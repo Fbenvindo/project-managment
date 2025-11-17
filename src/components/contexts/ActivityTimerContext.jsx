@@ -130,7 +130,7 @@ export const ActivityTimerProvider = ({ children }) => {
         }
     }, []);
 
-    const updatePlanejamento = useCallback(async (planejamentoId, tempoAdicional, finalStatus) => {
+    const updatePlanejamento = useCallback(async (planejamentoId, tempoAdicional, finalStatus, observacao = null) => {
         if (!planejamentoId) {
             console.warn('⚠️ [updatePlanejamento] planejamentoId é null/undefined, abortando');
             return;
@@ -140,6 +140,7 @@ export const ActivityTimerProvider = ({ children }) => {
         console.log(`   Planejamento ID: ${planejamentoId}`);
         console.log(`   Tempo adicional: ${tempoAdicional?.toFixed(4)}h`);
         console.log(`   Status final: ${finalStatus}`);
+        console.log(`   Observação: ${observacao || 'N/A'}`);
         
         try {
             let planejamento = null;
@@ -186,6 +187,12 @@ export const ActivityTimerProvider = ({ children }) => {
             const updateData = {
                 tempo_executado: novoTempoExecutado,
             };
+
+            // **ADICIONADO**: Salvar observação no planejamento
+            if (observacao) {
+                updateData.observacao = observacao;
+                console.log(`   💬 Salvando observação no planejamento`);
+            }
 
             if (isAtividadeRapida) {
                 updateData.tempo_planejado = novoTempoExecutado;
@@ -236,7 +243,7 @@ export const ActivityTimerProvider = ({ children }) => {
                         console.log(`   🎯 Tempo planejado atingido - marcando como concluída`);
                     } else {
                         updateData.status = 'em_andamento';
-                        console.log(`   ▶️ Marcando como em sandamento`);
+                        console.log(`   ▶️ Marcando como em andamento`);
                     }
                 }
             }
@@ -252,7 +259,11 @@ export const ActivityTimerProvider = ({ children }) => {
             
             console.log(`✅ [updatePlanejamento] ${isDocumento ? 'PlanejamentoDocumento' : 'PlanejamentoAtividade'} ${planejamento.id} ATUALIZADO COM SUCESSO`);
             console.log(`   Novo tempo_executado: ${updateData.tempo_executado?.toFixed(2)}h`);
-            console.log(`   Status: ${updateData.status}\n`);
+            console.log(`   Status: ${updateData.status}`);
+            if (updateData.observacao) {
+                console.log(`   Observação salva: "${updateData.observacao}"`);
+            }
+            console.log();
             
             triggerUpdate();
         } catch (error) {
@@ -483,6 +494,7 @@ export const ActivityTimerProvider = ({ children }) => {
             console.log(`⏸️ [pauseExecution] Descritivo: "${executionToPause.descritivo}"`);
             console.log(`⏸️ [pauseExecution] Tempo calculado: ${tempoDecorridoHoras.toFixed(4)}h`);
             console.log(`⏸️ [pauseExecution] Planejamento ID: ${executionToPause.planejamento_id || 'N/A'}`);
+            console.log(`⏸️ [pauseExecution] Observação: "${observacao}"`);
 
             const execution = await retryWithExtendedBackoff(
                 () => Execucao.get(executionToPause.id), 
@@ -515,7 +527,7 @@ export const ActivityTimerProvider = ({ children }) => {
 
             if (execution.planejamento_id) {
                 console.log(`🔄 [pauseExecution] Atualizando planejamento ${execution.planejamento_id}...`);
-                await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'pausado');
+                await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'pausado', observacao);
                 console.log('✅ [pauseExecution] Planejamento atualizado');
             }
             
@@ -555,22 +567,6 @@ export const ActivityTimerProvider = ({ children }) => {
         }
     }, [activeExecution, updatePlanejamento, triggerUpdate, refreshActiveExecution]);
 
-    const removeFromPlaylist = useCallback(async (planejamentoId) => {
-        if (!user) {
-            alert("Faça login para gerenciar sua playlist.");
-            return;
-        }
-        const newPlaylist = playlist.filter(id => id !== planejamentoId);
-        try {
-            await retryWithBackoff(() => User.updateMyUserData({ playlist_atividades: newPlaylist }), 3, 1000, 'removeFromPlaylist');
-            setPlaylist(newPlaylist);
-            console.log(`✅ Atividade ${planejamentoId} removida da playlist.`);
-        } catch (error) {
-            console.error("Erro ao remover da playlist:", error);
-            alert("Não foi possível remover da playlist. Tente novamente.");
-        }
-    }, [playlist, user]);
-
     const finishExecution = useCallback(async (observacao = '') => {
         if (!activeExecution) {
             console.log("Nenhuma execução ativa para finalizar");
@@ -595,6 +591,7 @@ export const ActivityTimerProvider = ({ children }) => {
             console.log(`   Fim: ${agora.toISOString()}`);
             console.log(`   Tempo calculado: ${tempoDecorridoHoras.toFixed(4)}h`);
             console.log(`   Planejamento ID: ${executionToFinish.planejamento_id || 'N/A'}`);
+            console.log(`   Observação: "${observacao}"`);
             console.log(`🏁 ========================================\n`);
 
             const execution = await retryWithExtendedBackoff(() => Execucao.get(executionToFinish.id), 'finishExecution.get');
@@ -621,7 +618,7 @@ export const ActivityTimerProvider = ({ children }) => {
 
             if (execution.planejamento_id) {
                 console.log(`\n🔄 [finishExecution] ATUALIZANDO PLANEJAMENTO ${execution.planejamento_id}...`);
-                await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'concluido');
+                await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'concluido', observacao);
                 console.log('✅ [finishExecution] Planejamento atualizado\n');
                 
                 if (playlist.includes(execution.planejamento_id)) {
@@ -912,7 +909,7 @@ export const ActivityTimerProvider = ({ children }) => {
         onIdle: async () => {
             console.log("Usuário inativo - pausando atividade automaticamente");
             if (activeExecution) {
-                await pauseExecution("Atividade paralisada automaticamente por inatividade.");
+                await pauseExecution("Atividade paralisada automaticamente devido à inatividade.");
                 alert("Sua atividade foi pausada automaticamente devido à inatividade.");
             }
         },
