@@ -1,9 +1,10 @@
 
-import { createContext, useState, useEffect, useCallback } from 'react';
-import { Execucao, User, PlanejamentoAtividade, AtividadeGenerica, Empreendimento, PlanejamentoDocumento, Usuario } from '@/entities/all';
+import React, { createContext, useState, useEffect, useMemo, useCallback } from 'react';
+import { Execucao, User, PlanejamentoAtividade, SobraUsuario, AtividadeGenerica, Empreendimento, PlanejamentoDocumento, Usuario } from '@/entities/all';
 import { useIdleDetection } from '../hooks/useIdleDetection';
 import IdleWarningModal from '../layout/IdleWarningModal';
 import { retryWithBackoff, retryWithExtendedBackoff } from '../utils/apiUtils';
+import { distribuirHorasSimples } from '../utils/DateCalculator';
 import { realocarAtividadesDoDiaSeguinte } from '../utils/ReagendamentoAutomatico';
 import { format, parseISO, isValid } from 'date-fns';
 
@@ -193,7 +194,7 @@ export const ActivityTimerProvider = ({ children }) => {
                 if (diaDaAtividade) {
                   updateData.horas_por_dia = { [diaDaAtividade]: novoTempoExecutado };
                 }
-                console.log(`   ⚡ Atividade rápida - atualizando tempo_planejado e horas_por_dia`);
+                console.log(`   ⚡ Atividade rápida - atualizando tempo_planejado=${novoTempoExecutado.toFixed(4)}h e horas_por_dia`);
             } else {
                 if (finalStatus === 'concluido') {
                     updateData.status = 'concluido';
@@ -374,17 +375,17 @@ export const ActivityTimerProvider = ({ children }) => {
                 
                 const hojeStr = format(new Date(), 'yyyy-MM-dd');
                 
-                // **CORRIGIDO**: Criar atividade rápida COM horas_por_dia já alocadas para aparecer no calendário
+                // **CORRIGIDO**: Criar com tempo mínimo (0.01h) que será atualizado ao concluir
                 const novoPlano = await retryWithBackoff(
                     () => PlanejamentoAtividade.create({
                         descritivo: executionData.descritivo,
                         base_descritivo: executionData.base_descritivo,
                         empreendimento_id: executionData.empreendimento_id || null,
-                        tempo_planejado: 0.5, // Tempo estimado inicial para aparecer no calendário
+                        tempo_planejado: 0.01, // Tempo mínimo - será atualizado ao finalizar
                         executor_principal: user.email,
                         executores: [user.email],
                         status: 'nao_iniciado',
-                        horas_por_dia: { [hojeStr]: 0.5 }, // **CORRIGIDO**: Já alocar 0.5h no dia para aparecer no calendário
+                        horas_por_dia: { [hojeStr]: 0.01 }, // Tempo mínimo - será atualizado ao finalizar
                         inicio_planejado: hojeStr,
                         termino_planejado: hojeStr,
                         is_quick_activity: true,
