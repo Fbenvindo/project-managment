@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useMemo, useCallback, useContext, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,14 +17,32 @@ export default function ExecucoesPorUsuario() {
     const [execucoesPorUsuario, setExecucoesPorUsuario] = useState({});
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [isLoading, setIsLoading] = useState(true);
-    const [usuariosMap, setUsuariosMap] = useState({});
     
     const hasLoadedRef = useRef(false);
     const lastLoadedDateRef = useRef(null);
 
     const isAdmin = user && (user.role === 'admin' || user.role === 'lider' || user.perfil === 'coordenador');
 
-    const processarDados = useCallback((execucoesDoDia, usuarios) => {
+    // **MODIFICADO**: Criar mapa de usuários SEMPRE a partir do allUsers do contexto
+    const usuariosMap = useMemo(() => {
+        if (!allUsers || allUsers.length === 0) {
+            // Fallback: criar mapa apenas com o usuário atual
+            if (user) {
+                return {
+                    [user.email]: user.full_name || user.nome || user.email
+                };
+            }
+            return {};
+        }
+        
+        // Usar allUsers do contexto para criar o mapa
+        return allUsers.reduce((acc, u) => ({
+            ...acc, 
+            [u.email]: u.nome || u.full_name || u.email
+        }), {});
+    }, [allUsers, user]);
+
+    const processarDados = useCallback((execucoesDoDia) => {
         if (!execucoesDoDia || execucoesDoDia.length === 0) {
             setExecucoesPorUsuario({});
             return;
@@ -78,14 +95,6 @@ export default function ExecucoesPorUsuario() {
         }
 
         setExecucoesPorUsuario(finalGrouped);
-        
-        // MODIFICADO: Criar mapa com nome completo ou email como fallback
-        const uMap = usuarios.reduce((acc, u) => ({
-            ...acc, 
-            [u.email]: u.nome || u.full_name || u.email
-        }), {});
-        setUsuariosMap(uMap);
-
     }, []);
 
     const loadData = useCallback(async () => {
@@ -115,9 +124,7 @@ export default function ExecucoesPorUsuario() {
 
             const execsDoDia = await retryWithBackoff(() => Execucao.filter(filters), 3, 2000, 'loadExecucoesDia');
             
-            const usersToUse = isAdmin && allUsers && allUsers.length > 0 ? allUsers : [user];
-            
-            processarDados(execsDoDia || [], usersToUse);
+            processarDados(execsDoDia || []);
 
         } catch (error) {
             console.error("Erro ao carregar execuções:", error);
@@ -125,19 +132,19 @@ export default function ExecucoesPorUsuario() {
         } finally {
             setIsLoading(false);
         }
-    }, [user, selectedDate, isAdmin, processarDados, allUsers]);
+    }, [user, selectedDate, isAdmin, processarDados]);
 
     useEffect(() => {
         const timeout = setTimeout(() => {
             loadData();
-        }, 4000); 
+        }, 4000);
 
         return () => clearTimeout(timeout);
-    }, [selectedDate]); 
+    }, [selectedDate]);
 
     useEffect(() => {
         if (hasLoadedRef.current) {
-            hasLoadedRef.current = false; 
+            hasLoadedRef.current = false;
             loadData();
         }
     }, [updateKey, activeExecution]);
