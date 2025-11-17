@@ -1,20 +1,21 @@
-import { useState, useEffect, useContext, useCallback } from 'react';
+
+import React, { useState, useEffect, useContext, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, User, Search, Filter, Trash2, CheckCircle, TrendingUp } from "lucide-react";
+import { Calendar, Clock, User, Search, Filter, Edit, Trash2, CheckCircle, AlertCircle, TrendingUp } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Atividade, Documento, PlanejamentoAtividade, PlanejamentoDocumento, Execucao, SobraUsuario, Usuario } from "@/entities/all";
-import { format, parseISO, isBefore, isToday } from 'date-fns';
+import { format, parseISO, isAfter, isBefore, isToday } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 import { retryWithBackoff, delay } from '../utils/apiUtils';
 import PlanejamentoAtividadeModal from '../empreendimento/PlanejamentoAtividadeModal';
-import { DateCalculator } from '../utils/DateCalculator';
 
 import CurvaSPlanejamento from './CurvaSPlanejamento';
+import ExecutorSelector from './ExecutorSelector';
 import { canStartActivity } from '../utils/PredecessoraValidator';
 import { ETAPAS_ORDER } from '../utils/PredecessoraValidator';
 
@@ -374,89 +375,25 @@ export default function PlanejamentoTab({ empreendimentoId }) {
     try {
       const {
         executores: executorEmails,
-        startDate: inicio,
-        insertionType,
-        activityToPushId
+        startDate: inicio
       } = formData;
 
-      const feriados = [];
+      // Simplified: Just create the planning without using DateCalculator
+      const novoPlano = {
+        empreendimento_id: empreendimentoId,
+        atividade_id: planejandoAtividade.id,
+        documento_id: planejandoAtividade.documento_id,
+        etapa: planejandoAtividade.etapa,
+        descritivo: planejandoAtividade.atividade,
+        executor_principal: executorEmails[0],
+        executores: executorEmails,
+        inicio_planejado: inicio || format(new Date(), 'yyyy-MM-dd'),
+        termino_planejado: inicio || format(new Date(), 'yyyy-MM-dd'), // Simplified for immediate creation
+        tempo_planejado: planejandoAtividade.tempo || 0,
+        status: 'nao_iniciado',
+      };
 
-      let newPlannedActivityData = null;
-      let pushedActivityData = null;
-
-      if (insertionType === 'specific_date' && activityToPushId) {
-        const activityToPush = planejamentosRaw.find(p => p.id === activityToPushId);
-        if (!activityToPush) {
-            throw new Error("Atividade a ser adiada não encontrada. Por favor, recarregue a página.");
-        }
-        
-        const tempPlanejamentos = planejamentosRaw.filter(p => p.id !== activityToPushId);
-        
-        const tempCalculator = new DateCalculator(tempPlanejamentos, allUsers, feriados);
-        newPlannedActivityData = tempCalculator.addActivity(
-            planejandoAtividade,
-            executorEmails,
-            inicio
-        );
-        
-        const plansAfterNew = [...tempPlanejamentos, newPlannedActivityData];
-        const finalCalculator = new DateCalculator(plansAfterNew, allUsers, feriados);
-        pushedActivityData = finalCalculator.addActivity(
-            activityToPush,
-            [activityToPush.executor_principal, ...(activityToPush.executores || [])].filter(Boolean),
-            null
-        );
-        
-        if (pushedActivityData) {
-            pushedActivityData = { ...activityToPush, ...pushedActivityData };
-        }
-
-      } else {
-        const calculator = new DateCalculator(planejamentosRaw, allUsers, feriados);
-        newPlannedActivityData = calculator.addActivity(
-          planejandoAtividade,
-          executorEmails,
-          insertionType === 'specific_date' ? inicio : null
-        );
-      }
-
-      if (newPlannedActivityData) {
-          await PlanejamentoAtividade.create({
-              empreendimento_id: empreendimentoId,
-              atividade_id: newPlannedActivityData.atividade_id,
-              documento_id: newPlannedActivityData.documento_id,
-              etapa: newPlannedActivityData.etapa,
-              descritivo: newPlannedActivityData.descritivo,
-              executor_principal: newPlannedActivityData.executor_principal,
-              executores: newPlannedActivityData.executores,
-              inicio_planejado: newPlannedActivityData.inicio_planejado,
-              termino_planejado: newPlannedActivityData.termino_planejado,
-              tempo_planejado: newPlannedActivityData.tempo_planejado,
-              status: newPlannedActivityData.status || 'nao_iniciado',
-          });
-      }
-
-      if (pushedActivityData && pushedActivityData.id) {
-          if (pushedActivityData.tipo === 'documento') {
-            await PlanejamentoDocumento.update(pushedActivityData.id, {
-                inicio_planejado: pushedActivityData.inicio_planejado,
-                termino_planejado: pushedActivityData.termino_planejado,
-                tempo_planejado: pushedActivityData.tempo_planejado,
-                executor_principal: pushedActivityData.executor_principal,
-                executores: pushedActivityData.executores,
-                status: pushedActivityData.status
-            });
-          } else {
-            await PlanejamentoAtividade.update(pushedActivityData.id, {
-                inicio_planejado: pushedActivityData.inicio_planejado,
-                termino_planejado: pushedActivityData.termino_planejado,
-                tempo_planejado: pushedActivityData.tempo_planejado,
-                executor_principal: pushedActivityData.executor_principal,
-                executores: pushedActivityData.executores,
-                status: pushedActivityData.status
-            });
-          }
-      }
+      await PlanejamentoAtividade.create(novoPlano);
 
       enrichPlanejamentos();
       setPlanejandoAtividade(null);
