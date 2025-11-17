@@ -631,7 +631,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
               )}
           </div>
           
-          {/* Right side: Time information - MODIFIED */}
+          {/* Right side: Time information - CORRIGIDO */}
           <div className="flex items-center gap-2">
             {shouldShowAdjustButton() ? (
               <button
@@ -643,15 +643,15 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
                 title="Clique para ajustar o tempo (Coordenador ou superior)"
               >
                  <span className="font-semibold text-sm" title="Horas alocadas para este dia">{horasDoDia.toFixed(1)}h</span>
-                 <span className="text-xs text-gray-500 font-normal" title="Progresso total (Executado / Planejado)">
-                    ({tempoExecutado.toFixed(1)}h / {tempoPlanejado.toFixed(1)}h)
+                 <span className="text-xs text-gray-500 font-normal" title="Executado / Alocado neste dia">
+                    ({tempoExecutado.toFixed(1)}h / {horasDoDia.toFixed(1)}h)
                 </span>
               </button>
             ) : (
                <div className="font-mono text-blue-600 flex flex-col items-end">
                  <span className="font-semibold text-sm" title="Horas alocadas para este dia">{horasDoDia.toFixed(1)}h</span>
-                 <span className="text-xs text-gray-500 font-normal" title="Progresso total (Executado / Planejado)">
-                    ({tempoExecutado.toFixed(1)}h / {tempoPlanejado.toFixed(1)}h)
+                 <span className="text-xs text-gray-500 font-normal" title="Executado / Alocado neste dia">
+                    ({tempoExecutado.toFixed(1)}h / {horasDoDia.toFixed(1)}h)
                 </span>
               </div>
             )}
@@ -714,7 +714,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
           <div className="py-4 space-y-4">
             <div>
               <p className="text-sm text-gray-600 mb-2"><strong>Atividade:</strong> {displayName}</p>
-              <p className="text-sm text-gray-600 mb-4">Tempo atual: {tempoExecutado.toFixed(1)}h de {tempoPlanejado.toFixed(1)}h planejadas</p>
+              <p className="text-sm text-gray-600 mb-4">Tempo atual: {tempoExecutado.toFixed(1)}h executadas</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="adjustedTime">Novo Tempo Executado (horas)</Label>
