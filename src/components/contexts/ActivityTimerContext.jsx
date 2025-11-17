@@ -210,12 +210,14 @@ export const ActivityTimerProvider = ({ children }) => {
                     console.log(`      ✅ Horas liberadas na agenda: ${horasLiberadas.toFixed(2)}h`);
                     console.log(`      📊 Mantendo distribuição original de horas_por_dia`);
 
-                    if (horasLiberadas > 0.1 && planejamento.executor_principal && planejamento.inicio_planejado) {
-                        console.log(`      🎯 Iniciando realocação automática...`);
+                    // **CORRIGIDO**: Usar data atual da finalização, não o início planejado
+                    if (horasLiberadas > 0.1 && planejamento.executor_principal) {
+                        const dataFinalizacao = format(new Date(), 'yyyy-MM-dd');
+                        console.log(`      🎯 Iniciando realocação automática a partir de ${dataFinalizacao}...`);
                         
                         const atividadesRealocadas = await realocarAtividadesDoDiaSeguinte(
                             planejamento.executor_principal,
-                            planejamento.inicio_planejado,
+                            dataFinalizacao,
                             horasLiberadas
                         );
 
