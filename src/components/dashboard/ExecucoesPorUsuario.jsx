@@ -1,10 +1,11 @@
-import { useState, useEffect, useMemo, useCallback, useContext, useRef } from 'react';
+
+import React, { useState, useEffect, useMemo, useCallback, useContext, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Execucao } from "@/entities/all";
-import { Clock, Calendar as CalendarIcon } from "lucide-react";
-import { format, isToday } from "date-fns";
+import { Execucao, Usuario } from "@/entities/all";
+import { Users, Clock, Play, FileText, Calendar as CalendarIcon } from "lucide-react";
+import { format, isToday, isSameDay } from "date-fns";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Button } from "@/components/ui/button";
@@ -19,7 +20,6 @@ export default function ExecucoesPorUsuario() {
     const [isLoading, setIsLoading] = useState(true);
     const [usuariosMap, setUsuariosMap] = useState({});
     
-    // **NOVO**: Ref para controlar se já carregou
     const hasLoadedRef = useRef(false);
     const lastLoadedDateRef = useRef(null);
 
@@ -79,7 +79,11 @@ export default function ExecucoesPorUsuario() {
 
         setExecucoesPorUsuario(finalGrouped);
         
-        const uMap = usuarios.reduce((acc, u) => ({...acc, [u.email]: u.nome}), {});
+        // MODIFICADO: Criar mapa com nome completo ou email como fallback
+        const uMap = usuarios.reduce((acc, u) => ({
+            ...acc, 
+            [u.email]: u.nome || u.full_name || u.email
+        }), {});
         setUsuariosMap(uMap);
 
     }, []);
@@ -87,11 +91,9 @@ export default function ExecucoesPorUsuario() {
     const loadData = useCallback(async () => {
         if (!user) return;
         
-        // **NOVO**: Verificar se mudou de data
         const dateStr = format(selectedDate, 'yyyy-MM-dd');
         const dateChanged = lastLoadedDateRef.current !== dateStr;
         
-        // **NOVO**: Só recarregar se mudou de data OU se updateKey mudou OU se activeExecution mudou
         if (hasLoadedRef.current && !dateChanged) {
             console.log('✅ [ExecucoesPorUsuario] Dados já carregados para esta data');
             return;
@@ -125,19 +127,17 @@ export default function ExecucoesPorUsuario() {
         }
     }, [user, selectedDate, isAdmin, processarDados, allUsers]);
 
-    // **MODIFICADO**: Carregar com delay inicial e apenas quando updateKey mudar
     useEffect(() => {
         const timeout = setTimeout(() => {
             loadData();
-        }, 4000); // **NOVO**: Delay de 4 segundos para carregar depois de tudo
+        }, 4000); 
 
         return () => clearTimeout(timeout);
-    }, [selectedDate]); // **MODIFICADO**: Apenas quando mudar a data
+    }, [selectedDate]); 
 
-    // **NOVO**: Recarregar quando updateKey ou activeExecution mudar
     useEffect(() => {
         if (hasLoadedRef.current) {
-            hasLoadedRef.current = false; // Reset para forçar recarga
+            hasLoadedRef.current = false; 
             loadData();
         }
     }, [updateKey, activeExecution]);
