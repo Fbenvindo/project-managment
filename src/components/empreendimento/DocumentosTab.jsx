@@ -1,0 +1,1786 @@
+
+import { useState, useEffect, useMemo, useCallback } from 'react';
+import { Documento, Atividade, PlanejamentoAtividade, PlanejamentoDocumento } from "@/entities/all";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Plus, Search, Edit, Trash2, ChevronDown, ChevronRight, BarChart, CalendarDays, FileText, Loader2, Users2, CalendarIcon } from "lucide-react";
+import { AnimatePresence } from "framer-motion";
+import DocumentoForm from "./DocumentoForm";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
+import PlanejamentoDocumentoEtapaModal from './PlanejamentoDocumentoEtapaModal';
+import { ETAPAS_ORDER } from '../utils/PredecessoraValidator';
+import { distribuirHorasPorDias, isWorkingDay, calculateEndDate, ensureWorkingDay } from '../utils/DateCalculator';
+import { format, isValid, parseISO, addDays } from 'date-fns';
+import { retryWithBackoff, retryWithExtendedBackoff } from '../utils/apiUtils';
+
+const parseDate = (dateString) => {
+  if (!dateString) return null;
+  if (dateString instanceof Date) return dateString;
+  const date = new Date(`${dateString}T00:00:00`);
+  return date;
+};
+
+const useDebounce = (value, delay) => {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+  return debouncedValue;
+};
+
+const ordenarAtividades = (atividades) => {
+  return [...atividades].sort((a, b) => {
+    const indexA = ETAPAS_ORDER.indexOf(a.etapa);
+    const indexB = ETAPAS_ORDER.indexOf(b.etapa);
+
+    if (indexA !== indexB) {
+      if (indexA === -1) return 1;
+      if (indexB === -1) return -1;
+      return indexA - indexB;
+    }
+    return String(a.id).localeCompare(String(b.id));
+  });
+};
+
+export default function DocumentosTab({
+  empreendimento,
+  documentos,
+  disciplinas,
+  atividades: allAtividades,
+  planejamentos,
+  usuarios,
+  pavimentos,
+  onUpdate,
+  isLoading,
+  etapaParaPlanejamento,
+  onEtapaChange,
+}) {
+  const [showForm, setShowForm] = useState(false);
+  const [editingDocumento, setEditingDocumento] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const debouncedSearchTerm = useDebounce(searchTerm, 300);
+  const [expandedRows, setExpandedRows] = useState({});
+  
+  const [isDocEtapaModalOpen, setIsDocEtapaModal] = useState(false);
+  const [documentForDocEtapaModal, setDocumentForDocEtapaModal] = useState(null);
+
+  const [expandedSequencing, setExpandedSequencing] = useState({});
+
+  const [loadingDocs, setLoadingDocs] = useState({});
+
+  const [localDocumentos, setLocalDocumentos] = useState(documentos);
+  const [localPlanejamentos, setLocalPlanejamentos] = useState(planejamentos);
+
+  const [executorPreSelecionado, setExecutorPreSelecionado] = useState(null);
+
+  const [cargaDiariaCache, setCargaDiariaCache] = useState({});
+
+  useEffect(() => {
+    setLocalDocumentos(documentos);
+  }, [documentos]);
+
+  useEffect(() => {
+    setLocalPlanejamentos(planejamentos);
+  }, [planejamentos]);
+
+  const handleLocalUpdate = useCallback((updatedItemOrArray) => {
+    setLocalDocumentos(prevDocs => {
+      const updatedDocs = Array.isArray(updatedItemOrArray) ? updatedItemOrArray : [updatedItemOrArray];
+      const newDocs = prevDocs.map(doc => {
+        const found = updatedDocs.find(uDoc => uDoc.id === doc.id);
+        return found ? { ...doc, ...found } : doc;
+      });
+      const existingIds = new Set(prevDocs.map(d => d.id));
+      const newDocumentsToAdd = updatedDocs.filter(uDoc => !existingIds.has(uDoc.id));
+      return [...newDocs, ...newDocumentsToAdd];
+    });
+  }, []);
+
+  const getCargaDiariaExecutor = useCallback(async (executorEmail, forceRefresh = false) => {
+    if (!forceRefresh && cargaDiariaCache[executorEmail]) {
+      console.log(`✅ Usando cache de carga para ${executorEmail}`);
+      return cargaDiariaCache[executorEmail];
+    }
+
+    console.log(`🔄 Buscando carga do executor ${executorEmail}...`);
+    
+    const [planosAtividade, planosDocumento] = await Promise.all([
+        retryWithExtendedBackoff(
+            () => PlanejamentoAtividade.filter({ executor_principal: executorEmail }),
+            'loadAllPlansAtividade'
+        ),
+        retryWithExtendedBackoff(
+            () => PlanejamentoDocumento.filter({ executor_principal: executorEmail }),
+            'loadAllPlansDocumento'
+        )
+    ]);
+    
+    const todosOsPlanos = [...(planosAtividade || []), ...(planosDocumento || [])];
+    const hoje = new Date();
+    const hojeMidnight = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+    const cargaDiaria = {};
+
+    todosOsPlanos.forEach((plano) => {
+        if (plano.horas_por_dia && typeof plano.horas_por_dia === 'object') {
+            Object.entries(plano.horas_por_dia).forEach(([data, horas]) => {
+                try {
+                    const dataObj = parseISO(data);
+                    if (isValid(dataObj) && dataObj >= hojeMidnight) {
+                        const diaKey = format(dataObj, 'yyyy-MM-dd');
+                        const horasValidas = Number(horas) || 0;
+                        
+                        if (horasValidas > 0 && horasValidas <= 12) {
+                            cargaDiaria[diaKey] = (cargaDiaria[diaKey] || 0) + horasValidas;
+                        }
+                    }
+                } catch (erro) {
+                    console.warn(`Erro ao processar data ${data}:`, erro);
+                }
+            });
+        }
+    });
+
+    setCargaDiariaCache(prev => ({ ...prev, [executorEmail]: cargaDiaria }));
+    return cargaDiaria;
+  }, [cargaDiariaCache]);
+
+
+  const handleCascadingUpdate = useCallback(async (startDoc) => {
+    let docsToUpdateQueue = [{ ...startDoc }];
+    const updatedDocsMap = new Map();
+    updatedDocsMap.set(startDoc.id, { ...startDoc });
+
+    const currentDocStateMap = new Map(localDocumentos.map(d => [d.id, { ...d }]));
+    currentDocStateMap.set(startDoc.id, { ...startDoc });
+
+    let totalDocsUpdatedInCascade = 0;
+
+    try {
+      while (docsToUpdateQueue.length > 0) {
+        const currentDoc = docsToUpdateQueue.shift();
+
+        const children = localDocumentos.filter(d => d.predecessora_id === currentDoc.id);
+
+        for (const child of children) {
+          setLoadingDocs(prev => ({ ...prev, [child.id]: true }));
+          
+          const currentPredecessorState = updatedDocsMap.get(child.predecessora_id) || currentDocStateMap.get(child.predecessora_id);
+
+          if (currentPredecessorState && currentPredecessorState.termino_planejado && isValid(parseDate(currentPredecessorState.termino_planejado))) {
+            const dataTerminoPredecessor = parseDate(currentPredecessorState.termino_planejado);
+            
+            let novaDataInicio = ensureWorkingDay(dataTerminoPredecessor);
+
+            const subdisciplinasChild = child.subdisciplinas || [];
+            const disciplinaChild = child.disciplina;
+            const fatorDificuldadeChild = child.fator_dificuldade || 1;
+
+            const pavimentoChild = (pavimentos || []).find(p => p.id === child.pavimento_id);
+            const areaPavimentoChild = pavimentoChild ? Number(pavimentoChild.area) : null;
+
+            const etapaOverridesChild = new Map();
+            const tempoOverridesChild = new Map();
+            
+            allAtividades.forEach(ativ => {
+              if (ativ.empreendimento_id === empreendimento.id && ativ.id_atividade && ativ.tempo !== -999) {
+                etapaOverridesChild.set(ativ.id_atividade, ativ.etapa);
+                tempoOverridesChild.set(ativ.id_atividade, ativ.tempo);
+              }
+            });
+
+            let atividadesGeraisChild = allAtividades.filter(ativ => {
+              if (ativ.empreendimento_id) {
+                return false;
+              }
+              const disciplinaMatch = ativ.disciplina === disciplinaChild;
+              const subdisciplinaMatch = subdisciplinasChild.includes(ativ.subdisciplina);
+              return disciplinaMatch && subdisciplinaMatch;
+            });
+
+            const atividadesExcluidasGlobalChild = new Set();
+            const atividadesExcluidasPorDocChild = new Set();
+            
+            allAtividades.forEach(ativ => {
+              if (ativ.empreendimento_id === empreendimento.id && ativ.tempo === -999 && ativ.id_atividade) {
+                if (ativ.documento_id === child.id) {
+                  atividadesExcluidasPorDocChild.add(ativ.id_atividade);
+                } else if (!ativ.documento_id) {
+                  atividadesExcluidasGlobalChild.add(ativ.id_atividade);
+                }
+              }
+            });
+            
+            atividadesGeraisChild = atividadesGeraisChild.filter(ativ => 
+              !atividadesExcluidasGlobalChild.has(ativ.id) && 
+              !atividadesExcluidasPorDocChild.has(ativ.id)
+            );
+
+            const atividadesParaCalculoChild = atividadesGeraisChild.filter(ativ => {
+                const etapaFinal = etapaOverridesChild.has(ativ.id) ? etapaOverridesChild.get(ativ.id) : ativ.etapa;
+                if (etapaParaPlanejamento !== "todas") {
+                  return etapaFinal === etapaParaPlanejamento;
+                }
+                return true;
+            });
+
+            const tempoTotalChild = atividadesParaCalculoChild.reduce((total, ativ) => {
+                const tempoBase = tempoOverridesChild.has(ativ.id)
+                    ? parseFloat(tempoOverridesChild.get(ativ.id)) || 0
+                    : parseFloat(ativ.tempo) || 0;
+                let tempoCalculado = tempoBase;
+                if (areaPavimentoChild && areaPavimentoChild > 0) {
+                  tempoCalculado = tempoBase * areaPavimentoChild;
+                }
+                return total + (tempoCalculado * fatorDificuldadeChild);
+            }, 0);
+
+            let novaDataTermino = null;
+            if (tempoTotalChild > 0 && isValid(novaDataInicio)) {
+              novaDataTermino = calculateEndDate(novaDataInicio, tempoTotalChild, 8);
+            }
+
+            const newInicioStr = isValid(novaDataInicio) ? format(novaDataInicio, 'yyyy-MM-dd') : null;
+            const newTerminoStr = isValid(novaDataTermino) ? format(novaDataTermino, 'yyyy-MM-dd') : null;
+
+            if (newInicioStr !== child.inicio_planejado || newTerminoStr !== child.termino_planejado || tempoTotalChild !== child.tempo_total) {
+                const childUpdated = {
+                    ...child,
+                    inicio_planejado: newInicioStr,
+                    termino_planejado: newTerminoStr,
+                    tempo_total: tempoTotalChild
+                };
+                console.log(`[Cascata] Atualizando ${child.numero}: Início ${newInicioStr}, Término ${newTerminoStr}, Tempo ${tempoTotalChild.toFixed(1)}h`);
+
+                const dbUpdatedChild = await retryWithExtendedBackoff(() => Documento.update(child.id, {
+                    inicio_planejado: childUpdated.inicio_planejado,
+                    termino_planejado: childUpdated.termino_planejado,
+                    tempo_total: childUpdated.tempo_total
+                }), `cascadeUpdate-${child.id}`);
+
+                handleLocalUpdate(dbUpdatedChild);
+
+                updatedDocsMap.set(dbUpdatedChild.id, dbUpdatedChild);
+                currentDocStateMap.set(dbUpdatedChild.id, dbUpdatedChild);
+                docsToUpdateQueue.push(dbUpdatedChild);
+                totalDocsUpdatedInCascade++;
+            } else {
+                console.log(`[Cascata] Datas de ${child.numero} não mudaram.`);
+            }
+          }
+          setLoadingDocs(prev => ({ ...prev, [child.id]: false }));
+        }
+      }
+      if (totalDocsUpdatedInCascade > 0) {
+        console.log(`✅ Cascata concluída. ${totalDocsUpdatedInCascade} documentos atualizados.`);
+        setCargaDiariaCache({});
+      }
+    } catch (error) {
+      console.error("Erro durante cascata:", error);
+      alert("Erro ao atualizar documentos em cascata.");
+    } finally {
+      setLoadingDocs({});
+    }
+  }, [handleLocalUpdate, allAtividades, localDocumentos, etapaParaPlanejamento, pavimentos, empreendimento.id, setCargaDiariaCache]);
+
+
+  const autoPlanejarAtividades = useCallback(async (documento, etapa, executorEmail, metodoData, dataManualInicio) => {
+    if (!documento?.id || !executorEmail || !etapa) {
+        console.warn("🚫 Auto-planejamento ignorado: dados insuficientes.");
+        alert("Dados insuficientes para planejar. Verifique documento, executor e etapa.");
+        return;
+    }
+
+    if (etapa === 'todas') {
+        alert("Por favor, selecione uma etapa específica no dropdown 'Planejar Etapa' antes de definir o executor.");
+        return;
+    }
+
+    setLoadingDocs(prev => ({ ...prev, [documento.id]: true }));
+
+    try {
+        console.log(`\n🚀 ========================================`);
+        console.log(`📋 PLANEJAMENTO DE DOCUMENTO (EXECUTOR ÚNICO)`);
+        console.log(`   Documento: ${documento.numero}`);
+        console.log(`   Etapa: ${etapa}`);
+        console.log(`   Executor: ${executorEmail}`);
+        console.log(`   Método de Data: ${metodoData}`);
+        if (dataManualInicio) {
+            console.log(`   Data Manual: ${dataManualInicio}`);
+        }
+        console.log(`🚀 ========================================\n`);
+
+        const subdisciplinasDoc = documento.subdisciplinas || [];
+        const disciplinaDoc = documento.disciplina;
+        const fatorDificuldade = documento.fator_dificuldade || 1;
+        
+        const pavimento = (pavimentos || []).find(p => p.id === documento.pavimento_id);
+        const areaPavimento = pavimento ? Number(pavimento.area) : null;
+
+        const etapaOverrides = new Map();
+        const tempoOverrides = new Map();
+        
+        allAtividades.forEach(ativ => {
+          if (ativ.empreendimento_id === empreendimento.id && ativ.id_atividade && ativ.tempo !== -999) {
+            etapaOverrides.set(ativ.id_atividade, ativ.etapa);
+            tempoOverrides.set(ativ.id_atividade, ativ.tempo);
+          }
+        });
+
+        let atividadesGerais = allAtividades.filter(ativ => {
+          if (ativ.empreendimento_id) {
+            return false;
+          }
+
+          const disciplinaMatch = ativ.disciplina === disciplinaDoc;
+          const subdisciplinaMatch = subdisciplinasDoc.includes(ativ.subdisciplina);
+          return disciplinaMatch && subdisciplinaMatch;
+        });
+
+        const atividadesExcluidasGlobal = new Set();
+        const atividadesExcluidasPorDoc = new Set();
+        
+        allAtividades.forEach(ativ => {
+          if (ativ.empreendimento_id === empreendimento.id && ativ.tempo === -999 && ativ.id_atividade) {
+            if (ativ.documento_id === documento.id) {
+              atividadesExcluidasPorDoc.add(ativ.id_atividade);
+            } else if (!ativ.documento_id) {
+              atividadesExcluidasGlobal.add(ativ.id_atividade);
+            }
+          }
+        });
+
+        atividadesGerais = atividadesGerais.filter(ativ => 
+          !atividadesExcluidasGlobal.has(ativ.id) && 
+          !atividadesExcluidasPorDoc.has(ativ.id)
+        );
+
+        const atividadesDaEtapa = atividadesGerais.filter(ativ => {
+            const etapaFinal = etapaOverrides.has(ativ.id) ? etapaOverrides.get(ativ.id) : ativ.etapa;
+            return etapaFinal === etapa;
+        });
+
+        console.log(`📊 Atividades encontradas: ${atividadesDaEtapa.length}`);
+
+        if (atividadesDaEtapa.length === 0) {
+            alert(`Nenhuma atividade encontrada para a etapa "${etapa}".`);
+            return;
+        }
+
+        const tempoTotal = atividadesDaEtapa.reduce((total, ativ) => {
+            const tempoBase = tempoOverrides.has(ativ.id)
+                ? parseFloat(tempoOverrides.get(ativ.id)) || 0
+                : parseFloat(ativ.tempo) || 0;
+            let tempoCalculado = tempoBase;
+            if (areaPavimento && areaPavimento > 0) {
+              tempoCalculado = tempoBase * areaPavimento;
+            }
+            return total + (tempoCalculado * fatorDificuldade);
+        }, 0);
+
+        console.log(`⏱️ Tempo total calculado: ${tempoTotal.toFixed(1)}h (com fator ${fatorDificuldade} e área ${areaPavimento ? areaPavimento + 'm²' : 'N/A'})`);
+
+        const planejamentosAtividadeAntigos = localPlanejamentos.filter(p => 
+            p.documento_id === documento.id && p.etapa === etapa && p.tipo_plano === 'atividade'
+        );
+        
+        if (planejamentosAtividadeAntigos.length > 0) {
+            console.log(`🧹 Removendo ${planejamentosAtividadeAntigos.length} planejamentos de atividade antigos da etapa "${etapa}"...`);
+            await Promise.all(planejamentosAtividadeAntigos.map(p => 
+                retryWithBackoff(() => PlanejamentoAtividade.delete(p.id), 3, 1000, `deleteOldAtiv-${p.id}`)
+            ));
+            setLocalPlanejamentos(prev => prev.filter(p => 
+                !(p.documento_id === documento.id && p.etapa === etapa && p.tipo_plano === 'atividade')
+            ));
+        }
+
+        const planejamentosDocumentoAntigos = localPlanejamentos.filter(p =>
+            p.documento_id === documento.id && p.etapa === etapa && p.tipo_plano === 'documento'
+        );
+
+        if (planejamentosDocumentoAntigos.length > 0) {
+            console.log(`🧹 Removendo ${planejamentosDocumentoAntigos.length} planejamentos de documento antigos da etapa "${etapa}"...`);
+            await Promise.all(planejamentosDocumentoAntigos.map(p =>
+                retryWithBackoff(() => PlanejamentoDocumento.delete(p.id), 3, 1000, `deleteOldDocPlan-${p.id}`)
+            ));
+            setLocalPlanejamentos(prev => prev.filter(p =>
+                !(p.documento_id === documento.id && p.etapa === etapa && p.tipo_plano === 'documento')
+            ));
+        }
+
+        console.log(`\n🔄 Buscando agenda completa do executor...`);
+        const cargaDiaria = await getCargaDiariaExecutor(executorEmail, true);
+        
+        let dataInicio;
+        const hoje = new Date();
+        const hojeMidnight = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+        
+        if (metodoData === 'manual' && dataManualInicio) {
+            const parsedManualDate = parseISO(dataManualInicio);
+            if (!isValid(parsedManualDate)) {
+                throw new Error(`Data manual de início inválida: ${dataManualInicio}`);
+            }
+            
+            dataInicio = parsedManualDate;
+            console.log(`\n📅 Usando data manual: ${format(dataInicio, 'dd/MM/yyyy')}`);
+            
+        } else if (documento.predecessora_id) {
+            const predecessora = localDocumentos.find(d => d.id === documento.predecessora_id);
+            if (!predecessora || !predecessora.termino_planejado || !isValid(parseDate(predecessora.termino_planejado))) {
+                throw new Error(`Predecessora '${predecessora?.numero}' não possui data de término planejada.`);
+            }
+
+            const dataTerminoPredecessor = parseDate(predecessora.termino_planejado);
+            dataInicio = ensureWorkingDay(dataTerminoPredecessor);
+            
+            console.log(`\n📅 Predecessora termina em: ${format(dataTerminoPredecessor, 'dd/MM/yyyy')}`);
+            console.log(`📅 Começando busca a partir de: ${format(dataInicio, 'dd/MM/yyyy')}`);
+            console.log(`✅ distribuirHorasPorDias vai verificar espaços disponíveis a partir deste dia`);
+
+        } else {
+            console.log(`\n🔍 Procurando primeiro dia útil disponível...`);
+            let diaDisponivel = new Date(hojeMidnight);
+            let tentativas = 0;
+            const maxTentativas = 365;
+            
+            while (tentativas < maxTentativas) {
+                if (isWorkingDay(diaDisponivel)) {
+                    const diaKey = format(diaDisponivel, 'yyyy-MM-dd');
+                    const cargaDoDia = cargaDiaria[diaKey] || 0;
+                    const disponivel = 8 - cargaDoDia;
+                    
+                    if (disponivel >= 0.5) { 
+                        dataInicio = diaDisponivel;
+                        console.log(`   ✅ Primeiro dia disponível: ${format(dataInicio, 'dd/MM/yyyy')} (${disponivel.toFixed(1)}h livres)`);
+                        break;
+                    }
+                }
+                diaDisponivel = addDays(diaDisponivel, 1);
+                tentativas++;
+            }
+            
+            if (tentativas >= maxTentativas) {
+                throw new Error(`Não foi possível encontrar uma data disponível na agenda do executor.`);
+            }
+        }
+
+        console.log(`\n🔄 Distribuindo ${tempoTotal.toFixed(1)}h a partir de ${format(dataInicio, 'dd/MM/yyyy')}...`);
+        
+        const { distribuicao, dataTermino, novaCargaDiaria } = distribuirHorasPorDias(
+            dataInicio,
+            tempoTotal,
+            8,
+            cargaDiaria,
+            metodoData === 'manual'
+        );
+
+        if (!distribuicao || Object.keys(distribuicao).length === 0) {
+            throw new Error(`Não foi possível distribuir as horas na agenda.`);
+        }
+
+        if (metodoData !== 'manual') {
+            let ultrapassou = false;
+            Object.entries(distribuicao).forEach(([data, horas]) => {
+                const cargaTotal = novaCargaDiaria[data] || 0;
+                if (cargaTotal > 8.01) {
+                    console.error(`❌ DIA ${data} ULTRAPASSOU 8H: ${cargaTotal.toFixed(2)}h`);
+                    ultrapassou = true;
+                }
+            });
+
+            if (ultrapassou) {
+                throw new Error(`A distribuição resultou em um dia com mais de 8h.`);
+            }
+        }
+
+        const diasUtilizados = Object.keys(distribuicao).sort();
+        const inicioPlanejado = diasUtilizados[0];
+        const terminoPlanejado = format(dataTermino, 'yyyy-MM-dd');
+
+        console.log(`\n📊 Distribuição realizada:`);
+        console.log(`   Período: ${inicioPlanejado} a ${terminoPlanejado}`);
+        console.log(`   Dias utilizados: ${diasUtilizados.length}`);
+        
+        diasUtilizados.forEach(dia => {
+            const horasDoDia = distribuicao[dia];
+            const cargaTotalDoDia = novaCargaDiaria[dia];
+            console.log(`      ${dia}: ${horasDoDia.toFixed(1)}h (carga total: ${cargaTotalDoDia.toFixed(1)}h)`);
+        });
+
+        const dadosPlanoDocumento = {
+            empreendimento_id: empreendimento.id,
+            documento_id: documento.id,
+            descritivo: `${documento.numero} - ${etapa}`,
+            etapa: etapa,
+            executor_principal: executorEmail,
+            executores: [executorEmail],
+            tempo_planejado: tempoTotal,
+            inicio_planejado: inicioPlanejado,
+            termino_planejado: terminoPlanejado,
+            horas_por_dia: distribuicao,
+            status: 'nao_iniciado',
+            prioridade: 1,
+            tipo_plano: 'documento'
+        };
+
+        console.log(`\n💾 Criando PlanejamentoDocumento...`);
+        const novoPlano = await retryWithBackoff(
+            () => PlanejamentoDocumento.create(dadosPlanoDocumento),
+            3, 1000, 'createPlanDocumento'
+        );
+        
+        console.log(`✅ PlanejamentoDocumento criado: ID ${novoPlano.id}`);
+
+        const docAtualizado = await retryWithBackoff(
+            () => Documento.update(documento.id, {
+                executor_principal: executorEmail,
+                inicio_planejado: inicioPlanejado,
+                termino_planejado: terminoPlanejado,
+                tempo_total: tempoTotal,
+                multiplos_executores: false
+            }),
+            3, 1000, `updateDoc-${documento.id}`
+        );
+
+        handleLocalUpdate(docAtualizado);
+        setLocalPlanejamentos(prev => prev.filter(p => !(p.documento_id === documento.id && p.etapa === etapa)).concat(novoPlano));
+        setCargaDiariaCache({});
+
+        await handleCascadingUpdate(docAtualizado);
+
+        console.log(`\n✅ PLANEJAMENTO CONCLUÍDO!`);
+        console.log(`   Tempo total: ${tempoTotal.toFixed(1)}h`);
+        console.log(`   Período: ${format(parseISO(inicioPlanejado), 'dd/MM/yyyy')} a ${format(parseISO(terminoPlanejado), 'dd/MM/yyyy')}`);
+        
+        alert(`✅ Documento planejado com sucesso!\nEtapa: ${etapa}\nTempo: ${tempoTotal.toFixed(1)}h\nPeríodo: ${format(parseISO(inicioPlanejado), 'dd/MM/yyyy')} a ${format(parseISO(terminoPlanejado), 'dd/MM/yyyy')}`);
+
+    } catch (error) {
+        console.error("❌ Erro no planejamento automático:", error);
+        let userMessage = `Erro no planejamento: ${error.message || error}`;
+        if (error.message?.includes('Network Error') || error.message?.includes('Failed to fetch')) {
+          userMessage = 'Problema de conexão. Verifique sua internet.';
+        } else if (error.message?.includes('Rate limit')) {
+          userMessage = 'Sistema ocupado. Aguarde alguns momentos.';
+        }
+
+        alert(userMessage);
+        throw error;
+    } finally {
+        setLoadingDocs(prev => ({ ...prev, [documento.id]: false }));
+    }
+  }, [allAtividades, empreendimento, handleLocalUpdate, localPlanejamentos, setLocalPlanejamentos, pavimentos, getCargaDiariaExecutor, handleCascadingUpdate, localDocumentos]);
+
+  const handleSuccess = async (savedDoc) => {
+    onUpdate();
+    setShowForm(false);
+    setEditingDocumento(null);
+    setCargaDiariaCache({});
+  };
+
+  const handleEdit = (doc) => {
+    setEditingDocumento(doc);
+    setShowForm(true);
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Tem certeza que deseja excluir este documento?")) {
+      try {
+        await retryWithExtendedBackoff(() => Documento.delete(id), `deleteDocument-${id}`);
+        setLocalDocumentos(prevDocs => prevDocs.filter(d => d.id !== id));
+        setCargaDiariaCache({});
+        onUpdate();
+      } catch (error) {
+        console.error("Erro ao excluir documento:", error);
+        let errorMessage = "Ocorreu um erro ao excluir o documento.";
+        if (error.message?.includes("ReplicaSetNoPrimary") || error.message?.includes("500")) {
+            errorMessage = "Problema temporário com o servidor. Tente novamente.";
+        } else if (error.message?.includes('Network Error') || error.message?.includes('Failed to fetch')) {
+            errorMessage = 'Problema de conexão. Verifique sua internet.';
+        } else if (error.message?.includes('Rate limit')) {
+          errorMessage = 'Sistema ocupado. Aguarde alguns momentos.';
+        }
+        alert(errorMessage);
+      }
+    }
+  };
+
+  const handleOpenDocEtapaModal = useCallback((doc) => {
+    console.log('📋 Abrindo planejamento por documento/etapa para:', doc.numero);
+    setDocumentForDocEtapaModal(doc);
+    setExecutorPreSelecionado(null);
+    setIsDocEtapaModal(true);
+  }, []);
+
+  const handleCloseDocEtapaModal = useCallback(() => {
+    setIsDocEtapaModal(false);
+    setDocumentForDocEtapaModal(null);
+    setExecutorPreSelecionado(null);
+  }, []);
+
+  const handleSaveDocEtapaPlanning = useCallback(() => {
+    setCargaDiariaCache({});
+    onUpdate();
+    handleCloseDocEtapaModal();
+    setExecutorPreSelecionado(null);
+  }, [onUpdate, handleCloseDocEtapaModal]);
+
+  const toggleRow = (id) => {
+    setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const toggleSequencing = (id) => {
+    setExpandedSequencing(prev => ({ ...prev, [id]: !prev[id] }));
+  };
+
+  const handlePredecessoraChange = useCallback(async (documentoId, predecessoraId) => {
+    setLoadingDocs(prev => ({ ...prev, [documentoId]: true }));
+    try {
+      const documento = localDocumentos.find(d => d.id === documentoId);
+      if (!documento) {
+        console.warn(`[handlePredecessoraChange] Documento com ID ${documentoId} não encontrado.`);
+        return;
+      }
+
+      let updateData = { predecessora_id: predecessoraId };
+
+      if (!predecessoraId) {
+        updateData.inicio_planejado = null;
+        updateData.termino_planejado = null;
+        updateData.tempo_total = 0;
+        
+        if (!documento.multiplos_executores) {
+          updateData.executor_principal = null;
+        }
+      }
+
+      console.log(`🔧 [handlePredecessoraChange] Atualizando documento ${documentoId} com:`, updateData);
+
+      const updatedDocFromAPI = await retryWithExtendedBackoff(() => Documento.update(documentoId, updateData), `setPredecessor-${documentoId}`);
+
+      handleLocalUpdate(updatedDocFromAPI);
+      setCargaDiariaCache({});
+      
+      if (predecessoraId) {
+        console.log(`✅ Predecessor definido para ${documento.numero}. Datas serão calculadas ao atribuir executor.`);
+      } else {
+        console.log(`✅ Predecessor removido de ${documento.numero}. Datas limpas.`);
+      }
+
+    } catch (error) {
+      console.error('Erro ao definir predecessora:', error);
+
+      let userMessage = 'Ocorreu um erro ao definir a predecessora.';
+      if (error.message?.includes('Network Error') || error.message?.includes('Failed to fetch')) {
+        userMessage = 'Problema de conexão. Verifique sua internet.';
+      } else if (error.message?.includes('Rate limit')) {
+        userMessage = 'Sistema ocupado. Aguarde alguns momentos.';
+      }
+
+      alert(userMessage);
+    } finally {
+      setLoadingDocs(prev => ({ ...prev, [documentoId]: false }));
+    }
+  }, [localDocumentos, handleLocalUpdate, setCargaDiariaCache]);
+
+  const handleDataInicioChange = useCallback(async (documentoId, novaDataStr) => {
+    setLoadingDocs(prev => ({ ...prev, [documentoId]: true }));
+    
+    try {
+      const documento = localDocumentos.find(d => d.id === documentoId);
+      if (!documento) {
+        console.warn(`[handleDataInicioChange] Documento com ID ${documentoId} não encontrado.`);
+        return;
+      }
+
+      const novaDataInicio = parseDate(novaDataStr);
+      if (!isValid(novaDataInicio)) {
+        console.warn(`[handleDataInicioChange] Data de início inválida: ${novaDataStr}`);
+        alert("Data de início inválida.");
+        return;
+      }
+
+      const updateData = {
+        inicio_planejado: novaDataStr
+      };
+
+      console.log(`🔧 [handleDataInicioChange] Atualizando documento ${documentoId} com:`, updateData);
+
+      const updatedDocFromAPI = await retryWithExtendedBackoff(() => Documento.update(documentoId, updateData), `setStartDate-${documentoId}`);
+
+      handleLocalUpdate(updatedDocFromAPI);
+      setCargaDiariaCache({});
+      
+      console.log(`✅ Data de início para ${documento.numero} salva.`);
+
+    } catch (error) {
+      console.error('Erro ao atualizar data de início:', error);
+
+      let userMessage = 'Erro ao atualizar data de início.';
+      if (error.message?.includes('Network Error') || error.message?.includes('Failed to fetch')) {
+        userMessage = 'Problema de conexão. Verifique sua internet.';
+      } else if (error.message?.includes('Rate limit')) {
+        userMessage = 'Sistema ocupado. Aguarde alguns momentos.';
+      }
+
+      alert(userMessage);
+    } finally {
+      setLoadingDocs(prev => ({ ...prev, [documentoId]: false }));
+    }
+  }, [localDocumentos, handleLocalUpdate, setCargaDiariaCache]);
+
+  const filteredDocumentos = useMemo(() => {
+    const filtered = localDocumentos.filter(doc =>
+      (doc.numero?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())) ||
+      (doc.arquivo?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()))
+    );
+
+    return filtered.sort((a, b) => {
+      const arquivoA = (a.arquivo || '').trim().toLowerCase();
+      const arquivoB = (b.arquivo || '').trim().toLowerCase();
+
+      return arquivoA.localeCompare(arquivoB, 'pt-BR', {
+        numeric: true,
+        sensitivity: 'base',
+        ignorePunctuation: false
+      });
+    });
+  }, [localDocumentos, debouncedSearchTerm]);
+
+  const etapasDisponiveis = useMemo(() => {
+    const etapas = new Set();
+    allAtividades.forEach(atividade => {
+      if (atividade && atividade.etapa && !atividade.empreendimento_id) {
+        etapas.add(atividade.etapa);
+      }
+    });
+
+    return Array.from(etapas).filter(etapa =>
+      etapa !== 'Concepção' && etapa !== 'Planejamento'
+    ).sort();
+  }, [allAtividades]);
+
+  const usuariosOrdenados = useMemo(() => {
+    return [...usuarios].sort((a, b) => {
+      const nomeA = a.nome || a.full_name || a.email || '';
+      const nomeB = b.nome || b.full_name || b.email || '';
+      return nomeA.localeCompare(nomeB, 'pt-BR', { sensitivity: 'base' });
+    });
+  }, [usuarios]);
+
+  const DocumentoItem = ({ doc, planejamentos, allAtividades, handleEdit, handleDelete, handleOpenDocEtapaModal, handlePredecessoraChange, handleDataInicioChange, etapaParaPlanejamento, loadingDocs, empreendimento, onUpdate }) => {
+    const [isUpdatingActivity, setIsUpdatingActivity] = useState(false);
+    const [isUpdating, setIsUpdating] = useState(false);
+    const isDocLoading = loadingDocs[doc.id] || false;
+    
+    const [searchPredecessor, setSearchPredecessor] = useState('');
+
+    const planejamentosDoDocumento = useMemo(() => {
+        return planejamentos.filter(p => p.documento_id === doc.id);
+    }, [planejamentos, doc.id]);
+
+    const atividadesDisponiveis = useMemo(() => {
+      const subdisciplinasDoc = doc.subdisciplinas || [];
+      const disciplinaDoc = doc.disciplina;
+
+      const etapaOverrides = new Map();
+      const tempoOverrides = new Map();
+      
+      allAtividades.forEach(ativ => {
+        if (ativ.empreendimento_id === empreendimento.id && ativ.id_atividade && ativ.tempo !== -999) {
+          etapaOverrides.set(ativ.id_atividade, ativ.etapa);
+          tempoOverrides.set(ativ.id_atividade, ativ.tempo);
+        }
+      });
+
+      let atividadesGerais = allAtividades.filter(ativ => {
+        if (ativ.empreendimento_id) {
+          return false;
+        }
+
+        const disciplinaMatch = ativ.disciplina === disciplinaDoc;
+        const subdisciplinaMatch = subdisciplinasDoc.includes(ativ.subdisciplina);
+        return disciplinaMatch && subdisciplinaMatch;
+      });
+
+      console.log(`\n🔍 [Doc ${doc.numero}] Filtrando exclusões:`);
+      console.log(`   ID do documento: ${doc.id}`);
+      console.log(`   Atividades gerais encontradas: ${atividadesGerais.length}`);
+      
+      const atividadesExcluidasGlobal = new Set();
+      const atividadesExcluidasPorDoc = new Set();
+      
+      allAtividades.forEach(ativ => {
+        if (ativ.empreendimento_id === empreendimento.id && ativ.tempo === -999 && ativ.id_atividade) {
+          if (ativ.documento_id === doc.id) {
+            console.log(`   ❌ Exclusão da folha ${doc.numero}: atividade ${ativ.id_atividade}`);
+            atividadesExcluidasPorDoc.add(ativ.id_atividade);
+          } else if (!ativ.documento_id) {
+            console.log(`   ❌ Exclusão global: atividade ${ativ.id_atividade}`);
+            atividadesExcluidasGlobal.add(ativ.id_atividade);
+          }
+        }
+      });
+
+      console.log(`   Excluídas globalmente: ${atividadesExcluidasGlobal.size}`);
+      console.log(`   Excluídas desta folha: ${atividadesExcluidasPorDoc.size}`);
+
+      atividadesGerais = atividadesGerais.filter(ativ => {
+        const globalExcluded = atividadesExcluidasGlobal.has(ativ.id);
+        const docExcluded = atividadesExcluidasPorDoc.has(ativ.id);
+        return !globalExcluded && !docExcluded;
+      });
+
+      console.log(`   ✅ Atividades disponíveis após filtros: ${atividadesGerais.length}\n`);
+
+      const isDocumentPlannedAsSingleEntity = !doc.multiplos_executores && planejamentosDoDocumento.some(p => p.etapa === etapaParaPlanejamento && p.tipo_plano === 'documento');
+
+      const pavimento = (pavimentos || []).find(p => p.id === doc.pavimento_id);
+      const areaPavimento = pavimento ? Number(pavimento.area) : null;
+
+      return ordenarAtividades(atividadesGerais).map(atividade => {
+        const etapaFinal = etapaOverrides.has(atividade.id) 
+          ? etapaOverrides.get(atividade.id) 
+          : atividade.etapa;
+
+        const tempoBase = tempoOverrides.has(atividade.id)
+          ? parseFloat(tempoOverrides.get(atividade.id)) || 0
+          : parseFloat(atividade.tempo) || 0;
+
+        const jaFoiPlanejada = isDocumentPlannedAsSingleEntity && etapaFinal === etapaParaPlanejamento;
+
+        const fatorDificuldade = doc.fator_dificuldade || 1;
+        
+        let tempoComFator;
+        if (areaPavimento && areaPavimento > 0) {
+          tempoComFator = tempoBase * areaPavimento * fatorDificuldade;
+        } else {
+          tempoComFator = tempoBase * fatorDificuldade;
+        }
+
+        return {
+          ...atividade,
+          etapa: etapaFinal,
+          tempoComFator,
+          tempoBase: tempoBase,
+          area: areaPavimento,
+          jaFoiPlanejada: jaFoiPlanejada
+        };
+      });
+    }, [allAtividades, doc.disciplina, doc.fator_dificuldade, doc.pavimento_id, planejamentosDoDocumento, doc.subdisciplinas, doc.multiplos_executores, etapaParaPlanejamento, empreendimento.id, pavimentos, doc.id, doc.numero]);
+
+    const tempoCalculadoPorEtapa = useMemo(() => {
+      const atividadesFiltradas = etapaParaPlanejamento === 'todas'
+          ? atividadesDisponiveis
+          : atividadesDisponiveis.filter(ativ => ativ.etapa === etapaParaPlanejamento);
+          
+      return atividadesFiltradas.reduce((total, ativ) => {
+        return total + (ativ.tempoComFator || 0);
+      }, 0);
+    }, [atividadesDisponiveis, etapaParaPlanejamento]);
+
+    const handleExcluirAtividade = async (activityObj) => {
+      // **LOG IMEDIATO**: Verificar se a função está sendo chamada
+      console.log(`\n🎯 ========================================`);
+      console.log(`🎯 BOTÃO DE EXCLUIR CLICADO!`);
+      console.log(`🎯 ========================================`);
+      console.log(`   Atividade objeto:`, activityObj);
+      console.log(`   Documento atual:`, { id: doc.id, numero: doc.numero });
+      console.log(`🎯 ========================================\n`);
+      
+      const confirmMessage = `Tem certeza que deseja excluir a atividade "${activityObj.atividade}" SOMENTE desta folha "${doc.numero}"?\n\nEsta atividade continuará disponível em outras folhas do projeto.`;
+      
+      if (!window.confirm(confirmMessage)) {
+        console.log(`❌ Usuário cancelou a exclusão`);
+        return;
+      }
+
+      console.log(`✅ Usuário confirmou - prosseguindo com exclusão...\n`);
+
+      setIsUpdatingActivity(true);
+      try {
+        console.log(`🗑️ ========================================`);
+        console.log(`📋 INICIANDO PROCESSO DE EXCLUSÃO`);
+        console.log(`🗑️ ========================================`);
+        console.log(`   Atividade: "${activityObj.atividade}"`);
+        console.log(`   ID da Atividade: ${activityObj.id}`);
+        console.log(`   empreendimento_id da atividade: ${activityObj.empreendimento_id}`);
+        console.log(`   Folha: ${doc.numero}`);
+        console.log(`   ID da Folha: ${doc.id}`);
+        console.log(`   Empreendimento: ${empreendimento.nome}`);
+        console.log(`   ID do Empreendimento: ${empreendimento.id}`);
+        console.log(`🗑️ ========================================\n`);
+
+        if (!activityObj) {
+            console.error(`❌ Atividade inválida.`);
+            alert("Erro: Atividade inválida para exclusão.");
+            return;
+        }
+
+        // **VERIFICAÇÃO 1**: Se é atividade específica do projeto
+        if (activityObj.empreendimento_id === empreendimento.id) {
+          console.log(`\n📌 ========================================`);
+          console.log(`📌 ATIVIDADE ESPECÍFICA DO PROJETO`);
+          console.log(`📌 ========================================`);
+          console.log(`   Esta atividade pertence ao empreendimento`);
+          console.log(`   Ação: Deletar a atividade diretamente`);
+          console.log(`📌 ========================================\n`);
+          
+          await retryWithBackoff(
+            () => Atividade.delete(activityObj.id),
+            3, 1000, `deleteSpecificAtividade-${activityObj.id}`
+          );
+          console.log(`✅ Atividade específica excluída com sucesso.`);
+          
+        } else {
+          // **VERIFICAÇÃO 2**: É atividade genérica - criar marcador
+          console.log(`\n📌 ========================================`);
+          console.log(`📌 ATIVIDADE GENÉRICA (CATÁLOGO GLOBAL)`);
+          console.log(`📌 ========================================`);
+          console.log(`   Esta atividade NÃO pertence ao empreendimento`);
+          console.log(`   Ação: Criar marcador de exclusão ESPECÍFICO`);
+          console.log(`   Marcador será vinculado ao documento: ${doc.id}`);
+          console.log(`📌 ========================================\n`);
+
+          console.log(`🔍 PASSO 1: Verificando se já existe marcador...\n`);
+          console.log(`   Buscando com filtro:`);
+          console.log(`   {`);
+          console.log(`     empreendimento_id: "${empreendimento.id}",`);
+          console.log(`     id_atividade: "${activityObj.id}",`);
+          console.log(`     documento_id: "${doc.id}",`);
+          console.log(`     tempo: -999`);
+          console.log(`   }`);
+          
+          const existingMarkers = await retryWithBackoff(
+            () => Atividade.filter({
+              empreendimento_id: empreendimento.id,
+              id_atividade: activityObj.id,
+              documento_id: doc.id,
+              tempo: -999
+            }),
+            3, 1000, `checkExclusionMarker-${activityObj.id}-${doc.id}`
+          );
+
+          console.log(`\n   📊 Resultado da busca: ${existingMarkers?.length || 0} marcadores encontrados`);
+          
+          if (existingMarkers && existingMarkers.length > 0) {
+            console.log(`   📋 Marcador(es) encontrado(s):`);
+            existingMarkers.forEach((marker, idx) => {
+              console.log(`\n   Marcador ${idx + 1}:`);
+              console.log(`      ID: ${marker.id}`);
+              console.log(`      empreendimento_id: "${marker.empreendimento_id}"`);
+              console.log(`      id_atividade: "${marker.id_atividade}"`);
+              console.log(`      documento_id: "${marker.documento_id}"`);
+              console.log(`      tempo: ${marker.tempo}`);
+            });
+          }
+
+          if (existingMarkers && existingMarkers.length > 0) {
+            console.log(`\n⚠️ Marcador já existe - ABORTANDO operação`);
+            alert(`A atividade "${activityObj.atividade}" já está excluída desta folha.`);
+            setIsUpdatingActivity(false);
+            return;
+          }
+
+          console.log(`\n✅ Nenhum marcador existente - prosseguindo com criação...\n`);
+
+          // **CRÍTICO**: Criar marcador com documento_id obrigatório
+          const novoMarcador = {
+            etapa: activityObj.etapa,
+            disciplina: activityObj.disciplina,
+            subdisciplina: activityObj.subdisciplina,
+            atividade: `(Excluída da folha ${doc.numero}) ${activityObj.atividade}`,
+            funcao: activityObj.funcao,
+            empreendimento_id: empreendimento.id,
+            id_atividade: activityObj.id,
+            documento_id: doc.id,
+            tempo: -999
+          };
+
+          console.log(`💾 PASSO 2: Criando marcador de exclusão...\n`);
+          console.log(`   📝 Dados que serão enviados para Atividade.create():`);
+          console.log(`   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+          Object.entries(novoMarcador).forEach(([key, value]) => {
+            const emoji = key === 'documento_id' ? '⭐' : '  ';
+            console.log(`   ${emoji} ${key}: "${value}"`);
+          });
+          console.log(`   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+
+          const marcadorCriado = await retryWithBackoff(
+            () => Atividade.create(novoMarcador),
+            3, 1000, `createExclusionMarker-${activityObj.id}-${doc.id}`
+          );
+          
+          console.log(`\n✅ ========================================`);
+          console.log(`✅ RESPOSTA DO SERVIDOR`);
+          console.log(`✅ ========================================`);
+          console.log(`   ID gerado: ${marcadorCriado.id}`);
+          console.log(`   📝 Dados retornados pelo servidor:`);
+          console.log(`   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`);
+          Object.entries(marcadorCriado).forEach(([key, value]) => {
+            const emoji = key === 'documento_id' ? '⭐' : '  ';
+            const status = key === 'documento_id' && !value ? '❌ NULO!' : '';
+            console.log(`   ${emoji} ${key}: "${value}" ${status}`);
+          });
+          console.log(`   ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`);
+          
+          // **VALIDAÇÃO CRÍTICA**: Verificar se documento_id foi salvo
+          if (!marcadorCriado.documento_id) {
+            console.error(`\n❌ ========================================`);
+            console.error(`❌ ERRO CRÍTICO DETECTADO!`);
+            console.error(`❌ ========================================`);
+            console.error(`   O campo documento_id NÃO foi salvo!`);
+            console.error(`   Isso fará com que a exclusão seja GLOBAL`);
+            console.error(`   em vez de específica desta folha.`);
+            console.error(`❌ ========================================\n`);
+            
+            alert(`⚠️ ERRO CRÍTICO:\n\nO sistema não conseguiu salvar o vínculo com a folha específica!\n\nIsso significa que a atividade seria excluída de TODAS as folhas.\n\n🔧 Tentando corrigir automaticamente...`);
+            
+            // **CORREÇÃO AUTOMÁTICA**: Atualizar o marcador com documento_id
+            console.log(`🔧 Aplicando correção: atualizando marcador ${marcadorCriado.id}...`);
+            const marcadorCorrigido = await retryWithBackoff(
+              () => Atividade.update(marcadorCriado.id, { documento_id: doc.id }),
+              3, 1000, `fixMarker-${marcadorCriado.id}`
+            );
+            
+            console.log(`✅ Marcador corrigido:`, {
+              id: marcadorCorrigido.id,
+              documento_id: marcadorCorrigido.documento_id,
+              empreendimento_id: marcadorCorrigido.empreendimento_id
+            });
+            
+            if (!marcadorCorrigido.documento_id) {
+              console.error(`❌ FALHA NA CORREÇÃO! documento_id ainda está nulo.`);
+              alert(`❌ Não foi possível corrigir o erro.\n\nPor favor, recarregue a página e tente novamente.`);
+              return;
+            }
+            
+            alert(`✅ Erro corrigido automaticamente!\n\nA atividade foi excluída SOMENTE da folha "${doc.numero}".`);
+          }
+          
+          console.log(`✅ Marcador válido criado com sucesso!\n`);
+        }
+
+        console.log(`🔄 PASSO 3: Recarregando dados da página...\n`);
+        await onUpdate();
+        
+        console.log(`\n🎉 ========================================`);
+        console.log(`🎉 PROCESSO CONCLUÍDO COM SUCESSO!`);
+        console.log(`🎉 ========================================\n`);
+        
+        alert(`✅ Atividade "${activityObj.atividade}" removida APENAS da folha "${doc.numero}"!\n\nEla continuará disponível nas outras folhas.`);
+        
+      } catch (error) {
+        console.error("\n💥 ========================================");
+        console.error("💥 ERRO DURANTE O PROCESSO");
+        console.error("💥 ========================================");
+        console.error("Erro:", error);
+        console.error("Stack:", error.stack);
+        console.error("💥 ========================================\n");
+        
+        alert("Erro ao excluir atividade: " + error.message);
+      } finally {
+        console.log(`\n🏁 Finalizando processo (isUpdatingActivity = false)\n`);
+        setIsUpdatingActivity(false);
+      }
+    };
+
+    const handleExecutorChange = async (field, value) => {
+      setIsUpdating(true);
+      try {
+          let updateData = {};
+
+          if (field === 'multiplos_executores' && value === true) {
+              updateData = {
+                  multiplos_executores: true,
+                  executor_principal: null,
+                  inicio_planejado: null,
+                  termino_planejado: null,
+                  tempo_total: 0
+              };
+
+              const allPlansForDoc = localPlanejamentos.filter(p => p.documento_id === doc.id);
+              if (allPlansForDoc.length > 0) {
+                  await Promise.all(allPlansForDoc.map(p => {
+                      if (p.tipo_plano === 'atividade') {
+                          return retryWithExtendedBackoff(() => PlanejamentoAtividade.delete(p.id), `deleteOldPlanForMultiAtiv-${p.id}`);
+                      } else if (p.tipo_plano === 'documento') {
+                          return retryWithExtendedBackoff(() => PlanejamentoDocumento.delete(p.id), `deleteOldPlanForMultiDoc-${p.id}`);
+                      }
+                      return Promise.resolve();
+                  }));
+                  setLocalPlanejamentos(prev => prev.filter(p => p.documento_id !== doc.id));
+              }
+
+              const updatedDocFromAPI = await retryWithExtendedBackoff(() => Documento.update(doc.id, updateData), `updateDocMulti-${doc.id}`);
+              handleLocalUpdate(updatedDocFromAPI);
+              setCargaDiariaCache({});
+
+              if(updatedDocFromAPI) {
+                  handleOpenDocEtapaModal(updatedDocFromAPI);
+              }
+
+          } else if (field === 'multiplos_executores' && value === false) {
+              updateData = {
+                  multiplos_executores: false,
+                  executor_principal: null,
+                  inicio_planejado: null,
+                  termino_planejado: null,
+                  tempo_total: 0
+              };
+
+              const allPlansForDoc = localPlanejamentos.filter(p => p.documento_id === doc.id);
+              if (allPlansForDoc.length > 0) {
+                  await Promise.all(allPlansForDoc.map(p => {
+                      if (p.tipo_plano === 'atividade') {
+                          return retryWithExtendedBackoff(() => PlanejamentoAtividade.delete(p.id), `deleteOldPlanForSingleAtiv-${p.id}`);
+                      } else if (p.tipo_plano === 'documento') {
+                          return retryWithExtendedBackoff(() => PlanejamentoDocumento.delete(p.id), `deleteOldPlanForSingleDoc-${p.id}`);
+                      }
+                      return Promise.resolve();
+                  }));
+                  setLocalPlanejamentos(prev => prev.filter(p => p.documento_id !== doc.id));
+              }
+
+              const updatedDocFromAPI = await retryWithExtendedBackoff(() => Documento.update(doc.id, updateData), `updateDocSingle-${doc.id}`);
+              handleLocalUpdate(updatedDocFromAPI);
+              setCargaDiariaCache({});
+
+          } else if (field === 'executor_principal' && value === null) {
+              updateData = { executor_principal: null, inicio_planejado: null, termino_planejado: null, tempo_total: 0 };
+
+              const allPlansForDoc = localPlanejamentos.filter(p => p.documento_id === doc.id);
+              if (allPlansForDoc.length > 0) {
+                  await Promise.all(allPlansForDoc.map(p => {
+                      if (p.tipo_plano === 'atividade') {
+                          return retryWithExtendedBackoff(() => PlanejamentoAtividade.delete(p.id), `deleteOldPlanClearExecutorAtiv-${p.id}`);
+                      } else if (p.tipo_plano === 'documento') {
+                          return retryWithExtendedBackoff(() => PlanejamentoDocumento.delete(p.id), `deleteOldPlanClearExecutorDoc-${p.id}`);
+                      }
+                      return Promise.resolve();
+                  }));
+                  setLocalPlanejamentos(prev => prev.filter(p => p.documento_id !== doc.id));
+              }
+
+              const updatedDocFromAPI = await retryWithExtendedBackoff(() => Documento.update(doc.id, updateData), `clearExecutor-${doc.id}`);
+              handleLocalUpdate(updatedDocFromAPI);
+              setCargaDiariaCache({});
+          }
+
+      } catch (error) {
+          console.error("Erro ao atualizar o documento:", error);
+          let errorMessage = "Falha ao atualizar o executor.";
+          if (error.message?.includes('Network Error') || error.message?.includes('Failed to fetch')) {
+            errorMessage = 'Problema de conexão. Verifique sua internet.';
+          } else if (error.message?.includes('Rate limit')) {
+            errorMessage = 'Sistema ocupado. Aguarde alguns momentos.';
+          }
+          alert(errorMessage);
+      } finally {
+          setIsUpdating(false);
+      }
+    };
+
+    const handleExecutorSelectChange = async (executorEmail) => {
+        if (!executorEmail) return;
+        
+        if (etapaParaPlanejamento === 'todas') {
+            alert("Por favor, selecione uma etapa específica no dropdown 'Planejar Etapa' antes de atribuir um executor.");
+            return;
+        }
+
+        console.log(`📋 [DocumentosTab] Executor selecionado para doc ${doc.numero}: ${executorEmail}`);
+        console.log(`🎯 Etapa selecionada para planejamento: ${etapaParaPlanejamento}`);
+        
+        setIsUpdating(true);
+        
+        try {
+            console.log(`💾 Atualizando executor_principal no documento...`);
+            const docAtualizado = await retryWithBackoff(
+                () => Documento.update(doc.id, { 
+                    executor_principal: executorEmail,
+                    multiplos_executores: false 
+                }),
+                3, 1000, `setExecutor-${doc.id}`
+            );
+            
+            handleLocalUpdate(docAtualizado);
+            console.log(`✅ Documento atualizado com executor: ${executorEmail}`);
+
+            const temDataManual = docAtualizado.inicio_planejado && 
+                                  isValid(parseDate(docAtualizado.inicio_planejado));
+            
+            const metodoData = temDataManual ? 'manual' : 'agenda';
+            const dataManualInicio = temDataManual ? docAtualizado.inicio_planejado : null;
+
+            if (temDataManual) {
+                console.log(`📅 Documento possui data de início manual: ${format(parseDate(docAtualizado.inicio_planejado), 'dd/MM/yyyy')}`);
+            } else {
+                console.log(`🔍 Buscando disponibilidade na agenda do executor...`);
+            }
+
+            console.log(`\n🚀 Iniciando planejamento automático...`);
+            
+            await autoPlanejarAtividades(
+                docAtualizado,
+                etapaParaPlanejamento,
+                executorEmail,
+                metodoData,
+                dataManualInicio
+            );
+            setCargaDiariaCache({});
+            
+            console.log(`✅ Planejamento concluído!`);
+            
+        } catch (error) {
+            console.error("❌ Erro ao definir executor e planejar:", error);
+            
+            let errorMessage = "Erro ao definir executor e planejar.";
+            if (error.message?.includes('Network Error') || error.message?.includes('Failed to fetch')) {
+                errorMessage = 'Problema de conexão. Verifique sua internet.';
+            } else if (error.message?.includes('Rate limit')) {
+                errorMessage = 'Sistema ocupado. Aguarde alguns momentos.';
+            } else if (error.message) {
+                errorMessage = error.message;
+            }
+            
+            alert(errorMessage);
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const documentosFiltradosParaPredecessor = useMemo(() => {
+      const docs = localDocumentos.filter(d => d.id !== doc.id);
+      
+      if (!searchPredecessor) {
+        return docs.slice(0, 50);
+      }
+      
+      const search = searchPredecessor.toLowerCase();
+      return docs.filter(d => 
+        d.numero?.toLowerCase().includes(search) || 
+        d.arquivo?.toLowerCase().includes(search)
+      ).slice(0, 50);
+    }, [localDocumentos, doc.id, searchPredecessor]);
+
+    return (
+      <>
+        <TableRow key={doc.id}>
+          <TableCell>
+            <Button variant="ghost" size="icon" onClick={() => toggleRow(doc.id)} disabled={isDocLoading}>
+              {expandedRows[doc.id] ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </Button>
+          </TableCell>
+          <TableCell className="font-medium">{doc.numero}</TableCell>
+          <TableCell>{doc.arquivo}</TableCell>
+          <TableCell>{doc.disciplina}</TableCell>
+          <TableCell className="w-[180px]">
+            <div className="space-y-1">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id={`multi-${doc.id}`}
+                  checked={doc.multiplos_executores || false}
+                  onCheckedChange={(checked) => handleExecutorChange('multiplos_executores', checked)}
+                  disabled={isUpdating || isDocLoading}
+                />
+                <Label htmlFor={`multi-${doc.id}`} className="text-xs font-normal">Múltiplos Executores</Label>
+              </div>
+              {!doc.multiplos_executores && (
+                <div className="space-y-1">
+                  {doc.executor_principal ? (
+                    <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-xs font-medium text-green-800">
+                          {usuariosOrdenados.find(u => u.email === doc.executor_principal)?.nome || doc.executor_principal}
+                        </span>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleExecutorChange('executor_principal', null)}
+                        className="text-xs text-red-600 hover:text-red-700 h-6"
+                        disabled={isUpdating || isDocLoading}
+                      >
+                        Remover
+                      </Button>
+                    </div>
+                  ) : (
+                    <Select
+                      onValueChange={(value) => handleExecutorSelectChange(value)}
+                      disabled={isUpdating || isDocLoading}
+                    >
+                      <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
+                        <Users2 className="w-3 h-3 mr-1" />
+                        <SelectValue placeholder="Selecionar Executor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {usuariosOrdenados.map(u => (
+                          <SelectItem key={u.id} value={u.email}>
+                            {u.nome}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                </div>
+              )}
+              {(isUpdating || isDocLoading) && (
+                <div className="flex items-center gap-1 text-xs text-blue-600">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  {isDocLoading ? "Planejando..." : "Salvando..."}
+                </div>
+              )}
+            </div>
+          </TableCell>
+          <TableCell className="text-sm text-gray-700">
+            <div className="flex flex-col">
+              <span>Início: {doc.inicio_planejado ? format(parseISO(doc.inicio_planejado), 'dd/MM/yyyy') : 'N/A'}</span>
+              <span>Término: {doc.termino_planejado ? format(parseISO(doc.termino_planejado), 'dd/MM/yyyy') : 'N/A'}</span>
+            </div>
+          </TableCell>
+          <TableCell className="text-sm text-gray-700">
+            <div className="flex flex-col">
+              <span className="font-medium">{`${tempoCalculadoPorEtapa.toFixed(1)}h`}</span>
+              {etapaParaPlanejamento !== 'todas' && (
+                <span className="text-xs text-gray-500">({etapaParaPlanejamento})</span>
+              )}
+            </div>
+          </TableCell>
+          <TableCell>
+            <div className="flex items-center justify-end gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => toggleSequencing(doc.id)}
+                  className="text-xs h-7 border-purple-500 text-purple-600 hover:bg-purple-50"
+                  disabled={isDocLoading}
+                >
+                  <CalendarIcon className="w-3 h-3 mr-1" />
+                  Predecessora
+                </Button>
+                <Link to={createPageUrl(`AtividadesPlanejadas?doc_id=${doc.id}&emp_id=${empreendimento.id}`)}>
+                  <Button variant="outline" size="icon" className="h-8 w-8" disabled={isDocLoading}>
+                    <BarChart className="h-4 w-4" />
+                  </Button>
+                </Link>
+                
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-8 w-8 border-blue-500 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                  onClick={() => handleOpenDocEtapaModal(doc)}
+                  disabled={isDocLoading}
+                  title="Planejar Documento"
+                >
+                  <CalendarDays className="h-4 w-4" />
+                </Button>
+                
+                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleEdit(doc)} disabled={isDocLoading}>
+                  <Edit className="h-4 w-4" />
+                </Button>
+                <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleDelete(doc.id)} disabled={isDocLoading}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+          </TableCell>
+        </TableRow>
+
+        {expandedSequencing[doc.id] && (
+          <TableRow>
+            <TableCell colSpan={8} className="bg-purple-50">
+              <div className="p-4">
+                <h4 className="font-semibold mb-4 flex items-center gap-2">
+                  <CalendarIcon className="w-4 h-4" />
+                  Sequenciamento - {doc.numero}
+                </h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <Label className="text-sm font-medium">Documento Predecessor</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full mt-1 justify-between"
+                          disabled={isDocLoading}
+                        >
+                          <span className="truncate">
+                            {doc.predecessora_id 
+                              ? (() => {
+                                  const pred = localDocumentos.find(d => d.id === doc.predecessora_id);
+                                  return pred ? `${pred.numero} - ${pred.arquivo}` : 'Predecessor não encontrado';
+                                })()
+                              : 'Selecione predecessor'}
+                          </span>
+                          <ChevronDown className="h-4 w-4 ml-2 opacity-50" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-[400px] p-0" align="start">
+                        <div className="p-2 border-b">
+                          <div className="relative">
+                            <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
+                            <Input
+                              placeholder="Buscar documento..."
+                              value={searchPredecessor}
+                              onChange={(e) => setSearchPredecessor(e.target.value)}
+                              className="pl-8"
+                            />
+                          </div>
+                        </div>
+                        <div className="max-h-[300px] overflow-y-auto">
+                          <div className="p-1">
+                            <Button
+                              variant="ghost"
+                              className="w-full justify-start text-left font-normal"
+                              onClick={() => {
+                                handlePredecessoraChange(doc.id, null);
+                                setSearchPredecessor('');
+                              }}
+                            >
+                              <span className="text-gray-500">Nenhum predecessor</span>
+                            </Button>
+                            {documentosFiltradosParaPredecessor.map(d => (
+                              <Button
+                                key={d.id}
+                                variant="ghost"
+                                className="w-full justify-start text-left font-normal"
+                                onClick={() => {
+                                  handlePredecessoraChange(doc.id, d.id);
+                                  setSearchPredecessor('');
+                                }}
+                              >
+                                <span className="font-medium">{d.numero}</span>
+                                <span className="text-gray-500 ml-2 truncate">{d.arquivo}</span>
+                              </Button>
+                            ))}
+                            {documentosFiltradosParaPredecessor.length === 0 && searchPredecessor && (
+                              <div className="p-4 text-center text-sm text-gray-500">
+                                Nenhum documento encontrado
+                              </div>
+                            )}
+                            {!searchPredecessor && localDocumentos.length > 51 && (
+                              <div className="p-2 text-xs text-center text-gray-500 bg-blue-50">
+                                Mostrando 50 de {localDocumentos.length - 1} documentos. Use a busca para encontrar outros.
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {doc.predecessora_id 
+                        ? "✅ Predecessor salvo. Datas calculadas ao planejar." 
+                        : "Sem predecessor"}
+                    </p>
+                  </div>
+
+                  <div>
+                    <Label className="text-sm font-medium">Data de Início Manual</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className="w-full mt-1 justify-start text-left font-normal"
+                          disabled={isDocLoading || doc.multiplos_executores === true}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {doc.inicio_planejado && isValid(parseDate(doc.inicio_planejado))
+                            ? format(parseDate(doc.inicio_planejado), 'dd/MM/yyyy')
+                            : "Selecionar"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={doc.inicio_planejado && isValid(parseDate(doc.inicio_planejado))
+                            ? parseDate(doc.inicio_planejado)
+                            : undefined}
+                          onSelect={(date) => {
+                            if (date) {
+                              handleDataInicioChange(doc.id, format(date, 'yyyy-MM-dd'));
+                            }
+                          }}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {doc.multiplos_executores ? "Defina no modal de planejamento" : 
+                       doc.inicio_planejado ? "✅ Data salva. Será usada ao planejar." : "Opcional - calcula automaticamente"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </TableCell>
+          </TableRow>
+        )}
+
+        {expandedRows[doc.id] && (
+          <TableRow>
+            <TableCell colSpan={8} className="bg-gray-50">
+              <div className="p-4">
+                <h4 className="font-semibold mb-3">Atividades da Folha: {doc.numero}</h4>
+                <div className="space-y-2">
+                  {atividadesDisponiveis.length > 0 ? atividadesDisponiveis.map(atividade => {
+                    const subdisciplina = atividade.subdisciplina || 'N/A';
+
+                    return (
+                      <div
+                        key={atividade.id}
+                        className={`flex justify-between items-center p-3 rounded border ${
+                          atividade.jaFoiPlanejada
+                            ? 'bg-green-50 border-green-200'
+                            : 'bg-white border-gray-200'
+                        }`}
+                      >
+                        <div className="flex-1 pr-2">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{atividade.atividade}</span>
+                            {atividade.jaFoiPlanejada && (
+                              <Badge className="bg-green-100 text-green-800 text-xs">
+                                Planejada
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-sm text-gray-500 mt-1">
+                            {atividade.etapa} • {subdisciplina}
+                            {atividade.area && (
+                                <span className="ml-2 text-blue-600">
+                                  • {atividade.tempoBase.toFixed(2)}h/m² × {atividade.area}m²
+                                </span>
+                              )}
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="text-right">
+                            <div className="text-sm font-medium">
+                              {atividade.tempoComFator.toFixed(1)}h
+                            </div>
+                            {atividade.jaFoiPlanejada && (
+                              <div className="text-xs text-gray-500">
+                                Tempo contabilizado no plano do documento.
+                              </div>
+                            )}
+                            {!atividade.jaFoiPlanejada && (
+                              <div className="text-xs text-blue-600">
+                                Disponível para planejamento
+                              </div>
+                            )}
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleExcluirAtividade(atividade)}
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            title="Excluir atividade SOMENTE desta folha"
+                            disabled={isUpdatingActivity}
+                          >
+                            {isUpdatingActivity ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  }) : (
+                    <div className="text-center text-gray-500 p-4">
+                      <div className="flex flex-col items-center gap-2">
+                        <FileText className="w-16 h-16 text-gray-300" />
+                        <p>Nenhuma atividade encontrada para esta disciplina/subdisciplinas</p>
+                        <p className="text-xs">
+                          Disciplina: {doc.disciplina} | Subdisciplinas: {(doc.subdisciplinas || []).join(', ') || 'Nenhuma'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {atividadesDisponiveis.length > 0 && (
+                  <div className="mt-4 pt-3 border-t border-gray-200">
+                    <div className="flex justify-between items-center text-sm text-gray-600">
+                      <span>
+                        Total: {atividadesDisponiveis.length} atividades |
+                        Planejadas: {atividadesDisponiveis.filter(a => a.jaFoiPlanejada).length}
+                      </span>
+                      <span>
+                        Tempo total: {atividadesDisponiveis.reduce((sum, a) => sum + a.tempoComFator, 0).toFixed(1)}h
+                      </span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </TableCell>
+          </TableRow>
+        )}
+      </>
+    );
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card className="shadow-lg border-0 bg-white">
+        <CardHeader className="flex flex-row items-center justify-between border-b border-gray-100">
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="w-5 h-5 text-blue-600" />
+            Documentos ({filteredDocumentos.length})
+          </CardTitle>
+          <Button
+            onClick={() => setShowForm(true)}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            <Plus className="w-4 h-4 mr-2" />
+            Novo Documento
+          </Button>
+        </CardHeader>
+        <CardContent className="p-6">
+          {etapaParaPlanejamento !== "todas" && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <div className="flex items-center gap-2 text-blue-800">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <span className="text-sm font-medium">
+                  Modo: Planejamento "{etapaParaPlanejamento}"
+                </span>
+              </div>
+            </div>
+          )}
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+            <Input
+              placeholder="Buscar documentos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              disabled={Object.keys(loadingDocs).some(id => loadingDocs[id])}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <div className="flex items-center gap-4 flex-1">
+              <CardTitle>Documentos Cadastrados ({filteredDocumentos.length})</CardTitle>
+              
+              <div className="flex items-center gap-2">
+                <Label htmlFor="etapa-planejamento" className="text-sm font-medium whitespace-nowrap">
+                  Planejar Etapa:
+                </Label>
+                <Select
+                  value={etapaParaPlanejamento}
+                  onValueChange={onEtapaChange}
+                >
+                  <SelectTrigger id="etapa-planejamento" className="w-[180px]">
+                    <SelectValue placeholder="Selecione a etapa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todas">Todas as etapas</SelectItem>
+                    {etapasDisponiveis.map(etapa => (
+                      <SelectItem key={etapa} value={etapa}>{etapa}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+        </CardHeader>
+
+        <CardContent>
+          {isLoading ? (
+            <div className="flex justify-center items-center py-8">
+              <Loader2 className="w-8 h-8 animate-spin text-gray-400" />
+              <span className="ml-2 text-gray-500">Carregando documentos...</span>
+            </div>
+          ) : filteredDocumentos.length === 0 ? (
+            <div className="text-center py-12">
+              <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+              <p className="text-gray-500 mb-2">Nenhum documento encontrado</p>
+              <p className="text-gray-400 text-sm">
+                {debouncedSearchTerm ? "Tente ajustar sua busca" : "Adicione documentos ao projeto para começar"}
+              </p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[50px]"></TableHead>
+                    <TableHead>Número</TableHead>
+                    <TableHead>Arquivo</TableHead>
+                    <TableHead>Disciplina</TableHead>
+                    <TableHead>Executor</TableHead>
+                    <TableHead>Datas</TableHead>
+                    <TableHead>Tempo</TableHead>
+                    <TableHead className="w-[100px]">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredDocumentos.map(doc => (
+                    <DocumentoItem
+                      key={doc.id}
+                      doc={doc}
+                      planejamentos={localPlanejamentos}
+                      allAtividades={allAtividades}
+                      handleEdit={handleEdit}
+                      handleDelete={handleDelete}
+                      handleOpenDocEtapaModal={handleOpenDocEtapaModal}
+                      handlePredecessoraChange={handlePredecessoraChange}
+                      handleDataInicioChange={handleDataInicioChange}
+                      etapaParaPlanejamento={etapaParaPlanejamento}
+                      loadingDocs={loadingDocs}
+                      empreendimento={empreendimento}
+                      onUpdate={onUpdate}
+                    />
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <AnimatePresence>
+        {showForm && (
+          <DocumentoForm
+            doc={editingDocumento}
+            empreendimentoId={empreendimento.id}
+            empreendimentoNome={empreendimento.nome}
+            onClose={() => {
+              setShowForm(false);
+              setEditingDocumento(null);
+            }}
+            onSave={handleSuccess}
+            disciplinas={disciplinas}
+            atividades={allAtividades}
+            pavimentos={pavimentos}
+            documentos={localDocumentos}
+          />
+        )}
+      </AnimatePresence>
+
+      {isDocEtapaModalOpen && documentForDocEtapaModal && (
+        <PlanejamentoDocumentoEtapaModal
+          documento={documentForDocEtapaModal}
+          usuarios={usuariosOrdenados}
+          empreendimentoId={empreendimento.id}
+          allAtividades={allAtividades}
+          executorPadrao={executorPreSelecionado}
+          etapaParaPlanejamento={etapaParaPlanejamento}
+          isOpen={isDocEtapaModalOpen}
+          onClose={handleCloseDocEtapaModal}
+          onSuccess={handleSaveDocEtapaPlanning}
+        />
+      )}
+    </div>
+  );
+}

@@ -1,0 +1,70 @@
+
+import { useState, useEffect, useCallback } from "react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Disciplina, Atividade } from "@/entities/all";
+
+import DisciplinasManager from "../components/configuracoes/DisciplinasManager";
+import AtividadesManager from "../components/configuracoes/AtividadesManager";
+import AtividadeFuncaoManager from "../components/configuracoes/AtividadeFuncaoManager";
+
+export default function ConfiguracoesPage() {
+  const [disciplinas, setDisciplinas] = useState([]);
+  const [atividades, setAtividades] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const fetchData = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      // REMOVIDO: O filtro que limitava as atividades foi removido para exibir todas.
+      const [disciplinasData, atividadesData] = await Promise.all([
+        Disciplina.list(),
+        Atividade.list() 
+      ]);
+      setDisciplinas(disciplinasData || []);
+      setAtividades(atividadesData || []);
+    } catch (error) {
+      console.error("Erro ao buscar dados de configuração:", error);
+      setDisciplinas([]);
+      setAtividades([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      <div className="p-6 md:p-8 space-y-8">
+        <h1 className="text-3xl font-bold text-gray-900">Configurações Gerais</h1>
+        <Tabs defaultValue="disciplinas" className="w-full">
+          <TabsList className="grid w-full grid-cols-1 md:grid-cols-3">
+            <TabsTrigger value="disciplinas">Disciplinas</TabsTrigger>
+            <TabsTrigger value="atividades">Catálogo de Atividades</TabsTrigger>
+            <TabsTrigger value="atividades_funcao">Atividades por Departamento</TabsTrigger>
+          </TabsList>
+          <TabsContent value="disciplinas" className="mt-6">
+            <DisciplinasManager 
+              disciplinas={disciplinas}
+              isLoading={isLoading}
+              onUpdate={fetchData}
+            />
+          </TabsContent>
+          <TabsContent value="atividades" className="mt-6">
+            <AtividadesManager 
+              atividades={atividades}
+              disciplinas={disciplinas}
+              isLoading={isLoading}
+              onUpdate={fetchData}
+            />
+          </TabsContent>
+          <TabsContent value="atividades_funcao" className="mt-6">
+            <AtividadeFuncaoManager />
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,960 @@
+
+import { createContext, useState, useEffect, useCallback } from 'react';
+import { Execucao, User, PlanejamentoAtividade, AtividadeGenerica, Empreendimento, PlanejamentoDocumento, Usuario } from '@/entities/all';
+import { useIdleDetection } from '../hooks/useIdleDetection';
+import IdleWarningModal from '../layout/IdleWarningModal';
+import { retryWithBackoff, retryWithExtendedBackoff } from '../utils/apiUtils';
+import { realocarAtividadesDoDiaSeguinte } from '../utils/ReagendamentoAutomatico';
+import { format, parseISO, isValid } from 'date-fns';
+
+export const ActivityTimerContext = createContext();
+
+const calculateElapsedTime = (startDateString, endDate) => {
+    try {
+        const startDate = typeof startDateString === 'string' ? parseISO(startDateString) : startDateString;
+        
+        if (!isValid(startDate)) {
+            console.error('❌ [calculateElapsedTime] Data de início inválida:', startDateString);
+            return 0;
+        }
+        
+        if (!isValid(endDate)) {
+            console.error('❌ [calculateElapsedTime] Data de término inválida:', endDate);
+            return 0;
+        }
+        
+        const diffMs = endDate.getTime() - startDate.getTime();
+        
+        if (diffMs < 0) {
+            console.error('❌ [calculateElapsedTime] Tempo negativo detectado!', {
+                inicio: startDate.toISOString(),
+                fim: endDate.toISOString(),
+                diferenca: diffMs
+            });
+            return 0;
+        }
+        
+        const hours = diffMs / (1000 * 60 * 60);
+        
+        if (hours > 24) {
+            console.warn('⚠️ [calculateElapsedTime] Tempo excessivo detectado (>24h), limitando a 8h:', {
+                inicio: startDate.toISOString(),
+                fim: endDate.toISOString(),
+                horas: hours.toFixed(2)
+            });
+            return 8;
+        }
+        
+        console.log('✅ [calculateElapsedTime] Cálculo realizado:', {
+            inicio: startDate.toISOString(),
+            fim: endDate.toISOString(),
+            diferencaMs: diffMs,
+            horas: hours.toFixed(4)
+        });
+        
+        return hours;
+    } catch (error) {
+        console.error('❌ [calculateElapsedTime] Erro ao calcular tempo:', error);
+        return 0;
+    }
+};
+
+const delay = (ms) => new Promise(res => setTimeout(res, ms));
+
+export const ActivityTimerProvider = ({ children }) => {
+    const [activeExecution, setActiveExecution] = useState(null);
+    const [isLoading, setIsLoading] = useState(true);
+    const [user, setUser] = useState(null);
+    const [userProfile, setUserProfile] = useState(null);
+    const [updateKey, setUpdateKey] = useState(0);
+    const [isStarting, setIsStarting] = useState(null);
+    const [isFinishing, setIsFinishing] = useState(false);
+    const [isPausing, setIsPausing] = useState(null);
+
+    const [playlist, setPlaylist] = useState([]);
+    const [allPlanejamentos, setAllPlanejamentos] = useState([]);
+    const [isLoadingPlanejamentos, setIsLoadingPlanejamentos] = useState(false);
+    const [atividadesGenericas, setAtividadesGenericas] = useState([]);
+    const [allEmpreendimentos, setAllEmpreendimentos] = useState([]);
+    const [allUsers, setAllUsers] = useState([]);
+
+    const triggerUpdate = useCallback(() => {
+        console.log("🔄 Acionando atualização de dados (updateKey)...");
+        setUpdateKey(prevKey => prevKey + 1);
+    }, []);
+
+    const perfisHierarquia = {
+        'direcao': 6,
+        'gestao': 5,
+        'lider': 4,
+        'coordenador': 3,
+        'apoio': 2,
+        'user': 1
+    };
+
+    const perfilAtual = userProfile?.perfil || user?.perfil || 'user';
+    const nivelUsuario = perfisHierarquia[perfilAtual] || 1;
+    const isAdmin = user?.role === 'admin';
+
+    const hasPermission = useCallback((nivelMinimo) => {
+        return isAdmin || nivelUsuario >= perfisHierarquia[nivelMinimo];
+    }, [isAdmin, nivelUsuario]);
+
+    const isColaborador = nivelUsuario === 1 && !isAdmin;
+    const isGestao = perfilAtual === 'gestao';
+    const isCoordenador = perfilAtual === 'coordenador';
+
+    const getPlanejamento = useCallback(async (id) => {
+        if (!id) return null;
+        try {
+            const results = await retryWithBackoff(
+                async () => {
+                    const filtered = await PlanejamentoAtividade.filter({ id: id }, null, 1);
+                    return filtered;
+                },
+                3,
+                1000,
+                'getPlanejamento'
+            );
+            
+            if (results && results.length > 0) {
+                return results[0];
+            }
+            console.warn(`[getPlanejamento] Planejamento com ID ${id} não encontrado.`);
+            return null;
+
+        } catch (error) {
+            console.error(`Erro ao buscar planejamento ${id}:`, error);
+            return null;
+        }
+    }, []);
+
+    const updatePlanejamento = useCallback(async (planejamentoId, tempoAdicional, finalStatus) => {
+        if (!planejamentoId) {
+            console.warn('⚠️ [updatePlanejamento] planejamentoId é null/undefined, abortando');
+            return;
+        }
+        
+        console.log(`\n🔧 [updatePlanejamento] INICIANDO ATUALIZAÇÃO`);
+        console.log(`   Planejamento ID: ${planejamentoId}`);
+        console.log(`   Tempo adicional: ${tempoAdicional?.toFixed(4)}h`);
+        console.log(`   Status final: ${finalStatus}`);
+        
+        try {
+            let planejamento = null;
+            let isDocumento = false;
+            
+            try {
+                const resultAtiv = await retryWithBackoff(() => PlanejamentoAtividade.filter({ id: planejamentoId }, null, 1), 2, 500, 'updatePlanejamento.findAtiv');
+                if (resultAtiv && resultAtiv.length > 0) {
+                    planejamento = resultAtiv[0];
+                    console.log(`   ✅ Encontrado em PlanejamentoAtividade`);
+                }
+            } catch (e) {
+                console.log("   Não encontrado em PlanejamentoAtividade, tentando PlanejamentoDocumento...");
+            }
+            
+            if (!planejamento) {
+                try {
+                    const resultDoc = await retryWithBackoff(() => PlanejamentoDocumento.filter({ id: planejamentoId }, null, 1), 2, 500, 'updatePlanejamento.findDoc');
+                    if (resultDoc && resultDoc.length > 0) {
+                        planejamento = resultDoc[0];
+                        isDocumento = true;
+                        console.log(`   ✅ Encontrado em PlanejamentoDocumento`);
+                    }
+                } catch (e) {
+                    console.log("   Também não encontrado em PlanejamentoDocumento");
+                }
+            }
+            
+            if (!planejamento) {
+                console.error(`❌ [updatePlanejamento] Planejamento ${planejamentoId} NÃO ENCONTRADO`);
+                return;
+            }
+            
+            const tempoExecutadoAtual = Number(planejamento.tempo_executado || 0);
+            const novoTempoExecutado = tempoExecutadoAtual + tempoAdicional;
+
+            const isAtividadeRapida = planejamento.is_quick_activity === true;
+
+            console.log(`   📊 Tempo executado atual: ${tempoExecutadoAtual.toFixed(4)}h`);
+            console.log(`   📊 Novo tempo executado: ${novoTempoExecutado.toFixed(4)}h`);
+            console.log(`   📊 is_quick_activity: ${planejamento.is_quick_activity}`);
+            console.log(`   📊 Tipo: ${isAtividadeRapida ? 'Atividade Rápida' : 'Atividade Normal'}`);
+
+            const updateData = {
+                tempo_executado: novoTempoExecutado,
+            };
+
+            if (isAtividadeRapida) {
+                updateData.tempo_planejado = novoTempoExecutado;
+                updateData.status = finalStatus;
+                const diaDaAtividade = planejamento.inicio_planejado;
+                if (diaDaAtividade) {
+                  updateData.horas_por_dia = { [diaDaAtividade]: novoTempoExecutado };
+                }
+                console.log(`   ⚡ Atividade rápida - atualizando tempo_planejado e horas_por_dia`);
+            } else {
+                if (finalStatus === 'concluido') {
+                    updateData.status = 'concluido';
+                    updateData.termino_real = format(new Date(), 'yyyy-MM-dd');
+
+                    console.log(`   🏁 Finalizando atividade normal...`);
+                    console.log(`      Tempo planejado original: ${planejamento.tempo_planejado}h`);
+                    
+                    const horasPorDiaOriginal = planejamento.horas_por_dia || {};
+                    const totalHorasOriginais = Object.values(horasPorDiaOriginal).reduce((sum, h) => sum + h, 0);
+                    const horasLiberadas = totalHorasOriginais - novoTempoExecutado;
+                    
+                    console.log(`      ✅ Horas liberadas na agenda: ${horasLiberadas.toFixed(2)}h`);
+                    console.log(`      📊 Mantendo distribuição original de horas_por_dia`);
+
+                    if (horasLiberadas > 0.1 && planejamento.executor_principal && planejamento.inicio_planejado) {
+                        console.log(`      🎯 Iniciando realocação automática...`);
+                        
+                        const atividadesRealocadas = await realocarAtividadesDoDiaSeguinte(
+                            planejamento.executor_principal,
+                            planejamento.inicio_planejado,
+                            horasLiberadas
+                        );
+
+                        if (atividadesRealocadas.length > 0) {
+                            console.log(`      ✨ ${atividadesRealocadas.length} atividade(s) realocada(s)`);
+                        }
+                    }
+                    
+                } else if (finalStatus === 'pausado') {
+                    updateData.status = 'pausado';
+                    console.log(`   ⏸️ Pausando atividade`);
+                } else {
+                    if (novoTempoExecutado >= (Number(planejamento.tempo_planejado) || 0)) {
+                        updateData.status = 'concluido';
+                        updateData.termino_real = format(new Date(), 'yyyy-MM-dd');
+                        console.log(`   🎯 Tempo planejado atingido - marcando como concluída`);
+                    } else {
+                        updateData.status = 'em_andamento';
+                        console.log(`   ▶️ Marcando como em sandamento`);
+                    }
+                }
+            }
+
+            console.log(`   💾 Salvando atualização no banco...`);
+            console.log(`   📦 Dados a serem salvos:`, updateData);
+
+            const entityToUpdate = isDocumento ? PlanejamentoDocumento : PlanejamentoAtividade;
+            await retryWithBackoff(
+                () => entityToUpdate.update(planejamento.id, updateData),
+                3, 1000, 'updatePlanejamento.update'
+            );
+            
+            console.log(`✅ [updatePlanejamento] ${isDocumento ? 'PlanejamentoDocumento' : 'PlanejamentoAtividade'} ${planejamento.id} ATUALIZADO COM SUCESSO`);
+            console.log(`   Novo tempo_executado: ${updateData.tempo_executado?.toFixed(2)}h`);
+            console.log(`   Status: ${updateData.status}\n`);
+            
+            triggerUpdate();
+        } catch (error) {
+            console.error("❌ [updatePlanejamento] ERRO AO ATUALIZAR:", error);
+            console.error("   Stack:", error.stack);
+        }
+    }, [triggerUpdate]);
+
+    const cleanupDuplicateExecutions = useCallback(async (userEmail) => {
+        if (!userEmail) return;
+        
+        try {
+            const execucoesAtivas = await retryWithBackoff(
+                () => Execucao.filter({
+                    usuario: userEmail,
+                    status: 'Em andamento'
+                }),
+                3,
+                1000,
+                'cleanupDuplicateExecutions'
+            );
+
+            if (execucoesAtivas && execucoesAtivas.length > 1) {
+                console.warn(`⚠️ Detectadas ${execucoesAtivas.length} execuções ativas para ${userEmail}. Mantendo apenas a mais recente...`);
+                
+                const sortedExecutions = [...execucoesAtivas].sort((a, b) => 
+                    new Date(b.inicio) - new Date(a.inicio)
+                );
+                
+                for (let i = 1; i < sortedExecutions.length; i++) {
+                    const exec = sortedExecutions[i];
+                    console.log(`⏸️ Pausando execução duplicada: ${exec.id} (${exec.descritivo})`);
+                    
+                    const agora = new Date();
+                    const tempoDecorrido = calculateElapsedTime(exec.inicio, agora);
+                    
+                    await retryWithBackoff(
+                        () => Execucao.update(exec.id, {
+                            status: 'Paralisado',
+                            termino: agora.toISOString(),
+                            tempo_total: tempoDecorrido,
+                            observacao: 'Pausado automaticamente - execução duplicada detectada',
+                            pausado_automaticamente: true
+                        }),
+                        3, 1000, `pauseDuplicate-${exec.id}`
+                    );
+                    
+                    if (exec.planejamento_id) {
+                        await updatePlanejamento(exec.planejamento_id, tempoDecorrido, 'pausado');
+                    }
+                }
+                
+                return execucoesAtivas && execucoesAtivas.length > 0 ? sortedExecutions[0] : null;
+            }
+            
+            return execucoesAtivas && execucoesAtivas.length > 0 ? execucoesAtivas[0] : null;
+        } catch (error) {
+            console.error('❌ Erro ao limpar execuções duplicadas:', error);
+            return null;
+        }
+    }, [updatePlanejamento]);
+
+    const refreshActiveExecution = useCallback(async () => {
+        if (!user?.email) return;
+
+        try {
+            console.log('🔄 [refreshActiveExecution] Buscando execuções ativas...');
+
+            const execucaoAtiva = await cleanupDuplicateExecutions(user.email);
+
+            if (execucaoAtiva) {
+                const agora = new Date();
+                const horasDesdeInicio = calculateElapsedTime(execucaoAtiva.inicio, agora);
+
+                if (horasDesdeInicio > 24) {
+                    console.warn(`🧟 Atividade Zumbi Detectada: ${execucaoAtiva.id} está ativa por ${horasDesdeInicio.toFixed(1)}h. Pausando automaticamente...`);
+                    
+                    await Execucao.update(execucaoAtiva.id, {
+                        status: 'Paralisado',
+                        termino: agora.toISOString(),
+                        tempo_total: 8,
+                        observacao: 'Atividade paralisada automaticamente por ter ficado ativa por mais de 24 horas (atividade órfã).',
+                        pausado_automaticamente: true,
+                    });
+
+                    setActiveExecution(null);
+                    triggerUpdate();
+                    return;
+                }
+                
+                console.log('✅ [refreshActiveExecution] Execução ativa encontrada:', execucaoAtiva.descritivo);
+                setActiveExecution(execucaoAtiva);
+            } else {
+                console.log('ℹ️ [refreshActiveExecution] Nenhuma execução ativa encontrada');
+                setActiveExecution(null);
+            }
+        } catch (error) {
+            console.warn('⚠️ [refreshActiveExecution] Erro de rede - modo offline temporário:', error.message);
+            setTimeout(() => {
+                console.log('🔄 [refreshActiveExecution] Tentativa automática após erro de rede...');
+                refreshActiveExecution();
+            }, 30000);
+        }
+    }, [user?.email, triggerUpdate, cleanupDuplicateExecutions]);
+
+    const startExecution = useCallback(async (executionData) => {
+        if (!user) {
+            console.error("Tentando iniciar execução sem usuário logado");
+            return;
+        }
+
+        if (isStarting || activeExecution) {
+            console.log('⚠️ Tentativa de iniciar nova execução com outra já em andamento ou iniciando. Cancelando operação.');
+            return;
+        }
+
+        let planejamentoId = executionData.planejamento_id;
+        
+        if (!planejamentoId) {
+            try {
+                console.log(`✨ [Atividade Rápida] Criando novo PlanejamentoAtividade para: "${executionData.descritivo}"`);
+                
+                const hojeStr = format(new Date(), 'yyyy-MM-dd');
+                
+                // **CORRIGIDO**: Criar atividade rápida COM horas_por_dia já alocadas para aparecer no calendário
+                const novoPlano = await retryWithBackoff(
+                    () => PlanejamentoAtividade.create({
+                        descritivo: executionData.descritivo,
+                        base_descritivo: executionData.base_descritivo,
+                        empreendimento_id: executionData.empreendimento_id || null,
+                        tempo_planejado: 0.5, // Tempo estimado inicial para aparecer no calendário
+                        executor_principal: user.email,
+                        executores: [user.email],
+                        status: 'nao_iniciado',
+                        horas_por_dia: { [hojeStr]: 0.5 }, // **CORRIGIDO**: Já alocar 0.5h no dia para aparecer no calendário
+                        inicio_planejado: hojeStr,
+                        termino_planejado: hojeStr,
+                        is_quick_activity: true,
+                        etapa: executionData.etapa || 'Execução',
+                    }), 3, 1000, 'createNewRapidPlanning'
+                );
+                planejamentoId = novoPlano.id;
+                console.log(`✅ Novo PlanejamentoAtividade para atividade rápida criado: ${planejamentoId}`);
+                
+            } catch (e) {
+                console.error("Erro ao criar PlanejamentoAtividade para atividade rápida", e);
+                alert("Não foi possível registrar o planejamento da atividade. A execução não será iniciada.");
+                setIsStarting(null);
+                return;
+            }
+        }
+
+        try {
+            const idToStart = planejamentoId;
+            setIsStarting(idToStart);
+            console.log('▶️ Iniciando nova execução:', executionData);
+
+            if (planejamentoId && !executionData.empreendimento_id) {
+                const plano = await getPlanejamento(planejamentoId);
+                if (plano && plano.empreendimento_id) {
+                    executionData.empreendimento_id = plano.empreendimento_id;
+                }
+            }
+            
+            const newExec = await retryWithBackoff(
+                () => Execucao.create({
+                    ...executionData,
+                    planejamento_id: planejamentoId,
+                    usuario: user.email,
+                    inicio: new Date().toISOString(),
+                    status: 'Em andamento'
+                }),
+                5,
+                3000,
+                'startExecution'
+            );
+
+            console.log('✅ Nova execução iniciada:', newExec.id);
+            setActiveExecution(newExec);
+
+            if (newExec.planejamento_id) {
+                retryWithBackoff(() => PlanejamentoAtividade.update(newExec.planejamento_id, { status: "em_andamento" }), 3, 1000, 'startExecution.updateBackground')
+                    .then(() => {
+                        console.log(`✅ Fundo: Planejamento ${newExec.planejamento_id} atualizado para em_andamento.`);
+                        triggerUpdate();
+                    })
+                    .catch(e => console.error("Falha em segundo plano ao atualizar status do planejamento", e));
+            } else {
+                 triggerUpdate();
+            }
+
+        } catch (error) {
+            console.error('❌ Erro ao iniciar execução:', error);
+            let userMessage = 'Não foi possível iniciar a atividade. ';
+            if (error.message?.includes('Network Error') || error.message?.includes('Failed to fetch')) {
+                userMessage += 'Verifique sua conexão com a internet e tente novamente.';
+            } else if (error.message?.includes('timeout')) {
+                userMessage += 'O servidor está demorando para responder. Tente novamente em alguns minutos.';
+            } else if (error.message?.includes("429")) {
+                userMessage = "Muitas solicitações simultâneas. Aguarde alguns segundos e tente novamente.";
+            } else if (error.message?.includes("500")) {
+                userMessage = "Problema temporário com o servidor. Tente novamente em instantes.";
+            } else {
+                userMessage += 'Tente novamente em alguns instantes.';
+            }
+            alert(userMessage);
+        } finally {
+            setIsStarting(null);
+        }
+    }, [user, triggerUpdate, activeExecution, getPlanejamento, isStarting]);
+
+    const pauseExecution = useCallback(async (observacao = '', triggeredById = null) => {
+        if (!activeExecution) {
+            console.log("Nenhuma execução ativa para pausar");
+            return;
+        }
+
+        const executionToPause = activeExecution;
+        setActiveExecution(null);
+
+        try {
+            setIsPausing(triggeredById || executionToPause.planejamento_id);
+            const agora = new Date();
+            
+            const tempoDecorridoHoras = calculateElapsedTime(executionToPause.inicio, agora);
+
+            console.log(`⏸️ [pauseExecution] Pausando execução: ${executionToPause.id}`);
+            console.log(`⏸️ [pauseExecution] Descritivo: "${executionToPause.descritivo}"`);
+            console.log(`⏸️ [pauseExecution] Tempo calculado: ${tempoDecorridoHoras.toFixed(4)}h`);
+            console.log(`⏸️ [pauseExecution] Planejamento ID: ${executionToPause.planejamento_id || 'N/A'}`);
+
+            const execution = await retryWithExtendedBackoff(
+                () => Execucao.get(executionToPause.id), 
+                'pauseExecution.get'
+            );
+            
+            if (!execution) {
+                console.error('❌ [pauseExecution] Execução não encontrada no banco de dados');
+                throw new Error('Execução não encontrada. Pode ter sido removida.');
+            }
+
+            if (execution.status !== 'Em andamento') {
+                console.warn(`⚠️ [pauseExecution] Execução já foi pausada/finalizada. Status atual: ${execution.status}. Ignorando nova pausa.`);
+                triggerUpdate();
+                return;
+            }
+
+            await retryWithExtendedBackoff(
+                () => Execucao.update(execution.id, {
+                    status: 'Paralisado',
+                    termino: agora.toISOString(),
+                    tempo_total: tempoDecorridoHoras,
+                    observacao: observacao,
+                    pausado_automaticamente: false
+                }),
+                'pauseExecution.update'
+            );
+            
+            console.log('✅ [pauseExecution] Execução pausada com sucesso no banco de dados');
+
+            if (execution.planejamento_id) {
+                console.log(`🔄 [pauseExecution] Atualizando planejamento ${execution.planejamento_id}...`);
+                await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'pausado');
+                console.log('✅ [pauseExecution] Planejamento atualizado');
+            }
+            
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            triggerUpdate();
+            
+            console.log('✅ [pauseExecution] Processo de pausa concluído com sucesso');
+        } catch (error) {
+            console.error('❌ [pauseExecution] Erro ao pausar execução:', error);
+            console.error('❌ [pauseExecution] Stack trace:', error.stack);
+            
+            if (!error.message?.includes('Network Error') && !error.message?.includes('Failed to fetch')) {
+                setActiveExecution(executionToPause);
+            }
+
+            let userMessage = 'Não foi possível pausar a atividade completamente. ';
+            if (error.message?.includes('Network Error') || error.message?.includes('Failed to fetch')) {
+                userMessage += 'Problema de conexão. A pausa pode ter sido registrada parcialmente. Atualize a página para verificar.';
+            } else if (error.message?.includes('timeout')) {
+                userMessage += 'O servidor está demorando para responder. A pausa pode ter sido registrada parcialmente. Verifique em alguns instantes.';
+            } else if (error.message?.includes("429")) {
+                userMessage = "Muitas solicitações simultâneas. Aguarde alguns segundos e tente novamente.";
+            } else if (error.message?.includes("500")) {
+                userMessage = "Problema temporário com o servidor. A pausa pode ter sido registrada parcialmente. Tente atualizar a página.";
+            } else {
+                userMessage += error.message || 'Tente novamente em alguns instantes.';
+            }
+            alert(userMessage);
+            
+            setTimeout(() => {
+                console.log('🔄 [pauseExecution] Forçando refresh após erro...');
+                refreshActiveExecution();
+            }, 2000);
+        } finally {
+            setIsPausing(null);
+        }
+    }, [activeExecution, updatePlanejamento, triggerUpdate, refreshActiveExecution]);
+
+    const removeFromPlaylist = useCallback(async (planejamentoId) => {
+        if (!user) {
+            alert("Faça login para gerenciar sua playlist.");
+            return;
+        }
+        const newPlaylist = playlist.filter(id => id !== planejamentoId);
+        try {
+            await retryWithBackoff(() => User.updateMyUserData({ playlist_atividades: newPlaylist }), 3, 1000, 'removeFromPlaylist');
+            setPlaylist(newPlaylist);
+            console.log(`✅ Atividade ${planejamentoId} removida da playlist.`);
+        } catch (error) {
+            console.error("Erro ao remover da playlist:", error);
+            alert("Não foi possível remover da playlist. Tente novamente.");
+        }
+    }, [playlist, user]);
+
+    const finishExecution = useCallback(async (observacao = '') => {
+        if (!activeExecution) {
+            console.log("Nenhuma execução ativa para finalizar");
+            return;
+        }
+
+        const executionToFinish = activeExecution;
+        setActiveExecution(null);
+
+        try {
+            setIsFinishing(true);
+
+            const agora = new Date();
+            
+            const tempoDecorridoHoras = calculateElapsedTime(executionToFinish.inicio, agora);
+
+            console.log(`\n🏁 ========================================`);
+            console.log(`🏁 [finishExecution] FINALIZANDO EXECUÇÃO`);
+            console.log(`   Execução ID: ${executionToFinish.id}`);
+            console.log(`   Descritivo: "${executionToFinish.descritivo}"`);
+            console.log(`   Início: ${executionToFinish.inicio}`);
+            console.log(`   Fim: ${agora.toISOString()}`);
+            console.log(`   Tempo calculado: ${tempoDecorridoHoras.toFixed(4)}h`);
+            console.log(`   Planejamento ID: ${executionToFinish.planejamento_id || 'N/A'}`);
+            console.log(`🏁 ========================================\n`);
+
+            const execution = await retryWithExtendedBackoff(() => Execucao.get(executionToFinish.id), 'finishExecution.get');
+            
+            if (!execution) {
+                console.error('❌ [finishExecution] Execução não encontrada no banco de dados');
+                throw new Error('Execução não encontrada. Pode ter sido removida.');
+            }
+
+            console.log(`💾 [finishExecution] Salvando execução com tempo_total: ${tempoDecorridoHoras.toFixed(4)}h`);
+
+            await retryWithExtendedBackoff(
+                () => Execucao.update(execution.id, {
+                    status: 'Finalizado',
+                    termino: agora.toISOString(),
+                    tempo_total: tempoDecorridoHoras,
+                    observacao: observacao,
+                    pausado_automaticamente: false
+                }),
+                'finishExecution.update'
+            );
+            
+            console.log('✅ [finishExecution] Execução finalizada com sucesso no banco de dados');
+
+            if (execution.planejamento_id) {
+                console.log(`\n🔄 [finishExecution] ATUALIZANDO PLANEJAMENTO ${execution.planejamento_id}...`);
+                await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'concluido');
+                console.log('✅ [finishExecution] Planejamento atualizado\n');
+                
+                if (playlist.includes(execution.planejamento_id)) {
+                    console.log(`🗑️ Removendo planejamento ${execution.planejamento_id} da playlist por ter sido concluído.`);
+                    await removeFromPlaylist(execution.planejamento_id);
+                }
+            } else {
+                console.warn(`⚠️ [finishExecution] Execução sem planejamento_id - não há planejamento para atualizar`);
+            }
+            
+            triggerUpdate();
+            
+            console.log('✅ [finishExecution] Processo de finalização concluído com sucesso\n');
+            
+        } catch (error) {
+            console.error('❌ [finishExecution] Erro ao finalizar execução:', error);
+            console.error('❌ [finishExecution] Stack trace:', error.stack);
+            setActiveExecution(executionToFinish);
+
+            let userMessage = 'Não foi possível finalizar a atividade. ';
+            if (error.message?.includes('Network Error') || error.message?.includes('Failed to fetch')) {
+                userMessage += 'Verifique sua conexão e tente novamente.';
+            } else if (error.message?.includes('timeout')) {
+                userMessage += 'O servidor não está respondendo. Tente novamente em alguns minutos.';
+            } else if (error.message?.includes("429")) {
+                userMessage = "Muitas solicitações simultâneas. A atividade pode não ter sido salva. Tente novamente.";
+            } else if (error.message?.includes("500")) {
+                userMessage = "Problema temporário com o servidor. A atividade pode não ter sido salva corretamente.";
+            } else {
+                userMessage += 'Tente novamente em alguns instantes.';
+            }
+            alert(userMessage);
+        } finally {
+            setIsFinishing(false);
+        }
+    }, [activeExecution, updatePlanejamento, playlist, removeFromPlaylist, triggerUpdate]);
+
+    const addToPlaylist = useCallback(async (planejamentoId) => {
+        if (!user) {
+            alert("Faça login para gerenciar sua playlist.");
+            return;
+        }
+        if (playlist.includes(planejamentoId)) {
+            console.log(`Atividade ${planejamentoId} já está na playlist.`);
+            return;
+        }
+        const newPlaylist = [...playlist, planejamentoId];
+        try {
+            await retryWithBackoff(() => User.updateMyUserData({ playlist_atividades: newPlaylist }), 3, 1000, 'addToPlaylist');
+            setPlaylist(newPlaylist);
+            console.log(`✅ Atividade ${planejamentoId} adicionada à playlist.`);
+        } catch (error) {
+            console.error("Erro ao adicionar à playlist:", error);
+            alert("Não foi possível adicionar à playlist. Tente novamente.");
+        }
+    }, [playlist, user]);
+
+
+    const startFromPlaylist = useCallback(async (plano) => {
+        if (!user) {
+            alert("Faça login para iniciar atividades.");
+            return;
+        }
+        console.log('▶️ Pedido para iniciar da playlist:', plano.descritivo);
+
+        if (activeExecution && activeExecution.planejamento_id !== plano.id) {
+            console.log('-- Atividade ativa detectada. Pausando automaticamente...');
+            await pauseExecution("Pausado para iniciar outra atividade da playlist.", plano.id);
+        }
+        
+        console.log(`-- Iniciando ou retomando o planejamento ID: ${plano.id}`);
+        await startExecution({
+            planejamento_id: plano.id,
+            descritivo: plano.descritivo,
+            empreendimento_id: plano.empreendimento_id || null,
+            usuario_ajudado: null,
+            observacao: null
+        });
+
+    }, [activeExecution, pauseExecution, startExecution, user]);
+
+    const deleteExecution = async (executionId) => {
+        if (!user || user.role !== 'admin') {
+            alert("Você não tem permissão para excluir atividades.");
+            console.warn("Tentativa de exclusão de atividade sem permissão de administrador.");
+            return;
+        }
+
+        if (!confirm("Tem certeza que deseja excluir esta atividade? Esta ação não pode ser desfeita.")) {
+            return;
+        }
+
+        try {
+            const execsToDelete = await retryWithBackoff(() => Execucao.filter({ id: executionId }, null, 1), 2, 500, 'deleteExecution.find');
+            const execToDelete = execsToDelete.length > 0 ? execsToDelete[0] : null;
+
+            if (!execToDelete) {
+                alert("Atividade não encontrada.");
+                return;
+            }
+
+            console.log(`🗑️ Excluindo execução ${executionId}...`);
+            await retryWithBackoff(() => Execucao.delete(executionId), 3, 1000, 'deleteExecution.delete');
+            console.log(`✅ Execução ${executionId} excluída com sucesso.`);
+
+            if (activeExecution && activeExecution.id === executionId) {
+                setActiveExecution(null);
+            }
+
+            if (execToDelete.planejamento_id) {
+                console.log(`🔄 Recalculando status do planejamento ${execToDelete.planejamento_id} após exclusão...`);
+                
+                setTimeout(async () => {
+                    try {
+                        const planejamento = await getPlanejamento(execToDelete.planejamento_id);
+                        if (planejamento) {
+                            const remainingExecutions = await retryWithBackoff(() => Execucao.filter({ planejamento_id: execToDelete.planejamento_id }), 2, 500, 'deleteExecution.checkRemaining');
+                            
+                            const newTempoExecutado = remainingExecutions.reduce((sum, exec) => sum + (Number(exec.tempo_total) || 0), 0);
+
+                            let newStatus;
+                            if (remainingExecutions.length === 0) {
+                                newStatus = "nao_iniciado";
+                            } else {
+                                const anyActive = remainingExecutions.some(exec => exec.status === "Em andamento");
+                                newStatus = anyActive ? "em_andamento" : "pausado";
+                            }
+
+                            await retryWithBackoff(() => PlanejamentoAtividade.update(planejamento.id, { 
+                                status: newStatus, 
+                                tempo_executado: newTempoExecutado 
+                            }), 2, 500, 'deleteExecution.updatePlan');
+                            
+                            console.log(`✅ Planejamento ${planejamento.id} reavaliado após exclusão de execução.`);
+                        }
+                    } catch (e) {
+                        console.error("❌ Falha ao reavaliar status do planejamento após exclusão", e);
+                    }
+                }, 1000);
+            }
+
+            triggerUpdate();
+
+        } catch (error) {
+            console.error("❌ Erro ao excluir execução:", error);
+            let errorMessage = "Erro ao excluir atividade.";
+            if (error.message?.includes("Rate limit") || error.message?.includes("429")) {
+                errorMessage = "Muitas solicitações simultâneas. Tente novamente.";
+            } else if (error.message?.includes("500") || error.message?.includes("ReplicaSetNoPrimary")) {
+                errorMessage = "Problema temporário com o servidor. Tente novamente em alguns instantes.";
+            }
+            alert(errorMessage);
+        }
+    };
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const initializeTimer = async () => {
+            try {
+                console.log("Inicializando usuário...");
+                const currentUser = await retryWithBackoff(() => User.me(), 3, 2000, 'user.me');
+                if (isMounted) {
+                    console.log("Usuário carregado:", currentUser?.email);
+                    setUser(currentUser);
+                    setPlaylist(currentUser?.playlist_atividades || []);
+                    setIsLoading(false);
+                }
+            } catch (error) {
+                console.warn('⚠️ Erro ao buscar usuário (pode estar deslogado ou problema de rede):', error);
+                if (isMounted) {
+                    setUser(null);
+                    setIsLoading(false);
+                }
+            }
+        };
+
+        initializeTimer();
+
+        return () => {
+            isMounted = false;
+        };
+    }, []);
+
+    useEffect(() => {
+        let isMounted = true;
+        
+        const loadUserProfile = async () => {
+            if (!user?.email) {
+                setUserProfile(null);
+                return;
+            }
+            
+            try {
+                console.log("👤 [Contexto] Carregando perfil do usuário da entidade Usuario...");
+                const usuarios = await retryWithBackoff(() => Usuario.filter({ email: user.email }, null, 1), 3, 2000, 'loadUserProfile');
+                if (isMounted && usuarios && usuarios.length > 0) {
+                    setUserProfile(usuarios[0]);
+                    console.log(`✅ Perfil carregado: ${usuarios[0].perfil}`);
+                } else {
+                    setUserProfile(null);
+                }
+            } catch (error) {
+                console.warn('⚠️ Erro ao carregar perfil do usuário:', error);
+                if (isMounted) {
+                    setUserProfile(null);
+                }
+            }
+        };
+        
+        loadUserProfile();
+        
+        return () => {
+            isMounted = false;
+        };
+    }, [user?.email]);
+
+    useEffect(() => {
+        let isMounted = true;
+        let hasLoaded = false;
+        
+        const loadEssentialData = async () => {
+            if (!user || !isMounted || hasLoaded) return;
+
+            hasLoaded = true;
+
+            try {
+                console.log("📦 [Contexto] Carregando dados essenciais SEQUENCIALMENTE...");
+                
+                console.log("   1/3 Carregando atividades genéricas...");
+                const genericas = await retryWithBackoff(() => AtividadeGenerica.list(), 3, 3000, 'loadGenericasForPlaylist');
+                if (isMounted) setAtividadesGenericas(genericas || []);
+                
+                await delay(3000);
+                
+                console.log("   2/3 Carregando empreendimentos...");
+                const empreendimentos = await retryWithBackoff(() => Empreendimento.list(), 3, 3000, 'loadEmpreendimentosForPlaylist');
+                if (isMounted) setAllEmpreendimentos(empreendimentos || []);
+                
+                await delay(3000);
+                
+                console.log("   3/3 Carregando usuários...");
+                try {
+                    const usuarios = await retryWithBackoff(() => Usuario.list(), 3, 3000, 'loadUsersForPlaylist');
+                    if (isMounted) setAllUsers(usuarios || []);
+                } catch (userError) {
+                    console.warn("Erro ao carregar usuários cadastrados:", userError.message);
+                    if (isMounted) setAllUsers([]);
+                }
+                
+                console.log("✅ [Contexto] Todos os dados essenciais carregados!");
+
+            } catch (error) {
+                console.error("❌ [Contexto] Erro ao carregar dados essenciais:", error);
+                
+                if (isMounted) {
+                    setAtividadesGenericas([]);
+                    setAllEmpreendimentos([]);
+                    setAllUsers([]);
+                }
+            }
+        };
+        
+        const timeout = setTimeout(() => {
+            loadEssentialData();
+        }, 2000);
+
+        return () => {
+            clearTimeout(timeout);
+            isMounted = false;
+        }
+    }, [user]);
+
+    useEffect(() => {
+        if (user?.email && !isLoading) {
+            const timer = setTimeout(() => {
+                refreshActiveExecution();
+            }, 1000);
+
+            return () => clearTimeout(timer);
+        }
+    }, [user?.email, isLoading, refreshActiveExecution]);
+
+    const { showWarning, timeUntilIdle, extendSession } = useIdleDetection({
+        enabled: false,
+        warningTime: 10 * 60 * 1000,
+        idleTime: 15 * 60 * 1000,
+        onIdle: async () => {
+            console.log("Usuário inativo - pausando atividade automaticamente");
+            if (activeExecution) {
+                await pauseExecution("Atividade paralisada automaticamente por inatividade.");
+                alert("Sua atividade foi pausada automaticamente devido à inatividade.");
+            }
+        },
+    });
+
+    return (
+        <ActivityTimerContext.Provider value={{
+            activeExecution,
+            isLoading,
+            startExecution,
+            finishExecution,
+            pauseExecution, 
+            refreshActiveExecution,
+            user,
+            userProfile,
+            updateKey,
+            triggerUpdate,
+            deleteExecution,
+            isStarting,
+            isFinishing,
+            isPausing,
+            playlist,
+            addToPlaylist,
+            removeFromPlaylist,
+            startFromPlaylist,
+            allPlanejamentos,
+            isLoadingPlanejamentos,
+            atividadesGenericas,
+            allEmpreendimentos,
+            allUsers,
+            hasPermission,
+            isAdmin,
+            isColaborador,
+            isGestao,
+            isCoordenador,
+            nivelUsuario,
+            perfilAtual
+        }}>
+            {children}
+
+            <IdleWarningModal
+                isOpen={showWarning}
+                timeUntilIdle={timeUntilIdle}
+                onExtendSession={extendSession}
+            />
+        </ActivityTimerContext.Provider>
+    );
+};
