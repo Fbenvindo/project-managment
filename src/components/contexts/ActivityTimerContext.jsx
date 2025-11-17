@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { Execucao, User, PlanejamentoAtividade, SobraUsuario, AtividadeGenerica, Empreendimento, PlanejamentoDocumento, Usuario } from '@/entities/all';
 import { useIdleDetection } from '../hooks/useIdleDetection';
@@ -188,7 +187,6 @@ export const ActivityTimerProvider = ({ children }) => {
                 tempo_executado: novoTempoExecutado,
             };
 
-            // **ADICIONADO**: Salvar observação no planejamento
             if (observacao) {
                 updateData.observacao = observacao;
                 console.log(`   💬 Salvando observação no planejamento`);
@@ -217,7 +215,6 @@ export const ActivityTimerProvider = ({ children }) => {
                     console.log(`      ✅ Horas liberadas na agenda: ${horasLiberadas.toFixed(2)}h`);
                     console.log(`      📊 Mantendo distribuição original de horas_por_dia`);
 
-                    // **CORRIGIDO**: Usar data atual da finalização, não o início planejado
                     if (horasLiberadas > 0.1 && planejamento.executor_principal) {
                         const dataFinalizacao = format(new Date(), 'yyyy-MM-dd');
                         console.log(`      🎯 Iniciando realocação automática a partir de ${dataFinalizacao}...`);
@@ -312,7 +309,7 @@ export const ActivityTimerProvider = ({ children }) => {
                     );
                     
                     if (exec.planejamento_id) {
-                        await updatePlanejamento(exec.planejamento_id, tempoDecorrido, 'pausado');
+                        await updatePlanejamento(exec.planejamento_id, tempoDecorrido, 'pausado', 'Pausado automaticamente - execução duplicada detectada');
                     }
                 }
                 
@@ -388,17 +385,16 @@ export const ActivityTimerProvider = ({ children }) => {
                 
                 const hojeStr = format(new Date(), 'yyyy-MM-dd');
                 
-                // **CORRIGIDO**: Criar com tempo mínimo (0.01h) que será atualizado ao concluir
                 const novoPlano = await retryWithBackoff(
                     () => PlanejamentoAtividade.create({
                         descritivo: executionData.descritivo,
                         base_descritivo: executionData.base_descritivo,
                         empreendimento_id: executionData.empreendimento_id || null,
-                        tempo_planejado: 0.01, // Tempo mínimo - será atualizado ao finalizar
+                        tempo_planejado: 0.01,
                         executor_principal: user.email,
                         executores: [user.email],
                         status: 'nao_iniciado',
-                        horas_por_dia: { [hojeStr]: 0.01 }, // Tempo mínimo - será atualizado ao finalizar
+                        horas_por_dia: { [hojeStr]: 0.01 },
                         inicio_planejado: hojeStr,
                         termino_planejado: hojeStr,
                         is_quick_activity: true,
@@ -566,6 +562,22 @@ export const ActivityTimerProvider = ({ children }) => {
             setIsPausing(null);
         }
     }, [activeExecution, updatePlanejamento, triggerUpdate, refreshActiveExecution]);
+
+    const removeFromPlaylist = useCallback(async (planejamentoId) => {
+        if (!user) {
+            alert("Faça login para gerenciar sua playlist.");
+            return;
+        }
+        const newPlaylist = playlist.filter(id => id !== planejamentoId);
+        try {
+            await retryWithBackoff(() => User.updateMyUserData({ playlist_atividades: newPlaylist }), 3, 1000, 'removeFromPlaylist');
+            setPlaylist(newPlaylist);
+            console.log(`✅ Atividade ${planejamentoId} removida da playlist.`);
+        } catch (error) {
+            console.error("Erro ao remover da playlist:", error);
+            alert("Não foi possível remover da playlist. Tente novamente.");
+        }
+    }, [playlist, user]);
 
     const finishExecution = useCallback(async (observacao = '') => {
         if (!activeExecution) {
@@ -909,7 +921,7 @@ export const ActivityTimerProvider = ({ children }) => {
         onIdle: async () => {
             console.log("Usuário inativo - pausando atividade automaticamente");
             if (activeExecution) {
-                await pauseExecution("Atividade paralisada automaticamente devido à inatividade.");
+                await pauseExecution("Atividade paralisada automaticamente por inatividade.");
                 alert("Sua atividade foi pausada automaticamente devido à inatividade.");
             }
         },
