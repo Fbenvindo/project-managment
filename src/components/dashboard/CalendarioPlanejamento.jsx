@@ -1,14 +1,15 @@
 
-import { useState, useMemo, useEffect, useContext, useCallback } from 'react';
+import React, { useState, useMemo, useEffect, useContext, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Calendar, User, Filter, Trash2, CalendarDays, Play, RefreshCw, LineChart, Users, PlusCircle, ListMusic, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Clock, User, Building2, Filter, Trash2, CalendarDays, View, Play, RefreshCw, LineChart, Users, PlusCircle, ListMusic, Loader2 } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import {
   format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval,
-  isSameMonth, isSameDay, parseISO, addWeeks, subWeeks, addDays, subDays, startOfDay,
+  isSameMonth, isSameDay, parseISO, addWeeks, subWeeks, addDays, subDays, startOfDay, endOfDay,
   isValid, isAfter
 } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -148,7 +149,8 @@ const CalendarFilters = ({
   hasSelectedUser,
   isColaborador,
   isViewingAllUsers,
-  isGestao
+  isGestao,
+  isApoio
 }) => {
   // **MODIFICADO**: Filtrar e ordenar apenas usuários com nome cadastrado
   const usersOrdenados = useMemo(() => {
@@ -161,8 +163,8 @@ const CalendarFilters = ({
       });
   }, [users]);
 
-  // **NOVO**: Dropdown bloqueado para colaboradores e gestão
-  const isDropdownDisabled = isColaborador || isGestao;
+  // **MODIFICADO**: Dropdown bloqueado para colaboradores, gestão e APOIO
+  const isDropdownDisabled = isColaborador || isGestao || isApoio;
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 p-4 border-b border-gray-100 bg-gray-50/50">
@@ -179,7 +181,7 @@ const CalendarFilters = ({
                             {user.nome || user.full_name}
                         </SelectItem>
                     ))}
-                    {!isColaborador && !isGestao && usersOrdenados.length > 0 && (
+                    {!isColaborador && !isGestao && !isApoio && usersOrdenados.length > 0 && (
                       <SelectItem value="all">⚠️ Todos os Usuários (pode ser lento)</SelectItem>
                     )}
                 </SelectContent>
@@ -197,7 +199,7 @@ const CalendarFilters = ({
                         ))}
                     </SelectContent>
                 </Select>
-                {(filters.discipline !== 'all' || filters.user !== '') && !isGestao && !isColaborador && (
+                {(filters.discipline !== 'all' || filters.user !== '') && !isGestao && !isColaborador && !isApoio && (
                     <Button variant="ghost" size="sm" onClick={onClearFilters} className="text-red-500 hover:text-red-600">
                         <Trash2 className="w-4 h-4 mr-2" />
                         Limpar Filtros
@@ -1354,14 +1356,17 @@ const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowP
 
 // --- Componente Principal ---
 export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefresh, isDashboardRefreshing }) {
-  const { user, isColaborador, isGestao, hasPermission, triggerUpdate } = useContext(ActivityTimerContext);
+  const { user, isColaborador, isGestao, hasPermission, triggerUpdate, perfilAtual } = useContext(ActivityTimerContext);
 
   const [currentDate, setCurrentDate] = useState(new Date());
   const [viewMode, setViewMode] = useState('week'); 
   
-  // **MODIFICADO**: Se for gestão, já inicia com o próprio email selecionado
+  // **MODIFICADO**: Verificar se é apoio
+  const isApoio = perfilAtual === 'apoio';
+  
+  // **MODIFICADO**: Se for gestão OU apoio, já inicia com o próprio email selecionado
   const [filters, setFilters] = useState({ 
-    user: '', // Será definido no useEffect se for gestão
+    user: '', // Será definido no useEffect se for gestão ou apoio
     discipline: 'all' 
   });
   
@@ -1378,14 +1383,14 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   const hasSelectedUser = !!filters.user;
   const isViewingAllUsers = filters.user === 'all';
 
-  // **MODIFICADO**: useEffect para auto-selecionar usuário se for gestão OU colaborador
+  // **MODIFICADO**: useEffect para auto-selecionar usuário se for gestão, colaborador OU apoio
   useEffect(() => {
-    if ((isGestao || isColaborador) && user?.email && !filters.user) {
-      const tipoUsuario = isGestao ? 'gestão' : 'colaborador';
+    if ((isGestao || isColaborador || isApoio) && user?.email && !filters.user) {
+      const tipoUsuario = isGestao ? 'gestão' : isColaborador ? 'colaborador' : 'apoio';
       console.log(`🔒 Perfil ${tipoUsuario} detectado - auto-selecionando próprio usuário: ${user.email}`);
       setFilters(prev => ({ ...prev, user: user.email }));
     }
-  }, [isGestao, isColaborador, user?.email, filters.user]);
+  }, [isGestao, isColaborador, isApoio, user?.email, filters.user]);
 
   const executorMap = useMemo(() => {
     return usuarios.reduce((acc, u) => {
@@ -1458,17 +1463,14 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     const enrichData = async () => {
       if (!planejamentos) {
           setEnrichedData([]);
-          // setIsCalendarLoading(false); // Removed, handled by loadCalendarData finally
           return;
       }
       
       if (planejamentos.length === 0 && execucoes.length === 0 && !isCalendarLoading) { // Only clear if not currently loading fresh data
         setEnrichedData([]);
-        // setIsCalendarLoading(false); // Removed, handled by loadCalendarData finally
         return;
       }
 
-      // setIsCalendarLoading(true); // Removed, handled by loadCalendarData finally
       try {
         const empreendimentoIds = [...new Set(planejamentos.map(p => p.empreendimento_id).filter(Boolean))];
         const atividadeIds = [...new Set(planejamentos.map(p => p.atividade_id).filter(Boolean))];
@@ -1496,8 +1498,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       } catch (error) {
         console.error("❌ Erro ao enriquecer dados do calendário:", error);
         setEnrichedData(planejamentos);
-      } finally {
-        // setIsCalendarLoading(false); // Removed, handled by loadCalendarData finally
       }
     };
 
@@ -2012,9 +2012,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   }, [currentDate, viewMode]);
 
   const handleClearFilters = () => {
-    // **MODIFICADO**: Gestão e Colaboradores não podem limpar o filtro de usuário
-    if (isGestao || isColaborador) {
-      const tipoUsuario = isGestao ? 'gestão' : 'colaborador';
+    // **MODIFICADO**: Gestão, Colaboradores e APOIO não podem limpar o filtro de usuário
+    if (isGestao || isColaborador || isApoio) {
+      const tipoUsuario = isGestao ? 'gestão' : isColaborador ? 'colaborador' : 'apoio';
       console.log(`🔒 Perfil ${tipoUsuario} não pode limpar filtro de usuário`);
       setFilters(prev => ({ ...prev, discipline: 'all' })); // Só limpa disciplina
       clearSelection();
@@ -2123,7 +2123,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
               )}
               {hasSelectedUser && (
                 <>
-                  {(!isColaborador) && (
+                  {(!isColaborador && !isApoio) && (
                     <Button variant="outline" onClick={() => setShowPrevisaoModal(true)}>
                       <LineChart className="w-4 h-4 mr-2" />
                       Previsão de Entrega
@@ -2149,9 +2149,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           onViewModeChange={setViewMode}
           filters={filters}
           onFilterChange={(key, value) => {
-            // **MODIFICADO**: Gestão e Colaboradores não podem mudar de usuário
-            if ((isGestao || isColaborador) && key === 'user') {
-              const tipoUsuario = isGestao ? 'gestão' : 'colaborador';
+            // **MODIFICADO**: Gestão, Colaboradores e APOIO não podem mudar de usuário
+            if ((isGestao || isColaborador || isApoio) && key === 'user') {
+              const tipoUsuario = isGestao ? 'gestão' : isColaborador ? 'colaborador' : 'apoio';
               console.log(`🔒 Perfil ${tipoUsuario} não pode mudar de usuário`);
               return;
             }
@@ -2162,6 +2162,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           isColaborador={isColaborador}
           isViewingAllUsers={isViewingAllUsers}
           isGestao={isGestao}
+          isApoio={isApoio}
         />
         <DragDropContext onDragEnd={onDragEnd}>
           <CardContent className="p-0 flex-1">
