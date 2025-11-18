@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo, useEffect, useContext, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -1444,10 +1443,10 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     }
   }, []);
 
-  // NOVO: useEffect para disparar o carregamento de dados quando o filtro de usuário mudar
+  // NOVO: useEffect para disparar o carregamento de dados quando o filtro de usuário mudar OU quando updateKey mudar
   useEffect(() => {
     if (hasSelectedUser) {
-        console.log(`🔄 Filtro de usuário mudou para: ${filters.user}`);
+        console.log(`🔄 Filtro de usuário mudou para: ${filters.user} ou updateKey: ${updateKey}`);
         loadCalendarData(filters.user);
     } else {
         console.log(`⚪ Nenhum usuário selecionado - limpando dados do calendário`);
@@ -1456,7 +1455,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         setEnrichedData([]); // Clear enriched data when no user is selected
         setIsCalendarLoading(false);
     }
-  }, [filters.user, hasSelectedUser, loadCalendarData]);
+  }, [filters.user, hasSelectedUser, loadCalendarData, updateKey]);
 
   // NOVO: useEffect para enriquecer os dados quando eles são carregados
   useEffect(() => {
