@@ -657,15 +657,15 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
                 title="Clique para ajustar o tempo (Coordenador ou superior)"
               >
                  <span className="font-semibold text-sm" title="Horas alocadas para este dia">{horasDoDia.toFixed(1)}h</span>
-                 <span className="text-xs text-gray-500 font-normal" title="Executado / Alocado neste dia">
-                    ({tempoExecutado.toFixed(1)}h / {horasDoDia.toFixed(1)}h)
+                 <span className="text-xs text-gray-500 font-normal" title="Executado / Total Planejado">
+                    ({tempoExecutado.toFixed(1)}h / {tempoPlanejado.toFixed(1)}h)
                 </span>
               </button>
             ) : (
                <div className="font-mono text-blue-600 flex flex-col items-end">
                  <span className="font-semibold text-sm" title="Horas alocadas para este dia">{horasDoDia.toFixed(1)}h</span>
-                 <span className="text-xs text-gray-500 font-normal" title="Executado / Alocado neste dia">
-                    ({tempoExecutado.toFixed(1)}h / {horasDoDia.toFixed(1)}h)
+                 <span className="text-xs text-gray-500 font-normal" title="Executado / Total Planejado">
+                    ({tempoExecutado.toFixed(1)}h / {tempoPlanejado.toFixed(1)}h)
                 </span>
               </div>
             )}
