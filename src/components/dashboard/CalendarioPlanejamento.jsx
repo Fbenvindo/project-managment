@@ -753,15 +753,21 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
 const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, onToggle, disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, groupKey, provided, isDragging }) => {
   const totalHoras = useMemo(() => {
     if (!dayKey) return 0;
-    
+
     let soma = 0;
     atividades.forEach((atividade) => {
-      if (atividade.horas_por_dia && typeof atividade.horas_por_dia === 'object') {
-        const horasDoDia = Number(atividade.horas_por_dia[dayKey]) || 0;
-        soma += horasDoDia;
+      // **CORRIGIDO**: Para atividades rápidas, usar tempo_executado
+      if (atividade.isQuickActivity) {
+        soma += Number(atividade.tempo_executado) || 0;
+      } else {
+        // Para atividades normais, usar horas_por_dia
+        if (atividade.horas_por_dia && typeof atividade.horas_por_dia === 'object') {
+          const horasDoDia = Number(atividade.horas_por_dia[dayKey]) || 0;
+          soma += horasDoDia;
+        }
       }
     });
-    
+
     const totalArredondado = Math.round(soma * 10) / 10;
     return totalArredondado;
   }, [atividades, dayKey]);
