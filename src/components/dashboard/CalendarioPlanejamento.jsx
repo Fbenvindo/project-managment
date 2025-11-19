@@ -268,10 +268,17 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   const tempoPlanejado = plano.tempo_planejado || 0;
   const planoExecutor = plano.executor_principal ? executorMap[plano.executor_principal] : null;
 
-  // **CORRIGIDO**: Para atividades rápidas E legadas, SEMPRE usar tempo_executado
-  const horasDoDia = (plano.isQuickActivity || plano.isLegacyExecution) 
-    ? tempoExecutado 
-    : (Number(plano.horas_por_dia?.[dayKey]) || 0);
+  // **CORRIGIDO**: Determinar horasDoDia baseado no tipo de atividade
+  let horasDoDia;
+  const horasAlocadasDia = Number(plano.horas_por_dia?.[dayKey]) || 0;
+
+  // Se for atividade rápida, legada, OU se está concluída e não tem horas alocadas mas tem tempo executado
+  if (plano.isQuickActivity || plano.isLegacyExecution || 
+      (plano.status === 'concluido' && horasAlocadasDia === 0 && tempoExecutado > 0)) {
+    horasDoDia = tempoExecutado;
+  } else {
+    horasDoDia = horasAlocadasDia;
+  }
 
   const isNaPlaylist = playlist.includes(plano.id);
 
