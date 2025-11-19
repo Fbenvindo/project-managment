@@ -1895,7 +1895,8 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
                     if (!grouped[dayKey].some(item => item.id === plano.id)) {
                         const planoParaExibir = {
                             ...plano,
-                            isQuickActivity: !!plano.is_quick_activity, // New flag for new quick activities
+                            // Detecta atividades rápidas: flag is_quick_activity OU tem base_descritivo (antigas)
+                            isQuickActivity: !!plano.is_quick_activity || !!plano.base_descritivo,
                             isLegacyExecution: false, // Explicitly set to false for actual PlanejamentoAtividade
                         };
                         grouped[dayKey].push(planoParaExibir);
