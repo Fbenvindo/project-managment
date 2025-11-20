@@ -169,12 +169,21 @@ export default function RelatorioAtividades({ planejamentos, execucoes = [] }) {
                                         {exec ? `${(exec.tempo_total || 0).toFixed(1)}h` : '-'}
                                     </TableCell>
                                     
-                                    {/* Status Atual (do planejamento) */}
+                                    {/* Status Atual */}
                                     <TableCell className="text-center">
-                                        {!exec || idx === 0 ? (
-                                            <Badge className={statusInfo.color}>{statusInfo.text}</Badge>
+                                        {exec ? (
+                                            <Badge className={
+                                                exec.status === 'Finalizado' ? 'bg-green-100 text-green-800' :
+                                                exec.status === 'Em andamento' ? 'bg-blue-100 text-blue-800' :
+                                                exec.status === 'Paralisado' ? 'bg-yellow-100 text-yellow-800' :
+                                                'bg-gray-100 text-gray-800'
+                                            }>
+                                                {exec.status === 'Finalizado' ? 'Concluído' :
+                                                 exec.status === 'Em andamento' ? 'Em Andamento' :
+                                                 exec.status === 'Paralisado' ? 'Pausado' : exec.status}
+                                            </Badge>
                                         ) : (
-                                            <span className="text-gray-400 text-sm">-</span>
+                                            <Badge className={statusInfo.color}>{statusInfo.text}</Badge>
                                         )}
                                     </TableCell>
                                     
