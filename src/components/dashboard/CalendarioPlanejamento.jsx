@@ -771,15 +771,14 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
 
     let soma = 0;
     atividades.forEach((atividade) => {
-      // **CORRIGIDO**: Para atividades rápidas, usar tempo_executado
-      if (atividade.isQuickActivity) {
-        soma += Number(atividade.tempo_executado) || 0;
+      const tempoExecutado = Number(atividade.tempo_executado) || 0;
+      const horasAlocadasDia = Number(atividade.horas_por_dia?.[dayKey]) || 0;
+      
+      // Se for atividade legada, rápida, ou tempo executado > alocado, usar executado
+      if (atividade.isLegacyExecution || atividade.isQuickActivity || atividade.is_quick_activity || tempoExecutado > horasAlocadasDia) {
+        soma += tempoExecutado;
       } else {
-        // Para atividades normais, usar horas_por_dia
-        if (atividade.horas_por_dia && typeof atividade.horas_por_dia === 'object') {
-          const horasDoDia = Number(atividade.horas_por_dia[dayKey]) || 0;
-          soma += horasDoDia;
-        }
+        soma += horasAlocadasDia;
       }
     });
 
