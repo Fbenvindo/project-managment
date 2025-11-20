@@ -488,7 +488,7 @@ export default function Relatorios() {
                             <TabsTrigger value="carga_horaria">Relatório de Carga Horária</TabsTrigger>
                         </TabsList>
                         <TabsContent value="atividades" className="mt-4">
-                            <RelatorioResumo planejamentos={planejamentosFiltrados} />
+                            <RelatorioResumo planejamentos={planejamentosFiltrados} execucoes={execucoesFiltradas} />
                             <div className="mt-6">
                                 <RelatorioAtividades 
                                     planejamentos={planejamentosFiltrados} 

@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import React, { useMemo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Users, Clock, AlertTriangle, CheckCircle2 } from "lucide-react";
 import { isActivityOverdue as isOverdue } from '../utils/DateCalculator';
@@ -20,11 +20,11 @@ function ResumoCard({ icon: Icon, title, value, color, unit }) {
     );
 }
 
-export default function RelatorioResumo({ planejamentos }) {
+export default function RelatorioResumo({ planejamentos, execucoes = [] }) {
     const resumo = useMemo(() => {
         if (!planejamentos) return { totalAtividades: 0, totalHoras: 0, totalAtrasadas: 0, totalConcluidas: 0 };
 
-        const totalHoras = planejamentos.reduce((acc, p) => acc + (Number(p.tempo_executado) || 0), 0);
+        const totalHoras = execucoes.reduce((acc, e) => acc + (Number(e.tempo_total) || 0), 0);
         const totalAtrasadas = planejamentos.filter(p => isOverdue(p)).length;
         const totalConcluidas = planejamentos.filter(p => p.status === 'concluido').length;
 
@@ -34,7 +34,7 @@ export default function RelatorioResumo({ planejamentos }) {
             totalAtrasadas,
             totalConcluidas,
         };
-    }, [planejamentos]);
+    }, [planejamentos, execucoes]);
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 my-6">
