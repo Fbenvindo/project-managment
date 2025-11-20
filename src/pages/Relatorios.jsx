@@ -132,6 +132,7 @@ export default function Relatorios() {
 
                 let terminoReal = null;
                 let inicioReal = null;
+                let observacaoConsolidada = p.observacao || '';
 
                 if (execucoesDoPlano.length > 0) {
                     inicioReal = execucoesDoPlano.reduce((earliest, current) => {
@@ -142,6 +143,18 @@ export default function Relatorios() {
 
                     if (!inicioReal && execucoesDoPlano.length > 0) {
                         inicioReal = execucoesDoPlano[0].inicio;
+                    }
+                    
+                    // Consolidar observações das execuções
+                    const observacoesExecs = execucoesDoPlano
+                        .filter(e => e.observacao)
+                        .map(e => e.observacao)
+                        .join('; ');
+                    
+                    if (observacoesExecs && observacaoConsolidada) {
+                        observacaoConsolidada = `${observacaoConsolidada}; ${observacoesExecs}`;
+                    } else if (observacoesExecs) {
+                        observacaoConsolidada = observacoesExecs;
                     }
                 }
 
@@ -161,6 +174,7 @@ export default function Relatorios() {
                     executor: p.executor_principal ? usuariosMap[p.executor_principal] : null,
                     termino_real: terminoReal,
                     inicio_real: inicioReal,
+                    observacao: observacaoConsolidada,
                 };
             });
 
@@ -187,6 +201,7 @@ export default function Relatorios() {
                         inicio_real: exec.inicio,
                         termino_real: exec.status === 'Finalizado' ? exec.termino : null,
                         tempo_executado: exec.tempo_total || 0,
+                        observacao: exec.observacao || '',
                     };
                 });
             
