@@ -60,7 +60,8 @@ export default function RelatorioAtividades({ planejamentos, execucoes = [] }) {
                         execucao: exec,
                         isMultiple: execsDoPlano.length > 1,
                         execNumber: index + 1,
-                        totalExecs: execsDoPlano.length
+                        totalExecs: execsDoPlano.length,
+                        isFirstExec: index === 0
                     });
                 });
             } else {
@@ -68,7 +69,8 @@ export default function RelatorioAtividades({ planejamentos, execucoes = [] }) {
                 rows.push({
                     ...plano,
                     execucao: null,
-                    isMultiple: false
+                    isMultiple: false,
+                    isFirstExec: true
                 });
             }
         });
@@ -189,7 +191,7 @@ export default function RelatorioAtividades({ planejamentos, execucoes = [] }) {
                                     
                                     {/* Tempo Total (acumulado do planejamento) */}
                                     <TableCell className="text-center font-mono font-semibold">
-                                        {!exec || idx === 0 ? `${(row.tempo_executado || 0).toFixed(1)}h` : '-'}
+                                        {row.isFirstExec ? `${(row.tempo_executado || 0).toFixed(1)}h` : '-'}
                                     </TableCell>
                                     
                                     {/* Observação */}
