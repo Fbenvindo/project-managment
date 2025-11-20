@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Download, Search } from "lucide-react";
@@ -274,42 +273,49 @@ export default function Relatorios() {
         }
 
         if (activeTab === 'atividades') {
-            const dataToExport = planejamentosFiltrados.map(p => {
-                const plannedFinishDate = p.termino_ajustado || p.termino_planejado;
-                let daysOverdue = 0;
-                
-                if (!p.isQuickActivity) {
-                    if (p.status === 'concluido' && p.termino_real && plannedFinishDate) {
-                        const realFinish = startOfDay(parseISO(p.termino_real));
-                        const plannedFinish = startOfDay(parseISO(plannedFinishDate));
-                        if (isValid(realFinish) && isValid(plannedFinish)) {
-                            const diff = differenceInBusinessDays(realFinish, plannedFinish);
-                            daysOverdue = diff > 0 ? diff : 0;
-                        }
-                    } else if (p.status !== 'concluido' && isOverdue(p) && plannedFinishDate) {
-                        const diff = differenceInBusinessDays(startOfDay(new Date()), startOfDay(parseISO(plannedFinishDate)));
-                        daysOverdue = diff > 0 ? diff : 0;
-                    }
-                }
-                
+            const dataToExport = [];
+            
+            planejamentosFiltrados.forEach(p => {
+                const execsDoPlano = execucoesFiltradas.filter(e => e.planejamento_id === p.id);
                 const isActuallyOverdue = !p.isQuickActivity && isOverdue(p);
                 const currentStatus = (p.status !== 'concluido' && isActuallyOverdue) ? 'Atrasado' : (p.status || 'nao_iniciado');
-
-                return {
-                    "Empreendimento": p.empreendimento?.nome || 'N/A',
-                    "Atividade": p.descritivo || p.atividade?.atividade || 'N/A',
-                    "Usuário": p.executor?.full_name || p.executor?.nome || p.executor_principal || 'N/A',
-                    "Folha do Documento": p.documento?.numero || 'N/A',
-                    "Início Real": p.inicio_real ? new Date(p.inicio_real).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'N/A',
-                    "Término Planejado": plannedFinishDate ? new Date(plannedFinishDate).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : 'N/A',
-                    "Término Real": p.termino_real ? new Date(p.termino_real).toLocaleDateString('pt-BR', { timeZone: 'UTC' }) : (p.status === 'concluido' ? 'Concluído' : 'N/A'),
-                    "Dias de Atraso (úteis)": daysOverdue > 0 ? daysOverdue : '',
-                    "Tempo Gasto (h)": p.tempo_executado ? p.tempo_executado.toFixed(1) : '0.0',
-                    "Status": currentStatus.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-                };
+                
+                if (execsDoPlano.length > 0) {
+                    // Para cada execução, adiciona uma linha
+                    execsDoPlano.forEach((exec, index) => {
+                        dataToExport.push({
+                            "Usuário": p.executor?.full_name || p.executor?.nome || p.executor_principal || 'N/A',
+                            "Empreendimento": p.empreendimento?.nome || 'N/A',
+                            "Documento/Atividades": `${p.descritivo || p.atividade?.atividade || 'N/A'}${p.documento?.numero ? ` (Folha: ${p.documento.numero})` : ''}`,
+                            "Horário Início": exec.inicio ? new Date(exec.inicio).toLocaleString('pt-BR') : 'N/A',
+                            "Horário Fim": exec.termino ? new Date(exec.termino).toLocaleString('pt-BR') : 'Em andamento',
+                            "Ação": exec.status === 'Finalizado' ? 'Finalizado' : 
+                                   exec.status === 'Em andamento' ? 'Em Progresso' : 
+                                   exec.status === 'Paralisado' ? 'Pausado' : exec.status,
+                            "Tempo Gasto (h)": exec.tempo_total ? exec.tempo_total.toFixed(1) : '0.0',
+                            "Status Atual": index === 0 ? currentStatus.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : '',
+                            "Tempo Total (h)": index === 0 ? (p.tempo_executado ? p.tempo_executado.toFixed(1) : '0.0') : '',
+                            "Observação": exec.observacao || p.observacao || '',
+                        });
+                    });
+                } else {
+                    // Sem execuções, adiciona apenas o planejamento
+                    dataToExport.push({
+                        "Usuário": p.executor?.full_name || p.executor?.nome || p.executor_principal || 'N/A',
+                        "Empreendimento": p.empreendimento?.nome || 'N/A',
+                        "Documento/Atividades": `${p.descritivo || p.atividade?.atividade || 'N/A'}${p.documento?.numero ? ` (Folha: ${p.documento.numero})` : ''}`,
+                        "Horário Início": p.inicio_real ? new Date(p.inicio_real).toLocaleDateString('pt-BR') : 'N/A',
+                        "Horário Fim": p.termino_real ? new Date(p.termino_real).toLocaleDateString('pt-BR') : 'N/A',
+                        "Ação": '-',
+                        "Tempo Gasto (h)": '-',
+                        "Status Atual": currentStatus.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+                        "Tempo Total (h)": p.tempo_executado ? p.tempo_executado.toFixed(1) : '0.0',
+                        "Observação": p.observacao || '',
+                    });
+                }
             });
 
-            exportToExcel(dataToExport, "Relatorio_de_Atividades");
+            exportToExcel(dataToExport, "Relatorio_de_Atividades_Detalhado");
         } else if (activeTab === 'carga_horaria') {
             const dataToExport = execucoesFiltradas.map(exec => {
                 const usuario = data.usuarios.find(u => u.email === exec.usuario);
@@ -453,7 +459,10 @@ export default function Relatorios() {
                         <TabsContent value="atividades" className="mt-4">
                             <RelatorioResumo planejamentos={planejamentosFiltrados} />
                             <div className="mt-6">
-                                <RelatorioAtividades planejamentos={planejamentosFiltrados} />
+                                <RelatorioAtividades 
+                                    planejamentos={planejamentosFiltrados} 
+                                    execucoes={execucoesFiltradas}
+                                />
                             </div>
                         </TabsContent>
                         <TabsContent value="carga_horaria" className="mt-4">

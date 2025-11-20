@@ -1,9 +1,10 @@
+import React, { useMemo } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { format, parseISO, isValid, differenceInCalendarDays } from 'date-fns';
 import { isActivityOverdue as isOverdue } from '../utils/DateCalculator';
 
-export default function RelatorioAtividades({ planejamentos }) {
+export default function RelatorioAtividades({ planejamentos, execucoes = [] }) {
 
     const getStatusInfo = (plano) => {
         const isAtrasado = !plano.isQuickActivity && isOverdue(plano);
@@ -29,12 +30,51 @@ export default function RelatorioAtividades({ planejamentos }) {
     const formatDate = (dateString) => {
         if (!dateString) return "N/A";
         try {
-            // Adicionar T00:00:00 para tratar como data local e evitar problemas de fuso
             return format(parseISO(`${dateString.split('T')[0]}T00:00:00`), 'dd/MM/yyyy');
         } catch {
             return "Data inválida";
         }
     };
+
+    const formatDateTime = (dateString) => {
+        if (!dateString) return "N/A";
+        try {
+            return format(parseISO(dateString), 'dd/MM/yyyy HH:mm');
+        } catch {
+            return "Data inválida";
+        }
+    };
+
+    // Agrupa execuções por planejamento para exibir múltiplas linhas
+    const detailedRows = useMemo(() => {
+        const rows = [];
+        
+        planejamentos.forEach(plano => {
+            const execsDoPlano = execucoes.filter(e => e.planejamento_id === plano.id);
+            
+            if (execsDoPlano.length > 0) {
+                // Para cada execução, cria uma linha
+                execsDoPlano.forEach((exec, index) => {
+                    rows.push({
+                        ...plano,
+                        execucao: exec,
+                        isMultiple: execsDoPlano.length > 1,
+                        execNumber: index + 1,
+                        totalExecs: execsDoPlano.length
+                    });
+                });
+            } else {
+                // Se não tem execução, mostra apenas o planejamento
+                rows.push({
+                    ...plano,
+                    execucao: null,
+                    isMultiple: false
+                });
+            }
+        });
+        
+        return rows;
+    }, [planejamentos, execucoes]);
 
     if (!planejamentos || planejamentos.length === 0) {
         return (
@@ -46,55 +86,113 @@ export default function RelatorioAtividades({ planejamentos }) {
 
     return (
         <div className="border rounded-lg overflow-hidden">
-            <Table>
-                <TableHeader className="bg-gray-50">
-                    <TableRow>
-                        <TableHead>Atividade</TableHead>
-                        <TableHead>Usuário</TableHead>
-                        <TableHead>Empreendimento</TableHead>
-                        <TableHead>Folha</TableHead>
-                        <TableHead>Início Real</TableHead>
-                        <TableHead>Término Real</TableHead>
-                        <TableHead className="text-center">Duração (dias)</TableHead>
-                        <TableHead className="text-center">Tempo Gasto</TableHead>
-                        <TableHead className="text-center">Status</TableHead>
-                    </TableRow>
-                </TableHeader>
-                <TableBody>
-                    {planejamentos.map((plano) => {
-                        const statusInfo = getStatusInfo(plano);
-                        
-                        let duracaoDias = '-';
-                        if (plano.inicio_real && plano.termino_real) {
-                            const inicio = parseISO(plano.inicio_real);
-                            const termino = parseISO(plano.termino_real);
-                            if (isValid(inicio) && isValid(termino)) {
-                                duracaoDias = differenceInCalendarDays(termino, inicio) + 1;
-                            }
-                        }
-
-                        return (
-                            <TableRow key={plano.id}>
-                                <TableCell className="font-medium">{plano.descritivo || plano.atividade?.atividade || 'N/A'}</TableCell>
-                                <TableCell>{plano.executor?.full_name || plano.executor?.nome || plano.executor_principal || 'N/A'}</TableCell>
-                                <TableCell>{plano.empreendimento?.nome || 'N/A'}</TableCell>
-                                <TableCell>{plano.documento?.numero || (plano.isQuickActivity ? 'Atividade Rápida' : 'N/A')}</TableCell>
-                                <TableCell>{formatDate(plano.inicio_real)}</TableCell>
-                                <TableCell>{plano.termino_real ? formatDate(plano.termino_real) : (plano.status === 'concluido' ? 'Concluído' : 'Em andamento')}</TableCell>
-                                <TableCell className="text-center font-medium">
-                                    {duracaoDias}
-                                </TableCell>
-                                <TableCell className="text-center">
-                                    {(plano.tempo_executado || 0).toFixed(1)}h
-                                </TableCell>
-                                <TableCell className="text-center">
-                                    <Badge className={statusInfo.color}>{statusInfo.text}</Badge>
-                                </TableCell>
-                            </TableRow>
-                        );
-                    })}
-                </TableBody>
-            </Table>
+            <div className="overflow-x-auto">
+                <Table>
+                    <TableHeader className="bg-gray-50">
+                        <TableRow>
+                            <TableHead className="min-w-[120px]">Usuário</TableHead>
+                            <TableHead className="min-w-[150px]">Empreendimento</TableHead>
+                            <TableHead className="min-w-[200px]">Documento/Atividades</TableHead>
+                            <TableHead className="min-w-[130px]">Horário Início</TableHead>
+                            <TableHead className="min-w-[130px]">Horário Fim</TableHead>
+                            <TableHead className="min-w-[100px]">Ação</TableHead>
+                            <TableHead className="text-center min-w-[100px]">Tempo Gasto</TableHead>
+                            <TableHead className="text-center min-w-[120px]">Status Atual</TableHead>
+                            <TableHead className="text-center min-w-[100px]">Tempo Total</TableHead>
+                            <TableHead className="min-w-[200px]">Observação</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {detailedRows.map((row, idx) => {
+                            const statusInfo = getStatusInfo(row);
+                            const exec = row.execucao;
+                            
+                            return (
+                                <TableRow key={`${row.id}-${idx}`} className={exec ? 'bg-blue-50/30' : ''}>
+                                    {/* Usuário */}
+                                    <TableCell className="font-medium">
+                                        {row.executor?.full_name || row.executor?.nome || row.executor_principal || 'N/A'}
+                                    </TableCell>
+                                    
+                                    {/* Empreendimento */}
+                                    <TableCell>{row.empreendimento?.nome || 'N/A'}</TableCell>
+                                    
+                                    {/* Documento/Atividades */}
+                                    <TableCell>
+                                        <div className="space-y-1">
+                                            <div className="font-medium text-sm">
+                                                {row.descritivo || row.atividade?.atividade || 'N/A'}
+                                            </div>
+                                            {row.documento?.numero && (
+                                                <div className="text-xs text-gray-500">
+                                                    Folha: {row.documento.numero}
+                                                </div>
+                                            )}
+                                            {row.isQuickActivity && (
+                                                <Badge variant="outline" className="text-xs">Rápida</Badge>
+                                            )}
+                                            {row.isMultiple && (
+                                                <div className="text-xs text-blue-600 font-medium">
+                                                    Execução {row.execNumber}/{row.totalExecs}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                    
+                                    {/* Horário Início */}
+                                    <TableCell>
+                                        {exec ? formatDateTime(exec.inicio) : formatDate(row.inicio_real)}
+                                    </TableCell>
+                                    
+                                    {/* Horário Fim */}
+                                    <TableCell>
+                                        {exec 
+                                            ? (exec.termino ? formatDateTime(exec.termino) : 'Em andamento') 
+                                            : (row.termino_real ? formatDate(row.termino_real) : 'N/A')}
+                                    </TableCell>
+                                    
+                                    {/* Ação */}
+                                    <TableCell>
+                                        {exec ? (
+                                            <Badge variant="outline" className="text-xs">
+                                                {exec.status === 'Finalizado' ? 'Finalizado' : 
+                                                 exec.status === 'Em andamento' ? 'Em Progresso' : 
+                                                 exec.status === 'Paralisado' ? 'Pausado' : exec.status}
+                                            </Badge>
+                                        ) : (
+                                            <span className="text-gray-400 text-sm">-</span>
+                                        )}
+                                    </TableCell>
+                                    
+                                    {/* Tempo Gasto (da execução) */}
+                                    <TableCell className="text-center font-mono">
+                                        {exec ? `${(exec.tempo_total || 0).toFixed(1)}h` : '-'}
+                                    </TableCell>
+                                    
+                                    {/* Status Atual (do planejamento) */}
+                                    <TableCell className="text-center">
+                                        {!exec || idx === 0 ? (
+                                            <Badge className={statusInfo.color}>{statusInfo.text}</Badge>
+                                        ) : (
+                                            <span className="text-gray-400 text-sm">-</span>
+                                        )}
+                                    </TableCell>
+                                    
+                                    {/* Tempo Total (acumulado do planejamento) */}
+                                    <TableCell className="text-center font-mono font-semibold">
+                                        {!exec || idx === 0 ? `${(row.tempo_executado || 0).toFixed(1)}h` : '-'}
+                                    </TableCell>
+                                    
+                                    {/* Observação */}
+                                    <TableCell className="text-sm text-gray-600 max-w-[200px] truncate" title={exec?.observacao || row.observacao || ''}>
+                                        {exec?.observacao || row.observacao || '-'}
+                                    </TableCell>
+                                </TableRow>
+                            );
+                        })}
+                    </TableBody>
+                </Table>
+            </div>
         </div>
     );
 }
