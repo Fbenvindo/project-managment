@@ -508,14 +508,20 @@ export const ActivityTimerProvider = ({ children }) => {
                 return;
             }
 
+            const updateData = {
+                status: 'Paralisado',
+                termino: agora.toISOString(),
+                tempo_total: tempoDecorridoHoras,
+                pausado_automaticamente: false
+            };
+
+            if (observacao && observacao.trim()) {
+                updateData.observacao = observacao.trim();
+                console.log(`💬 [pauseExecution] Salvando observação: "${observacao.trim()}"`);
+            }
+
             await retryWithExtendedBackoff(
-                () => Execucao.update(execution.id, {
-                    status: 'Paralisado',
-                    termino: agora.toISOString(),
-                    tempo_total: tempoDecorridoHoras,
-                    observacao: observacao,
-                    pausado_automaticamente: false
-                }),
+                () => Execucao.update(execution.id, updateData),
                 'pauseExecution.update'
             );
             
@@ -615,14 +621,20 @@ export const ActivityTimerProvider = ({ children }) => {
 
             console.log(`💾 [finishExecution] Salvando execução com tempo_total: ${tempoDecorridoHoras.toFixed(4)}h`);
 
+            const updateData = {
+                status: 'Finalizado',
+                termino: agora.toISOString(),
+                tempo_total: tempoDecorridoHoras,
+                pausado_automaticamente: false
+            };
+
+            if (observacao && observacao.trim()) {
+                updateData.observacao = observacao.trim();
+                console.log(`💬 [finishExecution] Salvando observação: "${observacao.trim()}"`);
+            }
+
             await retryWithExtendedBackoff(
-                () => Execucao.update(execution.id, {
-                    status: 'Finalizado',
-                    termino: agora.toISOString(),
-                    tempo_total: tempoDecorridoHoras,
-                    observacao: observacao,
-                    pausado_automaticamente: false
-                }),
+                () => Execucao.update(execution.id, updateData),
                 'finishExecution.update'
             );
             
