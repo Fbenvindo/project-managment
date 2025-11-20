@@ -272,10 +272,14 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   let horasDoDia;
   const horasAlocadasDia = Number(plano.horas_por_dia?.[dayKey]) || 0;
 
-  // Se for atividade rápida OU legada, SEMPRE usar tempo_executado
-  if (plano.isQuickActivity || plano.isLegacyExecution) {
+  // Se for atividade legada (execução antiga), usar tempo_executado
+  if (plano.isLegacyExecution) {
     horasDoDia = tempoExecutado;
-  } 
+  }
+  // Se for atividade rápida (is_quick_activity), usar tempo_executado
+  else if (plano.isQuickActivity || plano.is_quick_activity) {
+    horasDoDia = tempoExecutado;
+  }
   // Para atividades normais concluídas: se não tem horas alocadas mas tem tempo executado, usar executado
   else if (plano.status === 'concluido' && horasAlocadasDia === 0 && tempoExecutado > 0) {
     horasDoDia = tempoExecutado;

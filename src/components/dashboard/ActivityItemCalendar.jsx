@@ -1,4 +1,4 @@
-import { useState, useMemo, useContext } from 'react';
+import React, { useState, useMemo, useContext } from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
@@ -80,7 +80,13 @@ export default function ActivityItemCalendar({
   const tempoExecutado = plano.tempo_executado || 0;
   const tempoPlanejado = plano.tempo_planejado || 0;
   const planoExecutor = plano.executor_principal ? executorMap[plano.executor_principal] : null;
-  const horasDoDia = Number(plano.horas_por_dia?.[dayKey]) || 0;
+  
+  // **CORRIGIDO**: Para atividades rápidas, usar tempo_executado como horasDoDia
+  const horasAlocadasDia = Number(plano.horas_por_dia?.[dayKey]) || 0;
+  const horasDoDia = (plano.isQuickActivity || plano.is_quick_activity || plano.isLegacyExecution) 
+    ? tempoExecutado 
+    : horasAlocadasDia;
+  
   const isNaPlaylist = playlist.includes(plano.id);
 
   const getDocumentoDisplay = () => {
