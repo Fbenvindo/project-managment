@@ -214,11 +214,19 @@ export default function Relatorios() {
 
         if (filters.dataInicio) {
             const inicio = startOfDay(filters.dataInicio);
-            filtered = filtered.filter(p => p.inicio_planejado && isAfter(parseISO(p.inicio_planejado), inicio));
+            filtered = filtered.filter(p => {
+                if (!p.inicio_planejado) return false;
+                const dataAtividade = startOfDay(parseISO(p.inicio_planejado));
+                return dataAtividade >= inicio;
+            });
         }
         if (filters.dataFim) {
             const fim = endOfDay(filters.dataFim);
-            filtered = filtered.filter(p => p.inicio_planejado && isBefore(parseISO(p.inicio_planejado), fim));
+            filtered = filtered.filter(p => {
+                if (!p.inicio_planejado) return false;
+                const dataAtividade = parseISO(p.inicio_planejado);
+                return dataAtividade <= fim;
+            });
         }
 
         if (filters.empreendimento && filters.empreendimento !== 'all') {
@@ -249,11 +257,19 @@ export default function Relatorios() {
 
         if (filters.dataInicio) {
             const inicio = startOfDay(filters.dataInicio);
-            filtered = filtered.filter(e => e.inicio && isAfter(parseISO(e.inicio), inicio));
+            filtered = filtered.filter(e => {
+                if (!e.inicio) return false;
+                const dataExecucao = startOfDay(parseISO(e.inicio));
+                return dataExecucao >= inicio;
+            });
         }
         if (filters.dataFim) {
             const fim = endOfDay(filters.dataFim);
-            filtered = filtered.filter(e => e.inicio && isBefore(parseISO(e.inicio), fim));
+            filtered = filtered.filter(e => {
+                if (!e.inicio) return false;
+                const dataExecucao = parseISO(e.inicio);
+                return dataExecucao <= fim;
+            });
         }
         if (filters.empreendimento && filters.empreendimento !== 'all') {
             filtered = filtered.filter(e => e.empreendimento_id === filters.empreendimento);
