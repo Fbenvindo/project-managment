@@ -81,9 +81,9 @@ export default function ActivityItemCalendar({
   const tempoPlanejado = plano.tempo_planejado || 0;
   const planoExecutor = plano.executor_principal ? executorMap[plano.executor_principal] : null;
   
-  // **CORRIGIDO**: Para atividades rápidas, usar tempo_executado como horasDoDia
+  // **CORRIGIDO**: Para atividades rápidas ou quando executado > alocado, usar tempo_executado
   const horasAlocadasDia = Number(plano.horas_por_dia?.[dayKey]) || 0;
-  const horasDoDia = (plano.isQuickActivity || plano.is_quick_activity || plano.isLegacyExecution) 
+  const horasDoDia = (plano.isQuickActivity || plano.is_quick_activity || plano.isLegacyExecution || tempoExecutado > horasAlocadasDia) 
     ? tempoExecutado 
     : horasAlocadasDia;
   

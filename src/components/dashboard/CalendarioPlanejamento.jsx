@@ -280,7 +280,11 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   else if (plano.isQuickActivity || plano.is_quick_activity) {
     horasDoDia = tempoExecutado;
   }
-  // Para atividades normais concluídas: se não tem horas alocadas mas tem tempo executado, usar executado
+  // Se tempo executado > horas alocadas (atividade rápida não marcada), usar executado
+  else if (tempoExecutado > horasAlocadasDia) {
+    horasDoDia = tempoExecutado;
+  }
+  // Para atividades concluídas: se não tem horas alocadas mas tem tempo executado, usar executado
   else if (plano.status === 'concluido' && horasAlocadasDia === 0 && tempoExecutado > 0) {
     horasDoDia = tempoExecutado;
   } 
