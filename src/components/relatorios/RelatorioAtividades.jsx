@@ -75,6 +75,17 @@ export default function RelatorioAtividades({ planejamentos, execucoes = [] }) {
             }
         });
         
+        // Ordenar por data/hora de início
+        rows.sort((a, b) => {
+            const dataA = a.execucao?.inicio || a.inicio_planejado;
+            const dataB = b.execucao?.inicio || b.inicio_planejado;
+            
+            if (!dataA) return 1;
+            if (!dataB) return -1;
+            
+            return new Date(dataA) - new Date(dataB);
+        });
+        
         return rows;
     }, [planejamentos, execucoes]);
 
