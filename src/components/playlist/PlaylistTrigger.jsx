@@ -1,9 +1,10 @@
-import { useState, useContext, useMemo, useEffect } from 'react';
+import React, { useState, useContext, useMemo, useEffect } from 'react';
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-import { Zap, Play, X, Users, List, Loader2 } from "lucide-react";
+import { Zap, Play, X, ChevronDown, ChevronUp, Users, List, Loader2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { PlanejamentoAtividade, PlanejamentoDocumento } from '@/entities/all';
@@ -110,8 +111,7 @@ export default function PlaylistTrigger() {
       descritivo: atividade.nome,
       base_descritivo: atividade.nome,
       empreendimento_id: empreendimentoId,
-      usuario_ajudado: null,
-      observacao: null
+      usuario_ajudado: null
     });
 
     // Resetar
@@ -133,8 +133,7 @@ export default function PlaylistTrigger() {
       descritivo: `Ajudando ${usuarioAjudadoObj?.nome || usuarioAjudadoObj?.full_name || selectedUsuarioAjuda} - ${atividade.nome}`,
       base_descritivo: atividade.nome,
       empreendimento_id: empreendimentoId,
-      usuario_ajudado: selectedUsuarioAjuda,
-      observacao: null
+      usuario_ajudado: selectedUsuarioAjuda
     });
 
     // Resetar

@@ -1,5 +1,5 @@
-
-import { useState, useEffect, useContext } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { base44 } from '@/api/base44Client';
 import { AtividadeGenerica, Usuario, Execucao, Empreendimento } from '@/entities/all';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,8 +28,7 @@ export default function AtividadesRapidasPage() {
   const [selectedAtividade, setSelectedAtividade] = useState(null);
   const [modalData, setModalData] = useState({
     usuario_ajudado: '',
-    empreendimento_id: '',
-    observacao: ''
+    empreendimento_id: ''
   });
 
   useEffect(() => {
@@ -98,8 +97,7 @@ export default function AtividadesRapidasPage() {
         descritivo: descritivo,
         base_descritivo: selectedAtividade.nome,
         empreendimento_id: modalData.empreendimento_id || null,
-        usuario_ajudado: modalData.usuario_ajudado || null,
-        observacao: modalData.observacao || null
+        usuario_ajudado: modalData.usuario_ajudado || null
       });
 
       alert('✅ Atividade iniciada com sucesso!');
@@ -328,16 +326,6 @@ export default function AtividadesRapidasPage() {
               </Select>
             </div>
 
-            <div>
-              <Label htmlFor="observacao">Observação (Opcional)</Label>
-              <Textarea
-                id="observacao"
-                placeholder="Adicione uma observação sobre esta atividade..."
-                value={modalData.observacao}
-                onChange={(e) => setModalData(prev => ({ ...prev, observacao: e.target.value }))}
-                rows={3}
-              />
-            </div>
           </div>
 
           <DialogFooter>
