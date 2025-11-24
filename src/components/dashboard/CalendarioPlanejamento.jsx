@@ -1434,15 +1434,16 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
 
   // **MODIFICADO**: useEffect para auto-selecionar usuário se for gestão, colaborador OU apoio (sem permissão especial)
   useEffect(() => {
-    // Verifica se tem permissão especial para ver outros calendários
-    const podeVerOutros = userProfile?.pode_visualizar_outros_calendarios === true;
+    // Verifica se tem usuários permitidos
+    const usuariosPermitidos = userProfile?.usuarios_permitidos_visualizar || [];
+    const temPermissao = usuariosPermitidos.length > 0;
 
-    if ((isGestao || isColaborador || isApoio) && !podeVerOutros && user?.email && !filters.user) {
+    if ((isGestao || isColaborador || isApoio) && !temPermissao && user?.email && !filters.user) {
       const tipoUsuario = isGestao ? 'gestão' : isColaborador ? 'colaborador' : 'apoio';
       console.log(`🔒 Perfil ${tipoUsuario} detectado (sem permissão especial) - auto-selecionando próprio usuário: ${user.email}`);
       setFilters(prev => ({ ...prev, user: user.email }));
     }
-  }, [isGestao, isColaborador, isApoio, userProfile?.pode_visualizar_outros_calendarios, user?.email, filters.user]);
+  }, [isGestao, isColaborador, isApoio, userProfile?.usuarios_permitidos_visualizar, user?.email, filters.user]);
 
   const executorMap = useMemo(() => {
     return usuarios.reduce((acc, u) => {
@@ -2066,14 +2067,17 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
 
   const handleClearFilters = () => {
     // **MODIFICADO**: Gestão, Colaboradores e APOIO (sem permissão especial) não podem limpar o filtro de usuário
-    if ((isGestao || isColaborador || isApoio) && !podeVisualizarOutros) {
+    const usuariosPermitidos = userProfile?.usuarios_permitidos_visualizar || [];
+    const temPermissao = usuariosPermitidos.length > 0;
+
+    if ((isGestao || isColaborador || isApoio) && !temPermissao) {
       const tipoUsuario = isGestao ? 'gestão' : isColaborador ? 'colaborador' : 'apoio';
       console.log(`🔒 Perfil ${tipoUsuario} não pode limpar filtro de usuário`);
       setFilters(prev => ({ ...prev, discipline: 'all' })); // Só limpa disciplina
       clearSelection();
       return;
     }
-    
+
     console.log('🧹 Limpando filtros e seleção de usuário...');
     setFilters({
       user: '', // Limpa seleção de usuário
@@ -2204,7 +2208,10 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           podeVerOutros={podeVisualizarOutros}
           onFilterChange={(key, value) => {
             // **MODIFICADO**: Gestão, Colaboradores e APOIO (sem permissão especial) não podem mudar de usuário
-            if ((isGestao || isColaborador || isApoio) && !podeVisualizarOutros && key === 'user') {
+            const usuariosPermitidos = userProfile?.usuarios_permitidos_visualizar || [];
+            const temPermissao = usuariosPermitidos.length > 0;
+
+            if ((isGestao || isColaborador || isApoio) && !temPermissao && key === 'user') {
               const tipoUsuario = isGestao ? 'gestão' : isColaborador ? 'colaborador' : 'apoio';
               console.log(`🔒 Perfil ${tipoUsuario} não pode mudar de usuário`);
               return;
