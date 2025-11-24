@@ -154,6 +154,16 @@ const CalendarFilters = ({
   usuariosPermitidos,
   currentUserEmail
 }) => {
+  // Debug log
+  console.log('🔍 CalendarFilters Debug:', {
+    podeVerOutros,
+    usuariosPermitidos: usuariosPermitidos?.length || 0,
+    isColaborador,
+    isGestao,
+    isApoio,
+    currentUserEmail
+  });
+
   // **MODIFICADO**: Filtrar e ordenar apenas usuários com nome cadastrado
   const usersOrdenados = useMemo(() => {
     return [...users]
@@ -167,6 +177,8 @@ const CalendarFilters = ({
 
   // **MODIFICADO**: Dropdown bloqueado para colaboradores, gestão e APOIO (sem permissão especial)
   const isDropdownDisabled = (isColaborador || isGestao || isApoio) && !podeVerOutros;
+
+  console.log('🔒 Dropdown disabled?', isDropdownDisabled);
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 p-4 border-b border-gray-100 bg-gray-50/50">
@@ -2208,10 +2220,13 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           filters={filters}
           podeVerOutros={podeVisualizarOutros}
           currentUserEmail={user?.email}
+          usuariosPermitidos={usuariosPermitidos}
           onFilterChange={(key, value) => {
             // **MODIFICADO**: Gestão, Colaboradores e APOIO (sem permissão especial) não podem mudar de usuário
-            const usuariosPermitidos = userProfile?.usuarios_permitidos_visualizar || [];
-            const temPermissao = usuariosPermitidos.length > 0;
+            const usuariosPermitidosLocal = userProfile?.usuarios_permitidos_visualizar || [];
+            const temPermissao = usuariosPermitidosLocal.length > 0;
+
+            console.log('🔄 onFilterChange:', { key, value, temPermissao, usuariosPermitidos: usuariosPermitidosLocal });
 
             if ((isGestao || isColaborador || isApoio) && !temPermissao && key === 'user') {
               const tipoUsuario = isGestao ? 'gestão' : isColaborador ? 'colaborador' : 'apoio';
