@@ -841,7 +841,10 @@ export const ActivityTimerProvider = ({ children }) => {
                 const usuarios = await retryWithBackoff(() => Usuario.filter({ email: user.email }, null, 1), 3, 2000, 'loadUserProfile');
                 if (isMounted && usuarios && usuarios.length > 0) {
                     setUserProfile(usuarios[0]);
-                    console.log(`✅ Perfil carregado: ${usuarios[0].perfil}`);
+                    console.log(`✅ Perfil carregado:`, {
+                        perfil: usuarios[0].perfil,
+                        usuarios_permitidos_visualizar: usuarios[0].usuarios_permitidos_visualizar
+                    });
                 } else {
                     setUserProfile(null);
                 }
@@ -858,7 +861,7 @@ export const ActivityTimerProvider = ({ children }) => {
         return () => {
             isMounted = false;
         };
-    }, [user?.email]);
+    }, [user?.email, updateKey]);
 
     useEffect(() => {
         let isMounted = true;
