@@ -162,8 +162,9 @@ const CalendarFilters = ({
       });
   }, [users]);
 
-  // **MODIFICADO**: Dropdown bloqueado para colaboradores, gestão e APOIO
-  const isDropdownDisabled = isColaborador || isGestao || isApoio;
+  // **MODIFICADO**: Dropdown bloqueado para colaboradores, gestão e APOIO (sem permissão especial)
+  const podeVerOutros = userProfile?.pode_visualizar_outros_calendarios === true;
+  const isDropdownDisabled = (isColaborador || isGestao || isApoio) && !podeVerOutros;
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 p-4 border-b border-gray-100 bg-gray-50/50">
@@ -180,7 +181,7 @@ const CalendarFilters = ({
                             {user.nome || user.full_name}
                         </SelectItem>
                     ))}
-                    {!isColaborador && !isGestao && !isApoio && usersOrdenados.length > 0 && (
+                    {(!isColaborador || podeVerOutros) && (!isGestao || podeVerOutros) && (!isApoio || podeVerOutros) && usersOrdenados.length > 0 && (
                       <SelectItem value="all">⚠️ Todos os Usuários (pode ser lento)</SelectItem>
                     )}
                 </SelectContent>
@@ -198,7 +199,7 @@ const CalendarFilters = ({
                         ))}
                     </SelectContent>
                 </Select>
-                {(filters.discipline !== 'all' || filters.user !== '') && !isGestao && !isColaborador && !isApoio && (
+                {(filters.discipline !== 'all' || filters.user !== '') && ((!isGestao && !isColaborador && !isApoio) || podeVerOutros) && (
                     <Button variant="ghost" size="sm" onClick={onClearFilters} className="text-red-500 hover:text-red-600">
                         <Trash2 className="w-4 h-4 mr-2" />
                         Limpar Filtros
@@ -1391,9 +1392,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   // **MODIFICADO**: Verificar se é apoio
   const isApoio = perfilAtual === 'apoio';
   
-  // **MODIFICADO**: Se for gestão OU apoio, já inicia com o próprio email selecionado
+  // **MODIFICADO**: Se for gestão OU apoio (sem permissão especial), já inicia com o próprio email selecionado
   const [filters, setFilters] = useState({ 
-    user: '', // Será definido no useEffect se for gestão ou apoio
+    user: '', // Será definido no useEffect se for gestão ou apoio sem permissão
     discipline: 'all' 
   });
   
@@ -1410,14 +1411,17 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   const hasSelectedUser = !!filters.user;
   const isViewingAllUsers = filters.user === 'all';
 
-  // **MODIFICADO**: useEffect para auto-selecionar usuário se for gestão, colaborador OU apoio
+  // **MODIFICADO**: useEffect para auto-selecionar usuário se for gestão, colaborador OU apoio (sem permissão especial)
   useEffect(() => {
-    if ((isGestao || isColaborador || isApoio) && user?.email && !filters.user) {
+    // Verifica se tem permissão especial para ver outros calendários
+    const podeVerOutros = userProfile?.pode_visualizar_outros_calendarios === true;
+
+    if ((isGestao || isColaborador || isApoio) && !podeVerOutros && user?.email && !filters.user) {
       const tipoUsuario = isGestao ? 'gestão' : isColaborador ? 'colaborador' : 'apoio';
-      console.log(`🔒 Perfil ${tipoUsuario} detectado - auto-selecionando próprio usuário: ${user.email}`);
+      console.log(`🔒 Perfil ${tipoUsuario} detectado (sem permissão especial) - auto-selecionando próprio usuário: ${user.email}`);
       setFilters(prev => ({ ...prev, user: user.email }));
     }
-  }, [isGestao, isColaborador, isApoio, user?.email, filters.user]);
+  }, [isGestao, isColaborador, isApoio, userProfile?.pode_visualizar_outros_calendarios, user?.email, filters.user]);
 
   const executorMap = useMemo(() => {
     return usuarios.reduce((acc, u) => {
@@ -2040,8 +2044,8 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   }, [currentDate, viewMode]);
 
   const handleClearFilters = () => {
-    // **MODIFICADO**: Gestão, Colaboradores e APOIO não podem limpar o filtro de usuário
-    if (isGestao || isColaborador || isApoio) {
+    // **MODIFICADO**: Gestão, Colaboradores e APOIO (sem permissão especial) não podem limpar o filtro de usuário
+    if ((isGestao || isColaborador || isApoio) && !podeVisualizarOutros) {
       const tipoUsuario = isGestao ? 'gestão' : isColaborador ? 'colaborador' : 'apoio';
       console.log(`🔒 Perfil ${tipoUsuario} não pode limpar filtro de usuário`);
       setFilters(prev => ({ ...prev, discipline: 'all' })); // Só limpa disciplina
@@ -2177,8 +2181,8 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           onViewModeChange={setViewMode}
           filters={filters}
           onFilterChange={(key, value) => {
-            // **MODIFICADO**: Gestão, Colaboradores e APOIO não podem mudar de usuário
-            if ((isGestao || isColaborador || isApoio) && key === 'user') {
+            // **MODIFICADO**: Gestão, Colaboradores e APOIO (sem permissão especial) não podem mudar de usuário
+            if ((isGestao || isColaborador || isApoio) && !podeVisualizarOutros && key === 'user') {
               const tipoUsuario = isGestao ? 'gestão' : isColaborador ? 'colaborador' : 'apoio';
               console.log(`🔒 Perfil ${tipoUsuario} não pode mudar de usuário`);
               return;

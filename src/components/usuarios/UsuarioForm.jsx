@@ -1,4 +1,4 @@
-import { useState, useContext } from 'react';
+import React, { useState, useContext } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +18,8 @@ export default function UsuarioForm({ usuario, onSubmit, onCancel }) {
     telefone: usuario?.telefone || "",
     data_admissao: usuario?.data_admissao || "",
     status: usuario?.status || "ativo",
-    perfil: usuario?.perfil || "user" // Added 'perfil' field with default 'user'
+    perfil: usuario?.perfil || "user",
+    pode_visualizar_outros_calendarios: usuario?.pode_visualizar_outros_calendarios || false
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -198,6 +199,23 @@ export default function UsuarioForm({ usuario, onSubmit, onCancel }) {
                     <SelectItem value="inativo">Inativo</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Permissão especial para visualizar outros calendários */}
+              <div className="flex items-center space-x-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <input
+                  type="checkbox"
+                  id="pode_visualizar_outros_calendarios"
+                  checked={formData.pode_visualizar_outros_calendarios}
+                  onChange={(e) => handleInputChange("pode_visualizar_outros_calendarios", e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <Label htmlFor="pode_visualizar_outros_calendarios" className="cursor-pointer text-sm">
+                  Permitir visualizar calendários de outros usuários
+                  <p className="text-xs text-gray-600 font-normal mt-1">
+                    Libera acesso ao calendário de planejamento de todos os usuários, mesmo para colaboradores e gestão
+                  </p>
+                </Label>
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
