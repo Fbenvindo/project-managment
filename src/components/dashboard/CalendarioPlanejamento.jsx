@@ -179,10 +179,18 @@ const CalendarFilters = ({
                 <SelectContent>
                     {usersOrdenados
                       .filter(u => {
-                        // Se não tem permissão especial, só mostra usuários permitidos ou ele mesmo
-                        if ((isColaborador || isGestao || isApoio) && podeVerOutros) {
-                          return usuariosPermitidos.includes(u.email);
+                        // Se for colaborador, gestão ou apoio, filtra por permissões
+                        if (isColaborador || isGestao || isApoio) {
+                          // Sempre mostra o próprio usuário
+                          if (u.email === user?.email) return true;
+                          // Se tem usuários permitidos, mostra apenas esses
+                          if (podeVerOutros) {
+                            return usuariosPermitidos.includes(u.email);
+                          }
+                          // Sem permissões especiais, não mostra outros usuários
+                          return false;
                         }
+                        // Admin, líder, direção veem todos
                         return true;
                       })
                       .map(user => (
@@ -190,7 +198,7 @@ const CalendarFilters = ({
                             {user.nome || user.full_name}
                         </SelectItem>
                     ))}
-                    {(!isColaborador || podeVerOutros) && (!isGestao || podeVerOutros) && (!isApoio || podeVerOutros) && usersOrdenados.length > 0 && (
+                    {(!isColaborador && !isGestao && !isApoio) && usersOrdenados.length > 0 && (
                       <SelectItem value="all">⚠️ Todos os Usuários (pode ser lento)</SelectItem>
                     )}
                 </SelectContent>
