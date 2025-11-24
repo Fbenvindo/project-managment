@@ -149,7 +149,8 @@ const CalendarFilters = ({
   isColaborador,
   isViewingAllUsers,
   isGestao,
-  isApoio
+  isApoio,
+  podeVerOutros
 }) => {
   // **MODIFICADO**: Filtrar e ordenar apenas usuários com nome cadastrado
   const usersOrdenados = useMemo(() => {
@@ -163,7 +164,6 @@ const CalendarFilters = ({
   }, [users]);
 
   // **MODIFICADO**: Dropdown bloqueado para colaboradores, gestão e APOIO (sem permissão especial)
-  const podeVerOutros = userProfile?.pode_visualizar_outros_calendarios === true;
   const isDropdownDisabled = (isColaborador || isGestao || isApoio) && !podeVerOutros;
 
   return (
@@ -2183,6 +2183,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           filters={filters}
+          podeVerOutros={podeVisualizarOutros}
           onFilterChange={(key, value) => {
             // **MODIFICADO**: Gestão, Colaboradores e APOIO (sem permissão especial) não podem mudar de usuário
             if ((isGestao || isColaborador || isApoio) && !podeVisualizarOutros && key === 'user') {
