@@ -151,7 +151,8 @@ const CalendarFilters = ({
   isGestao,
   isApoio,
   podeVerOutros,
-  usuariosPermitidos
+  usuariosPermitidos,
+  currentUserEmail
 }) => {
   // **MODIFICADO**: Filtrar e ordenar apenas usuários com nome cadastrado
   const usersOrdenados = useMemo(() => {
@@ -182,7 +183,7 @@ const CalendarFilters = ({
                         // Se for colaborador, gestão ou apoio, filtra por permissões
                         if (isColaborador || isGestao || isApoio) {
                           // Sempre mostra o próprio usuário
-                          if (u.email === user?.email) return true;
+                          if (u.email === currentUserEmail) return true;
                           // Se tem usuários permitidos, mostra apenas esses
                           if (podeVerOutros) {
                             return usuariosPermitidos.includes(u.email);
@@ -193,9 +194,9 @@ const CalendarFilters = ({
                         // Admin, líder, direção veem todos
                         return true;
                       })
-                      .map(user => (
-                        <SelectItem key={user.id} value={user.email}>
-                            {user.nome || user.full_name}
+                      .map(userItem => (
+                        <SelectItem key={userItem.id} value={userItem.email}>
+                            {userItem.nome || userItem.full_name}
                         </SelectItem>
                     ))}
                     {(!isColaborador && !isGestao && !isApoio) && usersOrdenados.length > 0 && (
@@ -2206,6 +2207,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           onViewModeChange={setViewMode}
           filters={filters}
           podeVerOutros={podeVisualizarOutros}
+          currentUserEmail={user?.email}
           onFilterChange={(key, value) => {
             // **MODIFICADO**: Gestão, Colaboradores e APOIO (sem permissão especial) não podem mudar de usuário
             const usuariosPermitidos = userProfile?.usuarios_permitidos_visualizar || [];
