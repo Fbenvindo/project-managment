@@ -1391,6 +1391,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   
   // **MODIFICADO**: Verificar se é apoio
   const isApoio = perfilAtual === 'apoio';
+
+  // **NOVO**: Verificar se tem permissão especial para visualizar outros calendários
+  const podeVisualizarOutros = userProfile?.pode_visualizar_outros_calendarios === true;
   
   // **MODIFICADO**: Se for gestão OU apoio (sem permissão especial), já inicia com o próprio email selecionado
   const [filters, setFilters] = useState({ 
