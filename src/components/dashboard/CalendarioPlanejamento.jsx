@@ -1428,12 +1428,22 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
 
   // Debug log do userProfile
   console.log('👤 UserProfile no CalendarioPlanejamento:', {
+    user: user?.email,
     userProfile,
     usuarios_permitidos_visualizar: userProfile?.usuarios_permitidos_visualizar,
     usuariosPermitidos,
     podeVisualizarOutros,
+    perfilAtual,
+    isColaborador,
+    isGestao,
+    isApoio,
     updateKey
   });
+
+  // **CRÍTICO**: Se userProfile é null mas temos um usuário logado, alertar
+  if (!userProfile && user?.email) {
+    console.warn('⚠️ ATENÇÃO: userProfile está null, mas temos usuário logado. Isso pode indicar que o usuário não tem registro na entidade Usuario.');
+  }
   
   // **MODIFICADO**: Se for gestão OU apoio (sem permissão especial), já inicia com o próprio email selecionado
   const [filters, setFilters] = useState({ 

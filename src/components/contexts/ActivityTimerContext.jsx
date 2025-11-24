@@ -832,24 +832,32 @@ export const ActivityTimerProvider = ({ children }) => {
         
         const loadUserProfile = async () => {
             if (!user?.email) {
+                console.log("👤 [Contexto] Sem email de usuário, setando userProfile como null");
                 setUserProfile(null);
                 return;
             }
             
             try {
-                console.log("👤 [Contexto] Carregando perfil do usuário da entidade Usuario...");
+                console.log(`👤 [Contexto] Carregando perfil do usuário: ${user.email} (updateKey: ${updateKey})`);
                 const usuarios = await retryWithBackoff(() => Usuario.filter({ email: user.email }, null, 1), 3, 2000, 'loadUserProfile');
+                
+                console.log(`   Resultado da busca:`, usuarios);
+                
                 if (isMounted && usuarios && usuarios.length > 0) {
                     setUserProfile(usuarios[0]);
-                    console.log(`✅ Perfil carregado:`, {
+                    console.log(`✅ Perfil carregado com sucesso:`, {
+                        id: usuarios[0].id,
+                        email: usuarios[0].email,
                         perfil: usuarios[0].perfil,
-                        usuarios_permitidos_visualizar: usuarios[0].usuarios_permitidos_visualizar
+                        usuarios_permitidos_visualizar: usuarios[0].usuarios_permitidos_visualizar,
+                        tamanho_array: usuarios[0].usuarios_permitidos_visualizar?.length || 0
                     });
                 } else {
+                    console.warn(`⚠️ Nenhum perfil encontrado para ${user.email} na entidade Usuario`);
                     setUserProfile(null);
                 }
             } catch (error) {
-                console.warn('⚠️ Erro ao carregar perfil do usuário:', error);
+                console.error('❌ Erro ao carregar perfil do usuário:', error);
                 if (isMounted) {
                     setUserProfile(null);
                 }
