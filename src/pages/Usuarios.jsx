@@ -1,15 +1,17 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import { Usuario } from "@/entities/all";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Users } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
+import { ActivityTimerContext } from "../components/contexts/ActivityTimerContext";
 
 import UsuarioCard from "../components/usuarios/UsuarioCard";
 import UsuarioForm from "../components/usuarios/UsuarioForm";
 import UsuarioFilters from "../components/usuarios/UsuarioFilters";
 
 export default function Usuarios() {
+  const { triggerUpdate } = useContext(ActivityTimerContext);
   const [usuarios, setUsuarios] = useState([]);
   const [filteredUsuarios, setFilteredUsuarios] = useState([]);
   const [showForm, setShowForm] = useState(false);
@@ -69,20 +71,32 @@ export default function Usuarios() {
 
   const handleSubmit = async (data) => {
     console.log('💾 Salvando usuário com dados:', data);
+    console.log('   - usuarios_permitidos_visualizar:', data.usuarios_permitidos_visualizar);
 
-    if (editingUsuario) {
-      await Usuario.update(editingUsuario.id, data);
-      console.log('✅ Usuário atualizado:', editingUsuario.id);
-    } else {
-      await Usuario.create(data);
-      console.log('✅ Novo usuário criado');
+    try {
+      if (editingUsuario) {
+        await Usuario.update(editingUsuario.id, data);
+        console.log('✅ Usuário atualizado:', editingUsuario.id);
+      } else {
+        await Usuario.create(data);
+        console.log('✅ Novo usuário criado');
+      }
+
+      setShowForm(false);
+      setEditingUsuario(null);
+      await loadUsuarios();
+
+      // Trigger update no contexto para recarregar userProfile
+      if (triggerUpdate) {
+        console.log('🔄 Disparando atualização do contexto...');
+        triggerUpdate();
+      }
+
+      console.log('✅ Página de usuários recarregada com sucesso');
+    } catch (error) {
+      console.error('❌ Erro ao salvar usuário:', error);
+      alert('Erro ao salvar usuário. Verifique o console.');
     }
-
-    setShowForm(false);
-    setEditingUsuario(null);
-    await loadUsuarios();
-
-    console.log('🔄 Página de usuários recarregada');
   };
 
   const handleEdit = (usuario) => {
