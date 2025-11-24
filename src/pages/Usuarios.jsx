@@ -68,14 +68,21 @@ export default function Usuarios() {
   };
 
   const handleSubmit = async (data) => {
+    console.log('💾 Salvando usuário com dados:', data);
+
     if (editingUsuario) {
       await Usuario.update(editingUsuario.id, data);
+      console.log('✅ Usuário atualizado:', editingUsuario.id);
     } else {
       await Usuario.create(data);
+      console.log('✅ Novo usuário criado');
     }
+
     setShowForm(false);
     setEditingUsuario(null);
-    loadUsuarios();
+    await loadUsuarios();
+
+    console.log('🔄 Página de usuários recarregada');
   };
 
   const handleEdit = (usuario) => {

@@ -1425,6 +1425,15 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   // **MODIFICADO**: Verificar lista de usuários permitidos
   const usuariosPermitidos = userProfile?.usuarios_permitidos_visualizar || [];
   const podeVisualizarOutros = usuariosPermitidos.length > 0;
+
+  // Debug log do userProfile
+  console.log('👤 UserProfile no CalendarioPlanejamento:', {
+    userProfile,
+    usuarios_permitidos_visualizar: userProfile?.usuarios_permitidos_visualizar,
+    usuariosPermitidos,
+    podeVisualizarOutros,
+    updateKey
+  });
   
   // **MODIFICADO**: Se for gestão OU apoio (sem permissão especial), já inicia com o próprio email selecionado
   const [filters, setFilters] = useState({ 
