@@ -150,7 +150,8 @@ const CalendarFilters = ({
   isViewingAllUsers,
   isGestao,
   isApoio,
-  podeVerOutros
+  podeVerOutros,
+  usuariosPermitidos
 }) => {
   // **MODIFICADO**: Filtrar e ordenar apenas usuários com nome cadastrado
   const usersOrdenados = useMemo(() => {
@@ -176,7 +177,15 @@ const CalendarFilters = ({
                     <SelectValue placeholder="⚠️ Selecione um usuário" />
                 </SelectTrigger>
                 <SelectContent>
-                    {usersOrdenados.map(user => (
+                    {usersOrdenados
+                      .filter(u => {
+                        // Se não tem permissão especial, só mostra usuários permitidos ou ele mesmo
+                        if ((isColaborador || isGestao || isApoio) && podeVerOutros) {
+                          return usuariosPermitidos.includes(u.email);
+                        }
+                        return true;
+                      })
+                      .map(user => (
                         <SelectItem key={user.id} value={user.email}>
                             {user.nome || user.full_name}
                         </SelectItem>
@@ -1392,8 +1401,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   // **MODIFICADO**: Verificar se é apoio
   const isApoio = perfilAtual === 'apoio';
 
-  // **NOVO**: Verificar se tem permissão especial para visualizar outros calendários
-  const podeVisualizarOutros = userProfile?.pode_visualizar_outros_calendarios === true;
+  // **MODIFICADO**: Verificar lista de usuários permitidos
+  const usuariosPermitidos = userProfile?.usuarios_permitidos_visualizar || [];
+  const podeVisualizarOutros = usuariosPermitidos.length > 0;
   
   // **MODIFICADO**: Se for gestão OU apoio (sem permissão especial), já inicia com o próprio email selecionado
   const [filters, setFilters] = useState({ 
@@ -2199,7 +2209,8 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           isViewingAllUsers={isViewingAllUsers}
           isGestao={isGestao}
           isApoio={isApoio}
-        />
+          usuariosPermitidos={usuariosPermitidos}
+          />
         <DragDropContext onDragEnd={onDragEnd}>
           <CardContent className="p-0 flex-1">
               {renderContent()}

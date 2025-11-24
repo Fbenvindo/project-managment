@@ -1,9 +1,9 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Usuario } from "@/entities/all";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Users } from "lucide-react";
-import { AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 import UsuarioCard from "../components/usuarios/UsuarioCard";
 import UsuarioForm from "../components/usuarios/UsuarioForm";
@@ -140,14 +140,15 @@ export default function Usuarios() {
 
           <AnimatePresence>
             {showForm && (
-              <UsuarioForm
-                usuario={editingUsuario}
-                onSubmit={handleSubmit}
-                onCancel={() => {
-                  setShowForm(false);
-                  setEditingUsuario(null);
-                }}
-              />
+                <UsuarioForm
+                    usuario={editingUsuario}
+                    onSubmit={handleSubmit}
+                    onCancel={() => {
+                        setShowForm(false);
+                        setEditingUsuario(null);
+                    }}
+                    allUsers={usuarios}
+                />
             )}
           </AnimatePresence>
 

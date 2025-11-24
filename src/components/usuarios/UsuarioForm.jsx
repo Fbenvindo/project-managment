@@ -1,14 +1,14 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useMemo } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Save } from "lucide-react";
+import { X, Save, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 
-export default function UsuarioForm({ usuario, onSubmit, onCancel }) {
+export default function UsuarioForm({ usuario, onSubmit, onCancel, allUsers }) {
   const { user } = useContext(ActivityTimerContext);
   const [formData, setFormData] = useState({
     nome: usuario?.nome || "",
@@ -19,7 +19,7 @@ export default function UsuarioForm({ usuario, onSubmit, onCancel }) {
     data_admissao: usuario?.data_admissao || "",
     status: usuario?.status || "ativo",
     perfil: usuario?.perfil || "user",
-    pode_visualizar_outros_calendarios: usuario?.pode_visualizar_outros_calendarios || false
+    usuarios_permitidos_visualizar: usuario?.usuarios_permitidos_visualizar || []
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -66,6 +66,24 @@ export default function UsuarioForm({ usuario, onSubmit, onCancel }) {
   };
 
   const availableProfiles = getAvailableProfiles();
+
+  // Lista de usuários disponíveis para seleção (exceto o próprio usuário sendo editado)
+  const availableUsers = useMemo(() => {
+    return (allUsers || [])
+      .filter(u => u.email !== formData.email && u.nome)
+      .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
+  }, [allUsers, formData.email]);
+
+  // Alternar seleção de usuário permitido
+  const toggleUserPermission = (email) => {
+    setFormData(prev => {
+      const current = prev.usuarios_permitidos_visualizar || [];
+      const updated = current.includes(email)
+        ? current.filter(e => e !== email)
+        : [...current, email];
+      return { ...prev, usuarios_permitidos_visualizar: updated };
+    });
+  };
 
   return (
     <motion.div
@@ -201,21 +219,45 @@ export default function UsuarioForm({ usuario, onSubmit, onCancel }) {
                 </Select>
               </div>
 
-              {/* Permissão especial para visualizar outros calendários */}
-              <div className="flex items-center space-x-2 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                <input
-                  type="checkbox"
-                  id="pode_visualizar_outros_calendarios"
-                  checked={formData.pode_visualizar_outros_calendarios}
-                  onChange={(e) => handleInputChange("pode_visualizar_outros_calendarios", e.target.checked)}
-                  className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
-                />
-                <Label htmlFor="pode_visualizar_outros_calendarios" className="cursor-pointer text-sm">
-                  Permitir visualizar calendários de outros usuários
-                  <p className="text-xs text-gray-600 font-normal mt-1">
-                    Libera acesso ao calendário de planejamento de todos os usuários, mesmo para colaboradores e gestão
+              {/* Seleção de usuários permitidos */}
+              <div className="space-y-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-center gap-2">
+                  <Users className="w-4 h-4 text-blue-600" />
+                  <Label className="text-sm font-semibold text-blue-900">
+                    Usuários que este usuário pode visualizar no calendário
+                  </Label>
+                </div>
+                <p className="text-xs text-gray-600">
+                  Selecione os usuários cujos calendários este usuário poderá acessar
+                </p>
+                
+                {availableUsers.length > 0 ? (
+                  <div className="max-h-48 overflow-y-auto space-y-2 mt-3">
+                    {availableUsers.map(u => (
+                      <div key={u.email} className="flex items-center space-x-2 p-2 bg-white rounded hover:bg-gray-50">
+                        <input
+                          type="checkbox"
+                          id={`user-${u.email}`}
+                          checked={formData.usuarios_permitidos_visualizar?.includes(u.email) || false}
+                          onChange={() => toggleUserPermission(u.email)}
+                          className="w-4 h-4 text-blue-600 rounded focus:ring-blue-500"
+                        />
+                        <Label htmlFor={`user-${u.email}`} className="cursor-pointer text-sm flex-1">
+                          {u.nome}
+                          <span className="text-xs text-gray-500 ml-2">({u.email})</span>
+                        </Label>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-500 italic">Nenhum outro usuário disponível</p>
+                )}
+                
+                {formData.usuarios_permitidos_visualizar?.length > 0 && (
+                  <p className="text-xs text-blue-700 font-medium mt-2">
+                    ✓ {formData.usuarios_permitidos_visualizar.length} usuário(s) selecionado(s)
                   </p>
-                </Label>
+                )}
               </div>
 
               <div className="flex justify-end gap-3 pt-4">
