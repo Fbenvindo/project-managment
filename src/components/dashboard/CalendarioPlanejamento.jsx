@@ -311,9 +311,9 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   else if (plano.isQuickActivity || plano.is_quick_activity) {
     horasDoDia = tempoExecutado;
   }
-  // Para atividades concluídas, usar as horas alocadas para o dia (que agora contém o tempo real executado)
+  // Para atividades concluídas, usar o MAIOR entre executado e alocado (caso tenha passado do tempo)
   else if (plano.status === 'concluido') {
-    horasDoDia = horasAlocadasDia;
+    horasDoDia = Math.max(tempoExecutado, horasAlocadasDia);
   }
   // Para atividades que têm "Ajuda" no descritivo (atividades de ajuda a colaborador), usar tempo executado
   else if (plano.descritivo && plano.descritivo.includes('Ajuda') && tempoExecutado > 0) {
@@ -813,9 +813,9 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
       else if (atividade.isQuickActivity || atividade.is_quick_activity) {
         soma += tempoExecutado;
       }
-      // Para atividades concluídas, usar as horas alocadas para o dia (que contém o tempo real)
+      // Para atividades concluídas, usar o MAIOR entre executado e alocado
       else if (atividade.status === 'concluido') {
-        soma += horasAlocadasDia;
+        soma += Math.max(tempoExecutado, horasAlocadasDia);
       }
       // Para atividades de ajuda a colaborador, usar tempo executado
       else if (atividade.descritivo && atividade.descritivo.includes('Ajuda') && tempoExecutado > 0) {
