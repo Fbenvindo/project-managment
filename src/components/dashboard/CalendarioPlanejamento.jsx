@@ -1983,30 +1983,50 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     filteredPlanejamentos.forEach(plano => {
         processedPlanIds.add(plano.id);
         
-        // Em vez de iterar sobre o intervalo de datas, vamos iterar sobre as chaves de 'horas_por_dia'.
-        // Isso garante que a atividade só aparecerá nos dias em que TEM horas alocadas.
-        if (plano.horas_por_dia && typeof plano.horas_por_dia === 'object') {
-            Object.keys(plano.horas_por_dia).forEach(dayKey => {
-                const horas = Number(plano.horas_por_dia[dayKey]) || 0;
-                
-                // Só adiciona ao calendário se houver horas planejadas para aquele dia
-                if (horas > 0) {
-                    if (!grouped[dayKey]) {
-                        grouped[dayKey] = [];
+        // Determinar em quais dias a atividade deve aparecer
+            // Para atividades concluídas: aparecer nos dias em que foi EXECUTADA (horas_executadas_por_dia)
+            // Para atividades não concluídas: aparecer nos dias PLANEJADOS (horas_por_dia)
+
+            const diasParaExibir = new Set();
+
+            // Se a atividade foi executada, adicionar os dias com execução real
+            if (plano.horas_executadas_por_dia && typeof plano.horas_executadas_por_dia === 'object') {
+                Object.keys(plano.horas_executadas_por_dia).forEach(dayKey => {
+                    const horasExec = Number(plano.horas_executadas_por_dia[dayKey]) || 0;
+                    if (horasExec > 0) {
+                        diasParaExibir.add(dayKey);
                     }
-                    
-                    if (!grouped[dayKey].some(item => item.id === plano.id)) {
-                        const planoParaExibir = {
-                            ...plano,
-                            // Detecta apenas atividades rápidas com flag explícita
-                            isQuickActivity: !!plano.is_quick_activity,
-                            isLegacyExecution: false, // Explicitly set to false for actual PlanejamentoAtividade
-                        };
-                        grouped[dayKey].push(planoParaExibir);
-                    }
+                });
+            }
+
+            // Se não foi concluída OU não tem execuções, usar dias planejados
+            if (plano.status !== 'concluido' || diasParaExibir.size === 0) {
+                if (plano.horas_por_dia && typeof plano.horas_por_dia === 'object') {
+                    Object.keys(plano.horas_por_dia).forEach(dayKey => {
+                        const horas = Number(plano.horas_por_dia[dayKey]) || 0;
+                        if (horas > 0) {
+                            diasParaExibir.add(dayKey);
+                        }
+                    });
+                }
+            }
+
+            // Adicionar a atividade nos dias determinados
+            diasParaExibir.forEach(dayKey => {
+                if (!grouped[dayKey]) {
+                    grouped[dayKey] = [];
+                }
+
+                if (!grouped[dayKey].some(item => item.id === plano.id)) {
+                    const planoParaExibir = {
+                        ...plano,
+                        // Detecta apenas atividades rápidas com flag explícita
+                        isQuickActivity: !!plano.is_quick_activity,
+                        isLegacyExecution: false, // Explicitly set to false for actual PlanejamentoAtividade
+                    };
+                    grouped[dayKey].push(planoParaExibir);
                 }
             });
-        }
     });
 
     // 2. Processar execuções muito antigas (sem planejamento associado ou não encontradas em planejamentos)
