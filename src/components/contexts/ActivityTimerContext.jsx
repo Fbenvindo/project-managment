@@ -129,16 +129,20 @@ export const ActivityTimerProvider = ({ children }) => {
         }
     }, []);
 
-    const updatePlanejamento = useCallback(async (planejamentoId, tempoAdicional, finalStatus, observacao = null) => {
+    const updatePlanejamento = useCallback(async (planejamentoId, tempoAdicional, finalStatus, observacao = null, diaExecucao = null) => {
         if (!planejamentoId) {
             console.warn('⚠️ [updatePlanejamento] planejamentoId é null/undefined, abortando');
             return;
         }
         
+        // Se não foi passado o dia de execução, usa o dia de hoje
+        const diaParaRegistrar = diaExecucao || format(new Date(), 'yyyy-MM-dd');
+        
         console.log(`\n🔧 [updatePlanejamento] INICIANDO ATUALIZAÇÃO`);
         console.log(`   Planejamento ID: ${planejamentoId}`);
         console.log(`   Tempo adicional: ${tempoAdicional?.toFixed(4)}h`);
         console.log(`   Status final: ${finalStatus}`);
+        console.log(`   Dia de execução: ${diaParaRegistrar}`);
         console.log(`   Observação: ${observacao || 'N/A'}`);
         
         try {
@@ -192,13 +196,25 @@ export const ActivityTimerProvider = ({ children }) => {
                 console.log(`   💬 Salvando observação no planejamento`);
             }
 
+            // Atualizar horas_por_dia com as horas REAIS executadas no dia
+            const horasPorDiaAtual = { ...(planejamento.horas_por_dia || {}) };
+            const horasJaRegistradasNoDia = Number(horasPorDiaAtual[diaParaRegistrar] || 0);
+            
+            // Para atividades normais, adicionar as horas executadas ao dia correto
+            // mantendo o maior valor entre o planejado e o executado real
+            if (!isAtividadeRapida) {
+                const novasHorasNoDia = horasJaRegistradasNoDia + tempoAdicional;
+                horasPorDiaAtual[diaParaRegistrar] = Math.round(novasHorasNoDia * 100) / 100;
+                updateData.horas_por_dia = horasPorDiaAtual;
+                console.log(`   📅 Atualizando horas_por_dia[${diaParaRegistrar}]: ${horasJaRegistradasNoDia.toFixed(2)}h -> ${novasHorasNoDia.toFixed(2)}h`);
+            }
+
             if (isAtividadeRapida) {
                 updateData.tempo_planejado = novoTempoExecutado;
                 updateData.status = finalStatus;
-                const diaDaAtividade = planejamento.inicio_planejado;
-                if (diaDaAtividade) {
-                  updateData.horas_por_dia = { [diaDaAtividade]: novoTempoExecutado };
-                }
+                // Para atividades rápidas, o dia é sempre o inicio_planejado
+                const diaDaAtividade = planejamento.inicio_planejado || diaParaRegistrar;
+                updateData.horas_por_dia = { [diaDaAtividade]: novoTempoExecutado };
                 console.log(`   ⚡ Atividade rápida - atualizando tempo_planejado=${novoTempoExecutado.toFixed(4)}h e horas_por_dia`);
             } else {
                 if (finalStatus === 'concluido') {
@@ -208,12 +224,11 @@ export const ActivityTimerProvider = ({ children }) => {
                     console.log(`   🏁 Finalizando atividade normal...`);
                     console.log(`      Tempo planejado original: ${planejamento.tempo_planejado}h`);
                     
-                    const horasPorDiaOriginal = planejamento.horas_por_dia || {};
-                    const totalHorasOriginais = Object.values(horasPorDiaOriginal).reduce((sum, h) => sum + h, 0);
+                    const totalHorasOriginais = Number(planejamento.tempo_planejado) || 0;
                     const horasLiberadas = totalHorasOriginais - novoTempoExecutado;
                     
                     console.log(`      ✅ Horas liberadas na agenda: ${horasLiberadas.toFixed(2)}h`);
-                    console.log(`      📊 Mantendo distribuição original de horas_por_dia`);
+                    console.log(`      📊 horas_por_dia atualizado com execução real`);
 
                     if (horasLiberadas > 0.1 && planejamento.executor_principal) {
                         const dataFinalizacao = format(new Date(), 'yyyy-MM-dd');
