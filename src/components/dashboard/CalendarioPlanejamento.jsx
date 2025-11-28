@@ -307,6 +307,10 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   if (plano.isLegacyExecution) {
     horasDoDia = tempoExecutado;
   }
+  // Se for atividade rápida (is_quick_activity), usar tempo_executado pois ele é atualizado dinamicamente
+  else if (plano.isQuickActivity || plano.is_quick_activity) {
+    horasDoDia = tempoExecutado > 0 ? tempoExecutado : horasAlocadasDia;
+  }
   // Para todas as outras atividades, usar a alocação do dia específico
   else {
     horasDoDia = horasAlocadasDia;
@@ -790,14 +794,19 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
 
     let soma = 0;
     atividades.forEach((atividade) => {
-      // SEMPRE usar as horas alocadas para o dia específico (horas_por_dia)
       const horasAlocadasDia = Number(atividade.horas_por_dia?.[dayKey]) || 0;
+      const tempoExecutado = Number(atividade.tempo_executado) || 0;
       
-      // Para atividades legadas ou rápidas sem distribuição, usar tempo_executado
+      // Para atividades legadas, usar tempo_executado
       if (atividade.isLegacyExecution) {
-        soma += Number(atividade.tempo_executado) || 0;
-      } else {
-        // Usar a alocação do dia específico
+        soma += tempoExecutado;
+      }
+      // Para atividades rápidas, usar tempo_executado (atualizado dinamicamente)
+      else if (atividade.isQuickActivity || atividade.is_quick_activity) {
+        soma += tempoExecutado > 0 ? tempoExecutado : horasAlocadasDia;
+      }
+      // Para outras atividades, usar a alocação do dia específico
+      else {
         soma += horasAlocadasDia;
       }
     });
