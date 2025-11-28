@@ -813,13 +813,13 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
       if (atividade.isLegacyExecution) {
         soma += tempoExecutado;
       }
-      // Para atividades rápidas, SEMPRE usar tempo_executado
+      // Para atividades rápidas, usar horas executadas no dia específico
       else if (atividade.isQuickActivity || atividade.is_quick_activity) {
-        soma += tempoExecutado;
+        soma += horasExecutadasNoDia > 0 ? horasExecutadasNoDia : tempoExecutado;
       }
-      // Para atividades concluídas, usar o MAIOR entre executado no dia e alocado
+      // Para atividades concluídas, usar horas executadas no dia (se disponível) ou alocado
       else if (atividade.status === 'concluido') {
-        soma += Math.max(horasExecutadasNoDia, horasAlocadasDia);
+        soma += horasExecutadasNoDia > 0 ? horasExecutadasNoDia : horasAlocadasDia;
       }
       // Para atividades de ajuda a colaborador, usar horas executadas no dia
       else if (atividade.descritivo && atividade.descritivo.includes('Ajuda') && horasExecutadasNoDia > 0) {
