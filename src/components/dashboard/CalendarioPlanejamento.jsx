@@ -303,6 +303,9 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   let horasDoDia;
   const horasAlocadasDia = Number(plano.horas_por_dia?.[dayKey]) || 0;
 
+  // Buscar horas executadas NESTE DIA específico (das execuções vinculadas)
+  const horasExecutadasNoDia = Number(plano.horas_executadas_por_dia?.[dayKey]) || 0;
+
   // Se for atividade legada (execução antiga), usar tempo_executado
   if (plano.isLegacyExecution) {
     horasDoDia = tempoExecutado;
@@ -311,13 +314,13 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   else if (plano.isQuickActivity || plano.is_quick_activity) {
     horasDoDia = tempoExecutado;
   }
-  // Para atividades concluídas, usar o MAIOR entre executado e alocado (caso tenha passado do tempo)
+  // Para atividades concluídas, usar o MAIOR entre executado no dia e alocado
   else if (plano.status === 'concluido') {
-    horasDoDia = Math.max(tempoExecutado, horasAlocadasDia);
+    horasDoDia = Math.max(horasExecutadasNoDia, horasAlocadasDia);
   }
-  // Para atividades que têm "Ajuda" no descritivo (atividades de ajuda a colaborador), usar tempo executado
-  else if (plano.descritivo && plano.descritivo.includes('Ajuda') && tempoExecutado > 0) {
-    horasDoDia = tempoExecutado;
+  // Para atividades que têm "Ajuda" no descritivo (atividades de ajuda a colaborador), usar horas executadas no dia
+  else if (plano.descritivo && plano.descritivo.includes('Ajuda') && horasExecutadasNoDia > 0) {
+    horasDoDia = horasExecutadasNoDia;
   }
   // Para todas as outras atividades, usar a alocação do dia específico
   else {
