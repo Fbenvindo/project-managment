@@ -324,7 +324,8 @@ export const ActivityTimerProvider = ({ children }) => {
                     );
                     
                     if (exec.planejamento_id) {
-                        await updatePlanejamento(exec.planejamento_id, tempoDecorrido, 'pausado', 'Pausado automaticamente - execução duplicada detectada');
+                        const diaExec = exec.inicio ? format(parseISO(exec.inicio), 'yyyy-MM-dd') : format(agora, 'yyyy-MM-dd');
+                        await updatePlanejamento(exec.planejamento_id, tempoDecorrido, 'pausado', 'Pausado automaticamente - execução duplicada detectada', diaExec);
                     }
                 }
                 
@@ -544,7 +545,9 @@ export const ActivityTimerProvider = ({ children }) => {
 
             if (execution.planejamento_id) {
                 console.log(`🔄 [pauseExecution] Atualizando planejamento ${execution.planejamento_id}...`);
-                await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'pausado', observacao);
+                // Usar a data de início da execução para registrar as horas no dia correto
+                const diaExecucao = execution.inicio ? format(parseISO(execution.inicio), 'yyyy-MM-dd') : format(agora, 'yyyy-MM-dd');
+                await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'pausado', observacao, diaExecucao);
                 console.log('✅ [pauseExecution] Planejamento atualizado');
             }
             
@@ -657,7 +660,9 @@ export const ActivityTimerProvider = ({ children }) => {
 
             if (execution.planejamento_id) {
                 console.log(`\n🔄 [finishExecution] ATUALIZANDO PLANEJAMENTO ${execution.planejamento_id}...`);
-                await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'concluido', observacao);
+                // Usar a data de início da execução para registrar as horas no dia correto
+                const diaExecucao = execution.inicio ? format(parseISO(execution.inicio), 'yyyy-MM-dd') : format(agora, 'yyyy-MM-dd');
+                await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'concluido', observacao, diaExecucao);
                 console.log('✅ [finishExecution] Planejamento atualizado\n');
                 
                 if (playlist.includes(execution.planejamento_id)) {
