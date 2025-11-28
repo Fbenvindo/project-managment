@@ -817,6 +817,10 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
       else if (atividade.status === 'concluido' && tempoExecutado > 0 && horasAlocadasDia === 0) {
         soma += tempoExecutado;
       }
+      // Para atividades de ajuda a colaborador, usar tempo executado
+      else if (atividade.descritivo && atividade.descritivo.includes('Ajuda') && tempoExecutado > 0) {
+        soma += tempoExecutado;
+      }
       // Para outras atividades, usar a alocação do dia específico
       else {
         soma += horasAlocadasDia;
