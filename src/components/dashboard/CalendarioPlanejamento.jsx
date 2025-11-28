@@ -1568,7 +1568,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           setEnrichedData([]);
           return;
       }
-      
+
       if (planejamentos.length === 0 && execucoes.length === 0 && !isCalendarLoading) { // Only clear if not currently loading fresh data
         setEnrichedData([]);
         return;
@@ -1578,24 +1578,44 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         const empreendimentoIds = [...new Set(planejamentos.map(p => p.empreendimento_id).filter(Boolean))];
         const atividadeIds = [...new Set(planejamentos.map(p => p.atividade_id).filter(Boolean))];
         const documentoIds = [...new Set(planejamentos.map(p => p.documento_id).filter(Boolean))];
+        const planejamentoIds = planejamentos.map(p => p.id).filter(Boolean);
 
-        const [empreendimentosData, atividadesData, documentosData] = await Promise.all([
+        const [empreendimentosData, atividadesData, documentosData, execucoesData] = await Promise.all([
           empreendimentoIds.length > 0 ? retryWithBackoff(() => Empreendimento.filter({ id: { $in: empreendimentoIds } }), 3, 1000, 'enrich.empreendimentos') : Promise.resolve([]),
           atividadeIds.length > 0 ? retryWithBackoff(() => Atividade.filter({ id: { $in: atividadeIds } }), 3, 1000, 'enrich.atividades') : Promise.resolve([]),
-          documentoIds.length > 0 ? retryWithBackoff(() => Documento.filter({ id: { $in: documentoIds } }), 3, 1000, 'enrich.documentos') : Promise.resolve([])
+          documentoIds.length > 0 ? retryWithBackoff(() => Documento.filter({ id: { $in: documentoIds } }), 3, 1000, 'enrich.documentos') : Promise.resolve([]),
+          planejamentoIds.length > 0 ? retryWithBackoff(() => Execucao.filter({ planejamento_id: { $in: planejamentoIds } }), 3, 1000, 'enrich.execucoes') : Promise.resolve([])
         ]);
 
         const empreendimentosMap = new Map((empreendimentosData || []).map(item => [item.id, item]));
         const atividadesMap = new Map((atividadesData || []).map(item => [item.id, item]));
         const documentosMap = new Map((documentosData || []).map(item => [item.id, item]));
 
+        // Calcular horas executadas por dia para cada planejamento
+        const horasExecutadasPorPlanejamento = {};
+        (execucoesData || []).forEach(exec => {
+          if (!exec.planejamento_id || !exec.inicio) return;
+
+          // Usar a data de início da execução
+          const diaExec = format(parseLocalDate(exec.inicio), 'yyyy-MM-dd');
+          const tempoExec = Number(exec.tempo_total) || 0;
+
+          if (!horasExecutadasPorPlanejamento[exec.planejamento_id]) {
+            horasExecutadasPorPlanejamento[exec.planejamento_id] = {};
+          }
+
+          horasExecutadasPorPlanejamento[exec.planejamento_id][diaExec] = 
+            (horasExecutadasPorPlanejamento[exec.planejamento_id][diaExec] || 0) + tempoExec;
+        });
+
         const finalData = planejamentos.map(plano => ({
           ...plano,
           empreendimento: empreendimentosMap.get(plano.empreendimento_id) || null,
           atividade: atividadesMap.get(plano.atividade_id) || null,
           documento: documentosMap.get(plano.documento_id) || null,
+          horas_executadas_por_dia: horasExecutadasPorPlanejamento[plano.id] || {},
         }));
-        
+
         setEnrichedData(finalData);
 
       } catch (error) {
