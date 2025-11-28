@@ -196,18 +196,9 @@ export const ActivityTimerProvider = ({ children }) => {
                 console.log(`   💬 Salvando observação no planejamento`);
             }
 
-            // Atualizar horas_por_dia com as horas REAIS executadas no dia
-            const horasPorDiaAtual = { ...(planejamento.horas_por_dia || {}) };
-            const horasJaRegistradasNoDia = Number(horasPorDiaAtual[diaParaRegistrar] || 0);
-            
-            // Para atividades normais, adicionar as horas executadas ao dia correto
-            // mantendo o maior valor entre o planejado e o executado real
-            if (!isAtividadeRapida) {
-                const novasHorasNoDia = horasJaRegistradasNoDia + tempoAdicional;
-                horasPorDiaAtual[diaParaRegistrar] = Math.round(novasHorasNoDia * 100) / 100;
-                updateData.horas_por_dia = horasPorDiaAtual;
-                console.log(`   📅 Atualizando horas_por_dia[${diaParaRegistrar}]: ${horasJaRegistradasNoDia.toFixed(2)}h -> ${novasHorasNoDia.toFixed(2)}h`);
-            }
+            // NÃO atualizar horas_por_dia aqui - manter o planejamento original
+            // As horas executadas são rastreadas via tempo_executado e as execuções individuais
+            // O calendário deve buscar as execuções para calcular horas reais por dia
 
             if (isAtividadeRapida) {
                 updateData.tempo_planejado = novoTempoExecutado;
