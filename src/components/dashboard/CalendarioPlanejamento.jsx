@@ -315,6 +315,10 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   else if (plano.status === 'concluido' && tempoExecutado > 0 && horasAlocadasDia === 0) {
     horasDoDia = tempoExecutado;
   }
+  // Para atividades que têm "Ajuda" no descritivo (atividades de ajuda a colaborador), usar tempo executado
+  else if (plano.descritivo && plano.descritivo.includes('Ajuda') && tempoExecutado > 0) {
+    horasDoDia = tempoExecutado;
+  }
   // Para todas as outras atividades, usar a alocação do dia específico
   else {
     horasDoDia = horasAlocadasDia;
