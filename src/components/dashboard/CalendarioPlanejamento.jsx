@@ -310,15 +310,15 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   if (plano.isLegacyExecution) {
     horasDoDia = tempoExecutado;
   }
-  // Se for atividade rápida (is_quick_activity), SEMPRE usar tempo_executado
+  // Se for atividade rápida (is_quick_activity), usar horas executadas no dia específico
   else if (plano.isQuickActivity || plano.is_quick_activity) {
-    horasDoDia = tempoExecutado;
+    horasDoDia = horasExecutadasNoDia > 0 ? horasExecutadasNoDia : tempoExecutado;
   }
-  // Para atividades concluídas, usar o MAIOR entre executado no dia e alocado
+  // Para atividades concluídas, usar horas executadas no dia (se disponível) ou alocado
   else if (plano.status === 'concluido') {
-    horasDoDia = Math.max(horasExecutadasNoDia, horasAlocadasDia);
+    horasDoDia = horasExecutadasNoDia > 0 ? horasExecutadasNoDia : horasAlocadasDia;
   }
-  // Para atividades que têm "Ajuda" no descritivo (atividades de ajuda a colaborador), usar horas executadas no dia
+  // Para atividades que têm "Ajuda" no descritivo, usar horas executadas no dia
   else if (plano.descritivo && plano.descritivo.includes('Ajuda') && horasExecutadasNoDia > 0) {
     horasDoDia = horasExecutadasNoDia;
   }
