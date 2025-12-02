@@ -819,23 +819,24 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
       const horasAlocadasDia = Number(atividade.horas_por_dia?.[dayKey]) || 0;
       const tempoExecutado = Number(atividade.tempo_executado) || 0;
       const horasExecutadasNoDia = Number(atividade.horas_executadas_por_dia?.[dayKey]) || 0;
+      const isQuickActivity = atividade.isQuickActivity || atividade.is_quick_activity;
       
       // Para atividades legadas, usar tempo_executado
       if (atividade.isLegacyExecution) {
         soma += tempoExecutado;
       }
-      // Para atividades rápidas ou concluídas, usar horas executadas no dia OU tempo_executado se não há horas por dia
-      else if (atividade.isQuickActivity || atividade.is_quick_activity || atividade.status === 'concluido') {
-        // Se tem horas executadas neste dia específico, usar
+      // Para atividades rápidas: SEMPRE usar horas executadas no dia (é o único dado confiável)
+      else if (isQuickActivity) {
+        // Atividades rápidas só aparecem onde foram executadas
+        soma += horasExecutadasNoDia > 0 ? horasExecutadasNoDia : tempoExecutado;
+      }
+      // Para atividades concluídas normais: priorizar horas executadas no dia
+      else if (atividade.status === 'concluido') {
         if (horasExecutadasNoDia > 0) {
           soma += horasExecutadasNoDia;
-        }
-        // Se tem horas alocadas para este dia, usar
-        else if (horasAlocadasDia > 0) {
+        } else if (horasAlocadasDia > 0) {
           soma += horasAlocadasDia;
-        }
-        // Se não tem nenhum dos dois mas está aparecendo neste dia (atividade rápida sem distribuição), usar tempo_executado
-        else if (atividade.isQuickActivity || atividade.is_quick_activity) {
+        } else {
           soma += tempoExecutado;
         }
       }
