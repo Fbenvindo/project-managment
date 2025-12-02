@@ -2002,30 +2002,47 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         processedPlanIds.add(plano.id);
         
         // Determinar em quais dias a atividade deve aparecer
-            // Para atividades concluídas: aparecer nos dias em que foi EXECUTADA (horas_executadas_por_dia)
+            // Para atividades rápidas concluídas: aparecer APENAS nos dias em que foi EXECUTADA (horas_executadas_por_dia)
+            // Para atividades concluídas normais: aparecer nos dias em que foi EXECUTADA (horas_executadas_por_dia)
             // Para atividades não concluídas: aparecer nos dias PLANEJADOS (horas_por_dia)
 
             const diasParaExibir = new Set();
+            const isQuickActivity = plano.is_quick_activity || plano.isQuickActivity;
 
-            // Se a atividade foi executada, adicionar os dias com execução real
-            if (plano.horas_executadas_por_dia && typeof plano.horas_executadas_por_dia === 'object') {
-                Object.keys(plano.horas_executadas_por_dia).forEach(dayKey => {
-                    const horasExec = Number(plano.horas_executadas_por_dia[dayKey]) || 0;
-                    if (horasExec > 0) {
-                        diasParaExibir.add(dayKey);
-                    }
-                });
-            }
-
-            // Se não foi concluída OU não tem execuções, usar dias planejados
-            if (plano.status !== 'concluido' || diasParaExibir.size === 0) {
-                if (plano.horas_por_dia && typeof plano.horas_por_dia === 'object') {
-                    Object.keys(plano.horas_por_dia).forEach(dayKey => {
-                        const horas = Number(plano.horas_por_dia[dayKey]) || 0;
-                        if (horas > 0) {
+            // Para atividades rápidas concluídas, usar APENAS horas_executadas_por_dia
+            if (isQuickActivity && plano.status === 'concluido') {
+                if (plano.horas_executadas_por_dia && typeof plano.horas_executadas_por_dia === 'object') {
+                    Object.keys(plano.horas_executadas_por_dia).forEach(dayKey => {
+                        const horasExec = Number(plano.horas_executadas_por_dia[dayKey]) || 0;
+                        if (horasExec > 0) {
                             diasParaExibir.add(dayKey);
                         }
                     });
+                }
+                // Se não tem horas_executadas_por_dia mas está concluída, não adicionar em nenhum dia do horas_por_dia
+                // (pois seria mostrar em dias incorretos)
+            } else {
+                // Para outras atividades, usar a lógica original
+                // Se a atividade foi executada, adicionar os dias com execução real
+                if (plano.horas_executadas_por_dia && typeof plano.horas_executadas_por_dia === 'object') {
+                    Object.keys(plano.horas_executadas_por_dia).forEach(dayKey => {
+                        const horasExec = Number(plano.horas_executadas_por_dia[dayKey]) || 0;
+                        if (horasExec > 0) {
+                            diasParaExibir.add(dayKey);
+                        }
+                    });
+                }
+
+                // Se não foi concluída OU não tem execuções, usar dias planejados
+                if (plano.status !== 'concluido' || diasParaExibir.size === 0) {
+                    if (plano.horas_por_dia && typeof plano.horas_por_dia === 'object') {
+                        Object.keys(plano.horas_por_dia).forEach(dayKey => {
+                            const horas = Number(plano.horas_por_dia[dayKey]) || 0;
+                            if (horas > 0) {
+                                diasParaExibir.add(dayKey);
+                            }
+                        });
+                    }
                 }
             }
 
