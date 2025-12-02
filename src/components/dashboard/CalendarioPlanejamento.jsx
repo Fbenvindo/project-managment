@@ -2015,7 +2015,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
                 if (plano.horas_executadas_por_dia && typeof plano.horas_executadas_por_dia === 'object') {
                     Object.keys(plano.horas_executadas_por_dia).forEach(dayKey => {
                         const horasExec = Number(plano.horas_executadas_por_dia[dayKey]) || 0;
-                        if (horasExec > 0) {
+                        // Só mostrar no dia se houver horas significativas (> 0.01h = 36 segundos)
+                        // Isso evita mostrar atividades em dias onde só houve execuções muito curtas
+                        if (horasExec > 0.01) {
                             diasParaExibir.add(dayKey);
                         }
                     });
