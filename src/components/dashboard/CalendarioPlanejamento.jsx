@@ -2002,15 +2002,16 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         processedPlanIds.add(plano.id);
         
         // Determinar em quais dias a atividade deve aparecer
-            // Para atividades rápidas concluídas: aparecer APENAS nos dias em que foi EXECUTADA (horas_executadas_por_dia)
-            // Para atividades concluídas normais: aparecer nos dias em que foi EXECUTADA (horas_executadas_por_dia)
+            // Para atividades rápidas: aparecer APENAS nos dias em que foi EXECUTADA (horas_executadas_por_dia)
+            // Para atividades concluídas: aparecer nos dias em que foi EXECUTADA (horas_executadas_por_dia)
             // Para atividades não concluídas: aparecer nos dias PLANEJADOS (horas_por_dia)
 
             const diasParaExibir = new Set();
             const isQuickActivity = plano.is_quick_activity || plano.isQuickActivity;
 
-            // Para atividades rápidas concluídas, usar APENAS horas_executadas_por_dia
-            if (isQuickActivity && plano.status === 'concluido') {
+            // Para atividades rápidas (concluídas ou não), usar APENAS horas_executadas_por_dia
+            // Atividades rápidas não têm planejamento de dias - aparecem onde foram executadas
+            if (isQuickActivity) {
                 if (plano.horas_executadas_por_dia && typeof plano.horas_executadas_por_dia === 'object') {
                     Object.keys(plano.horas_executadas_por_dia).forEach(dayKey => {
                         const horasExec = Number(plano.horas_executadas_por_dia[dayKey]) || 0;
@@ -2019,10 +2020,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
                         }
                     });
                 }
-                // Se não tem horas_executadas_por_dia mas está concluída, não adicionar em nenhum dia do horas_por_dia
-                // (pois seria mostrar em dias incorretos)
+                // NÃO usar horas_por_dia para atividades rápidas - esse campo pode conter dados incorretos
             } else {
-                // Para outras atividades, usar a lógica original
+                // Para atividades normais (não rápidas)
                 // Se a atividade foi executada, adicionar os dias com execução real
                 if (plano.horas_executadas_por_dia && typeof plano.horas_executadas_por_dia === 'object') {
                     Object.keys(plano.horas_executadas_por_dia).forEach(dayKey => {
