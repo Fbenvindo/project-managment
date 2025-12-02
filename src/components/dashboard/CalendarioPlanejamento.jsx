@@ -305,26 +305,27 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
 
   // Buscar horas executadas NESTE DIA específico (das execuções vinculadas)
   const horasExecutadasNoDia = Number(plano.horas_executadas_por_dia?.[dayKey]) || 0;
+  const isQuickActivity = plano.isQuickActivity || plano.is_quick_activity;
 
   // Se for atividade legada (execução antiga), usar tempo_executado
   if (plano.isLegacyExecution) {
     horasDoDia = tempoExecutado;
   }
-  // Para atividades rápidas ou concluídas
-  else if (plano.isQuickActivity || plano.is_quick_activity || plano.status === 'concluido') {
-    // Se tem horas executadas neste dia específico, usar
+  // Para atividades rápidas: SEMPRE usar horas executadas (é o único dado confiável)
+  else if (isQuickActivity) {
+    horasDoDia = horasExecutadasNoDia > 0 ? horasExecutadasNoDia : tempoExecutado;
+  }
+  // Para atividades concluídas: priorizar horas executadas no dia
+  else if (plano.status === 'concluido') {
+    // Se tem horas executadas neste dia, usar elas
     if (horasExecutadasNoDia > 0) {
       horasDoDia = horasExecutadasNoDia;
     }
-    // Se tem horas alocadas para este dia, usar
+    // Se não tem execução neste dia mas tem alocação, usar alocação
     else if (horasAlocadasDia > 0) {
       horasDoDia = horasAlocadasDia;
     }
-    // Se não tem nenhum dos dois mas é atividade rápida, usar tempo_executado
-    else if (plano.isQuickActivity || plano.is_quick_activity) {
-      horasDoDia = tempoExecutado;
-    }
-    // Fallback para atividades concluídas sem dados de horas por dia
+    // Fallback: usar tempo executado total
     else {
       horasDoDia = tempoExecutado;
     }
