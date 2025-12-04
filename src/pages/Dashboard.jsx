@@ -229,6 +229,12 @@ export default function Dashboard() {
                 usuarios={allUsers}
               />
             )}
+
+            {viewMode === 'alocacao' && !isColaboradorView && (
+              <AlocacaoEquipeTab
+                usuarios={allUsers}
+              />
+            )}
           </div>
 
           <div className="grid lg:grid-cols-3 gap-8">
