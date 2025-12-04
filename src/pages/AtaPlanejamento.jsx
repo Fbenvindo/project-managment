@@ -36,7 +36,7 @@ const printStyles = `
 @media print {
   @page {
     size: A4 landscape;
-    margin: 5mm;
+    margin: 3mm;
   }
 
   * {
@@ -48,10 +48,10 @@ const printStyles = `
   html, body {
     margin: 0 !important;
     padding: 0 !important;
-    width: 100% !important;
+    width: 277mm !important;
     height: auto !important;
     overflow: visible !important;
-    font-size: 8px !important;
+    font-size: 6px !important;
   }
 
   .print\\:hidden, .no-print {
@@ -66,7 +66,7 @@ const printStyles = `
   main {
     margin: 0 !important;
     padding: 0 !important;
-    width: 100% !important;
+    width: 277mm !important;
     height: auto !important;
     overflow: visible !important;
     position: static !important;
@@ -75,6 +75,7 @@ const printStyles = `
   main > div {
     overflow: visible !important;
     height: auto !important;
+    width: 277mm !important;
   }
 
   /* Esconde botões flutuantes (playlist, timer, etc) */
@@ -87,7 +88,7 @@ const printStyles = `
     padding: 0 !important;
     margin: 0 !important;
     background: white !important;
-    width: 100% !important;
+    width: 277mm !important;
     height: auto !important;
     min-height: auto !important;
     display: block !important;
@@ -95,8 +96,8 @@ const printStyles = `
 
   /* Container da ATA na impressão */
   .max-w-\\[297mm\\] {
-    max-width: 100% !important;
-    width: 100% !important;
+    max-width: 277mm !important;
+    width: 277mm !important;
     height: auto !important;
     box-shadow: none !important;
     border: 1px solid black !important;
@@ -142,8 +143,8 @@ const printStyles = `
 
   /* Texto */
   .text-center { text-align: center !important; }
-  .text-sm { font-size: 8px !important; }
-  .text-xs { font-size: 7px !important; }
+  .text-sm { font-size: 6px !important; }
+  .text-xs { font-size: 5px !important; }
   .font-medium { font-weight: 500 !important; }
   .font-bold { font-weight: 700 !important; }
 
@@ -162,6 +163,7 @@ const printStyles = `
     border: none !important;
     background: transparent !important;
     padding: 0 !important;
+    font-size: 6px !important;
   }
 
   select {
@@ -175,12 +177,22 @@ const printStyles = `
   table {
     width: 100% !important;
     table-layout: fixed !important;
-    font-size: 7px !important;
+    font-size: 5px !important;
   }
 
   td, th {
-    padding: 2px !important;
+    padding: 1px !important;
     word-wrap: break-word !important;
+    font-size: 5px !important;
+  }
+
+  /* Cabeçalho da tabela */
+  .flex.bg-yellow-100 {
+    font-size: 5px !important;
+  }
+
+  .flex.bg-yellow-100 > div {
+    padding: 1px !important;
   }
 }
 `;
