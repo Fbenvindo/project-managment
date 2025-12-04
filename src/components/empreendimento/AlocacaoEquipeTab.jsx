@@ -140,45 +140,18 @@ export default function AlocacaoEquipeTab({
     }
   };
 
-  const handleOpenMembros = (equipe) => {
-    console.log('Abrindo modal de membros para:', equipe);
-    setSelectedEquipe(equipe);
-    setShowEquipeModal(false); // Fechar modal de gerenciar equipes
-    setShowMembrosModal(true);
-  };
-
-  const handleAddMembro = async (usuario) => {
-    if (!selectedEquipe?.id) {
-      alert('Nenhuma equipe selecionada.');
-      return;
-    }
+  const handleChangeEquipe = async (usuarioId, equipeId) => {
     try {
-      console.log('Adicionando membro:', usuario.id, 'à equipe:', selectedEquipe.id);
-      await retryWithBackoff(() => Usuario.update(usuario.id, { equipe_id: selectedEquipe.id }), 3, 1000, 'addMembro');
-      console.log('✅ Membro adicionado com sucesso');
-      // Recarregar dados
+      const novaEquipeId = equipeId === 'sem_equipe' ? null : equipeId;
+      await retryWithBackoff(() => Usuario.update(usuarioId, { equipe_id: novaEquipeId }), 3, 1000, 'changeEquipe');
       await loadData();
     } catch (error) {
-      console.error('Erro ao adicionar membro:', error);
-      alert('Erro ao adicionar membro: ' + (error.message || 'Erro desconhecido'));
-    }
-  };
-
-  const handleRemoveMembro = async (usuario) => {
-    try {
-      console.log('Removendo membro:', usuario.id, 'da equipe');
-      await retryWithBackoff(() => Usuario.update(usuario.id, { equipe_id: null }), 3, 1000, 'removeMembro');
-      console.log('✅ Membro removido com sucesso');
-      // Recarregar dados
-      await loadData();
-    } catch (error) {
-      console.error('Erro ao remover membro:', error);
-      alert('Erro ao remover membro: ' + (error.message || 'Erro desconhecido'));
+      console.error('Erro ao alterar equipe:', error);
+      alert('Erro ao alterar equipe.');
     }
   };
 
   const getMembros = (equipeId) => usuarios.filter(u => u.equipe_id === equipeId);
-  const getUsuariosSemEquipe = () => usuarios.filter(u => !u.equipe_id);
 
   // Gerar dias da semana atual + offset (3 semanas = 21 dias)
   const diasExibidos = useMemo(() => {
