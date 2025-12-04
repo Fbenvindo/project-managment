@@ -776,11 +776,13 @@ export default function AtaPlanejamento() {
 
       {/* Modal Adicionar Providência */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Adicionar Providência</DialogTitle>
+            <DialogTitle>Adicionar Providências</DialogTitle>
           </DialogHeader>
-          <div className="grid grid-cols-2 gap-4">
+          
+          {/* Dados do Projeto (compartilhados) */}
+          <div className="grid grid-cols-3 gap-4 pb-4 border-b">
             <div>
               <label className="text-sm font-medium">OS</label>
               <Input
@@ -813,90 +815,107 @@ export default function AtaPlanejamento() {
                 placeholder="Ex: PP24-1071-R3"
               />
             </div>
-            <div>
-              <label className="text-sm font-medium">Gerência</label>
-              <Input
-                value={novaProvidencia.gerencia}
-                onChange={(e) => setNovaProvidencia(prev => ({ ...prev, gerencia: e.target.value }))}
-              />
-            </div>
-            <div>
-                                <label className="text-sm font-medium">Responsável</label>
-                                <div className="border rounded-md p-2 max-h-32 overflow-y-auto space-y-1">
-                                  {usuarios.map(user => {
-                                    const nome = user.nome || user.full_name;
-                                    const isSelected = novaProvidencia.responsaveis?.includes(nome);
-                                    return (
-                                      <label key={user.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
-                                        <input
-                                          type="checkbox"
-                                          checked={isSelected}
-                                          onChange={() => {
-                                            setNovaProvidencia(prev => ({
-                                              ...prev,
-                                              responsaveis: isSelected
-                                                ? prev.responsaveis.filter(r => r !== nome)
-                                                : [...(prev.responsaveis || []), nome]
-                                            }));
-                                          }}
-                                          className="rounded"
-                                        />
-                                        <span className="text-sm">{nome}</span>
-                                      </label>
-                                    );
-                                  })}
-                                </div>
-                                {novaProvidencia.responsaveis?.length > 0 && (
-                                  <p className="text-xs text-gray-500 mt-1">
-                                    {novaProvidencia.responsaveis.length} selecionado(s)
-                                  </p>
-                                )}
-                              </div>
-            <div>
-              <label className="text-sm font-medium">Status</label>
-              <Select
-                value={novaProvidencia.status}
-                onValueChange={(value) => setNovaProvidencia(prev => ({ ...prev, status: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {STATUS_OPTIONS.map(s => (
-                    <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <label className="text-sm font-medium">Data da Reunião</label>
-              <Input
-                type="date"
-                value={novaProvidencia.dataReuniao}
-                onChange={(e) => setNovaProvidencia(prev => ({ ...prev, dataReuniao: e.target.value }))}
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Data de Retorno</label>
-              <Input
-                type="date"
-                value={novaProvidencia.dataRetorno}
-                onChange={(e) => setNovaProvidencia(prev => ({ ...prev, dataRetorno: e.target.value }))}
-              />
-            </div>
-            <div className="col-span-2">
-              <label className="text-sm font-medium">Providências</label>
-              <Textarea
-                value={novaProvidencia.providencias}
-                onChange={(e) => setNovaProvidencia(prev => ({ ...prev, providencias: e.target.value }))}
-                placeholder="Descreva as providências..."
-                rows={4}
-              />
-            </div>
           </div>
-          <div className="flex justify-end gap-2 mt-4">
+
+          {/* Lista de Providências */}
+          <div className="space-y-4 mt-4">
+            <div className="flex justify-between items-center">
+              <label className="text-sm font-medium">Providências</label>
+              <Button type="button" variant="outline" size="sm" onClick={handleAddLinha}>
+                <Plus className="w-3 h-3 mr-1" />
+                Adicionar Linha
+              </Button>
+            </div>
+            
+            {novaProvidencia.linhas.map((linha, idx) => (
+              <div key={idx} className="border rounded-lg p-4 bg-gray-50 space-y-3">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-600">Providência {idx + 1}</span>
+                  {novaProvidencia.linhas.length > 1 && (
+                    <Button type="button" variant="ghost" size="sm" className="text-red-500 h-6 px-2" onClick={() => handleRemoveLinha(idx)}>
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  )}
+                </div>
+                
+                <div>
+                  <Textarea
+                    value={linha.providencias}
+                    onChange={(e) => handleUpdateLinha(idx, 'providencias', e.target.value)}
+                    placeholder="Descreva a providência..."
+                    rows={2}
+                  />
+                </div>
+                
+                <div className="grid grid-cols-5 gap-3">
+                  <div>
+                    <label className="text-xs text-gray-500">Gerência</label>
+                    <Input
+                      value={linha.gerencia}
+                      onChange={(e) => handleUpdateLinha(idx, 'gerencia', e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">Responsável</label>
+                    <Select
+                      value={linha.responsaveis?.[0] || ''}
+                      onValueChange={(value) => handleUpdateLinha(idx, 'responsaveis', [value])}
+                    >
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue placeholder="Selecione" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {usuarios.map(user => (
+                          <SelectItem key={user.id} value={user.nome || user.full_name}>
+                            {user.nome || user.full_name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">Data Reunião</label>
+                    <Input
+                      type="date"
+                      value={linha.dataReuniao}
+                      onChange={(e) => handleUpdateLinha(idx, 'dataReuniao', e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">Data Retorno</label>
+                    <Input
+                      type="date"
+                      value={linha.dataRetorno}
+                      onChange={(e) => handleUpdateLinha(idx, 'dataRetorno', e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs text-gray-500">Status</label>
+                    <Select
+                      value={linha.status}
+                      onValueChange={(value) => handleUpdateLinha(idx, 'status', value)}
+                    >
+                      <SelectTrigger className="h-8 text-sm">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUS_OPTIONS.map(s => (
+                          <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
             <Button variant="outline" onClick={() => setShowAddModal(false)}>Cancelar</Button>
-            <Button onClick={handleAddProvidencia}>Adicionar</Button>
+            <Button onClick={handleAddProvidencia}>Adicionar {novaProvidencia.linhas.filter(l => l.providencias.trim()).length} Providência(s)</Button>
           </div>
         </DialogContent>
       </Dialog>
