@@ -85,7 +85,7 @@ const printStyles = `
   .max-w-\\[297mm\\] {
     max-width: 100% !important;
     width: 100% !important;
-    min-height: auto !important;
+    height: auto !important;
     box-shadow: none !important;
   }
   
@@ -271,7 +271,7 @@ export default function AtaPlanejamento() {
       </div>
 
       {/* Documento ATA - Formato A4 Paisagem */}
-                <div className="bg-white border border-gray-400 print:border-black print:text-[10px] w-full max-w-[297mm] shadow-lg" style={{ minHeight: '210mm' }}>
+                <div className="bg-white border border-gray-400 print:border-black print:text-[10px] w-full max-w-[297mm] shadow-lg">
         {/* Cabeçalho */}
         <div className="grid grid-cols-12 border-b border-gray-400">
           <div className="col-span-2 border-r border-gray-400 p-2 flex items-center justify-center">
