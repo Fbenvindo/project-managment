@@ -289,7 +289,7 @@ export default function AtaPlanejamento() {
             <div className="p-2 space-y-1">
               {STATUS_OPTIONS.map(status => (
                 <div key={status.value} className="flex items-center gap-2 text-xs">
-                  <div className={`w-20 text-center py-0.5 ${status.color} text-white rounded`}>
+                  <div className={`w-20 text-center py-0.5 ${status.color} ${status.textColor} rounded`}>
                     {status.label}
                   </div>
                 </div>
