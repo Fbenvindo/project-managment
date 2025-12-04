@@ -36,7 +36,7 @@ const printStyles = `
 @media print {
   @page {
     size: A4 landscape;
-    margin: 0;
+    margin: 5mm;
   }
   
   html, body {
@@ -44,13 +44,10 @@ const printStyles = `
     print-color-adjust: exact !important;
     margin: 0 !important;
     padding: 0 !important;
+    font-size: 9px !important;
   }
   
-  .print\\:hidden {
-    display: none !important;
-  }
-  
-  .no-print {
+  .print\\:hidden, .no-print {
     display: none !important;
   }
   
@@ -77,6 +74,29 @@ const printStyles = `
   
   .bg-gray-100 {
     background: white !important;
+  }
+  
+  /* Ajustes de tabela para impressão */
+  .grid-cols-12 {
+    display: grid !important;
+    grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  }
+  
+  /* Quebra de página */
+  .page-break-inside-avoid {
+    page-break-inside: avoid;
+  }
+  
+  /* Texto menor na impressão */
+  td, th, div {
+    font-size: 8px !important;
+    line-height: 1.2 !important;
+  }
+  
+  /* Permitir quebra de texto */
+  .whitespace-pre-wrap {
+    white-space: pre-wrap !important;
+    word-break: break-word !important;
   }
 }
 `;
