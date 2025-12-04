@@ -149,12 +149,19 @@ export default function AlocacaoEquipeTab({
   };
 
   const handleAddMembro = async (usuario) => {
+    if (!selectedEquipe?.id) {
+      alert('Nenhuma equipe selecionada.');
+      return;
+    }
     try {
+      console.log('Adicionando membro:', usuario.id, 'à equipe:', selectedEquipe.id);
       await retryWithBackoff(() => Usuario.update(usuario.id, { equipe_id: selectedEquipe.id }), 3, 1000, 'addMembro');
+      // Atualizar estado local imediatamente
+      setUsuariosLocal(prev => prev.map(u => u.id === usuario.id ? { ...u, equipe_id: selectedEquipe.id } : u));
       await loadData();
     } catch (error) {
       console.error('Erro ao adicionar membro:', error);
-      alert('Erro ao adicionar membro.');
+      alert('Erro ao adicionar membro: ' + (error.message || 'Erro desconhecido'));
     }
   };
 
