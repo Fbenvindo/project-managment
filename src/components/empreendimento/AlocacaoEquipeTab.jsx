@@ -5,8 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Users, RefreshCw, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Users, RefreshCw, Plus, Settings, Pencil, Trash2, UserPlus, X, Loader2 } from "lucide-react";
 import { format, addDays, startOfWeek, parseISO, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PlanejamentoAtividade, Empreendimento, Documento, Equipe, Usuario } from "@/entities/all";
@@ -49,6 +48,10 @@ export default function AlocacaoEquipeTab({
   const [editingEquipe, setEditingEquipe] = useState(null);
   const [equipeFormData, setEquipeFormData] = useState({ nome: '', cor: '#3B82F6', descricao: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Modal de membros
+  const [showMembrosModal, setShowMembrosModal] = useState(false);
+  const [selectedEquipe, setSelectedEquipe] = useState(null);
 
   // Usar dados props se disponíveis, senão usar local
   const planejamentos = planejamentosProp?.length > 0 ? planejamentosProp : planejamentosLocal;
@@ -140,18 +143,45 @@ export default function AlocacaoEquipeTab({
     }
   };
 
-  const handleChangeEquipe = async (usuarioId, equipeId) => {
+  const handleOpenMembros = (equipe) => {
+    console.log('Abrindo modal de membros para:', equipe);
+    setSelectedEquipe(equipe);
+    setShowEquipeModal(false); // Fechar modal de gerenciar equipes
+    setShowMembrosModal(true);
+  };
+
+  const handleAddMembro = async (usuario) => {
+    if (!selectedEquipe?.id) {
+      alert('Nenhuma equipe selecionada.');
+      return;
+    }
     try {
-      const novaEquipeId = equipeId === 'sem_equipe' ? null : equipeId;
-      await retryWithBackoff(() => Usuario.update(usuarioId, { equipe_id: novaEquipeId }), 3, 1000, 'changeEquipe');
+      console.log('Adicionando membro:', usuario.id, 'à equipe:', selectedEquipe.id);
+      await retryWithBackoff(() => Usuario.update(usuario.id, { equipe_id: selectedEquipe.id }), 3, 1000, 'addMembro');
+      console.log('✅ Membro adicionado com sucesso');
+      // Recarregar dados
       await loadData();
     } catch (error) {
-      console.error('Erro ao alterar equipe:', error);
-      alert('Erro ao alterar equipe.');
+      console.error('Erro ao adicionar membro:', error);
+      alert('Erro ao adicionar membro: ' + (error.message || 'Erro desconhecido'));
+    }
+  };
+
+  const handleRemoveMembro = async (usuario) => {
+    try {
+      console.log('Removendo membro:', usuario.id, 'da equipe');
+      await retryWithBackoff(() => Usuario.update(usuario.id, { equipe_id: null }), 3, 1000, 'removeMembro');
+      console.log('✅ Membro removido com sucesso');
+      // Recarregar dados
+      await loadData();
+    } catch (error) {
+      console.error('Erro ao remover membro:', error);
+      alert('Erro ao remover membro: ' + (error.message || 'Erro desconhecido'));
     }
   };
 
   const getMembros = (equipeId) => usuarios.filter(u => u.equipe_id === equipeId);
+  const getUsuariosSemEquipe = () => usuarios.filter(u => !u.equipe_id);
 
   // Gerar dias da semana atual + offset (3 semanas = 21 dias)
   const diasExibidos = useMemo(() => {
@@ -365,7 +395,7 @@ export default function AlocacaoEquipeTab({
                   {usuariosEquipe.map(usuario => {
                     const email = usuario.email;
                     const alocacaoUser = alocacaoPorUsuarioDia[email] || { planejado: {}, reprogramado: {} };
-
+                    
                     return (
                       <React.Fragment key={usuario.id}>
                         {/* Linha Programado */}
@@ -373,20 +403,6 @@ export default function AlocacaoEquipeTab({
                           <td className="border border-gray-300 p-1 sticky left-0 bg-gray-100 z-10" rowSpan={2}>
                             <div className="font-medium">{usuario.nome || usuario.full_name}</div>
                             <div className="text-gray-500 text-xs">{usuario.cargo || ''}</div>
-                            <Select
-                              value={usuario.equipe_id || 'sem_equipe'}
-                              onValueChange={(value) => handleChangeEquipe(usuario.id, value)}
-                            >
-                              <SelectTrigger className="h-6 text-xs mt-1 w-24">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="sem_equipe">Sem Equipe</SelectItem>
-                                {equipes.map(eq => (
-                                  <SelectItem key={eq.id} value={eq.id}>{eq.nome}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
                           </td>
                           <td className="border border-gray-300 p-1 text-xs">Programado</td>
                           {diasExibidos.map(dia => {
@@ -532,13 +548,16 @@ export default function AlocacaoEquipeTab({
                     </div>
                   </div>
                   <div className="flex gap-1">
-                      <Button variant="ghost" size="sm" onClick={() => handleEditEquipe(equipe)}>
-                        <Pencil className="w-4 h-4" />
-                      </Button>
-                      <Button variant="ghost" size="sm" onClick={() => handleDeleteEquipe(equipe)} className="text-red-600">
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => handleOpenMembros(equipe)}>
+                      <UserPlus className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleEditEquipe(equipe)}>
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDeleteEquipe(equipe)} className="text-red-600">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </div>
               );
             })}
@@ -553,7 +572,55 @@ export default function AlocacaoEquipeTab({
       </DialogContent>
     </Dialog>
 
+    {/* Modal de Membros */}
+    <Dialog open={showMembrosModal} onOpenChange={setShowMembrosModal}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Membros: {selectedEquipe?.nome}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label className="text-sm font-medium">Membros Atuais</Label>
+            <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
+              {selectedEquipe && getMembros(selectedEquipe.id).map(membro => (
+                <div key={membro.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <div>
+                    <span className="font-medium">{membro.nome}</span>
+                    <span className="text-xs text-gray-500 ml-2">{membro.cargo || ''}</span>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => handleRemoveMembro(membro)} className="text-red-600">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+              {selectedEquipe && getMembros(selectedEquipe.id).length === 0 && (
+                <p className="text-sm text-gray-500 italic">Nenhum membro</p>
+              )}
+            </div>
+          </div>
 
+          <div>
+            <Label className="text-sm font-medium">Adicionar Membros</Label>
+            <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
+              {getUsuariosSemEquipe().map(usuario => (
+                <div key={usuario.id} className="flex items-center justify-between p-2 bg-blue-50 rounded">
+                  <div>
+                    <span className="font-medium">{usuario.nome}</span>
+                    <span className="text-xs text-gray-500 ml-2">{usuario.cargo || ''}</span>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => handleAddMembro(usuario)} className="text-blue-600">
+                    <UserPlus className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+              {getUsuariosSemEquipe().length === 0 && (
+                <p className="text-sm text-gray-500 italic">Todos já estão em equipes</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
     </>
   );
 }
