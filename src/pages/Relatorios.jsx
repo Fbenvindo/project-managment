@@ -484,9 +484,10 @@ export default function Relatorios() {
                     />
                     
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-6">
-                        <TabsList className="grid w-full grid-cols-2">
+                        <TabsList className="grid w-full grid-cols-3">
                             <TabsTrigger value="atividades">Relatório de Atividades</TabsTrigger>
                             <TabsTrigger value="carga_horaria">Relatório de Carga Horária</TabsTrigger>
+                            <TabsTrigger value="matriz">Matriz de Alocação</TabsTrigger>
                         </TabsList>
                         <TabsContent value="atividades" className="mt-4">
                             <RelatorioResumo planejamentos={planejamentosFiltrados} execucoes={execucoesFiltradas} />
