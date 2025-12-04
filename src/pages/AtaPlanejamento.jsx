@@ -531,5 +531,6 @@ export default function AtaPlanejamento() {
         </DialogContent>
       </Dialog>
     </div>
+    </>
   );
 }
