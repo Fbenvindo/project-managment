@@ -711,47 +711,51 @@ export default function AtaPlanejamento() {
           </div>
         ) : (
           providenciasAgrupadas.map((grupo, gIdx) => (
-            <React.Fragment key={gIdx}>
+            <div key={gIdx} className="flex flex-col">
               {grupo.items.map((prov, pIdx) => (
                 <div 
                   key={prov.id} 
-                  className={`grid grid-cols-12 border-b border-gray-300 text-xs ${
+                  className={`flex border-b border-gray-300 text-xs ${
                     gIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'
                   }`}
                 >
-                  {pIdx === 0 && (
+                  {pIdx === 0 ? (
                     <>
                       <div 
-                        className="col-span-1 p-1 text-center border-r border-gray-300 font-medium bg-yellow-50"
-                        style={{ gridRow: `span ${grupo.items.length}` }}
+                        className="w-[6%] p-1 text-center border-r border-gray-300 font-medium bg-yellow-50 flex items-center justify-center"
+                        style={{ position: 'relative' }}
                       >
                         {grupo.os}
                       </div>
                       <div 
-                        className="col-span-1 p-1 text-center border-r border-gray-300 bg-yellow-50"
-                        style={{ gridRow: `span ${grupo.items.length}` }}
+                        className="w-[10%] p-1 text-center border-r border-gray-300 bg-yellow-50 flex items-center justify-center"
                       >
                         {grupo.projeto}
                       </div>
                     </>
+                  ) : (
+                    <>
+                      <div className="w-[6%] p-1 border-r border-gray-300 bg-yellow-50"></div>
+                      <div className="w-[10%] p-1 border-r border-gray-300 bg-yellow-50"></div>
+                    </>
                   )}
-                  <div className="col-span-1 p-1 text-center border-r border-gray-300">{prov.numProposta}</div>
-                  <div className="col-span-3 p-1 border-r border-gray-300 whitespace-pre-wrap">{prov.providencias}</div>
-                  <div className="col-span-1 p-1 text-center border-r border-gray-300">{prov.gerencia}</div>
-                  <div className="col-span-1 p-1 text-center border-r border-gray-300">
-                          {Array.isArray(prov.responsaveis) ? prov.responsaveis.join(', ') : prov.responsavel || ''}
-                        </div>
-                  <div className="col-span-1 p-1 text-center border-r border-gray-300">
+                  <div className="w-[8%] p-1 text-center border-r border-gray-300">{prov.numProposta}</div>
+                  <div className="w-[30%] p-1 border-r border-gray-300 whitespace-pre-wrap">{prov.providencias}</div>
+                  <div className="w-[8%] p-1 text-center border-r border-gray-300">{prov.gerencia}</div>
+                  <div className="w-[10%] p-1 text-center border-r border-gray-300">
+                    {Array.isArray(prov.responsaveis) ? prov.responsaveis.join(', ') : prov.responsavel || ''}
+                  </div>
+                  <div className="w-[8%] p-1 text-center border-r border-gray-300">
                     {prov.dataReuniao ? format(new Date(prov.dataReuniao), 'dd/MM/yyyy') : ''}
                   </div>
-                  <div className="col-span-1 p-1 text-center border-r border-gray-300">
+                  <div className="w-[8%] p-1 text-center border-r border-gray-300">
                     {prov.dataRetorno ? format(new Date(prov.dataRetorno), 'dd/MM/yyyy') : ''}
                   </div>
-                  <div className="col-span-2 p-1 flex items-center justify-between gap-1">
+                  <div className="w-[12%] p-1 flex items-center justify-between gap-1">
                     <select
                       value={prov.status}
                       onChange={(e) => handleUpdateProvidencia(prov.id, 'status', e.target.value)}
-                      className={`text-xs px-2 py-1 rounded ${getStatusColor(prov.status)} print:hidden`}
+                      className={`text-xs px-2 py-1 rounded ${getStatusColor(prov.status)} print:hidden flex-1`}
                     >
                       {STATUS_OPTIONS.map(s => (
                         <option key={s.value} value={s.value}>{s.label}</option>
@@ -769,7 +773,7 @@ export default function AtaPlanejamento() {
                   </div>
                 </div>
               ))}
-            </React.Fragment>
+            </div>
           ))
         )}
       </div>
