@@ -6,6 +6,7 @@ import RelatorioFiltros from '../components/relatorios/RelatorioFiltros';
 import RelatorioResumo from '../components/relatorios/RelatorioResumo';
 import RelatorioAtividades from '../components/relatorios/RelatorioAtividades';
 import RelatorioCargaHoraria from '../components/relatorios/RelatorioCargaHoraria';
+import MatrizColaboradores from '../components/relatorios/MatrizColaboradores';
 import { Skeleton } from '@/components/ui/skeleton';
 import { base44 } from '@/api/base44Client';
 import { retryWithBackoff, delay } from '../components/utils/apiUtils';
