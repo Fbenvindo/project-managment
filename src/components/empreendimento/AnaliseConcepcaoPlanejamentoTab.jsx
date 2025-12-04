@@ -222,19 +222,44 @@ export default function AnaliseConcepcaoPlanejamentoTab({
 
     // Quantidade de folhas (documentos) do empreendimento
     const quantidadeFolhas = useMemo(() => (documentos || []).length, [documentos]);
+    
+    // Quantidade de pavimentos do empreendimento
+    const quantidadePavimentos = useMemo(() => (pavimentos || []).length, [pavimentos]);
+    
+    // Quantidade de etapas
+    const quantidadeEtapas = ETAPAS_PARA_MULTIPLICAR.length;
 
     const formatarTempo = (horas) => `${Number(horas || 0).toFixed(1)}h`;
     const calcularPercentual = (tempoExecutado, tempoReal) => Math.round(((Number(tempoExecutado) || 0) / (Number(tempoReal) || 1)) * 100);
     const getStatusColor = (p) => p === 0 ? "bg-gray-100 text-gray-800" : p < 100 ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800";
     const getStatusText = (p) => p === 0 ? "Não Iniciado" : p < 100 ? "Em Andamento" : "Concluído";
     
-    // Função para calcular tempo padrão considerando multiplicador por folhas
+    // Função para calcular tempo padrão considerando multiplicadores
     const calcularTempoPadrao = (atividade) => {
         const tempoBase = Number(atividade.tempo) || 0;
+        
+        // Multiplicar por folhas (documentos)
         if (ATIVIDADES_MULTIPLICAR_POR_FOLHAS.includes(atividade.atividade)) {
             return tempoBase * quantidadeFolhas;
         }
+        
+        // Multiplicar por pavimentos e etapas
+        if (ATIVIDADES_MULTIPLICAR_POR_PAVIMENTO_ETAPA.includes(atividade.atividade)) {
+            return tempoBase * quantidadePavimentos * quantidadeEtapas;
+        }
+        
         return tempoBase;
+    };
+    
+    // Função para obter o texto explicativo do multiplicador
+    const getMultiplicadorTexto = (atividade) => {
+        if (ATIVIDADES_MULTIPLICAR_POR_FOLHAS.includes(atividade.atividade) && quantidadeFolhas > 0) {
+            return `(${atividade.tempo}h × ${quantidadeFolhas} folhas)`;
+        }
+        if (ATIVIDADES_MULTIPLICAR_POR_PAVIMENTO_ETAPA.includes(atividade.atividade) && quantidadePavimentos > 0) {
+            return `(${atividade.tempo}h × ${quantidadePavimentos} pav. × ${quantidadeEtapas} etapas)`;
+        }
+        return null;
     };
 
     return (
