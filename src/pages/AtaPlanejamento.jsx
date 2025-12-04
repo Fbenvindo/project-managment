@@ -36,7 +36,7 @@ const printStyles = `
 @media print {
   @page {
     size: A4 landscape;
-    margin: 3mm;
+    margin: 8mm;
   }
 
   * {
@@ -48,10 +48,9 @@ const printStyles = `
   html, body {
     margin: 0 !important;
     padding: 0 !important;
-    width: 277mm !important;
+    width: 100% !important;
     height: auto !important;
     overflow: visible !important;
-    font-size: 6px !important;
   }
 
   .print\\:hidden, .no-print {
@@ -66,7 +65,7 @@ const printStyles = `
   main {
     margin: 0 !important;
     padding: 0 !important;
-    width: 277mm !important;
+    width: 100% !important;
     height: auto !important;
     overflow: visible !important;
     position: static !important;
@@ -75,7 +74,7 @@ const printStyles = `
   main > div {
     overflow: visible !important;
     height: auto !important;
-    width: 277mm !important;
+    width: 100% !important;
   }
 
   /* Esconde botões flutuantes (playlist, timer, etc) */
@@ -88,7 +87,7 @@ const printStyles = `
     padding: 0 !important;
     margin: 0 !important;
     background: white !important;
-    width: 277mm !important;
+    width: 100% !important;
     height: auto !important;
     min-height: auto !important;
     display: block !important;
@@ -96,8 +95,8 @@ const printStyles = `
 
   /* Container da ATA na impressão */
   .max-w-\\[297mm\\] {
-    max-width: 277mm !important;
-    width: 277mm !important;
+    max-width: 100% !important;
+    width: 100% !important;
     height: auto !important;
     box-shadow: none !important;
     border: 1px solid black !important;
@@ -141,16 +140,16 @@ const printStyles = `
   .bg-gray-50 { background-color: #f9fafb !important; }
   .bg-white { background-color: white !important; }
 
-  /* Texto */
+  /* Texto - mantém tamanhos legíveis */
   .text-center { text-align: center !important; }
-  .text-sm { font-size: 6px !important; }
-  .text-xs { font-size: 5px !important; }
+  .text-sm { font-size: 9px !important; }
+  .text-xs { font-size: 8px !important; }
   .font-medium { font-weight: 500 !important; }
   .font-bold { font-weight: 700 !important; }
 
   /* Padding */
-  .p-1 { padding: 1px !important; }
-  .p-2 { padding: 2px !important; }
+  .p-1 { padding: 2px !important; }
+  .p-2 { padding: 4px !important; }
 
   /* Permitir quebra de texto */
   .whitespace-pre-wrap {
@@ -163,7 +162,7 @@ const printStyles = `
     border: none !important;
     background: transparent !important;
     padding: 0 !important;
-    font-size: 6px !important;
+    font-size: 9px !important;
   }
 
   select {
@@ -177,22 +176,22 @@ const printStyles = `
   table {
     width: 100% !important;
     table-layout: fixed !important;
-    font-size: 5px !important;
+    font-size: 8px !important;
   }
 
   td, th {
-    padding: 1px !important;
+    padding: 2px !important;
     word-wrap: break-word !important;
-    font-size: 5px !important;
+    font-size: 8px !important;
   }
 
   /* Cabeçalho da tabela */
   .flex.bg-yellow-100 {
-    font-size: 5px !important;
+    font-size: 8px !important;
   }
 
   .flex.bg-yellow-100 > div {
-    padding: 1px !important;
+    padding: 2px !important;
   }
 }
 `;
