@@ -387,14 +387,87 @@ export default function AtaPlanejamento() {
     );
   }
 
+  // Tela de Lista de ATAs
+  if (viewMode === 'list') {
+    return (
+      <div className="p-6 bg-gray-100 min-h-screen">
+        <div className="max-w-6xl mx-auto">
+          <div className="mb-6 flex justify-between items-center">
+            <h1 className="text-2xl font-bold text-gray-800">ATAs de Reunião</h1>
+            <Button onClick={handleNewAta} className="bg-blue-600 hover:bg-blue-700">
+              <FilePlus className="w-4 h-4 mr-2" />
+              Nova ATA
+            </Button>
+          </div>
+
+          {atasRegistradas.length === 0 ? (
+            <div className="bg-white rounded-lg shadow p-8 text-center">
+              <FileText className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+              <h3 className="text-lg font-medium text-gray-700 mb-2">Nenhuma ATA registrada</h3>
+              <p className="text-gray-500 mb-4">Clique em "Nova ATA" para criar sua primeira ata de reunião.</p>
+            </div>
+          ) : (
+            <div className="grid gap-4">
+              {atasRegistradas.map(ata => (
+                <div key={ata.id} className="bg-white rounded-lg shadow p-4 flex items-center justify-between hover:shadow-md transition-shadow">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <FileText className="w-5 h-5 text-blue-500" />
+                      <div>
+                        <h3 className="font-medium text-gray-800">{ata.assunto}</h3>
+                        <p className="text-sm text-gray-500">
+                          {ata.data ? format(new Date(ata.data), 'dd/MM/yyyy', { locale: ptBR }) : 'Sem data'} 
+                          {ata.horario && ` às ${ata.horario}`}
+                          {ata.local && ` - ${ata.local}`}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="mt-2 flex items-center gap-2">
+                      <span className={`text-xs px-2 py-0.5 rounded ${ata.status === 'finalizada' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                        {ata.status === 'finalizada' ? 'Finalizada' : 'Rascunho'}
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {ata.providencias?.length || 0} providência(s)
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button variant="outline" size="sm" onClick={() => handleOpenAta(ata)}>
+                      <FolderOpen className="w-4 h-4 mr-1" />
+                      Abrir
+                    </Button>
+                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700" onClick={() => handleDeleteAta(ata.id)}>
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <>
       <style>{printStyles}</style>
       <div className="p-6 bg-gray-100 min-h-screen print:p-0 print:bg-white print:min-h-0 flex flex-col items-center">
       {/* Barra de Ações */}
                 <div className="mb-4 flex justify-between items-center no-print w-full max-w-[297mm]">
-                  <h1 className="text-2xl font-bold text-gray-800">ATA de Planejamento</h1>
+                  <div className="flex items-center gap-4">
+                    <Button variant="ghost" onClick={handleBackToList} className="p-2">
+                      <ArrowLeft className="w-5 h-5" />
+                    </Button>
+                    <h1 className="text-2xl font-bold text-gray-800">
+                      {currentAtaId ? 'Editar ATA' : 'Nova ATA'}
+                    </h1>
+                  </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={handleSaveAta} disabled={isSaving}>
+            {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+            Salvar
+          </Button>
           <Button variant="outline" onClick={handlePrint}>
             <Printer className="w-4 h-4 mr-2" />
             Imprimir
