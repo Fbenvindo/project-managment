@@ -198,14 +198,17 @@ export default function Dashboard() {
           />
 
           <div className="flex justify-center mb-4">
-            <div className="bg-white rounded-lg p-1 shadow-sm border">
-              <Button variant={isColaboradorView || viewMode === 'calendar' ? 'default' : 'ghost'} onClick={() => setViewMode('calendar')} className="px-4 py-2" disabled={isColaboradorView}>
-                <Calendar className="w-4 h-4 mr-2" />Calendário
-              </Button>
-              <Button variant={viewMode === 'curva-s' && !isColaboradorView ? 'default' : 'ghost'} onClick={() => setViewMode('curva-s')} className="px-4 py-2" disabled={isColaboradorView}>
-                <TrendingUp className="w-4 h-4 mr-2" />Curva S
-              </Button>
-            </div>
+           <div className="bg-white rounded-lg p-1 shadow-sm border">
+             <Button variant={isColaboradorView || viewMode === 'calendar' ? 'default' : 'ghost'} onClick={() => setViewMode('calendar')} className="px-4 py-2" disabled={isColaboradorView}>
+               <Calendar className="w-4 h-4 mr-2" />Calendário
+             </Button>
+             <Button variant={viewMode === 'curva-s' && !isColaboradorView ? 'default' : 'ghost'} onClick={() => setViewMode('curva-s')} className="px-4 py-2" disabled={isColaboradorView}>
+               <TrendingUp className="w-4 h-4 mr-2" />Curva S
+             </Button>
+             <Button variant={viewMode === 'alocacao' && !isColaboradorView ? 'default' : 'ghost'} onClick={() => setViewMode('alocacao')} className="px-4 py-2" disabled={isColaboradorView}>
+               <UsersRound className="w-4 h-4 mr-2" />Alocação Equipe
+             </Button>
+           </div>
           </div>
 
           <div className="mb-8">
