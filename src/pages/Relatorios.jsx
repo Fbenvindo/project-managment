@@ -504,6 +504,13 @@ export default function Relatorios() {
                                 usuarios={data.usuarios}
                              />
                         </TabsContent>
+                        <TabsContent value="matriz" className="mt-4">
+                             <MatrizColaboradores 
+                                planejamentos={data.planejamentos}
+                                usuarios={data.usuarios}
+                                empreendimentos={data.empreendimentos}
+                             />
+                        </TabsContent>
                     </Tabs>
                 </CardContent>
             </Card>
