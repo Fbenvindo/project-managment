@@ -409,17 +409,18 @@ export default function EmpreendimentoPage() {
           </TabsContent>
 
           <TabsContent value="documentacao">
-            {tabData.documentacao.loading || sharedData.loading ? (
+            {tabData.documentacao.loading || sharedData.loading || tabData.documentos.loading ? (
               <div className="flex flex-col items-center justify-center h-96">
                 <RefreshCw className="w-8 h-8 animate-spin text-blue-500 mb-4" />
                 <p className="text-gray-600">Carregando documentação...</p>
               </div>
-            ) : tabData.documentacao.loaded && sharedData.loaded ? (
+            ) : tabData.documentacao.loaded && sharedData.loaded && tabData.documentos.loaded ? (
               <AnaliseConcepcaoPlanejamentoTab
                 empreendimentoId={empreendimento?.id}
                 planejamentos={tabData.documentacao.data}
                 atividades={sharedData.atividades || []}
                 usuarios={sharedData.usuarios}
+                documentos={tabData.documentos.data.documentos || []}
                 onUpdate={() => {
                   setTabData(prev => ({
                     ...prev,
