@@ -74,6 +74,15 @@ const LayoutComponent = ({ children, currentPageName }) => {
       });
     }
 
+    if (hasPermission('coordenador')) {
+      items.push({
+        title: "ATA de Reunião",
+        url: createPageUrl("AtaPlanejamento"),
+        icon: FileText,
+        show: true
+      });
+    }
+
     items.push({
       title: "Atividades Rápidas",
       url: createPageUrl("AtividadesRapidas"),
