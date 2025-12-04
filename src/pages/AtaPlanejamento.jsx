@@ -187,7 +187,9 @@ export default function AtaPlanejamento() {
   }
 
   return (
-    <div className="p-6 bg-gray-100 min-h-screen">
+    <>
+      <style>{printStyles}</style>
+      <div className="p-6 bg-gray-100 min-h-screen print:p-0 print:bg-white print:min-h-0">
       {/* Barra de Ações */}
       <div className="mb-4 flex justify-between items-center print:hidden">
         <h1 className="text-2xl font-bold text-gray-800">ATA de Planejamento</h1>
