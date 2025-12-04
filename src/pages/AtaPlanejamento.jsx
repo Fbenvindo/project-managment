@@ -36,19 +36,21 @@ const printStyles = `
 @media print {
   @page {
     size: A4 landscape;
-    margin: 5mm;
+    margin: 0;
   }
   
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+    box-sizing: border-box !important;
   }
   
   html, body {
     margin: 0 !important;
     padding: 0 !important;
-    font-size: 8px !important;
-    overflow: visible !important;
+    width: 297mm !important;
+    height: 210mm !important;
+    overflow: hidden !important;
   }
   
   .print\\:hidden, .no-print {
@@ -56,15 +58,19 @@ const printStyles = `
   }
   
   /* Esconde sidebar e elementos do layout */
-  aside, nav, header, footer, [data-sidebar] {
+  aside, nav, header, footer, [data-sidebar], [data-radix-popper-content-wrapper] {
     display: none !important;
   }
   
   main {
     margin: 0 !important;
     padding: 0 !important;
-    width: 100% !important;
-    overflow: visible !important;
+    width: 297mm !important;
+    height: 210mm !important;
+    overflow: hidden !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
   }
   
   /* Esconde botões flutuantes (playlist, timer, etc) */
@@ -72,21 +78,27 @@ const printStyles = `
     display: none !important;
   }
   
-  /* Remove padding/margin do container da ATA */
-  .p-6 {
-    padding: 0 !important;
-  }
-  
-  .bg-gray-100 {
+  /* Container principal */
+  .p-6.bg-gray-100 {
+    padding: 5mm !important;
+    margin: 0 !important;
     background: white !important;
+    width: 297mm !important;
+    height: 210mm !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
   }
   
   /* Container da ATA na impressão */
   .max-w-\\[297mm\\] {
-    max-width: 100% !important;
-    width: 100% !important;
+    max-width: 287mm !important;
+    width: 287mm !important;
     height: auto !important;
+    max-height: 200mm !important;
     box-shadow: none !important;
+    border: 1px solid black !important;
+    overflow: hidden !important;
   }
   
   /* Evitar quebra dentro de linhas */
@@ -94,26 +106,10 @@ const printStyles = `
     page-break-inside: avoid;
   }
   
-  /* Texto compacto na impressão */
-  td, th, div, span, p {
-    font-size: 7px !important;
-    line-height: 1.1 !important;
-  }
-  
-  /* Cabeçalho maior */
-  .text-sm {
-    font-size: 8px !important;
-  }
-  
   /* Permitir quebra de texto */
   .whitespace-pre-wrap {
     white-space: pre-wrap !important;
     word-break: break-word !important;
-  }
-  
-  /* Compactar padding */
-  .p-1, .p-2 {
-    padding: 2px !important;
   }
 }
 `;
