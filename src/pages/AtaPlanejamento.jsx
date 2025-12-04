@@ -294,15 +294,15 @@ export default function AtaPlanejamento() {
         {/* Info da Reunião */}
         <div className="border-b border-gray-400">
           <div className="grid grid-cols-12">
-            <div className="col-span-8 border-r border-gray-400 p-2 text-sm">
-              <span className="font-medium">Assunto: </span>
-              <input 
-                type="text" 
-                value={ataData.assunto}
-                onChange={(e) => setAtaData(prev => ({ ...prev, assunto: e.target.value }))}
-                className="border-none outline-none bg-transparent print:bg-transparent"
-              />
-            </div>
+            <div className="col-span-8 border-r border-gray-400 p-2 text-sm flex items-center">
+                                <span className="font-medium whitespace-nowrap">Assunto: </span>
+                                <input 
+                                  type="text" 
+                                  value={ataData.assunto}
+                                  onChange={(e) => setAtaData(prev => ({ ...prev, assunto: e.target.value }))}
+                                  className="border-none outline-none bg-transparent print:bg-transparent flex-1 w-full"
+                                />
+                              </div>
             <div className="col-span-4 p-2 text-sm">
               <span className="font-medium">Data: </span>
               <input 
