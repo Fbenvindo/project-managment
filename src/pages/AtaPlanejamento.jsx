@@ -395,15 +395,18 @@ export default function AtaPlanejamento() {
                     <select
                       value={prov.status}
                       onChange={(e) => handleUpdateProvidencia(prov.id, 'status', e.target.value)}
-                      className={`text-xs px-2 py-1 rounded ${getStatusColor(prov.status)} print:bg-transparent print:text-black`}
+                      className={`text-xs px-2 py-1 rounded ${getStatusColor(prov.status)} print:hidden`}
                     >
                       {STATUS_OPTIONS.map(s => (
                         <option key={s.value} value={s.value}>{s.label}</option>
                       ))}
                     </select>
+                    <span className={`hidden print:inline text-xs px-2 py-1 rounded ${getStatusColor(prov.status)}`}>
+                      {getStatusLabel(prov.status)}
+                    </span>
                     <button 
                       onClick={() => handleDeleteProvidencia(prov.id)}
-                      className="text-red-500 hover:text-red-700 print:hidden"
+                      className="text-red-500 hover:text-red-700 no-print"
                     >
                       <Trash2 className="w-3 h-3" />
                     </button>
