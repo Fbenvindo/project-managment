@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight, Users, RefreshCw } from "lucide-react";
 import { format, addDays, startOfWeek, parseISO, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { PlanejamentoAtividade, Empreendimento, Documento } from "@/entities/all";
+import { PlanejamentoAtividade, Empreendimento, Documento, Equipe } from "@/entities/all";
 import { retryWithBackoff } from "../utils/apiUtils";
 
 // Função para parsear datas locais
@@ -27,18 +27,21 @@ export default function AlocacaoEquipeTab({
   planejamentos: planejamentosProp,
   usuarios = [],
   empreendimentos: empreendimentosProp,
-  documentos: documentosProp
+  documentos: documentosProp,
+  equipes: equipesProp
 }) {
   const [weekOffset, setWeekOffset] = useState(0);
   const [planejamentosLocal, setPlanejamentosLocal] = useState([]);
   const [empreendimentosLocal, setEmpreendimentosLocal] = useState([]);
   const [documentosLocal, setDocumentosLocal] = useState([]);
+  const [equipesLocal, setEquipesLocal] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
   // Usar dados props se disponíveis, senão usar local
   const planejamentos = planejamentosProp?.length > 0 ? planejamentosProp : planejamentosLocal;
   const empreendimentos = empreendimentosProp?.length > 0 ? empreendimentosProp : empreendimentosLocal;
   const documentos = documentosProp?.length > 0 ? documentosProp : documentosLocal;
+  const equipes = equipesProp?.length > 0 ? equipesProp : equipesLocal;
 
   // Carregar dados se não recebeu via props
   useEffect(() => {
@@ -47,15 +50,17 @@ export default function AlocacaoEquipeTab({
       
       setIsLoading(true);
       try {
-        const [plans, emps, docs] = await Promise.all([
+        const [plans, emps, docs, teams] = await Promise.all([
           retryWithBackoff(() => PlanejamentoAtividade.list(), 3, 2000, 'AlocacaoEquipe-Planejamentos'),
           retryWithBackoff(() => Empreendimento.list(), 3, 2000, 'AlocacaoEquipe-Empreendimentos'),
-          retryWithBackoff(() => Documento.list(), 3, 2000, 'AlocacaoEquipe-Documentos')
+          retryWithBackoff(() => Documento.list(), 3, 2000, 'AlocacaoEquipe-Documentos'),
+          retryWithBackoff(() => Equipe.list(), 3, 2000, 'AlocacaoEquipe-Equipes')
         ]);
         
         setPlanejamentosLocal(plans || []);
         setEmpreendimentosLocal(emps || []);
         setDocumentosLocal(docs || []);
+        setEquipesLocal(teams || []);
       } catch (error) {
         console.error('Erro ao carregar dados de alocação:', error);
       } finally {
@@ -95,18 +100,36 @@ export default function AlocacaoEquipeTab({
     return map;
   }, [documentos]);
 
-  // Agrupar usuários por equipe/perfil
+  // Criar mapa de equipes por ID
+  const equipesMap = useMemo(() => {
+    const map = {};
+    (equipes || []).forEach(eq => {
+      map[eq.id] = eq;
+    });
+    return map;
+  }, [equipes]);
+
+  // Agrupar usuários por equipe (usando equipe_id)
   const usuariosPorEquipe = useMemo(() => {
     const grupos = {};
     
     (usuarios || []).forEach(user => {
       if (!user.nome && !user.full_name) return; // Ignorar usuários sem nome
       
-      const equipe = user.departamento || user.cargo || 'Sem Equipe';
-      if (!grupos[equipe]) {
-        grupos[equipe] = [];
+      // Usar equipe_id para agrupar, senão fallback para departamento/cargo
+      let nomeEquipe = 'Sem Equipe';
+      if (user.equipe_id && equipesMap[user.equipe_id]) {
+        nomeEquipe = equipesMap[user.equipe_id].nome;
+      } else if (user.departamento) {
+        nomeEquipe = user.departamento;
+      } else if (user.cargo) {
+        nomeEquipe = user.cargo;
       }
-      grupos[equipe].push(user);
+      
+      if (!grupos[nomeEquipe]) {
+        grupos[nomeEquipe] = [];
+      }
+      grupos[nomeEquipe].push(user);
     });
 
     // Ordenar usuários dentro de cada equipe
@@ -119,7 +142,7 @@ export default function AlocacaoEquipeTab({
     });
 
     return grupos;
-  }, [usuarios]);
+  }, [usuarios, equipesMap]);
 
   // Processar planejamentos por usuário e dia
   const alocacaoPorUsuarioDia = useMemo(() => {
