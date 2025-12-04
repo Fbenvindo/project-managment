@@ -6,9 +6,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-import ComercialCard from "../components/comercial/ComercialCard";
-import ComercialForm from "../components/comercial/ComercialForm";
-import ComercialFilters from "../components/comercial/ComercialFilters";
+import EmpreendimentoCard from "../components/empreendimentos/EmpreendimentoCard";
+import EmpreendimentoForm from "../components/empreendimentos/EmpreendimentoForm";
+import EmpreendimentoFilters from "../components/empreendimentos/EmpreendimentoFilters";
 import { retryWithBackoff } from "../components/utils/apiUtils";
 import { ActivityTimerContext } from '../components/contexts/ActivityTimerContext';
 
@@ -251,7 +251,7 @@ export default function ComercialPage() {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            <ComercialFilters 
+            <EmpreendimentoFilters 
               filters={filters}
               onFiltersChange={setFilters}
               totalCount={empreendimentos.length}
@@ -275,9 +275,9 @@ export default function ComercialPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
                   >
-                    <ComercialCard 
+                    <EmpreendimentoCard 
                       empreendimento={empreendimento}
-                      canEdit={canEdit}
+                      user={user}
                       onEdit={handleEdit}
                       onDelete={handleDelete}
                     />
@@ -318,7 +318,7 @@ export default function ComercialPage() {
 
           <AnimatePresence>
             {showForm && (
-              <ComercialForm 
+              <EmpreendimentoForm 
                 empreendimento={editingEmpreendimento}
                 onClose={() => {
                   setShowForm(false);
