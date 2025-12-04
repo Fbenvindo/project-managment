@@ -8,13 +8,14 @@ import { X, Save, Users } from "lucide-react";
 import { motion } from "framer-motion";
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 
-export default function UsuarioForm({ usuario, onSubmit, onCancel, allUsers }) {
+export default function UsuarioForm({ usuario, onSubmit, onCancel, allUsers, equipes = [] }) {
   const { user } = useContext(ActivityTimerContext);
   const [formData, setFormData] = useState({
     nome: usuario?.nome || "",
     email: usuario?.email || "",
     cargo: usuario?.cargo || "",
     departamento: usuario?.departamento || "",
+    equipe_id: usuario?.equipe_id || "",
     telefone: usuario?.telefone || "",
     data_admissao: usuario?.data_admissao || "",
     status: usuario?.status || "ativo",
@@ -157,6 +158,26 @@ export default function UsuarioForm({ usuario, onSubmit, onCancel, allUsers }) {
                     placeholder="Ex: TI, RH, Financeiro"
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="equipe">Equipe</Label>
+                <Select
+                  value={formData.equipe_id || "sem_equipe"}
+                  onValueChange={(value) => handleInputChange("equipe_id", value === "sem_equipe" ? "" : value)}
+                >
+                  <SelectTrigger id="equipe">
+                    <SelectValue placeholder="Selecione a equipe" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="sem_equipe">Sem equipe</SelectItem>
+                    {equipes.map(equipe => (
+                      <SelectItem key={equipe.id} value={equipe.id}>
+                        {equipe.nome}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

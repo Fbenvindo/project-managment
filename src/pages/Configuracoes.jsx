@@ -1,11 +1,11 @@
-
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Disciplina, Atividade } from "@/entities/all";
 
 import DisciplinasManager from "../components/configuracoes/DisciplinasManager";
 import AtividadesManager from "../components/configuracoes/AtividadesManager";
 import AtividadeFuncaoManager from "../components/configuracoes/AtividadeFuncaoManager";
+import EquipesManager from "../components/configuracoes/EquipesManager";
 
 export default function ConfiguracoesPage() {
   const [disciplinas, setDisciplinas] = useState([]);
@@ -40,10 +40,11 @@ export default function ConfiguracoesPage() {
       <div className="p-6 md:p-8 space-y-8">
         <h1 className="text-3xl font-bold text-gray-900">Configurações Gerais</h1>
         <Tabs defaultValue="disciplinas" className="w-full">
-          <TabsList className="grid w-full grid-cols-1 md:grid-cols-3">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
             <TabsTrigger value="disciplinas">Disciplinas</TabsTrigger>
             <TabsTrigger value="atividades">Catálogo de Atividades</TabsTrigger>
             <TabsTrigger value="atividades_funcao">Atividades por Departamento</TabsTrigger>
+            <TabsTrigger value="equipes">Equipes</TabsTrigger>
           </TabsList>
           <TabsContent value="disciplinas" className="mt-6">
             <DisciplinasManager 
@@ -62,6 +63,9 @@ export default function ConfiguracoesPage() {
           </TabsContent>
           <TabsContent value="atividades_funcao" className="mt-6">
             <AtividadeFuncaoManager />
+          </TabsContent>
+          <TabsContent value="equipes" className="mt-6">
+            <EquipesManager />
           </TabsContent>
         </Tabs>
       </div>
