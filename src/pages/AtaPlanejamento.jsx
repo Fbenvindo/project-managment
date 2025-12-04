@@ -70,6 +70,12 @@ const printStyles = `
     height: auto !important;
     overflow: visible !important;
     position: static !important;
+    overflow-y: visible !important;
+  }
+
+  main > div {
+    overflow: visible !important;
+    height: auto !important;
   }
   
   /* Esconde botões flutuantes (playlist, timer, etc) */
