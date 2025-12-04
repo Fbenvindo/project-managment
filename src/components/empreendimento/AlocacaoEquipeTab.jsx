@@ -29,7 +29,7 @@ const parseLocalDate = (dateString) => {
 
 export default function AlocacaoEquipeTab({
   planejamentos: planejamentosProp,
-  usuarios = [],
+  usuarios: usuariosProp = [],
   empreendimentos: empreendimentosProp,
   documentos: documentosProp,
   equipes: equipesProp
@@ -39,7 +39,19 @@ export default function AlocacaoEquipeTab({
   const [empreendimentosLocal, setEmpreendimentosLocal] = useState([]);
   const [documentosLocal, setDocumentosLocal] = useState([]);
   const [equipesLocal, setEquipesLocal] = useState([]);
+  const [usuariosLocal, setUsuariosLocal] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Modal de gerenciamento de equipes
+  const [showEquipeModal, setShowEquipeModal] = useState(false);
+  const [showEquipeForm, setShowEquipeForm] = useState(false);
+  const [editingEquipe, setEditingEquipe] = useState(null);
+  const [equipeFormData, setEquipeFormData] = useState({ nome: '', cor: '#3B82F6', descricao: '' });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
+  // Modal de membros
+  const [showMembrosModal, setShowMembrosModal] = useState(false);
+  const [selectedEquipe, setSelectedEquipe] = useState(null);
 
   // Usar dados props se disponíveis, senão usar local
   const planejamentos = planejamentosProp?.length > 0 ? planejamentosProp : planejamentosLocal;
