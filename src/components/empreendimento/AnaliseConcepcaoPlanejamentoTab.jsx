@@ -330,7 +330,14 @@ export default function AnaliseConcepcaoPlanejamentoTab({
                                             <TableCell><Badge variant="outline">{atividade.etapa}</Badge></TableCell>
                                             <TableCell><Badge className="bg-purple-100 text-purple-800">{atividade.subdisciplina}</Badge></TableCell>
                                             <TableCell className="max-w-xs truncate" title={atividade.atividade}>{atividade.atividade}</TableCell>
-                                            <TableCell>{formatarTempo(atividade.tempo)}</TableCell>
+                                            <TableCell>
+                                                {formatarTempo(calcularTempoPadrao(atividade))}
+                                                {ATIVIDADES_MULTIPLICAR_POR_FOLHAS.includes(atividade.atividade) && quantidadeFolhas > 0 && (
+                                                    <span className="text-xs text-gray-500 block">
+                                                        ({atividade.tempo}h × {quantidadeFolhas} folhas)
+                                                    </span>
+                                                )}
+                                            </TableCell>
                                             <TableCell>{formatarTempo(tempoExecutadoTotal)}</TableCell>
                                             <TableCell>
                                                 <Progress value={percentual} className="w-full" />
