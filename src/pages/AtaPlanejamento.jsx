@@ -94,9 +94,10 @@ export default function AtaPlanejamento() {
     data: format(new Date(), 'yyyy-MM-dd'),
     horario: '14h',
     participantes: [],
-    folha: '1',
+    folha: '1/',
     rev: '00',
     controle: 'RG-PO-27',
+    emissao: '/ /',
   });
 
   const [providencias, setProvidencias] = useState([]);
