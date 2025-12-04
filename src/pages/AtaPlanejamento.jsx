@@ -191,7 +191,7 @@ export default function AtaPlanejamento() {
       <style>{printStyles}</style>
       <div className="p-6 bg-gray-100 min-h-screen print:p-0 print:bg-white print:min-h-0">
       {/* Barra de Ações */}
-      <div className="mb-4 flex justify-between items-center print:hidden">
+      <div className="mb-4 flex justify-between items-center no-print">
         <h1 className="text-2xl font-bold text-gray-800">ATA de Planejamento</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handlePrint}>
