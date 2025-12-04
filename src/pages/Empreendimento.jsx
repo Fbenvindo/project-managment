@@ -23,6 +23,7 @@ import AtividadesProjetoTab from "../components/empreendimento/AtividadesProjeto
 import AnaliticoGlobalTab from "../components/empreendimento/AnaliticoGlobalTab";
 import AnaliseConcepcaoPlanejamentoTab from "../components/empreendimento/AnaliseConcepcaoPlanejamentoTab";
 import GestaoTab from "../components/empreendimento/GestaoTab";
+import AlocacaoEquipeTab from "../components/empreendimento/AlocacaoEquipeTab";
 import { ActivityTimerContext } from "@/components/contexts/ActivityTimerContext";
 
 export default function EmpreendimentoPage() {
