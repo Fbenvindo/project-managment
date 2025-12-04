@@ -368,13 +368,13 @@ export default function AtaPlanejamento() {
     
     setProvidencias(prev => [...prev, ...novasProvidencias]);
     setNovaProvidencia({
-      os: '',
-      projeto: '',
-      numProposta: '',
-      linhas: [{ providencias: '', gerencia: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
-    });
-    setShowAddModal(false);
-  };
+            os: '',
+            projeto: '',
+            numProposta: '',
+            linhas: [{ providencias: '', gerencia: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente', numProposta: '' }]
+          });
+          setShowAddModal(false);
+        };
 
   const handleAddLinha = () => {
     setNovaProvidencia(prev => ({
