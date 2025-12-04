@@ -303,8 +303,8 @@ export default function EmpreendimentoPage() {
     );
   }
 
-  const isGestaoLoading = sharedData.loading || tabData.documentos.loading;
-  const isGestaoLoaded = sharedData.loaded && tabData.documentos.loaded;
+  const isGestaoLoading = sharedData.loading || tabData.documentos.loading || tabData.pavimentos.loading;
+  const isGestaoLoaded = sharedData.loaded && tabData.documentos.loaded && tabData.pavimentos.loaded;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
