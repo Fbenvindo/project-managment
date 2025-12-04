@@ -226,7 +226,7 @@ export default function AtaPlanejamento() {
     os: '',
     projeto: '',
     numProposta: '',
-    linhas: [{ providencias: '', gerencia: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
+    linhas: [{ providencias: '', gerencia: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente', numProposta: '' }]
   });
 
   useEffect(() => {
