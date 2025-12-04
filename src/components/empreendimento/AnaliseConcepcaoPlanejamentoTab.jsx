@@ -234,6 +234,13 @@ export default function AnaliseConcepcaoPlanejamentoTab({
     const getStatusColor = (p) => p === 0 ? "bg-gray-100 text-gray-800" : p < 100 ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800";
     const getStatusText = (p) => p === 0 ? "Não Iniciado" : p < 100 ? "Em Andamento" : "Concluído";
     
+    // Função auxiliar para verificar se atividade deve multiplicar por pavimento/etapa
+    const deveMultiplicarPorPavimentoEtapa = (nomeAtividade) => {
+        return ATIVIDADES_MULTIPLICAR_POR_PAVIMENTO_ETAPA.some(prefixo => 
+            (nomeAtividade || '').startsWith(prefixo)
+        );
+    };
+
     // Função para calcular tempo padrão considerando multiplicadores
     const calcularTempoPadrao = (atividade) => {
         const tempoBase = Number(atividade.tempo) || 0;
@@ -243,8 +250,8 @@ export default function AnaliseConcepcaoPlanejamentoTab({
             return tempoBase * quantidadeFolhas;
         }
         
-        // Multiplicar por pavimentos e etapas
-        if (ATIVIDADES_MULTIPLICAR_POR_PAVIMENTO_ETAPA.includes(atividade.atividade)) {
+        // Multiplicar por pavimentos e etapas (usando prefixo)
+        if (deveMultiplicarPorPavimentoEtapa(atividade.atividade)) {
             return tempoBase * quantidadePavimentos * quantidadeEtapas;
         }
         
@@ -256,7 +263,7 @@ export default function AnaliseConcepcaoPlanejamentoTab({
         if (ATIVIDADES_MULTIPLICAR_POR_FOLHAS.includes(atividade.atividade) && quantidadeFolhas > 0) {
             return `(${atividade.tempo}h × ${quantidadeFolhas} folhas)`;
         }
-        if (ATIVIDADES_MULTIPLICAR_POR_PAVIMENTO_ETAPA.includes(atividade.atividade) && quantidadePavimentos > 0) {
+        if (deveMultiplicarPorPavimentoEtapa(atividade.atividade) && quantidadePavimentos > 0) {
             return `(${atividade.tempo}h × ${quantidadePavimentos} pav. × ${quantidadeEtapas} etapas)`;
         }
         return null;
