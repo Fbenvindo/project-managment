@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, FileText, Download, Printer, Save, Loader2 } from "lucide-react";
+import { Plus, Trash2, FileText, Download, Printer, Save, Loader2, Check } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Empreendimento, Usuario, Documento } from "@/entities/all";
@@ -294,15 +294,24 @@ export default function AtaPlanejamento() {
               Participantes
             </div>
             <div className="p-2 text-sm space-y-1">
-              {usuarios.slice(0, 8).map(user => (
+              {usuarios.map(user => (
                 <div 
                   key={user.id} 
-                  className={`cursor-pointer hover:bg-gray-100 px-2 py-0.5 rounded ${
-                    ataData.participantes.includes(user.email) ? 'bg-blue-50 font-medium' : ''
+                  className={`cursor-pointer hover:bg-gray-100 px-2 py-0.5 rounded flex items-center gap-2 ${
+                    ataData.participantes.includes(user.email) ? 'bg-green-100 font-medium' : ''
                   }`}
                   onClick={() => toggleParticipante(user.email)}
                 >
-                  {user.nome || user.full_name}
+                  <div className={`w-4 h-4 border rounded flex items-center justify-center ${
+                    ataData.participantes.includes(user.email) 
+                      ? 'bg-green-500 border-green-500 text-white' 
+                      : 'border-gray-400'
+                  }`}>
+                    {ataData.participantes.includes(user.email) && <Check className="w-3 h-3" />}
+                  </div>
+                  <span className={ataData.participantes.includes(user.email) ? 'text-green-800' : ''}>
+                    {user.nome || user.full_name}
+                  </span>
                 </div>
               ))}
             </div>
