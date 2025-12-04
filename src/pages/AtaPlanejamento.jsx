@@ -885,15 +885,24 @@ export default function AtaPlanejamento() {
                   />
                 </div>
                 
-                <div className="grid grid-cols-5 gap-3">
-                  <div>
-                    <label className="text-xs text-gray-500">Gerência</label>
-                    <Input
-                      value={linha.gerencia}
-                      onChange={(e) => handleUpdateLinha(idx, 'gerencia', e.target.value)}
-                      className="h-8 text-sm"
-                    />
-                  </div>
+                <div className="grid grid-cols-6 gap-3">
+                                        <div>
+                                          <label className="text-xs text-gray-500">Nº Proposta</label>
+                                          <Input
+                                            value={linha.numProposta}
+                                            onChange={(e) => handleUpdateLinha(idx, 'numProposta', e.target.value)}
+                                            className="h-8 text-sm"
+                                            placeholder={novaProvidencia.numProposta || "Ex: PP24-1071"}
+                                          />
+                                        </div>
+                                        <div>
+                                          <label className="text-xs text-gray-500">Gerência</label>
+                                          <Input
+                                            value={linha.gerencia}
+                                            onChange={(e) => handleUpdateLinha(idx, 'gerencia', e.target.value)}
+                                            className="h-8 text-sm"
+                                          />
+                                        </div>
                   <div>
                     <label className="text-xs text-gray-500">Responsável</label>
                     <Select
