@@ -6,10 +6,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, FileText, Download, Printer, Save, Loader2, Check } from "lucide-react";
+import { Plus, Trash2, FileText, Download, Printer, Save, Loader2, Check, FolderOpen, FilePlus, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Empreendimento, Usuario, Documento } from "@/entities/all";
+import { Empreendimento, Usuario, Documento, AtaReuniao } from "@/entities/all";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 
 const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/577f93874_logo_Interativa_versao_final_sem_fundo_0002.png";
