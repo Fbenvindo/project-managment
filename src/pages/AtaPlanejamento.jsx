@@ -370,7 +370,7 @@ export default function AtaPlanejamento() {
                     <select
                       value={prov.status}
                       onChange={(e) => handleUpdateProvidencia(prov.id, 'status', e.target.value)}
-                      className={`text-xs px-1 py-0.5 rounded text-white ${getStatusColor(prov.status)} print:bg-transparent print:text-black`}
+                      className={`text-xs px-2 py-1 rounded ${getStatusColor(prov.status)} print:bg-transparent print:text-black`}
                     >
                       {STATUS_OPTIONS.map(s => (
                         <option key={s.value} value={s.value}>{s.label}</option>
