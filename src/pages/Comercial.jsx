@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useContext } from "react";
-import { Comercial, Usuario } from "@/entities/all";
+import { Empreendimento, Usuario } from "@/entities/all";
 import { Button } from "@/components/ui/button";
 import { Plus, Briefcase, AlertTriangle, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -14,7 +14,7 @@ import { ActivityTimerContext } from '../components/contexts/ActivityTimerContex
 
 const useComercialData = () => {
   const [data, setData] = useState({
-    comerciais: [],
+    empreendimentos: [],
     usuarios: [],
     isLoading: true,
     error: null,
@@ -31,9 +31,9 @@ const useComercialData = () => {
     }
 
     try {
-      const comerciaisData = await retryWithBackoff(
-        () => Comercial.list('-updated_date'), 
-        5, 3000, 'Comercial'
+      const empreendimentosData = await retryWithBackoff(
+        () => Empreendimento.list('-updated_date'), 
+        5, 3000, 'Empreendimentos'
       );
       
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -44,7 +44,7 @@ const useComercialData = () => {
       );
 
       setData({
-        comerciais: comerciaisData || [],
+        empreendimentos: empreendimentosData || [],
         usuarios: usuariosData || [],
         isLoading: false,
         error: null,
@@ -80,73 +80,73 @@ const useComercialData = () => {
 };
 
 export default function ComercialPage() {
-  const { comerciais, usuarios, isLoading, error, lastUpdate, refresh, isRefreshing, loadData } = useComercialData();
+  const { empreendimentos, usuarios, isLoading, error, lastUpdate, refresh, isRefreshing, loadData } = useComercialData();
   const { user, hasPermission } = useContext(ActivityTimerContext);
 
   const [showForm, setShowForm] = useState(false);
-  const [editingComercial, setEditingComercial] = useState(null);
+  const [editingEmpreendimento, setEditingEmpreendimento] = useState(null);
   const [filters, setFilters] = useState({ status: 'todos', search: '' });
 
   const dadosFiltrados = useMemo(() => {
-    let filtered = [...comerciais];
+    let filtered = [...empreendimentos];
 
     if (filters.status !== 'todos') {
-      filtered = filtered.filter(c => c.status === filters.status);
+      filtered = filtered.filter(e => e.status === filters.status);
     }
 
     if (filters.search) {
       const searchTerm = filters.search.toLowerCase();
-      filtered = filtered.filter(c => 
-        c.nome?.toLowerCase().includes(searchTerm) ||
-        c.cliente?.toLowerCase().includes(searchTerm)
+      filtered = filtered.filter(e => 
+        e.nome?.toLowerCase().includes(searchTerm) ||
+        e.cliente?.toLowerCase().includes(searchTerm)
       );
     }
 
     return filtered;
-  }, [comerciais, filters]);
+  }, [empreendimentos, filters]);
 
   const handleCreate = useCallback(() => {
-    setEditingComercial(null);
+    setEditingEmpreendimento(null);
     setShowForm(true);
   }, []);
 
-  const handleEdit = useCallback((comercial) => {
-    setEditingComercial(comercial);
+  const handleEdit = useCallback((empreendimento) => {
+    setEditingEmpreendimento(empreendimento);
     setShowForm(true);
   }, []);
 
-  const handleSubmit = useCallback(async (comercialData) => {
+  const handleSubmit = useCallback(async (empreendimentoData) => {
     try {
-      if (editingComercial) {
-        await retryWithBackoff(() => Comercial.update(editingComercial.id, comercialData), 3, 3000, 'Update Comercial');
+      if (editingEmpreendimento) {
+        await retryWithBackoff(() => Empreendimento.update(editingEmpreendimento.id, empreendimentoData), 3, 3000, 'Update Empreendimento');
       } else {
-        await retryWithBackoff(() => Comercial.create(comercialData), 3, 3000, 'Create Comercial');
+        await retryWithBackoff(() => Empreendimento.create(empreendimentoData), 3, 3000, 'Create Empreendimento');
       }
       
       setShowForm(false);
-      setEditingComercial(null);
+      setEditingEmpreendimento(null);
       await loadData(true);
     } catch (error) {
       console.error('❌ Erro ao salvar:', error);
-      alert('Erro ao salvar projeto comercial.');
+      alert('Erro ao salvar empreendimento.');
     }
-  }, [editingComercial, loadData]);
+  }, [editingEmpreendimento, loadData]);
 
   const handleFormSuccess = useCallback(async () => {
     setShowForm(false);
-    setEditingComercial(null);
+    setEditingEmpreendimento(null);
     await loadData(true);
   }, [loadData]);
 
   const handleDelete = useCallback(async (id) => {
-    if (!window.confirm("Tem certeza que deseja excluir este projeto comercial?")) return;
+    if (!window.confirm("Tem certeza que deseja excluir este empreendimento?")) return;
 
     try {
-      await retryWithBackoff(() => Comercial.delete(id), 3, 2000, 'Delete Comercial');
+      await retryWithBackoff(() => Empreendimento.delete(id), 3, 2000, 'Delete Empreendimento');
       await loadData(true);
     } catch (error) {
       console.error('❌ Erro ao excluir:', error);
-      alert('Erro ao excluir projeto comercial.');
+      alert('Erro ao excluir empreendimento.');
     }
   }, [loadData]);
 
@@ -226,7 +226,7 @@ export default function ComercialPage() {
                 )}
               </h1>
               <p className="text-gray-600 mt-1">
-                Gerencie propostas e projetos comerciais
+                Gerencie empreendimentos e projetos comerciais
                 {lastUpdate && (
                   <span className="text-sm text-gray-400 block md:inline md:ml-2">
                     • Última atualização: {lastUpdate.toLocaleTimeString()}
@@ -254,7 +254,7 @@ export default function ComercialPage() {
             <ComercialFilters 
               filters={filters}
               onFiltersChange={setFilters}
-              totalCount={comerciais.length}
+              totalCount={empreendimentos.length}
               filteredCount={dadosFiltrados.length}
             />
           </motion.div>
@@ -268,15 +268,15 @@ export default function ComercialPage() {
                 exit={{ opacity: 0 }}
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
               >
-                {dadosFiltrados.map((comercial, index) => (
+                {dadosFiltrados.map((empreendimento, index) => (
                   <motion.div
-                    key={comercial.id}
+                    key={empreendimento.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
                   >
                     <ComercialCard 
-                      comercial={comercial}
+                      empreendimento={empreendimento}
                       canEdit={canEdit}
                       onEdit={handleEdit}
                       onDelete={handleDelete}
@@ -319,10 +319,10 @@ export default function ComercialPage() {
           <AnimatePresence>
             {showForm && (
               <ComercialForm 
-                comercial={editingComercial}
+                empreendimento={editingEmpreendimento}
                 onClose={() => {
                   setShowForm(false);
-                  setEditingComercial(null);
+                  setEditingEmpreendimento(null);
                 }}
                 onSubmit={handleSubmit}
                 onSuccess={handleFormSuccess}

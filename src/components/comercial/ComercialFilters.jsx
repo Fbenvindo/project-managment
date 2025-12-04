@@ -26,10 +26,10 @@ export default function ComercialFilters({ filters, onFiltersChange, totalCount,
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos os Status</SelectItem>
-            <SelectItem value="proposta">Proposta</SelectItem>
-            <SelectItem value="negociacao">Em Negociação</SelectItem>
-            <SelectItem value="aprovado">Aprovado</SelectItem>
-            <SelectItem value="cancelado">Cancelado</SelectItem>
+            <SelectItem value="ativo">Ativo</SelectItem>
+            <SelectItem value="em_planejamento">Em Planejamento</SelectItem>
+            <SelectItem value="concluido">Concluído</SelectItem>
+            <SelectItem value="pausado">Pausado</SelectItem>
           </SelectContent>
         </Select>
 
