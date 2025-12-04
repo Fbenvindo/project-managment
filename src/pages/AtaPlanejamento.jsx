@@ -80,7 +80,7 @@ const printStyles = `
   
   /* Container principal */
   .p-6.bg-gray-100 {
-    padding: 5mm !important;
+    padding: 3mm !important;
     margin: 0 !important;
     background: white !important;
     width: 297mm !important;
@@ -92,10 +92,10 @@ const printStyles = `
   
   /* Container da ATA na impressão */
   .max-w-\\[297mm\\] {
-    max-width: 287mm !important;
-    width: 287mm !important;
+    max-width: 291mm !important;
+    width: 291mm !important;
     height: auto !important;
-    max-height: 200mm !important;
+    max-height: 204mm !important;
     box-shadow: none !important;
     border: 1px solid black !important;
     overflow: hidden !important;
