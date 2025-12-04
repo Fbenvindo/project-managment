@@ -464,7 +464,7 @@ export default function AlocacaoEquipeTab({
       </CardContent>
     </Card>
 
-    {/* Modal de Gerenciamento de Equipes */}
+      {/* Modal de Gerenciamento de Equipes */}
     <Dialog open={showEquipeModal} onOpenChange={setShowEquipeModal}>
       <DialogContent className="max-w-2xl">
         <DialogHeader>
