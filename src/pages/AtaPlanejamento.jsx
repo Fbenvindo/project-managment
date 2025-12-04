@@ -226,7 +226,7 @@ export default function AtaPlanejamento() {
     os: '',
     projeto: '',
     numProposta: '',
-    linhas: [{ providencias: '', gerencia: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente', numProposta: '' }]
+    linhas: [{ providencias: '', gerencia: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
   });
 
   useEffect(() => {
@@ -354,32 +354,32 @@ export default function AtaPlanejamento() {
     if (linhasValidas.length === 0) return;
     
     const novasProvidencias = linhasValidas.map((linha, idx) => ({
-            id: Date.now() + idx,
-            os: novaProvidencia.os,
-            projeto: novaProvidencia.projeto,
-            numProposta: linha.numProposta || novaProvidencia.numProposta,
-            providencias: linha.providencias,
-            gerencia: linha.gerencia,
-            responsaveis: linha.responsaveis,
-            dataReuniao: linha.dataReuniao,
-            dataRetorno: linha.dataRetorno,
-            status: linha.status
-          }));
+      id: Date.now() + idx,
+      os: novaProvidencia.os,
+      projeto: novaProvidencia.projeto,
+      numProposta: novaProvidencia.numProposta,
+      providencias: linha.providencias,
+      gerencia: linha.gerencia,
+      responsaveis: linha.responsaveis,
+      dataReuniao: linha.dataReuniao,
+      dataRetorno: linha.dataRetorno,
+      status: linha.status
+    }));
     
     setProvidencias(prev => [...prev, ...novasProvidencias]);
     setNovaProvidencia({
-            os: '',
-            projeto: '',
-            numProposta: '',
-            linhas: [{ providencias: '', gerencia: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente', numProposta: '' }]
-          });
-          setShowAddModal(false);
-        };
+      os: '',
+      projeto: '',
+      numProposta: '',
+      linhas: [{ providencias: '', gerencia: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
+    });
+    setShowAddModal(false);
+  };
 
   const handleAddLinha = () => {
     setNovaProvidencia(prev => ({
       ...prev,
-      linhas: [...prev.linhas, { providencias: '', gerencia: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente', numProposta: '' }]
+      linhas: [...prev.linhas, { providencias: '', gerencia: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
     }));
   };
 
@@ -885,24 +885,15 @@ export default function AtaPlanejamento() {
                   />
                 </div>
                 
-                <div className="grid grid-cols-6 gap-3">
-                                        <div>
-                                          <label className="text-xs text-gray-500">Nº Proposta</label>
-                                          <Input
-                                            value={linha.numProposta}
-                                            onChange={(e) => handleUpdateLinha(idx, 'numProposta', e.target.value)}
-                                            className="h-8 text-sm"
-                                            placeholder={novaProvidencia.numProposta || "Ex: PP24-1071"}
-                                          />
-                                        </div>
-                                        <div>
-                                          <label className="text-xs text-gray-500">Gerência</label>
-                                          <Input
-                                            value={linha.gerencia}
-                                            onChange={(e) => handleUpdateLinha(idx, 'gerencia', e.target.value)}
-                                            className="h-8 text-sm"
-                                          />
-                                        </div>
+                <div className="grid grid-cols-5 gap-3">
+                  <div>
+                    <label className="text-xs text-gray-500">Gerência</label>
+                    <Input
+                      value={linha.gerencia}
+                      onChange={(e) => handleUpdateLinha(idx, 'gerencia', e.target.value)}
+                      className="h-8 text-sm"
+                    />
+                  </div>
                   <div>
                     <label className="text-xs text-gray-500">Responsável</label>
                     <Select
