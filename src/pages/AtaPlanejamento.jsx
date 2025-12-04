@@ -293,27 +293,52 @@ export default function AtaPlanejamento() {
             <div className="bg-yellow-100 p-1 text-center text-sm font-medium border-b border-gray-400">
               Participantes
             </div>
-            <div className="p-2 text-sm space-y-1">
-              {usuarios.map(user => (
-                <div 
-                  key={user.id} 
-                  className={`cursor-pointer hover:bg-gray-100 px-2 py-0.5 rounded flex items-center gap-2 ${
-                    ataData.participantes.includes(user.email) ? 'bg-green-100 font-medium' : ''
-                  }`}
-                  onClick={() => toggleParticipante(user.email)}
-                >
-                  <div className={`w-4 h-4 border rounded flex items-center justify-center ${
-                    ataData.participantes.includes(user.email) 
-                      ? 'bg-green-500 border-green-500 text-white' 
-                      : 'border-gray-400'
-                  }`}>
-                    {ataData.participantes.includes(user.email) && <Check className="w-3 h-3" />}
-                  </div>
-                  <span className={ataData.participantes.includes(user.email) ? 'text-green-800' : ''}>
-                    {user.nome || user.full_name}
-                  </span>
-                </div>
-              ))}
+            <div className="p-2 text-sm">
+              {/* Participantes selecionados */}
+              <div className="space-y-1 print:space-y-0">
+                {ataData.participantes.map(email => {
+                  const user = usuarios.find(u => u.email === email);
+                  return user ? (
+                    <div 
+                      key={user.id} 
+                      className="cursor-pointer hover:bg-red-50 px-2 py-0.5 rounded flex items-center gap-2 bg-green-100 font-medium no-print"
+                      onClick={() => toggleParticipante(user.email)}
+                      title="Clique para remover"
+                    >
+                      <div className="w-4 h-4 border rounded flex items-center justify-center bg-green-500 border-green-500 text-white">
+                        <Check className="w-3 h-3" />
+                      </div>
+                      <span className="text-green-800">{user.nome || user.full_name}</span>
+                    </div>
+                  ) : null;
+                })}
+                {/* Lista para impressão */}
+                {ataData.participantes.map(email => {
+                  const user = usuarios.find(u => u.email === email);
+                  return user ? (
+                    <div key={`print-${user.id}`} className="hidden print:block py-0.5">
+                      {user.nome || user.full_name}
+                    </div>
+                  ) : null;
+                })}
+              </div>
+              {/* Dropdown para adicionar */}
+              <div className="mt-2 no-print">
+                <Select onValueChange={(email) => toggleParticipante(email)}>
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="+ Adicionar participante" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {usuarios
+                      .filter(u => !ataData.participantes.includes(u.email))
+                      .map(user => (
+                        <SelectItem key={user.id} value={user.email}>
+                          {user.nome || user.full_name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
           <div className="col-span-4">
