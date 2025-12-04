@@ -769,9 +769,14 @@ export default function AtaPlanejamento() {
                         >
                           {grupo.projeto}
                         </td>
+                        <td 
+                          rowSpan={grupo.items.length}
+                          className="w-[8%] p-1 text-center border-r border-gray-300 bg-yellow-50 align-middle"
+                        >
+                          {grupo.numProposta}
+                        </td>
                       </>
                     )}
-                    <td className="w-[8%] p-1 text-center border-r border-gray-300">{prov.numProposta}</td>
                     <td className="w-[30%] p-1 border-r border-gray-300 whitespace-pre-wrap">{prov.providencias}</td>
                     <td className="w-[8%] p-1 text-center border-r border-gray-300">{prov.gerencia}</td>
                     <td className="w-[10%] p-1 text-center border-r border-gray-300">
