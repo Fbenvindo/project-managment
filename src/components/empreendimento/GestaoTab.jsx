@@ -53,18 +53,32 @@ export default function GestaoTab({ empreendimento, documentos, planejamentos, a
       });
     });
 
+    // Criar mapa de pavimentos para buscar área
+    const pavimentosMap = {};
+    (pavimentos || []).forEach(pav => {
+      pavimentosMap[pav.id] = pav;
+    });
+
     // Para cada documento, buscar atividades aplicáveis e somar horas
     documentos.forEach(doc => {
       const disciplinaDoc = doc.disciplina;
       const subdisciplinasDoc = doc.subdisciplinas || [];
       const fatorDificuldade = doc.fator_dificuldade || 1;
-      const areaPavimento = doc.area ? parseFloat(doc.area) : 1;
+      
+      // Buscar área do pavimento vinculado, senão usar área do documento, senão 1
+      let areaPavimento = 1;
+      if (doc.pavimento_id && pavimentosMap[doc.pavimento_id]) {
+        areaPavimento = parseFloat(pavimentosMap[doc.pavimento_id].area) || 1;
+      } else if (doc.area) {
+        areaPavimento = parseFloat(doc.area) || 1;
+      }
 
       console.log(`📄 [GestaoTab] Processando documento ${doc.numero}:`, {
         disciplina: disciplinaDoc,
         subdisciplinas: subdisciplinasDoc,
         fatorDificuldade,
-        areaPavimento
+        areaPavimento,
+        pavimento_id: doc.pavimento_id
       });
 
       // Buscar atividades globais que se aplicam a este documento
