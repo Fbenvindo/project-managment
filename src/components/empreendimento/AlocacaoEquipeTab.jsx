@@ -56,7 +56,20 @@ export default function AlocacaoEquipeTab({
   const empreendimentos = empreendimentosProp?.length > 0 ? empreendimentosProp : empreendimentosLocal;
   const documentos = documentosProp?.length > 0 ? documentosProp : documentosLocal;
   const equipes = equipesProp?.length > 0 ? equipesProp : equipesLocal;
-  const usuarios = usuariosProp?.length > 0 ? usuariosProp : usuariosLocal;
+  
+  // Para usuários, mesclar props com atualizações locais
+  const usuariosBase = usuariosProp?.length > 0 ? usuariosProp : usuariosLocal;
+  const [usuariosEditados, setUsuariosEditados] = useState({});
+  
+  // Aplicar edições locais sobre os dados base
+  const usuarios = useMemo(() => {
+    return usuariosBase.map(u => {
+      if (usuariosEditados[u.id] !== undefined) {
+        return { ...u, equipe_id: usuariosEditados[u.id] };
+      }
+      return u;
+    });
+  }, [usuariosBase, usuariosEditados]);
 
   // Carregar dados se não recebeu via props
   const loadData = async () => {
