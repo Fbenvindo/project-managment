@@ -103,6 +103,17 @@ const printStyles = `
     box-shadow: none !important;
     border: 1px solid black !important;
     overflow: visible !important;
+    overflow-y: visible !important;
+  }
+
+  /* Remove barras de rolamento */
+  ::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  * {
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
   }
   
   /* Grid de 12 colunas - manter estrutura */
