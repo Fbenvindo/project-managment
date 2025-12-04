@@ -443,7 +443,7 @@ export default function AlocacaoEquipeTab({
                                 title={hasItems ? items.map(i => `${i.label} (${i.empNome})`).join(', ') : ''}
                               >
                                 <div className="flex flex-wrap gap-0.5 justify-center">
-                                  {items.slice(0, 3).map((item, idx) => (
+                                  {items.map((item, idx) => (
                                     <span 
                                       key={idx} 
                                       className="px-1 rounded text-white text-[10px] font-medium"
@@ -485,7 +485,7 @@ export default function AlocacaoEquipeTab({
                                 title={hasItems ? items.map(i => `${i.label} (${i.empNome})`).join(', ') : ''}
                               >
                                 <div className="flex flex-wrap gap-0.5 justify-center">
-                                  {items.slice(0, 3).map((item, idx) => (
+                                  {items.map((item, idx) => (
                                     <span 
                                       key={idx} 
                                       className="px-1 rounded text-white text-[10px] font-medium border border-yellow-500"
