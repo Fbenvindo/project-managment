@@ -36,7 +36,7 @@ const printStyles = `
 @media print {
   @page {
     size: A4 landscape;
-    margin: 5mm;
+    margin: 0;
   }
   
   html, body {
@@ -44,17 +44,6 @@ const printStyles = `
     print-color-adjust: exact !important;
     margin: 0 !important;
     padding: 0 !important;
-  }
-  
-  /* Remove cabeçalho e rodapé do navegador */
-  @page {
-    margin-top: 0;
-    margin-bottom: 0;
-  }
-  
-  body {
-    padding-top: 5mm;
-    padding-bottom: 5mm;
   }
   
   .print\\:hidden {
@@ -79,6 +68,15 @@ const printStyles = `
   /* Esconde botões flutuantes (playlist, timer, etc) */
   [class*="fixed"], button[class*="fixed"], div[class*="fixed"] {
     display: none !important;
+  }
+  
+  /* Remove padding/margin do container da ATA */
+  .p-6 {
+    padding: 0 !important;
+  }
+  
+  .bg-gray-100 {
+    background: white !important;
   }
 }
 `;
