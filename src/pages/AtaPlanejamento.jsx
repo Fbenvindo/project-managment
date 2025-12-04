@@ -36,7 +36,7 @@ const printStyles = `
 @media print {
   @page {
     size: A4 landscape;
-    margin: 0;
+    margin: 5mm;
   }
   
   * {
@@ -48,9 +48,9 @@ const printStyles = `
   html, body {
     margin: 0 !important;
     padding: 0 !important;
-    width: 297mm !important;
-    height: 210mm !important;
-    overflow: hidden !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
   }
   
   .print\\:hidden, .no-print {
@@ -65,12 +65,10 @@ const printStyles = `
   main {
     margin: 0 !important;
     padding: 0 !important;
-    width: 297mm !important;
-    height: 210mm !important;
-    overflow: hidden !important;
-    position: absolute !important;
-    top: 0 !important;
-    left: 0 !important;
+    width: 100% !important;
+    height: auto !important;
+    overflow: visible !important;
+    position: static !important;
   }
   
   /* Esconde botões flutuantes (playlist, timer, etc) */
@@ -80,29 +78,31 @@ const printStyles = `
   
   /* Container principal */
   .p-6.bg-gray-100 {
-    padding: 5mm !important;
+    padding: 0 !important;
     margin: 0 !important;
     background: white !important;
-    width: 297mm !important;
-    height: 210mm !important;
-    display: flex !important;
-    flex-direction: column !important;
-    align-items: center !important;
+    width: 100% !important;
+    height: auto !important;
+    min-height: auto !important;
   }
   
   /* Container da ATA na impressão */
   .max-w-\\[297mm\\] {
-    max-width: 287mm !important;
-    width: 287mm !important;
+    max-width: 100% !important;
+    width: 100% !important;
     height: auto !important;
-    max-height: 200mm !important;
     box-shadow: none !important;
     border: 1px solid black !important;
-    overflow: hidden !important;
+    overflow: visible !important;
   }
   
-  /* Evitar quebra dentro de linhas */
+  /* Permitir quebra de página entre linhas de providências */
   .grid-cols-12 {
+    page-break-inside: auto;
+  }
+  
+  /* Evitar quebra no cabeçalho */
+  .border-b.border-gray-400:first-child {
     page-break-inside: avoid;
   }
   
@@ -110,6 +110,16 @@ const printStyles = `
   .whitespace-pre-wrap {
     white-space: pre-wrap !important;
     word-break: break-word !important;
+  }
+  
+  /* Texto compacto */
+  .text-xs {
+    font-size: 7pt !important;
+    line-height: 1.2 !important;
+  }
+  
+  .text-sm {
+    font-size: 8pt !important;
   }
 }
 `;
