@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useMemo, useContext } from 'react';
+import React, { useState, useEffect, useMemo, useContext } from 'react';
 import { User } from '@/entities/all';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -9,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Filter, Folder, Play, Timer, BookOpen, CalendarDays, Calendar } from "lucide-react";
+import { Search, Filter, Folder, BarChart3, Play, Timer, BookOpen, CalendarDays, Calendar } from "lucide-react";
 import { ActivityTimerContext } from "../contexts/ActivityTimerContext";
 import { canStartActivity } from "../utils/PredecessoraValidator";
 import PlanejamentoDocumentacaoModal from "./PlanejamentoDocumentacaoModal";
@@ -41,6 +40,7 @@ export default function AnaliseConcepcaoPlanejamentoTab({
   atividades = [],
   execucoes = [],
   usuarios = [],
+  documentos = [],
   onUpdate
 }) {
     const [searchTerm, setSearchTerm] = useState("");
