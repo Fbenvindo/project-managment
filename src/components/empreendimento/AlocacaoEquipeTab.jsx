@@ -365,7 +365,7 @@ export default function AlocacaoEquipeTab({
                   {usuariosEquipe.map(usuario => {
                     const email = usuario.email;
                     const alocacaoUser = alocacaoPorUsuarioDia[email] || { planejado: {}, reprogramado: {} };
-                    
+
                     return (
                       <React.Fragment key={usuario.id}>
                         {/* Linha Programado */}
@@ -373,6 +373,20 @@ export default function AlocacaoEquipeTab({
                           <td className="border border-gray-300 p-1 sticky left-0 bg-gray-100 z-10" rowSpan={2}>
                             <div className="font-medium">{usuario.nome || usuario.full_name}</div>
                             <div className="text-gray-500 text-xs">{usuario.cargo || ''}</div>
+                            <Select
+                              value={usuario.equipe_id || 'sem_equipe'}
+                              onValueChange={(value) => handleChangeEquipe(usuario.id, value)}
+                            >
+                              <SelectTrigger className="h-6 text-xs mt-1 w-24">
+                                <SelectValue />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="sem_equipe">Sem Equipe</SelectItem>
+                                {equipes.map(eq => (
+                                  <SelectItem key={eq.id} value={eq.id}>{eq.nome}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
                           </td>
                           <td className="border border-gray-300 p-1 text-xs">Programado</td>
                           {diasExibidos.map(dia => {
