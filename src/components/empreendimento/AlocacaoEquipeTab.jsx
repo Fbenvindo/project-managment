@@ -331,6 +331,7 @@ export default function AlocacaoEquipeTab({
   };
 
   return (
+    <>
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2">
@@ -338,6 +339,10 @@ export default function AlocacaoEquipeTab({
           Alocação por Equipe/Colaborador
         </CardTitle>
         <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setShowEquipeModal(true)}>
+            <Settings className="w-4 h-4 mr-1" />
+            Equipes
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setWeekOffset(prev => prev - 1)}>
             <ChevronLeft className="w-4 h-4" />
           </Button>
