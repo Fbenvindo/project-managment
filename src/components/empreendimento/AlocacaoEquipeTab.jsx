@@ -58,34 +58,118 @@ export default function AlocacaoEquipeTab({
   const empreendimentos = empreendimentosProp?.length > 0 ? empreendimentosProp : empreendimentosLocal;
   const documentos = documentosProp?.length > 0 ? documentosProp : documentosLocal;
   const equipes = equipesProp?.length > 0 ? equipesProp : equipesLocal;
+  const usuarios = usuariosProp?.length > 0 ? usuariosProp : usuariosLocal;
 
   // Carregar dados se não recebeu via props
-  useEffect(() => {
-    const loadData = async () => {
-      if (planejamentosProp?.length > 0) return; // Já tem dados via props
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      const [plans, emps, docs, teams, users] = await Promise.all([
+        retryWithBackoff(() => PlanejamentoAtividade.list(), 3, 2000, 'AlocacaoEquipe-Planejamentos'),
+        retryWithBackoff(() => Empreendimento.list(), 3, 2000, 'AlocacaoEquipe-Empreendimentos'),
+        retryWithBackoff(() => Documento.list(), 3, 2000, 'AlocacaoEquipe-Documentos'),
+        retryWithBackoff(() => Equipe.list(), 3, 2000, 'AlocacaoEquipe-Equipes'),
+        retryWithBackoff(() => Usuario.list(), 3, 2000, 'AlocacaoEquipe-Usuarios')
+      ]);
       
-      setIsLoading(true);
-      try {
-        const [plans, emps, docs, teams] = await Promise.all([
-          retryWithBackoff(() => PlanejamentoAtividade.list(), 3, 2000, 'AlocacaoEquipe-Planejamentos'),
-          retryWithBackoff(() => Empreendimento.list(), 3, 2000, 'AlocacaoEquipe-Empreendimentos'),
-          retryWithBackoff(() => Documento.list(), 3, 2000, 'AlocacaoEquipe-Documentos'),
-          retryWithBackoff(() => Equipe.list(), 3, 2000, 'AlocacaoEquipe-Equipes')
-        ]);
-        
-        setPlanejamentosLocal(plans || []);
-        setEmpreendimentosLocal(emps || []);
-        setDocumentosLocal(docs || []);
-        setEquipesLocal(teams || []);
-      } catch (error) {
-        console.error('Erro ao carregar dados de alocação:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      setPlanejamentosLocal(plans || []);
+      setEmpreendimentosLocal(emps || []);
+      setDocumentosLocal(docs || []);
+      setEquipesLocal(teams || []);
+      setUsuariosLocal(users || []);
+    } catch (error) {
+      console.error('Erro ao carregar dados de alocação:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    loadData();
+  useEffect(() => {
+    if (!planejamentosProp?.length) {
+      loadData();
+    }
   }, [planejamentosProp]);
+
+  // Funções para gerenciar equipes
+  const handleSaveEquipe = async (e) => {
+    e.preventDefault();
+    if (!equipeFormData.nome.trim()) {
+      alert('Nome da equipe é obrigatório.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      if (editingEquipe) {
+        await retryWithBackoff(() => Equipe.update(editingEquipe.id, equipeFormData), 3, 1000, 'updateEquipe');
+      } else {
+        await retryWithBackoff(() => Equipe.create(equipeFormData), 3, 1000, 'createEquipe');
+      }
+      setShowEquipeForm(false);
+      setEditingEquipe(null);
+      setEquipeFormData({ nome: '', cor: '#3B82F6', descricao: '' });
+      await loadData();
+    } catch (error) {
+      console.error('Erro ao salvar equipe:', error);
+      alert('Erro ao salvar equipe.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleEditEquipe = (equipe) => {
+    setEditingEquipe(equipe);
+    setEquipeFormData({
+      nome: equipe.nome || '',
+      cor: equipe.cor || '#3B82F6',
+      descricao: equipe.descricao || ''
+    });
+    setShowEquipeForm(true);
+  };
+
+  const handleDeleteEquipe = async (equipe) => {
+    const membros = usuarios.filter(u => u.equipe_id === equipe.id);
+    if (membros.length > 0) {
+      alert(`Esta equipe possui ${membros.length} membro(s). Remova-os antes de excluir.`);
+      return;
+    }
+    if (!window.confirm(`Deseja excluir a equipe "${equipe.nome}"?`)) return;
+    try {
+      await retryWithBackoff(() => Equipe.delete(equipe.id), 3, 1000, 'deleteEquipe');
+      await loadData();
+    } catch (error) {
+      console.error('Erro ao excluir equipe:', error);
+      alert('Erro ao excluir equipe.');
+    }
+  };
+
+  const handleOpenMembros = (equipe) => {
+    setSelectedEquipe(equipe);
+    setShowMembrosModal(true);
+  };
+
+  const handleAddMembro = async (usuario) => {
+    try {
+      await retryWithBackoff(() => Usuario.update(usuario.id, { equipe_id: selectedEquipe.id }), 3, 1000, 'addMembro');
+      await loadData();
+    } catch (error) {
+      console.error('Erro ao adicionar membro:', error);
+      alert('Erro ao adicionar membro.');
+    }
+  };
+
+  const handleRemoveMembro = async (usuario) => {
+    try {
+      await retryWithBackoff(() => Usuario.update(usuario.id, { equipe_id: null }), 3, 1000, 'removeMembro');
+      await loadData();
+    } catch (error) {
+      console.error('Erro ao remover membro:', error);
+      alert('Erro ao remover membro.');
+    }
+  };
+
+  const getMembros = (equipeId) => usuarios.filter(u => u.equipe_id === equipeId);
+  const getUsuariosSemEquipe = () => usuarios.filter(u => !u.equipe_id);
 
   // Gerar dias da semana atual + offset (3 semanas = 21 dias)
   const diasExibidos = useMemo(() => {
