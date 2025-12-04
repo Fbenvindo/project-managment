@@ -1,9 +1,20 @@
-
-import { useMemo } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Grid3x3 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Grid3x3, DollarSign } from "lucide-react";
 
 export default function GestaoTab({ empreendimento, documentos, planejamentos, atividades, usuarios, execucoes, onUpdate }) {
+  const [valorHora, setValorHora] = useState(0);
+
+  // Função para formatar valor em reais
+  const formatCurrency = (value) => {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL'
+    }).format(value);
+  };
 
   // Calcular matriz Disciplinas x Etapas
   const matrizDisciplinasEtapas = useMemo(() => {
