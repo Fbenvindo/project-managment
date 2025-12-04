@@ -234,8 +234,13 @@ export default function EmpreendimentoPage() {
       loadTabData('pavimentos');
     }
 
-    if (newTab === 'documentacao' && !tabData.documentos.loaded && !tabData.documentos.loading) {
-      loadTabData('documentos');
+    if (newTab === 'documentacao') {
+      if (!tabData.documentos.loaded && !tabData.documentos.loading) {
+        loadTabData('documentos');
+      }
+      if (!tabData.pavimentos.loaded && !tabData.pavimentos.loading) {
+        loadTabData('pavimentos');
+      }
     }
 
     if (newTab === 'gestao') {
