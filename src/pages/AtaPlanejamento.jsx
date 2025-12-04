@@ -424,15 +424,16 @@ export default function AtaPlanejamento() {
     window.print();
   };
 
-  // Agrupar providências por OS/Projeto
+  // Agrupar providências por OS/Projeto/NumProposta
   const providenciasAgrupadas = useMemo(() => {
     const grupos = {};
     providencias.forEach(p => {
-      const key = `${p.os}-${p.projeto}`;
+      const key = `${p.os}-${p.projeto}-${p.numProposta}`;
       if (!grupos[key]) {
         grupos[key] = {
           os: p.os,
           projeto: p.projeto,
+          numProposta: p.numProposta,
           items: []
         };
       }
