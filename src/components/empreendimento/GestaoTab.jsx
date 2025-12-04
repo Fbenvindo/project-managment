@@ -178,6 +178,42 @@ export default function GestaoTab({ empreendimento, documentos, planejamentos, a
 
   return (
     <div className="space-y-6">
+      {/* Campo de Valor por Hora */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="w-5 h-5 text-green-600" />
+            Configuração de Valor Financeiro
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-4">
+            <div className="flex-1 max-w-xs">
+              <Label htmlFor="valorHora" className="text-sm font-medium">Valor por Hora (R$/h)</Label>
+              <div className="relative mt-1">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R$</span>
+                <Input
+                  id="valorHora"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={valorHora || ''}
+                  onChange={(e) => setValorHora(parseFloat(e.target.value) || 0)}
+                  className="pl-10"
+                  placeholder="0,00"
+                />
+              </div>
+            </div>
+            {valorHora > 0 && (
+              <div className="text-sm text-gray-600 mt-6">
+                <span className="font-medium">Total Planejado:</span> {formatCurrency(matrizDisciplinasEtapas.totalGeral.planejado * valorHora)} | 
+                <span className="font-medium ml-2">Total Executado:</span> {formatCurrency(matrizDisciplinasEtapas.totalGeral.executado * valorHora)}
+              </div>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
