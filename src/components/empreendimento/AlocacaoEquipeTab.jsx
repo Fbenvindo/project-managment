@@ -1,10 +1,14 @@
 import React, { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Users, RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ChevronLeft, ChevronRight, Users, RefreshCw, Plus, Settings, Pencil, Trash2, UserPlus, X, Loader2 } from "lucide-react";
 import { format, addDays, startOfWeek, parseISO, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { PlanejamentoAtividade, Empreendimento, Documento, Equipe } from "@/entities/all";
+import { PlanejamentoAtividade, Empreendimento, Documento, Equipe, Usuario } from "@/entities/all";
 import { retryWithBackoff } from "../utils/apiUtils";
 
 // Função para parsear datas locais
