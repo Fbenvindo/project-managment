@@ -75,6 +75,11 @@ const printStyles = `
     padding: 0 !important;
     width: 100% !important;
   }
+  
+  /* Esconde botões flutuantes (playlist, timer, etc) */
+  [class*="fixed"], button[class*="fixed"], div[class*="fixed"] {
+    display: none !important;
+  }
 }
 `;
 
