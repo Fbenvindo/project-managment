@@ -126,7 +126,7 @@ export default function AtaPlanejamento() {
 
   const getStatusColor = (status) => {
     const found = STATUS_OPTIONS.find(s => s.value === status);
-    return found ? found.color : 'bg-gray-300';
+    return found ? `${found.color} ${found.textColor}` : 'bg-gray-300 text-white';
   };
 
   const getStatusLabel = (status) => {
