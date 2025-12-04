@@ -464,8 +464,8 @@ export default function AlocacaoEquipeTab({
                           <td className="border border-gray-300 p-1 text-xs">Reprogramado</td>
                           {diasExibidos.map(dia => {
                             const dataStr = format(dia, 'yyyy-MM-dd');
-                            const items = alocacaoUser.reprogramado[dataStr];
-                            const hasItems = items && items.size > 0;
+                            const items = alocacaoUser.reprogramado[dataStr] || [];
+                            const hasItems = items.length > 0;
                             
                             return (
                               <td 
@@ -473,10 +473,21 @@ export default function AlocacaoEquipeTab({
                                 className={`border border-gray-300 p-0.5 text-center ${
                                   dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-200' : ''
                                 }`}
-                                style={hasItems ? { backgroundColor: '#FFFF00' } : {}}
-                                title={hasItems ? Array.from(items).join(', ') : ''}
+                                style={hasItems ? { backgroundColor: '#FEF3C7' } : {}}
+                                title={hasItems ? items.map(i => `${i.label} (${i.empNome})`).join(', ') : ''}
                               >
-                                {hasItems ? Array.from(items).slice(0, 2).join(', ') : ''}
+                                <div className="flex flex-wrap gap-0.5 justify-center">
+                                  {items.slice(0, 3).map((item, idx) => (
+                                    <span 
+                                      key={idx} 
+                                      className="px-1 rounded text-white text-[10px] font-medium border border-yellow-500"
+                                      style={{ backgroundColor: item.cor }}
+                                    >
+                                      {item.label}
+                                    </span>
+                                  ))}
+                                  {items.length > 3 && <span className="text-[10px] text-gray-500">+{items.length - 3}</span>}
+                                </div>
                               </td>
                             );
                           })}
