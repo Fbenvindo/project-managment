@@ -1,9 +1,11 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ChevronLeft, ChevronRight, Users } from "lucide-react";
+import { ChevronLeft, ChevronRight, Users, RefreshCw } from "lucide-react";
 import { format, addDays, startOfWeek, parseISO, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { PlanejamentoAtividade, Empreendimento, Documento } from "@/entities/all";
+import { retryWithBackoff } from "../utils/apiUtils";
 
 // Função para parsear datas locais
 const parseLocalDate = (dateString) => {
@@ -22,12 +24,47 @@ const parseLocalDate = (dateString) => {
 };
 
 export default function AlocacaoEquipeTab({
-  planejamentos = [],
+  planejamentos: planejamentosProp,
   usuarios = [],
-  empreendimentos = [],
-  documentos = []
+  empreendimentos: empreendimentosProp,
+  documentos: documentosProp
 }) {
   const [weekOffset, setWeekOffset] = useState(0);
+  const [planejamentosLocal, setPlanejamentosLocal] = useState([]);
+  const [empreendimentosLocal, setEmpreendimentosLocal] = useState([]);
+  const [documentosLocal, setDocumentosLocal] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Usar dados props se disponíveis, senão usar local
+  const planejamentos = planejamentosProp?.length > 0 ? planejamentosProp : planejamentosLocal;
+  const empreendimentos = empreendimentosProp?.length > 0 ? empreendimentosProp : empreendimentosLocal;
+  const documentos = documentosProp?.length > 0 ? documentosProp : documentosLocal;
+
+  // Carregar dados se não recebeu via props
+  useEffect(() => {
+    const loadData = async () => {
+      if (planejamentosProp?.length > 0) return; // Já tem dados via props
+      
+      setIsLoading(true);
+      try {
+        const [plans, emps, docs] = await Promise.all([
+          retryWithBackoff(() => PlanejamentoAtividade.list(), 3, 2000, 'AlocacaoEquipe-Planejamentos'),
+          retryWithBackoff(() => Empreendimento.list(), 3, 2000, 'AlocacaoEquipe-Empreendimentos'),
+          retryWithBackoff(() => Documento.list(), 3, 2000, 'AlocacaoEquipe-Documentos')
+        ]);
+        
+        setPlanejamentosLocal(plans || []);
+        setEmpreendimentosLocal(emps || []);
+        setDocumentosLocal(docs || []);
+      } catch (error) {
+        console.error('Erro ao carregar dados de alocação:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [planejamentosProp]);
 
   // Gerar dias da semana atual + offset (3 semanas = 21 dias)
   const diasExibidos = useMemo(() => {
