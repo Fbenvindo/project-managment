@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from "react";
-import { Usuario } from "@/entities/all";
+import { Usuario, Equipe } from "@/entities/all";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Plus, Search, Users } from "lucide-react";
@@ -13,6 +13,7 @@ import UsuarioFilters from "../components/usuarios/UsuarioFilters";
 export default function Usuarios() {
   const { triggerUpdate } = useContext(ActivityTimerContext);
   const [usuarios, setUsuarios] = useState([]);
+  const [equipes, setEquipes] = useState([]);
   const [filteredUsuarios, setFilteredUsuarios] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [editingUsuario, setEditingUsuario] = useState(null);
@@ -22,7 +23,17 @@ export default function Usuarios() {
 
   useEffect(() => {
     loadUsuarios();
+    loadEquipes();
   }, []);
+
+  const loadEquipes = async () => {
+    try {
+      const data = await Equipe.list();
+      setEquipes(data || []);
+    } catch (error) {
+      console.error('Erro ao carregar equipes:', error);
+    }
+  };
 
   useEffect(() => {
     filterUsuarios();
@@ -169,6 +180,7 @@ export default function Usuarios() {
                         setEditingUsuario(null);
                     }}
                     allUsers={usuarios}
+                    equipes={equipes}
                 />
             )}
           </AnimatePresence>
