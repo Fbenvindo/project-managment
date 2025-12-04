@@ -156,8 +156,8 @@ export default function AlocacaoEquipeTab({
     try {
       console.log('Adicionando membro:', usuario.id, 'à equipe:', selectedEquipe.id);
       await retryWithBackoff(() => Usuario.update(usuario.id, { equipe_id: selectedEquipe.id }), 3, 1000, 'addMembro');
-      // Atualizar estado local imediatamente
-      setUsuariosLocal(prev => prev.map(u => u.id === usuario.id ? { ...u, equipe_id: selectedEquipe.id } : u));
+      console.log('✅ Membro adicionado com sucesso');
+      // Recarregar dados
       await loadData();
     } catch (error) {
       console.error('Erro ao adicionar membro:', error);
