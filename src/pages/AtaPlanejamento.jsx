@@ -15,11 +15,11 @@ import { retryWithBackoff } from "@/components/utils/apiUtils";
 const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/577f93874_logo_Interativa_versao_final_sem_fundo_0002.png";
 
 const STATUS_OPTIONS = [
-  { value: 'concluido', label: 'Concluído', color: 'bg-green-500' },
-  { value: 'pendente', label: 'Pendente', color: 'bg-yellow-400' },
-  { value: 'em_andamento', label: 'Em andamento', color: 'bg-orange-400' },
-  { value: 'cancelado', label: 'Cancelado', color: 'bg-red-500' },
-  { value: 'na', label: 'N/A', color: 'bg-gray-300' },
+  { value: 'concluido', label: 'Concluído', color: 'bg-green-600', textColor: 'text-white' },
+  { value: 'pendente', label: 'Pendente', color: 'bg-amber-300', textColor: 'text-amber-900' },
+  { value: 'em_andamento', label: 'Em andamento', color: 'bg-orange-300', textColor: 'text-orange-900' },
+  { value: 'cancelado', label: 'Cancelado', color: 'bg-red-400', textColor: 'text-white' },
+  { value: 'na', label: 'N/A', color: 'bg-gray-400', textColor: 'text-white' },
 ];
 
 const PAUTA_ITEMS = [
