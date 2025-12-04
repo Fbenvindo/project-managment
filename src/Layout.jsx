@@ -1,7 +1,7 @@
-import { useContext } from "react";
+import React, { useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Building2, Settings, Home, Users, Zap, Calendar, BarChart3 } from "lucide-react";
+import { Building2, Settings, Home, Users, Zap, Calendar, BarChart3, Briefcase } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -43,6 +43,15 @@ const LayoutComponent = ({ children, currentPageName }) => {
         title: "Empreendimentos",
         url: createPageUrl("Empreendimentos"),
         icon: Building2,
+        show: true
+      });
+    }
+
+    if (hasPermission('gestao')) {
+      items.push({
+        title: "Comercial",
+        url: createPageUrl("Comercial"),
+        icon: Briefcase,
         show: true
       });
     }

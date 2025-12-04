@@ -9,6 +9,7 @@ import AnaliseConcepcaoPlanejamento from './pages/AnaliseConcepcaoPlanejamento';
 import SeletorPlanejamento from './pages/SeletorPlanejamento';
 import Relatorios from './pages/Relatorios';
 import Planejamento from './pages/Planejamento';
+import Comercial from './pages/Comercial';
 import __Layout from './Layout.jsx';
 
 
@@ -24,6 +25,7 @@ export const PAGES = {
     "SeletorPlanejamento": SeletorPlanejamento,
     "Relatorios": Relatorios,
     "Planejamento": Planejamento,
+    "Comercial": Comercial,
 }
 
 export const pagesConfig = {
