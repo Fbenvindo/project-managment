@@ -260,6 +260,12 @@ export default function EmpreendimentoPage() {
       }
     }
 
+    if (newTab === 'alocacao') {
+      if (!tabData.documentos.loaded && !tabData.documentos.loading) {
+        loadTabData('documentos');
+      }
+    }
+
   }, [sharedData.loaded, sharedData.loading, tabData, loadSharedData, loadTabData]);
 
   const forceFullReload = useCallback(() => {
