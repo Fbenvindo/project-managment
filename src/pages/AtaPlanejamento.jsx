@@ -31,6 +31,29 @@ const PAUTA_ITEMS = [
   'Dúvidas Gerais',
 ];
 
+// Estilos de impressão
+const printStyles = `
+@media print {
+  @page {
+    size: A4 landscape;
+    margin: 10mm;
+  }
+  
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  
+  .print\\:hidden {
+    display: none !important;
+  }
+  
+  .no-print {
+    display: none !important;
+  }
+}
+`;
+
 export default function AtaPlanejamento() {
   const [isLoading, setIsLoading] = useState(true);
   const [empreendimentos, setEmpreendimentos] = useState([]);
