@@ -38,7 +38,8 @@ export default function EmpreendimentoPage() {
     atividades_projeto: { data: [], loaded: false, loading: false },
     catalogo_atividades: { data: [], loaded: false, loading: false },
     documentacao: { data: [], loaded: false, loading: false },
-    gestao: { data: [], loaded: false, loading: false }
+    gestao: { data: [], loaded: false, loading: false },
+    alocacao: { data: [], loaded: false, loading: false }
   });
 
   const [sharedData, setSharedData] = useState({
