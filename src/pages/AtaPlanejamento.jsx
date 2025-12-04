@@ -478,7 +478,7 @@ export default function AtaPlanejamento() {
   return (
     <>
       <style>{printStyles}</style>
-      <div className="p-6 bg-gray-100 min-h-screen print:p-0 print:bg-white print:min-h-0 flex flex-col items-center">
+      <div className="p-6 bg-gray-100 min-h-screen print:p-0 print:bg-white print:min-h-0 flex flex-col items-center print:overflow-visible">
       {/* Barra de Ações */}
                 <div className="mb-4 flex justify-between items-center no-print w-full max-w-[297mm]">
                   <div className="flex items-center gap-4">
