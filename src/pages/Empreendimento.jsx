@@ -23,7 +23,6 @@ import AtividadesProjetoTab from "../components/empreendimento/AtividadesProjeto
 import AnaliticoGlobalTab from "../components/empreendimento/AnaliticoGlobalTab";
 import AnaliseConcepcaoPlanejamentoTab from "../components/empreendimento/AnaliseConcepcaoPlanejamentoTab";
 import GestaoTab from "../components/empreendimento/GestaoTab";
-import AlocacaoEquipeTab from "../components/empreendimento/AlocacaoEquipeTab";
 import { ActivityTimerContext } from "@/components/contexts/ActivityTimerContext";
 
 export default function EmpreendimentoPage() {
@@ -38,8 +37,7 @@ export default function EmpreendimentoPage() {
     atividades_projeto: { data: [], loaded: false, loading: false },
     catalogo_atividades: { data: [], loaded: false, loading: false },
     documentacao: { data: [], loaded: false, loading: false },
-    gestao: { data: [], loaded: false, loading: false },
-    alocacao: { data: [], loaded: false, loading: false }
+    gestao: { data: [], loaded: false, loading: false }
   });
 
   const [sharedData, setSharedData] = useState({
@@ -260,11 +258,7 @@ export default function EmpreendimentoPage() {
       }
     }
 
-    if (newTab === 'alocacao') {
-      if (!tabData.documentos.loaded && !tabData.documentos.loading) {
-        loadTabData('documentos');
-      }
-    }
+
 
   }, [sharedData.loaded, sharedData.loading, tabData, loadSharedData, loadTabData]);
 
@@ -275,8 +269,7 @@ export default function EmpreendimentoPage() {
       atividades_projeto: { data: [], loaded: false, loading: false },
       catalogo_atividades: { data: [], loaded: false, loading: false },
       documentacao: { data: [], loaded: false, loading: false },
-      gestao: { data: [], loaded: false, loading: false },
-      alocacao: { data: [], loaded: false, loading: false }
+      gestao: { data: [], loaded: false, loading: false }
     });
     setSharedData(prev => ({ ...prev, loaded: false }));
     loadEmpreendimento();
@@ -330,7 +323,7 @@ export default function EmpreendimentoPage() {
         <EmpreendimentoHeader empreendimento={empreendimento} />
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className={`grid w-full ${hasAccessToGestao ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-7' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6'} bg-white shadow-sm`}>
+          <TabsList className={`grid w-full ${hasAccessToGestao ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5'} bg-white shadow-sm`}>
             <TabsTrigger value="documentos">Documentos</TabsTrigger>
             <TabsTrigger value="pavimentos">Pavimentos</TabsTrigger>
             <TabsTrigger value="atividades_projeto">Atividades do Projeto</TabsTrigger>
@@ -338,7 +331,6 @@ export default function EmpreendimentoPage() {
               <ListChecks className="w-4 h-4 mr-2" /> Catálogo
             </TabsTrigger>
             <TabsTrigger value="documentacao">Documentação</TabsTrigger>
-            <TabsTrigger value="alocacao">Alocação Equipe</TabsTrigger>
             {hasAccessToGestao && (
               <TabsTrigger value="gestao">Gestão</TabsTrigger>
             )}
@@ -448,22 +440,6 @@ export default function EmpreendimentoPage() {
                   }));
                   loadTabData('documentacao');
                 }}
-              />
-            ) : null}
-          </TabsContent>
-
-          <TabsContent value="alocacao">
-            {tabData.documentos.loading || sharedData.loading ? (
-              <div className="flex flex-col items-center justify-center h-96">
-                <RefreshCw className="w-8 h-8 animate-spin text-blue-500 mb-4" />
-                <p className="text-gray-600">Carregando alocação...</p>
-              </div>
-            ) : tabData.documentos.loaded && sharedData.loaded ? (
-              <AlocacaoEquipeTab
-                planejamentos={tabData.documentos.data.planejamentos || []}
-                usuarios={sharedData.usuarios}
-                empreendimentos={[empreendimento]}
-                documentos={tabData.documentos.data.documentos || []}
               />
             ) : null}
           </TabsContent>
