@@ -237,10 +237,10 @@ export default function AtaPlanejamento() {
   return (
     <>
       <style>{printStyles}</style>
-      <div className="p-6 bg-gray-100 min-h-screen print:p-0 print:bg-white print:min-h-0">
+      <div className="p-6 bg-gray-100 min-h-screen print:p-0 print:bg-white print:min-h-0 flex flex-col items-center">
       {/* Barra de Ações */}
-      <div className="mb-4 flex justify-between items-center no-print">
-        <h1 className="text-2xl font-bold text-gray-800">ATA de Planejamento</h1>
+                <div className="mb-4 flex justify-between items-center no-print w-full max-w-[297mm]">
+                  <h1 className="text-2xl font-bold text-gray-800">ATA de Planejamento</h1>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handlePrint}>
             <Printer className="w-4 h-4 mr-2" />
@@ -253,8 +253,8 @@ export default function AtaPlanejamento() {
         </div>
       </div>
 
-      {/* Documento ATA */}
-      <div className="bg-white border border-gray-400 print:border-black print:text-[10px]">
+      {/* Documento ATA - Formato A4 Paisagem */}
+                <div className="bg-white border border-gray-400 print:border-black print:text-[10px] w-full max-w-[297mm] shadow-lg" style={{ minHeight: '210mm' }}>
         {/* Cabeçalho */}
         <div className="grid grid-cols-12 border-b border-gray-400">
           <div className="col-span-2 border-r border-gray-400 p-2 flex items-center justify-center">
