@@ -206,7 +206,7 @@ export default function AtaPlanejamento() {
       </div>
 
       {/* Documento ATA */}
-      <div className="bg-white border border-gray-400 print:border-black">
+      <div className="bg-white border border-gray-400 print:border-black print:text-[10px]">
         {/* Cabeçalho */}
         <div className="grid grid-cols-12 border-b border-gray-400">
           <div className="col-span-2 border-r border-gray-400 p-2 flex items-center justify-center">
