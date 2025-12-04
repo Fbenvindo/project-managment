@@ -260,6 +260,20 @@ export default function AlocacaoEquipeTab({
     return grupos;
   }, [usuarios, equipesMap]);
 
+  // Gerar cores para empreendimentos
+  const coresEmpreendimentos = useMemo(() => {
+    const cores = [
+      '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', 
+      '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1',
+      '#14B8A6', '#A855F7', '#0EA5E9', '#22C55E', '#E11D48'
+    ];
+    const map = {};
+    (empreendimentos || []).forEach((emp, idx) => {
+      map[emp.id] = cores[idx % cores.length];
+    });
+    return map;
+  }, [empreendimentos]);
+
   // Processar planejamentos por usuário e dia
   const alocacaoPorUsuarioDia = useMemo(() => {
     const alocacao = {};
@@ -280,23 +294,24 @@ export default function AlocacaoEquipeTab({
         Object.entries(plan.horas_por_dia).forEach(([dataStr, horas]) => {
           if (Number(horas) > 0) {
             if (!alocacao[executor].planejado[dataStr]) {
-              alocacao[executor].planejado[dataStr] = new Set();
+              alocacao[executor].planejado[dataStr] = [];
             }
             
             // Identificar o empreendimento
             const empId = plan.empreendimento_id;
             const emp = empreendimentosMap[empId];
             const empNome = emp?.nome || 'Sem Emp.';
+            const empCor = coresEmpreendimentos[empId] || '#6B7280';
             
             // Extrair número do documento se houver
             const doc = plan.documento_id ? documentosMap[plan.documento_id] : null;
             const docNumero = doc?.numero || null;
             
-            // Adicionar identificador único
-            if (docNumero) {
-              alocacao[executor].planejado[dataStr].add(docNumero);
-            } else if (empNome) {
-              alocacao[executor].planejado[dataStr].add(empNome.substring(0, 3).toUpperCase());
+            // Adicionar item com cor
+            const label = docNumero || empNome.substring(0, 3).toUpperCase();
+            const exists = alocacao[executor].planejado[dataStr].find(i => i.label === label);
+            if (!exists) {
+              alocacao[executor].planejado[dataStr].push({ label, cor: empCor, empNome });
             }
           }
         });
@@ -313,18 +328,19 @@ export default function AlocacaoEquipeTab({
             Object.entries(plan.horas_por_dia).forEach(([dataStr, horas]) => {
               if (Number(horas) > 0) {
                 if (!alocacao[executor].reprogramado[dataStr]) {
-                  alocacao[executor].reprogramado[dataStr] = new Set();
+                  alocacao[executor].reprogramado[dataStr] = [];
                 }
                 
                 const doc = plan.documento_id ? documentosMap[plan.documento_id] : null;
                 const docNumero = doc?.numero || null;
                 const emp = empreendimentosMap[plan.empreendimento_id];
                 const empNome = emp?.nome || 'Sem Emp.';
+                const empCor = coresEmpreendimentos[plan.empreendimento_id] || '#6B7280';
                 
-                if (docNumero) {
-                  alocacao[executor].reprogramado[dataStr].add(docNumero);
-                } else if (empNome) {
-                  alocacao[executor].reprogramado[dataStr].add(empNome.substring(0, 3).toUpperCase());
+                const label = docNumero || empNome.substring(0, 3).toUpperCase();
+                const exists = alocacao[executor].reprogramado[dataStr].find(i => i.label === label);
+                if (!exists) {
+                  alocacao[executor].reprogramado[dataStr].push({ label, cor: empCor, empNome });
                 }
               }
             });
@@ -334,7 +350,7 @@ export default function AlocacaoEquipeTab({
     });
 
     return alocacao;
-  }, [planejamentos, empreendimentosMap, documentosMap]);
+  }, [planejamentos, empreendimentosMap, documentosMap, coresEmpreendimentos]);
 
   // Função para obter cor de fundo baseada em reprogramação
   const getCellStyle = (items, isReprogramado) => {
