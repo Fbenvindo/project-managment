@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Grid3x3, DollarSign } from "lucide-react";
 
-export default function GestaoTab({ empreendimento, documentos, planejamentos, atividades, usuarios, execucoes, onUpdate }) {
+export default function GestaoTab({ empreendimento, documentos, planejamentos, atividades, usuarios, execucoes, onUpdate, pavimentos = [] }) {
   const [valorHora, setValorHora] = useState(0);
 
   // Função para formatar valor em reais
