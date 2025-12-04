@@ -1,15 +1,21 @@
-import { useState, useEffect, useCallback, memo, useContext, useRef } from "react";
-import { Disciplina, Atividade } from "@/entities/all";
+import React, { useState, useEffect, useCallback, memo, useContext, useRef } from "react";
+import { Empreendimento, Disciplina, Atividade, Documento, Execucao, PlanejamentoAtividade, Usuario, AtividadeGenerica } from "@/entities/all";
 import { Button } from "@/components/ui/button";
-import { Plus, Calendar, TrendingUp } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Building2, Users, FileText, BarChart3, Plus, MapPin, RefreshCw, Calendar, TrendingUp, UsersRound } from "lucide-react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 import { ActivityTimerContext } from "@/components/contexts/ActivityTimerContext";
 import ExecucoesPorUsuario from "../components/dashboard/ExecucoesPorUsuario";
 import QuickActions from "../components/dashboard/QuickActions";
 import CalendarioPlanejamento from "../components/dashboard/CalendarioPlanejamento";
 import AlertaAtrasosEntrega from "../components/dashboard/AlertaAtrasosEntrega";
 import CurvaSPlanejamento from "../components/dashboard/CurvaSPlanejamento";
+import AlocacaoEquipeTab from "../components/empreendimento/AlocacaoEquipeTab";
 import { Skeleton } from "@/components/ui/skeleton";
-import { retryWithBackoff } from "../components/utils/apiUtils";
+import { retryWithBackoff, delay } from "../components/utils/apiUtils";
+import { parseISO, subDays, isValid, format } from 'date-fns';
+import { getNextWorkingDay, distribuirHorasPorDias } from '../components/utils/DateCalculator';
 import NovoPlanejamentoModal from "../components/planejamento/NovoPlanejamentoModal";
 
 const MemoizedExecucoesPorUsuario = memo(ExecucoesPorUsuario);
