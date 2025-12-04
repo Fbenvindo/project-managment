@@ -553,55 +553,7 @@ export default function AlocacaoEquipeTab({
       </DialogContent>
     </Dialog>
 
-    {/* Modal de Membros */}
-    <Dialog open={showMembrosModal} onOpenChange={setShowMembrosModal}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Membros: {selectedEquipe?.nome}</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <Label className="text-sm font-medium">Membros Atuais</Label>
-            <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
-              {selectedEquipe && getMembros(selectedEquipe.id).map(membro => (
-                <div key={membro.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
-                  <div>
-                    <span className="font-medium">{membro.nome}</span>
-                    <span className="text-xs text-gray-500 ml-2">{membro.cargo || ''}</span>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => handleRemoveMembro(membro)} className="text-red-600">
-                    <X className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
-              {selectedEquipe && getMembros(selectedEquipe.id).length === 0 && (
-                <p className="text-sm text-gray-500 italic">Nenhum membro</p>
-              )}
-            </div>
-          </div>
 
-          <div>
-            <Label className="text-sm font-medium">Adicionar Membros</Label>
-            <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
-              {getUsuariosSemEquipe().map(usuario => (
-                <div key={usuario.id} className="flex items-center justify-between p-2 bg-blue-50 rounded">
-                  <div>
-                    <span className="font-medium">{usuario.nome}</span>
-                    <span className="text-xs text-gray-500 ml-2">{usuario.cargo || ''}</span>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => handleAddMembro(usuario)} className="text-blue-600">
-                    <UserPlus className="w-4 h-4" />
-                  </Button>
-                </div>
-              ))}
-              {getUsuariosSemEquipe().length === 0 && (
-                <p className="text-sm text-gray-500 italic">Todos já estão em equipes</p>
-              )}
-            </div>
-          </div>
-        </div>
-      </DialogContent>
-    </Dialog>
     </>
   );
 }
