@@ -253,11 +253,17 @@ export default function GestaoTab({ empreendimento, documentos, planejamentos, a
                   <td className="border border-gray-300 p-3 text-center">
                     {matrizDisciplinasEtapas.totalGeral.percentual}%
                   </td>
-                  {matrizDisciplinasEtapas.disciplinas.map(disciplina => (
-                    <td key={disciplina} className="border border-gray-300 p-3 text-center">
-                      {matrizDisciplinasEtapas.totaisPorDisciplina[disciplina].planejado.toFixed(1)}h
-                    </td>
-                  ))}
+                  {matrizDisciplinasEtapas.disciplinas.map(disciplina => {
+                    const horas = matrizDisciplinasEtapas.totaisPorDisciplina[disciplina].planejado;
+                    return (
+                      <td key={disciplina} className="border border-gray-300 p-3 text-center">
+                        <div>{horas.toFixed(1)}h</div>
+                        {valorHora > 0 && (
+                          <div className="text-xs text-green-700 font-normal">{formatCurrency(horas * valorHora)}</div>
+                        )}
+                      </td>
+                    );
+                  })}
                 </tr>
 
                 {/* Linhas de Etapas */}
@@ -275,7 +281,10 @@ export default function GestaoTab({ empreendimento, documentos, planejamentos, a
                       
                       return (
                         <td key={disciplina} className={`border border-gray-300 p-3 text-center ${!temDados ? 'text-gray-400' : ''}`}>
-                          {dados.horasPlanejadas > 0 ? dados.horasPlanejadas.toFixed(1) : '0'}
+                          <div>{dados.horasPlanejadas > 0 ? dados.horasPlanejadas.toFixed(1) : '0'}</div>
+                          {valorHora > 0 && dados.horasPlanejadas > 0 && (
+                            <div className="text-xs text-green-700">{formatCurrency(dados.horasPlanejadas * valorHora)}</div>
+                          )}
                         </td>
                       );
                     })}
