@@ -190,12 +190,7 @@ export default function AtaPlanejamento() {
     os: '',
     projeto: '',
     numProposta: '',
-    providencias: '',
-    gerencia: '',
-    responsaveis: [],
-    dataReuniao: '',
-    dataRetorno: '',
-    status: 'pendente'
+    linhas: [{ providencias: '', gerencia: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
   });
 
   useEffect(() => {
