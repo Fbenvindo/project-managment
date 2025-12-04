@@ -108,15 +108,12 @@ export default function GestaoTab({ empreendimento, documentos, planejamentos, a
         }
       });
 
-      // Buscar execuções relacionadas aos planejamentos deste documento
+      // Buscar tempo executado diretamente dos planejamentos deste documento
       const planejamentosDoDocumento = planejamentos.filter(p => p.documento_id === doc.id);
       
       planejamentosDoDocumento.forEach(plano => {
         const etapa = plano.etapa;
-        
-        // Buscar execuções deste planejamento
-        const execucoesDoPlano = execucoes.filter(exec => exec.planejamento_id === plano.id);
-        const tempoExecutado = execucoesDoPlano.reduce((sum, exec) => sum + (exec.tempo_total || 0), 0);
+        const tempoExecutado = plano.tempo_executado || 0;
 
         if (matriz[disciplinaDoc] && matriz[disciplinaDoc][etapa]) {
           matriz[disciplinaDoc][etapa].horasExecutadas += tempoExecutado;
