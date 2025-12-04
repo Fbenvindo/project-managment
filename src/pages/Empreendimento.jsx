@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo, useContext } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useContext } from "react";
 import { useLocation } from "react-router-dom";
 import {
   Empreendimento,
@@ -237,6 +237,9 @@ export default function EmpreendimentoPage() {
     if (newTab === 'gestao') {
       if (!tabData.documentos.loaded && !tabData.documentos.loading) {
         loadTabData('documentos');
+      }
+      if (!tabData.pavimentos.loaded && !tabData.pavimentos.loading) {
+        loadTabData('pavimentos');
       }
       if (!tabData.gestao.loaded) {
           setTabData(prev => ({
