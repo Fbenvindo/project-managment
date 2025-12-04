@@ -169,8 +169,8 @@ export default function AlocacaoEquipeTab({
     try {
       console.log('Removendo membro:', usuario.id, 'da equipe');
       await retryWithBackoff(() => Usuario.update(usuario.id, { equipe_id: null }), 3, 1000, 'removeMembro');
-      // Atualizar estado local imediatamente
-      setUsuariosLocal(prev => prev.map(u => u.id === usuario.id ? { ...u, equipe_id: null } : u));
+      console.log('✅ Membro removido com sucesso');
+      // Recarregar dados
       await loadData();
     } catch (error) {
       console.error('Erro ao remover membro:', error);
