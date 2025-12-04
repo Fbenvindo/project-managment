@@ -379,7 +379,7 @@ export default function AtaPlanejamento() {
   const handleAddLinha = () => {
     setNovaProvidencia(prev => ({
       ...prev,
-      linhas: [...prev.linhas, { providencias: '', gerencia: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
+      linhas: [...prev.linhas, { providencias: '', gerencia: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente', numProposta: '' }]
     }));
   };
 
