@@ -36,33 +36,33 @@ const printStyles = `
 @media print {
   @page {
     size: A4 landscape;
-    margin: 10mm;
+    margin: 5mm;
   }
-  
+
   * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     box-sizing: border-box !important;
   }
-  
+
   html, body {
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
     height: auto !important;
     overflow: visible !important;
-    font-size: 10px !important;
+    font-size: 8px !important;
   }
-  
+
   .print\\:hidden, .no-print {
     display: none !important;
   }
-  
+
   /* Esconde sidebar e elementos do layout */
   aside, nav, header, footer, [data-sidebar], [data-radix-popper-content-wrapper] {
     display: none !important;
   }
-  
+
   main {
     margin: 0 !important;
     padding: 0 !important;
@@ -70,19 +70,18 @@ const printStyles = `
     height: auto !important;
     overflow: visible !important;
     position: static !important;
-    overflow-y: visible !important;
   }
 
   main > div {
     overflow: visible !important;
     height: auto !important;
   }
-  
+
   /* Esconde botões flutuantes (playlist, timer, etc) */
   [class*="fixed"], button[class*="fixed"], div[class*="fixed"] {
     display: none !important;
   }
-  
+
   /* Container principal */
   .p-6.bg-gray-100 {
     padding: 0 !important;
@@ -92,9 +91,8 @@ const printStyles = `
     height: auto !important;
     min-height: auto !important;
     display: block !important;
-    align-items: flex-start !important;
   }
-  
+
   /* Container da ATA na impressão */
   .max-w-\\[297mm\\] {
     max-width: 100% !important;
@@ -103,7 +101,6 @@ const printStyles = `
     box-shadow: none !important;
     border: 1px solid black !important;
     overflow: visible !important;
-    overflow-y: visible !important;
   }
 
   /* Remove barras de rolamento */
@@ -115,14 +112,13 @@ const printStyles = `
     scrollbar-width: none !important;
     -ms-overflow-style: none !important;
   }
-  
+
   /* Grid de 12 colunas - manter estrutura */
   .grid-cols-12 {
     display: grid !important;
     grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
-    page-break-inside: avoid !important;
   }
-  
+
   /* Colunas específicas */
   .col-span-1 { grid-column: span 1 / span 1 !important; }
   .col-span-2 { grid-column: span 2 / span 2 !important; }
@@ -131,48 +127,60 @@ const printStyles = `
   .col-span-7 { grid-column: span 7 / span 7 !important; }
   .col-span-8 { grid-column: span 8 / span 8 !important; }
   .col-span-11 { grid-column: span 11 / span 11 !important; }
-  
+
   /* Bordas */
   .border-r { border-right: 1px solid #9ca3af !important; }
   .border-b { border-bottom: 1px solid #9ca3af !important; }
   .border-gray-400 { border-color: #9ca3af !important; }
   .border-gray-300 { border-color: #d1d5db !important; }
-  
+
   /* Cores de fundo */
   .bg-yellow-100 { background-color: #fef9c3 !important; }
   .bg-yellow-50 { background-color: #fefce8 !important; }
   .bg-gray-50 { background-color: #f9fafb !important; }
   .bg-white { background-color: white !important; }
-  
+
   /* Texto */
   .text-center { text-align: center !important; }
-  .text-sm { font-size: 10px !important; }
-  .text-xs { font-size: 9px !important; }
+  .text-sm { font-size: 8px !important; }
+  .text-xs { font-size: 7px !important; }
   .font-medium { font-weight: 500 !important; }
   .font-bold { font-weight: 700 !important; }
-  
+
   /* Padding */
-  .p-1 { padding: 2px !important; }
-  .p-2 { padding: 4px !important; }
-  
+  .p-1 { padding: 1px !important; }
+  .p-2 { padding: 2px !important; }
+
   /* Permitir quebra de texto */
   .whitespace-pre-wrap {
     white-space: pre-wrap !important;
     word-break: break-word !important;
   }
-  
+
   /* Esconder inputs na impressão, mostrar só valor */
   input {
     border: none !important;
     background: transparent !important;
     padding: 0 !important;
   }
-  
+
   select {
     -webkit-appearance: none !important;
     appearance: none !important;
     border: none !important;
     background: transparent !important;
+  }
+
+  /* Tabela de providências */
+  table {
+    width: 100% !important;
+    table-layout: fixed !important;
+    font-size: 7px !important;
+  }
+
+  td, th {
+    padding: 2px !important;
+    word-wrap: break-word !important;
   }
 }
 `;
