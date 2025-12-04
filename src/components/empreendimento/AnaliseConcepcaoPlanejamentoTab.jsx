@@ -39,6 +39,21 @@ const ATIVIDADES_MULTIPLICAR_POR_FOLHAS = [
   'Carimbo, nota e legenda'
 ];
 
+// Atividades que devem ter tempo multiplicado por pavimento e por etapa
+const ATIVIDADES_MULTIPLICAR_POR_PAVIMENTO_ETAPA = [
+  'Confecção de A-',
+  'Confecção de E-'
+];
+
+// Etapas para multiplicação
+const ETAPAS_PARA_MULTIPLICAR = [
+  'Estudo Preliminar',
+  'Ante-Projeto',
+  'Projeto Básico',
+  'Projeto Executivo',
+  'Liberado para Obra'
+];
+
 export default function AnaliseConcepcaoPlanejamentoTab({
   empreendimentoId,
   planejamentos = [], 
