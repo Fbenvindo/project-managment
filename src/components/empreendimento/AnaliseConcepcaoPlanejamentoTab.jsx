@@ -61,6 +61,7 @@ export default function AnaliseConcepcaoPlanejamentoTab({
   execucoes = [],
   usuarios = [],
   documentos = [], // Adicionar documentos para contar folhas
+  pavimentos = [], // Adicionar pavimentos para multiplicação
   onUpdate
 }) {
     const [searchTerm, setSearchTerm] = useState("");
