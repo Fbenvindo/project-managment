@@ -39,12 +39,16 @@ const printStyles = `
     margin: 5mm;
   }
   
-  html, body {
+  * {
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
+  }
+  
+  html, body {
     margin: 0 !important;
     padding: 0 !important;
-    font-size: 9px !important;
+    font-size: 8px !important;
+    overflow: visible !important;
   }
   
   .print\\:hidden, .no-print {
@@ -60,6 +64,7 @@ const printStyles = `
     margin: 0 !important;
     padding: 0 !important;
     width: 100% !important;
+    overflow: visible !important;
   }
   
   /* Esconde botões flutuantes (playlist, timer, etc) */
@@ -76,27 +81,39 @@ const printStyles = `
     background: white !important;
   }
   
-  /* Ajustes de tabela para impressão */
-  .grid-cols-12 {
-    display: grid !important;
-    grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+  /* Container da ATA na impressão */
+  .max-w-\\[297mm\\] {
+    max-width: 100% !important;
+    width: 100% !important;
+    min-height: auto !important;
+    box-shadow: none !important;
   }
   
-  /* Quebra de página */
-  .page-break-inside-avoid {
+  /* Evitar quebra dentro de linhas */
+  .grid-cols-12 {
     page-break-inside: avoid;
   }
   
-  /* Texto menor na impressão */
-  td, th, div {
+  /* Texto compacto na impressão */
+  td, th, div, span, p {
+    font-size: 7px !important;
+    line-height: 1.1 !important;
+  }
+  
+  /* Cabeçalho maior */
+  .text-sm {
     font-size: 8px !important;
-    line-height: 1.2 !important;
   }
   
   /* Permitir quebra de texto */
   .whitespace-pre-wrap {
     white-space: pre-wrap !important;
     word-break: break-word !important;
+  }
+  
+  /* Compactar padding */
+  .p-1, .p-2 {
+    padding: 2px !important;
   }
 }
 `;
