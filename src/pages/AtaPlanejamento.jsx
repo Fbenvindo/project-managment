@@ -36,12 +36,25 @@ const printStyles = `
 @media print {
   @page {
     size: A4 landscape;
-    margin: 10mm;
+    margin: 5mm;
+  }
+  
+  html, body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  
+  /* Remove cabeçalho e rodapé do navegador */
+  @page {
+    margin-top: 0;
+    margin-bottom: 0;
   }
   
   body {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
+    padding-top: 5mm;
+    padding-bottom: 5mm;
   }
   
   .print\\:hidden {
@@ -50,6 +63,17 @@ const printStyles = `
   
   .no-print {
     display: none !important;
+  }
+  
+  /* Esconde sidebar e elementos do layout */
+  aside, nav, header, footer, [data-sidebar] {
+    display: none !important;
+  }
+  
+  main {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
   }
 }
 `;
