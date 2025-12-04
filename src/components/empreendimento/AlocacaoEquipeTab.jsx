@@ -144,7 +144,9 @@ export default function AlocacaoEquipeTab({
   };
 
   const handleOpenMembros = (equipe) => {
+    console.log('Abrindo modal de membros para:', equipe);
     setSelectedEquipe(equipe);
+    setShowEquipeModal(false); // Fechar modal de gerenciar equipes
     setShowMembrosModal(true);
   };
 
