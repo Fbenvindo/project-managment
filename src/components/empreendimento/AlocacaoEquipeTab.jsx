@@ -463,5 +463,156 @@ export default function AlocacaoEquipeTab({
         )}
       </CardContent>
     </Card>
+
+    {/* Modal de Gerenciamento de Equipes */}
+    <Dialog open={showEquipeModal} onOpenChange={setShowEquipeModal}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader>
+          <DialogTitle className="flex items-center justify-between">
+            <span>Gerenciar Equipes</span>
+            <Button size="sm" onClick={() => { setShowEquipeForm(true); setEditingEquipe(null); setEquipeFormData({ nome: '', cor: '#3B82F6', descricao: '' }); }}>
+              <Plus className="w-4 h-4 mr-1" />
+              Nova Equipe
+            </Button>
+          </DialogTitle>
+        </DialogHeader>
+        
+        {showEquipeForm ? (
+          <form onSubmit={handleSaveEquipe} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="nome">Nome da Equipe *</Label>
+              <Input
+                id="nome"
+                value={equipeFormData.nome}
+                onChange={(e) => setEquipeFormData({ ...equipeFormData, nome: e.target.value })}
+                placeholder="Ex: Projetos, Coordenação"
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="cor">Cor</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="cor"
+                  type="color"
+                  value={equipeFormData.cor}
+                  onChange={(e) => setEquipeFormData({ ...equipeFormData, cor: e.target.value })}
+                  className="w-16 h-10 p-1"
+                />
+                <Input
+                  value={equipeFormData.cor}
+                  onChange={(e) => setEquipeFormData({ ...equipeFormData, cor: e.target.value })}
+                  placeholder="#3B82F6"
+                  className="flex-1"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="descricao">Descrição</Label>
+              <Input
+                id="descricao"
+                value={equipeFormData.descricao}
+                onChange={(e) => setEquipeFormData({ ...equipeFormData, descricao: e.target.value })}
+                placeholder="Descrição opcional"
+              />
+            </div>
+            <div className="flex justify-end gap-3">
+              <Button type="button" variant="outline" onClick={() => setShowEquipeForm(false)}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSubmitting}>
+                {isSubmitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+                {editingEquipe ? 'Salvar' : 'Criar'}
+              </Button>
+            </div>
+          </form>
+        ) : (
+          <div className="space-y-3 max-h-96 overflow-y-auto">
+            {equipes.map(equipe => {
+              const membros = getMembros(equipe.id);
+              return (
+                <div key={equipe.id} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <div className="w-4 h-4 rounded" style={{ backgroundColor: equipe.cor || '#3B82F6' }} />
+                    <div>
+                      <div className="font-medium">{equipe.nome}</div>
+                      <div className="text-xs text-gray-500">{membros.length} membro(s)</div>
+                    </div>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button variant="ghost" size="sm" onClick={() => handleOpenMembros(equipe)}>
+                      <UserPlus className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleEditEquipe(equipe)}>
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button variant="ghost" size="sm" onClick={() => handleDeleteEquipe(equipe)} className="text-red-600">
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+            {equipes.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+                <p>Nenhuma equipe cadastrada</p>
+              </div>
+            )}
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+
+    {/* Modal de Membros */}
+    <Dialog open={showMembrosModal} onOpenChange={setShowMembrosModal}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Membros: {selectedEquipe?.nome}</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div>
+            <Label className="text-sm font-medium">Membros Atuais</Label>
+            <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
+              {selectedEquipe && getMembros(selectedEquipe.id).map(membro => (
+                <div key={membro.id} className="flex items-center justify-between p-2 bg-gray-50 rounded">
+                  <div>
+                    <span className="font-medium">{membro.nome}</span>
+                    <span className="text-xs text-gray-500 ml-2">{membro.cargo || ''}</span>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => handleRemoveMembro(membro)} className="text-red-600">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+              {selectedEquipe && getMembros(selectedEquipe.id).length === 0 && (
+                <p className="text-sm text-gray-500 italic">Nenhum membro</p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <Label className="text-sm font-medium">Adicionar Membros</Label>
+            <div className="mt-2 space-y-2 max-h-40 overflow-y-auto">
+              {getUsuariosSemEquipe().map(usuario => (
+                <div key={usuario.id} className="flex items-center justify-between p-2 bg-blue-50 rounded">
+                  <div>
+                    <span className="font-medium">{usuario.nome}</span>
+                    <span className="text-xs text-gray-500 ml-2">{usuario.cargo || ''}</span>
+                  </div>
+                  <Button variant="ghost" size="sm" onClick={() => handleAddMembro(usuario)} className="text-blue-600">
+                    <UserPlus className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+              {getUsuariosSemEquipe().length === 0 && (
+                <p className="text-sm text-gray-500 italic">Todos já estão em equipes</p>
+              )}
+            </div>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+    </>
   );
 }
