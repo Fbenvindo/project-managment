@@ -162,9 +162,13 @@ const printStyles = `
 
 export default function AtaPlanejamento() {
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [empreendimentos, setEmpreendimentos] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [documentos, setDocumentos] = useState([]);
+  const [atasRegistradas, setAtasRegistradas] = useState([]);
+  const [viewMode, setViewMode] = useState('list'); // 'list', 'edit', 'new'
+  const [currentAtaId, setCurrentAtaId] = useState(null);
   
   // Dados da ATA
   const [ataData, setAtaData] = useState({
@@ -177,6 +181,7 @@ export default function AtaPlanejamento() {
     rev: '00',
     controle: 'RG-PO-27',
     emissao: '/ /',
+    status: 'rascunho'
   });
 
   const [providencias, setProvidencias] = useState([]);
@@ -200,19 +205,108 @@ export default function AtaPlanejamento() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [emps, users, docs] = await Promise.all([
+      const [emps, users, docs, atas] = await Promise.all([
         retryWithBackoff(() => Empreendimento.list(), 3, 2000, 'AtaPlanejamento-Empreendimentos'),
         retryWithBackoff(() => Usuario.list(), 3, 2000, 'AtaPlanejamento-Usuarios'),
         retryWithBackoff(() => Documento.list(), 3, 2000, 'AtaPlanejamento-Documentos'),
+        retryWithBackoff(() => AtaReuniao.list('-created_date'), 3, 2000, 'AtaPlanejamento-Atas'),
       ]);
       setEmpreendimentos(emps || []);
       setUsuarios(users || []);
       setDocumentos(docs || []);
+      setAtasRegistradas(atas || []);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSaveAta = async () => {
+    setIsSaving(true);
+    try {
+      const ataToSave = {
+        ...ataData,
+        providencias: providencias.map(p => ({
+          os: p.os,
+          projeto: p.projeto,
+          numProposta: p.numProposta,
+          providencias: p.providencias,
+          gerencia: p.gerencia,
+          responsaveis: p.responsaveis,
+          dataReuniao: p.dataReuniao,
+          dataRetorno: p.dataRetorno,
+          status: p.status
+        }))
+      };
+
+      if (currentAtaId) {
+        await AtaReuniao.update(currentAtaId, ataToSave);
+      } else {
+        const newAta = await AtaReuniao.create(ataToSave);
+        setCurrentAtaId(newAta.id);
+      }
+      
+      await loadData();
+      alert('ATA salva com sucesso!');
+    } catch (error) {
+      console.error('Erro ao salvar ATA:', error);
+      alert('Erro ao salvar ATA. Tente novamente.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleNewAta = () => {
+    setCurrentAtaId(null);
+    setAtaData({
+      assunto: 'Reunião de Planejamento / Semanal',
+      local: 'Home Office',
+      data: format(new Date(), 'yyyy-MM-dd'),
+      horario: '14h',
+      participantes: [],
+      folha: '1/',
+      rev: '00',
+      controle: 'RG-PO-27',
+      emissao: '/ /',
+      status: 'rascunho'
+    });
+    setProvidencias([]);
+    setViewMode('edit');
+  };
+
+  const handleOpenAta = (ata) => {
+    setCurrentAtaId(ata.id);
+    setAtaData({
+      assunto: ata.assunto || '',
+      local: ata.local || '',
+      data: ata.data || format(new Date(), 'yyyy-MM-dd'),
+      horario: ata.horario || '',
+      participantes: ata.participantes || [],
+      folha: ata.folha || '1/',
+      rev: ata.rev || '00',
+      controle: ata.controle || 'RG-PO-27',
+      emissao: ata.emissao || '/ /',
+      status: ata.status || 'rascunho'
+    });
+    setProvidencias((ata.providencias || []).map((p, idx) => ({ ...p, id: Date.now() + idx })));
+    setViewMode('edit');
+  };
+
+  const handleDeleteAta = async (ataId) => {
+    if (!confirm('Deseja excluir esta ATA?')) return;
+    try {
+      await AtaReuniao.delete(ataId);
+      await loadData();
+    } catch (error) {
+      console.error('Erro ao excluir ATA:', error);
+      alert('Erro ao excluir ATA.');
+    }
+  };
+
+  const handleBackToList = () => {
+    setViewMode('list');
+    setCurrentAtaId(null);
   };
 
   const toggleParticipante = (email) => {
