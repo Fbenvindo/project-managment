@@ -314,21 +314,52 @@ export default function AtaPlanejamento() {
   };
 
   const handleAddProvidencia = () => {
-    if (!novaProvidencia.providencias.trim()) return;
+    const linhasValidas = novaProvidencia.linhas.filter(l => l.providencias.trim());
+    if (linhasValidas.length === 0) return;
     
-    setProvidencias(prev => [...prev, { ...novaProvidencia, id: Date.now() }]);
+    const novasProvidencias = linhasValidas.map((linha, idx) => ({
+      id: Date.now() + idx,
+      os: novaProvidencia.os,
+      projeto: novaProvidencia.projeto,
+      numProposta: novaProvidencia.numProposta,
+      providencias: linha.providencias,
+      gerencia: linha.gerencia,
+      responsaveis: linha.responsaveis,
+      dataReuniao: linha.dataReuniao,
+      dataRetorno: linha.dataRetorno,
+      status: linha.status
+    }));
+    
+    setProvidencias(prev => [...prev, ...novasProvidencias]);
     setNovaProvidencia({
       os: '',
       projeto: '',
       numProposta: '',
-      providencias: '',
-      gerencia: '',
-      responsaveis: [],
-      dataReuniao: '',
-      dataRetorno: '',
-      status: 'pendente'
+      linhas: [{ providencias: '', gerencia: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
     });
     setShowAddModal(false);
+  };
+
+  const handleAddLinha = () => {
+    setNovaProvidencia(prev => ({
+      ...prev,
+      linhas: [...prev.linhas, { providencias: '', gerencia: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
+    }));
+  };
+
+  const handleRemoveLinha = (idx) => {
+    if (novaProvidencia.linhas.length <= 1) return;
+    setNovaProvidencia(prev => ({
+      ...prev,
+      linhas: prev.linhas.filter((_, i) => i !== idx)
+    }));
+  };
+
+  const handleUpdateLinha = (idx, field, value) => {
+    setNovaProvidencia(prev => ({
+      ...prev,
+      linhas: prev.linhas.map((linha, i) => i === idx ? { ...linha, [field]: value } : linha)
+    }));
   };
 
   const handleUpdateProvidencia = (id, field, value) => {
