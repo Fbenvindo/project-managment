@@ -36,7 +36,7 @@ const printStyles = `
 @media print {
   @page {
     size: A4 landscape;
-    margin: 5mm;
+    margin: 10mm;
   }
   
   * {
@@ -51,6 +51,7 @@ const printStyles = `
     width: 100% !important;
     height: auto !important;
     overflow: visible !important;
+    font-size: 10px !important;
   }
   
   .print\\:hidden, .no-print {
@@ -85,6 +86,7 @@ const printStyles = `
     height: auto !important;
     min-height: auto !important;
     display: block !important;
+    align-items: flex-start !important;
   }
   
   /* Container da ATA na impressão */
@@ -97,15 +99,63 @@ const printStyles = `
     overflow: visible !important;
   }
   
-  /* Permitir quebra de página entre linhas de providências */
+  /* Grid de 12 colunas - manter estrutura */
   .grid-cols-12 {
-    page-break-inside: auto;
+    display: grid !important;
+    grid-template-columns: repeat(12, minmax(0, 1fr)) !important;
+    page-break-inside: avoid !important;
   }
+  
+  /* Colunas específicas */
+  .col-span-1 { grid-column: span 1 / span 1 !important; }
+  .col-span-2 { grid-column: span 2 / span 2 !important; }
+  .col-span-3 { grid-column: span 3 / span 3 !important; }
+  .col-span-4 { grid-column: span 4 / span 4 !important; }
+  .col-span-7 { grid-column: span 7 / span 7 !important; }
+  .col-span-8 { grid-column: span 8 / span 8 !important; }
+  .col-span-11 { grid-column: span 11 / span 11 !important; }
+  
+  /* Bordas */
+  .border-r { border-right: 1px solid #9ca3af !important; }
+  .border-b { border-bottom: 1px solid #9ca3af !important; }
+  .border-gray-400 { border-color: #9ca3af !important; }
+  .border-gray-300 { border-color: #d1d5db !important; }
+  
+  /* Cores de fundo */
+  .bg-yellow-100 { background-color: #fef9c3 !important; }
+  .bg-yellow-50 { background-color: #fefce8 !important; }
+  .bg-gray-50 { background-color: #f9fafb !important; }
+  .bg-white { background-color: white !important; }
+  
+  /* Texto */
+  .text-center { text-align: center !important; }
+  .text-sm { font-size: 10px !important; }
+  .text-xs { font-size: 9px !important; }
+  .font-medium { font-weight: 500 !important; }
+  .font-bold { font-weight: 700 !important; }
+  
+  /* Padding */
+  .p-1 { padding: 2px !important; }
+  .p-2 { padding: 4px !important; }
   
   /* Permitir quebra de texto */
   .whitespace-pre-wrap {
     white-space: pre-wrap !important;
     word-break: break-word !important;
+  }
+  
+  /* Esconder inputs na impressão, mostrar só valor */
+  input {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+  }
+  
+  select {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    border: none !important;
+    background: transparent !important;
   }
 }
 `;
