@@ -334,13 +334,22 @@ export default function GestaoTab({ empreendimento, documentos, planejamentos, a
                 <tr className="bg-green-50 font-semibold">
                   <td className="border border-gray-300 p-3 sticky left-0 bg-green-100 z-10">TOTAL</td>
                   <td className="border border-gray-300 p-3 text-center">
-                    {matrizDisciplinasEtapas.totalGeral.executado.toFixed(1)}h
+                    <div>{matrizDisciplinasEtapas.totalGeral.executado.toFixed(1)}h</div>
+                    {valorHora > 0 && (
+                      <div className="text-xs text-green-700 font-normal">{formatCurrency(matrizDisciplinasEtapas.totalGeral.executado * valorHora)}</div>
+                    )}
                   </td>
-                  {matrizDisciplinasEtapas.disciplinas.map(disciplina => (
-                    <td key={disciplina} className="border border-gray-300 p-3 text-center">
-                      {matrizDisciplinasEtapas.totaisPorDisciplina[disciplina].executado.toFixed(1)}h
-                    </td>
-                  ))}
+                  {matrizDisciplinasEtapas.disciplinas.map(disciplina => {
+                    const horas = matrizDisciplinasEtapas.totaisPorDisciplina[disciplina].executado;
+                    return (
+                      <td key={disciplina} className="border border-gray-300 p-3 text-center">
+                        <div>{horas.toFixed(1)}h</div>
+                        {valorHora > 0 && horas > 0 && (
+                          <div className="text-xs text-green-700 font-normal">{formatCurrency(horas * valorHora)}</div>
+                        )}
+                      </td>
+                    );
+                  })}
                 </tr>
 
                 {/* Linhas de Etapas */}
@@ -350,7 +359,10 @@ export default function GestaoTab({ empreendimento, documentos, planejamentos, a
                       {etapa}
                     </td>
                     <td className="border border-gray-300 p-3 text-center font-semibold">
-                      {matrizDisciplinasEtapas.totaisPorEtapa[etapa].executado.toFixed(1)}h
+                      <div>{matrizDisciplinasEtapas.totaisPorEtapa[etapa].executado.toFixed(1)}h</div>
+                      {valorHora > 0 && matrizDisciplinasEtapas.totaisPorEtapa[etapa].executado > 0 && (
+                        <div className="text-xs text-green-700 font-normal">{formatCurrency(matrizDisciplinasEtapas.totaisPorEtapa[etapa].executado * valorHora)}</div>
+                      )}
                     </td>
                     {matrizDisciplinasEtapas.disciplinas.map(disciplina => {
                       const dados = matrizDisciplinasEtapas.matriz[disciplina][etapa];
@@ -363,7 +375,10 @@ export default function GestaoTab({ empreendimento, documentos, planejamentos, a
                             temDados ? 'font-medium text-green-700' : 'text-gray-400'
                           }`}
                         >
-                          {dados.horasExecutadas > 0 ? dados.horasExecutadas.toFixed(1) : '0'}
+                          <div>{dados.horasExecutadas > 0 ? dados.horasExecutadas.toFixed(1) : '0'}</div>
+                          {valorHora > 0 && dados.horasExecutadas > 0 && (
+                            <div className="text-xs">{formatCurrency(dados.horasExecutadas * valorHora)}</div>
+                          )}
                         </td>
                       );
                     })}
