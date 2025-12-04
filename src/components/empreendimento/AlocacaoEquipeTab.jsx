@@ -49,10 +49,7 @@ export default function AlocacaoEquipeTab({
   const [editingEquipe, setEditingEquipe] = useState(null);
   const [equipeFormData, setEquipeFormData] = useState({ nome: '', cor: '#3B82F6', descricao: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Modal de membros
-  const [showMembrosModal, setShowMembrosModal] = useState(false);
-  const [selectedEquipe, setSelectedEquipe] = useState(null);
+  const [novaEquipeNome, setNovaEquipeNome] = useState('');
 
   // Usar dados props se disponíveis, senão usar local
   const planejamentos = planejamentosProp?.length > 0 ? planejamentosProp : planejamentosLocal;
