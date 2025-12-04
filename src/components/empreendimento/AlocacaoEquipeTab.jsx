@@ -142,14 +142,17 @@ export default function AlocacaoEquipeTab({
   };
 
   const handleChangeEquipe = async (usuario, equipeId) => {
+    const newEquipeId = equipeId === 'none' ? null : equipeId;
+    // Atualizar localmente primeiro para feedback imediato
+    setUsuariosLocal(prev => prev.map(u => u.id === usuario.id ? { ...u, equipe_id: newEquipeId } : u));
+    
     try {
-      const newEquipeId = equipeId === 'none' ? null : equipeId;
       await retryWithBackoff(() => Usuario.update(usuario.id, { equipe_id: newEquipeId }), 3, 1000, 'changeEquipe');
-      // Atualizar localmente
-      setUsuariosLocal(prev => prev.map(u => u.id === usuario.id ? { ...u, equipe_id: newEquipeId } : u));
+      console.log('✅ Equipe alterada com sucesso');
     } catch (error) {
       console.error('Erro ao alterar equipe:', error);
-      alert('Erro ao alterar equipe.');
+      alert('Erro ao alterar equipe. Recarregando dados...');
+      await loadData(); // Recarregar para reverter
     }
   };
 
