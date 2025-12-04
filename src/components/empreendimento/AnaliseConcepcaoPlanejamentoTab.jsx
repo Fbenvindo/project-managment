@@ -373,9 +373,9 @@ export default function AnaliseConcepcaoPlanejamentoTab({
                                             <TableCell className="max-w-xs truncate" title={atividade.atividade}>{atividade.atividade}</TableCell>
                                             <TableCell>
                                                 {formatarTempo(calcularTempoPadrao(atividade))}
-                                                {ATIVIDADES_MULTIPLICAR_POR_FOLHAS.includes(atividade.atividade) && quantidadeFolhas > 0 && (
+                                                {getMultiplicadorTexto(atividade) && (
                                                     <span className="text-xs text-gray-500 block">
-                                                        ({atividade.tempo}h × {quantidadeFolhas} folhas)
+                                                        {getMultiplicadorTexto(atividade)}
                                                     </span>
                                                 )}
                                             </TableCell>
