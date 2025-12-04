@@ -204,10 +204,22 @@ export default function AnaliseConcepcaoPlanejamentoTab({
         });
     }, [planejamentos, atividadesMap]);
 
+    // Quantidade de folhas (documentos) do empreendimento
+    const quantidadeFolhas = useMemo(() => (documentos || []).length, [documentos]);
+
     const formatarTempo = (horas) => `${Number(horas || 0).toFixed(1)}h`;
     const calcularPercentual = (tempoExecutado, tempoReal) => Math.round(((Number(tempoExecutado) || 0) / (Number(tempoReal) || 1)) * 100);
     const getStatusColor = (p) => p === 0 ? "bg-gray-100 text-gray-800" : p < 100 ? "bg-yellow-100 text-yellow-800" : "bg-green-100 text-green-800";
     const getStatusText = (p) => p === 0 ? "Não Iniciado" : p < 100 ? "Em Andamento" : "Concluído";
+    
+    // Função para calcular tempo padrão considerando multiplicador por folhas
+    const calcularTempoPadrao = (atividade) => {
+        const tempoBase = Number(atividade.tempo) || 0;
+        if (ATIVIDADES_MULTIPLICAR_POR_FOLHAS.includes(atividade.atividade)) {
+            return tempoBase * quantidadeFolhas;
+        }
+        return tempoBase;
+    };
 
     return (
         <div className="space-y-6">
