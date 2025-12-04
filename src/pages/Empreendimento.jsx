@@ -446,6 +446,22 @@ export default function EmpreendimentoPage() {
             ) : null}
           </TabsContent>
 
+          <TabsContent value="alocacao">
+            {tabData.documentos.loading || sharedData.loading ? (
+              <div className="flex flex-col items-center justify-center h-96">
+                <RefreshCw className="w-8 h-8 animate-spin text-blue-500 mb-4" />
+                <p className="text-gray-600">Carregando alocação...</p>
+              </div>
+            ) : tabData.documentos.loaded && sharedData.loaded ? (
+              <AlocacaoEquipeTab
+                planejamentos={tabData.documentos.data.planejamentos || []}
+                usuarios={sharedData.usuarios}
+                empreendimentos={[empreendimento]}
+                documentos={tabData.documentos.data.documentos || []}
+              />
+            ) : null}
+          </TabsContent>
+
           {hasAccessToGestao && (
             <TabsContent value="gestao">
               {isGestaoLoading ? (
