@@ -448,6 +448,7 @@ export default function EmpreendimentoPage() {
                   atividades={sharedData.atividades || []}
                   usuarios={sharedData.usuarios}
                   execucoes={sharedData.execucoes || []}
+                  pavimentos={tabData.pavimentos.data || []}
                   onUpdate={forceFullReload}
                 />
               ) : null}
