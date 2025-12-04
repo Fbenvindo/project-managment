@@ -6,7 +6,6 @@ import RelatorioFiltros from '../components/relatorios/RelatorioFiltros';
 import RelatorioResumo from '../components/relatorios/RelatorioResumo';
 import RelatorioAtividades from '../components/relatorios/RelatorioAtividades';
 import RelatorioCargaHoraria from '../components/relatorios/RelatorioCargaHoraria';
-import MatrizColaboradores from '../components/relatorios/MatrizColaboradores';
 import { Skeleton } from '@/components/ui/skeleton';
 import { base44 } from '@/api/base44Client';
 import { retryWithBackoff, delay } from '../components/utils/apiUtils';
@@ -484,10 +483,9 @@ export default function Relatorios() {
                     />
                     
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-6">
-                        <TabsList className="grid w-full grid-cols-3">
+                        <TabsList className="grid w-full grid-cols-2">
                             <TabsTrigger value="atividades">Relatório de Atividades</TabsTrigger>
                             <TabsTrigger value="carga_horaria">Relatório de Carga Horária</TabsTrigger>
-                            <TabsTrigger value="matriz">Matriz de Alocação</TabsTrigger>
                         </TabsList>
                         <TabsContent value="atividades" className="mt-4">
                             <RelatorioResumo planejamentos={planejamentosFiltrados} execucoes={execucoesFiltradas} />
@@ -502,13 +500,6 @@ export default function Relatorios() {
                              <RelatorioCargaHoraria 
                                 execucoes={execucoesFiltradas}
                                 usuarios={data.usuarios}
-                             />
-                        </TabsContent>
-                        <TabsContent value="matriz" className="mt-4">
-                             <MatrizColaboradores 
-                                planejamentos={data.planejamentos}
-                                usuarios={data.usuarios}
-                                empreendimentos={data.empreendimentos}
                              />
                         </TabsContent>
                     </Tabs>
