@@ -98,23 +98,13 @@ export default function GestaoTab({ empreendimento, documentos, planejamentos, a
         const etapa = ativ.etapa;
         const tempoBase = parseFloat(ativ.tempo) || 0;
         
-        // Atividades de "Apoio" são multiplicadas por 1 (por folha), não pela área
-        // Exemplo: "Carimbo, nota e legenda" é 0.2h por folha
-        const isAtividadeApoio = ativ.subdisciplina === 'Apoio';
-        
-        let tempoPlanejado;
-        if (isAtividadeApoio) {
-          // Para atividades de Apoio: tempo × fator de dificuldade (1 folha = 1 unidade)
-          tempoPlanejado = tempoBase * fatorDificuldade;
-          console.log(`    💡 ${ativ.atividade} [${etapa}] (Apoio/Folha): ${tempoBase}h × ${fatorDificuldade} = ${tempoPlanejado.toFixed(1)}h`);
-        } else {
-          // Para demais atividades: tempo × área × fator de dificuldade
-          tempoPlanejado = tempoBase * areaPavimento * fatorDificuldade;
-          console.log(`    💡 ${ativ.atividade} [${etapa}]: ${tempoBase}h/m² × ${areaPavimento}m² × ${fatorDificuldade} = ${tempoPlanejado.toFixed(1)}h`);
-        }
+        // Aplicar área e fator de dificuldade
+        const tempoPlanejado = tempoBase * areaPavimento * fatorDificuldade;
 
         if (matriz[disciplinaDoc] && matriz[disciplinaDoc][etapa]) {
           matriz[disciplinaDoc][etapa].horasPlanejadas += tempoPlanejado;
+          
+          console.log(`    💡 ${ativ.atividade} [${etapa}]: ${tempoBase}h/m² × ${areaPavimento}m² × ${fatorDificuldade} = ${tempoPlanejado.toFixed(1)}h`);
         }
       });
 
