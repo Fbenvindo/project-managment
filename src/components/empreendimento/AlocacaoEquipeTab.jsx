@@ -1,0 +1,295 @@
+import React, { useMemo, useState } from 'react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight, Users } from "lucide-react";
+import { format, addDays, startOfWeek, parseISO, isValid } from "date-fns";
+import { ptBR } from "date-fns/locale";
+
+// Função para parsear datas locais
+const parseLocalDate = (dateString) => {
+  if (!dateString) return null;
+  if (dateString instanceof Date) return dateString;
+  if (typeof dateString === 'string' && dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+    const [year, month, day] = dateString.split('-').map(Number);
+    return new Date(year, month - 1, day);
+  }
+  try {
+    const parsed = parseISO(dateString);
+    return isValid(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+export default function AlocacaoEquipeTab({
+  planejamentos = [],
+  usuarios = [],
+  empreendimentos = [],
+  documentos = []
+}) {
+  const [weekOffset, setWeekOffset] = useState(0);
+
+  // Gerar dias da semana atual + offset (3 semanas = 21 dias)
+  const diasExibidos = useMemo(() => {
+    const hoje = new Date();
+    const inicioSemana = startOfWeek(addDays(hoje, weekOffset * 7), { weekStartsOn: 1 }); // Segunda
+    const dias = [];
+    for (let i = 0; i < 21; i++) { // 3 semanas
+      dias.push(addDays(inicioSemana, i));
+    }
+    return dias;
+  }, [weekOffset]);
+
+  // Criar mapa de empreendimentos
+  const empreendimentosMap = useMemo(() => {
+    const map = {};
+    (empreendimentos || []).forEach(emp => {
+      map[emp.id] = emp;
+    });
+    return map;
+  }, [empreendimentos]);
+
+  // Criar mapa de documentos
+  const documentosMap = useMemo(() => {
+    const map = {};
+    (documentos || []).forEach(doc => {
+      map[doc.id] = doc;
+    });
+    return map;
+  }, [documentos]);
+
+  // Agrupar usuários por equipe/perfil
+  const usuariosPorEquipe = useMemo(() => {
+    const grupos = {};
+    
+    (usuarios || []).forEach(user => {
+      if (!user.nome && !user.full_name) return; // Ignorar usuários sem nome
+      
+      const equipe = user.departamento || user.cargo || 'Sem Equipe';
+      if (!grupos[equipe]) {
+        grupos[equipe] = [];
+      }
+      grupos[equipe].push(user);
+    });
+
+    // Ordenar usuários dentro de cada equipe
+    Object.keys(grupos).forEach(equipe => {
+      grupos[equipe].sort((a, b) => {
+        const nomeA = a.nome || a.full_name || '';
+        const nomeB = b.nome || b.full_name || '';
+        return nomeA.localeCompare(nomeB, 'pt-BR');
+      });
+    });
+
+    return grupos;
+  }, [usuarios]);
+
+  // Processar planejamentos por usuário e dia
+  const alocacaoPorUsuarioDia = useMemo(() => {
+    const alocacao = {};
+
+    (planejamentos || []).forEach(plan => {
+      const executor = plan.executor_principal;
+      if (!executor) return;
+
+      if (!alocacao[executor]) {
+        alocacao[executor] = {
+          planejado: {},
+          reprogramado: {}
+        };
+      }
+
+      // Processar horas_por_dia para datas planejadas
+      if (plan.horas_por_dia && typeof plan.horas_por_dia === 'object') {
+        Object.entries(plan.horas_por_dia).forEach(([dataStr, horas]) => {
+          if (Number(horas) > 0) {
+            if (!alocacao[executor].planejado[dataStr]) {
+              alocacao[executor].planejado[dataStr] = new Set();
+            }
+            
+            // Identificar o empreendimento
+            const empId = plan.empreendimento_id;
+            const emp = empreendimentosMap[empId];
+            const empNome = emp?.nome || 'Sem Emp.';
+            
+            // Extrair número do documento se houver
+            const doc = plan.documento_id ? documentosMap[plan.documento_id] : null;
+            const docNumero = doc?.numero || null;
+            
+            // Adicionar identificador único
+            if (docNumero) {
+              alocacao[executor].planejado[dataStr].add(docNumero);
+            } else if (empNome) {
+              alocacao[executor].planejado[dataStr].add(empNome.substring(0, 3).toUpperCase());
+            }
+          }
+        });
+      }
+
+      // Verificar se foi reprogramado (inicio_ajustado diferente de inicio_planejado)
+      if (plan.inicio_ajustado && plan.inicio_planejado) {
+        const ajustado = parseLocalDate(plan.inicio_ajustado);
+        const planejado = parseLocalDate(plan.inicio_planejado);
+        
+        if (ajustado && planejado && ajustado.getTime() !== planejado.getTime()) {
+          // Foi reprogramado - marcar nos dias ajustados
+          if (plan.horas_por_dia && typeof plan.horas_por_dia === 'object') {
+            Object.entries(plan.horas_por_dia).forEach(([dataStr, horas]) => {
+              if (Number(horas) > 0) {
+                if (!alocacao[executor].reprogramado[dataStr]) {
+                  alocacao[executor].reprogramado[dataStr] = new Set();
+                }
+                
+                const doc = plan.documento_id ? documentosMap[plan.documento_id] : null;
+                const docNumero = doc?.numero || null;
+                const emp = empreendimentosMap[plan.empreendimento_id];
+                const empNome = emp?.nome || 'Sem Emp.';
+                
+                if (docNumero) {
+                  alocacao[executor].reprogramado[dataStr].add(docNumero);
+                } else if (empNome) {
+                  alocacao[executor].reprogramado[dataStr].add(empNome.substring(0, 3).toUpperCase());
+                }
+              }
+            });
+          }
+        }
+      }
+    });
+
+    return alocacao;
+  }, [planejamentos, empreendimentosMap, documentosMap]);
+
+  // Função para obter cor de fundo baseada em reprogramação
+  const getCellStyle = (items, isReprogramado) => {
+    if (!items || items.size === 0) return {};
+    
+    if (isReprogramado) {
+      return { backgroundColor: '#FFFF00', color: '#000' }; // Amarelo
+    }
+    return { backgroundColor: '#90EE90', color: '#000' }; // Verde claro
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle className="flex items-center gap-2">
+          <Users className="w-5 h-5" />
+          Alocação por Equipe/Colaborador
+        </CardTitle>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" onClick={() => setWeekOffset(prev => prev - 1)}>
+            <ChevronLeft className="w-4 h-4" />
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setWeekOffset(0)}>
+            Hoje
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setWeekOffset(prev => prev + 1)}>
+            <ChevronRight className="w-4 h-4" />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-xs">
+            <thead>
+              <tr className="bg-gray-800 text-white">
+                <th className="border border-gray-600 p-1 text-left sticky left-0 bg-gray-800 z-10 min-w-[120px]">Nome</th>
+                <th className="border border-gray-600 p-1 text-left min-w-[60px]">Item</th>
+                {diasExibidos.map(dia => (
+                  <th 
+                    key={format(dia, 'yyyy-MM-dd')} 
+                    className={`border border-gray-600 p-1 text-center min-w-[40px] ${
+                      dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-700' : ''
+                    }`}
+                  >
+                    <div>{format(dia, 'd/MM')}</div>
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {Object.entries(usuariosPorEquipe).map(([equipe, usuariosEquipe]) => (
+                <React.Fragment key={equipe}>
+                  {/* Linha de cabeçalho da equipe */}
+                  <tr className="bg-gray-900 text-white font-bold">
+                    <td colSpan={2 + diasExibidos.length} className="border border-gray-600 p-1">
+                      {equipe.toUpperCase()}
+                    </td>
+                  </tr>
+                  
+                  {/* Linhas de cada usuário */}
+                  {usuariosEquipe.map(usuario => {
+                    const email = usuario.email;
+                    const alocacaoUser = alocacaoPorUsuarioDia[email] || { planejado: {}, reprogramado: {} };
+                    
+                    return (
+                      <React.Fragment key={usuario.id}>
+                        {/* Linha Programado */}
+                        <tr className="bg-gray-100">
+                          <td className="border border-gray-300 p-1 sticky left-0 bg-gray-100 z-10" rowSpan={2}>
+                            <div className="font-medium">{usuario.nome || usuario.full_name}</div>
+                            <div className="text-gray-500 text-xs">{usuario.cargo || ''}</div>
+                          </td>
+                          <td className="border border-gray-300 p-1 text-xs">Programado</td>
+                          {diasExibidos.map(dia => {
+                            const dataStr = format(dia, 'yyyy-MM-dd');
+                            const items = alocacaoUser.planejado[dataStr];
+                            const hasItems = items && items.size > 0;
+                            
+                            return (
+                              <td 
+                                key={dataStr}
+                                className={`border border-gray-300 p-0.5 text-center ${
+                                  dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-200' : ''
+                                }`}
+                                style={hasItems ? { backgroundColor: '#90EE90' } : {}}
+                                title={hasItems ? Array.from(items).join(', ') : ''}
+                              >
+                                {hasItems ? Array.from(items).slice(0, 2).join(', ') : ''}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                        
+                        {/* Linha Reprogramado */}
+                        <tr className="bg-gray-50">
+                          <td className="border border-gray-300 p-1 text-xs">Reprogramado</td>
+                          {diasExibidos.map(dia => {
+                            const dataStr = format(dia, 'yyyy-MM-dd');
+                            const items = alocacaoUser.reprogramado[dataStr];
+                            const hasItems = items && items.size > 0;
+                            
+                            return (
+                              <td 
+                                key={dataStr}
+                                className={`border border-gray-300 p-0.5 text-center ${
+                                  dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-200' : ''
+                                }`}
+                                style={hasItems ? { backgroundColor: '#FFFF00' } : {}}
+                                title={hasItems ? Array.from(items).join(', ') : ''}
+                              >
+                                {hasItems ? Array.from(items).slice(0, 2).join(', ') : ''}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      </React.Fragment>
+                    );
+                  })}
+                </React.Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {Object.keys(usuariosPorEquipe).length === 0 && (
+          <div className="text-center py-8 text-gray-500">
+            <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
+            <p>Nenhum usuário encontrado para exibir a alocação.</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
