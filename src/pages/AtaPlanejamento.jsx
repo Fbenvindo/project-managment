@@ -108,7 +108,7 @@ export default function AtaPlanejamento() {
     numProposta: '',
     providencias: '',
     gerencia: '',
-    responsavel: '',
+    responsaveis: [],
     dataReuniao: '',
     dataRetorno: '',
     status: 'pendente'
@@ -155,7 +155,7 @@ export default function AtaPlanejamento() {
       numProposta: '',
       providencias: '',
       gerencia: '',
-      responsavel: '',
+      responsaveis: [],
       dataReuniao: '',
       dataRetorno: '',
       status: 'pendente'
@@ -466,7 +466,9 @@ export default function AtaPlanejamento() {
                   <div className="col-span-1 p-1 text-center border-r border-gray-300">{prov.numProposta}</div>
                   <div className="col-span-3 p-1 border-r border-gray-300 whitespace-pre-wrap">{prov.providencias}</div>
                   <div className="col-span-1 p-1 text-center border-r border-gray-300">{prov.gerencia}</div>
-                  <div className="col-span-1 p-1 text-center border-r border-gray-300">{prov.responsavel}</div>
+                  <div className="col-span-1 p-1 text-center border-r border-gray-300">
+                          {Array.isArray(prov.responsaveis) ? prov.responsaveis.join(', ') : prov.responsavel || ''}
+                        </div>
                   <div className="col-span-1 p-1 text-center border-r border-gray-300">
                     {prov.dataReuniao ? format(new Date(prov.dataReuniao), 'dd/MM/yyyy') : ''}
                   </div>
@@ -547,23 +549,37 @@ export default function AtaPlanejamento() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium">Responsável</label>
-              <Select
-                value={novaProvidencia.responsavel}
-                onValueChange={(value) => setNovaProvidencia(prev => ({ ...prev, responsavel: value }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione" />
-                </SelectTrigger>
-                <SelectContent>
-                  {usuarios.map(user => (
-                    <SelectItem key={user.id} value={user.nome || user.full_name}>
-                      {user.nome || user.full_name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                                <label className="text-sm font-medium">Responsável</label>
+                                <div className="border rounded-md p-2 max-h-32 overflow-y-auto space-y-1">
+                                  {usuarios.map(user => {
+                                    const nome = user.nome || user.full_name;
+                                    const isSelected = novaProvidencia.responsaveis?.includes(nome);
+                                    return (
+                                      <label key={user.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-1 rounded">
+                                        <input
+                                          type="checkbox"
+                                          checked={isSelected}
+                                          onChange={() => {
+                                            setNovaProvidencia(prev => ({
+                                              ...prev,
+                                              responsaveis: isSelected
+                                                ? prev.responsaveis.filter(r => r !== nome)
+                                                : [...(prev.responsaveis || []), nome]
+                                            }));
+                                          }}
+                                          className="rounded"
+                                        />
+                                        <span className="text-sm">{nome}</span>
+                                      </label>
+                                    );
+                                  })}
+                                </div>
+                                {novaProvidencia.responsaveis?.length > 0 && (
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    {novaProvidencia.responsaveis.length} selecionado(s)
+                                  </p>
+                                )}
+                              </div>
             <div>
               <label className="text-sm font-medium">Status</label>
               <Select
