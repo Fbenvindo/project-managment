@@ -320,7 +320,14 @@ export default function AlocacaoEquipeTab({
           </table>
         </div>
 
-        {Object.keys(usuariosPorEquipe).length === 0 && (
+        {isLoading && (
+          <div className="flex flex-col items-center justify-center py-12">
+            <RefreshCw className="w-8 h-8 animate-spin text-blue-500 mb-4" />
+            <p className="text-gray-600">Carregando dados de alocação...</p>
+          </div>
+        )}
+
+        {!isLoading && Object.keys(usuariosPorEquipe).length === 0 && (
           <div className="text-center py-8 text-gray-500">
             <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
             <p>Nenhum usuário encontrado para exibir a alocação.</p>
