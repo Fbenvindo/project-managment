@@ -452,15 +452,7 @@ export default function AlocacaoEquipeTab({
                                       {item.label}
                                     </span>
                                   ))}
-                                  {items.length > 3 && items.slice(3).map((item, idx) => (
-                                    <span 
-                                      key={`extra-${idx}`} 
-                                      className="px-1 rounded text-white text-[10px] font-medium"
-                                      style={{ backgroundColor: item.cor }}
-                                    >
-                                      {item.label}
-                                    </span>
-                                  ))}
+
                                 </div>
                               </td>
                             );
@@ -494,15 +486,7 @@ export default function AlocacaoEquipeTab({
                                       {item.label}
                                     </span>
                                   ))}
-                                  {items.length > 3 && items.slice(3).map((item, idx) => (
-                                    <span 
-                                      key={`extra-${idx}`} 
-                                      className="px-1 rounded text-white text-[10px] font-medium"
-                                      style={{ backgroundColor: item.cor }}
-                                    >
-                                      {item.label}
-                                    </span>
-                                  ))}
+
                                 </div>
                               </td>
                             );
