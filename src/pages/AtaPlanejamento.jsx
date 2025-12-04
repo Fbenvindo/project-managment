@@ -354,17 +354,17 @@ export default function AtaPlanejamento() {
     if (linhasValidas.length === 0) return;
     
     const novasProvidencias = linhasValidas.map((linha, idx) => ({
-      id: Date.now() + idx,
-      os: novaProvidencia.os,
-      projeto: novaProvidencia.projeto,
-      numProposta: novaProvidencia.numProposta,
-      providencias: linha.providencias,
-      gerencia: linha.gerencia,
-      responsaveis: linha.responsaveis,
-      dataReuniao: linha.dataReuniao,
-      dataRetorno: linha.dataRetorno,
-      status: linha.status
-    }));
+            id: Date.now() + idx,
+            os: novaProvidencia.os,
+            projeto: novaProvidencia.projeto,
+            numProposta: linha.numProposta || novaProvidencia.numProposta,
+            providencias: linha.providencias,
+            gerencia: linha.gerencia,
+            responsaveis: linha.responsaveis,
+            dataReuniao: linha.dataReuniao,
+            dataRetorno: linha.dataRetorno,
+            status: linha.status
+          }));
     
     setProvidencias(prev => [...prev, ...novasProvidencias]);
     setNovaProvidencia({
