@@ -692,16 +692,16 @@ export default function AtaPlanejamento() {
         </div>
 
         {/* Cabeçalho da Tabela de Providências */}
-        <div className="grid grid-cols-12 bg-yellow-100 border-b border-gray-400 text-xs font-medium">
-          <div className="col-span-1 p-1 text-center border-r border-gray-400">OS ▼</div>
-          <div className="col-span-1 p-1 text-center border-r border-gray-400">Projeto ▼</div>
-          <div className="col-span-1 p-1 text-center border-r border-gray-400">Nº Proposta ▼</div>
-          <div className="col-span-3 p-1 text-center border-r border-gray-400">Providências</div>
-          <div className="col-span-1 p-1 text-center border-r border-gray-400">Gerência</div>
-          <div className="col-span-1 p-1 text-center border-r border-gray-400">Responsável▼</div>
-          <div className="col-span-1 p-1 text-center border-r border-gray-400">Data da reunião▼</div>
-          <div className="col-span-1 p-1 text-center border-r border-gray-400">Data de retorno</div>
-          <div className="col-span-2 p-1 text-center">Status / Ações</div>
+        <div className="flex bg-yellow-100 border-b border-gray-400 text-xs font-medium">
+          <div className="w-[6%] p-1 text-center border-r border-gray-400">OS ▼</div>
+          <div className="w-[10%] p-1 text-center border-r border-gray-400">Projeto ▼</div>
+          <div className="w-[8%] p-1 text-center border-r border-gray-400">Nº Proposta ▼</div>
+          <div className="w-[30%] p-1 text-center border-r border-gray-400">Providências</div>
+          <div className="w-[8%] p-1 text-center border-r border-gray-400">Gerência</div>
+          <div className="w-[10%] p-1 text-center border-r border-gray-400">Responsável▼</div>
+          <div className="w-[8%] p-1 text-center border-r border-gray-400">Data da reunião▼</div>
+          <div className="w-[8%] p-1 text-center border-r border-gray-400">Data de retorno</div>
+          <div className="w-[12%] p-1 text-center">Status / Ações</div>
         </div>
 
         {/* Linhas de Providências */}
