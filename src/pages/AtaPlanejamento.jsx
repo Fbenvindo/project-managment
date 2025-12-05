@@ -867,6 +867,9 @@ export default function AtaPlanejamento() {
                 value={novaProvidencia.projeto}
                 onValueChange={(value) => {
                   const empSelecionado = empreendimentos.find(e => e.nome === value);
+                  console.log('Empreendimento selecionado:', empSelecionado);
+                  console.log('OS:', empSelecionado?.os);
+                  console.log('Num Proposta:', empSelecionado?.num_proposta);
                   setNovaProvidencia(prev => ({ 
                     ...prev, 
                     projeto: value,
