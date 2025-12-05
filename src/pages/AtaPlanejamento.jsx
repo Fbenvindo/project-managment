@@ -862,14 +862,6 @@ export default function AtaPlanejamento() {
           {/* Dados do Projeto (compartilhados) */}
           <div className="grid grid-cols-3 gap-4 pb-4 border-b">
             <div>
-              <label className="text-sm font-medium">OS</label>
-              <Input
-                value={novaProvidencia.os}
-                onChange={(e) => setNovaProvidencia(prev => ({ ...prev, os: e.target.value }))}
-                placeholder="Ex: 813"
-              />
-            </div>
-            <div>
               <label className="text-sm font-medium">Projeto</label>
               <Select
                 value={novaProvidencia.projeto}
@@ -878,8 +870,8 @@ export default function AtaPlanejamento() {
                   setNovaProvidencia(prev => ({ 
                     ...prev, 
                     projeto: value,
-                    os: empSelecionado?.os || prev.os,
-                    numProposta: empSelecionado?.num_proposta || prev.numProposta
+                    os: empSelecionado?.os || '',
+                    numProposta: empSelecionado?.num_proposta || ''
                   }));
                 }}
               >
@@ -892,6 +884,14 @@ export default function AtaPlanejamento() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">OS</label>
+              <Input
+                value={novaProvidencia.os}
+                onChange={(e) => setNovaProvidencia(prev => ({ ...prev, os: e.target.value }))}
+                placeholder="Ex: 813"
+              />
             </div>
             <div>
               <label className="text-sm font-medium">Nº Proposta</label>
