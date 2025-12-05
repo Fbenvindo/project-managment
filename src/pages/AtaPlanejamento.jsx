@@ -867,13 +867,11 @@ export default function AtaPlanejamento() {
                 value={novaProvidencia.projeto}
                 onValueChange={(value) => {
                   const empSelecionado = empreendimentos.find(e => e.nome === value);
-                  console.log('Empreendimento selecionado:', empSelecionado);
-                  console.log('OS:', empSelecionado?.os);
-                  console.log('Num Proposta:', empSelecionado?.num_proposta);
+                  const osExtraida = empSelecionado?.nome?.match(/^\d+/)?.[0] || empSelecionado?.os || '';
                   setNovaProvidencia(prev => ({ 
                     ...prev, 
                     projeto: value,
-                    os: empSelecionado?.os || '',
+                    os: osExtraida,
                     numProposta: empSelecionado?.num_proposta || ''
                   }));
                 }}
