@@ -263,30 +263,30 @@ export default function ComercialDetalhesPage() {
             </TabsList>
 
             <TabsContent value="documentos" className="mt-6">
-              {isLoadingShared ? (
+              {isLoadingShared || tabData.documentos.loading ? (
                 <div className="flex justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
                 </div>
               ) : (
                 <DocumentosTab
                   empreendimento={comercial}
-                  documentos={tabData.documentos.data}
-                  pavimentos={tabData.pavimentos.data}
-                  disciplinas={sharedData.disciplinas}
+                  documentos={tabData.documentos.data || []}
+                  pavimentos={tabData.pavimentos.data || []}
+                  disciplinas={sharedData.disciplinas || []}
                   onReload={handleReload}
                 />
               )}
             </TabsContent>
 
             <TabsContent value="pavimentos" className="mt-6">
-              {isLoadingShared ? (
+              {isLoadingShared || tabData.pavimentos.loading ? (
                 <div className="flex justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
                 </div>
               ) : (
                 <PavimentosTab
                   empreendimentoId={comercial.id}
-                  pavimentos={tabData.pavimentos.data}
+                  pavimentos={tabData.pavimentos.data || []}
                   onReload={handleReload}
                 />
               )}
@@ -300,26 +300,26 @@ export default function ComercialDetalhesPage() {
               ) : (
                 <AnaliticoGlobalTab
                   empreendimento={comercial}
-                  documentos={tabData.documentos.data}
-                  disciplinas={sharedData.disciplinas}
-                  atividades={sharedData.atividades}
-                  usuarios={sharedData.usuarios}
-                  execucoes={sharedData.execucoes}
+                  documentos={tabData.documentos.data || []}
+                  disciplinas={sharedData.disciplinas || []}
+                  atividades={sharedData.atividades || []}
+                  usuarios={sharedData.usuarios || []}
+                  execucoes={sharedData.execucoes || []}
                   onReload={handleReload}
                 />
               )}
             </TabsContent>
 
             <TabsContent value="atividades" className="mt-6">
-              {isLoadingShared ? (
+              {isLoadingShared || tabData.atividades.loading ? (
                 <div className="flex justify-center py-12">
                   <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
                 </div>
               ) : (
                 <AtividadesProjetoTab
                   empreendimentoId={comercial.id}
-                  atividades={tabData.atividades.data}
-                  disciplinas={sharedData.disciplinas}
+                  atividades={tabData.atividades.data || []}
+                  disciplinas={sharedData.disciplinas || []}
                   onReload={handleReload}
                 />
               )}
@@ -333,8 +333,8 @@ export default function ComercialDetalhesPage() {
               ) : (
                 <GestaoTab
                   empreendimento={comercial}
-                  documentos={tabData.documentos.data}
-                  usuarios={sharedData.usuarios}
+                  documentos={tabData.documentos.data || []}
+                  usuarios={sharedData.usuarios || []}
                   onReload={handleReload}
                 />
               )}
