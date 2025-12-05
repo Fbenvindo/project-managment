@@ -873,7 +873,15 @@ export default function AtaPlanejamento() {
               <label className="text-sm font-medium">Projeto</label>
               <Select
                 value={novaProvidencia.projeto}
-                onValueChange={(value) => setNovaProvidencia(prev => ({ ...prev, projeto: value }))}
+                onValueChange={(value) => {
+                  const empSelecionado = empreendimentos.find(e => e.nome === value);
+                  setNovaProvidencia(prev => ({ 
+                    ...prev, 
+                    projeto: value,
+                    os: empSelecionado?.os || prev.os,
+                    numProposta: empSelecionado?.num_proposta || prev.numProposta
+                  }));
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione o projeto" />
