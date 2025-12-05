@@ -830,6 +830,13 @@ export default function AtaPlanejamento() {
                           {getStatusLabel(prov.status)}
                         </span>
                         <button 
+                          onClick={() => handleInsertProvidenciaAfter(prov.id)}
+                          className="text-green-600 hover:text-green-800 no-print"
+                          title="Inserir providência após esta"
+                        >
+                          <Plus className="w-3 h-3" />
+                        </button>
+                        <button 
                           onClick={() => handleDeleteProvidencia(prov.id)}
                           className="text-red-500 hover:text-red-700 no-print"
                         >
