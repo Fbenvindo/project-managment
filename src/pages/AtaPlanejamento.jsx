@@ -376,6 +376,33 @@ export default function AtaPlanejamento() {
     setShowAddModal(false);
   };
 
+  const handleInsertProvidenciaAfter = (provId) => {
+    const index = providencias.findIndex(p => p.id === provId);
+    if (index === -1) return;
+    
+    const provAnterior = providencias[index];
+    const novaProvidencia = {
+      id: Date.now(),
+      os: provAnterior.os,
+      projeto: provAnterior.projeto,
+      numProposta: provAnterior.numProposta,
+      providencias: '',
+      gerencia: '',
+      responsaveis: [],
+      dataReuniao: '',
+      dataRetorno: '',
+      status: 'pendente'
+    };
+    
+    const novasProvidencias = [
+      ...providencias.slice(0, index + 1),
+      novaProvidencia,
+      ...providencias.slice(index + 1)
+    ];
+    
+    setProvidencias(novasProvidencias);
+  };
+
   const handleAddLinha = () => {
     setNovaProvidencia(prev => ({
       ...prev,
