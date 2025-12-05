@@ -2,7 +2,9 @@ import React from "react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Pencil, Trash2, MapPin, User } from "lucide-react";
+import { Pencil, Trash2, MapPin, User, ExternalLink } from "lucide-react";
+import { Link } from "react-router-dom";
+import { createPageUrl } from "@/utils";
 
 
 const statusStyles = {
@@ -57,16 +59,25 @@ export default function ComercialCard({ empreendimento, canEdit, onEdit, onDelet
           </div>
         )}
 
-        {canEdit && (
-          <div className="flex justify-end gap-2 pt-2 border-t">
-            <Button variant="ghost" size="sm" onClick={() => onEdit(empreendimento)}>
-              <Pencil className="w-4 h-4" />
+        <div className="flex justify-between gap-2 pt-2 border-t">
+          <Link to={createPageUrl(`ComercialDetalhes?id=${empreendimento.id}`)}>
+            <Button variant="default" size="sm" className="bg-purple-600 hover:bg-purple-700">
+              <ExternalLink className="w-4 h-4 mr-1" />
+              Abrir Projeto
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => onDelete(empreendimento.id)} className="text-red-600 hover:text-red-700 hover:bg-red-50">
-              <Trash2 className="w-4 h-4" />
-            </Button>
-          </div>
-        )}
+          </Link>
+          
+          {canEdit && (
+            <div className="flex gap-2">
+              <Button variant="ghost" size="sm" onClick={() => onEdit(empreendimento)}>
+                <Pencil className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="sm" onClick={() => onDelete(empreendimento.id)} className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                <Trash2 className="w-4 h-4" />
+              </Button>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
