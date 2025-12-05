@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ export default function EmpreendimentoForm({ empreendimento, onSubmit, onClose, 
     nome: empreendimento?.nome || "",
     cliente: empreendimento?.cliente || "",
     endereco: empreendimento?.endereco || "",
+    num_proposta: empreendimento?.num_proposta || "",
     status: empreendimento?.status || "em_planejamento",
     foto_url: empreendimento?.foto_url || ""
   });
@@ -122,6 +123,16 @@ export default function EmpreendimentoForm({ empreendimento, onSubmit, onClose, 
                   value={formData.endereco}
                   onChange={(e) => handleInputChange("endereco", e.target.value)}
                   placeholder="Endereço completo do empreendimento"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="num_proposta">Nº Proposta</Label>
+                <Input
+                  id="num_proposta"
+                  value={formData.num_proposta}
+                  onChange={(e) => handleInputChange("num_proposta", e.target.value)}
+                  placeholder="Ex: PP24-1071-R3"
                 />
               </div>
 
