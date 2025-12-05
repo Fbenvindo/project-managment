@@ -1,20 +1,20 @@
 import React, { useState, useEffect, useCallback, useMemo, useContext } from "react";
-import { Empreendimento, Usuario } from "@/entities/all";
+import { Comercial, Usuario } from "@/entities/all";
 import { Button } from "@/components/ui/button";
 import { Plus, Briefcase, AlertTriangle, RefreshCw } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 
-import EmpreendimentoCard from "../components/empreendimentos/EmpreendimentoCard";
-import EmpreendimentoForm from "../components/empreendimentos/EmpreendimentoForm";
-import EmpreendimentoFilters from "../components/empreendimentos/EmpreendimentoFilters";
+import ComercialCard from "../components/comercial/ComercialCard";
+import ComercialForm from "../components/comercial/ComercialForm";
+import ComercialFilters from "../components/comercial/ComercialFilters";
 import { retryWithBackoff } from "../components/utils/apiUtils";
 import { ActivityTimerContext } from '../components/contexts/ActivityTimerContext';
 
 const useComercialData = () => {
   const [data, setData] = useState({
-    empreendimentos: [],
+    comerciais: [],
     usuarios: [],
     isLoading: true,
     error: null,
@@ -31,9 +31,9 @@ const useComercialData = () => {
     }
 
     try {
-      const empreendimentosData = await retryWithBackoff(
-        () => Empreendimento.list('-updated_date'), 
-        5, 3000, 'Empreendimentos'
+      const comerciaisData = await retryWithBackoff(
+        () => Comercial.list('-updated_date'), 
+        5, 3000, 'Comerciais'
       );
       
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -44,7 +44,7 @@ const useComercialData = () => {
       );
 
       setData({
-        empreendimentos: empreendimentosData || [],
+        comerciais: comerciaisData || [],
         usuarios: usuariosData || [],
         isLoading: false,
         error: null,
@@ -80,15 +80,15 @@ const useComercialData = () => {
 };
 
 export default function ComercialPage() {
-  const { empreendimentos, usuarios, isLoading, error, lastUpdate, refresh, isRefreshing, loadData } = useComercialData();
+  const { comerciais, usuarios, isLoading, error, lastUpdate, refresh, isRefreshing, loadData } = useComercialData();
   const { user, hasPermission } = useContext(ActivityTimerContext);
 
   const [showForm, setShowForm] = useState(false);
-  const [editingEmpreendimento, setEditingEmpreendimento] = useState(null);
+  const [editingComercial, setEditingComercial] = useState(null);
   const [filters, setFilters] = useState({ status: 'todos', search: '' });
 
   const dadosFiltrados = useMemo(() => {
-    let filtered = [...empreendimentos];
+    let filtered = [...comerciais];
 
     if (filters.status !== 'todos') {
       filtered = filtered.filter(e => e.status === filters.status);
@@ -103,50 +103,50 @@ export default function ComercialPage() {
     }
 
     return filtered;
-  }, [empreendimentos, filters]);
+  }, [comerciais, filters]);
 
   const handleCreate = useCallback(() => {
-    setEditingEmpreendimento(null);
+    setEditingComercial(null);
     setShowForm(true);
   }, []);
 
-  const handleEdit = useCallback((empreendimento) => {
-    setEditingEmpreendimento(empreendimento);
+  const handleEdit = useCallback((comercial) => {
+    setEditingComercial(comercial);
     setShowForm(true);
   }, []);
 
-  const handleSubmit = useCallback(async (empreendimentoData) => {
+  const handleSubmit = useCallback(async (comercialData) => {
     try {
-      if (editingEmpreendimento) {
-        await retryWithBackoff(() => Empreendimento.update(editingEmpreendimento.id, empreendimentoData), 3, 3000, 'Update Empreendimento');
+      if (editingComercial) {
+        await retryWithBackoff(() => Comercial.update(editingComercial.id, comercialData), 3, 3000, 'Update Comercial');
       } else {
-        await retryWithBackoff(() => Empreendimento.create(empreendimentoData), 3, 3000, 'Create Empreendimento');
+        await retryWithBackoff(() => Comercial.create(comercialData), 3, 3000, 'Create Comercial');
       }
       
       setShowForm(false);
-      setEditingEmpreendimento(null);
+      setEditingComercial(null);
       await loadData(true);
     } catch (error) {
       console.error('❌ Erro ao salvar:', error);
-      alert('Erro ao salvar empreendimento.');
+      alert('Erro ao salvar projeto comercial.');
     }
-  }, [editingEmpreendimento, loadData]);
+  }, [editingComercial, loadData]);
 
   const handleFormSuccess = useCallback(async () => {
     setShowForm(false);
-    setEditingEmpreendimento(null);
+    setEditingComercial(null);
     await loadData(true);
   }, [loadData]);
 
   const handleDelete = useCallback(async (id) => {
-    if (!window.confirm("Tem certeza que deseja excluir este empreendimento?")) return;
+    if (!window.confirm("Tem certeza que deseja excluir este projeto?")) return;
 
     try {
-      await retryWithBackoff(() => Empreendimento.delete(id), 3, 2000, 'Delete Empreendimento');
+      await retryWithBackoff(() => Comercial.delete(id), 3, 2000, 'Delete Comercial');
       await loadData(true);
     } catch (error) {
       console.error('❌ Erro ao excluir:', error);
-      alert('Erro ao excluir empreendimento.');
+      alert('Erro ao excluir projeto comercial.');
     }
   }, [loadData]);
 
@@ -251,10 +251,10 @@ export default function ComercialPage() {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
-            <EmpreendimentoFilters 
+            <ComercialFilters 
               filters={filters}
               onFiltersChange={setFilters}
-              totalCount={empreendimentos.length}
+              totalCount={comerciais.length}
               filteredCount={dadosFiltrados.length}
             />
           </motion.div>
@@ -268,16 +268,16 @@ export default function ComercialPage() {
                 exit={{ opacity: 0 }}
                 className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
               >
-                {dadosFiltrados.map((empreendimento, index) => (
+                {dadosFiltrados.map((comercial, index) => (
                   <motion.div
-                    key={empreendimento.id}
+                    key={comercial.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.05 }}
                   >
-                    <EmpreendimentoCard 
-                      empreendimento={empreendimento}
-                      user={user}
+                    <ComercialCard 
+                      empreendimento={comercial}
+                      canEdit={canEdit}
                       onEdit={handleEdit}
                       onDelete={handleDelete}
                     />
@@ -318,15 +318,14 @@ export default function ComercialPage() {
 
           <AnimatePresence>
             {showForm && (
-              <EmpreendimentoForm 
-                empreendimento={editingEmpreendimento}
+              <ComercialForm 
+                empreendimento={editingComercial}
                 onClose={() => {
                   setShowForm(false);
-                  setEditingEmpreendimento(null);
+                  setEditingComercial(null);
                 }}
                 onSubmit={handleSubmit}
                 onSuccess={handleFormSuccess}
-                usuarios={usuarios}
               />
             )}
           </AnimatePresence>
