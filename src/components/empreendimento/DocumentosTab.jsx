@@ -1,6 +1,5 @@
-
-import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Documento, Atividade, PlanejamentoAtividade, PlanejamentoDocumento } from "@/entities/all";
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { Documento, Disciplina, Atividade, Execucao, Usuario, PlanejamentoAtividade, PlanejamentoDocumento } from "@/entities/all";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -12,15 +11,15 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Plus, Search, Edit, Trash2, ChevronDown, ChevronRight, BarChart, CalendarDays, FileText, Loader2, Users2, CalendarIcon } from "lucide-react";
-import { AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import DocumentoForm from "./DocumentoForm";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import PlanejamentoDocumentoEtapaModal from './PlanejamentoDocumentoEtapaModal';
 import { ETAPAS_ORDER } from '../utils/PredecessoraValidator';
-import { distribuirHorasPorDias, isWorkingDay, calculateEndDate, ensureWorkingDay } from '../utils/DateCalculator';
-import { format, isValid, parseISO, addDays } from 'date-fns';
-import { retryWithBackoff, retryWithExtendedBackoff } from '../utils/apiUtils';
+import { getNextWorkingDay, distribuirHorasPorDias, isWorkingDay, calculateEndDate, ensureWorkingDay } from '../utils/DateCalculator';
+import { format, isValid, parseISO, addDays, subDays } from 'date-fns';
+import { retryWithBackoff, retryWithExtendedBackoff, delay } from '../utils/apiUtils';
 
 const parseDate = (dateString) => {
   if (!dateString) return null;
@@ -1286,7 +1285,20 @@ export default function DocumentosTab({
           </TableCell>
           <TableCell className="font-medium">{doc.numero}</TableCell>
           <TableCell>{doc.arquivo}</TableCell>
-          <TableCell>{doc.disciplina}</TableCell>
+          <TableCell>
+            <div className="flex flex-col gap-1">
+              <span className="font-medium">{doc.disciplina}</span>
+              {doc.subdisciplinas && doc.subdisciplinas.length > 0 && (
+                <div className="flex flex-wrap gap-1">
+                  {doc.subdisciplinas.map((sub, idx) => (
+                    <Badge key={idx} variant="secondary" className="text-xs">
+                      {sub}
+                    </Badge>
+                  ))}
+                </div>
+              )}
+            </div>
+          </TableCell>
           <TableCell className="w-[180px]">
             <div className="space-y-1">
               <div className="flex items-center space-x-2">
