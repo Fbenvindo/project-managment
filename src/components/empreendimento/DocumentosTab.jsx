@@ -1308,7 +1308,6 @@ export default function DocumentosTab({
           </TableCell>
           <TableCell>
             <div className="flex flex-col gap-1">
-              <span className="font-medium">{doc.disciplina}</span>
               {doc.subdisciplinas && doc.subdisciplinas.length > 0 && (
                 <div className="flex flex-wrap gap-1">
                   {doc.subdisciplinas.map((sub, idx) => (
@@ -1317,6 +1316,9 @@ export default function DocumentosTab({
                     </Badge>
                   ))}
                 </div>
+              )}
+              {doc.escala && (
+                <span className="text-xs text-gray-500">Escala: 1:{doc.escala}</span>
               )}
             </div>
           </TableCell>
