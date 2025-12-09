@@ -1,5 +1,4 @@
-
-import { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,6 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Documento } from "@/entities/all";
 import { X, Loader2, Info } from "lucide-react";
+import { motion } from "framer-motion";
+import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { retryWithBackoff } from '../utils/apiUtils';
 
@@ -24,6 +25,7 @@ export default function DocumentoForm({
   const [formData, setFormData] = useState({
     numero: "",
     arquivo: "",
+    descritivo: "",
     pavimento_id: null,
     disciplina: "",
     subdisciplinas: [],
@@ -46,6 +48,7 @@ export default function DocumentoForm({
       setFormData({
         numero: doc.numero || "",
         arquivo: doc.arquivo || "",
+        descritivo: doc.descritivo || "",
         pavimento_id: doc.pavimento_id || null,
         disciplina: doc.disciplina || "",
         subdisciplinas: doc.subdisciplinas || [],
@@ -311,6 +314,7 @@ export default function DocumentoForm({
       const docData = {
         numero: formData.numero.trim(),
         arquivo: formData.arquivo.trim(),
+        descritivo: formData.descritivo.trim(),
         pavimento_id: formData.pavimento_id,
         disciplina: formData.disciplina,
         subdisciplinas: formData.subdisciplinas,
@@ -400,6 +404,17 @@ export default function DocumentoForm({
               />
               {errors.arquivo && <p className="text-red-500 text-sm mt-1">{errors.arquivo}</p>}
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="descritivo">Descritivo</Label>
+            <Input
+              id="descritivo"
+              value={formData.descritivo}
+              onChange={(e) => setFormData({...formData, descritivo: e.target.value})}
+              placeholder="Ex: Planta baixa do pavimento térreo com layout de móveis"
+            />
+            <p className="text-xs text-gray-500">Descrição detalhada do documento (opcional)</p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> {/* Adjusted from outline, keeping responsive */}
