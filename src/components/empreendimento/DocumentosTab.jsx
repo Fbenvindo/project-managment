@@ -758,6 +758,20 @@ export default function DocumentosTab({
     });
   }, [localDocumentos, debouncedSearchTerm]);
 
+  const documentosPorDisciplina = useMemo(() => {
+    const grupos = {};
+    
+    filteredDocumentos.forEach(doc => {
+      const disciplina = doc.disciplina || 'Sem Disciplina';
+      if (!grupos[disciplina]) {
+        grupos[disciplina] = [];
+      }
+      grupos[disciplina].push(doc);
+    });
+
+    return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [filteredDocumentos]);
+
   const etapasDisponiveis = useMemo(() => {
     const etapas = new Set();
     allAtividades.forEach(atividade => {
@@ -1722,40 +1736,55 @@ export default function DocumentosTab({
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[50px]"></TableHead>
-                    <TableHead>Número</TableHead>
-                    <TableHead>Arquivo</TableHead>
-                    <TableHead>Disciplina</TableHead>
-                    <TableHead>Executor</TableHead>
-                    <TableHead>Datas</TableHead>
-                    <TableHead>Tempo</TableHead>
-                    <TableHead className="w-[100px]">Ações</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredDocumentos.map(doc => (
-                    <DocumentoItem
-                      key={doc.id}
-                      doc={doc}
-                      planejamentos={localPlanejamentos}
-                      allAtividades={allAtividades}
-                      handleEdit={handleEdit}
-                      handleDelete={handleDelete}
-                      handleOpenDocEtapaModal={handleOpenDocEtapaModal}
-                      handlePredecessoraChange={handlePredecessoraChange}
-                      handleDataInicioChange={handleDataInicioChange}
-                      etapaParaPlanejamento={etapaParaPlanejamento}
-                      loadingDocs={loadingDocs}
-                      empreendimento={empreendimento}
-                      onUpdate={onUpdate}
-                    />
-                  ))}
-                </TableBody>
-              </Table>
+            <div className="space-y-6">
+              {documentosPorDisciplina.map(([disciplina, docs]) => (
+                <div key={disciplina} className="border rounded-lg overflow-hidden">
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border-b">
+                    <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
+                      <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
+                      {disciplina}
+                      <Badge variant="secondary" className="ml-2">
+                        {docs.length} {docs.length === 1 ? 'documento' : 'documentos'}
+                      </Badge>
+                    </h3>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-[50px]"></TableHead>
+                          <TableHead>Número</TableHead>
+                          <TableHead>Arquivo</TableHead>
+                          <TableHead>Disciplina</TableHead>
+                          <TableHead>Executor</TableHead>
+                          <TableHead>Datas</TableHead>
+                          <TableHead>Tempo</TableHead>
+                          <TableHead className="w-[100px]">Ações</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {docs.map(doc => (
+                          <DocumentoItem
+                            key={doc.id}
+                            doc={doc}
+                            planejamentos={localPlanejamentos}
+                            allAtividades={allAtividades}
+                            handleEdit={handleEdit}
+                            handleDelete={handleDelete}
+                            handleOpenDocEtapaModal={handleOpenDocEtapaModal}
+                            handlePredecessoraChange={handlePredecessoraChange}
+                            handleDataInicioChange={handleDataInicioChange}
+                            etapaParaPlanejamento={etapaParaPlanejamento}
+                            loadingDocs={loadingDocs}
+                            empreendimento={empreendimento}
+                            onUpdate={onUpdate}
+                          />
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
