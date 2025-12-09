@@ -1299,6 +1299,13 @@ export default function DocumentosTab({
           </TableCell>
           <TableCell className="font-medium">{doc.numero}</TableCell>
           <TableCell>{doc.arquivo}</TableCell>
+          <TableCell className="text-sm text-gray-600 max-w-xs">
+            {doc.descritivo ? (
+              <span className="line-clamp-2" title={doc.descritivo}>{doc.descritivo}</span>
+            ) : (
+              <span className="text-gray-400 italic">Sem descrição</span>
+            )}
+          </TableCell>
           <TableCell>
             <div className="flex flex-col gap-1">
               <span className="font-medium">{doc.disciplina}</span>
@@ -1755,6 +1762,7 @@ export default function DocumentosTab({
                           <TableHead className="w-[50px]"></TableHead>
                           <TableHead>Número</TableHead>
                           <TableHead>Arquivo</TableHead>
+                          <TableHead>Descritivo</TableHead>
                           <TableHead>Disciplina</TableHead>
                           <TableHead>Executor</TableHead>
                           <TableHead>Datas</TableHead>
