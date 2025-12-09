@@ -1307,20 +1307,20 @@ export default function DocumentosTab({
             )}
           </TableCell>
           <TableCell>
-            <div className="flex flex-col gap-1">
-              {doc.subdisciplinas && doc.subdisciplinas.length > 0 && (
-                <div className="flex flex-wrap gap-1">
-                  {doc.subdisciplinas.map((sub, idx) => (
-                    <Badge key={idx} variant="secondary" className="text-xs">
-                      {sub}
-                    </Badge>
-                  ))}
-                </div>
-              )}
-              {doc.escala && (
-                <span className="text-xs text-gray-500">Escala: 1:{doc.escala}</span>
-              )}
-            </div>
+            {doc.subdisciplinas && doc.subdisciplinas.length > 0 ? (
+              <div className="flex flex-wrap gap-1">
+                {doc.subdisciplinas.map((sub, idx) => (
+                  <Badge key={idx} variant="secondary" className="text-xs">
+                    {sub}
+                  </Badge>
+                ))}
+              </div>
+            ) : (
+              <span className="text-gray-400 italic text-xs">-</span>
+            )}
+          </TableCell>
+          <TableCell className="text-sm text-gray-600">
+            {doc.escala ? `1:${doc.escala}` : '-'}
           </TableCell>
           <TableCell className="w-[180px]">
             <div className="space-y-1">
@@ -1765,7 +1765,8 @@ export default function DocumentosTab({
                           <TableHead>Número</TableHead>
                           <TableHead>Arquivo</TableHead>
                           <TableHead>Descritivo</TableHead>
-                          <TableHead>Disciplina</TableHead>
+                          <TableHead>Subdisciplina</TableHead>
+                          <TableHead>Escala</TableHead>
                           <TableHead>Executor</TableHead>
                           <TableHead>Datas</TableHead>
                           <TableHead>Tempo</TableHead>
