@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, Search, Edit, Trash2, ChevronDown, ChevronRight, BarChart, CalendarDays, FileText, Loader2, Users2, CalendarIcon } from "lucide-react";
+import { Plus, Search, Edit, Trash2, ChevronDown, ChevronRight, BarChart, CalendarDays, FileText, Loader2, Users2, CalendarIcon, Check } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import DocumentoForm from "./DocumentoForm";
 import { Link, useLocation } from "react-router-dom";
@@ -883,13 +883,16 @@ export default function DocumentosTab({
           tempoComFator = tempoBase * fatorDificuldade;
         }
 
+        const estaConcluida = atividadesConcluidasPorDoc.has(atividade.id);
+
         return {
           ...atividade,
           etapa: etapaFinal,
           tempoComFator,
           tempoBase: tempoBase,
           area: areaPavimento,
-          jaFoiPlanejada: jaFoiPlanejada
+          jaFoiPlanejada: jaFoiPlanejada,
+          estaConcluida: estaConcluida
         };
       });
     }, [allAtividades, doc.disciplina, doc.fator_dificuldade, doc.pavimento_id, planejamentosDoDocumento, doc.subdisciplinas, doc.multiplos_executores, etapaParaPlanejamento, empreendimento.id, pavimentos, doc.id, doc.numero]);
@@ -903,6 +906,66 @@ export default function DocumentosTab({
         return total + (ativ.tempoComFator || 0);
       }, 0);
     }, [atividadesDisponiveis, etapaParaPlanejamento]);
+
+    const handleMarcarComoConcluida = async (activityObj) => {
+      console.log(`\n✅ ========================================`);
+      console.log(`✅ MARCAR COMO CONCLUÍDA`);
+      console.log(`✅ ========================================`);
+      console.log(`   Atividade: "${activityObj.atividade}"`);
+      console.log(`   Folha: ${doc.numero}`);
+      console.log(`✅ ========================================\n`);
+
+      setIsUpdatingActivity(true);
+      try {
+        // Verificar se já existe marcador de conclusão
+        const existingMarkers = await retryWithBackoff(
+          () => Atividade.filter({
+            empreendimento_id: empreendimento.id,
+            id_atividade: activityObj.id,
+            documento_id: doc.id,
+            tempo: -888 // Marcador de conclusão
+          }),
+          3, 1000, `checkConclusionMarker-${activityObj.id}-${doc.id}`
+        );
+
+        if (existingMarkers && existingMarkers.length > 0) {
+          // Já está marcada como concluída, então vamos desmarcar
+          console.log(`   Desmarcando como concluída...`);
+          await retryWithBackoff(
+            () => Atividade.delete(existingMarkers[0].id),
+            3, 1000, `removeConclusionMarker-${existingMarkers[0].id}`
+          );
+          alert(`Atividade "${activityObj.atividade}" desmarcada como concluída.`);
+        } else {
+          // Criar marcador de conclusão
+          const novoMarcador = {
+            etapa: activityObj.etapa,
+            disciplina: activityObj.disciplina,
+            subdisciplina: activityObj.subdisciplina,
+            atividade: `(Concluída na folha ${doc.numero}) ${activityObj.atividade}`,
+            funcao: activityObj.funcao,
+            empreendimento_id: empreendimento.id,
+            id_atividade: activityObj.id,
+            documento_id: doc.id,
+            tempo: -888 // Marcador de conclusão
+          };
+
+          console.log(`   Criando marcador de conclusão...`);
+          await retryWithBackoff(
+            () => Atividade.create(novoMarcador),
+            3, 1000, `createConclusionMarker-${activityObj.id}-${doc.id}`
+          );
+          alert(`✅ Atividade "${activityObj.atividade}" marcada como concluída!`);
+        }
+
+        await onUpdate();
+      } catch (error) {
+        console.error("❌ Erro ao marcar atividade como concluída:", error);
+        alert("Erro ao atualizar o status da atividade: " + error.message);
+      } finally {
+        setIsUpdatingActivity(false);
+      }
+    };
 
     const handleExcluirAtividade = async (activityObj) => {
       // **LOG IMEDIATO**: Verificar se a função está sendo chamada
@@ -1576,15 +1639,24 @@ export default function DocumentosTab({
                       <div
                         key={atividade.id}
                         className={`flex justify-between items-center p-3 rounded border ${
-                          atividade.jaFoiPlanejada
+                          atividade.estaConcluida
+                            ? 'bg-blue-50 border-blue-200'
+                            : atividade.jaFoiPlanejada
                             ? 'bg-green-50 border-green-200'
                             : 'bg-white border-gray-200'
                         }`}
                       >
                         <div className="flex-1 pr-2">
                           <div className="flex items-center gap-2">
-                            <span className="font-medium">{atividade.atividade}</span>
-                            {atividade.jaFoiPlanejada && (
+                            <span className={`font-medium ${atividade.estaConcluida ? 'line-through text-gray-500' : ''}`}>
+                              {atividade.atividade}
+                            </span>
+                            {atividade.estaConcluida && (
+                              <Badge className="bg-blue-100 text-blue-800 text-xs">
+                                Concluída
+                              </Badge>
+                            )}
+                            {atividade.jaFoiPlanejada && !atividade.estaConcluida && (
                               <Badge className="bg-green-100 text-green-800 text-xs">
                                 Planejada
                               </Badge>
