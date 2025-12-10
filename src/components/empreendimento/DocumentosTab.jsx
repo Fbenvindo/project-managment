@@ -834,21 +834,30 @@ export default function DocumentosTab({
       
       const atividadesExcluidasGlobal = new Set();
       const atividadesExcluidasPorDoc = new Set();
+      const atividadesConcluidasPorDoc = new Set();
       
       allAtividades.forEach(ativ => {
-        if (ativ.empreendimento_id === empreendimento.id && ativ.tempo === -999 && ativ.id_atividade) {
-          if (ativ.documento_id === doc.id) {
-            console.log(`   ❌ Exclusão da folha ${doc.numero}: atividade ${ativ.id_atividade}`);
-            atividadesExcluidasPorDoc.add(ativ.id_atividade);
-          } else if (!ativ.documento_id) {
-            console.log(`   ❌ Exclusão global: atividade ${ativ.id_atividade}`);
-            atividadesExcluidasGlobal.add(ativ.id_atividade);
+        if (ativ.empreendimento_id === empreendimento.id && ativ.id_atividade) {
+          if (ativ.tempo === -999) {
+            // Exclusões
+            if (ativ.documento_id === doc.id) {
+              console.log(`   ❌ Exclusão da folha ${doc.numero}: atividade ${ativ.id_atividade}`);
+              atividadesExcluidasPorDoc.add(ativ.id_atividade);
+            } else if (!ativ.documento_id) {
+              console.log(`   ❌ Exclusão global: atividade ${ativ.id_atividade}`);
+              atividadesExcluidasGlobal.add(ativ.id_atividade);
+            }
+          } else if (ativ.tempo === -888 && ativ.documento_id === doc.id) {
+            // Conclusões
+            console.log(`   ✅ Concluída na folha ${doc.numero}: atividade ${ativ.id_atividade}`);
+            atividadesConcluidasPorDoc.add(ativ.id_atividade);
           }
         }
       });
 
       console.log(`   Excluídas globalmente: ${atividadesExcluidasGlobal.size}`);
       console.log(`   Excluídas desta folha: ${atividadesExcluidasPorDoc.size}`);
+      console.log(`   Concluídas nesta folha: ${atividadesConcluidasPorDoc.size}`);
 
       atividadesGerais = atividadesGerais.filter(ativ => {
         const globalExcluded = atividadesExcluidasGlobal.has(ativ.id);
@@ -1688,17 +1697,31 @@ export default function DocumentosTab({
                             )}
                           </div>
                           <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleExcluirAtividade(atividade)}
-                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                            title="Excluir atividade SOMENTE desta folha"
-                            disabled={isUpdatingActivity}
+                           variant="ghost"
+                           size="icon"
+                           onClick={() => handleMarcarComoConcluida(atividade)}
+                           className={`${
+                             atividade.estaConcluida 
+                               ? 'text-blue-600 hover:text-blue-800 hover:bg-blue-50' 
+                               : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
+                           }`}
+                           title={atividade.estaConcluida ? "Desmarcar como concluída" : "Marcar como concluída"}
+                           disabled={isUpdatingActivity}
                           >
-                            {isUpdatingActivity ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                           {isUpdatingActivity ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                           </Button>
-                        </div>
-                      </div>
+                          <Button
+                           variant="ghost"
+                           size="icon"
+                           onClick={() => handleExcluirAtividade(atividade)}
+                           className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                           title="Excluir atividade SOMENTE desta folha"
+                           disabled={isUpdatingActivity}
+                          >
+                           {isUpdatingActivity ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                          </Button>
+                          </div>
+                          </div>
                     );
                   }) : (
                     <div className="text-center text-gray-500 p-4">
