@@ -799,6 +799,7 @@ export default function DocumentosTab({
     const isDocLoading = loadingDocs[doc.id] || false;
     
     const [searchPredecessor, setSearchPredecessor] = useState('');
+    const [refreshKey, setRefreshKey] = useState(0);
 
     const planejamentosDoDocumento = useMemo(() => {
         return planejamentos.filter(p => p.documento_id === doc.id);
@@ -904,7 +905,7 @@ export default function DocumentosTab({
           estaConcluida: estaConcluida
         };
       });
-    }, [allAtividades, doc.disciplina, doc.fator_dificuldade, doc.pavimento_id, planejamentosDoDocumento, doc.subdisciplinas, doc.multiplos_executores, etapaParaPlanejamento, empreendimento.id, pavimentos, doc.id, doc.numero]);
+    }, [allAtividades, doc.disciplina, doc.fator_dificuldade, doc.pavimento_id, planejamentosDoDocumento, doc.subdisciplinas, doc.multiplos_executores, etapaParaPlanejamento, empreendimento.id, pavimentos, doc.id, doc.numero, refreshKey]);
 
     const tempoCalculadoPorEtapa = useMemo(() => {
       const atividadesFiltradas = etapaParaPlanejamento === 'todas'
@@ -967,8 +968,8 @@ export default function DocumentosTab({
           alert(`✅ Atividade "${activityObj.atividade}" marcada como concluída!`);
         }
 
-        // Atualiza apenas o estado local sem recarregar a página
-        setLocalDocumentos(prev => [...prev]);
+        // Força re-renderização para recalcular as atividades
+        setRefreshKey(prev => prev + 1);
       } catch (error) {
         console.error("❌ Erro ao marcar atividade como concluída:", error);
         alert("Erro ao atualizar o status da atividade: " + error.message);
