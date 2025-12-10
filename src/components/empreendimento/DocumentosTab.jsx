@@ -799,7 +799,6 @@ export default function DocumentosTab({
     const isDocLoading = loadingDocs[doc.id] || false;
     
     const [searchPredecessor, setSearchPredecessor] = useState('');
-    const [atividadesConcluidas, setAtividadesConcluidas] = useState(new Set());
 
     const planejamentosDoDocumento = useMemo(() => {
         return planejamentos.filter(p => p.documento_id === doc.id);
@@ -893,7 +892,7 @@ export default function DocumentosTab({
           tempoComFator = tempoBase * fatorDificuldade;
         }
 
-        const estaConcluida = atividadesConcluidasPorDoc.has(atividade.id) || atividadesConcluidas.has(atividade.id);
+        const estaConcluida = atividadesConcluidasPorDoc.has(atividade.id);
 
         return {
           ...atividade,
@@ -905,7 +904,7 @@ export default function DocumentosTab({
           estaConcluida: estaConcluida
         };
       });
-    }, [allAtividades, doc.disciplina, doc.fator_dificuldade, doc.pavimento_id, planejamentosDoDocumento, doc.subdisciplinas, doc.multiplos_executores, etapaParaPlanejamento, empreendimento.id, pavimentos, doc.id, doc.numero, atividadesConcluidas]);
+    }, [allAtividades, doc.disciplina, doc.fator_dificuldade, doc.pavimento_id, planejamentosDoDocumento, doc.subdisciplinas, doc.multiplos_executores, etapaParaPlanejamento, empreendimento.id, pavimentos, doc.id, doc.numero]);
 
     const tempoCalculadoPorEtapa = useMemo(() => {
       const atividadesFiltradas = etapaParaPlanejamento === 'todas'
@@ -945,14 +944,6 @@ export default function DocumentosTab({
             () => Atividade.delete(existingMarkers[0].id),
             3, 1000, `removeConclusionMarker-${existingMarkers[0].id}`
           );
-          
-          // Atualiza estado local
-          setAtividadesConcluidas(prev => {
-            const newSet = new Set(prev);
-            newSet.delete(activityObj.id);
-            return newSet;
-          });
-          
           alert(`Atividade "${activityObj.atividade}" desmarcada como concluída.`);
         } else {
           // Criar marcador de conclusão
@@ -973,12 +964,10 @@ export default function DocumentosTab({
             () => Atividade.create(novoMarcador),
             3, 1000, `createConclusionMarker-${activityObj.id}-${doc.id}`
           );
-          
-          // Atualiza estado local
-          setAtividadesConcluidas(prev => new Set(prev).add(activityObj.id));
-          
           alert(`✅ Atividade "${activityObj.atividade}" marcada como concluída!`);
         }
+
+        await onUpdate();
       } catch (error) {
         console.error("❌ Erro ao marcar atividade como concluída:", error);
         alert("Erro ao atualizar o status da atividade: " + error.message);
