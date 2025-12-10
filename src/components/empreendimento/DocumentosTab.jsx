@@ -967,7 +967,8 @@ export default function DocumentosTab({
           alert(`✅ Atividade "${activityObj.atividade}" marcada como concluída!`);
         }
 
-        await onUpdate();
+        // Atualiza apenas o estado local sem recarregar a página
+        setLocalDocumentos(prev => [...prev]);
       } catch (error) {
         console.error("❌ Erro ao marcar atividade como concluída:", error);
         alert("Erro ao atualizar o status da atividade: " + error.message);
