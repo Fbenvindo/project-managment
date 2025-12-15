@@ -1686,8 +1686,8 @@ export default function DocumentosTab({
                           <div className="text-sm text-gray-500 mt-1">
                             {atividade.etapa} • {subdisciplina}
                             {atividade.area && (
-                                <span className="ml-2 text-blue-600">
-                                  • {atividade.tempoBase.toFixed(2)}h/m² × {atividade.area}m²
+                                <span className={`ml-2 ${atividade.estaConcluida ? 'line-through text-gray-400' : 'text-blue-600'}`}>
+                                  • {atividade.tempoBaseParaExibicao.toFixed(2)}h/m² × {atividade.area}m²
                                 </span>
                               )}
                           </div>
