@@ -1694,15 +1694,23 @@ export default function DocumentosTab({
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="text-right">
-                            <div className="text-sm font-medium">
-                              {atividade.tempoComFator.toFixed(1)}h
+                            <div className={`text-sm font-medium ${atividade.estaConcluida ? 'line-through text-gray-400' : ''}`}>
+                              {atividade.estaConcluida 
+                                ? `${((atividade.area || 1) * atividade.tempoBaseParaExibicao * (doc.fator_dificuldade || 1)).toFixed(1)}h`
+                                : `${atividade.tempoComFator.toFixed(1)}h`
+                              }
                             </div>
-                            {atividade.jaFoiPlanejada && (
+                            {atividade.estaConcluida && (
+                              <div className="text-xs text-gray-500">
+                                Tempo zerado (concluída)
+                              </div>
+                            )}
+                            {!atividade.estaConcluida && atividade.jaFoiPlanejada && (
                               <div className="text-xs text-gray-500">
                                 Tempo contabilizado no plano do documento.
                               </div>
                             )}
-                            {!atividade.jaFoiPlanejada && (
+                            {!atividade.estaConcluida && !atividade.jaFoiPlanejada && (
                               <div className="text-xs text-blue-600">
                                 Disponível para planejamento
                               </div>
