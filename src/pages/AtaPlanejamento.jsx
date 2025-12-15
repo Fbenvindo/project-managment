@@ -157,30 +157,19 @@ const printStyles = `
     word-break: break-word !important;
   }
 
-  /* Esconder inputs, selects e textareas na impressão */
-  input, select, textarea, button {
-    display: none !important;
-    visibility: hidden !important;
+  /* Esconder inputs na impressão, mostrar só valor */
+  input {
+    border: none !important;
+    background: transparent !important;
+    padding: 0 !important;
+    font-size: 9px !important;
   }
-  
-  /* Força exibição de spans na impressão - máxima prioridade */
-  .hidden {
-    display: inline !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-    position: static !important;
-    width: auto !important;
-    height: auto !important;
-  }
-  
-  /* Garantir que elementos com print:block sejam blocos */
-  .print\\:block {
-    display: block !important;
-  }
-  
-  /* Garantir que elementos com print:inline sejam inline */
-  .print\\:inline {
-    display: inline !important;
+
+  select {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    border: none !important;
+    background: transparent !important;
   }
 
   /* Tabela de providências */
@@ -188,36 +177,21 @@ const printStyles = `
     width: 100% !important;
     table-layout: fixed !important;
     font-size: 8px !important;
-    border-collapse: collapse !important;
   }
 
   td, th {
     padding: 2px !important;
     word-wrap: break-word !important;
     font-size: 8px !important;
-    border: 1px solid #9ca3af !important;
-  }
-  
-  tbody {
-    display: table-row-group !important;
-  }
-  
-  tr {
-    display: table-row !important;
-    page-break-inside: avoid !important;
   }
 
   /* Cabeçalho da tabela */
-  thead {
-    display: table-header-group !important;
+  .flex.bg-yellow-100 {
+    font-size: 8px !important;
   }
-  
-  .bg-yellow-100 {
-    background-color: #fef9c3 !important;
-  }
-  
-  .bg-yellow-50 {
-    background-color: #fefce8 !important;
+
+  .flex.bg-yellow-100 > div {
+    padding: 2px !important;
   }
 }
 `;
@@ -622,7 +596,6 @@ export default function AtaPlanejamento() {
                                 onChange={(e) => setAtaData(prev => ({ ...prev, controle: e.target.value }))}
                                 className="border-none outline-none bg-transparent text-right font-medium w-20 print:bg-transparent"
                               />
-                              <span className="hidden print:inline font-medium">{ataData.controle}</span>
                             </div>
                             <div className="flex justify-between items-center">
                               <span>Folha:</span>
@@ -632,7 +605,6 @@ export default function AtaPlanejamento() {
                                 onChange={(e) => setAtaData(prev => ({ ...prev, folha: e.target.value }))}
                                 className="border-none outline-none bg-transparent text-right w-12 print:bg-transparent"
                               />
-                              <span className="hidden print:inline">{ataData.folha}</span>
                             </div>
                             <div className="flex justify-between items-center">
                               <span>Rev:</span>
@@ -642,7 +614,6 @@ export default function AtaPlanejamento() {
                                 onChange={(e) => setAtaData(prev => ({ ...prev, rev: e.target.value }))}
                                 className="border-none outline-none bg-transparent text-right w-12 print:bg-transparent"
                               />
-                              <span className="hidden print:inline">{ataData.rev}</span>
                             </div>
                             <div className="flex justify-between items-center">
                               <span>Emissão:</span>
@@ -652,7 +623,6 @@ export default function AtaPlanejamento() {
                                 onChange={(e) => setAtaData(prev => ({ ...prev, emissao: e.target.value }))}
                                 className="border-none outline-none bg-transparent text-right w-16 print:bg-transparent"
                               />
-                              <span className="hidden print:inline">{ataData.emissao}</span>
                             </div>
                           </div>
         </div>
@@ -668,7 +638,6 @@ export default function AtaPlanejamento() {
                                   onChange={(e) => setAtaData(prev => ({ ...prev, assunto: e.target.value }))}
                                   className="border-none outline-none bg-transparent print:bg-transparent flex-1 w-full"
                                 />
-                                <span className="hidden print:inline">{ataData.assunto}</span>
                               </div>
             <div className="col-span-4 p-2 text-sm">
               <span className="font-medium">Data: </span>
@@ -689,7 +658,6 @@ export default function AtaPlanejamento() {
                 onChange={(e) => setAtaData(prev => ({ ...prev, local: e.target.value }))}
                 className="border-none outline-none bg-transparent print:bg-transparent"
               />
-              <span className="hidden print:inline">{ataData.local}</span>
             </div>
             <div className="col-span-4 p-2 text-sm">
               <span className="font-medium">Horário: </span>
@@ -699,7 +667,6 @@ export default function AtaPlanejamento() {
                 onChange={(e) => setAtaData(prev => ({ ...prev, horario: e.target.value }))}
                 className="border-none outline-none bg-transparent print:bg-transparent"
               />
-              <span className="hidden print:inline">{ataData.horario}</span>
             </div>
           </div>
         </div>
@@ -789,35 +756,25 @@ export default function AtaPlanejamento() {
         </div>
 
         {/* Cabeçalho da Tabela de Providências */}
-        <table className="w-full text-xs">
-          <thead>
-            <tr className="bg-yellow-100 border-b border-gray-400">
-              <th className="w-[6%] p-1 text-center border-r border-gray-400 font-medium">OS ▼</th>
-              <th className="w-[10%] p-1 text-center border-r border-gray-400 font-medium">Projeto ▼</th>
-              <th className="w-[8%] p-1 text-center border-r border-gray-400 font-medium">Nº Proposta ▼</th>
-              <th className="w-[30%] p-1 text-center border-r border-gray-400 font-medium">Providências</th>
-              <th className="w-[8%] p-1 text-center border-r border-gray-400 font-medium">Gerência</th>
-              <th className="w-[10%] p-1 text-center border-r border-gray-400 font-medium">Responsável▼</th>
-              <th className="w-[8%] p-1 text-center border-r border-gray-400 font-medium">Data da reunião▼</th>
-              <th className="w-[8%] p-1 text-center border-r border-gray-400 font-medium">Data de retorno</th>
-              <th className="w-[12%] p-1 text-center font-medium">Status / Ações</th>
-            </tr>
-          </thead>
-        </table>
+        <div className="flex bg-yellow-100 border-b border-gray-400 text-xs font-medium">
+          <div className="w-[6%] p-1 text-center border-r border-gray-400">OS ▼</div>
+          <div className="w-[10%] p-1 text-center border-r border-gray-400">Projeto ▼</div>
+          <div className="w-[8%] p-1 text-center border-r border-gray-400">Nº Proposta ▼</div>
+          <div className="w-[30%] p-1 text-center border-r border-gray-400">Providências</div>
+          <div className="w-[8%] p-1 text-center border-r border-gray-400">Gerência</div>
+          <div className="w-[10%] p-1 text-center border-r border-gray-400">Responsável▼</div>
+          <div className="w-[8%] p-1 text-center border-r border-gray-400">Data da reunião▼</div>
+          <div className="w-[8%] p-1 text-center border-r border-gray-400">Data de retorno</div>
+          <div className="w-[12%] p-1 text-center">Status / Ações</div>
+        </div>
 
         {/* Linhas de Providências */}
         {providenciasAgrupadas.length === 0 ? (
-          <table className="w-full text-xs">
-            <tbody>
-              <tr>
-                <td colSpan="9" className="p-4 text-center text-gray-500 text-sm">
-                  Nenhuma providência cadastrada. Clique em "Adicionar Providência" para começar.
-                </td>
-              </tr>
-            </tbody>
-          </table>
+          <div className="p-4 text-center text-gray-500 text-sm">
+            Nenhuma providência cadastrada. Clique em "Adicionar Providência" para começar.
+          </div>
         ) : (
-          <table className="w-full text-xs table-fixed">
+          <table className="w-full text-xs">
             <tbody>
               {providenciasAgrupadas.map((grupo, gIdx) => (
                 grupo.items.map((prov, pIdx) => (
@@ -847,28 +804,28 @@ export default function AtaPlanejamento() {
                         </td>
                       </>
                     )}
-                    <td className="w-[30%] p-1 border-r border-gray-300 align-top">
+                    <td className="w-[30%] p-1 border-r border-gray-300">
                       <Textarea
                         value={prov.providencias}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'providencias', e.target.value)}
-                        className="min-h-[60px] text-xs w-full border-gray-300 print:hidden resize-none"
+                        className="min-h-[60px] text-xs print:hidden"
                       />
-                      <span className="hidden print:inline whitespace-pre-wrap text-xs">{prov.providencias}</span>
+                      <span className="hidden print:inline whitespace-pre-wrap">{prov.providencias}</span>
                     </td>
-                    <td className="w-[8%] p-1 border-r border-gray-300 align-top">
+                    <td className="w-[8%] p-1 border-r border-gray-300">
                       <Input
                         value={prov.gerencia}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'gerencia', e.target.value)}
-                        className="h-8 text-xs w-full border-gray-300 print:hidden"
+                        className="h-8 text-xs print:hidden"
                       />
-                      <span className="hidden print:inline text-xs">{prov.gerencia}</span>
+                      <span className="hidden print:inline">{prov.gerencia}</span>
                     </td>
-                    <td className="w-[10%] p-1 border-r border-gray-300 align-top">
+                    <td className="w-[10%] p-1 border-r border-gray-300">
                       <Select
                         value={prov.responsaveis?.[0] || ''}
                         onValueChange={(value) => handleUpdateProvidencia(prov.id, 'responsaveis', [value])}
                       >
-                        <SelectTrigger className="h-8 text-xs w-full border-gray-300 print:hidden">
+                        <SelectTrigger className="h-8 text-xs print:hidden">
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                         <SelectContent>
@@ -879,29 +836,29 @@ export default function AtaPlanejamento() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <span className="hidden print:inline text-xs">
+                      <span className="hidden print:inline">
                         {Array.isArray(prov.responsaveis) ? prov.responsaveis.join(', ') : ''}
                       </span>
                     </td>
-                    <td className="w-[8%] p-1 border-r border-gray-300 align-top">
+                    <td className="w-[8%] p-1 border-r border-gray-300">
                       <Input
                         type="date"
                         value={prov.dataReuniao}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'dataReuniao', e.target.value)}
-                        className="h-8 text-xs w-full border-gray-300 print:hidden"
+                        className="h-8 text-xs print:hidden"
                       />
-                      <span className="hidden print:inline text-xs">
+                      <span className="hidden print:inline">
                         {prov.dataReuniao ? format(new Date(prov.dataReuniao), 'dd/MM/yyyy') : ''}
                       </span>
                     </td>
-                    <td className="w-[8%] p-1 border-r border-gray-300 align-top">
+                    <td className="w-[8%] p-1 border-r border-gray-300">
                       <Input
                         type="date"
                         value={prov.dataRetorno}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'dataRetorno', e.target.value)}
-                        className="h-8 text-xs w-full border-gray-300 print:hidden"
+                        className="h-8 text-xs print:hidden"
                       />
-                      <span className="hidden print:inline text-xs">
+                      <span className="hidden print:inline">
                         {prov.dataRetorno ? format(new Date(prov.dataRetorno), 'dd/MM/yyyy') : ''}
                       </span>
                     </td>
