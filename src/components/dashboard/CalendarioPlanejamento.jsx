@@ -196,14 +196,14 @@ const CalendarFilters = ({
                         if (isColaborador || isGestao || isApoio) {
                           // Sempre mostra o próprio usuário
                           if (u.email === currentUserEmail) return true;
-                          // Se tem usuários permitidos, mostra apenas esses
-                          if (podeVerOutros) {
+                          // Se tem usuários permitidos (array válido com conteúdo), mostra apenas esses
+                          if (podeVerOutros && Array.isArray(usuariosPermitidos)) {
                             return usuariosPermitidos.includes(u.email);
                           }
                           // Sem permissões especiais, não mostra outros usuários
                           return false;
                         }
-                        // Admin, líder, direção veem todos
+                        // Admin, líder, direção, coordenador veem todos
                         return true;
                       })
                       .map(userItem => (
@@ -1461,7 +1461,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
 
   // **MODIFICADO**: Verificar lista de usuários permitidos
   const usuariosPermitidos = userProfile?.usuarios_permitidos_visualizar || [];
-  const podeVisualizarOutros = usuariosPermitidos.length > 0;
+  const podeVisualizarOutros = Array.isArray(usuariosPermitidos) && usuariosPermitidos.length > 0;
 
   // Debug log do userProfile
   console.log('👤 UserProfile no CalendarioPlanejamento:', {
@@ -1503,9 +1503,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
 
   // **MODIFICADO**: useEffect para auto-selecionar usuário se for gestão, colaborador OU apoio (sem permissão especial)
   useEffect(() => {
-    // Verifica se tem usuários permitidos
+    // Verifica se tem usuários permitidos (array válido com conteúdo)
     const usuariosPermitidos = userProfile?.usuarios_permitidos_visualizar || [];
-    const temPermissao = usuariosPermitidos.length > 0;
+    const temPermissao = Array.isArray(usuariosPermitidos) && usuariosPermitidos.length > 0;
 
     if ((isGestao || isColaborador || isApoio) && !temPermissao && user?.email && !filters.user) {
       const tipoUsuario = isGestao ? 'gestão' : isColaborador ? 'colaborador' : 'apoio';
@@ -2196,7 +2196,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   const handleClearFilters = () => {
     // **MODIFICADO**: Gestão, Colaboradores e APOIO (sem permissão especial) não podem limpar o filtro de usuário
     const usuariosPermitidos = userProfile?.usuarios_permitidos_visualizar || [];
-    const temPermissao = usuariosPermitidos.length > 0;
+    const temPermissao = Array.isArray(usuariosPermitidos) && usuariosPermitidos.length > 0;
 
     if ((isGestao || isColaborador || isApoio) && !temPermissao) {
       const tipoUsuario = isGestao ? 'gestão' : isColaborador ? 'colaborador' : 'apoio';
@@ -2339,7 +2339,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           onFilterChange={(key, value) => {
             // **MODIFICADO**: Gestão, Colaboradores e APOIO (sem permissão especial) não podem mudar de usuário
             const usuariosPermitidosLocal = userProfile?.usuarios_permitidos_visualizar || [];
-            const temPermissao = usuariosPermitidosLocal.length > 0;
+            const temPermissao = Array.isArray(usuariosPermitidosLocal) && usuariosPermitidosLocal.length > 0;
 
             console.log('🔄 onFilterChange:', { key, value, temPermissao, usuariosPermitidos: usuariosPermitidosLocal });
 
