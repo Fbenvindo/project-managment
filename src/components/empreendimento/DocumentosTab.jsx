@@ -909,7 +909,8 @@ export default function DocumentosTab({
           ...atividade,
           etapa: etapaFinal,
           tempoComFator,
-          tempoBase: tempoBase,
+          tempoBase: tempoBase, // Tempo usado para cálculo (0 se concluída)
+          tempoBaseParaExibicao: tempoBaseParaExibicao, // Tempo original para mostrar riscado
           area: areaPavimento,
           jaFoiPlanejada: jaFoiPlanejada,
           estaConcluida: estaConcluida
