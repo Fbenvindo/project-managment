@@ -835,15 +835,15 @@ export default function AtaPlanejamento() {
                       />
                       <span className="hidden print:inline whitespace-pre-wrap text-[6px] leading-tight">{prov.providencias}</span>
                     </td>
-                    <td className="w-[8%] p-1 border-r border-gray-300">
+                    <td className="w-[8%] p-1 border-r border-gray-300 text-center align-top">
                       <Input
                         value={prov.gerencia}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'gerencia', e.target.value)}
-                        className="h-8 text-xs print:hidden"
+                        className="h-8 text-xs print:hidden text-center"
                       />
-                      <span className="hidden print:inline">{prov.gerencia}</span>
+                      <span className="hidden print:inline text-[6px]">{prov.gerencia}</span>
                     </td>
-                    <td className="w-[10%] p-1 border-r border-gray-300">
+                    <td className="w-[10%] p-1 border-r border-gray-300 text-center align-top">
                       <Select
                         value={prov.responsaveis?.[0] || ''}
                         onValueChange={(value) => handleUpdateProvidencia(prov.id, 'responsaveis', [value])}
@@ -859,29 +859,29 @@ export default function AtaPlanejamento() {
                           ))}
                         </SelectContent>
                       </Select>
-                      <span className="hidden print:inline">
+                      <span className="hidden print:inline text-[6px]">
                         {Array.isArray(prov.responsaveis) ? prov.responsaveis.join(', ') : ''}
                       </span>
                     </td>
-                    <td className="w-[8%] p-1 border-r border-gray-300">
+                    <td className="w-[8%] p-1 border-r border-gray-300 text-center align-top">
                       <Input
                         type="date"
                         value={prov.dataReuniao}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'dataReuniao', e.target.value)}
                         className="h-8 text-xs print:hidden"
                       />
-                      <span className="hidden print:inline">
+                      <span className="hidden print:inline text-[6px]">
                         {prov.dataReuniao ? format(new Date(prov.dataReuniao), 'dd/MM/yyyy') : ''}
                       </span>
                     </td>
-                    <td className="w-[8%] p-1 border-r border-gray-300">
+                    <td className="w-[8%] p-1 border-r border-gray-300 text-center align-top">
                       <Input
                         type="date"
                         value={prov.dataRetorno}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'dataRetorno', e.target.value)}
                         className="h-8 text-xs print:hidden"
                       />
-                      <span className="hidden print:inline">
+                      <span className="hidden print:inline text-[6px]">
                         {prov.dataRetorno ? format(new Date(prov.dataRetorno), 'dd/MM/yyyy') : ''}
                       </span>
                     </td>
