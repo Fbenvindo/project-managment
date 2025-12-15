@@ -198,6 +198,13 @@ const printStyles = `
     line-height: 1.2 !important;
   }
 
+  /* Células com rowspan - altura compacta */
+  td[rowspan] {
+    height: auto !important;
+    max-height: 30px !important;
+    padding: 1px 2px !important;
+  }
+
   /* Remover espaçamentos extras na impressão */
   .space-y-1, .space-y-2, .space-y-3 {
     gap: 0 !important;
@@ -206,6 +213,11 @@ const printStyles = `
   /* Esconder elementos vazios */
   tr:empty {
     display: none !important;
+  }
+
+  /* Linhas da tabela mais compactas */
+  tbody tr {
+    height: auto !important;
   }
 
   /* Cabeçalho da tabela */
