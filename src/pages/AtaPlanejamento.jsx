@@ -157,26 +157,27 @@ const printStyles = `
     word-break: break-word !important;
   }
 
-  /* Esconder inputs na impressão, mostrar só valor */
-  input {
-    border: none !important;
-    background: transparent !important;
-    padding: 0 !important;
-    font-size: 8px !important;
-  }
-
-  select {
-    -webkit-appearance: none !important;
-    appearance: none !important;
-    border: none !important;
-    background: transparent !important;
+  /* Esconder inputs, selects e textareas na impressão */
+  input, select, textarea, button {
+    display: none !important;
   }
   
-  textarea {
-    border: none !important;
-    background: transparent !important;
-    padding: 0 !important;
-    font-size: 8px !important;
+  /* Mostrar apenas os spans de impressão */
+  .print\:inline {
+    display: inline !important;
+  }
+  
+  .print\:block {
+    display: block !important;
+  }
+  
+  /* Garantir que spans escondidos apareçam */
+  span.hidden {
+    display: none !important;
+  }
+  
+  span.hidden.print\:inline {
+    display: inline !important;
   }
 
   /* Tabela de providências */
