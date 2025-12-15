@@ -184,21 +184,36 @@ const printStyles = `
     width: 100% !important;
     table-layout: fixed !important;
     font-size: 8px !important;
+    border-collapse: collapse !important;
   }
 
   td, th {
     padding: 2px !important;
     word-wrap: break-word !important;
     font-size: 8px !important;
+    border: 1px solid #9ca3af !important;
+  }
+  
+  tbody {
+    display: table-row-group !important;
+  }
+  
+  tr {
+    display: table-row !important;
+    page-break-inside: avoid !important;
   }
 
   /* Cabeçalho da tabela */
-  .flex.bg-yellow-100 {
-    font-size: 8px !important;
+  thead {
+    display: table-header-group !important;
   }
-
-  .flex.bg-yellow-100 > div {
-    padding: 2px !important;
+  
+  .bg-yellow-100 {
+    background-color: #fef9c3 !important;
+  }
+  
+  .bg-yellow-50 {
+    background-color: #fefce8 !important;
   }
 }
 `;
