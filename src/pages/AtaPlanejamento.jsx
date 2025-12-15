@@ -142,19 +142,20 @@ const printStyles = `
 
   /* Texto - mantém tamanhos legíveis */
   .text-center { text-align: center !important; }
-  .text-sm { font-size: 9px !important; }
-  .text-xs { font-size: 8px !important; }
+  .text-sm { font-size: 7px !important; }
+  .text-xs { font-size: 6px !important; }
   .font-medium { font-weight: 500 !important; }
   .font-bold { font-weight: 700 !important; }
 
   /* Padding */
-  .p-1 { padding: 2px !important; }
-  .p-2 { padding: 4px !important; }
+  .p-1 { padding: 1px !important; }
+  .p-2 { padding: 2px !important; }
 
   /* Permitir quebra de texto */
   .whitespace-pre-wrap {
     white-space: pre-wrap !important;
     word-break: break-word !important;
+    overflow-wrap: break-word !important;
   }
 
   /* Esconder inputs na impressão, mostrar só valor */
@@ -162,7 +163,7 @@ const printStyles = `
     border: none !important;
     background: transparent !important;
     padding: 0 !important;
-    font-size: 9px !important;
+    font-size: 7px !important;
   }
 
   select {
@@ -176,13 +177,35 @@ const printStyles = `
   table {
     width: 100% !important;
     table-layout: fixed !important;
-    font-size: 8px !important;
+    font-size: 6px !important;
+    border-collapse: collapse !important;
   }
 
   td, th {
-    padding: 2px !important;
+    padding: 1px 2px !important;
     word-wrap: break-word !important;
-    font-size: 8px !important;
+    overflow-wrap: break-word !important;
+    font-size: 6px !important;
+    line-height: 1.2 !important;
+    vertical-align: top !important;
+  }
+
+  /* Altura máxima para células de providências */
+  td textarea,
+  td input,
+  td select {
+    font-size: 6px !important;
+    line-height: 1.2 !important;
+  }
+
+  /* Remover espaçamentos extras na impressão */
+  .space-y-1, .space-y-2, .space-y-3 {
+    gap: 0 !important;
+  }
+
+  /* Esconder elementos vazios */
+  tr:empty {
+    display: none !important;
   }
 
   /* Cabeçalho da tabela */
