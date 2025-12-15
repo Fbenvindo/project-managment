@@ -619,6 +619,7 @@ export default function AtaPlanejamento() {
                                 onChange={(e) => setAtaData(prev => ({ ...prev, controle: e.target.value }))}
                                 className="border-none outline-none bg-transparent text-right font-medium w-20 print:bg-transparent"
                               />
+                              <span className="hidden print:inline font-medium">{ataData.controle}</span>
                             </div>
                             <div className="flex justify-between items-center">
                               <span>Folha:</span>
@@ -628,6 +629,7 @@ export default function AtaPlanejamento() {
                                 onChange={(e) => setAtaData(prev => ({ ...prev, folha: e.target.value }))}
                                 className="border-none outline-none bg-transparent text-right w-12 print:bg-transparent"
                               />
+                              <span className="hidden print:inline">{ataData.folha}</span>
                             </div>
                             <div className="flex justify-between items-center">
                               <span>Rev:</span>
@@ -637,6 +639,7 @@ export default function AtaPlanejamento() {
                                 onChange={(e) => setAtaData(prev => ({ ...prev, rev: e.target.value }))}
                                 className="border-none outline-none bg-transparent text-right w-12 print:bg-transparent"
                               />
+                              <span className="hidden print:inline">{ataData.rev}</span>
                             </div>
                             <div className="flex justify-between items-center">
                               <span>Emissão:</span>
@@ -646,6 +649,7 @@ export default function AtaPlanejamento() {
                                 onChange={(e) => setAtaData(prev => ({ ...prev, emissao: e.target.value }))}
                                 className="border-none outline-none bg-transparent text-right w-16 print:bg-transparent"
                               />
+                              <span className="hidden print:inline">{ataData.emissao}</span>
                             </div>
                           </div>
         </div>
@@ -661,6 +665,7 @@ export default function AtaPlanejamento() {
                                   onChange={(e) => setAtaData(prev => ({ ...prev, assunto: e.target.value }))}
                                   className="border-none outline-none bg-transparent print:bg-transparent flex-1 w-full"
                                 />
+                                <span className="hidden print:inline">{ataData.assunto}</span>
                               </div>
             <div className="col-span-4 p-2 text-sm">
               <span className="font-medium">Data: </span>
@@ -681,6 +686,7 @@ export default function AtaPlanejamento() {
                 onChange={(e) => setAtaData(prev => ({ ...prev, local: e.target.value }))}
                 className="border-none outline-none bg-transparent print:bg-transparent"
               />
+              <span className="hidden print:inline">{ataData.local}</span>
             </div>
             <div className="col-span-4 p-2 text-sm">
               <span className="font-medium">Horário: </span>
@@ -690,6 +696,7 @@ export default function AtaPlanejamento() {
                 onChange={(e) => setAtaData(prev => ({ ...prev, horario: e.target.value }))}
                 className="border-none outline-none bg-transparent print:bg-transparent"
               />
+              <span className="hidden print:inline">{ataData.horario}</span>
             </div>
           </div>
         </div>
