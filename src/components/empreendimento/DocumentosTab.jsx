@@ -847,8 +847,8 @@ export default function DocumentosTab({
               console.log(`   ❌ Exclusão global: atividade ${ativ.id_atividade}`);
               atividadesExcluidasGlobal.add(ativ.id_atividade);
             }
-          } else if (ativ.tempo === -888 && ativ.documento_id === doc.id) {
-            // Conclusões
+          } else if (ativ.tempo === 0 && ativ.documento_id === doc.id && ativ.atividade?.includes('Concluída na folha')) {
+            // Conclusões (identificadas por tempo 0 e texto "Concluída na folha")
             console.log(`   ✅ Concluída na folha ${doc.numero}: atividade ${ativ.id_atividade}`);
             atividadesConcluidasPorDoc.add(ativ.id_atividade);
           }
@@ -932,7 +932,7 @@ export default function DocumentosTab({
             empreendimento_id: empreendimento.id,
             id_atividade: activityObj.id,
             documento_id: doc.id,
-            tempo: -888 // Marcador de conclusão
+            tempo: 0 // Marcador de conclusão
           }),
           3, 1000, `checkConclusionMarker-${activityObj.id}-${doc.id}`
         );
@@ -946,7 +946,7 @@ export default function DocumentosTab({
           );
           alert(`Atividade "${activityObj.atividade}" desmarcada como concluída.`);
         } else {
-          // Criar marcador de conclusão
+          // Criar marcador de conclusão (usando tempo 0 em vez de -888)
           const novoMarcador = {
             etapa: activityObj.etapa,
             disciplina: activityObj.disciplina,
@@ -956,7 +956,7 @@ export default function DocumentosTab({
             empreendimento_id: empreendimento.id,
             id_atividade: activityObj.id,
             documento_id: doc.id,
-            tempo: -888 // Marcador de conclusão
+            tempo: 0 // Atividade concluída tem tempo zero
           };
 
           console.log(`   Criando marcador de conclusão...`);
