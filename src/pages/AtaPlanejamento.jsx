@@ -264,6 +264,8 @@ export default function AtaPlanejamento() {
     numProposta: '',
     linhas: [{ providencias: '', gerencia: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
   });
+  const [showSelectAtaModal, setShowSelectAtaModal] = useState(false);
+  const [searchAta, setSearchAta] = useState('');
 
   useEffect(() => {
     loadData();
@@ -325,6 +327,10 @@ export default function AtaPlanejamento() {
   };
 
   const handleNewAta = () => {
+    setShowSelectAtaModal(true);
+  };
+
+  const handleCreateBlankAta = () => {
     setCurrentAtaId(null);
     setAtaData({
       assunto: 'Reunião de Planejamento / Semanal',
@@ -339,6 +345,26 @@ export default function AtaPlanejamento() {
       status: 'rascunho'
     });
     setProvidencias([]);
+    setShowSelectAtaModal(false);
+    setViewMode('edit');
+  };
+
+  const handleCreateFromPrevious = (ata) => {
+    setCurrentAtaId(null);
+    setAtaData({
+      assunto: ata.assunto || 'Reunião de Planejamento / Semanal',
+      local: ata.local || 'Home Office',
+      data: format(new Date(), 'yyyy-MM-dd'),
+      horario: ata.horario || '14h',
+      participantes: ata.participantes || [],
+      folha: '1/',
+      rev: '00',
+      controle: ata.controle || 'RG-PO-27',
+      emissao: '/ /',
+      status: 'rascunho'
+    });
+    setProvidencias((ata.providencias || []).map((p, idx) => ({ ...p, id: Date.now() + idx, status: 'pendente' })));
+    setShowSelectAtaModal(false);
     setViewMode('edit');
   };
 
