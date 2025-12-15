@@ -879,14 +879,17 @@ export default function DocumentosTab({
 
         const estaConcluida = atividadesConcluidasPorDoc.has(atividade.id);
 
-        // Para atividades concluídas, usar tempo original para exibição, mas 0 para cálculo
+        // Para atividades concluídas, tempo base é sempre ZERO para cálculo
         const tempoBaseOriginal = parseFloat(atividade.tempo) || 0;
 
-        const tempoBase = estaConcluida 
-          ? tempoBaseOriginal  // Mostrar tempo original se concluída
-          : (tempoOverrides.has(atividade.id)
-              ? parseFloat(tempoOverrides.get(atividade.id)) || 0
-              : tempoBaseOriginal);
+        let tempoBase;
+        if (estaConcluida) {
+          tempoBase = 0; // Atividades concluídas não somam no tempo total
+        } else if (tempoOverrides.has(atividade.id)) {
+          tempoBase = parseFloat(tempoOverrides.get(atividade.id)) || 0;
+        } else {
+          tempoBase = tempoBaseOriginal;
+        }
 
         const jaFoiPlanejada = isDocumentPlannedAsSingleEntity && etapaFinal === etapaParaPlanejamento;
 
@@ -898,6 +901,9 @@ export default function DocumentosTab({
         } else {
           tempoComFator = tempoBase * fatorDificuldade;
         }
+
+        // Para exibição: mostrar tempo original mesmo se concluída
+        const tempoBaseParaExibicao = estaConcluida ? tempoBaseOriginal : tempoBase;
 
         return {
           ...atividade,
