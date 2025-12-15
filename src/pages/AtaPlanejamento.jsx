@@ -948,6 +948,63 @@ export default function AtaPlanejamento() {
         )}
       </div>
 
+      {/* Modal Selecionar ATA Anterior */}
+      <Dialog open={showSelectAtaModal} onOpenChange={setShowSelectAtaModal}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Criar Nova ATA</DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <Button onClick={handleCreateBlankAta} className="w-full justify-start h-auto py-4" variant="outline">
+              <div className="text-left">
+                <div className="font-semibold mb-1">ATA em Branco</div>
+                <p className="text-sm text-gray-500">Começar uma nova ATA sem dados pré-preenchidos</p>
+              </div>
+            </Button>
+            
+            <div className="border-t pt-4">
+              <h3 className="font-medium mb-3">Ou buscar ATA anterior como base:</h3>
+              <Input
+                placeholder="Buscar por assunto, data..."
+                value={searchAta}
+                onChange={(e) => setSearchAta(e.target.value)}
+                className="mb-3"
+              />
+              <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                {atasRegistradas
+                  .filter(ata => {
+                    if (!searchAta) return true;
+                    const search = searchAta.toLowerCase();
+                    return (
+                      ata.assunto?.toLowerCase().includes(search) ||
+                      ata.data?.includes(search) ||
+                      ata.local?.toLowerCase().includes(search)
+                    );
+                  })
+                  .map(ata => (
+                    <Button
+                      key={ata.id}
+                      onClick={() => handleCreateFromPrevious(ata)}
+                      className="w-full justify-start h-auto py-3"
+                      variant="outline"
+                    >
+                      <div className="text-left">
+                        <div className="font-medium">{ata.assunto}</div>
+                        <p className="text-xs text-gray-500">
+                          {ata.data ? format(new Date(ata.data), 'dd/MM/yyyy', { locale: ptBR }) : 'Sem data'}
+                          {ata.local && ` - ${ata.local}`}
+                          {` • ${ata.providencias?.length || 0} providência(s)`}
+                        </p>
+                      </div>
+                    </Button>
+                  ))}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+      
       {/* Modal Adicionar Providência */}
       <Dialog open={showAddModal} onOpenChange={setShowAddModal}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
