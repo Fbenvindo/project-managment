@@ -805,28 +805,15 @@ export default function AtaPlanejamento() {
                     key={prov.id} 
                     className={`border-b border-gray-300 ${gIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
                   >
-                    {pIdx === 0 && (
-                      <>
-                        <td 
-                         rowSpan={grupo.items.length}
-                         className="w-[6%] p-1 text-center border-r border-gray-300 font-medium bg-yellow-50 align-top"
-                        >
-                         <span className="text-[6px] print:text-[6px]">{grupo.os}</span>
-                        </td>
-                        <td 
-                         rowSpan={grupo.items.length}
-                         className="w-[10%] p-1 text-center border-r border-gray-300 bg-yellow-50 align-top"
-                        >
-                         <span className="text-[6px] print:text-[6px]">{grupo.projeto}</span>
-                        </td>
-                        <td 
-                         rowSpan={grupo.items.length}
-                         className="w-[8%] p-1 text-center border-r border-gray-300 bg-yellow-50 align-top"
-                        >
-                         <span className="text-[6px] print:text-[6px]">{grupo.numProposta}</span>
-                        </td>
-                      </>
-                    )}
+                    <td className="w-[6%] p-1 text-center border-r border-gray-300 font-medium bg-yellow-50 align-top">
+                      <span className="text-[6px] print:text-[6px]">{grupo.os}</span>
+                    </td>
+                    <td className="w-[10%] p-1 text-center border-r border-gray-300 bg-yellow-50 align-top">
+                      <span className="text-[6px] print:text-[6px]">{grupo.projeto}</span>
+                    </td>
+                    <td className="w-[8%] p-1 text-center border-r border-gray-300 bg-yellow-50 align-top">
+                      <span className="text-[6px] print:text-[6px]">{grupo.numProposta}</span>
+                    </td>
                     <td className="w-[30%] p-1 border-r border-gray-300 align-top">
                       <Textarea
                         value={prov.providencias}
