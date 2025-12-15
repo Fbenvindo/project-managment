@@ -213,8 +213,25 @@ export default function DocumentoForm({
     atividadesRelacionadas.forEach(ativ => {
       let tempoBase = parseFloat(ativ.tempo) || 0;
 
+      // Verificar se a atividade está concluída NESTE documento específico
+      if (doc?.id) {
+        const conclusaoEspecifica = allAtividades.find(s_ativ =>
+          s_ativ.empreendimento_id === empreendimentoId && 
+          s_ativ.id_atividade === ativ.id && 
+          s_ativ.documento_id === doc.id &&
+          s_ativ.tempo === 0 &&
+          s_ativ.atividade?.includes('Concluída na folha')
+        );
+        
+        if (conclusaoEspecifica) {
+          console.log(`   ⭕ Atividade "${ativ.atividade}" concluída neste documento - usando tempo 0`);
+          tempoBase = 0;
+        }
+      }
+
       // Aplicar override de tempo se existir e não for -999 (já filtrado na criação do mapa)
-      if (tempoOverridesMap.has(ativ.id)) {
+      // Só aplicar se não estiver concluída (já zerada acima)
+      if (tempoBase !== 0 && tempoOverridesMap.has(ativ.id)) {
         tempoBase = parseFloat(tempoOverridesMap.get(ativ.id)) || 0;
       }
       
