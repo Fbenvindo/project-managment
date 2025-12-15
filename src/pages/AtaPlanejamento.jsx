@@ -821,21 +821,24 @@ export default function AtaPlanejamento() {
                       <>
                         <td 
                          rowSpan={grupo.items.length}
-                         className="w-[6%] p-1 text-center border-r border-gray-300 font-medium bg-yellow-50 align-top"
+                         className="w-[6%] p-1 text-center border-r border-gray-300 font-bold bg-yellow-50 align-top"
+                         style={{ maxHeight: '30px', height: 'auto' }}
                         >
-                         <span className="text-[6px] print:text-[6px]">{grupo.os}</span>
+                         <div className="text-xs print:text-[6px] print:leading-tight">{grupo.os}</div>
                         </td>
                         <td 
                          rowSpan={grupo.items.length}
                          className="w-[10%] p-1 text-center border-r border-gray-300 bg-yellow-50 align-top"
+                         style={{ maxHeight: '30px', height: 'auto' }}
                         >
-                         <span className="text-[6px] print:text-[6px]">{grupo.projeto}</span>
+                         <div className="text-xs print:text-[6px] print:leading-tight break-words">{grupo.projeto}</div>
                         </td>
                         <td 
                          rowSpan={grupo.items.length}
                          className="w-[8%] p-1 text-center border-r border-gray-300 bg-yellow-50 align-top"
+                         style={{ maxHeight: '30px', height: 'auto' }}
                         >
-                         <span className="text-[6px] print:text-[6px]">{grupo.numProposta}</span>
+                         <div className="text-xs print:text-[6px] print:leading-tight break-words">{grupo.numProposta}</div>
                         </td>
                       </>
                     )}
