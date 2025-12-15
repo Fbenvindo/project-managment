@@ -804,16 +804,63 @@ export default function AtaPlanejamento() {
                         </td>
                       </>
                     )}
-                    <td className="w-[30%] p-1 border-r border-gray-300 whitespace-pre-wrap">{prov.providencias}</td>
-                    <td className="w-[8%] p-1 text-center border-r border-gray-300">{prov.gerencia}</td>
-                    <td className="w-[10%] p-1 text-center border-r border-gray-300">
-                      {Array.isArray(prov.responsaveis) ? prov.responsaveis.join(', ') : prov.responsavel || ''}
+                    <td className="w-[30%] p-1 border-r border-gray-300">
+                      <Textarea
+                        value={prov.providencias}
+                        onChange={(e) => handleUpdateProvidencia(prov.id, 'providencias', e.target.value)}
+                        className="min-h-[60px] text-xs print:hidden"
+                      />
+                      <span className="hidden print:inline whitespace-pre-wrap">{prov.providencias}</span>
                     </td>
-                    <td className="w-[8%] p-1 text-center border-r border-gray-300">
-                      {prov.dataReuniao ? format(new Date(prov.dataReuniao), 'dd/MM/yyyy') : ''}
+                    <td className="w-[8%] p-1 border-r border-gray-300">
+                      <Input
+                        value={prov.gerencia}
+                        onChange={(e) => handleUpdateProvidencia(prov.id, 'gerencia', e.target.value)}
+                        className="h-8 text-xs print:hidden"
+                      />
+                      <span className="hidden print:inline">{prov.gerencia}</span>
                     </td>
-                    <td className="w-[8%] p-1 text-center border-r border-gray-300">
-                      {prov.dataRetorno ? format(new Date(prov.dataRetorno), 'dd/MM/yyyy') : ''}
+                    <td className="w-[10%] p-1 border-r border-gray-300">
+                      <Select
+                        value={prov.responsaveis?.[0] || ''}
+                        onValueChange={(value) => handleUpdateProvidencia(prov.id, 'responsaveis', [value])}
+                      >
+                        <SelectTrigger className="h-8 text-xs print:hidden">
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {usuarios.map(user => (
+                            <SelectItem key={user.id} value={user.nome || user.full_name}>
+                              {user.nome || user.full_name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <span className="hidden print:inline">
+                        {Array.isArray(prov.responsaveis) ? prov.responsaveis.join(', ') : ''}
+                      </span>
+                    </td>
+                    <td className="w-[8%] p-1 border-r border-gray-300">
+                      <Input
+                        type="date"
+                        value={prov.dataReuniao}
+                        onChange={(e) => handleUpdateProvidencia(prov.id, 'dataReuniao', e.target.value)}
+                        className="h-8 text-xs print:hidden"
+                      />
+                      <span className="hidden print:inline">
+                        {prov.dataReuniao ? format(new Date(prov.dataReuniao), 'dd/MM/yyyy') : ''}
+                      </span>
+                    </td>
+                    <td className="w-[8%] p-1 border-r border-gray-300">
+                      <Input
+                        type="date"
+                        value={prov.dataRetorno}
+                        onChange={(e) => handleUpdateProvidencia(prov.id, 'dataRetorno', e.target.value)}
+                        className="h-8 text-xs print:hidden"
+                      />
+                      <span className="hidden print:inline">
+                        {prov.dataRetorno ? format(new Date(prov.dataRetorno), 'dd/MM/yyyy') : ''}
+                      </span>
                     </td>
                     <td className="w-[12%] p-1">
                       <div className="flex items-center justify-between gap-1">
