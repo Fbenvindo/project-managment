@@ -158,32 +158,29 @@ const printStyles = `
   }
 
   /* Esconder inputs, selects e textareas na impressão */
-  input:not(.print-show), select:not(.print-show), textarea:not(.print-show), button:not(.print-show) {
+  input, select, textarea, button {
     display: none !important;
+    visibility: hidden !important;
   }
   
-  /* Mostrar spans de impressão */
-  span.print\:inline,
-  .print\:inline {
+  /* Força exibição de spans na impressão - máxima prioridade */
+  .hidden {
     display: inline !important;
     visibility: visible !important;
+    opacity: 1 !important;
+    position: static !important;
+    width: auto !important;
+    height: auto !important;
   }
   
-  span.print\:block,
-  .print\:block {
+  /* Garantir que elementos com print:block sejam blocos */
+  .print\\:block {
     display: block !important;
-    visibility: visible !important;
   }
   
-  /* Garantir que spans escondidos na tela apareçam na impressão */
-  span.hidden.print\:inline {
+  /* Garantir que elementos com print:inline sejam inline */
+  .print\\:inline {
     display: inline !important;
-    visibility: visible !important;
-  }
-  
-  span.hidden.print\:block {
-    display: block !important;
-    visibility: visible !important;
   }
 
   /* Tabela de providências */
