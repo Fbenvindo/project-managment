@@ -818,28 +818,15 @@ export default function AtaPlanejamento() {
                     key={prov.id} 
                     className={`border-b border-gray-300 ${gIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
                   >
-                    {pIdx === 0 && (
-                      <>
-                        <td 
-                         rowSpan={grupo.items.length}
-                         className="w-[6%] p-1 text-center border-r border-gray-300 font-bold bg-yellow-50 align-middle"
-                        >
-                         <div className="text-xs print:text-[6px] print:leading-tight">{grupo.os}</div>
-                        </td>
-                        <td 
-                         rowSpan={grupo.items.length}
-                         className="w-[10%] p-1 text-center border-r border-gray-300 bg-yellow-50 align-middle"
-                        >
-                         <div className="text-xs print:text-[6px] print:leading-tight break-words">{grupo.projeto}</div>
-                        </td>
-                        <td 
-                         rowSpan={grupo.items.length}
-                         className="w-[8%] p-1 text-center border-r border-gray-300 bg-yellow-50 align-middle"
-                        >
-                         <div className="text-xs print:text-[6px] print:leading-tight break-words">{grupo.numProposta}</div>
-                        </td>
-                      </>
-                    )}
+                    <td className="w-[6%] p-1 text-center border-r border-gray-300 font-bold bg-yellow-50 align-middle">
+                      <div className="text-xs print:text-[6px] print:leading-tight">{grupo.os}</div>
+                    </td>
+                    <td className="w-[10%] p-1 text-center border-r border-gray-300 bg-yellow-50 align-middle">
+                      <div className="text-xs print:text-[6px] print:leading-tight break-words">{grupo.projeto}</div>
+                    </td>
+                    <td className="w-[8%] p-1 text-center border-r border-gray-300 bg-yellow-50 align-middle">
+                      <div className="text-xs print:text-[6px] print:leading-tight break-words">{grupo.numProposta}</div>
+                    </td>
                     <td className="w-[30%] p-1 border-r border-gray-300 align-top">
                       <Textarea
                         value={prov.providencias}
