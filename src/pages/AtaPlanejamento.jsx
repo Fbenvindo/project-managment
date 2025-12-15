@@ -198,11 +198,12 @@ const printStyles = `
     line-height: 1.2 !important;
   }
 
-  /* Células com rowspan - altura compacta */
+  /* Células com rowspan - altura compacta e centralização vertical */
   td[rowspan] {
     height: auto !important;
     max-height: 30px !important;
     padding: 1px 2px !important;
+    vertical-align: middle !important;
   }
 
   /* Remover espaçamentos extras na impressão */
