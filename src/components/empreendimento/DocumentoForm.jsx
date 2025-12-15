@@ -211,9 +211,8 @@ export default function DocumentoForm({
     };
 
     atividadesRelacionadas.forEach(ativ => {
-      let tempoBase = parseFloat(ativ.tempo) || 0;
-
-      // Verificar se a atividade está concluída NESTE documento específico
+      // PRIMEIRO: Verificar se a atividade está concluída NESTE documento específico
+      let atividadeConcluida = false;
       if (doc?.id) {
         const conclusaoEspecifica = allAtividades.find(s_ativ =>
           s_ativ.empreendimento_id === empreendimentoId && 
@@ -224,18 +223,23 @@ export default function DocumentoForm({
         );
         
         if (conclusaoEspecifica) {
-          console.log(`   ⭕ Atividade "${ativ.atividade}" concluída neste documento - usando tempo 0`);
-          tempoBase = 0;
+          console.log(`   ⭕ Atividade "${ativ.atividade}" (ID: ${ativ.id}) concluída neste documento - será EXCLUÍDA do cálculo de tempo`);
+          atividadeConcluida = true;
+          return; // Pular esta atividade completamente do cálculo
         }
       }
 
-      // Aplicar override de tempo se existir e não for -999 (já filtrado na criação do mapa)
-      // Só aplicar se não estiver concluída (já zerada acima)
-      if (tempoBase !== 0 && tempoOverridesMap.has(ativ.id)) {
+      // SEGUNDO: Pegar tempo base
+      let tempoBase = parseFloat(ativ.tempo) || 0;
+
+      // TERCEIRO: Aplicar override de tempo se existir e não for -999 (já filtrado na criação do mapa)
+      if (tempoOverridesMap.has(ativ.id)) {
         tempoBase = parseFloat(tempoOverridesMap.get(ativ.id)) || 0;
+        console.log(`   📝 Atividade "${ativ.atividade}" tem override de tempo: ${tempoBase}h`);
       }
       
-      // MODIFICADO: Se não houver pavimento, usar apenas tempo base * fator
+      // QUARTO: Calcular tempo final
+      // Se não houver pavimento, usar apenas tempo base * fator
       // Se houver pavimento, usar tempo base * área * fator
       const tempoCalculado = areaPavimento && areaPavimento > 0
         ? tempoBase * areaPavimento * fatorDificuldade
