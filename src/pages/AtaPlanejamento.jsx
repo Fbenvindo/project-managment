@@ -755,26 +755,26 @@ export default function AtaPlanejamento() {
           ))}
         </div>
 
-        {/* Cabeçalho da Tabela de Providências */}
-        <div className="flex bg-yellow-100 border-b border-gray-400 text-xs font-medium">
-          <div className="w-[6%] p-1 text-center border-r border-gray-400">OS ▼</div>
-          <div className="w-[10%] p-1 text-center border-r border-gray-400">Projeto ▼</div>
-          <div className="w-[8%] p-1 text-center border-r border-gray-400">Nº Proposta ▼</div>
-          <div className="w-[30%] p-1 text-center border-r border-gray-400">Providências</div>
-          <div className="w-[8%] p-1 text-center border-r border-gray-400">Gerência</div>
-          <div className="w-[10%] p-1 text-center border-r border-gray-400">Responsável▼</div>
-          <div className="w-[8%] p-1 text-center border-r border-gray-400">Data da reunião▼</div>
-          <div className="w-[8%] p-1 text-center border-r border-gray-400">Data de retorno</div>
-          <div className="w-[12%] p-1 text-center">Status / Ações</div>
-        </div>
-
-        {/* Linhas de Providências */}
+        {/* Tabela de Providências */}
         {providenciasAgrupadas.length === 0 ? (
           <div className="p-4 text-center text-gray-500 text-sm">
             Nenhuma providência cadastrada. Clique em "Adicionar Providência" para começar.
           </div>
         ) : (
           <table className="w-full text-xs">
+            <thead>
+              <tr className="bg-yellow-100 border-b border-gray-400 text-xs font-medium">
+                <th className="w-[6%] p-1 text-center border-r border-gray-400">OS ▼</th>
+                <th className="w-[10%] p-1 text-center border-r border-gray-400">Projeto ▼</th>
+                <th className="w-[8%] p-1 text-center border-r border-gray-400">Nº Proposta ▼</th>
+                <th className="w-[30%] p-1 text-center border-r border-gray-400">Providências</th>
+                <th className="w-[8%] p-1 text-center border-r border-gray-400">Gerência</th>
+                <th className="w-[10%] p-1 text-center border-r border-gray-400">Responsável▼</th>
+                <th className="w-[8%] p-1 text-center border-r border-gray-400">Data da reunião▼</th>
+                <th className="w-[8%] p-1 text-center border-r border-gray-400">Data de retorno</th>
+                <th className="w-[12%] p-1 text-center">Status / Ações</th>
+              </tr>
+            </thead>
             <tbody>
               {providenciasAgrupadas.map((grupo, gIdx) => (
                 grupo.items.map((prov, pIdx) => (
