@@ -763,25 +763,35 @@ export default function AtaPlanejamento() {
         </div>
 
         {/* Cabeçalho da Tabela de Providências */}
-        <div className="flex bg-yellow-100 border-b border-gray-400 text-xs font-medium">
-          <div className="w-[6%] p-1 text-center border-r border-gray-400">OS ▼</div>
-          <div className="w-[10%] p-1 text-center border-r border-gray-400">Projeto ▼</div>
-          <div className="w-[8%] p-1 text-center border-r border-gray-400">Nº Proposta ▼</div>
-          <div className="w-[30%] p-1 text-center border-r border-gray-400">Providências</div>
-          <div className="w-[8%] p-1 text-center border-r border-gray-400">Gerência</div>
-          <div className="w-[10%] p-1 text-center border-r border-gray-400">Responsável▼</div>
-          <div className="w-[8%] p-1 text-center border-r border-gray-400">Data da reunião▼</div>
-          <div className="w-[8%] p-1 text-center border-r border-gray-400">Data de retorno</div>
-          <div className="w-[12%] p-1 text-center">Status / Ações</div>
-        </div>
+        <table className="w-full text-xs">
+          <thead>
+            <tr className="bg-yellow-100 border-b border-gray-400">
+              <th className="w-[6%] p-1 text-center border-r border-gray-400 font-medium">OS ▼</th>
+              <th className="w-[10%] p-1 text-center border-r border-gray-400 font-medium">Projeto ▼</th>
+              <th className="w-[8%] p-1 text-center border-r border-gray-400 font-medium">Nº Proposta ▼</th>
+              <th className="w-[30%] p-1 text-center border-r border-gray-400 font-medium">Providências</th>
+              <th className="w-[8%] p-1 text-center border-r border-gray-400 font-medium">Gerência</th>
+              <th className="w-[10%] p-1 text-center border-r border-gray-400 font-medium">Responsável▼</th>
+              <th className="w-[8%] p-1 text-center border-r border-gray-400 font-medium">Data da reunião▼</th>
+              <th className="w-[8%] p-1 text-center border-r border-gray-400 font-medium">Data de retorno</th>
+              <th className="w-[12%] p-1 text-center font-medium">Status / Ações</th>
+            </tr>
+          </thead>
+        </table>
 
         {/* Linhas de Providências */}
         {providenciasAgrupadas.length === 0 ? (
-          <div className="p-4 text-center text-gray-500 text-sm">
-            Nenhuma providência cadastrada. Clique em "Adicionar Providência" para começar.
-          </div>
-        ) : (
           <table className="w-full text-xs">
+            <tbody>
+              <tr>
+                <td colSpan="9" className="p-4 text-center text-gray-500 text-sm">
+                  Nenhuma providência cadastrada. Clique em "Adicionar Providência" para começar.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        ) : (
+          <table className="w-full text-xs table-fixed">
             <tbody>
               {providenciasAgrupadas.map((grupo, gIdx) => (
                 grupo.items.map((prov, pIdx) => (
