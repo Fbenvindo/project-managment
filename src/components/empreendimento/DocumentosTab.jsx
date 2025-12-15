@@ -872,6 +872,17 @@ export default function DocumentosTab({
       const pavimento = (pavimentos || []).find(p => p.id === doc.pavimento_id);
       const areaPavimento = pavimento ? Number(pavimento.area) : null;
 
+      // Filtrar por etapa se uma etapa específica foi selecionada
+      if (etapaParaPlanejamento !== 'todas') {
+        atividadesGerais = atividadesGerais.filter(ativ => {
+          const etapaFinal = etapaOverrides.has(ativ.id) 
+            ? etapaOverrides.get(ativ.id) 
+            : ativ.etapa;
+          return etapaFinal === etapaParaPlanejamento;
+        });
+        console.log(`   🎯 Filtrado por etapa "${etapaParaPlanejamento}": ${atividadesGerais.length} atividades\n`);
+      }
+
       return ordenarAtividades(atividadesGerais).map(atividade => {
         const etapaFinal = etapaOverrides.has(atividade.id) 
           ? etapaOverrides.get(atividade.id) 
