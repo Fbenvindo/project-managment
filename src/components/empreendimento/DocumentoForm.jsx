@@ -78,8 +78,8 @@ export default function DocumentoForm({
     allAtividades.forEach(ativ => {
       // This refers to specific activities that override generic ones for this empreendimento.
       // `ativ.id_atividade` is the ID of the generic activity being overridden.
-      // Only if tempo is NOT -999, which means it's an active override.
-      if (ativ.empreendimento_id === empreendimentoId && ativ.id_atividade && ativ.tempo !== -999) {
+      // Only if tempo is NOT -999 (exclusão) AND NOT 0 (conclusão), which means it's an active override.
+      if (ativ.empreendimento_id === empreendimentoId && ativ.id_atividade && ativ.tempo !== -999 && ativ.tempo !== 0) {
         map.set(ativ.id_atividade, ativ.etapa);
       }
     });
@@ -90,8 +90,8 @@ export default function DocumentoForm({
   const tempoOverridesMap = useMemo(() => {
     const map = new Map();
     allAtividades.forEach(ativ => {
-        // Only if tempo is NOT -999, which means it's an active override.
-        if (ativ.empreendimento_id === empreendimentoId && ativ.id_atividade && ativ.tempo !== -999) {
+        // Only if tempo is NOT -999 (exclusão) AND NOT 0 (conclusão), which means it's an active override.
+        if (ativ.empreendimento_id === empreendimentoId && ativ.id_atividade && ativ.tempo !== -999 && ativ.tempo !== 0) {
             map.set(ativ.id_atividade, ativ.tempo);
         }
     });
@@ -137,25 +137,33 @@ export default function DocumentoForm({
         return false;
       }
 
-      // **CRÍTICO**: Verificar exclusões com lógica correta
-      // 1. Buscar TODAS as exclusões desta atividade neste empreendimento
+      // **CRÍTICO**: Verificar exclusões E conclusões com lógica correta
+      // 1. Buscar TODAS as exclusões (-999) E conclusões (0) desta atividade neste empreendimento
       const exclusoes = allAtividades.filter(s_ativ =>
         s_ativ.empreendimento_id === empreendimentoId && 
         s_ativ.id_atividade === ativ.id && 
         s_ativ.tempo === -999
       );
 
+      // 2. Buscar TODAS as conclusões (tempo 0 com texto "Concluída na folha")
+      const conclusoes = allAtividades.filter(s_ativ =>
+        s_ativ.empreendimento_id === empreendimentoId && 
+        s_ativ.id_atividade === ativ.id && 
+        s_ativ.tempo === 0 &&
+        s_ativ.atividade?.includes('Concluída na folha')
+      );
+
       if (exclusoes.length > 0) {
         console.log(`   🔍 Verificando exclusões para atividade "${ativ.atividade}" (ID: ${ativ.id}):`);
         
-        // 2. Verificar se existe exclusão GLOBAL (sem documento_id)
+        // Verificar se existe exclusão GLOBAL (sem documento_id)
         const exclusaoGlobal = exclusoes.find(exc => !exc.documento_id);
         if (exclusaoGlobal) {
           console.log(`      ❌ Exclusão GLOBAL encontrada - excluindo de TODOS os documentos`);
           return false; // Excluir de TODOS os documentos
         }
 
-        // 3. Se for EDIÇÃO de documento existente, verificar exclusão ESPECÍFICA deste documento
+        // Se for EDIÇÃO de documento existente, verificar exclusão ESPECÍFICA deste documento
         if (doc?.id) {
           const exclusaoEspecifica = exclusoes.find(exc => exc.documento_id === doc.id);
           if (exclusaoEspecifica) {
@@ -164,11 +172,23 @@ export default function DocumentoForm({
           }
         }
 
-        // 4. Se não for exclusão global nem específica deste doc, incluir a atividade
+        // Se não for exclusão global nem específica deste doc, incluir a atividade
         console.log(`      ✅ Exclusões existem mas NÃO afetam este documento`);
         const exclusoesDeOutrosDocs = exclusoes.filter(exc => exc.documento_id && exc.documento_id !== doc?.id);
         if (exclusoesDeOutrosDocs.length > 0) {
           console.log(`      ℹ️ ${exclusoesDeOutrosDocs.length} exclusão(ões) de outros documentos ignoradas`);
+        }
+      }
+
+      // Verificar conclusões (mesma lógica que exclusões, mas para tempo 0)
+      if (conclusoes.length > 0 && doc?.id) {
+        console.log(`   🔍 Verificando conclusões para atividade "${ativ.atividade}" (ID: ${ativ.id}):`);
+        
+        // Se existe conclusão específica deste documento, INCLUIR no cálculo mas com tempo 0
+        const conclusaoEspecifica = conclusoes.find(conc => conc.documento_id === doc.id);
+        if (conclusaoEspecifica) {
+          console.log(`      ✅ Conclusão ESPECÍFICA do documento "${doc.numero}" encontrada - atividade será incluída com tempo 0`);
+          // A atividade será incluída, mas o tempoOverridesMap já tem o tempo 0 para ela (não precisa fazer nada aqui)
         }
       }
 
