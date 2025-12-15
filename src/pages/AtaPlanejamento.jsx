@@ -827,13 +827,13 @@ export default function AtaPlanejamento() {
                         </td>
                       </>
                     )}
-                    <td className="w-[30%] p-1 border-r border-gray-300">
+                    <td className="w-[30%] p-1 border-r border-gray-300 align-top">
                       <Textarea
                         value={prov.providencias}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'providencias', e.target.value)}
-                        className="min-h-[60px] text-xs print:hidden"
+                        className="min-h-[60px] text-xs print:hidden w-full"
                       />
-                      <span className="hidden print:inline whitespace-pre-wrap">{prov.providencias}</span>
+                      <span className="hidden print:inline whitespace-pre-wrap text-[6px] leading-tight">{prov.providencias}</span>
                     </td>
                     <td className="w-[8%] p-1 border-r border-gray-300">
                       <Input
