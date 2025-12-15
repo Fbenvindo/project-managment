@@ -212,7 +212,6 @@ export default function DocumentoForm({
 
     atividadesRelacionadas.forEach(ativ => {
       // PRIMEIRO: Verificar se a atividade está concluída NESTE documento específico
-      let atividadeConcluida = false;
       if (doc?.id) {
         const conclusaoEspecifica = allAtividades.find(s_ativ =>
           s_ativ.empreendimento_id === empreendimentoId && 
@@ -223,9 +222,8 @@ export default function DocumentoForm({
         );
         
         if (conclusaoEspecifica) {
-          console.log(`   ⭕ Atividade "${ativ.atividade}" (ID: ${ativ.id}) concluída neste documento - será EXCLUÍDA do cálculo de tempo`);
-          atividadeConcluida = true;
-          return; // Pular esta atividade completamente do cálculo
+          console.log(`   ⭕ Atividade "${ativ.atividade}" (ID: ${ativ.id}) concluída neste documento - PULANDO do cálculo de tempo`);
+          return; // Pular para próxima iteração - não calcular tempo
         }
       }
 
@@ -244,6 +242,8 @@ export default function DocumentoForm({
       const tempoCalculado = areaPavimento && areaPavimento > 0
         ? tempoBase * areaPavimento * fatorDificuldade
         : tempoBase * fatorDificuldade;
+
+      console.log(`   ✅ Atividade "${ativ.atividade}": ${tempoCalculado.toFixed(2)}h`);
 
       // MODIFICADO: Usar etapa com override se existir
       const etapaFinal = etapaOverridesMap.has(ativ.id)
