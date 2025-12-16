@@ -259,9 +259,7 @@ export default function AtaPlanejamento() {
   const [providencias, setProvidencias] = useState([]);
   const [showAddModal, setShowAddModal] = useState(false);
   const [novaProvidencia, setNovaProvidencia] = useState({
-    os: '',
     projeto: '',
-    numProposta: '',
     linhas: [{ providencias: '', gerencia: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
   });
   const [showSelectAtaModal, setShowSelectAtaModal] = useState(false);
@@ -297,9 +295,7 @@ export default function AtaPlanejamento() {
       const ataToSave = {
         ...ataData,
         providencias: providencias.map(p => ({
-          os: p.os,
           projeto: p.projeto,
-          numProposta: p.numProposta,
           providencias: p.providencias,
           gerencia: p.gerencia,
           responsaveis: p.responsaveis,
@@ -417,9 +413,7 @@ export default function AtaPlanejamento() {
     
     const novasProvidencias = linhasValidas.map((linha, idx) => ({
       id: Date.now() + idx,
-      os: novaProvidencia.os,
       projeto: novaProvidencia.projeto,
-      numProposta: novaProvidencia.numProposta,
       providencias: linha.providencias,
       gerencia: linha.gerencia,
       responsaveis: linha.responsaveis,
@@ -430,9 +424,7 @@ export default function AtaPlanejamento() {
     
     setProvidencias(prev => [...prev, ...novasProvidencias]);
     setNovaProvidencia({
-      os: '',
       projeto: '',
-      numProposta: '',
       linhas: [{ providencias: '', gerencia: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
     });
     setShowAddModal(false);
@@ -445,9 +437,7 @@ export default function AtaPlanejamento() {
     const provAnterior = providencias[index];
     const novaProvidencia = {
       id: Date.now(),
-      os: provAnterior.os,
       projeto: provAnterior.projeto,
-      numProposta: provAnterior.numProposta,
       providencias: '',
       gerencia: '',
       responsaveis: [],
@@ -513,16 +503,14 @@ export default function AtaPlanejamento() {
     window.print();
   };
 
-  // Agrupar providências por OS/Projeto/NumProposta
+  // Agrupar providências por Projeto
   const providenciasAgrupadas = useMemo(() => {
     const grupos = {};
     providencias.forEach(p => {
-      const key = `${p.os}-${p.projeto}-${p.numProposta}`;
+      const key = p.projeto;
       if (!grupos[key]) {
         grupos[key] = {
-          os: p.os,
           projeto: p.projeto,
-          numProposta: p.numProposta,
           items: []
         };
       }
@@ -883,15 +871,13 @@ export default function AtaPlanejamento() {
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-yellow-100 border-b border-gray-400 text-xs font-medium">
-                <th className="w-[6%] p-1 text-center border-r border-gray-400">OS ▼</th>
-                <th className="w-[10%] p-1 text-center border-r border-gray-400">Projeto ▼</th>
-                <th className="w-[8%] p-1 text-center border-r border-gray-400">Nº Proposta ▼</th>
-                <th className="w-[30%] p-1 text-center border-r border-gray-400">Providências</th>
-                <th className="w-[8%] p-1 text-center border-r border-gray-400">Gerência</th>
-                <th className="w-[10%] p-1 text-center border-r border-gray-400">Responsável▼</th>
-                <th className="w-[8%] p-1 text-center border-r border-gray-400">Data da reunião▼</th>
-                <th className="w-[8%] p-1 text-center border-r border-gray-400">Data de retorno</th>
-                <th className="w-[12%] p-1 text-center">Status / Ações</th>
+                <th className="w-[16%] p-1 text-center border-r border-gray-400">Projeto ▼</th>
+                <th className="w-[34%] p-1 text-center border-r border-gray-400">Providências</th>
+                <th className="w-[10%] p-1 text-center border-r border-gray-400">Gerência</th>
+                <th className="w-[12%] p-1 text-center border-r border-gray-400">Responsável▼</th>
+                <th className="w-[10%] p-1 text-center border-r border-gray-400">Data da reunião▼</th>
+                <th className="w-[10%] p-1 text-center border-r border-gray-400">Data de retorno</th>
+                <th className="w-[8%] p-1 text-center">Status / Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -901,16 +887,10 @@ export default function AtaPlanejamento() {
                     key={prov.id} 
                     className={`border-b border-gray-300 ${gIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
                   >
-                    <td className="w-[6%] p-1 text-center border-r border-gray-300 font-bold bg-yellow-50 align-middle">
-                      <div className="text-xs print:text-[6px] print:leading-tight">{grupo.os}</div>
-                    </td>
-                    <td className="w-[10%] p-1 text-center border-r border-gray-300 bg-yellow-50 align-middle">
+                    <td className="w-[16%] p-1 text-center border-r border-gray-300 bg-yellow-50 align-middle">
                       <div className="text-xs print:text-[6px] print:leading-tight break-words">{grupo.projeto}</div>
                     </td>
-                    <td className="w-[8%] p-1 text-center border-r border-gray-300 bg-yellow-50 align-middle">
-                      <div className="text-xs print:text-[6px] print:leading-tight break-words">{grupo.numProposta}</div>
-                    </td>
-                    <td className="w-[30%] p-1 border-r border-gray-300 align-top">
+                    <td className="w-[34%] p-1 border-r border-gray-300 align-top">
                       <Textarea
                         value={prov.providencias}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'providencias', e.target.value)}
@@ -918,7 +898,7 @@ export default function AtaPlanejamento() {
                       />
                       <span className="hidden print:inline whitespace-pre-wrap text-[6px] leading-tight">{prov.providencias}</span>
                     </td>
-                    <td className="w-[8%] p-1 border-r border-gray-300 text-center align-top">
+                    <td className="w-[10%] p-1 border-r border-gray-300 text-center align-top">
                       <Input
                         value={prov.gerencia}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'gerencia', e.target.value)}
@@ -926,7 +906,7 @@ export default function AtaPlanejamento() {
                       />
                       <span className="hidden print:inline text-[6px]">{prov.gerencia}</span>
                     </td>
-                    <td className="w-[10%] p-1 border-r border-gray-300 text-center align-top">
+                    <td className="w-[12%] p-1 border-r border-gray-300 text-center align-top">
                       <Select
                         value={prov.responsaveis?.[0] || ''}
                         onValueChange={(value) => handleUpdateProvidencia(prov.id, 'responsaveis', [value])}
@@ -946,7 +926,7 @@ export default function AtaPlanejamento() {
                         {Array.isArray(prov.responsaveis) ? prov.responsaveis.join(', ') : ''}
                       </span>
                     </td>
-                    <td className="w-[8%] p-1 border-r border-gray-300 text-center align-top">
+                    <td className="w-[10%] p-1 border-r border-gray-300 text-center align-top">
                       <Input
                         type="date"
                         value={prov.dataReuniao}
@@ -957,7 +937,7 @@ export default function AtaPlanejamento() {
                         {prov.dataReuniao ? format(new Date(prov.dataReuniao), 'dd/MM/yyyy') : ''}
                       </span>
                     </td>
-                    <td className="w-[8%] p-1 border-r border-gray-300 text-center align-top">
+                    <td className="w-[10%] p-1 border-r border-gray-300 text-center align-top">
                       <Input
                         type="date"
                         value={prov.dataRetorno}
@@ -968,7 +948,7 @@ export default function AtaPlanejamento() {
                         {prov.dataRetorno ? format(new Date(prov.dataRetorno), 'dd/MM/yyyy') : ''}
                       </span>
                     </td>
-                    <td className="w-[12%] p-1 text-center align-top">
+                    <td className="w-[8%] p-1 text-center align-top">
                       <div className="flex items-center justify-center gap-1">
                         <select
                           value={prov.status}
@@ -1013,20 +993,13 @@ export default function AtaPlanejamento() {
           </DialogHeader>
           
           {/* Dados do Projeto (compartilhados) */}
-          <div className="grid grid-cols-3 gap-4 pb-4 border-b">
+          <div className="pb-4 border-b">
             <div>
               <label className="text-sm font-medium">Projeto</label>
               <Select
                 value={novaProvidencia.projeto}
                 onValueChange={(value) => {
-                  const empSelecionado = empreendimentos.find(e => e.nome === value);
-                  const osExtraida = empSelecionado?.nome?.match(/^\d+/)?.[0] || empSelecionado?.os || '';
-                  setNovaProvidencia(prev => ({ 
-                    ...prev, 
-                    projeto: value,
-                    os: osExtraida,
-                    numProposta: empSelecionado?.num_proposta || ''
-                  }));
+                  setNovaProvidencia(prev => ({ ...prev, projeto: value }));
                 }}
               >
                 <SelectTrigger>
@@ -1038,22 +1011,6 @@ export default function AtaPlanejamento() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div>
-              <label className="text-sm font-medium">OS</label>
-              <Input
-                value={novaProvidencia.os}
-                onChange={(e) => setNovaProvidencia(prev => ({ ...prev, os: e.target.value }))}
-                placeholder="Ex: 813"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium">Nº Proposta</label>
-              <Input
-                value={novaProvidencia.numProposta}
-                onChange={(e) => setNovaProvidencia(prev => ({ ...prev, numProposta: e.target.value }))}
-                placeholder="Ex: PP24-1071-R3"
-              />
             </div>
           </div>
 
