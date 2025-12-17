@@ -56,8 +56,7 @@ export default function PRE() {
   }, []);
 
   useEffect(() => {
-    if (selectedEmp && empreendimentos.length > 0) {
-      loadItems(selectedEmp);
+    if (selectedEmp) {
       const emp = empreendimentos.find(e => e.id === selectedEmp);
       if (emp) {
         setHeaderData(prev => ({
@@ -65,7 +64,10 @@ export default function PRE() {
           cliente: emp.cliente || '',
           obra: emp.nome || ''
         }));
+        loadItems(selectedEmp);
       }
+    } else {
+      setItems([]);
     }
   }, [selectedEmp]);
 
