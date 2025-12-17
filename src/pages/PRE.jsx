@@ -323,7 +323,8 @@ export default function PRE() {
                           <Textarea
                             value={item.descritiva}
                             onChange={(e) => handleUpdateItem(item.id, 'descritiva', e.target.value)}
-                            className="min-h-[60px] text-xs print:border-none print:bg-transparent"
+                            className="min-h-[100px] text-xs print:border-none print:bg-transparent resize-y"
+                            rows={4}
                           />
                         </td>
                         <td className="border border-gray-300 p-1">
@@ -337,14 +338,16 @@ export default function PRE() {
                           <Textarea
                             value={item.assunto}
                             onChange={(e) => handleUpdateItem(item.id, 'assunto', e.target.value)}
-                            className="min-h-[60px] text-xs print:border-none print:bg-transparent"
+                            className="min-h-[100px] text-xs print:border-none print:bg-transparent resize-y"
+                            rows={4}
                           />
                         </td>
                         <td className="border border-gray-300 p-1">
                           <Textarea
                             value={item.comentario}
                             onChange={(e) => handleUpdateItem(item.id, 'comentario', e.target.value)}
-                            className="min-h-[60px] text-xs print:border-none print:bg-transparent"
+                            className="min-h-[100px] text-xs print:border-none print:bg-transparent resize-y"
+                            rows={4}
                           />
                         </td>
                         <td className={`border border-gray-300 p-1 ${STATUS_COLORS[item.status] || ''}`}>
@@ -367,7 +370,8 @@ export default function PRE() {
                           <Textarea
                             value={item.resposta}
                             onChange={(e) => handleUpdateItem(item.id, 'resposta', e.target.value)}
-                            className="min-h-[60px] text-xs print:border-none print:bg-transparent"
+                            className="min-h-[100px] text-xs print:border-none print:bg-transparent resize-y"
+                            rows={4}
                           />
                         </td>
                         <td className="border border-gray-300 p-1 text-center no-print">
