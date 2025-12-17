@@ -871,13 +871,13 @@ export default function AtaPlanejamento() {
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-yellow-100 border-b border-gray-400 text-xs font-medium">
-                <th className="w-[16%] p-1 text-center border-r border-gray-400">Projeto ▼</th>
-                <th className="w-[34%] p-1 text-center border-r border-gray-400">Providências</th>
-                <th className="w-[10%] p-1 text-center border-r border-gray-400">Gerência</th>
+                <th className="w-[12%] p-1 text-center border-r border-gray-400">Projeto ▼</th>
+                <th className="w-[40%] p-1 text-center border-r border-gray-400">Providências</th>
+                <th className="w-[8%] p-1 text-center border-r border-gray-400">Gerência</th>
                 <th className="w-[12%] p-1 text-center border-r border-gray-400">Responsável▼</th>
-                <th className="w-[10%] p-1 text-center border-r border-gray-400">Data da reunião▼</th>
-                <th className="w-[10%] p-1 text-center border-r border-gray-400">Data de retorno</th>
-                <th className="w-[8%] p-1 text-center">Status / Ações</th>
+                <th className="w-[9%] p-1 text-center border-r border-gray-400">Data da reunião▼</th>
+                <th className="w-[9%] p-1 text-center border-r border-gray-400">Data de retorno</th>
+                <th className="w-[10%] p-1 text-center">Status / Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -887,31 +887,31 @@ export default function AtaPlanejamento() {
                     key={prov.id} 
                     className={`border-b border-gray-300 ${gIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
                   >
-                    <td className="w-[16%] p-1 text-center border-r border-gray-300 bg-yellow-50 align-middle">
-                      <div className="text-xs print:text-[6px] print:leading-tight break-words">{grupo.projeto}</div>
+                    <td className="w-[12%] p-2 text-center border-r border-gray-300 bg-yellow-50 align-middle">
+                      <div className="text-sm print:text-[6px] print:leading-tight break-words">{grupo.projeto}</div>
                     </td>
-                    <td className="w-[34%] p-1 border-r border-gray-300 align-top">
+                    <td className="w-[40%] p-2 border-r border-gray-300 align-top">
                       <Textarea
                         value={prov.providencias}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'providencias', e.target.value)}
-                        className="min-h-[60px] text-xs print:hidden w-full"
+                        className="min-h-[80px] text-sm print:hidden w-full resize-y"
                       />
                       <span className="hidden print:inline whitespace-pre-wrap text-[6px] leading-tight">{prov.providencias}</span>
                     </td>
-                    <td className="w-[10%] p-1 border-r border-gray-300 text-center align-top">
+                    <td className="w-[8%] p-2 border-r border-gray-300 text-center align-top">
                       <Input
                         value={prov.gerencia}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'gerencia', e.target.value)}
-                        className="h-8 text-xs print:hidden text-center"
+                        className="h-9 text-sm print:hidden text-center"
                       />
                       <span className="hidden print:inline text-[6px]">{prov.gerencia}</span>
                     </td>
-                    <td className="w-[12%] p-1 border-r border-gray-300 text-center align-top">
+                    <td className="w-[12%] p-2 border-r border-gray-300 text-center align-top">
                       <Select
                         value={prov.responsaveis?.[0] || ''}
                         onValueChange={(value) => handleUpdateProvidencia(prov.id, 'responsaveis', [value])}
                       >
-                        <SelectTrigger className="h-8 text-xs print:hidden">
+                        <SelectTrigger className="h-9 text-sm print:hidden">
                           <SelectValue placeholder="Selecione" />
                         </SelectTrigger>
                         <SelectContent>
@@ -926,29 +926,29 @@ export default function AtaPlanejamento() {
                         {Array.isArray(prov.responsaveis) ? prov.responsaveis.join(', ') : ''}
                       </span>
                     </td>
-                    <td className="w-[10%] p-1 border-r border-gray-300 text-center align-top">
+                    <td className="w-[9%] p-2 border-r border-gray-300 text-center align-top">
                       <Input
                         type="date"
                         value={prov.dataReuniao}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'dataReuniao', e.target.value)}
-                        className="h-8 text-xs print:hidden"
+                        className="h-9 text-sm print:hidden"
                       />
                       <span className="hidden print:inline text-[6px]">
                         {prov.dataReuniao ? format(new Date(prov.dataReuniao), 'dd/MM/yyyy') : ''}
                       </span>
                     </td>
-                    <td className="w-[10%] p-1 border-r border-gray-300 text-center align-top">
+                    <td className="w-[9%] p-2 border-r border-gray-300 text-center align-top">
                       <Input
                         type="date"
                         value={prov.dataRetorno}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'dataRetorno', e.target.value)}
-                        className="h-8 text-xs print:hidden"
+                        className="h-9 text-sm print:hidden"
                       />
                       <span className="hidden print:inline text-[6px]">
                         {prov.dataRetorno ? format(new Date(prov.dataRetorno), 'dd/MM/yyyy') : ''}
                       </span>
                     </td>
-                    <td className="w-[8%] p-1 text-center align-top">
+                    <td className="w-[10%] p-2 text-center align-top">
                       <div className="flex items-center justify-center gap-1">
                         <select
                           value={prov.status}
