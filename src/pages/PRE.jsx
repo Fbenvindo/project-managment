@@ -13,7 +13,7 @@ const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/pub
 
 const STATUS_COLORS = {
   "Em andamento": "bg-yellow-200",
-  "Pendente": "bg-orange-200",
+  "Pendente": "bg-red-300",
   "Concluído": "bg-green-200",
   "Cancelado": "bg-red-200"
 };
