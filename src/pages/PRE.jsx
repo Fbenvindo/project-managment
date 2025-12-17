@@ -371,7 +371,7 @@ export default function PRE() {
                             value={item.de}
                             onChange={(e) => handleUpdateItem(item.id, 'de', e.target.value)}
                             className="w-full text-sm print:border-none print:bg-transparent resize-y"
-                            rows={5}
+                            rows={8}
                           />
                         </td>
                         <td className="border border-gray-300 p-2">
