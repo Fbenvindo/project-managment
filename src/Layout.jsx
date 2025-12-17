@@ -83,6 +83,15 @@ const LayoutComponent = ({ children, currentPageName }) => {
       });
     }
 
+    if (hasPermission('coordenador')) {
+      items.push({
+        title: "PRE",
+        url: createPageUrl("PRE"),
+        icon: FileText,
+        show: true
+      });
+    }
+
     items.push({
       title: "Atividades Rápidas",
       url: createPageUrl("AtividadesRapidas"),

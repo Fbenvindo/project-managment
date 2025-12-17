@@ -12,6 +12,7 @@ import Planejamento from './pages/Planejamento';
 import Comercial from './pages/Comercial';
 import AtaPlanejamento from './pages/AtaPlanejamento';
 import ComercialDetalhes from './pages/ComercialDetalhes';
+import PRE from './pages/PRE';
 import __Layout from './Layout.jsx';
 
 
@@ -30,6 +31,7 @@ export const PAGES = {
     "Comercial": Comercial,
     "AtaPlanejamento": AtaPlanejamento,
     "ComercialDetalhes": ComercialDetalhes,
+    "PRE": PRE,
 }
 
 export const pagesConfig = {
