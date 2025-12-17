@@ -403,7 +403,7 @@ export default function PRE() {
                             value={item.comentario}
                             onChange={(e) => handleUpdateItem(item.id, 'comentario', e.target.value)}
                             className="w-full text-sm print:border-none print:bg-transparent resize-y"
-                            rows={7}
+                            rows={10}
                           />
                         </td>
                         <td className={`border border-gray-300 p-2 align-middle ${STATUS_COLORS[item.status] || ''}`}>
