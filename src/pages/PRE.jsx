@@ -288,19 +288,19 @@ export default function PRE() {
 
             {/* Tabela */}
             <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-xs">
+              <table className="w-full border-collapse text-sm">
                 <thead>
                   <tr className="bg-blue-900 text-white">
-                    <th className="border border-gray-400 p-2 w-[5%]">Item</th>
-                    <th className="border border-gray-400 p-2 w-[8%]">Data</th>
-                    <th className="border border-gray-400 p-2 w-[8%]">De</th>
-                    <th className="border border-gray-400 p-2 w-[10%]">Descritiva</th>
-                    <th className="border border-gray-400 p-2 w-[10%]">Localização</th>
-                    <th className="border border-gray-400 p-2 w-[20%]">Assunto</th>
-                    <th className="border border-gray-400 p-2 w-[15%]">Comentário</th>
-                    <th className="border border-gray-400 p-2 w-[10%]">Status</th>
-                    <th className="border border-gray-400 p-2 w-[12%]">Resposta</th>
-                    <th className="border border-gray-400 p-2 w-[2%] no-print">Ações</th>
+                    <th className="border border-gray-400 p-3 w-[4%]">Item</th>
+                    <th className="border border-gray-400 p-3 w-[7%]">Data</th>
+                    <th className="border border-gray-400 p-3 w-[8%]">De</th>
+                    <th className="border border-gray-400 p-3 w-[12%]">Descritiva</th>
+                    <th className="border border-gray-400 p-3 w-[8%]">Localização</th>
+                    <th className="border border-gray-400 p-3 w-[18%]">Assunto</th>
+                    <th className="border border-gray-400 p-3 w-[15%]">Comentário</th>
+                    <th className="border border-gray-400 p-3 w-[8%]">Status</th>
+                    <th className="border border-gray-400 p-3 w-[14%]">Resposta</th>
+                    <th className="border border-gray-400 p-3 w-[6%] no-print">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -312,66 +312,68 @@ export default function PRE() {
                     </tr>
                   ) : (
                     items.map((item) => (
-                      <tr key={item.id} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 p-1 text-center">
+                      <tr key={item.id} className="hover:bg-gray-50 align-top">
+                        <td className="border border-gray-300 p-2 text-center align-middle">
                           <Input
                             value={item.item}
                             onChange={(e) => handleUpdateItem(item.id, 'item', e.target.value)}
-                            className="h-8 text-xs text-center print:border-none print:bg-transparent"
+                            className="h-10 text-sm text-center font-medium print:border-none print:bg-transparent"
                           />
                         </td>
-                        <td className="border border-gray-300 p-1">
+                        <td className="border border-gray-300 p-2 align-middle">
                           <Input
                             type="date"
                             value={item.data}
                             onChange={(e) => handleUpdateItem(item.id, 'data', e.target.value)}
-                            className="h-8 text-xs print:border-none print:bg-transparent"
+                            className="h-10 text-sm print:border-none print:bg-transparent"
                           />
                         </td>
-                        <td className="border border-gray-300 p-1">
-                          <Input
+                        <td className="border border-gray-300 p-2">
+                          <Textarea
                             value={item.de}
                             onChange={(e) => handleUpdateItem(item.id, 'de', e.target.value)}
-                            className="h-8 text-xs print:border-none print:bg-transparent"
+                            className="w-full text-sm print:border-none print:bg-transparent resize-none"
+                            rows={3}
                           />
                         </td>
-                        <td className="border border-gray-300 p-1">
+                        <td className="border border-gray-300 p-2">
                           <Textarea
                             value={item.descritiva}
                             onChange={(e) => handleUpdateItem(item.id, 'descritiva', e.target.value)}
-                            className="min-h-[100px] text-xs print:border-none print:bg-transparent resize-y"
-                            rows={4}
+                            className="w-full text-sm print:border-none print:bg-transparent resize-y"
+                            rows={5}
                           />
                         </td>
-                        <td className="border border-gray-300 p-1">
-                          <Input
+                        <td className="border border-gray-300 p-2">
+                          <Textarea
                             value={item.localizacao}
                             onChange={(e) => handleUpdateItem(item.id, 'localizacao', e.target.value)}
-                            className="h-8 text-xs print:border-none print:bg-transparent"
+                            className="w-full text-sm print:border-none print:bg-transparent resize-none"
+                            rows={3}
                           />
                         </td>
-                        <td className="border border-gray-300 p-1">
+                        <td className="border border-gray-300 p-2">
                           <Textarea
                             value={item.assunto}
                             onChange={(e) => handleUpdateItem(item.id, 'assunto', e.target.value)}
-                            className="min-h-[100px] text-xs print:border-none print:bg-transparent resize-y"
-                            rows={4}
+                            className="w-full text-sm print:border-none print:bg-transparent resize-y"
+                            rows={5}
                           />
                         </td>
-                        <td className="border border-gray-300 p-1">
+                        <td className="border border-gray-300 p-2">
                           <Textarea
                             value={item.comentario}
                             onChange={(e) => handleUpdateItem(item.id, 'comentario', e.target.value)}
-                            className="min-h-[100px] text-xs print:border-none print:bg-transparent resize-y"
-                            rows={4}
+                            className="w-full text-sm print:border-none print:bg-transparent resize-y"
+                            rows={5}
                           />
                         </td>
-                        <td className={`border border-gray-300 p-1 ${STATUS_COLORS[item.status] || ''}`}>
+                        <td className={`border border-gray-300 p-2 align-middle ${STATUS_COLORS[item.status] || ''}`}>
                           <Select
                             value={item.status}
                             onValueChange={(value) => handleUpdateItem(item.id, 'status', value)}
                           >
-                            <SelectTrigger className="h-8 text-xs print:border-none print:bg-transparent">
+                            <SelectTrigger className="h-10 text-sm print:border-none print:bg-transparent">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -382,22 +384,22 @@ export default function PRE() {
                             </SelectContent>
                           </Select>
                         </td>
-                        <td className="border border-gray-300 p-1">
+                        <td className="border border-gray-300 p-2">
                           <Textarea
                             value={item.resposta}
                             onChange={(e) => handleUpdateItem(item.id, 'resposta', e.target.value)}
-                            className="min-h-[100px] text-xs print:border-none print:bg-transparent resize-y"
-                            rows={4}
+                            className="w-full text-sm print:border-none print:bg-transparent resize-y"
+                            rows={5}
                           />
                         </td>
-                        <td className="border border-gray-300 p-1 text-center no-print">
+                        <td className="border border-gray-300 p-2 text-center align-middle no-print">
                           <Button
                             variant="ghost"
                             size="icon"
                             onClick={() => handleDeleteItem(item.id)}
-                            className="h-6 w-6 text-red-500 hover:text-red-700"
+                            className="h-8 w-8 text-red-500 hover:text-red-700"
                           >
-                            <Trash2 className="w-3 h-3" />
+                            <Trash2 className="w-4 h-4" />
                           </Button>
                         </td>
                       </tr>
