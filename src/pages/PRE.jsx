@@ -22,7 +22,7 @@ const printStyles = `
 @media print {
   @page {
     size: A4 landscape;
-    margin: 8mm;
+    margin: 5mm;
   }
   
   .no-print {
@@ -32,6 +32,53 @@ const printStyles = `
   body {
     print-color-adjust: exact;
     -webkit-print-color-adjust: exact;
+    font-size: 8pt;
+  }
+  
+  table {
+    page-break-inside: auto;
+    width: 100%;
+    border-collapse: collapse;
+  }
+  
+  tr {
+    page-break-inside: avoid;
+    page-break-after: auto;
+  }
+  
+  thead {
+    display: table-header-group;
+  }
+  
+  td, th {
+    font-size: 7pt !important;
+    padding: 1mm !important;
+    line-height: 1.2;
+    vertical-align: top;
+  }
+  
+  textarea, input {
+    font-size: 7pt !important;
+    padding: 0 !important;
+    line-height: 1.2 !important;
+  }
+  
+  /* Ajustar larguras das colunas */
+  table td:nth-child(1) { width: 4%; }   /* Item */
+  table td:nth-child(2) { width: 7%; }   /* Data */
+  table td:nth-child(3) { width: 8%; }   /* De */
+  table td:nth-child(4) { width: 12%; }  /* Descritiva */
+  table td:nth-child(5) { width: 8%; }   /* Localização */
+  table td:nth-child(6) { width: 18%; }  /* Assunto */
+  table td:nth-child(7) { width: 20%; }  /* Comentário */
+  table td:nth-child(8) { width: 8%; }   /* Status */
+  table td:nth-child(9) { width: 15%; }  /* Resposta */
+  
+  /* Quebrar palavras longas */
+  td {
+    word-wrap: break-word;
+    word-break: break-word;
+    overflow-wrap: break-word;
   }
 }
 `;
