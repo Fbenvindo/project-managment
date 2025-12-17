@@ -88,7 +88,12 @@ export default function PRE() {
         3, 2000, 
         'PRE-Items'
       );
-      setItems(itemsList || []);
+      const sortedItems = (itemsList || []).sort((a, b) => {
+        const numA = parseInt(a.item) || 0;
+        const numB = parseInt(b.item) || 0;
+        return numA - numB;
+      });
+      setItems(sortedItems);
     } catch (error) {
       console.error('Erro ao carregar itens:', error);
       setItems([]);
