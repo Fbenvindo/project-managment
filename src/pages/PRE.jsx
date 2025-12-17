@@ -90,12 +90,7 @@ export default function PRE() {
         3, 2000, 
         'PRE-Items'
       );
-      const sortedItems = (itemsList || []).sort((a, b) => {
-        const numA = parseInt(a.item) || 0;
-        const numB = parseInt(b.item) || 0;
-        return numA - numB;
-      });
-      setItems(sortedItems);
+      setItems(itemsList || []);
     } catch (error) {
       console.error('Erro ao carregar itens:', error);
       setItems([]);
@@ -173,12 +168,7 @@ export default function PRE() {
         }
       }
       
-      const sortedSavedItems = savedItems.sort((a, b) => {
-        const numA = parseInt(a.item) || 0;
-        const numB = parseInt(b.item) || 0;
-        return numA - numB;
-      });
-      setItems(sortedSavedItems);
+      setItems(savedItems);
       alert('Dados salvos com sucesso!');
     } catch (error) {
       console.error('Erro ao salvar:', error);
