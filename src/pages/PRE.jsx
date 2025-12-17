@@ -47,7 +47,8 @@ export default function PRE() {
     obra: '',
     descricao: '',
     data: format(new Date(), 'dd/MM/yyyy'),
-    rev: 'Arquivo'
+    rev: '',
+    arquivo: ''
   });
 
   useEffect(() => {
@@ -236,9 +237,24 @@ export default function PRE() {
               <div className="text-center flex-1">
                 <h2 className="text-xl font-bold text-gray-800">Emails, ATA e Documentos</h2>
               </div>
-              <div className="text-right text-sm">
+              <div className="text-right text-sm space-y-1">
                 <div>{headerData.data}</div>
-                <div>Rev: {headerData.rev}</div>
+                <div className="flex items-center gap-1">
+                  <span>Rev:</span>
+                  <Input
+                    value={headerData.rev}
+                    onChange={(e) => setHeaderData(prev => ({ ...prev, rev: e.target.value }))}
+                    className="h-6 w-20 text-xs print:border-none print:bg-transparent"
+                  />
+                </div>
+                <div className="flex items-center gap-1">
+                  <span>Arquivo:</span>
+                  <Input
+                    value={headerData.arquivo || ''}
+                    onChange={(e) => setHeaderData(prev => ({ ...prev, arquivo: e.target.value }))}
+                    className="h-6 w-20 text-xs print:border-none print:bg-transparent"
+                  />
+                </div>
               </div>
             </div>
 
