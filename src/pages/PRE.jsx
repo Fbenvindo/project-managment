@@ -173,7 +173,12 @@ export default function PRE() {
         }
       }
       
-      setItems(savedItems);
+      const sortedSavedItems = savedItems.sort((a, b) => {
+        const numA = parseInt(a.item) || 0;
+        const numB = parseInt(b.item) || 0;
+        return numA - numB;
+      });
+      setItems(sortedSavedItems);
       alert('Dados salvos com sucesso!');
     } catch (error) {
       console.error('Erro ao salvar:', error);
