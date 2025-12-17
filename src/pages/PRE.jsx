@@ -56,7 +56,7 @@ export default function PRE() {
   }, []);
 
   useEffect(() => {
-    if (selectedEmp) {
+    if (selectedEmp && empreendimentos.length > 0) {
       loadItems(selectedEmp);
       const emp = empreendimentos.find(e => e.id === selectedEmp);
       if (emp) {
@@ -67,7 +67,7 @@ export default function PRE() {
         }));
       }
     }
-  }, [selectedEmp, empreendimentos]);
+  }, [selectedEmp]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -141,6 +141,8 @@ export default function PRE() {
 
     setIsSaving(true);
     try {
+      const savedItems = [];
+      
       for (const item of items) {
         const itemData = {
           empreendimento_id: selectedEmp,
@@ -151,18 +153,20 @@ export default function PRE() {
           localizacao: item.localizacao,
           assunto: item.assunto,
           comentario: item.comentario,
-          status: item.status,
+          status: item.status || '',
           resposta: item.resposta
         };
 
         if (item.isNew || item.id.toString().startsWith('temp-')) {
-          await retryWithBackoff(() => ItemPRE.create(itemData), 3, 2000, 'PRE-Create');
+          const created = await retryWithBackoff(() => ItemPRE.create(itemData), 3, 2000, 'PRE-Create');
+          savedItems.push(created);
         } else {
-          await retryWithBackoff(() => ItemPRE.update(item.id, itemData), 3, 2000, `PRE-Update-${item.id}`);
+          const updated = await retryWithBackoff(() => ItemPRE.update(item.id, itemData), 3, 2000, `PRE-Update-${item.id}`);
+          savedItems.push(updated);
         }
       }
       
-      await loadItems(selectedEmp);
+      setItems(savedItems);
       alert('Dados salvos com sucesso!');
     } catch (error) {
       console.error('Erro ao salvar:', error);
