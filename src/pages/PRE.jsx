@@ -90,7 +90,23 @@ export default function PRE() {
         3, 2000, 
         'PRE-Items'
       );
-      setItems(itemsList || []);
+      const sortedItems = (itemsList || []).sort((a, b) => {
+        const parseItem = (str) => {
+          const parts = String(str).split('.');
+          return parts.map(p => parseInt(p) || 0);
+        };
+        
+        const partsA = parseItem(a.item);
+        const partsB = parseItem(b.item);
+        
+        for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+          const numA = partsA[i] || 0;
+          const numB = partsB[i] || 0;
+          if (numA !== numB) return numA - numB;
+        }
+        return 0;
+      });
+      setItems(sortedItems);
     } catch (error) {
       console.error('Erro ao carregar itens:', error);
       setItems([]);
@@ -168,7 +184,23 @@ export default function PRE() {
         }
       }
       
-      setItems(savedItems);
+      const sortedSavedItems = savedItems.sort((a, b) => {
+        const parseItem = (str) => {
+          const parts = String(str).split('.');
+          return parts.map(p => parseInt(p) || 0);
+        };
+        
+        const partsA = parseItem(a.item);
+        const partsB = parseItem(b.item);
+        
+        for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+          const numA = partsA[i] || 0;
+          const numB = partsB[i] || 0;
+          if (numA !== numB) return numA - numB;
+        }
+        return 0;
+      });
+      setItems(sortedSavedItems);
       alert('Dados salvos com sucesso!');
     } catch (error) {
       console.error('Erro ao salvar:', error);
