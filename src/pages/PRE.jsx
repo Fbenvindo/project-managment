@@ -374,9 +374,10 @@ export default function PRE() {
                             onValueChange={(value) => handleUpdateItem(item.id, 'status', value)}
                           >
                             <SelectTrigger className="h-10 text-sm print:border-none print:bg-transparent">
-                              <SelectValue />
+                              <SelectValue placeholder="Sem status" />
                             </SelectTrigger>
                             <SelectContent>
+                              <SelectItem value={null}>Sem status</SelectItem>
                               <SelectItem value="Em andamento">Em andamento</SelectItem>
                               <SelectItem value="Pendente">Pendente</SelectItem>
                               <SelectItem value="Concluído">Concluído</SelectItem>
