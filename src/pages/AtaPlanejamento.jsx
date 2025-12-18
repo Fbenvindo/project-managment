@@ -17,7 +17,7 @@ const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/pub
 const STATUS_OPTIONS = [
   { value: 'concluido', label: 'Concluído', color: 'bg-green-600', textColor: 'text-white' },
   { value: 'pendente', label: 'Pendente', color: 'bg-amber-300', textColor: 'text-amber-900' },
-  { value: 'em_andamento', label: 'Em andamento', color: 'bg-orange-300', textColor: 'text-orange-900' },
+  { value: 'em_andamento', label: 'Em andamento', color: 'bg-blue-500', textColor: 'text-white' },
   { value: 'cancelado', label: 'Cancelado', color: 'bg-red-400', textColor: 'text-white' },
   { value: 'na', label: 'N/A', color: 'bg-gray-400', textColor: 'text-white' },
 ];
