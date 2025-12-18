@@ -680,58 +680,14 @@ export default function AtaPlanejamento() {
                 <div className="bg-white border border-gray-400 print:border-black print:text-[10px] w-full max-w-[297mm] shadow-lg">
         {/* Cabeçalho */}
         <div className="grid grid-cols-12 border-b border-gray-400">
-          <div className="col-span-2 border-r border-gray-400 p-2 flex items-center justify-center">
-            <img src={LOGO_URL} alt="Logo" className="h-16" />
+          <div className="col-span-3 border-r border-gray-400 p-4 flex items-center justify-center">
+            <img src={LOGO_URL} alt="Logo" className="h-20" />
           </div>
-          <div className="col-span-7 border-r border-gray-400">
-            <div className="text-center py-1 text-sm font-medium border-b border-gray-400">
-              Sistema de Gestão da Qualidade
-            </div>
-            <div className="text-center py-1 text-sm font-bold border-b border-gray-400">
-              REGISTRO
-            </div>
-            <div className="text-center py-1 text-sm font-bold">
+          <div className="col-span-9 flex items-center justify-center">
+            <div className="text-center py-2 text-2xl font-bold">
               Ata de Reunião
             </div>
           </div>
-          <div className="col-span-3 text-xs p-2">
-                            <div className="flex justify-between items-center">
-                              <span>Controle:</span>
-                              <input 
-                                type="text" 
-                                value={ataData.controle}
-                                onChange={(e) => setAtaData(prev => ({ ...prev, controle: e.target.value }))}
-                                className="border-none outline-none bg-transparent text-right font-medium w-20 print:bg-transparent"
-                              />
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span>Folha:</span>
-                              <input 
-                                type="text" 
-                                value={ataData.folha}
-                                onChange={(e) => setAtaData(prev => ({ ...prev, folha: e.target.value }))}
-                                className="border-none outline-none bg-transparent text-right w-12 print:bg-transparent"
-                              />
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span>Rev:</span>
-                              <input 
-                                type="text" 
-                                value={ataData.rev}
-                                onChange={(e) => setAtaData(prev => ({ ...prev, rev: e.target.value }))}
-                                className="border-none outline-none bg-transparent text-right w-12 print:bg-transparent"
-                              />
-                            </div>
-                            <div className="flex justify-between items-center">
-                              <span>Emissão:</span>
-                              <input 
-                                type="text" 
-                                value={ataData.emissao}
-                                onChange={(e) => setAtaData(prev => ({ ...prev, emissao: e.target.value }))}
-                                className="border-none outline-none bg-transparent text-right w-16 print:bg-transparent"
-                              />
-                            </div>
-                          </div>
         </div>
 
         {/* Info da Reunião */}
