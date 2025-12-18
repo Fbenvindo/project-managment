@@ -850,7 +850,7 @@ export default function AtaPlanejamento() {
                       <Textarea
                         value={prov.providencias}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'providencias', e.target.value)}
-                        className="min-h-[120px] text-sm print:hidden w-full resize-y"
+                        className="min-h-[200px] text-sm print:hidden w-full resize-y"
                       />
                       <span className="hidden print:inline whitespace-pre-wrap text-[6px] leading-tight">{prov.providencias}</span>
                     </td>
