@@ -847,7 +847,7 @@ export default function AtaPlanejamento() {
                       <Textarea
                         value={prov.projeto}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'projeto', e.target.value)}
-                        className="min-h-[60px] text-sm print:hidden w-full resize-y text-center"
+                        className="min-h-[150px] text-sm print:hidden w-full resize-y text-center"
                       />
                       <span className="hidden print:inline text-[6px] leading-tight break-words">{prov.projeto}</span>
                     </td>
