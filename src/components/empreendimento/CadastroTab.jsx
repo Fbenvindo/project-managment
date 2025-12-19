@@ -204,12 +204,14 @@ export default function CadastroTab({ empreendimento }) {
             </tr>
             <tr>
               <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-10"></th>
-              {ETAPAS.map((etapa) => (
+              {ETAPAS.map((etapa, etapaIdx) => (
                 <React.Fragment key={`rev-${etapa}`}>
-                  {revisoes.map((revisao) => (
+                  {revisoes.map((revisao, revIdx) => (
                     <th
                       key={`${etapa}-${revisao}`}
-                      className="border border-gray-300 bg-blue-50 p-2 text-center font-medium"
+                      className={`border border-gray-300 bg-blue-50 p-2 text-center font-medium ${
+                        revIdx === revisoes.length - 1 && etapaIdx < ETAPAS.length - 1 ? 'border-r-4 border-r-gray-400' : ''
+                      }`}
                     >
                       {revisao}
                     </th>
@@ -225,10 +227,15 @@ export default function CadastroTab({ empreendimento }) {
                 <td className="border border-gray-300 p-1 text-center sticky left-0 bg-white z-10 font-medium">
                   {idx + 1}
                 </td>
-                {ETAPAS.map((etapa) => (
+                {ETAPAS.map((etapa, etapaIdx) => (
                   <React.Fragment key={`${linha.id}-${etapa}`}>
-                    {revisoes.map((revisao) => (
-                      <td key={`${linha.id}-${etapa}-${revisao}`} className="border border-gray-300 p-1">
+                    {revisoes.map((revisao, revIdx) => (
+                      <td 
+                        key={`${linha.id}-${etapa}-${revisao}`} 
+                        className={`border border-gray-300 p-1 ${
+                          revIdx === revisoes.length - 1 && etapaIdx < ETAPAS.length - 1 ? 'border-r-4 border-r-gray-400' : ''
+                        }`}
+                      >
                         <Input
                           type="date"
                           value={getDataValue(linha, etapa, revisao)}
