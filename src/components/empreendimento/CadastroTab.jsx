@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Plus, Trash2, Save, Loader2 } from "lucide-react";
-import { DataCadastro } from "@/entities/all";
+import { DataCadastro, Documento } from "@/entities/all";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { format } from "date-fns";
 
@@ -17,6 +18,7 @@ const ETAPAS = [
 export default function CadastroTab({ empreendimento }) {
   const [revisoes, setRevisoes] = useState(["R00", "R01", "R02"]);
   const [linhas, setLinhas] = useState([]);
+  const [documentos, setDocumentos] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -29,11 +31,20 @@ export default function CadastroTab({ empreendimento }) {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const data = await retryWithBackoff(
-        () => DataCadastro.filter({ empreendimento_id: empreendimento.id }),
-        3, 2000,
-        'loadDataCadastro'
-      );
+      const [data, docs] = await Promise.all([
+        retryWithBackoff(
+          () => DataCadastro.filter({ empreendimento_id: empreendimento.id }),
+          3, 2000,
+          'loadDataCadastro'
+        ),
+        retryWithBackoff(
+          () => Documento.filter({ empreendimento_id: empreendimento.id }),
+          3, 2000,
+          'loadDocumentos'
+        )
+      ]);
+      
+      setDocumentos(docs || []);
       
       if (data && data.length > 0) {
         const sortedData = data.sort((a, b) => a.ordem - b.ordem);
@@ -57,6 +68,7 @@ export default function CadastroTab({ empreendimento }) {
           id: `temp-${i}`,
           empreendimento_id: empreendimento.id,
           ordem: i,
+          documento_id: '',
           datas: {},
           isNew: true
         }));
@@ -74,6 +86,7 @@ export default function CadastroTab({ empreendimento }) {
       id: `temp-${Date.now()}`,
       empreendimento_id: empreendimento.id,
       ordem: linhas.length,
+      documento_id: '',
       datas: {},
       isNew: true
     };
@@ -141,6 +154,12 @@ export default function CadastroTab({ empreendimento }) {
     }));
   };
 
+  const handleUpdateDocumento = (linhaId, documentoId) => {
+    setLinhas(prev => prev.map(linha => 
+      linha.id === linhaId ? { ...linha, documento_id: documentoId } : linha
+    ));
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -148,6 +167,7 @@ export default function CadastroTab({ empreendimento }) {
         const linhaData = {
           empreendimento_id: empreendimento.id,
           ordem: linha.ordem,
+          documento_id: linha.documento_id || '',
           datas: linha.datas || {}
         };
 
@@ -213,6 +233,7 @@ export default function CadastroTab({ empreendimento }) {
           <thead>
             <tr>
               <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-10 w-12">Linha</th>
+              <th className="border border-gray-300 bg-blue-100 p-2 w-48">Folha</th>
               {ETAPAS.map((etapa) => (
                 <th
                   key={etapa}
@@ -226,6 +247,7 @@ export default function CadastroTab({ empreendimento }) {
             </tr>
             <tr>
               <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-10"></th>
+              <th className="border border-gray-300 bg-blue-50 p-2"></th>
               {ETAPAS.map((etapa, etapaIdx) => (
                 <React.Fragment key={`rev-${etapa}`}>
                   {revisoes.map((revisao, revIdx) => (
@@ -257,6 +279,24 @@ export default function CadastroTab({ empreendimento }) {
               <tr key={linha.id} className="hover:bg-gray-50">
                 <td className="border border-gray-300 p-1 text-center sticky left-0 bg-white z-10 font-medium">
                   {idx + 1}
+                </td>
+                <td className="border border-gray-300 p-1">
+                  <Select
+                    value={linha.documento_id || ''}
+                    onValueChange={(value) => handleUpdateDocumento(linha.id, value)}
+                  >
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Selecione a folha" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={null}>Sem folha</SelectItem>
+                      {documentos.map(doc => (
+                        <SelectItem key={doc.id} value={doc.id}>
+                          {doc.arquivo || doc.numero}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </td>
                 {ETAPAS.map((etapa, etapaIdx) => (
                   <React.Fragment key={`${linha.id}-${etapa}`}>
