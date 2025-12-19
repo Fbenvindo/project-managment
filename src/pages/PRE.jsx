@@ -4,10 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Printer, Save, FileText, Loader2 } from "lucide-react";
+import { Plus, Trash2, Printer, Save, FileText, Loader2, Upload, Image as ImageIcon, X } from "lucide-react";
 import { Empreendimento, ItemPRE } from "@/entities/all";
 import { format } from "date-fns";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
+import { base44 } from "@/api/base44Client";
 
 const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/577f93874_logo_Interativa_versao_final_sem_fundo_0002.png";
 
@@ -173,6 +174,7 @@ export default function PRE() {
       comentario: '',
       status: 'Em andamento',
       resposta: '',
+      imagens: [],
       isNew: true
     };
     setItems([...items, newItem]);
@@ -198,6 +200,28 @@ export default function PRE() {
     }
   };
 
+  const handleUploadImage = async (itemId, file) => {
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      setItems(prev => prev.map(item => 
+        item.id === itemId 
+          ? { ...item, imagens: [...(item.imagens || []), file_url] } 
+          : item
+      ));
+    } catch (error) {
+      console.error('Erro ao fazer upload da imagem:', error);
+      alert('Erro ao fazer upload da imagem.');
+    }
+  };
+
+  const handleRemoveImage = (itemId, imageUrl) => {
+    setItems(prev => prev.map(item => 
+      item.id === itemId 
+        ? { ...item, imagens: (item.imagens || []).filter(url => url !== imageUrl) } 
+        : item
+    ));
+  };
+
   const handleSave = async () => {
     if (!selectedEmp) {
       alert('Selecione um empreendimento primeiro.');
@@ -219,7 +243,8 @@ export default function PRE() {
           assunto: item.assunto,
           comentario: item.comentario,
           status: item.status || '',
-          resposta: item.resposta
+          resposta: item.resposta,
+          imagens: item.imagens || []
         };
 
         if (item.isNew || item.id.toString().startsWith('temp-')) {
@@ -381,17 +406,18 @@ export default function PRE() {
                     <th className="border border-gray-400 p-3 w-[8%]">De</th>
                     <th className="border border-gray-400 p-3 w-[12%]">Descritiva</th>
                     <th className="border border-gray-400 p-3 w-[8%]">Localização</th>
-                    <th className="border border-gray-400 p-3 w-[18%]">Assunto</th>
-                    <th className="border border-gray-400 p-3 w-[15%]">Comentário</th>
+                    <th className="border border-gray-400 p-3 w-[16%]">Assunto</th>
+                    <th className="border border-gray-400 p-3 w-[13%]">Comentário</th>
                     <th className="border border-gray-400 p-3 w-[8%]">Status</th>
-                    <th className="border border-gray-400 p-3 w-[14%]">Resposta</th>
+                    <th className="border border-gray-400 p-3 w-[12%]">Resposta</th>
+                    <th className="border border-gray-400 p-3 w-[6%]">Imagens</th>
                     <th className="border border-gray-400 p-3 w-[6%] no-print">Ações</th>
                   </tr>
                 </thead>
                 <tbody>
                   {items.length === 0 ? (
                     <tr>
-                      <td colSpan="10" className="text-center p-8 text-gray-500">
+                      <td colSpan="11" className="text-center p-8 text-gray-500">
                         Nenhum item cadastrado. Clique em "Adicionar Item" para começar.
                       </td>
                     </tr>
@@ -477,6 +503,47 @@ export default function PRE() {
                             className="w-full text-sm print:border-none print:bg-transparent resize-y"
                             rows={5}
                           />
+                        </td>
+                        <td className="border border-gray-300 p-2">
+                          <div className="space-y-2">
+                            <label className="no-print">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleUploadImage(item.id, file);
+                                  e.target.value = '';
+                                }}
+                                className="hidden"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                onClick={(e) => e.currentTarget.previousElementSibling.click()}
+                              >
+                                <Upload className="w-3 h-3 mr-1" />
+                                Anexar
+                              </Button>
+                            </label>
+                            {(item.imagens || []).map((imgUrl, idx) => (
+                              <div key={idx} className="relative group">
+                                <img
+                                  src={imgUrl}
+                                  alt={`Imagem ${idx + 1}`}
+                                  className="w-full h-20 object-cover rounded border"
+                                />
+                                <button
+                                  onClick={() => handleRemoveImage(item.id, imgUrl)}
+                                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity no-print"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
                         </td>
                         <td className="border border-gray-300 p-2 text-center align-middle no-print">
                           <Button
