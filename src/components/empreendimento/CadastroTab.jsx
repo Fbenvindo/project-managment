@@ -160,6 +160,13 @@ export default function CadastroTab({ empreendimento }) {
     ));
   };
 
+  const handleAddRevisaoParaFolha = (linhaId) => {
+    const ultimaRevisao = revisoes[revisoes.length - 1];
+    const numero = parseInt(ultimaRevisao.substring(1)) + 1;
+    const novaRevisao = `R${String(numero).padStart(2, '0')}`;
+    setRevisoes([...revisoes, novaRevisao]);
+  };
+
   const handleSave = async () => {
     setIsSaving(true);
     try {
