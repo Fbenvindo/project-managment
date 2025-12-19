@@ -288,22 +288,33 @@ export default function CadastroTab({ empreendimento }) {
                   {idx + 1}
                 </td>
                 <td className="border border-gray-300 p-1">
-                  <Select
-                    value={linha.documento_id || ''}
-                    onValueChange={(value) => handleUpdateDocumento(linha.id, value)}
-                  >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="Selecione a folha" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={null}>Sem folha</SelectItem>
-                      {documentos.map(doc => (
-                        <SelectItem key={doc.id} value={doc.id}>
-                          {doc.arquivo || doc.numero}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-1">
+                    <Select
+                      value={linha.documento_id || ''}
+                      onValueChange={(value) => handleUpdateDocumento(linha.id, value)}
+                    >
+                      <SelectTrigger className="h-8 text-xs flex-1">
+                        <SelectValue placeholder="Selecione a folha" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value={null}>Sem folha</SelectItem>
+                        {documentos.map(doc => (
+                          <SelectItem key={doc.id} value={doc.id}>
+                            {doc.arquivo || doc.numero}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={() => handleAddRevisaoParaFolha(linha.id)}
+                      className="h-8 w-8 flex-shrink-0"
+                      title="Adicionar nova revisão"
+                    >
+                      <Plus className="w-3 h-3" />
+                    </Button>
+                  </div>
                 </td>
                 {ETAPAS.map((etapa, etapaIdx) => (
                   <React.Fragment key={`${linha.id}-${etapa}`}>
