@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+
 import { Plus, Trash2, Save, Loader2 } from "lucide-react";
 import { DataCadastro, Documento } from "@/entities/all";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
@@ -44,15 +44,25 @@ export default function CadastroTab({ empreendimento }) {
         )
       ]);
       
-      setDocumentos(docs || []);
+      const sortedDocs = (docs || []).sort((a, b) => {
+        const numA = parseInt(a.numero) || 0;
+        const numB = parseInt(b.numero) || 0;
+        return numA - numB;
+      });
+      setDocumentos(sortedDocs);
       
+      // Criar um mapa de dados existentes por documento_id
+      const dataMap = new Map();
       if (data && data.length > 0) {
-        const sortedData = data.sort((a, b) => a.ordem - b.ordem);
-        setLinhas(sortedData);
+        data.forEach(item => {
+          if (item.documento_id) {
+            dataMap.set(item.documento_id, item);
+          }
+        });
         
         // Detectar revisões existentes
         const revisoesSet = new Set(["R00", "R01", "R02"]);
-        sortedData.forEach(linha => {
+        data.forEach(linha => {
           if (linha.datas) {
             Object.values(linha.datas).forEach(etapaData => {
               if (etapaData && typeof etapaData === 'object') {
@@ -62,18 +72,22 @@ export default function CadastroTab({ empreendimento }) {
           }
         });
         setRevisoes(Array.from(revisoesSet).sort());
-      } else {
-        // Criar 10 linhas vazias iniciais
-        const novasLinhas = Array.from({ length: 10 }, (_, i) => ({
-          id: `temp-${i}`,
+      }
+      
+      // Criar uma linha para cada documento
+      const novasLinhas = sortedDocs.map((doc, idx) => {
+        const existingData = dataMap.get(doc.id);
+        return existingData || {
+          id: `temp-${doc.id}`,
           empreendimento_id: empreendimento.id,
-          ordem: i,
-          documento_id: '',
+          ordem: idx,
+          documento_id: doc.id,
           datas: {},
           isNew: true
-        }));
-        setLinhas(novasLinhas);
-      }
+        };
+      });
+      
+      setLinhas(novasLinhas);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
@@ -81,35 +95,7 @@ export default function CadastroTab({ empreendimento }) {
     }
   };
 
-  const handleAddLinha = () => {
-    const novaLinha = {
-      id: `temp-${Date.now()}`,
-      empreendimento_id: empreendimento.id,
-      ordem: linhas.length,
-      documento_id: '',
-      datas: {},
-      isNew: true
-    };
-    setLinhas([...linhas, novaLinha]);
-  };
 
-  const handleRemoveLinha = async (id, ordem) => {
-    if (!confirm('Deseja remover esta linha?')) return;
-    
-    try {
-      if (!id.toString().startsWith('temp-')) {
-        await retryWithBackoff(
-          () => DataCadastro.delete(id),
-          3, 2000,
-          `deleteDataCadastro-${id}`
-        );
-      }
-      setLinhas(prev => prev.filter(l => l.id !== id).map((l, idx) => ({ ...l, ordem: idx })));
-    } catch (error) {
-      console.error('Erro ao remover linha:', error);
-      alert('Erro ao remover linha.');
-    }
-  };
 
   const handleAddRevisao = () => {
     const ultimaRevisao = revisoes[revisoes.length - 1];
@@ -154,11 +140,7 @@ export default function CadastroTab({ empreendimento }) {
     }));
   };
 
-  const handleUpdateDocumento = (linhaId, documentoId) => {
-    setLinhas(prev => prev.map(linha => 
-      linha.id === linhaId ? { ...linha, documento_id: documentoId } : linha
-    ));
-  };
+
 
   const handleSave = async () => {
     setIsSaving(true);
@@ -217,10 +199,6 @@ export default function CadastroTab({ empreendimento }) {
             <Plus className="w-4 h-4 mr-2" />
             Adicionar Revisão
           </Button>
-          <Button variant="outline" onClick={handleAddLinha}>
-            <Plus className="w-4 h-4 mr-2" />
-            Adicionar Linha
-          </Button>
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
             Salvar
@@ -232,8 +210,7 @@ export default function CadastroTab({ empreendimento }) {
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr>
-              <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-10 w-12">Linha</th>
-              <th className="border border-gray-300 bg-blue-100 p-2 w-48">Folha</th>
+              <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-10 w-48">Folha</th>
               {ETAPAS.map((etapa) => (
                 <th
                   key={etapa}
@@ -243,11 +220,9 @@ export default function CadastroTab({ empreendimento }) {
                   Datas de cadastro:<br />{etapa}
                 </th>
               ))}
-              <th className="border border-gray-300 bg-blue-100 p-2 w-16">Ações</th>
             </tr>
             <tr>
               <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-10"></th>
-              <th className="border border-gray-300 bg-blue-50 p-2"></th>
               {ETAPAS.map((etapa, etapaIdx) => (
                 <React.Fragment key={`rev-${etapa}`}>
                   {revisoes.map((revisao, revIdx) => (
@@ -298,37 +273,29 @@ export default function CadastroTab({ empreendimento }) {
                     </SelectContent>
                   </Select>
                 </td>
-                {ETAPAS.map((etapa, etapaIdx) => (
-                  <React.Fragment key={`${linha.id}-${etapa}`}>
-                    {revisoes.map((revisao, revIdx) => (
-                      <td 
-                        key={`${linha.id}-${etapa}-${revisao}`} 
-                        className={`border border-gray-300 p-1 ${
-                          revIdx === revisoes.length - 1 && etapaIdx < ETAPAS.length - 1 ? 'border-r-4 border-r-gray-400' : ''
-                        }`}
-                      >
-                        <Input
-                          type="date"
-                          value={getDataValue(linha, etapa, revisao)}
-                          onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
-                          className="h-8 text-xs w-full"
-                        />
-                      </td>
+                    {ETAPAS.map((etapa, etapaIdx) => (
+                      <React.Fragment key={`${linha.id}-${etapa}`}>
+                        {revisoes.map((revisao, revIdx) => (
+                          <td 
+                            key={`${linha.id}-${etapa}-${revisao}`} 
+                            className={`border border-gray-300 p-1 ${
+                              revIdx === revisoes.length - 1 && etapaIdx < ETAPAS.length - 1 ? 'border-r-4 border-r-gray-400' : ''
+                            }`}
+                          >
+                            <Input
+                              type="date"
+                              value={getDataValue(linha, etapa, revisao)}
+                              onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
+                              className="h-8 text-xs w-full"
+                            />
+                          </td>
+                        ))}
+                      </React.Fragment>
                     ))}
-                  </React.Fragment>
-                ))}
-                <td className="border border-gray-300 p-1 text-center">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => handleRemoveLinha(linha.id, linha.ordem)}
-                    className="h-7 w-7 text-red-500 hover:text-red-700"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </Button>
-                </td>
-              </tr>
-            ))}
+                  </tr>
+                );
+              })
+            )}
           </tbody>
         </table>
       </div>
