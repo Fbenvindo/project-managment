@@ -157,12 +157,11 @@ export default function CadastroTab({ empreendimento }) {
         return temDados;
       });
 
-      console.log(`Salvando ${linhasParaSalvar.length} de ${linhas.length} linhas`);
-
       // Processar em lotes de 10 para evitar sobrecarga
       const BATCH_SIZE = 10;
       let successCount = 0;
       let errorCount = 0;
+      const updatedLinhas = new Map();
 
       for (let i = 0; i < linhasParaSalvar.length; i += BATCH_SIZE) {
         const batch = linhasParaSalvar.slice(i, i + BATCH_SIZE);
@@ -176,9 +175,9 @@ export default function CadastroTab({ empreendimento }) {
           };
 
           if (linha.isNew || linha.id.toString().startsWith('temp-')) {
-            return await DataCadastro.create(linhaData);
+            return { linha, result: await DataCadastro.create(linhaData) };
           } else {
-            return await DataCadastro.update(linha.id, linhaData);
+            return { linha, result: await DataCadastro.update(linha.id, linhaData) };
           }
         });
 
@@ -187,6 +186,7 @@ export default function CadastroTab({ empreendimento }) {
         results.forEach((result, idx) => {
           if (result.status === 'fulfilled') {
             successCount++;
+            updatedLinhas.set(batch[idx].id, result.value.result);
           } else {
             errorCount++;
             console.error(`Erro na linha ${batch[idx].id}:`, result.reason);
@@ -199,13 +199,20 @@ export default function CadastroTab({ empreendimento }) {
         }
       }
 
+      // Atualizar estado local com os IDs salvos
+      setLinhas(prev => prev.map(linha => {
+        const savedData = updatedLinhas.get(linha.id);
+        if (savedData) {
+          return { ...linha, id: savedData.id, isNew: false };
+        }
+        return linha;
+      }));
+
       if (errorCount > 0) {
-        alert(`Salvamento parcial: ${successCount} sucesso, ${errorCount} erros. Verifique o console.`);
+        alert(`Salvamento parcial: ${successCount} sucesso, ${errorCount} erros.`);
       } else {
         alert(`Dados salvos com sucesso! ${successCount} linhas atualizadas.`);
       }
-      
-      await loadData();
     } catch (error) {
       console.error('Erro crítico ao salvar:', error);
       alert(`Erro ao salvar dados: ${error.message || 'Erro desconhecido'}`);
