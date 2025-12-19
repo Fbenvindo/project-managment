@@ -145,7 +145,7 @@ export default function CadastroTab({ empreendimento }) {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      for (const linha of linhas) {
+      const savePromises = linhas.map(linha => {
         const linhaData = {
           empreendimento_id: empreendimento.id,
           ordem: linha.ordem,
@@ -154,20 +154,21 @@ export default function CadastroTab({ empreendimento }) {
         };
 
         if (linha.isNew || linha.id.toString().startsWith('temp-')) {
-          await retryWithBackoff(
+          return retryWithBackoff(
             () => DataCadastro.create(linhaData),
             3, 2000,
             'createDataCadastro'
           );
         } else {
-          await retryWithBackoff(
+          return retryWithBackoff(
             () => DataCadastro.update(linha.id, linhaData),
             3, 2000,
             `updateDataCadastro-${linha.id}`
           );
         }
-      }
+      });
       
+      await Promise.all(savePromises);
       await loadData();
       alert('Dados salvos com sucesso!');
     } catch (error) {
