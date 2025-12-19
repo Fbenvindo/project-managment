@@ -105,6 +105,28 @@ export default function CadastroTab({ empreendimento }) {
     setRevisoes([...revisoes, novaRevisao]);
   };
 
+  const handleRemoveRevisao = (revisao) => {
+    if (revisoes.length <= 1) {
+      alert('Deve haver ao menos uma revisão.');
+      return;
+    }
+    
+    if (!confirm(`Deseja excluir a revisão ${revisao}? Os dados desta revisão serão perdidos.`)) return;
+    
+    setRevisoes(prev => prev.filter(r => r !== revisao));
+    
+    // Limpar dados da revisão removida
+    setLinhas(prev => prev.map(linha => {
+      const novasDatas = { ...linha.datas };
+      Object.keys(novasDatas).forEach(etapa => {
+        if (novasDatas[etapa] && novasDatas[etapa][revisao]) {
+          delete novasDatas[etapa][revisao];
+        }
+      });
+      return { ...linha, datas: novasDatas };
+    }));
+  };
+
   const handleUpdateData = (linhaId, etapa, revisao, valor) => {
     setLinhas(prev => prev.map(linha => {
       if (linha.id !== linhaId) return linha;
@@ -213,7 +235,16 @@ export default function CadastroTab({ empreendimento }) {
                         revIdx === revisoes.length - 1 && etapaIdx < ETAPAS.length - 1 ? 'border-r-4 border-r-gray-400' : ''
                       }`}
                     >
-                      {revisao}
+                      <div className="flex items-center justify-center gap-1">
+                        <span>{revisao}</span>
+                        <button
+                          onClick={() => handleRemoveRevisao(revisao)}
+                          className="text-red-500 hover:text-red-700 p-0.5"
+                          title="Excluir revisão"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
                     </th>
                   ))}
                 </React.Fragment>
