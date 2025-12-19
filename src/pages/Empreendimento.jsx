@@ -327,13 +327,13 @@ export default function EmpreendimentoPage() {
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
           <TabsList className={`grid w-full ${hasAccessToGestao ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-8' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-7'} bg-white shadow-sm`}>
             <TabsTrigger value="documentos">Documentos</TabsTrigger>
+            <TabsTrigger value="cadastro">Cadastro</TabsTrigger>
             <TabsTrigger value="pavimentos">Pavimentos</TabsTrigger>
             <TabsTrigger value="atividades_projeto">Atividades do Projeto</TabsTrigger>
             <TabsTrigger value="catalogo_atividades">
               <ListChecks className="w-4 h-4 mr-2" /> Catálogo
             </TabsTrigger>
             <TabsTrigger value="documentacao">Documentação</TabsTrigger>
-            <TabsTrigger value="cadastro">Cadastro</TabsTrigger>
             <TabsTrigger value="pre">PRE</TabsTrigger>
             {hasAccessToGestao && (
               <TabsTrigger value="gestao">Gestão</TabsTrigger>
