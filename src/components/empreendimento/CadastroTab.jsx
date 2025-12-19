@@ -246,33 +246,23 @@ export default function CadastroTab({ empreendimento }) {
                   ))}
                 </React.Fragment>
               ))}
-              <th className="border border-gray-300 bg-blue-50 p-2"></th>
             </tr>
           </thead>
           <tbody>
-            {linhas.map((linha, idx) => (
-              <tr key={linha.id} className="hover:bg-gray-50">
-                <td className="border border-gray-300 p-1 text-center sticky left-0 bg-white z-10 font-medium">
-                  {idx + 1}
+            {linhas.length === 0 ? (
+              <tr>
+                <td colSpan={revisoes.length * ETAPAS.length + 1} className="border border-gray-300 p-8 text-center text-gray-500">
+                  Nenhum documento cadastrado neste empreendimento. Cadastre documentos na aba "Documentos" primeiro.
                 </td>
-                <td className="border border-gray-300 p-1">
-                  <Select
-                    value={linha.documento_id || ''}
-                    onValueChange={(value) => handleUpdateDocumento(linha.id, value)}
-                  >
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="Selecione a folha" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value={null}>Sem folha</SelectItem>
-                      {documentos.map(doc => (
-                        <SelectItem key={doc.id} value={doc.id}>
-                          {doc.arquivo || doc.numero}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </td>
+              </tr>
+            ) : (
+              linhas.map((linha, idx) => {
+                const doc = documentos.find(d => d.id === linha.documento_id);
+                return (
+                  <tr key={linha.id} className="hover:bg-gray-50">
+                    <td className="border border-gray-300 p-2 sticky left-0 bg-white z-10 font-medium">
+                      {doc?.arquivo || doc?.numero || 'Sem folha'}
+                    </td>
                     {ETAPAS.map((etapa, etapaIdx) => (
                       <React.Fragment key={`${linha.id}-${etapa}`}>
                         {revisoes.map((revisao, revIdx) => (
