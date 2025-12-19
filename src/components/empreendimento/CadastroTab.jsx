@@ -145,9 +145,29 @@ export default function CadastroTab({ empreendimento }) {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const savePromises = linhas
-        .filter(linha => linha.documento_id) // Apenas salvar linhas com documento_id válido
-        .map(async (linha) => {
+      // Filtrar apenas linhas que têm dados para salvar
+      const linhasParaSalvar = linhas.filter(linha => {
+        if (!linha.documento_id) return false;
+        
+        // Verificar se há alguma data preenchida
+        const temDados = linha.datas && Object.values(linha.datas).some(etapaData => {
+          return etapaData && Object.values(etapaData).some(data => data && data.trim());
+        });
+        
+        return temDados;
+      });
+
+      console.log(`Salvando ${linhasParaSalvar.length} de ${linhas.length} linhas`);
+
+      // Processar em lotes de 10 para evitar sobrecarga
+      const BATCH_SIZE = 10;
+      let successCount = 0;
+      let errorCount = 0;
+
+      for (let i = 0; i < linhasParaSalvar.length; i += BATCH_SIZE) {
+        const batch = linhasParaSalvar.slice(i, i + BATCH_SIZE);
+        
+        const batchPromises = batch.map(async (linha) => {
           const linhaData = {
             empreendimento_id: empreendimento.id,
             ordem: linha.ordem,
@@ -155,30 +175,39 @@ export default function CadastroTab({ empreendimento }) {
             datas: linha.datas || {}
           };
 
-          try {
-            if (linha.isNew || linha.id.toString().startsWith('temp-')) {
-              return await DataCadastro.create(linhaData);
-            } else {
-              return await DataCadastro.update(linha.id, linhaData);
-            }
-          } catch (err) {
-            console.error(`Erro ao salvar linha ${linha.id}:`, err);
-            throw err;
+          if (linha.isNew || linha.id.toString().startsWith('temp-')) {
+            return await DataCadastro.create(linhaData);
+          } else {
+            return await DataCadastro.update(linha.id, linhaData);
           }
         });
-      
-      const results = await Promise.allSettled(savePromises);
-      
-      const failures = results.filter(r => r.status === 'rejected');
-      if (failures.length > 0) {
-        console.error('Algumas linhas falharam ao salvar:', failures);
-        throw new Error(`${failures.length} linha(s) falharam ao salvar`);
+
+        const results = await Promise.allSettled(batchPromises);
+        
+        results.forEach((result, idx) => {
+          if (result.status === 'fulfilled') {
+            successCount++;
+          } else {
+            errorCount++;
+            console.error(`Erro na linha ${batch[idx].id}:`, result.reason);
+          }
+        });
+
+        // Pequeno delay entre lotes
+        if (i + BATCH_SIZE < linhasParaSalvar.length) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+        }
+      }
+
+      if (errorCount > 0) {
+        alert(`Salvamento parcial: ${successCount} sucesso, ${errorCount} erros. Verifique o console.`);
+      } else {
+        alert(`Dados salvos com sucesso! ${successCount} linhas atualizadas.`);
       }
       
       await loadData();
-      alert('Dados salvos com sucesso!');
     } catch (error) {
-      console.error('Erro detalhado ao salvar:', error);
+      console.error('Erro crítico ao salvar:', error);
       alert(`Erro ao salvar dados: ${error.message || 'Erro desconhecido'}`);
     } finally {
       setIsSaving(false);
