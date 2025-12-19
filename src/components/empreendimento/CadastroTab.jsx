@@ -191,7 +191,7 @@ export default function CadastroTab({ empreendimento }) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 relative">
       <div className="flex justify-between items-center">
         <h2 className="text-xl font-bold text-gray-800">Datas de Cadastro</h2>
         <div className="flex gap-2">
@@ -205,6 +205,20 @@ export default function CadastroTab({ empreendimento }) {
           </Button>
         </div>
       </div>
+
+      {/* Botão flutuante de salvar */}
+      <Button
+        onClick={handleSave}
+        disabled={isSaving}
+        className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+        size="icon"
+      >
+        {isSaving ? (
+          <Loader2 className="w-6 h-6 animate-spin" />
+        ) : (
+          <Save className="w-6 h-6" />
+        )}
+      </Button>
 
       <div className="bg-white rounded-lg shadow overflow-x-auto">
         <table className="w-full border-collapse text-sm">
