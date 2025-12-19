@@ -23,6 +23,7 @@ import AtividadesProjetoTab from "../components/empreendimento/AtividadesProjeto
 import AnaliticoGlobalTab from "../components/empreendimento/AnaliticoGlobalTab";
 import AnaliseConcepcaoPlanejamentoTab from "../components/empreendimento/AnaliseConcepcaoPlanejamentoTab";
 import GestaoTab from "../components/empreendimento/GestaoTab";
+import PRETab from "../components/empreendimento/PRETab";
 import { ActivityTimerContext } from "@/components/contexts/ActivityTimerContext";
 
 export default function EmpreendimentoPage() {
@@ -323,7 +324,7 @@ export default function EmpreendimentoPage() {
         <EmpreendimentoHeader empreendimento={empreendimento} />
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className={`grid w-full ${hasAccessToGestao ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5'} bg-white shadow-sm`}>
+          <TabsList className={`grid w-full ${hasAccessToGestao ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-7' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6'} bg-white shadow-sm`}>
             <TabsTrigger value="documentos">Documentos</TabsTrigger>
             <TabsTrigger value="pavimentos">Pavimentos</TabsTrigger>
             <TabsTrigger value="atividades_projeto">Atividades do Projeto</TabsTrigger>
@@ -331,6 +332,7 @@ export default function EmpreendimentoPage() {
               <ListChecks className="w-4 h-4 mr-2" /> Catálogo
             </TabsTrigger>
             <TabsTrigger value="documentacao">Documentação</TabsTrigger>
+            <TabsTrigger value="pre">PRE</TabsTrigger>
             {hasAccessToGestao && (
               <TabsTrigger value="gestao">Gestão</TabsTrigger>
             )}
@@ -442,6 +444,10 @@ export default function EmpreendimentoPage() {
                 }}
               />
             ) : null}
+          </TabsContent>
+
+          <TabsContent value="pre">
+            <PRETab empreendimento={empreendimento} />
           </TabsContent>
 
           {hasAccessToGestao && (
