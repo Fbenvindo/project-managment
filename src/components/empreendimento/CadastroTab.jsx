@@ -145,35 +145,41 @@ export default function CadastroTab({ empreendimento }) {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const savePromises = linhas.map(linha => {
-        const linhaData = {
-          empreendimento_id: empreendimento.id,
-          ordem: linha.ordem,
-          documento_id: linha.documento_id || '',
-          datas: linha.datas || {}
-        };
+      const savePromises = linhas
+        .filter(linha => linha.documento_id) // Apenas salvar linhas com documento_id válido
+        .map(async (linha) => {
+          const linhaData = {
+            empreendimento_id: empreendimento.id,
+            ordem: linha.ordem,
+            documento_id: linha.documento_id,
+            datas: linha.datas || {}
+          };
 
-        if (linha.isNew || linha.id.toString().startsWith('temp-')) {
-          return retryWithBackoff(
-            () => DataCadastro.create(linhaData),
-            3, 2000,
-            'createDataCadastro'
-          );
-        } else {
-          return retryWithBackoff(
-            () => DataCadastro.update(linha.id, linhaData),
-            3, 2000,
-            `updateDataCadastro-${linha.id}`
-          );
-        }
-      });
+          try {
+            if (linha.isNew || linha.id.toString().startsWith('temp-')) {
+              return await DataCadastro.create(linhaData);
+            } else {
+              return await DataCadastro.update(linha.id, linhaData);
+            }
+          } catch (err) {
+            console.error(`Erro ao salvar linha ${linha.id}:`, err);
+            throw err;
+          }
+        });
       
-      await Promise.all(savePromises);
+      const results = await Promise.allSettled(savePromises);
+      
+      const failures = results.filter(r => r.status === 'rejected');
+      if (failures.length > 0) {
+        console.error('Algumas linhas falharam ao salvar:', failures);
+        throw new Error(`${failures.length} linha(s) falharam ao salvar`);
+      }
+      
       await loadData();
       alert('Dados salvos com sucesso!');
     } catch (error) {
-      console.error('Erro ao salvar:', error);
-      alert('Erro ao salvar dados.');
+      console.error('Erro detalhado ao salvar:', error);
+      alert(`Erro ao salvar dados: ${error.message || 'Erro desconhecido'}`);
     } finally {
       setIsSaving(false);
     }
