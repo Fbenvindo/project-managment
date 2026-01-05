@@ -926,8 +926,8 @@ export default function AtaPlanejamento() {
             <thead>
               <tr className="bg-yellow-100 border-b border-gray-400 text-xs font-medium">
                 <th className="w-[12%] p-1 text-center border-r border-gray-400">Projeto ▼</th>
-                <th className="w-[40%] p-1 text-center border-r border-gray-400">Providências</th>
-                <th className="w-[8%] p-1 text-center border-r border-gray-400">Resposta</th>
+                <th className="w-[36%] p-1 text-center border-r border-gray-400">Providências</th>
+                <th className="w-[12%] p-1 text-center border-r border-gray-400">Resposta</th>
                 <th className="w-[12%] p-1 text-center border-r border-gray-400">Responsável▼</th>
                 <th className="w-[9%] p-1 text-center border-r border-gray-400">Data da reunião▼</th>
                 <th className="w-[9%] p-1 text-center border-r border-gray-400">Data de retorno</th>
@@ -949,7 +949,7 @@ export default function AtaPlanejamento() {
                       />
                       <span className="hidden print:inline text-[6px] leading-tight break-words whitespace-pre-wrap">{prov.projeto}</span>
                     </td>
-                    <td className="w-[40%] p-2 border-r border-gray-300 align-top">
+                    <td className="w-[36%] p-2 border-r border-gray-300 align-top">
                       <AutoResizeTextarea
                         value={prov.providencias}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'providencias', e.target.value)}
@@ -957,7 +957,7 @@ export default function AtaPlanejamento() {
                       />
                       <span className="hidden print:inline whitespace-pre-wrap text-[6px] leading-tight">{prov.providencias}</span>
                     </td>
-                    <td className="w-[8%] p-2 border-r border-gray-300 text-center align-top">
+                    <td className="w-[12%] p-2 border-r border-gray-300 text-center align-top">
                       <AutoResizeTextarea
                         value={prov.resposta}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'resposta', e.target.value)}
