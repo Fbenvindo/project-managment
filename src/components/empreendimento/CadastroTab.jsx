@@ -23,10 +23,10 @@ export default function CadastroTab({ empreendimento }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (empreendimento?.id) {
+    if (empreendimento?.id && linhas.length === 0) {
       loadData();
     }
-  }, [empreendimento]);
+  }, [empreendimento?.id]);
 
   const loadData = async () => {
     setIsLoading(true);
