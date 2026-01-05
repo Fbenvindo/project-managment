@@ -262,7 +262,7 @@ export default function AtaPlanejamento() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [novaProvidencia, setNovaProvidencia] = useState({
     projeto: '',
-    linhas: [{ providencias: '', gerencia: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
+    linhas: [{ providencias: '', resposta: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
   });
   const [showSelectAtaModal, setShowSelectAtaModal] = useState(false);
   const [searchAta, setSearchAta] = useState('');
@@ -331,7 +331,7 @@ export default function AtaPlanejamento() {
         providencias: providencias.map(p => ({
           projeto: p.projeto,
           providencias: p.providencias,
-          gerencia: p.gerencia,
+          resposta: p.resposta,
           responsaveis: p.responsaveis,
           dataReuniao: p.dataReuniao,
           dataRetorno: p.dataRetorno,
@@ -462,7 +462,7 @@ export default function AtaPlanejamento() {
       id: Date.now() + idx,
       projeto: novaProvidencia.projeto,
       providencias: linha.providencias,
-      gerencia: linha.gerencia,
+      resposta: linha.resposta,
       responsaveis: linha.responsaveis,
       dataReuniao: linha.dataReuniao,
       dataRetorno: linha.dataRetorno,
@@ -473,7 +473,7 @@ export default function AtaPlanejamento() {
     setProvidencias(prev => [...prev, ...novasProvidencias]);
     setNovaProvidencia({
       projeto: '',
-      linhas: [{ providencias: '', gerencia: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
+      linhas: [{ providencias: '', resposta: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
     });
     setShowAddModal(false);
   };
@@ -487,7 +487,7 @@ export default function AtaPlanejamento() {
       id: Date.now(),
       projeto: provAnterior.projeto,
       providencias: '',
-      gerencia: '',
+      resposta: '',
       responsaveis: [],
       dataReuniao: '',
       dataRetorno: '',
@@ -507,7 +507,7 @@ export default function AtaPlanejamento() {
   const handleAddLinha = () => {
     setNovaProvidencia(prev => ({
       ...prev,
-      linhas: [...prev.linhas, { providencias: '', gerencia: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
+      linhas: [...prev.linhas, { providencias: '', resposta: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
     }));
   };
 
@@ -894,7 +894,7 @@ export default function AtaPlanejamento() {
               <tr className="bg-yellow-100 border-b border-gray-400 text-xs font-medium">
                 <th className="w-[12%] p-1 text-center border-r border-gray-400">Projeto ▼</th>
                 <th className="w-[40%] p-1 text-center border-r border-gray-400">Providências</th>
-                <th className="w-[8%] p-1 text-center border-r border-gray-400">Gerência</th>
+                <th className="w-[8%] p-1 text-center border-r border-gray-400">Resposta</th>
                 <th className="w-[12%] p-1 text-center border-r border-gray-400">Responsável▼</th>
                 <th className="w-[9%] p-1 text-center border-r border-gray-400">Data da reunião▼</th>
                 <th className="w-[9%] p-1 text-center border-r border-gray-400">Data de retorno</th>
@@ -926,11 +926,11 @@ export default function AtaPlanejamento() {
                     </td>
                     <td className="w-[8%] p-2 border-r border-gray-300 text-center align-top">
                       <Input
-                        value={prov.gerencia}
-                        onChange={(e) => handleUpdateProvidencia(prov.id, 'gerencia', e.target.value)}
+                        value={prov.resposta}
+                        onChange={(e) => handleUpdateProvidencia(prov.id, 'resposta', e.target.value)}
                         className="h-9 text-sm print:hidden text-center"
                       />
-                      <span className="hidden print:inline text-[6px]">{prov.gerencia}</span>
+                      <span className="hidden print:inline text-[6px]">{prov.resposta}</span>
                     </td>
                     <td className="w-[12%] p-2 border-r border-gray-300 text-center align-top">
                       <Select
@@ -1072,10 +1072,10 @@ export default function AtaPlanejamento() {
                 
                 <div className="grid grid-cols-5 gap-3">
                   <div>
-                    <label className="text-xs text-gray-500">Gerência</label>
+                    <label className="text-xs text-gray-500">Resposta</label>
                     <Input
-                      value={linha.gerencia}
-                      onChange={(e) => handleUpdateLinha(idx, 'gerencia', e.target.value)}
+                      value={linha.resposta}
+                      onChange={(e) => handleUpdateLinha(idx, 'resposta', e.target.value)}
                       className="h-8 text-sm"
                     />
                   </div>
