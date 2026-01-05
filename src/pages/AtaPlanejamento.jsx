@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,34 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Empreendimento, Usuario, Documento, AtaReuniao } from "@/entities/all";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
+
+// Componente Textarea com auto-resize
+const AutoResizeTextarea = ({ value, onChange, className, ...props }) => {
+  const textareaRef = useRef(null);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.style.height = 'auto';
+      textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+    }
+  }, [value]);
+
+  return (
+    <Textarea
+      ref={textareaRef}
+      value={value}
+      onChange={(e) => {
+        onChange(e);
+        if (textareaRef.current) {
+          textareaRef.current.style.height = 'auto';
+          textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
+        }
+      }}
+      className={className}
+      {...props}
+    />
+  );
+};
 
 const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/577f93874_logo_Interativa_versao_final_sem_fundo_0002.png";
 
@@ -909,29 +937,26 @@ export default function AtaPlanejamento() {
                     className={`border-b border-gray-300 ${gIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
                   >
                     <td className="w-[12%] p-2 text-center border-r border-gray-300 bg-yellow-50 align-top">
-                      <Textarea
+                      <AutoResizeTextarea
                         value={prov.projeto}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'projeto', e.target.value)}
-                        className="min-h-[40px] text-sm print:hidden w-full resize-y text-center"
-                        rows={2}
+                        className="text-sm print:hidden w-full resize-none text-center overflow-hidden"
                       />
                       <span className="hidden print:inline text-[6px] leading-tight break-words whitespace-pre-wrap">{prov.projeto}</span>
                     </td>
                     <td className="w-[40%] p-2 border-r border-gray-300 align-top">
-                      <Textarea
+                      <AutoResizeTextarea
                         value={prov.providencias}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'providencias', e.target.value)}
-                        className="min-h-[100px] text-sm print:hidden w-full resize-y"
-                        rows={5}
+                        className="text-sm print:hidden w-full resize-none overflow-hidden"
                       />
                       <span className="hidden print:inline whitespace-pre-wrap text-[6px] leading-tight">{prov.providencias}</span>
                     </td>
                     <td className="w-[8%] p-2 border-r border-gray-300 text-center align-top">
-                      <Textarea
+                      <AutoResizeTextarea
                         value={prov.resposta}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'resposta', e.target.value)}
-                        className="min-h-[60px] text-sm print:hidden text-center resize-y"
-                        rows={3}
+                        className="text-sm print:hidden text-center resize-none overflow-hidden"
                       />
                       <span className="hidden print:inline text-[6px] whitespace-pre-wrap">{prov.resposta}</span>
                     </td>
