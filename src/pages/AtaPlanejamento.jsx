@@ -925,13 +925,13 @@ export default function AtaPlanejamento() {
           <table className="w-full text-xs">
             <thead>
               <tr className="bg-yellow-100 border-b border-gray-400 text-xs font-medium">
-                <th className="w-[12%] p-1 text-center border-r border-gray-400">Projeto ▼</th>
-                <th className="w-[36%] p-1 text-center border-r border-gray-400">Providências</th>
-                <th className="w-[12%] p-1 text-center border-r border-gray-400">Resposta</th>
+                <th className="w-[10%] p-1 text-center border-r border-gray-400">Projeto ▼</th>
+                <th className="w-[28%] p-1 text-center border-r border-gray-400">Providências</th>
+                <th className="w-[28%] p-1 text-center border-r border-gray-400">Resposta</th>
                 <th className="w-[12%] p-1 text-center border-r border-gray-400">Responsável▼</th>
-                <th className="w-[9%] p-1 text-center border-r border-gray-400">Data da reunião▼</th>
-                <th className="w-[9%] p-1 text-center border-r border-gray-400">Data de retorno</th>
-                <th className="w-[10%] p-1 text-center">Status / Ações</th>
+                <th className="w-[8%] p-1 text-center border-r border-gray-400">Data da reunião▼</th>
+                <th className="w-[8%] p-1 text-center border-r border-gray-400">Data de retorno</th>
+                <th className="w-[6%] p-1 text-center">Status / Ações</th>
               </tr>
             </thead>
             <tbody>
@@ -941,7 +941,7 @@ export default function AtaPlanejamento() {
                     key={prov.id} 
                     className={`border-b border-gray-300 ${gIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
                   >
-                    <td className="w-[12%] p-2 text-center border-r border-gray-300 bg-yellow-50 align-top">
+                    <td className="w-[10%] p-2 text-center border-r border-gray-300 bg-yellow-50 align-top">
                       <AutoResizeTextarea
                         value={prov.projeto}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'projeto', e.target.value)}
@@ -949,7 +949,7 @@ export default function AtaPlanejamento() {
                       />
                       <span className="hidden print:inline text-[6px] leading-tight break-words whitespace-pre-wrap">{prov.projeto}</span>
                     </td>
-                    <td className="w-[36%] p-2 border-r border-gray-300 align-top">
+                    <td className="w-[28%] p-2 border-r border-gray-300 align-top">
                       <AutoResizeTextarea
                         value={prov.providencias}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'providencias', e.target.value)}
@@ -957,11 +957,11 @@ export default function AtaPlanejamento() {
                       />
                       <span className="hidden print:inline whitespace-pre-wrap text-[6px] leading-tight">{prov.providencias}</span>
                     </td>
-                    <td className="w-[12%] p-2 border-r border-gray-300 text-center align-top">
+                    <td className="w-[28%] p-2 border-r border-gray-300 align-top">
                       <AutoResizeTextarea
                         value={prov.resposta}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'resposta', e.target.value)}
-                        className="text-sm print:hidden text-center resize-none overflow-hidden"
+                        className="text-sm print:hidden w-full resize-none overflow-hidden"
                       />
                       <span className="hidden print:inline text-[6px] whitespace-pre-wrap">{prov.resposta}</span>
                     </td>
@@ -985,7 +985,7 @@ export default function AtaPlanejamento() {
                         {Array.isArray(prov.responsaveis) ? prov.responsaveis.join(', ') : ''}
                       </span>
                     </td>
-                    <td className="w-[9%] p-2 border-r border-gray-300 text-center align-top">
+                    <td className="w-[8%] p-2 border-r border-gray-300 text-center align-top">
                       <Input
                         type="date"
                         value={prov.dataReuniao}
@@ -996,7 +996,7 @@ export default function AtaPlanejamento() {
                         {prov.dataReuniao ? format(new Date(prov.dataReuniao), 'dd/MM/yyyy') : ''}
                       </span>
                     </td>
-                    <td className="w-[9%] p-2 border-r border-gray-300 text-center align-top">
+                    <td className="w-[8%] p-2 border-r border-gray-300 text-center align-top">
                       <Input
                         type="date"
                         value={prov.dataRetorno}
@@ -1007,7 +1007,7 @@ export default function AtaPlanejamento() {
                         {prov.dataRetorno ? format(new Date(prov.dataRetorno), 'dd/MM/yyyy') : ''}
                       </span>
                     </td>
-                    <td className="w-[10%] p-2 text-center align-top">
+                    <td className="w-[6%] p-2 text-center align-top">
                       <div className="flex items-center justify-center gap-1">
                         <select
                           value={prov.status}
