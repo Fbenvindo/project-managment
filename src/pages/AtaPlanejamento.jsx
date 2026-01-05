@@ -920,17 +920,19 @@ export default function AtaPlanejamento() {
                       <Textarea
                         value={prov.providencias}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'providencias', e.target.value)}
-                        className="min-h-[200px] text-sm print:hidden w-full resize-y"
+                        className="min-h-[100px] text-sm print:hidden w-full resize-y"
+                        rows={5}
                       />
                       <span className="hidden print:inline whitespace-pre-wrap text-[6px] leading-tight">{prov.providencias}</span>
                     </td>
                     <td className="w-[8%] p-2 border-r border-gray-300 text-center align-top">
-                      <Input
+                      <Textarea
                         value={prov.resposta}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'resposta', e.target.value)}
-                        className="h-9 text-sm print:hidden text-center"
+                        className="min-h-[60px] text-sm print:hidden text-center resize-y"
+                        rows={3}
                       />
-                      <span className="hidden print:inline text-[6px]">{prov.resposta}</span>
+                      <span className="hidden print:inline text-[6px] whitespace-pre-wrap">{prov.resposta}</span>
                     </td>
                     <td className="w-[12%] p-2 border-r border-gray-300 text-center align-top">
                       <Select
@@ -1073,10 +1075,11 @@ export default function AtaPlanejamento() {
                 <div className="grid grid-cols-5 gap-3">
                   <div>
                     <label className="text-xs text-gray-500">Resposta</label>
-                    <Input
+                    <Textarea
                       value={linha.resposta}
                       onChange={(e) => handleUpdateLinha(idx, 'resposta', e.target.value)}
-                      className="h-8 text-sm"
+                      className="text-sm resize-y"
+                      rows={2}
                     />
                   </div>
                   <div>
