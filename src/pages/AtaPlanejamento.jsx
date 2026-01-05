@@ -908,13 +908,14 @@ export default function AtaPlanejamento() {
                     key={prov.id} 
                     className={`border-b border-gray-300 ${gIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
                   >
-                    <td className="w-[12%] p-2 text-center border-r border-gray-300 bg-yellow-50 align-middle">
+                    <td className="w-[12%] p-2 text-center border-r border-gray-300 bg-yellow-50 align-top">
                       <Textarea
                         value={prov.projeto}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'projeto', e.target.value)}
-                        className="min-h-[150px] text-sm print:hidden w-full resize-y text-center"
+                        className="min-h-[40px] text-sm print:hidden w-full resize-y text-center"
+                        rows={2}
                       />
-                      <span className="hidden print:inline text-[6px] leading-tight break-words">{prov.projeto}</span>
+                      <span className="hidden print:inline text-[6px] leading-tight break-words whitespace-pre-wrap">{prov.projeto}</span>
                     </td>
                     <td className="w-[40%] p-2 border-r border-gray-300 align-top">
                       <Textarea
