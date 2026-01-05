@@ -1,37 +1,39 @@
-import Dashboard from './pages/Dashboard';
-import Empreendimentos from './pages/Empreendimentos';
-import Configuracoes from './pages/Configuracoes';
-import Empreendimento from './pages/Empreendimento';
-import Analitico from './pages/Analitico';
-import Usuarios from './pages/Usuarios';
-import AtividadesRapidas from './pages/AtividadesRapidas';
 import AnaliseConcepcaoPlanejamento from './pages/AnaliseConcepcaoPlanejamento';
-import SeletorPlanejamento from './pages/SeletorPlanejamento';
-import Relatorios from './pages/Relatorios';
-import Planejamento from './pages/Planejamento';
-import Comercial from './pages/Comercial';
+import Analitico from './pages/Analitico';
 import AtaPlanejamento from './pages/AtaPlanejamento';
+import AtividadesRapidas from './pages/AtividadesRapidas';
+import Comercial from './pages/Comercial';
 import ComercialDetalhes from './pages/ComercialDetalhes';
+import Configuracoes from './pages/Configuracoes';
+import Dashboard from './pages/Dashboard';
+import Empreendimento from './pages/Empreendimento';
+import Empreendimentos from './pages/Empreendimentos';
+import Home from './pages/Home';
 import PRE from './pages/PRE';
+import Planejamento from './pages/Planejamento';
+import Relatorios from './pages/Relatorios';
+import SeletorPlanejamento from './pages/SeletorPlanejamento';
+import Usuarios from './pages/Usuarios';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
-    "Dashboard": Dashboard,
-    "Empreendimentos": Empreendimentos,
-    "Configuracoes": Configuracoes,
-    "Empreendimento": Empreendimento,
-    "Analitico": Analitico,
-    "Usuarios": Usuarios,
-    "AtividadesRapidas": AtividadesRapidas,
     "AnaliseConcepcaoPlanejamento": AnaliseConcepcaoPlanejamento,
-    "SeletorPlanejamento": SeletorPlanejamento,
-    "Relatorios": Relatorios,
-    "Planejamento": Planejamento,
-    "Comercial": Comercial,
+    "Analitico": Analitico,
     "AtaPlanejamento": AtaPlanejamento,
+    "AtividadesRapidas": AtividadesRapidas,
+    "Comercial": Comercial,
     "ComercialDetalhes": ComercialDetalhes,
+    "Configuracoes": Configuracoes,
+    "Dashboard": Dashboard,
+    "Empreendimento": Empreendimento,
+    "Empreendimentos": Empreendimentos,
+    "Home": Home,
     "PRE": PRE,
+    "Planejamento": Planejamento,
+    "Relatorios": Relatorios,
+    "SeletorPlanejamento": SeletorPlanejamento,
+    "Usuarios": Usuarios,
 }
 
 export const pagesConfig = {

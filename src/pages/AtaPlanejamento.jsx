@@ -235,12 +235,14 @@ const printStyles = `
 export default function AtaPlanejamento() {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [empreendimentos, setEmpreendimentos] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [documentos, setDocumentos] = useState([]);
   const [atasRegistradas, setAtasRegistradas] = useState([]);
   const [viewMode, setViewMode] = useState('list'); // 'list', 'edit', 'new'
   const [currentAtaId, setCurrentAtaId] = useState(null);
+  const autoSaveTimeoutRef = React.useRef(null);
   
   // Dados da ATA
   const [ataData, setAtaData] = useState({
@@ -269,6 +271,38 @@ export default function AtaPlanejamento() {
     loadData();
   }, []);
 
+  // Auto-save com debounce
+  useEffect(() => {
+    if (hasUnsavedChanges && (viewMode === 'edit' || viewMode === 'new')) {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+      
+      autoSaveTimeoutRef.current = setTimeout(() => {
+        handleSaveAta(true); // true = silent save
+      }, 3000); // salva após 3 segundos de inatividade
+    }
+    
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [hasUnsavedChanges, ataData, providencias]);
+
+  // Aviso ao sair com mudanças não salvas
+  useEffect(() => {
+    const handleBeforeUnload = (e) => {
+      if (hasUnsavedChanges) {
+        e.preventDefault();
+        e.returnValue = '';
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [hasUnsavedChanges]);
+
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -289,7 +323,7 @@ export default function AtaPlanejamento() {
     }
   };
 
-  const handleSaveAta = async () => {
+  const handleSaveAta = async (silent = false) => {
     setIsSaving(true);
     try {
       const ataToSave = {
@@ -312,11 +346,17 @@ export default function AtaPlanejamento() {
         setCurrentAtaId(newAta.id);
       }
       
-      await loadData();
-      alert('ATA salva com sucesso!');
+      setHasUnsavedChanges(false);
+      
+      if (!silent) {
+        await loadData();
+        alert('ATA salva com sucesso!');
+      }
     } catch (error) {
       console.error('Erro ao salvar ATA:', error);
-      alert('Erro ao salvar ATA. Tente novamente.');
+      if (!silent) {
+        alert('Erro ao salvar ATA. Tente novamente.');
+      }
     } finally {
       setIsSaving(false);
     }
@@ -394,11 +434,18 @@ export default function AtaPlanejamento() {
   };
 
   const handleBackToList = () => {
+    if (hasUnsavedChanges) {
+      if (confirm('Você tem mudanças não salvas. Deseja salvá-las antes de sair?')) {
+        handleSaveAta();
+      }
+    }
     setViewMode('list');
     setCurrentAtaId(null);
+    setHasUnsavedChanges(false);
   };
 
   const toggleParticipante = (email) => {
+    setHasUnsavedChanges(true);
     setAtaData(prev => ({
       ...prev,
       participantes: prev.participantes.includes(email)
@@ -422,6 +469,7 @@ export default function AtaPlanejamento() {
       status: linha.status
     }));
     
+    setHasUnsavedChanges(true);
     setProvidencias(prev => [...prev, ...novasProvidencias]);
     setNovaProvidencia({
       projeto: '',
@@ -452,6 +500,7 @@ export default function AtaPlanejamento() {
       ...providencias.slice(index + 1)
     ];
     
+    setHasUnsavedChanges(true);
     setProvidencias(novasProvidencias);
   };
 
@@ -478,6 +527,7 @@ export default function AtaPlanejamento() {
   };
 
   const handleUpdateProvidencia = (id, field, value) => {
+    setHasUnsavedChanges(true);
     setProvidencias(prev => prev.map(p => 
       p.id === id ? { ...p, [field]: value } : p
     ));
@@ -485,6 +535,7 @@ export default function AtaPlanejamento() {
 
   const handleDeleteProvidencia = (id) => {
     if (confirm('Deseja excluir esta providência?')) {
+      setHasUnsavedChanges(true);
       setProvidencias(prev => prev.filter(p => p.id !== id));
     }
   };
@@ -652,14 +703,19 @@ export default function AtaPlanejamento() {
       <div className="p-6 bg-gray-100 min-h-screen print:p-0 print:bg-white print:min-h-0 flex flex-col items-center print:overflow-visible">
       {/* Barra de Ações */}
                 <div className="mb-4 flex justify-between items-center no-print w-full max-w-[297mm]">
-                  <div className="flex items-center gap-4">
-                    <Button variant="ghost" onClick={handleBackToList} className="p-2">
-                      <ArrowLeft className="w-5 h-5" />
-                    </Button>
-                    <h1 className="text-2xl font-bold text-gray-800">
-                      {currentAtaId ? 'Editar ATA' : 'Nova ATA'}
-                    </h1>
-                  </div>
+                            <div className="flex items-center gap-4">
+                              <Button variant="ghost" onClick={handleBackToList} className="p-2">
+                                <ArrowLeft className="w-5 h-5" />
+                              </Button>
+                              <h1 className="text-2xl font-bold text-gray-800">
+                                {currentAtaId ? 'Editar ATA' : 'Nova ATA'}
+                              </h1>
+                              {hasUnsavedChanges && (
+                                <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">
+                                  Salvando automaticamente...
+                                </Badge>
+                              )}
+                            </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleSaveAta} disabled={isSaving}>
             {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
@@ -698,7 +754,10 @@ export default function AtaPlanejamento() {
                                 <input 
                                   type="text" 
                                   value={ataData.assunto}
-                                  onChange={(e) => setAtaData(prev => ({ ...prev, assunto: e.target.value }))}
+                                  onChange={(e) => {
+                                    setHasUnsavedChanges(true);
+                                    setAtaData(prev => ({ ...prev, assunto: e.target.value }));
+                                  }}
                                   className="border-none outline-none bg-transparent print:bg-transparent flex-1 w-full"
                                 />
                               </div>
@@ -718,7 +777,10 @@ export default function AtaPlanejamento() {
               <input 
                 type="text" 
                 value={ataData.local}
-                onChange={(e) => setAtaData(prev => ({ ...prev, local: e.target.value }))}
+                onChange={(e) => {
+                  setHasUnsavedChanges(true);
+                  setAtaData(prev => ({ ...prev, local: e.target.value }));
+                }}
                 className="border-none outline-none bg-transparent print:bg-transparent"
               />
             </div>
@@ -727,7 +789,10 @@ export default function AtaPlanejamento() {
               <input 
                 type="text" 
                 value={ataData.horario}
-                onChange={(e) => setAtaData(prev => ({ ...prev, horario: e.target.value }))}
+                onChange={(e) => {
+                  setHasUnsavedChanges(true);
+                  setAtaData(prev => ({ ...prev, horario: e.target.value }));
+                }}
                 className="border-none outline-none bg-transparent print:bg-transparent"
               />
             </div>
