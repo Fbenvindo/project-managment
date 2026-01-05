@@ -16,11 +16,18 @@ import { retryWithBackoff } from "@/components/utils/apiUtils";
 const AutoResizeTextarea = ({ value, onChange, className, ...props }) => {
   const textareaRef = useRef(null);
 
-  useEffect(() => {
+  const adjustHeight = () => {
     if (textareaRef.current) {
       textareaRef.current.style.height = 'auto';
       textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
     }
+  };
+
+  useEffect(() => {
+    adjustHeight();
+    // Ajustar novamente após um pequeno delay para garantir que o DOM foi renderizado
+    const timer = setTimeout(adjustHeight, 0);
+    return () => clearTimeout(timer);
   }, [value]);
 
   return (
@@ -29,12 +36,10 @@ const AutoResizeTextarea = ({ value, onChange, className, ...props }) => {
       value={value}
       onChange={(e) => {
         onChange(e);
-        if (textareaRef.current) {
-          textareaRef.current.style.height = 'auto';
-          textareaRef.current.style.height = textareaRef.current.scrollHeight + 'px';
-        }
+        adjustHeight();
       }}
       className={className}
+      style={{ minHeight: '40px' }}
       {...props}
     />
   );
