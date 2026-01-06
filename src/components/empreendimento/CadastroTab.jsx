@@ -262,7 +262,7 @@ export default function CadastroTab({ empreendimento }) {
   }
 
   return (
-    <div className="space-y-4 relative">
+    <div className="space-y-4 relative overflow-hidden">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
           <h2 className="text-xl font-bold text-gray-800">Datas de Cadastro</h2>
@@ -298,11 +298,11 @@ export default function CadastroTab({ empreendimento }) {
         )}
       </Button>
 
-      <div className="bg-white rounded-lg shadow overflow-x-auto relative">
-        <table className="w-full border-collapse text-sm">
+      <div className="bg-white rounded-lg shadow overflow-x-auto relative isolate">
+        <table className="w-full border-collapse text-sm relative">
           <thead>
             <tr>
-              <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-20 w-48 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">Folha</th>
+              <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-10 w-48 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">Folha</th>
               {ETAPAS.map((etapa) => (
                 <th
                   key={etapa}
@@ -314,7 +314,7 @@ export default function CadastroTab({ empreendimento }) {
               ))}
             </tr>
             <tr>
-              <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]"></th>
+              <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]"></th>
               {ETAPAS.map((etapa, etapaIdx) => (
                 <React.Fragment key={`rev-${etapa}`}>
                   {revisoes.map((revisao, revIdx) => (
