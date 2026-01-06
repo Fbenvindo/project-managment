@@ -336,9 +336,9 @@ export default function CadastroTab({ empreendimento }) {
           )}
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleAddRevisao}>
+          <Button variant="outline" onClick={handleAddEtapa}>
             <Plus className="w-4 h-4 mr-2" />
-            Adicionar Revisão
+            Adicionar Etapa
           </Button>
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
