@@ -596,12 +596,14 @@ export default function DocumentosTab({
   const handleExportTemplate = () => {
     const csvContent = [
       'numero,arquivo,descritivo,pavimento_nome,disciplinas,subdisciplinas,escala,fator_dificuldade',
-      'ARQ-01,Planta Baixa Térreo,Planta baixa do pavimento térreo com layout de móveis,Térreo,Arquitetura,Planta|Compat,125,1',
+      'ARQ-01,Planta Baixa Terreo,Planta baixa do pavimento terreo com layout de moveis,Terreo,Arquitetura,Planta|Compat,125,1',
       'ARQ-02,Planta Baixa 1º Pav,Planta baixa do primeiro pavimento,1º Pavimento,Arquitetura,Planta,125,1.2',
-      'HID-01,Planta Hidráulica Térreo,Projeto hidráulico do térreo,Térreo,Hidráulica,Projeto,100,1',
+      'HID-01,Planta Hidraulica Terreo,Projeto hidraulico do terreo,Terreo,Hidraulica,Projeto,100,1',
     ].join('\n');
     
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    // Adicionar BOM UTF-8 para Excel reconhecer encoding corretamente
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
     link.download = `template_documentos_${empreendimento.nome.replace(/\s+/g, '_')}.csv`;
