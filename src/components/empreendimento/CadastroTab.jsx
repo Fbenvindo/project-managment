@@ -262,7 +262,7 @@ export default function CadastroTab({ empreendimento }) {
   }
 
   return (
-    <div className="space-y-4 relative overflow-hidden">
+    <div className="space-y-4">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
           <h2 className="text-xl font-bold text-gray-800">Datas de Cadastro</h2>
@@ -298,8 +298,8 @@ export default function CadastroTab({ empreendimento }) {
         )}
       </Button>
 
-      <div className="bg-white rounded-lg shadow overflow-x-auto relative isolate">
-        <table className="w-full border-collapse text-sm relative">
+      <div className="bg-white rounded-lg shadow overflow-x-auto">
+        <table className="w-full border-collapse text-sm">
           <thead>
             <tr>
               <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-10 w-48 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">Folha</th>
