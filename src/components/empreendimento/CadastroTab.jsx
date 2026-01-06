@@ -126,11 +126,6 @@ export default function CadastroTab({ empreendimento }) {
   };
 
   const handleRemoveRevisao = (revisao) => {
-    if (revisoes.length <= 1) {
-      alert('Deve haver ao menos uma revisão.');
-      return;
-    }
-    
     if (!confirm(`Deseja excluir a revisão ${revisao}? Os dados desta revisão serão perdidos.`)) return;
     
     setRevisoes(prev => prev.filter(r => r !== revisao));
