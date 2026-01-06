@@ -354,17 +354,19 @@ export default function CadastroTab({ empreendimento }) {
       </Button>
 
       <div className="bg-white rounded-lg shadow overflow-x-auto relative isolate">
-        <table className="w-full border-collapse text-sm relative">
+        <table className="w-full border-collapse text-sm relative table-fixed">
           <thead>
             <tr>
               <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-10 w-48 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">Folha</th>
-              {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa) => {
+              {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
                 const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+                const colSpanTotal = revisoesEtapa.length + 1;
                 return (
                   <th
                     key={etapa}
-                    colSpan={revisoesEtapa.length}
+                    colSpan={colSpanTotal}
                     className="border border-gray-300 bg-blue-200 p-2 text-center font-semibold relative group"
+                    style={{ width: `${colSpanTotal * 150}px` }}
                   >
                     <div className="flex items-center justify-center gap-2">
                       <span>Datas de cadastro:<br />{etapa}</span>
@@ -384,14 +386,14 @@ export default function CadastroTab({ empreendimento }) {
               <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]"></th>
               {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, etapaIdx) => {
                 const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+                const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
                 return (
                   <React.Fragment key={`rev-${etapa}`}>
                     {revisoesEtapa.map((revisao, revIdx) => (
                       <th
                         key={`${etapa}-${revisao}`}
-                        className={`border border-gray-300 bg-blue-50 p-2 text-center font-medium ${
-                          revIdx === revisoesEtapa.length - 1 && etapaIdx < ETAPAS.filter(e => !etapasExcluidas.includes(e)).length - 1 ? 'border-r-4 border-r-gray-400' : ''
-                        }`}
+                        className="border border-gray-300 bg-blue-50 p-2 text-center font-medium"
+                        style={{ width: '150px', minWidth: '150px' }}
                       >
                         <div className="flex items-center justify-center gap-1">
                           <span>{revisao}</span>
@@ -405,9 +407,12 @@ export default function CadastroTab({ empreendimento }) {
                         </div>
                       </th>
                     ))}
-                    <th className={`border border-gray-300 bg-green-50 p-1 text-center ${
-                      etapaIdx < ETAPAS.filter(e => !etapasExcluidas.includes(e)).length - 1 ? 'border-r-4 border-r-gray-400' : ''
-                    }`}>
+                    <th 
+                      className={`border bg-green-50 p-1 text-center ${
+                        etapaIdx < etapasVisiveis.length - 1 ? 'border-r-4 border-r-gray-800 border-gray-300' : 'border-gray-300'
+                      }`}
+                      style={{ width: '50px', minWidth: '50px' }}
+                    >
                       <button
                         onClick={() => handleAddRevisao(etapa)}
                         className="text-green-600 hover:text-green-800 p-0.5"
@@ -431,21 +436,21 @@ export default function CadastroTab({ empreendimento }) {
             ) : (
               linhas.map((linha, idx) => {
                 const doc = documentos.find(d => d.id === linha.documento_id);
+                const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
                 return (
                   <tr key={linha.id} className="hover:bg-gray-50">
                     <td className="border border-gray-300 p-2 sticky left-0 bg-white z-10 font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
                       {doc?.arquivo || doc?.numero || 'Sem folha'}
                     </td>
-                    {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, etapaIdx) => {
+                    {etapasVisiveis.map((etapa, etapaIdx) => {
                       const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                       return (
                         <React.Fragment key={`${linha.id}-${etapa}`}>
                           {revisoesEtapa.map((revisao, revIdx) => (
                             <td 
                               key={`${linha.id}-${etapa}-${revisao}`} 
-                              className={`border border-gray-300 p-1 ${
-                                revIdx === revisoesEtapa.length - 1 && etapaIdx < ETAPAS.filter(e => !etapasExcluidas.includes(e)).length - 1 ? 'border-r-4 border-r-gray-400' : ''
-                              }`}
+                              className="border border-gray-300 p-1"
+                              style={{ width: '150px', minWidth: '150px' }}
                             >
                               <Input
                                 type="date"
@@ -455,9 +460,12 @@ export default function CadastroTab({ empreendimento }) {
                               />
                             </td>
                           ))}
-                          <td className={`border border-gray-300 p-1 ${
-                            etapaIdx < ETAPAS.filter(e => !etapasExcluidas.includes(e)).length - 1 ? 'border-r-4 border-r-gray-400' : ''
-                          }`}></td>
+                          <td 
+                            className={`border p-1 ${
+                              etapaIdx < etapasVisiveis.length - 1 ? 'border-r-4 border-r-gray-800 border-gray-300' : 'border-gray-300'
+                            }`}
+                            style={{ width: '50px', minWidth: '50px' }}
+                          ></td>
                         </React.Fragment>
                       );
                     })}
