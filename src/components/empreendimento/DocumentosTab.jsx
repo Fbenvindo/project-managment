@@ -596,7 +596,7 @@ export default function DocumentosTab({
   const handleExportTemplate = () => {
     const csvContent = [
       'numero;arquivo;descritivo;pavimento_nome;disciplinas;subdisciplinas;escala;fator_dificuldade',
-      'ARQ-01;Planta Baixa Terreo;Planta baixa do pavimento terreo com layout de moveis;Terreo;Arquitetura;Planta|Compat;125;1',
+      'ARQ-01;Planta Baixa Terreo;Planta baixa do pavimento terreo com layout de moveis;Terreo;Arquitetura;Planta,Compat;125;1',
       'ARQ-02;Planta Baixa 1º Pav;Planta baixa do primeiro pavimento;1º Pavimento;Arquitetura;Planta;125;1.2',
       'HID-01;Planta Hidraulica Terreo;Projeto hidraulico do terreo;Terreo;Hidraulica;Projeto;100;1',
     ].join('\n');
@@ -657,14 +657,14 @@ export default function DocumentosTab({
           ? (pavimentos || []).find(p => p.nome?.toLowerCase() === row.pavimento_nome.toLowerCase())
           : null;
 
-        // Processar disciplinas (separadas por |)
+        // Processar disciplinas (separadas por vírgula)
         const disciplinasArray = row.disciplinas 
-          ? row.disciplinas.split('|').map(s => s.trim()).filter(s => s)
+          ? row.disciplinas.split(',').map(s => s.trim()).filter(s => s)
           : [];
 
-        // Processar subdisciplinas (separadas por |)
+        // Processar subdisciplinas (separadas por vírgula)
         const subdisciplinasArray = row.subdisciplinas 
-          ? row.subdisciplinas.split('|').map(s => s.trim()).filter(s => s)
+          ? row.subdisciplinas.split(',').map(s => s.trim()).filter(s => s)
           : [];
 
         // Validar se disciplinas existem no sistema
@@ -2131,7 +2131,7 @@ export default function DocumentosTab({
                   <li>• Envie um arquivo CSV com os documentos</li>
                   <li>• Colunas obrigatórias: <code className="bg-white px-1 rounded">numero</code>, <code className="bg-white px-1 rounded">arquivo</code></li>
                   <li>• Colunas opcionais: <code className="bg-white px-1 rounded">descritivo</code>, <code className="bg-white px-1 rounded">pavimento_nome</code>, <code className="bg-white px-1 rounded">disciplinas</code>, <code className="bg-white px-1 rounded">subdisciplinas</code>, <code className="bg-white px-1 rounded">escala</code>, <code className="bg-white px-1 rounded">fator_dificuldade</code></li>
-                  <li>• Disciplinas e subdisciplinas devem ser separadas por <code className="bg-white px-1 rounded">|</code> (ex: Arquitetura|Hidráulica)</li>
+                  <li>• Disciplinas e subdisciplinas devem ser separadas por <code className="bg-white px-1 rounded">,</code> (ex: Arquitetura,Hidráulica)</li>
                   <li>• O pavimento_nome deve corresponder ao nome exato de um pavimento já cadastrado</li>
                   <li>• Baixe o template para ver exemplos completos</li>
                 </ul>
