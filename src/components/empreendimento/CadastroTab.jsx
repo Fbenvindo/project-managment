@@ -357,7 +357,7 @@ export default function CadastroTab({ empreendimento }) {
         <table className="w-full border-collapse text-sm relative">
           <thead>
             <tr>
-              <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '200px', minWidth: '200px', maxWidth: '200px' }}>Folha</th>
+              <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '280px', minWidth: '280px', maxWidth: '280px' }}>Folha</th>
               {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
                 const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                 const colSpanTotal = revisoesEtapa.length + 1;
@@ -383,7 +383,7 @@ export default function CadastroTab({ empreendimento }) {
               })}
             </tr>
             <tr>
-              <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '200px', minWidth: '200px', maxWidth: '200px' }}></th>
+              <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '280px', minWidth: '280px', maxWidth: '280px' }}></th>
               {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, etapaIdx) => {
                 const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                 const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
@@ -439,7 +439,7 @@ export default function CadastroTab({ empreendimento }) {
                 const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
                 return (
                   <tr key={linha.id} className="hover:bg-gray-50">
-                    <td className="border border-gray-300 p-2 sticky left-0 bg-white z-20 font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '200px', minWidth: '200px', maxWidth: '200px' }}>
+                    <td className="border border-gray-300 p-2 sticky left-0 bg-white z-20 font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '280px', minWidth: '280px', maxWidth: '280px' }}>
                       <div className="truncate" title={doc?.arquivo || doc?.numero || 'Sem folha'}>
                         {doc?.arquivo || doc?.numero || 'Sem folha'}
                       </div>
