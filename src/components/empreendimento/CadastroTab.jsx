@@ -15,8 +15,11 @@ const ETAPAS = [
   "LIBERADO PARA OBRA"
 ];
 
+const DEFAULT_REVISOES = ["R00", "R01", "R02"];
+
 export default function CadastroTab({ empreendimento }) {
-  const [revisoes, setRevisoes] = useState(["R00", "R01", "R02"]);
+  const [revisoesPorEtapa, setRevisoesPorEtapa] = useState({});
+  const [etapasExcluidas, setEtapasExcluidas] = useState([]);
   const [linhas, setLinhas] = useState([]);
   const [documentos, setDocumentos] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -74,26 +77,48 @@ export default function CadastroTab({ empreendimento }) {
       
       // Criar um mapa de dados existentes por documento_id
       const dataMap = new Map();
+      const revisoesMap = {};
+      const etapasExcluidasSet = new Set();
+      
       if (data && data.length > 0) {
         data.forEach(item => {
           if (item.documento_id) {
             dataMap.set(item.documento_id, item);
           }
-        });
-        
-        // Detectar revisões existentes
-        const revisoesSet = new Set(["R00", "R01", "R02"]);
-        data.forEach(linha => {
-          if (linha.datas) {
-            Object.values(linha.datas).forEach(etapaData => {
+          
+          // Detectar revisões existentes por etapa
+          if (item.datas) {
+            Object.entries(item.datas).forEach(([etapa, etapaData]) => {
               if (etapaData && typeof etapaData === 'object') {
-                Object.keys(etapaData).forEach(rev => revisoesSet.add(rev));
+                if (!revisoesMap[etapa]) {
+                  revisoesMap[etapa] = new Set(DEFAULT_REVISOES);
+                }
+                Object.keys(etapaData).forEach(rev => {
+                  if (rev !== '_excluida') {
+                    revisoesMap[etapa].add(rev);
+                  }
+                });
+                
+                // Detectar etapas excluídas
+                if (etapaData._excluida) {
+                  etapasExcluidasSet.add(etapa);
+                }
               }
             });
           }
         });
-        setRevisoes(Array.from(revisoesSet).sort());
       }
+      
+      // Inicializar revisões para todas as etapas
+      const revisoesCompletas = {};
+      ETAPAS.forEach(etapa => {
+        revisoesCompletas[etapa] = revisoesMap[etapa] 
+          ? Array.from(revisoesMap[etapa]).sort()
+          : [...DEFAULT_REVISOES];
+      });
+      
+      setRevisoesPorEtapa(revisoesCompletas);
+      setEtapasExcluidas(Array.from(etapasExcluidasSet));
       
       // Criar uma linha para cada documento
       const novasLinhas = sortedDocs.map((doc, idx) => {
@@ -273,10 +298,6 @@ export default function CadastroTab({ empreendimento }) {
           )}
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleAddRevisao}>
-            <Plus className="w-4 h-4 mr-2" />
-            Adicionar Revisão
-          </Button>
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
             Salvar
@@ -303,47 +324,73 @@ export default function CadastroTab({ empreendimento }) {
           <thead>
             <tr>
               <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-10 w-48 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">Folha</th>
-              {ETAPAS.map((etapa) => (
-                <th
-                  key={etapa}
-                  colSpan={revisoes.length}
-                  className="border border-gray-300 bg-blue-200 p-2 text-center font-semibold"
-                >
-                  Datas de cadastro:<br />{etapa}
-                </th>
-              ))}
+              {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa) => {
+                const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+                return (
+                  <th
+                    key={etapa}
+                    colSpan={revisoesEtapa.length}
+                    className="border border-gray-300 bg-blue-200 p-2 text-center font-semibold relative group"
+                  >
+                    <div className="flex items-center justify-center gap-2">
+                      <span>Datas de cadastro:<br />{etapa}</span>
+                      <button
+                        onClick={() => handleExcluirEtapa(etapa)}
+                        className="absolute top-1 right-1 text-red-500 hover:text-red-700 p-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded"
+                        title="Excluir etapa"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                      </button>
+                    </div>
+                  </th>
+                );
+              })}
             </tr>
             <tr>
               <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]"></th>
-              {ETAPAS.map((etapa, etapaIdx) => (
-                <React.Fragment key={`rev-${etapa}`}>
-                  {revisoes.map((revisao, revIdx) => (
-                    <th
-                      key={`${etapa}-${revisao}`}
-                      className={`border border-gray-300 bg-blue-50 p-2 text-center font-medium ${
-                        revIdx === revisoes.length - 1 && etapaIdx < ETAPAS.length - 1 ? 'border-r-4 border-r-gray-400' : ''
-                      }`}
-                    >
-                      <div className="flex items-center justify-center gap-1">
-                        <span>{revisao}</span>
-                        <button
-                          onClick={() => handleRemoveRevisao(revisao)}
-                          className="text-red-500 hover:text-red-700 p-0.5"
-                          title="Excluir revisão"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
+              {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, etapaIdx) => {
+                const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+                return (
+                  <React.Fragment key={`rev-${etapa}`}>
+                    {revisoesEtapa.map((revisao, revIdx) => (
+                      <th
+                        key={`${etapa}-${revisao}`}
+                        className={`border border-gray-300 bg-blue-50 p-2 text-center font-medium ${
+                          revIdx === revisoesEtapa.length - 1 && etapaIdx < ETAPAS.filter(e => !etapasExcluidas.includes(e)).length - 1 ? 'border-r-4 border-r-gray-400' : ''
+                        }`}
+                      >
+                        <div className="flex items-center justify-center gap-1">
+                          <span>{revisao}</span>
+                          <button
+                            onClick={() => handleRemoveRevisao(etapa, revisao)}
+                            className="text-red-500 hover:text-red-700 p-0.5"
+                            title={`Excluir revisão ${revisao} de ${etapa}`}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      </th>
+                    ))}
+                    <th className={`border border-gray-300 bg-green-50 p-1 text-center ${
+                      etapaIdx < ETAPAS.filter(e => !etapasExcluidas.includes(e)).length - 1 ? 'border-r-4 border-r-gray-400' : ''
+                    }`}>
+                      <button
+                        onClick={() => handleAddRevisao(etapa)}
+                        className="text-green-600 hover:text-green-800 p-0.5"
+                        title={`Adicionar revisão em ${etapa}`}
+                      >
+                        <Plus className="w-4 h-4" />
+                      </button>
                     </th>
-                  ))}
-                </React.Fragment>
-              ))}
+                  </React.Fragment>
+                );
+              })}
             </tr>
           </thead>
           <tbody>
             {linhas.length === 0 ? (
               <tr>
-                <td colSpan={revisoes.length * ETAPAS.length + 1} className="border border-gray-300 p-8 text-center text-gray-500">
+                <td colSpan={ETAPAS.filter(e => !etapasExcluidas.includes(e)).reduce((acc, etapa) => acc + (revisoesPorEtapa[etapa]?.length || 3) + 1, 1)} className="border border-gray-300 p-8 text-center text-gray-500">
                   Nenhum documento cadastrado neste empreendimento. Cadastre documentos na aba "Documentos" primeiro.
                 </td>
               </tr>
@@ -355,25 +402,31 @@ export default function CadastroTab({ empreendimento }) {
                     <td className="border border-gray-300 p-2 sticky left-0 bg-white z-10 font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
                       {doc?.arquivo || doc?.numero || 'Sem folha'}
                     </td>
-                    {ETAPAS.map((etapa, etapaIdx) => (
-                      <React.Fragment key={`${linha.id}-${etapa}`}>
-                        {revisoes.map((revisao, revIdx) => (
-                          <td 
-                            key={`${linha.id}-${etapa}-${revisao}`} 
-                            className={`border border-gray-300 p-1 ${
-                              revIdx === revisoes.length - 1 && etapaIdx < ETAPAS.length - 1 ? 'border-r-4 border-r-gray-400' : ''
-                            }`}
-                          >
-                            <Input
-                              type="date"
-                              value={getDataValue(linha, etapa, revisao)}
-                              onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
-                              className="h-8 text-xs w-full"
-                            />
-                          </td>
-                        ))}
-                      </React.Fragment>
-                    ))}
+                    {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, etapaIdx) => {
+                      const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+                      return (
+                        <React.Fragment key={`${linha.id}-${etapa}`}>
+                          {revisoesEtapa.map((revisao, revIdx) => (
+                            <td 
+                              key={`${linha.id}-${etapa}-${revisao}`} 
+                              className={`border border-gray-300 p-1 ${
+                                revIdx === revisoesEtapa.length - 1 && etapaIdx < ETAPAS.filter(e => !etapasExcluidas.includes(e)).length - 1 ? 'border-r-4 border-r-gray-400' : ''
+                              }`}
+                            >
+                              <Input
+                                type="date"
+                                value={getDataValue(linha, etapa, revisao)}
+                                onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
+                                className="h-8 text-xs w-full"
+                              />
+                            </td>
+                          ))}
+                          <td className={`border border-gray-300 p-1 ${
+                            etapaIdx < ETAPAS.filter(e => !etapasExcluidas.includes(e)).length - 1 ? 'border-r-4 border-r-gray-400' : ''
+                          }`}></td>
+                        </React.Fragment>
+                      );
+                    })}
                   </tr>
                 );
               })
@@ -381,6 +434,25 @@ export default function CadastroTab({ empreendimento }) {
           </tbody>
         </table>
       </div>
+
+      {etapasExcluidas.length > 0 && (
+        <div className="mt-4 bg-gray-50 border border-gray-300 rounded-lg p-4">
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">Etapas Excluídas</h3>
+          <div className="flex flex-wrap gap-2">
+            {etapasExcluidas.map(etapa => (
+              <Button
+                key={etapa}
+                variant="outline"
+                size="sm"
+                onClick={() => handleRestaurarEtapa(etapa)}
+                className="text-xs"
+              >
+                {etapa} - Clique para restaurar
+              </Button>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
