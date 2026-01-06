@@ -2,19 +2,20 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Save, Loader2, X } from "lucide-react";
+import { Plus, Trash2, Save, Loader2 } from "lucide-react";
 import { DataCadastro, Documento } from "@/entities/all";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { format } from "date-fns";
 
+const ETAPAS = [
+  "ESTUDO PRELIMINAR",
+  "ANTE-PROJETO",
+  "PROJETO BÁSICO",
+  "PROJETO EXECUTIVO",
+  "LIBERADO PARA OBRA"
+];
+
 export default function CadastroTab({ empreendimento }) {
-  const [etapas, setEtapas] = useState([
-    "ESTUDO PRELIMINAR",
-    "ANTE-PROJETO",
-    "PROJETO BÁSICO",
-    "PROJETO EXECUTIVO",
-    "LIBERADO PARA OBRA"
-  ]);
   const [revisoes, setRevisoes] = useState(["R00", "R01", "R02"]);
   const [linhas, setLinhas] = useState([]);
   const [documentos, setDocumentos] = useState([]);
@@ -141,48 +142,6 @@ export default function CadastroTab({ empreendimento }) {
     }));
   };
 
-  const handleAddEtapa = () => {
-    const novaEtapa = prompt("Digite o nome da nova etapa:");
-    if (!novaEtapa || !novaEtapa.trim()) return;
-    
-    const etapaTrimmed = novaEtapa.trim().toUpperCase();
-    if (etapas.includes(etapaTrimmed)) {
-      alert("Esta etapa já existe!");
-      return;
-    }
-    
-    setEtapas([...etapas, etapaTrimmed]);
-  };
-
-  const handleRemoveEtapa = (etapa) => {
-    if (!confirm(`Deseja excluir a etapa "${etapa}"? Todos os dados desta etapa serão perdidos.`)) return;
-    
-    setHasUnsavedChanges(true);
-    setEtapas(prev => prev.filter(e => e !== etapa));
-    
-    // Limpar dados da etapa removida
-    setLinhas(prev => prev.map(linha => {
-      const novasDatas = { ...linha.datas };
-      if (novasDatas[etapa]) {
-        delete novasDatas[etapa];
-      }
-      return { ...linha, datas: novasDatas };
-    }));
-  };
-
-  const handleRemoveRevisoesEtapa = (etapa) => {
-    if (!confirm(`Deseja excluir TODAS as revisões da etapa "${etapa}"? Os dados serão perdidos.`)) return;
-    
-    setHasUnsavedChanges(true);
-    setLinhas(prev => prev.map(linha => {
-      const novasDatas = { ...linha.datas };
-      if (novasDatas[etapa]) {
-        delete novasDatas[etapa];
-      }
-      return { ...linha, datas: novasDatas };
-    }));
-  };
-
   const handleUpdateData = (linhaId, etapa, revisao, valor) => {
     setHasUnsavedChanges(true);
     setLinhas(prev => prev.map(linha => {
@@ -289,15 +248,6 @@ export default function CadastroTab({ empreendimento }) {
     return linha.datas?.[etapa]?.[revisao] || '';
   };
 
-  // Verificar quais etapas têm dados
-  const etapasComDados = etapas.filter(etapa => {
-    return linhas.some(linha => {
-      const etapaData = linha.datas?.[etapa];
-      if (!etapaData) return false;
-      return Object.keys(etapaData).length > 0;
-    });
-  });
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -318,10 +268,6 @@ export default function CadastroTab({ empreendimento }) {
           )}
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleAddEtapa}>
-            <Plus className="w-4 h-4 mr-2" />
-            Adicionar Etapa
-          </Button>
           <Button variant="outline" onClick={handleAddRevisao}>
             <Plus className="w-4 h-4 mr-2" />
             Adicionar Revisão
@@ -352,45 +298,25 @@ export default function CadastroTab({ empreendimento }) {
           <thead>
             <tr>
               <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-10 w-48 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">Folha</th>
-              {etapasComDados.map((etapa) => (
+              {ETAPAS.map((etapa) => (
                 <th
                   key={etapa}
                   colSpan={revisoes.length}
-                  className="border border-gray-300 bg-blue-200 p-2 text-center font-semibold relative"
+                  className="border border-gray-300 bg-blue-200 p-2 text-center font-semibold"
                 >
-                  <div className="flex items-center justify-center gap-2">
-                    <div>
-                      Datas de cadastro:<br />{etapa}
-                    </div>
-                    <div className="absolute top-1 right-1 flex gap-1">
-                      <button
-                        onClick={() => handleRemoveRevisoesEtapa(etapa)}
-                        className="text-orange-500 hover:text-orange-700 bg-white rounded p-1"
-                        title={`Limpar todas as revisões de ${etapa}`}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => handleRemoveEtapa(etapa)}
-                        className="text-red-500 hover:text-red-700 bg-white rounded p-1"
-                        title={`Excluir etapa ${etapa}`}
-                      >
-                        <X className="w-4 h-4" />
-                      </button>
-                    </div>
-                  </div>
+                  Datas de cadastro:<br />{etapa}
                 </th>
               ))}
             </tr>
             <tr>
               <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]"></th>
-              {etapasComDados.map((etapa, etapaIdx) => (
+              {ETAPAS.map((etapa, etapaIdx) => (
                 <React.Fragment key={`rev-${etapa}`}>
                   {revisoes.map((revisao, revIdx) => (
                     <th
                       key={`${etapa}-${revisao}`}
                       className={`border border-gray-300 bg-blue-50 p-2 text-center font-medium ${
-                        revIdx === revisoes.length - 1 && etapaIdx < etapasComDados.length - 1 ? 'border-r-4 border-r-gray-400' : ''
+                        revIdx === revisoes.length - 1 && etapaIdx < ETAPAS.length - 1 ? 'border-r-4 border-r-gray-400' : ''
                       }`}
                     >
                       <div className="flex items-center justify-center gap-1">
@@ -412,7 +338,7 @@ export default function CadastroTab({ empreendimento }) {
           <tbody>
             {linhas.length === 0 ? (
               <tr>
-                <td colSpan={revisoes.length * etapasComDados.length + 1} className="border border-gray-300 p-8 text-center text-gray-500">
+                <td colSpan={revisoes.length * ETAPAS.length + 1} className="border border-gray-300 p-8 text-center text-gray-500">
                   Nenhum documento cadastrado neste empreendimento. Cadastre documentos na aba "Documentos" primeiro.
                 </td>
               </tr>
@@ -424,13 +350,13 @@ export default function CadastroTab({ empreendimento }) {
                     <td className="border border-gray-300 p-2 sticky left-0 bg-white z-10 font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
                       {doc?.arquivo || doc?.numero || 'Sem folha'}
                     </td>
-                    {etapasComDados.map((etapa, etapaIdx) => (
+                    {ETAPAS.map((etapa, etapaIdx) => (
                       <React.Fragment key={`${linha.id}-${etapa}`}>
                         {revisoes.map((revisao, revIdx) => (
                           <td 
                             key={`${linha.id}-${etapa}-${revisao}`} 
                             className={`border border-gray-300 p-1 ${
-                              revIdx === revisoes.length - 1 && etapaIdx < etapasComDados.length - 1 ? 'border-r-4 border-r-gray-400' : ''
+                              revIdx === revisoes.length - 1 && etapaIdx < ETAPAS.length - 1 ? 'border-r-4 border-r-gray-400' : ''
                             }`}
                           >
                             <Input
