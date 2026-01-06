@@ -349,7 +349,7 @@ export default function CadastroTab({ empreendimento }) {
                     <th
                       key={`${etapa}-${revisao}`}
                       className={`border border-gray-300 bg-blue-50 p-2 text-center font-medium ${
-                        revIdx === revisoes.length - 1 && etapaIdx < ETAPAS.length - 1 ? 'border-r-4 border-r-gray-400' : ''
+                        revIdx === revisoes.length - 1 && etapaIdx < etapasComDados.length - 1 ? 'border-r-4 border-r-gray-400' : ''
                       }`}
                     >
                       <div className="flex items-center justify-center gap-1">
@@ -371,7 +371,7 @@ export default function CadastroTab({ empreendimento }) {
           <tbody>
             {linhas.length === 0 ? (
               <tr>
-                <td colSpan={revisoes.length * ETAPAS.length + 1} className="border border-gray-300 p-8 text-center text-gray-500">
+                <td colSpan={revisoes.length * etapasComDados.length + 1} className="border border-gray-300 p-8 text-center text-gray-500">
                   Nenhum documento cadastrado neste empreendimento. Cadastre documentos na aba "Documentos" primeiro.
                 </td>
               </tr>
