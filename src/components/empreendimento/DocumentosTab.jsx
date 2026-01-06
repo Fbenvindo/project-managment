@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Plus, Search, Edit, Trash2, ChevronDown, ChevronRight, BarChart, CalendarDays, FileText, Loader2, Users2, CalendarIcon, Check } from "lucide-react";
+import { Plus, Search, Edit, Trash2, ChevronDown, ChevronRight, BarChart, CalendarDays, FileText, Loader2, Users2, CalendarIcon, Check, Upload, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import DocumentoForm from "./DocumentoForm";
 import { Link, useLocation } from "react-router-dom";
@@ -73,6 +73,9 @@ export default function DocumentosTab({
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [expandedRows, setExpandedRows] = useState({});
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [isImporting, setIsImporting] = useState(false);
   
   const [isDocEtapaModalOpen, setIsDocEtapaModal] = useState(false);
   const [documentForDocEtapaModal, setDocumentForDocEtapaModal] = useState(null);
@@ -587,6 +590,128 @@ export default function DocumentosTab({
     setShowForm(false);
     setEditingDocumento(null);
     setCargaDiariaCache({});
+  };
+
+  const handleExportTemplate = () => {
+    const csvContent = [
+      'numero,arquivo,descritivo,disciplina,subdisciplinas,escala,fator_dificuldade,pavimento_nome',
+      'ARQ-01,Planta Baixa Térreo,Planta baixa do pavimento térreo,Arquitetura,Planta|Compat,125,1,Térreo',
+      'ARQ-02,Planta Baixa 1º Pav,Planta baixa do primeiro pavimento,Arquitetura,Planta,125,1,1º Pavimento',
+    ].join('\n');
+    
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `template_documentos.csv`;
+    link.click();
+  };
+
+  const handleImport = async () => {
+    if (!importFile) {
+      alert('Selecione um arquivo para importar');
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const fileContent = await importFile.text();
+      const lines = fileContent.split('\n').filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        alert('Arquivo vazio ou inválido');
+        return;
+      }
+
+      const headers = lines[0].split(',').map(h => h.trim());
+      const requiredHeaders = ['numero', 'arquivo'];
+      const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
+      
+      if (missingHeaders.length > 0) {
+        alert(`Cabeçalhos obrigatórios faltando: ${missingHeaders.join(', ')}`);
+        return;
+      }
+
+      const documentosParaImportar = [];
+      const erros = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(',').map(v => v.trim());
+        const row = {};
+        headers.forEach((header, idx) => {
+          row[header] = values[idx] || '';
+        });
+
+        if (!row.numero || !row.arquivo) {
+          erros.push(`Linha ${i + 1}: Número e Arquivo são obrigatórios`);
+          continue;
+        }
+
+        const pavimento = row.pavimento_nome 
+          ? (pavimentos || []).find(p => p.nome?.toLowerCase() === row.pavimento_nome.toLowerCase())
+          : null;
+
+        const subdisciplinasArray = row.subdisciplinas 
+          ? row.subdisciplinas.split('|').map(s => s.trim()).filter(s => s)
+          : [];
+
+        documentosParaImportar.push({
+          numero: row.numero,
+          arquivo: row.arquivo,
+          descritivo: row.descritivo || '',
+          disciplina: row.disciplina || disciplinas[0]?.nome || '',
+          disciplinas: row.disciplina ? [row.disciplina] : [],
+          subdisciplinas: subdisciplinasArray,
+          escala: row.escala ? parseFloat(row.escala) : null,
+          fator_dificuldade: row.fator_dificuldade ? parseFloat(row.fator_dificuldade) : 1,
+          pavimento_id: pavimento?.id || null,
+          empreendimento_id: empreendimento.id,
+          tempo_total: 0,
+          tempo_concepcao: 0,
+          tempo_planejamento: 0,
+          tempo_estudo_preliminar: 0,
+          tempo_ante_projeto: 0,
+          tempo_projeto_basico: 0,
+          tempo_projeto_executivo: 0,
+          tempo_liberado_obra: 0
+        });
+      }
+
+      if (erros.length > 0) {
+        alert(`Erros encontrados:\n${erros.join('\n')}\n\nContinuar com os documentos válidos?`);
+      }
+
+      if (documentosParaImportar.length === 0) {
+        alert('Nenhum documento válido encontrado no arquivo');
+        return;
+      }
+
+      let sucessos = 0;
+      let falhas = 0;
+
+      for (const doc of documentosParaImportar) {
+        try {
+          await retryWithBackoff(() => Documento.create(doc), 3, 1000, `importDoc-${doc.numero}`);
+          sucessos++;
+        } catch (error) {
+          console.error(`Erro ao importar ${doc.numero}:`, error);
+          falhas++;
+        }
+      }
+
+      alert(`Importação concluída!\n\nSucessos: ${sucessos}\nFalhas: ${falhas}`);
+      
+      if (sucessos > 0) {
+        await onUpdate();
+        setShowImportModal(false);
+        setImportFile(null);
+      }
+
+    } catch (error) {
+      console.error('Erro na importação:', error);
+      alert(`Erro ao processar arquivo: ${error.message}`);
+    } finally {
+      setIsImporting(false);
+    }
   };
 
   const handleEdit = (doc) => {
@@ -1796,13 +1921,23 @@ export default function DocumentosTab({
             <FileText className="w-5 h-5 text-blue-600" />
             Documentos ({filteredDocumentos.length})
           </CardTitle>
-          <Button
-            onClick={() => setShowForm(true)}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Documento
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setShowImportModal(true)}
+              className="border-green-500 text-green-600 hover:bg-green-50"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Importar
+            </Button>
+            <Button
+              onClick={() => setShowForm(true)}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Documento
+            </Button>
+          </div>
         </CardHeader>
         <CardContent className="p-6">
           {etapaParaPlanejamento !== "todas" && (
@@ -1958,6 +2093,82 @@ export default function DocumentosTab({
           onClose={handleCloseDocEtapaModal}
           onSuccess={handleSaveDocEtapaPlanning}
         />
+      )}
+
+      {showImportModal && (
+        <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Importar Documentos</DialogTitle>
+            </DialogHeader>
+            
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-semibold text-blue-900 mb-2">📋 Instruções</h3>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• Envie um arquivo CSV com os documentos</li>
+                  <li>• Colunas obrigatórias: <code className="bg-white px-1 rounded">numero</code>, <code className="bg-white px-1 rounded">arquivo</code></li>
+                  <li>• Colunas opcionais: descritivo, disciplina, subdisciplinas, escala, fator_dificuldade, pavimento_nome</li>
+                  <li>• Subdisciplinas devem ser separadas por <code className="bg-white px-1 rounded">|</code> (ex: Planta|Compat)</li>
+                  <li>• Baixe o template para ver um exemplo</li>
+                </ul>
+              </div>
+
+              <Button
+                variant="outline"
+                onClick={handleExportTemplate}
+                className="w-full"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Baixar Template CSV
+              </Button>
+
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                  className="w-full"
+                />
+                {importFile && (
+                  <p className="text-sm text-green-600 mt-2">
+                    ✓ Arquivo selecionado: {importFile.name}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowImportModal(false);
+                    setImportFile(null);
+                  }}
+                  disabled={isImporting}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleImport}
+                  disabled={!importFile || isImporting}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {isImporting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Importando...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Importar
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       )}
     </div>
   );
