@@ -1,7 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-
+import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Save, Loader2 } from "lucide-react";
 import { DataCadastro, Documento } from "@/entities/all";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
@@ -21,12 +21,33 @@ export default function CadastroTab({ empreendimento }) {
   const [documentos, setDocumentos] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const autoSaveTimeoutRef = useRef(null);
 
   useEffect(() => {
     if (empreendimento?.id && linhas.length === 0) {
       loadData();
     }
   }, [empreendimento?.id]);
+
+  // Auto-save com debounce
+  useEffect(() => {
+    if (hasUnsavedChanges && !isLoading) {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+      
+      autoSaveTimeoutRef.current = setTimeout(() => {
+        handleSave(true); // true = silent save
+      }, 3000); // salva após 3 segundos de inatividade
+    }
+    
+    return () => {
+      if (autoSaveTimeoutRef.current) {
+        clearTimeout(autoSaveTimeoutRef.current);
+      }
+    };
+  }, [hasUnsavedChanges, linhas]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -127,6 +148,7 @@ export default function CadastroTab({ empreendimento }) {
   };
 
   const handleUpdateData = (linhaId, etapa, revisao, valor) => {
+    setHasUnsavedChanges(true);
     setLinhas(prev => prev.map(linha => {
       if (linha.id !== linhaId) return linha;
       
@@ -142,7 +164,7 @@ export default function CadastroTab({ empreendimento }) {
 
 
 
-  const handleSave = async () => {
+  const handleSave = async (silent = false) => {
     setIsSaving(true);
     try {
       // Filtrar apenas linhas que têm dados para salvar
@@ -208,14 +230,20 @@ export default function CadastroTab({ empreendimento }) {
         return linha;
       }));
 
-      if (errorCount > 0) {
-        alert(`Salvamento parcial: ${successCount} sucesso, ${errorCount} erros.`);
-      } else {
-        alert(`Dados salvos com sucesso! ${successCount} linhas atualizadas.`);
+      setHasUnsavedChanges(false);
+
+      if (!silent) {
+        if (errorCount > 0) {
+          alert(`Salvamento parcial: ${successCount} sucesso, ${errorCount} erros.`);
+        } else {
+          alert(`Dados salvos com sucesso! ${successCount} linhas atualizadas.`);
+        }
       }
     } catch (error) {
       console.error('Erro crítico ao salvar:', error);
-      alert(`Erro ao salvar dados: ${error.message || 'Erro desconhecido'}`);
+      if (!silent) {
+        alert(`Erro ao salvar dados: ${error.message || 'Erro desconhecido'}`);
+      }
     } finally {
       setIsSaving(false);
     }
@@ -236,7 +264,14 @@ export default function CadastroTab({ empreendimento }) {
   return (
     <div className="space-y-4 relative">
       <div className="flex justify-between items-center">
-        <h2 className="text-xl font-bold text-gray-800">Datas de Cadastro</h2>
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-bold text-gray-800">Datas de Cadastro</h2>
+          {hasUnsavedChanges && (
+            <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">
+              Salvando automaticamente...
+            </Badge>
+          )}
+        </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={handleAddRevisao}>
             <Plus className="w-4 h-4 mr-2" />
