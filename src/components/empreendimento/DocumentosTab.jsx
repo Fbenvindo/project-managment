@@ -595,10 +595,10 @@ export default function DocumentosTab({
 
   const handleExportTemplate = () => {
     const csvContent = [
-      'numero,arquivo,descritivo,pavimento_nome,disciplinas,subdisciplinas,escala,fator_dificuldade',
-      'ARQ-01,Planta Baixa Terreo,Planta baixa do pavimento terreo com layout de moveis,Terreo,Arquitetura,Planta|Compat,125,1',
-      'ARQ-02,Planta Baixa 1º Pav,Planta baixa do primeiro pavimento,1º Pavimento,Arquitetura,Planta,125,1.2',
-      'HID-01,Planta Hidraulica Terreo,Projeto hidraulico do terreo,Terreo,Hidraulica,Projeto,100,1',
+      'numero;arquivo;descritivo;pavimento_nome;disciplinas;subdisciplinas;escala;fator_dificuldade',
+      'ARQ-01;Planta Baixa Terreo;Planta baixa do pavimento terreo com layout de moveis;Terreo;Arquitetura;Planta|Compat;125;1',
+      'ARQ-02;Planta Baixa 1º Pav;Planta baixa do primeiro pavimento;1º Pavimento;Arquitetura;Planta;125;1.2',
+      'HID-01;Planta Hidraulica Terreo;Projeto hidraulico do terreo;Terreo;Hidraulica;Projeto;100;1',
     ].join('\n');
     
     // Adicionar BOM UTF-8 para Excel reconhecer encoding corretamente
@@ -639,7 +639,7 @@ export default function DocumentosTab({
       const erros = [];
 
       for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(',').map(v => v.trim());
+        const values = lines[i].split(separator).map(v => v.trim());
         const row = {};
         headers.forEach((header, idx) => {
           row[header] = values[idx] || '';
