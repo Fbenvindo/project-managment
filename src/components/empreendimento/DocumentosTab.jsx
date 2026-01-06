@@ -626,7 +626,9 @@ export default function DocumentosTab({
         return;
       }
 
-      const headers = lines[0].split(',').map(h => h.trim());
+      // Detectar separador (ponto-e-vírgula ou vírgula)
+      const separator = lines[0].includes(';') ? ';' : ',';
+      const headers = lines[0].split(separator).map(h => h.trim());
       const requiredHeaders = ['numero', 'arquivo'];
       const missingHeaders = requiredHeaders.filter(h => !headers.includes(h));
       
