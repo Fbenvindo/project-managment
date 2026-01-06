@@ -143,31 +143,65 @@ export default function CadastroTab({ empreendimento }) {
 
 
 
-  const handleAddRevisao = () => {
-    const ultimaRevisao = revisoes[revisoes.length - 1];
+  const handleAddRevisao = (etapa) => {
+    const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+    const ultimaRevisao = revisoesEtapa[revisoesEtapa.length - 1];
     const numero = parseInt(ultimaRevisao.substring(1)) + 1;
     const novaRevisao = `R${String(numero).padStart(2, '0')}`;
-    setRevisoes([...revisoes, novaRevisao]);
+    
+    setHasUnsavedChanges(true);
+    setRevisoesPorEtapa(prev => ({
+      ...prev,
+      [etapa]: [...(prev[etapa] || []), novaRevisao]
+    }));
   };
 
-  const handleRemoveRevisao = (revisao) => {
-    if (revisoes.length <= 1) {
-      alert('Deve haver ao menos uma revisão.');
-      return;
-    }
+  const handleRemoveRevisao = (etapa, revisao) => {
+    if (!confirm(`Deseja excluir a revisão ${revisao} da etapa ${etapa}? Os dados desta revisão serão perdidos.`)) return;
     
-    if (!confirm(`Deseja excluir a revisão ${revisao}? Os dados desta revisão serão perdidos.`)) return;
+    setHasUnsavedChanges(true);
+    setRevisoesPorEtapa(prev => ({
+      ...prev,
+      [etapa]: prev[etapa].filter(r => r !== revisao)
+    }));
     
-    setRevisoes(prev => prev.filter(r => r !== revisao));
-    
-    // Limpar dados da revisão removida
+    // Limpar dados da revisão removida apenas desta etapa
     setLinhas(prev => prev.map(linha => {
       const novasDatas = { ...linha.datas };
-      Object.keys(novasDatas).forEach(etapa => {
-        if (novasDatas[etapa] && novasDatas[etapa][revisao]) {
-          delete novasDatas[etapa][revisao];
-        }
-      });
+      if (novasDatas[etapa] && novasDatas[etapa][revisao]) {
+        delete novasDatas[etapa][revisao];
+      }
+      return { ...linha, datas: novasDatas };
+    }));
+  };
+
+  const handleExcluirEtapa = (etapa) => {
+    if (!confirm(`Deseja excluir a etapa ${etapa}? Você poderá restaurá-la depois se necessário.`)) return;
+    
+    setHasUnsavedChanges(true);
+    setEtapasExcluidas(prev => [...prev, etapa]);
+    
+    // Marcar etapa como excluída nas linhas
+    setLinhas(prev => prev.map(linha => {
+      const novasDatas = { ...linha.datas };
+      if (!novasDatas[etapa]) {
+        novasDatas[etapa] = {};
+      }
+      novasDatas[etapa]._excluida = true;
+      return { ...linha, datas: novasDatas };
+    }));
+  };
+
+  const handleRestaurarEtapa = (etapa) => {
+    setHasUnsavedChanges(true);
+    setEtapasExcluidas(prev => prev.filter(e => e !== etapa));
+    
+    // Remover marcador de exclusão
+    setLinhas(prev => prev.map(linha => {
+      const novasDatas = { ...linha.datas };
+      if (novasDatas[etapa] && novasDatas[etapa]._excluida) {
+        delete novasDatas[etapa]._excluida;
+      }
       return { ...linha, datas: novasDatas };
     }));
   };
