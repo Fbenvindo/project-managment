@@ -261,6 +261,15 @@ export default function CadastroTab({ empreendimento }) {
     return linha.datas?.[etapa]?.[revisao] || '';
   };
 
+  // Verificar quais etapas têm dados
+  const etapasComDados = ETAPAS.filter(etapa => {
+    return linhas.some(linha => {
+      const etapaData = linha.datas?.[etapa];
+      if (!etapaData) return false;
+      return Object.keys(etapaData).length > 0;
+    });
+  });
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -311,7 +320,7 @@ export default function CadastroTab({ empreendimento }) {
           <thead>
             <tr>
               <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-10 w-48 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">Folha</th>
-              {ETAPAS.map((etapa) => (
+              {etapasComDados.map((etapa) => (
                 <th
                   key={etapa}
                   colSpan={revisoes.length}
@@ -334,7 +343,7 @@ export default function CadastroTab({ empreendimento }) {
             </tr>
             <tr>
               <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-10 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]"></th>
-              {ETAPAS.map((etapa, etapaIdx) => (
+              {etapasComDados.map((etapa, etapaIdx) => (
                 <React.Fragment key={`rev-${etapa}`}>
                   {revisoes.map((revisao, revIdx) => (
                     <th
@@ -374,13 +383,13 @@ export default function CadastroTab({ empreendimento }) {
                     <td className="border border-gray-300 p-2 sticky left-0 bg-white z-10 font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
                       {doc?.arquivo || doc?.numero || 'Sem folha'}
                     </td>
-                    {ETAPAS.map((etapa, etapaIdx) => (
+                    {etapasComDados.map((etapa, etapaIdx) => (
                       <React.Fragment key={`${linha.id}-${etapa}`}>
                         {revisoes.map((revisao, revIdx) => (
                           <td 
                             key={`${linha.id}-${etapa}-${revisao}`} 
                             className={`border border-gray-300 p-1 ${
-                              revIdx === revisoes.length - 1 && etapaIdx < ETAPAS.length - 1 ? 'border-r-4 border-r-gray-400' : ''
+                              revIdx === revisoes.length - 1 && etapaIdx < etapasComDados.length - 1 ? 'border-r-4 border-r-gray-400' : ''
                             }`}
                           >
                             <Input
