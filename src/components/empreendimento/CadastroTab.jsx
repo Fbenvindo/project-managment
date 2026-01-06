@@ -145,10 +145,19 @@ export default function CadastroTab({ empreendimento }) {
 
   const handleAddRevisao = (etapa) => {
     const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+    if (revisoesEtapa.length === 0) {
+      // Se não há revisões, começar com R00
+      setHasUnsavedChanges(true);
+      setRevisoesPorEtapa(prev => ({
+        ...prev,
+        [etapa]: ['R00']
+      }));
+      return;
+    }
     const ultimaRevisao = revisoesEtapa[revisoesEtapa.length - 1];
     const numero = parseInt(ultimaRevisao.substring(1)) + 1;
     const novaRevisao = `R${String(numero).padStart(2, '0')}`;
-    
+
     setHasUnsavedChanges(true);
     setRevisoesPorEtapa(prev => ({
       ...prev,
