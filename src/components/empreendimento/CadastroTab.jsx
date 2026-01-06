@@ -7,15 +7,14 @@ import { DataCadastro, Documento } from "@/entities/all";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { format } from "date-fns";
 
-const ETAPAS = [
-  "ESTUDO PRELIMINAR",
-  "ANTE-PROJETO",
-  "PROJETO BÁSICO",
-  "PROJETO EXECUTIVO",
-  "LIBERADO PARA OBRA"
-];
-
 export default function CadastroTab({ empreendimento }) {
+  const [etapas, setEtapas] = useState([
+    "ESTUDO PRELIMINAR",
+    "ANTE-PROJETO",
+    "PROJETO BÁSICO",
+    "PROJETO EXECUTIVO",
+    "LIBERADO PARA OBRA"
+  ]);
   const [revisoes, setRevisoes] = useState(["R00", "R01", "R02"]);
   const [linhas, setLinhas] = useState([]);
   const [documentos, setDocumentos] = useState([]);
@@ -142,6 +141,35 @@ export default function CadastroTab({ empreendimento }) {
     }));
   };
 
+  const handleAddEtapa = () => {
+    const novaEtapa = prompt("Digite o nome da nova etapa:");
+    if (!novaEtapa || !novaEtapa.trim()) return;
+    
+    const etapaTrimmed = novaEtapa.trim().toUpperCase();
+    if (etapas.includes(etapaTrimmed)) {
+      alert("Esta etapa já existe!");
+      return;
+    }
+    
+    setEtapas([...etapas, etapaTrimmed]);
+  };
+
+  const handleRemoveEtapa = (etapa) => {
+    if (!confirm(`Deseja excluir a etapa "${etapa}"? Todos os dados desta etapa serão perdidos.`)) return;
+    
+    setHasUnsavedChanges(true);
+    setEtapas(prev => prev.filter(e => e !== etapa));
+    
+    // Limpar dados da etapa removida
+    setLinhas(prev => prev.map(linha => {
+      const novasDatas = { ...linha.datas };
+      if (novasDatas[etapa]) {
+        delete novasDatas[etapa];
+      }
+      return { ...linha, datas: novasDatas };
+    }));
+  };
+
   const handleRemoveRevisoesEtapa = (etapa) => {
     if (!confirm(`Deseja excluir TODAS as revisões da etapa "${etapa}"? Os dados serão perdidos.`)) return;
     
@@ -262,7 +290,7 @@ export default function CadastroTab({ empreendimento }) {
   };
 
   // Verificar quais etapas têm dados
-  const etapasComDados = ETAPAS.filter(etapa => {
+  const etapasComDados = etapas.filter(etapa => {
     return linhas.some(linha => {
       const etapaData = linha.datas?.[etapa];
       if (!etapaData) return false;
@@ -290,6 +318,10 @@ export default function CadastroTab({ empreendimento }) {
           )}
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={handleAddEtapa}>
+            <Plus className="w-4 h-4 mr-2" />
+            Adicionar Etapa
+          </Button>
           <Button variant="outline" onClick={handleAddRevisao}>
             <Plus className="w-4 h-4 mr-2" />
             Adicionar Revisão
@@ -330,13 +362,22 @@ export default function CadastroTab({ empreendimento }) {
                     <div>
                       Datas de cadastro:<br />{etapa}
                     </div>
-                    <button
-                      onClick={() => handleRemoveRevisoesEtapa(etapa)}
-                      className="absolute top-1 right-1 text-red-500 hover:text-red-700 bg-white rounded p-1"
-                      title={`Excluir todas as revisões de ${etapa}`}
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
+                    <div className="absolute top-1 right-1 flex gap-1">
+                      <button
+                        onClick={() => handleRemoveRevisoesEtapa(etapa)}
+                        className="text-orange-500 hover:text-orange-700 bg-white rounded p-1"
+                        title={`Limpar todas as revisões de ${etapa}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => handleRemoveEtapa(etapa)}
+                        className="text-red-500 hover:text-red-700 bg-white rounded p-1"
+                        title={`Excluir etapa ${etapa}`}
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   </div>
                 </th>
               ))}
