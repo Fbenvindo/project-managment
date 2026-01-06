@@ -28,6 +28,7 @@ export default function DocumentoForm({
     descritivo: "",
     pavimento_id: null,
     disciplina: "",
+    disciplinas: [],
     subdisciplinas: [],
     escala: "",
     fator_dificuldade: 1,
@@ -51,6 +52,7 @@ export default function DocumentoForm({
         descritivo: doc.descritivo || "",
         pavimento_id: doc.pavimento_id || null,
         disciplina: doc.disciplina || "",
+        disciplinas: doc.disciplinas || (doc.disciplina ? [doc.disciplina] : []),
         subdisciplinas: doc.subdisciplinas || [],
         escala: doc.escala || "",
         fator_dificuldade: doc.fator_dificuldade || 1,
@@ -101,7 +103,7 @@ export default function DocumentoForm({
   // Cálculo dos tempos totais por etapa
   const temposCalculados = useMemo(() => {
     // MODIFICADO: Pavimento é opcional agora, não causa early exit
-    if (!formData.disciplina || formData.subdisciplinas.length === 0) {
+    if (formData.disciplinas.length === 0 || formData.subdisciplinas.length === 0) {
       return {
         total: 0,
         concepcao: 0,
@@ -118,7 +120,7 @@ export default function DocumentoForm({
     const areaPavimento = pavimento ? Number(pavimento.area) : null;
 
     console.log(`\n📊 [DocumentoForm] Calculando tempos para documento ${doc?.id || 'NOVO'}...`);
-    console.log(`   Disciplina: ${formData.disciplina}`);
+    console.log(`   Disciplinas: ${formData.disciplinas.join(', ')}`);
     console.log(`   Subdisciplinas: ${formData.subdisciplinas.join(', ')}`);
 
     // **CORRIGIDO**: Separar exclusões globais de exclusões específicas de documentos
@@ -130,7 +132,7 @@ export default function DocumentoForm({
         return false;
       }
 
-      const disciplinaMatch = ativ.disciplina === formData.disciplina;
+      const disciplinaMatch = formData.disciplinas.includes(ativ.disciplina);
       const subdisciplinaMatch = formData.subdisciplinas.includes(ativ.subdisciplina);
 
       if (!disciplinaMatch || !subdisciplinaMatch) {
@@ -291,7 +293,7 @@ export default function DocumentoForm({
     console.log('');
 
     return tempos;
-  }, [formData.disciplina, formData.subdisciplinas, formData.fator_dificuldade, formData.pavimento_id, allAtividades, pavimentos, etapaOverridesMap, tempoOverridesMap, empreendimentoId, doc]);
+  }, [formData.disciplinas, formData.subdisciplinas, formData.fator_dificuldade, formData.pavimento_id, allAtividades, pavimentos, etapaOverridesMap, tempoOverridesMap, empreendimentoId, doc]);
 
   useEffect(() => {
     if (temposCalculados) {
@@ -310,22 +312,22 @@ export default function DocumentoForm({
   }, [temposCalculados]);
 
   const subdisciplinasDisponiveis = useMemo(() => {
-    if (!formData.disciplina) return [];
-    const actividadesDaDisciplina = allAtividades.filter(ativ => 
-      ativ.disciplina === formData.disciplina && !ativ.empreendimento_id
+    if (formData.disciplinas.length === 0) return [];
+    const actividadesDasDisciplinas = allAtividades.filter(ativ => 
+      formData.disciplinas.includes(ativ.disciplina) && !ativ.empreendimento_id
     );
     const subdisciplinas = new Set();
-    actividadesDaDisciplina.forEach(ativ => {
+    actividadesDasDisciplinas.forEach(ativ => {
       if (ativ.subdisciplina) subdisciplinas.add(ativ.subdisciplina);
     });
     return Array.from(subdisciplinas).sort();
-  }, [formData.disciplina, allAtividades]);
+  }, [formData.disciplinas, allAtividades]);
 
   const validate = () => {
     const newErrors = {};
     if (!formData.numero.trim()) newErrors.numero = "Número é obrigatório";
     if (!formData.arquivo.trim()) newErrors.arquivo = "Nome do arquivo é obrigatório";
-    if (!formData.disciplina) newErrors.disciplina = "Disciplina é obrigatória";
+    if (formData.disciplinas.length === 0) newErrors.disciplinas = "Selecione ao menos uma disciplina";
     if (formData.subdisciplinas.length === 0) newErrors.subdisciplinas = "Selecione ao menos uma subdisciplina";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -357,7 +359,8 @@ export default function DocumentoForm({
         arquivo: formData.arquivo.trim(),
         descritivo: formData.descritivo.trim(),
         pavimento_id: formData.pavimento_id,
-        disciplina: formData.disciplina,
+        disciplina: formData.disciplinas[0] || "",
+        disciplinas: formData.disciplinas,
         subdisciplinas: formData.subdisciplinas,
         escala: formData.escala ? Number(formData.escala) : null,
         fator_dificuldade: Number(formData.fator_dificuldade),
@@ -497,22 +500,28 @@ export default function DocumentoForm({
               </p>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="disciplina">Disciplina *</Label>
-              <Select 
-                value={formData.disciplina} 
-                onValueChange={(value) => setFormData({...formData, disciplina: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a disciplina" />
-                </SelectTrigger>
-                <SelectContent>
-                  {disciplinas.map(d => (
-                    <SelectItem key={d.id} value={d.nome}>{d.nome}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {errors.disciplina && <p className="text-red-500 text-sm mt-1">{errors.disciplina}</p>}
+            <div className="space-y-2 md:col-span-2">
+              <Label>Disciplinas * (selecione até 2)</Label>
+              <div className="flex flex-wrap gap-2 p-3 border rounded-md bg-gray-50">
+                {disciplinas.map(d => (
+                  <div key={d.id} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`disc-${d.id}`}
+                      checked={formData.disciplinas.includes(d.nome)}
+                      onCheckedChange={(checked) => {
+                        if (checked && formData.disciplinas.length < 2) {
+                          setFormData({...formData, disciplinas: [...formData.disciplinas, d.nome], subdisciplinas: []});
+                        } else if (!checked) {
+                          setFormData({...formData, disciplinas: formData.disciplinas.filter(disc => disc !== d.nome), subdisciplinas: []});
+                        }
+                      }}
+                      disabled={!formData.disciplinas.includes(d.nome) && formData.disciplinas.length >= 2}
+                    />
+                    <Label htmlFor={`disc-${d.id}`} className="cursor-pointer">{d.nome}</Label>
+                  </div>
+                ))}
+              </div>
+              {errors.disciplinas && <p className="text-red-500 text-sm mt-1">{errors.disciplinas}</p>}
             </div>
 
             <div className="space-y-2">
@@ -542,7 +551,7 @@ export default function DocumentoForm({
             </div>
           </div>
 
-          {formData.disciplina && subdisciplinasDisponiveis.length > 0 && (
+          {formData.disciplinas.length > 0 && subdisciplinasDisponiveis.length > 0 && (
             <div>
               <Label>Subdisciplinas * (selecione ao menos uma)</Label>
               <div className="flex flex-wrap gap-2 mt-2 p-3 border rounded-md bg-gray-50">
