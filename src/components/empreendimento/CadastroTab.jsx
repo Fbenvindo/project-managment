@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Save, Loader2 } from "lucide-react";
+import { Plus, Trash2, Save, Loader2, X } from "lucide-react";
 import { DataCadastro, Documento } from "@/entities/all";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { format } from "date-fns";
@@ -138,6 +138,19 @@ export default function CadastroTab({ empreendimento }) {
           delete novasDatas[etapa][revisao];
         }
       });
+      return { ...linha, datas: novasDatas };
+    }));
+  };
+
+  const handleRemoveRevisoesEtapa = (etapa) => {
+    if (!confirm(`Deseja excluir TODAS as revisões da etapa "${etapa}"? Os dados serão perdidos.`)) return;
+    
+    setHasUnsavedChanges(true);
+    setLinhas(prev => prev.map(linha => {
+      const novasDatas = { ...linha.datas };
+      if (novasDatas[etapa]) {
+        delete novasDatas[etapa];
+      }
       return { ...linha, datas: novasDatas };
     }));
   };
@@ -302,9 +315,20 @@ export default function CadastroTab({ empreendimento }) {
                 <th
                   key={etapa}
                   colSpan={revisoes.length}
-                  className="border border-gray-300 bg-blue-200 p-2 text-center font-semibold"
+                  className="border border-gray-300 bg-blue-200 p-2 text-center font-semibold relative"
                 >
-                  Datas de cadastro:<br />{etapa}
+                  <div className="flex items-center justify-center gap-2">
+                    <div>
+                      Datas de cadastro:<br />{etapa}
+                    </div>
+                    <button
+                      onClick={() => handleRemoveRevisoesEtapa(etapa)}
+                      className="absolute top-1 right-1 text-red-500 hover:text-red-700 bg-white rounded p-1"
+                      title={`Excluir todas as revisões de ${etapa}`}
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
                 </th>
               ))}
             </tr>
