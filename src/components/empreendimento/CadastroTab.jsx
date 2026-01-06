@@ -302,7 +302,7 @@ export default function CadastroTab({ empreendimento }) {
         <table className="w-full border-collapse text-sm">
           <thead>
             <tr>
-              <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-10 w-48">Folha</th>
+              <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-20 w-48">Folha</th>
               {ETAPAS.map((etapa) => (
                 <th
                   key={etapa}
@@ -314,7 +314,7 @@ export default function CadastroTab({ empreendimento }) {
               ))}
             </tr>
             <tr>
-              <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-10"></th>
+              <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-20"></th>
               {ETAPAS.map((etapa, etapaIdx) => (
                 <React.Fragment key={`rev-${etapa}`}>
                   {revisoes.map((revisao, revIdx) => (
@@ -352,7 +352,7 @@ export default function CadastroTab({ empreendimento }) {
                 const doc = documentos.find(d => d.id === linha.documento_id);
                 return (
                   <tr key={linha.id} className="hover:bg-gray-50">
-                    <td className="border border-gray-300 p-2 sticky left-0 bg-white z-10 font-medium">
+                    <td className="border border-gray-300 p-2 sticky left-0 bg-white z-10 font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]">
                       {doc?.arquivo || doc?.numero || 'Sem folha'}
                     </td>
                     {ETAPAS.map((etapa, etapaIdx) => (
