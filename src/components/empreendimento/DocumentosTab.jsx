@@ -595,15 +595,16 @@ export default function DocumentosTab({
 
   const handleExportTemplate = () => {
     const csvContent = [
-      'numero,arquivo,descritivo,disciplina,subdisciplinas,escala,fator_dificuldade,pavimento_nome',
-      'ARQ-01,Planta Baixa Térreo,Planta baixa do pavimento térreo,Arquitetura,Planta|Compat,125,1,Térreo',
-      'ARQ-02,Planta Baixa 1º Pav,Planta baixa do primeiro pavimento,Arquitetura,Planta,125,1,1º Pavimento',
+      'numero,arquivo,descritivo,pavimento_nome,disciplinas,subdisciplinas,escala,fator_dificuldade',
+      'ARQ-01,Planta Baixa Térreo,Planta baixa do pavimento térreo com layout de móveis,Térreo,Arquitetura,Planta|Compat,125,1',
+      'ARQ-02,Planta Baixa 1º Pav,Planta baixa do primeiro pavimento,1º Pavimento,Arquitetura,Planta,125,1.2',
+      'HID-01,Planta Hidráulica Térreo,Projeto hidráulico do térreo,Térreo,Hidráulica,Projeto,100,1',
     ].join('\n');
     
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `template_documentos.csv`;
+    link.download = `template_documentos_${empreendimento.nome.replace(/\s+/g, '_')}.csv`;
     link.click();
   };
 
@@ -647,20 +648,36 @@ export default function DocumentosTab({
           continue;
         }
 
+        // Buscar pavimento por nome
         const pavimento = row.pavimento_nome 
           ? (pavimentos || []).find(p => p.nome?.toLowerCase() === row.pavimento_nome.toLowerCase())
           : null;
 
+        // Processar disciplinas (separadas por |)
+        const disciplinasArray = row.disciplinas 
+          ? row.disciplinas.split('|').map(s => s.trim()).filter(s => s)
+          : [];
+
+        // Processar subdisciplinas (separadas por |)
         const subdisciplinasArray = row.subdisciplinas 
           ? row.subdisciplinas.split('|').map(s => s.trim()).filter(s => s)
           : [];
+
+        // Validar se disciplinas existem no sistema
+        const disciplinasValidas = disciplinasArray.filter(d => 
+          disciplinas.some(disc => disc.nome === d)
+        );
+
+        if (disciplinasValidas.length === 0 && disciplinasArray.length > 0) {
+          erros.push(`Linha ${i + 1}: Disciplinas "${disciplinasArray.join(', ')}" não encontradas`);
+        }
 
         documentosParaImportar.push({
           numero: row.numero,
           arquivo: row.arquivo,
           descritivo: row.descritivo || '',
-          disciplina: row.disciplina || disciplinas[0]?.nome || '',
-          disciplinas: row.disciplina ? [row.disciplina] : [],
+          disciplina: disciplinasValidas[0] || disciplinas[0]?.nome || '',
+          disciplinas: disciplinasValidas.length > 0 ? disciplinasValidas.slice(0, 2) : [],
           subdisciplinas: subdisciplinasArray,
           escala: row.escala ? parseFloat(row.escala) : null,
           fator_dificuldade: row.fator_dificuldade ? parseFloat(row.fator_dificuldade) : 1,
@@ -2109,9 +2126,10 @@ export default function DocumentosTab({
                 <ul className="text-sm text-blue-800 space-y-1">
                   <li>• Envie um arquivo CSV com os documentos</li>
                   <li>• Colunas obrigatórias: <code className="bg-white px-1 rounded">numero</code>, <code className="bg-white px-1 rounded">arquivo</code></li>
-                  <li>• Colunas opcionais: descritivo, disciplina, subdisciplinas, escala, fator_dificuldade, pavimento_nome</li>
-                  <li>• Subdisciplinas devem ser separadas por <code className="bg-white px-1 rounded">|</code> (ex: Planta|Compat)</li>
-                  <li>• Baixe o template para ver um exemplo</li>
+                  <li>• Colunas opcionais: <code className="bg-white px-1 rounded">descritivo</code>, <code className="bg-white px-1 rounded">pavimento_nome</code>, <code className="bg-white px-1 rounded">disciplinas</code>, <code className="bg-white px-1 rounded">subdisciplinas</code>, <code className="bg-white px-1 rounded">escala</code>, <code className="bg-white px-1 rounded">fator_dificuldade</code></li>
+                  <li>• Disciplinas e subdisciplinas devem ser separadas por <code className="bg-white px-1 rounded">|</code> (ex: Arquitetura|Hidráulica)</li>
+                  <li>• O pavimento_nome deve corresponder ao nome exato de um pavimento já cadastrado</li>
+                  <li>• Baixe o template para ver exemplos completos</li>
                 </ul>
               </div>
 
