@@ -2,7 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Save, Loader2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Plus, Trash2, Save, Loader2, Upload, Download } from "lucide-react";
 import { DataCadastro, Documento } from "@/entities/all";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { format } from "date-fns";
@@ -26,6 +27,9 @@ export default function CadastroTab({ empreendimento }) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const autoSaveTimeoutRef = useRef(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [isImporting, setIsImporting] = useState(false);
 
   useEffect(() => {
     if (empreendimento?.id && linhas.length === 0) {
@@ -327,6 +331,175 @@ export default function CadastroTab({ empreendimento }) {
     return linha.datas?.[etapa]?.[revisao] || '';
   };
 
+  const handleExportTemplate = () => {
+    const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
+    
+    // Criar cabeçalhos dinamicamente
+    let headers = ['folha'];
+    etapasVisiveis.forEach(etapa => {
+      const revisoes = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+      revisoes.forEach(rev => {
+        headers.push(`${etapa}_${rev}`);
+      });
+    });
+    
+    const csvContent = [
+      headers.join(';'),
+      // Linha de exemplo
+      [
+        'ARQ-01',
+        ...etapasVisiveis.flatMap(etapa => 
+          (revisoesPorEtapa[etapa] || DEFAULT_REVISOES).map(() => '2025-01-15')
+        )
+      ].join(';')
+    ].join('\n');
+    
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `template_cadastro_${empreendimento.nome.replace(/\s+/g, '_')}.csv`;
+    link.click();
+  };
+
+  const handleImport = async () => {
+    if (!importFile) {
+      alert('Selecione um arquivo para importar');
+      return;
+    }
+
+    setIsImporting(true);
+    try {
+      const fileContent = await importFile.text();
+      const lines = fileContent.split('\n').filter(line => line.trim());
+      
+      if (lines.length < 2) {
+        alert('Arquivo vazio ou inválido');
+        return;
+      }
+
+      const separator = lines[0].includes(';') ? ';' : ',';
+      const headers = lines[0].split(separator).map(h => h.trim());
+      
+      if (!headers.includes('folha')) {
+        alert('Cabeçalho "folha" obrigatório não encontrado');
+        return;
+      }
+
+      const dadosParaImportar = [];
+      const erros = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i].split(separator).map(v => v.trim());
+        const row = {};
+        headers.forEach((header, idx) => {
+          row[header] = values[idx] || '';
+        });
+
+        const folhaNome = row.folha;
+        if (!folhaNome) {
+          erros.push(`Linha ${i + 1}: Nome da folha é obrigatório`);
+          continue;
+        }
+
+        // Buscar documento por número ou arquivo
+        const documento = documentos.find(d => 
+          d.numero === folhaNome || d.arquivo === folhaNome
+        );
+
+        if (!documento) {
+          erros.push(`Linha ${i + 1}: Folha "${folhaNome}" não encontrada`);
+          continue;
+        }
+
+        // Processar datas por etapa e revisão
+        const datas = {};
+        headers.forEach(header => {
+          if (header === 'folha') return;
+          
+          const data = row[header];
+          if (!data) return;
+
+          // Formato esperado: "ETAPA_REVISAO"
+          const parts = header.split('_');
+          if (parts.length < 2) return;
+
+          const revisao = parts.pop();
+          const etapa = parts.join('_');
+
+          if (!datas[etapa]) {
+            datas[etapa] = {};
+          }
+          datas[etapa][revisao] = data;
+        });
+
+        dadosParaImportar.push({
+          documento_id: documento.id,
+          datas
+        });
+      }
+
+      if (erros.length > 0) {
+        alert(`Erros encontrados:\n${erros.join('\n')}\n\nContinuar com os registros válidos?`);
+      }
+
+      if (dadosParaImportar.length === 0) {
+        alert('Nenhum registro válido encontrado no arquivo');
+        return;
+      }
+
+      let sucessos = 0;
+      let falhas = 0;
+
+      for (const dado of dadosParaImportar) {
+        try {
+          // Verificar se já existe registro para este documento
+          const linhaExistente = linhas.find(l => l.documento_id === dado.documento_id);
+          
+          if (linhaExistente && !linhaExistente.isNew && !linhaExistente.id.toString().startsWith('temp-')) {
+            // Atualizar registro existente
+            await retryWithBackoff(
+              () => DataCadastro.update(linhaExistente.id, {
+                datas: { ...linhaExistente.datas, ...dado.datas }
+              }),
+              3, 1000, `importUpdate-${linhaExistente.id}`
+            );
+          } else {
+            // Criar novo registro
+            const ordem = linhas.length;
+            await retryWithBackoff(
+              () => DataCadastro.create({
+                empreendimento_id: empreendimento.id,
+                ordem,
+                documento_id: dado.documento_id,
+                datas: dado.datas
+              }),
+              3, 1000, `importCreate-${dado.documento_id}`
+            );
+          }
+          sucessos++;
+        } catch (error) {
+          console.error(`Erro ao importar dado:`, error);
+          falhas++;
+        }
+      }
+
+      alert(`Importação concluída!\n\nSucessos: ${sucessos}\nFalhas: ${falhas}`);
+      
+      if (sucessos > 0) {
+        await loadData();
+        setShowImportModal(false);
+        setImportFile(null);
+      }
+
+    } catch (error) {
+      console.error('Erro na importação:', error);
+      alert(`Erro ao processar arquivo: ${error.message}`);
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -347,6 +520,14 @@ export default function CadastroTab({ empreendimento }) {
           )}
         </div>
         <div className="flex gap-2">
+          <Button
+            variant="outline"
+            onClick={() => setShowImportModal(true)}
+            className="border-green-500 text-green-600 hover:bg-green-50"
+          >
+            <Upload className="w-4 h-4 mr-2" />
+            Importar
+          </Button>
           <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
             Salvar
@@ -511,7 +692,82 @@ export default function CadastroTab({ empreendimento }) {
             ))}
           </div>
         </div>
-      )}
-    </div>
-  );
-}
+        )}
+
+        {/* Modal de Importação */}
+        <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Importar Datas de Cadastro</DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h3 className="font-semibold text-blue-900 mb-2">📋 Instruções</h3>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li>• Envie um arquivo CSV com as datas de cadastro</li>
+                <li>• Coluna obrigatória: <code className="bg-white px-1 rounded">folha</code> (número ou arquivo do documento)</li>
+                <li>• Colunas de datas: <code className="bg-white px-1 rounded">ETAPA_REVISAO</code> (ex: ESTUDO PRELIMINAR_R00)</li>
+                <li>• Formato de data: <code className="bg-white px-1 rounded">AAAA-MM-DD</code> (ex: 2025-01-15)</li>
+                <li>• Baixe o template para ver a estrutura correta</li>
+              </ul>
+            </div>
+
+            <Button
+              variant="outline"
+              onClick={handleExportTemplate}
+              className="w-full"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Baixar Template CSV
+            </Button>
+
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+              <input
+                type="file"
+                accept=".csv"
+                onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                className="w-full"
+              />
+              {importFile && (
+                <p className="text-sm text-green-600 mt-2">
+                  ✓ Arquivo selecionado: {importFile.name}
+                </p>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowImportModal(false);
+                  setImportFile(null);
+                }}
+                disabled={isImporting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleImport}
+                disabled={!importFile || isImporting}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {isImporting ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Importando...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Importar
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+        </Dialog>
+        </div>
+        );
+        }
