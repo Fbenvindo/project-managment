@@ -377,15 +377,16 @@ export default function CadastroTab({ empreendimento }) {
     try {
       const fileContent = await importFile.text();
       const lines = fileContent.split('\n').filter(line => line.trim());
-      
+
       if (lines.length < 2) {
         alert('Arquivo vazio ou inválido');
         return;
       }
 
+      // Detectar separador (ponto-e-vírgula ou vírgula)
       const separator = lines[0].includes(';') ? ';' : ',';
       const headers = lines[0].split(separator).map(h => h.trim());
-      
+
       if (!headers.includes('folha')) {
         alert('Cabeçalho "folha" obrigatório não encontrado');
         return;
@@ -421,7 +422,7 @@ export default function CadastroTab({ empreendimento }) {
         const datas = {};
         headers.forEach(header => {
           if (header === 'folha') return;
-          
+
           const data = row[header];
           if (!data) return;
 
@@ -469,7 +470,7 @@ export default function CadastroTab({ empreendimento }) {
         try {
           // Verificar se já existe registro para este documento
           const linhaExistente = linhas.find(l => l.documento_id === dado.documento_id);
-          
+
           if (linhaExistente && !linhaExistente.isNew && !linhaExistente.id.toString().startsWith('temp-')) {
             // Atualizar registro existente
             await retryWithBackoff(
@@ -493,13 +494,13 @@ export default function CadastroTab({ empreendimento }) {
           }
           sucessos++;
         } catch (error) {
-          console.error(`Erro ao importar dado:`, error);
+          console.error(`Erro ao importar ${dado.documento_id}:`, error);
           falhas++;
         }
       }
 
       alert(`Importação concluída!\n\nSucessos: ${sucessos}\nFalhas: ${falhas}`);
-      
+
       if (sucessos > 0) {
         await loadData();
         setShowImportModal(false);
