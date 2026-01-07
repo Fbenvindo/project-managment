@@ -349,7 +349,7 @@ export default function CadastroTab({ empreendimento }) {
       [
         'ARQ-01',
         ...etapasVisiveis.flatMap(etapa => 
-          (revisoesPorEtapa[etapa] || DEFAULT_REVISOES).map(() => '2025-01-15')
+          (revisoesPorEtapa[etapa] || DEFAULT_REVISOES).map(() => '15/01/2025')
         )
       ].join(';')
     ].join('\n');
@@ -427,10 +427,19 @@ export default function CadastroTab({ empreendimento }) {
           const revisao = parts.pop();
           const etapa = parts.join('_');
 
+          // Converter data de dd/mm/aaaa para aaaa-mm-dd
+          let dataFormatada = data;
+          if (data.includes('/')) {
+            const [dia, mes, ano] = data.split('/');
+            if (dia && mes && ano) {
+              dataFormatada = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+            }
+          }
+
           if (!datas[etapa]) {
             datas[etapa] = {};
           }
-          datas[etapa][revisao] = data;
+          datas[etapa][revisao] = dataFormatada;
         });
 
         dadosParaImportar.push({
@@ -708,7 +717,7 @@ export default function CadastroTab({ empreendimento }) {
                 <li>• Envie um arquivo CSV com as datas de cadastro</li>
                 <li>• Coluna obrigatória: <code className="bg-white px-1 rounded">folha</code> (número ou arquivo do documento)</li>
                 <li>• Colunas de datas: <code className="bg-white px-1 rounded">ETAPA_REVISAO</code> (ex: ESTUDO PRELIMINAR_R00)</li>
-                <li>• Formato de data: <code className="bg-white px-1 rounded">AAAA-MM-DD</code> (ex: 2025-01-15)</li>
+                <li>• Formato de data: <code className="bg-white px-1 rounded">DD/MM/AAAA</code> (ex: 15/01/2025)</li>
                 <li>• Baixe o template para ver a estrutura correta</li>
               </ul>
             </div>
