@@ -36,13 +36,28 @@ export default function OrcamentosPage() {
               mesAnoDisplay,
               quantidade: 0,
               valorBimTotal: 0,
-              valorCadTotal: 0
+              valorCadTotal: 0,
+              valorBimAprovado: 0,
+              valorCadAprovado: 0,
+              quantidadeAprovada: 0
             };
           }
           
           grouped[mesAno].quantidade++;
           grouped[mesAno].valorBimTotal += Number(proposta.valor_bim || 0);
           grouped[mesAno].valorCadTotal += Number(proposta.valor_cad || 0);
+          
+          // Verifica se foi aprovado no mesmo mês
+          if (proposta.data_aprovacao && proposta.status === 'aprovado') {
+            const dateAprovacao = parseISO(proposta.data_aprovacao);
+            const mesAnoAprovacao = format(dateAprovacao, 'yyyy-MM');
+            
+            if (mesAnoAprovacao === mesAno) {
+              grouped[mesAno].valorBimAprovado += Number(proposta.valor_bim || 0);
+              grouped[mesAno].valorCadAprovado += Number(proposta.valor_cad || 0);
+              grouped[mesAno].quantidadeAprovada++;
+            }
+          }
         }
       });
 
@@ -58,8 +73,11 @@ export default function OrcamentosPage() {
   const totalGeral = orcamentosPorMes.reduce((acc, mes) => ({
     quantidade: acc.quantidade + mes.quantidade,
     valorBim: acc.valorBim + mes.valorBimTotal,
-    valorCad: acc.valorCad + mes.valorCadTotal
-  }), { quantidade: 0, valorBim: 0, valorCad: 0 });
+    valorCad: acc.valorCad + mes.valorCadTotal,
+    valorBimAprovado: acc.valorBimAprovado + mes.valorBimAprovado,
+    valorCadAprovado: acc.valorCadAprovado + mes.valorCadAprovado,
+    quantidadeAprovada: acc.quantidadeAprovada + mes.quantidadeAprovada
+  }), { quantidade: 0, valorBim: 0, valorCad: 0, valorBimAprovado: 0, valorCadAprovado: 0, quantidadeAprovada: 0 });
 
   if (isLoading) {
     return (
@@ -139,6 +157,8 @@ export default function OrcamentosPage() {
                         <TableHead className="text-right">Valor BIM</TableHead>
                         <TableHead className="text-right">Valor CAD</TableHead>
                         <TableHead className="text-right">Valor Total (BIM + CAD)</TableHead>
+                        <TableHead className="text-center">Qtd. Aprovada</TableHead>
+                        <TableHead className="text-right bg-green-50">Valor Aprovado</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -152,8 +172,16 @@ export default function OrcamentosPage() {
                           <TableCell className="text-right">
                             R$ {mes.valorCadTotal.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                           </TableCell>
-                          <TableCell className="text-right font-semibold text-green-600">
+                          <TableCell className="text-right font-semibold text-gray-700">
                             R$ {(mes.valorBimTotal + mes.valorCadTotal).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                          </TableCell>
+                          <TableCell className="text-center">
+                            {mes.quantidadeAprovada > 0 ? mes.quantidadeAprovada : '-'}
+                          </TableCell>
+                          <TableCell className="text-right font-semibold text-green-600 bg-green-50">
+                            {mes.valorBimAprovado + mes.valorCadAprovado > 0 
+                              ? `R$ ${(mes.valorBimAprovado + mes.valorCadAprovado).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
+                              : '-'}
                           </TableCell>
                         </TableRow>
                       ))}
@@ -166,8 +194,12 @@ export default function OrcamentosPage() {
                         <TableCell className="text-right">
                           R$ {totalGeral.valorCad.toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </TableCell>
-                        <TableCell className="text-right text-green-600">
+                        <TableCell className="text-right text-gray-700">
                           R$ {(totalGeral.valorBim + totalGeral.valorCad).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
+                        </TableCell>
+                        <TableCell className="text-center">{totalGeral.quantidadeAprovada}</TableCell>
+                        <TableCell className="text-right text-green-600 bg-green-50">
+                          R$ {(totalGeral.valorBimAprovado + totalGeral.valorCadAprovado).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}
                         </TableCell>
                       </TableRow>
                     </TableBody>
