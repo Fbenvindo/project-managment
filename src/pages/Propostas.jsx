@@ -8,17 +8,17 @@ import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { format } from "date-fns";
 
 const statusColors = {
-  proposta: "bg-yellow-100 text-yellow-800",
-  negociacao: "bg-blue-100 text-blue-800",
+  solicitado: "bg-gray-100 text-gray-800",
+  em_analise: "bg-yellow-100 text-yellow-800",
   aprovado: "bg-green-100 text-green-800",
-  cancelado: "bg-red-100 text-red-800"
+  reprovado: "bg-red-100 text-red-800"
 };
 
 const statusLabels = {
-  proposta: "Proposta",
-  negociacao: "Negociação",
+  solicitado: "Solicitado",
+  em_analise: "Aguardando Aprovação",
   aprovado: "Aprovado",
-  cancelado: "Cancelado"
+  reprovado: "Não Aprovado"
 };
 
 export default function PropostasPage() {
@@ -81,41 +81,65 @@ export default function PropostasPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Nome do Projeto</TableHead>
+                        <TableHead>Número</TableHead>
+                        <TableHead>Data Solicitação</TableHead>
+                        <TableHead>Solicitante</TableHead>
                         <TableHead>Cliente</TableHead>
+                        <TableHead>Empreendimento</TableHead>
+                        <TableHead>Escopo</TableHead>
+                        <TableHead>Área (m²)</TableHead>
+                        <TableHead>Estado</TableHead>
+                        <TableHead>Valor BIM</TableHead>
+                        <TableHead>Valor CAD</TableHead>
+                        <TableHead>Data Aprovação</TableHead>
                         <TableHead>Status</TableHead>
-                        <TableHead>Valor Estimado</TableHead>
-                        <TableHead>Data da Proposta</TableHead>
-                        <TableHead>Endereço</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Telefone</TableHead>
                         <TableHead>Observações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {propostas.map((proposta) => (
                         <TableRow key={proposta.id} className="hover:bg-gray-50">
-                          <TableCell className="font-medium">{proposta.nome}</TableCell>
-                          <TableCell>{proposta.cliente}</TableCell>
+                          <TableCell className="font-medium whitespace-nowrap">{proposta.numero || '-'}</TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {proposta.data_solicitacao ? 
+                              format(new Date(proposta.data_solicitacao), 'dd/MM/yyyy') 
+                              : '-'}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">{proposta.solicitante || '-'}</TableCell>
+                          <TableCell className="whitespace-nowrap">{proposta.cliente || '-'}</TableCell>
+                          <TableCell className="max-w-xs">{proposta.empreendimento || '-'}</TableCell>
+                          <TableCell className="max-w-md">{proposta.escopo || '-'}</TableCell>
+                          <TableCell className="text-right whitespace-nowrap">
+                            {proposta.area ? 
+                              Number(proposta.area).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) 
+                              : '-'}
+                          </TableCell>
+                          <TableCell className="text-center">{proposta.estado || '-'}</TableCell>
+                          <TableCell className="text-right whitespace-nowrap">
+                            {proposta.valor_bim ? 
+                              `R$ ${Number(proposta.valor_bim).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 
+                              : '-'}
+                          </TableCell>
+                          <TableCell className="text-right whitespace-nowrap">
+                            {proposta.valor_cad ? 
+                              `R$ ${Number(proposta.valor_cad).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 
+                              : '-'}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {proposta.data_aprovacao ? 
+                              format(new Date(proposta.data_aprovacao), 'dd/MM/yyyy') 
+                              : '-'}
+                          </TableCell>
                           <TableCell>
                             <Badge className={statusColors[proposta.status]}>
                               {statusLabels[proposta.status]}
                             </Badge>
                           </TableCell>
-                          <TableCell>
-                            {proposta.valor_estimado ? 
-                              `R$ ${Number(proposta.valor_estimado).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 
-                              : '-'}
-                          </TableCell>
-                          <TableCell>
-                            {proposta.data_proposta ? 
-                              format(new Date(proposta.data_proposta), 'dd/MM/yyyy') 
-                              : '-'}
-                          </TableCell>
-                          <TableCell className="max-w-xs truncate">
-                            {proposta.endereco || '-'}
-                          </TableCell>
-                          <TableCell className="max-w-xs truncate">
-                            {proposta.observacoes || '-'}
-                          </TableCell>
+                          <TableCell className="max-w-xs truncate">{proposta.email || '-'}</TableCell>
+                          <TableCell className="whitespace-nowrap">{proposta.telefone || '-'}</TableCell>
+                          <TableCell className="max-w-xs">{proposta.observacao || '-'}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
