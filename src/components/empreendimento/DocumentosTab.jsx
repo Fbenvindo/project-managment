@@ -594,19 +594,46 @@ export default function DocumentosTab({
   };
 
   const handleExportTemplate = () => {
+    // Buscar etapas e revisões do CadastroTab
+    const etapasDisponiveis = [
+      "ESTUDO PRELIMINAR",
+      "ANTE-PROJETO",
+      "PROJETO BÁSICO",
+      "PROJETO EXECUTIVO",
+      "LIBERADO PARA OBRA"
+    ];
+    const revisoesDefault = ["R00", "R01", "R02"];
+
+    // Construir cabeçalhos: campos do documento + colunas de datas
+    let headers = ['numero', 'arquivo', 'descritivo', 'pavimento_nome', 'disciplinas', 'subdisciplinas', 'escala', 'fator_dificuldade'];
+
+    etapasDisponiveis.forEach(etapa => {
+      revisoesDefault.forEach(rev => {
+        headers.push(`${etapa}_${rev}`);
+      });
+    });
+
     const csvContent = [
-      'numero;arquivo;descritivo;pavimento_nome;disciplinas;subdisciplinas;escala;fator_dificuldade',
-      'ARQ-01;Planta Baixa Terreo;Planta baixa do pavimento terreo com layout de moveis;Terreo;Arquitetura;Planta,Compat;125;1',
-      'ARQ-02;Planta Baixa 1º Pav;Planta baixa do primeiro pavimento;1º Pavimento;Arquitetura;Planta;125;1.2',
-      'HID-01;Planta Hidraulica Terreo;Projeto hidraulico do terreo;Terreo;Hidraulica;Projeto;100;1',
+      headers.join(';'),
+      // Linha de exemplo com dados de documento e datas
+      [
+        'ARQ-01',
+        'Planta Baixa Terreo',
+        'Planta baixa do pavimento terreo com layout de moveis',
+        'Terreo',
+        'Arquitetura',
+        'Planta,Compat',
+        '125',
+        '1',
+        ...etapasDisponiveis.flatMap(() => revisoesDefault.map(() => '15/01/2025'))
+      ].join(';')
     ].join('\n');
-    
-    // Adicionar BOM UTF-8 para Excel reconhecer encoding corretamente
+
     const BOM = '\uFEFF';
     const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `template_documentos_${empreendimento.nome.replace(/\s+/g, '_')}.csv`;
+    link.download = `template_documentos_cadastro_${empreendimento.nome.replace(/\s+/g, '_')}.csv`;
     link.click();
   };
 
