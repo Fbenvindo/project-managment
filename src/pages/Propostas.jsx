@@ -81,20 +81,20 @@ export default function PropostasPage() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Número</TableHead>
-                        <TableHead>Data Solicitação</TableHead>
-                        <TableHead>Solicitante</TableHead>
+                        <TableHead className="w-[100px]">Número</TableHead>
+                        <TableHead className="w-[110px]">Data Solicitação</TableHead>
+                        <TableHead className="w-[110px]">Data Aprovação</TableHead>
+                        <TableHead className="w-[140px]">Status</TableHead>
+                        <TableHead className="w-[120px]">Tipo</TableHead>
                         <TableHead>Cliente</TableHead>
                         <TableHead>Empreendimento</TableHead>
-                        <TableHead>Tipo</TableHead>
+                        <TableHead>Solicitante</TableHead>
                         <TableHead>Escopo</TableHead>
-                        <TableHead>Área (m²)</TableHead>
-                        <TableHead>Estado</TableHead>
-                        <TableHead>Valor BIM</TableHead>
-                        <TableHead>Valor CAD</TableHead>
-                        <TableHead>Valor Total</TableHead>
-                        <TableHead>Data Aprovação</TableHead>
-                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Área (m²)</TableHead>
+                        <TableHead className="text-center w-[60px]">UF</TableHead>
+                        <TableHead className="text-right">Valor BIM</TableHead>
+                        <TableHead className="text-right">Valor CAD</TableHead>
+                        <TableHead className="text-right">Valor Total</TableHead>
                         <TableHead>Email</TableHead>
                         <TableHead>Telefone</TableHead>
                         <TableHead>Observações</TableHead>
@@ -104,14 +104,21 @@ export default function PropostasPage() {
                       {propostas.map((proposta) => (
                         <TableRow key={proposta.id} className="hover:bg-gray-50">
                           <TableCell className="font-medium whitespace-nowrap">{proposta.numero || '-'}</TableCell>
-                          <TableCell className="whitespace-nowrap">
+                          <TableCell className="whitespace-nowrap text-center">
                             {proposta.data_solicitacao ? 
                               format(new Date(proposta.data_solicitacao), 'dd/MM/yyyy') 
                               : '-'}
                           </TableCell>
-                          <TableCell className="whitespace-nowrap">{proposta.solicitante || '-'}</TableCell>
-                          <TableCell className="whitespace-nowrap">{proposta.cliente || '-'}</TableCell>
-                          <TableCell className="max-w-xs">{proposta.empreendimento || '-'}</TableCell>
+                          <TableCell className="whitespace-nowrap text-center">
+                            {proposta.data_aprovacao ? 
+                              format(new Date(proposta.data_aprovacao), 'dd/MM/yyyy') 
+                              : '-'}
+                          </TableCell>
+                          <TableCell>
+                            <Badge className={statusColors[proposta.status]}>
+                              {statusLabels[proposta.status]}
+                            </Badge>
+                          </TableCell>
                           <TableCell className="whitespace-nowrap">
                             {proposta.tipo_empreendimento ? (
                               <Badge variant="outline" className="text-xs">
@@ -119,7 +126,14 @@ export default function PropostasPage() {
                               </Badge>
                             ) : '-'}
                           </TableCell>
-                          <TableCell className="max-w-md">{proposta.escopo || '-'}</TableCell>
+                          <TableCell className="whitespace-nowrap">{proposta.cliente || '-'}</TableCell>
+                          <TableCell className="max-w-[200px] truncate" title={proposta.empreendimento}>
+                            {proposta.empreendimento || '-'}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">{proposta.solicitante || '-'}</TableCell>
+                          <TableCell className="max-w-[250px] truncate" title={proposta.escopo}>
+                            {proposta.escopo || '-'}
+                          </TableCell>
                           <TableCell className="text-right whitespace-nowrap">
                             {proposta.area ? 
                               Number(proposta.area).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) 
@@ -141,19 +155,13 @@ export default function PropostasPage() {
                               `R$ ${(Number(proposta.valor_bim || 0) + Number(proposta.valor_cad || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 
                               : '-'}
                           </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            {proposta.data_aprovacao ? 
-                              format(new Date(proposta.data_aprovacao), 'dd/MM/yyyy') 
-                              : '-'}
+                          <TableCell className="max-w-[180px] truncate" title={proposta.email}>
+                            {proposta.email || '-'}
                           </TableCell>
-                          <TableCell>
-                            <Badge className={statusColors[proposta.status]}>
-                              {statusLabels[proposta.status]}
-                            </Badge>
-                          </TableCell>
-                          <TableCell className="max-w-xs truncate">{proposta.email || '-'}</TableCell>
                           <TableCell className="whitespace-nowrap">{proposta.telefone || '-'}</TableCell>
-                          <TableCell className="max-w-xs">{proposta.observacao || '-'}</TableCell>
+                          <TableCell className="max-w-[200px] truncate" title={proposta.observacao}>
+                            {proposta.observacao || '-'}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
