@@ -674,46 +674,67 @@ export default function CadastroTab({ empreendimento }) {
                 </td>
               </tr>
             ) : (
-              linhas.map((linha, idx) => {
-                const doc = documentos.find(d => d.id === linha.documento_id);
-                const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
-                return (
-                  <tr key={linha.id} className="hover:bg-gray-50">
-                    <td className="border border-gray-300 p-2 sticky left-0 bg-white z-20 font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '350px', minWidth: '350px', maxWidth: '350px' }}>
-                      <div className="truncate" title={doc?.arquivo || doc?.numero || 'Sem folha'}>
-                        {doc?.arquivo || doc?.numero || 'Sem folha'}
+              linhasPorDisciplina.map(([disciplina, linhasDaDisciplina]) => (
+                <React.Fragment key={disciplina}>
+                  {/* Cabeçalho da disciplina */}
+                  <tr>
+                    <td 
+                      colSpan={ETAPAS.filter(e => !etapasExcluidas.includes(e)).reduce((acc, etapa) => acc + (revisoesPorEtapa[etapa]?.length || 3) + 1, 1)} 
+                      className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-gray-300 p-3"
+                    >
+                      <div className="flex items-center gap-2">
+                        <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
+                        <h3 className="font-semibold text-lg text-gray-800">{disciplina}</h3>
+                        <Badge variant="secondary" className="ml-2">
+                          {linhasDaDisciplina.length} {linhasDaDisciplina.length === 1 ? 'documento' : 'documentos'}
+                        </Badge>
                       </div>
                     </td>
-                    {etapasVisiveis.map((etapa, etapaIdx) => {
-                      const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
-                      return (
-                        <React.Fragment key={`${linha.id}-${etapa}`}>
-                          {revisoesEtapa.map((revisao, revIdx) => (
-                            <td 
-                              key={`${linha.id}-${etapa}-${revisao}`} 
-                              className="border border-gray-300 p-1"
-                              style={{ width: '150px', minWidth: '150px' }}
-                            >
-                              <Input
-                                type="date"
-                                value={getDataValue(linha, etapa, revisao)}
-                                onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
-                                className="h-8 text-xs w-full"
-                              />
-                            </td>
-                          ))}
-                          <td 
-                            className={`border p-1 ${
-                              etapaIdx < etapasVisiveis.length - 1 ? 'border-r-4 border-r-gray-800 border-gray-300' : 'border-gray-300'
-                            }`}
-                            style={{ width: '50px', minWidth: '50px' }}
-                          ></td>
-                        </React.Fragment>
-                      );
-                    })}
                   </tr>
-                );
-              })
+                  
+                  {/* Linhas da disciplina */}
+                  {linhasDaDisciplina.map((linha) => {
+                    const doc = documentos.find(d => d.id === linha.documento_id);
+                    const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
+                    return (
+                      <tr key={linha.id} className="hover:bg-gray-50">
+                        <td className="border border-gray-300 p-2 sticky left-0 bg-white z-20 font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '350px', minWidth: '350px', maxWidth: '350px' }}>
+                          <div className="truncate" title={doc?.arquivo || doc?.numero || 'Sem folha'}>
+                            {doc?.arquivo || doc?.numero || 'Sem folha'}
+                          </div>
+                        </td>
+                        {etapasVisiveis.map((etapa, etapaIdx) => {
+                          const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+                          return (
+                            <React.Fragment key={`${linha.id}-${etapa}`}>
+                              {revisoesEtapa.map((revisao, revIdx) => (
+                                <td 
+                                  key={`${linha.id}-${etapa}-${revisao}`} 
+                                  className="border border-gray-300 p-1"
+                                  style={{ width: '150px', minWidth: '150px' }}
+                                >
+                                  <Input
+                                    type="date"
+                                    value={getDataValue(linha, etapa, revisao)}
+                                    onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
+                                    className="h-8 text-xs w-full"
+                                  />
+                                </td>
+                              ))}
+                              <td 
+                                className={`border p-1 ${
+                                  etapaIdx < etapasVisiveis.length - 1 ? 'border-r-4 border-r-gray-800 border-gray-300' : 'border-gray-300'
+                                }`}
+                                style={{ width: '50px', minWidth: '50px' }}
+                              ></td>
+                            </React.Fragment>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </React.Fragment>
+              ))
             )}
           </tbody>
         </table>
