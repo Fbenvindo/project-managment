@@ -86,11 +86,13 @@ export default function PropostasPage() {
                         <TableHead>Solicitante</TableHead>
                         <TableHead>Cliente</TableHead>
                         <TableHead>Empreendimento</TableHead>
+                        <TableHead>Tipo</TableHead>
                         <TableHead>Escopo</TableHead>
                         <TableHead>Área (m²)</TableHead>
                         <TableHead>Estado</TableHead>
                         <TableHead>Valor BIM</TableHead>
                         <TableHead>Valor CAD</TableHead>
+                        <TableHead>Valor Total</TableHead>
                         <TableHead>Data Aprovação</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead>Email</TableHead>
@@ -110,6 +112,13 @@ export default function PropostasPage() {
                           <TableCell className="whitespace-nowrap">{proposta.solicitante || '-'}</TableCell>
                           <TableCell className="whitespace-nowrap">{proposta.cliente || '-'}</TableCell>
                           <TableCell className="max-w-xs">{proposta.empreendimento || '-'}</TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {proposta.tipo_empreendimento ? (
+                              <Badge variant="outline" className="text-xs">
+                                {proposta.tipo_empreendimento}
+                              </Badge>
+                            ) : '-'}
+                          </TableCell>
                           <TableCell className="max-w-md">{proposta.escopo || '-'}</TableCell>
                           <TableCell className="text-right whitespace-nowrap">
                             {proposta.area ? 
@@ -125,6 +134,11 @@ export default function PropostasPage() {
                           <TableCell className="text-right whitespace-nowrap">
                             {proposta.valor_cad ? 
                               `R$ ${Number(proposta.valor_cad).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 
+                              : '-'}
+                          </TableCell>
+                          <TableCell className="text-right whitespace-nowrap font-semibold text-green-600">
+                            {(proposta.valor_bim || proposta.valor_cad) ? 
+                              `R$ ${(Number(proposta.valor_bim || 0) + Number(proposta.valor_cad || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 
                               : '-'}
                           </TableCell>
                           <TableCell className="whitespace-nowrap">
