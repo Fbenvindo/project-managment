@@ -349,6 +349,22 @@ export default function CadastroTab({ empreendimento }) {
   return data;
   };
 
+  const linhasPorDisciplina = useMemo(() => {
+    const grupos = {};
+    
+    linhas.forEach(linha => {
+      const doc = documentos.find(d => d.id === linha.documento_id);
+      const disciplina = doc?.disciplina || 'Sem Disciplina';
+      
+      if (!grupos[disciplina]) {
+        grupos[disciplina] = [];
+      }
+      grupos[disciplina].push(linha);
+    });
+
+    return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [linhas, documentos]);
+
   const handleExportTemplate = () => {
     const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
     
