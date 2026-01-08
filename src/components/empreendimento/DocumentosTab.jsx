@@ -790,7 +790,7 @@ export default function DocumentosTab({
       for (const { original, criado } of documentosCriados) {
         if (original.datas && Object.keys(original.datas).length > 0) {
           try {
-            await retryWithBackoff(() => window.DataCadastro.create({
+            await retryWithBackoff(() => DataCadastro.create({
               empreendimento_id: empreendimento.id,
               ordem: documentosCriados.indexOf(documentosCriados.find(d => d.criado.id === criado.id)),
               documento_id: criado.id,
