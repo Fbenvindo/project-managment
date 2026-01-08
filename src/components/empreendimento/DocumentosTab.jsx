@@ -657,14 +657,14 @@ export default function DocumentosTab({
           ? (pavimentos || []).find(p => p.nome?.toLowerCase() === row.pavimento_nome.toLowerCase())
           : null;
 
-        // Processar disciplinas (separadas por vírgula)
+        // Processar disciplinas (separadas por vírgula ou ponto-e-vírgula)
         const disciplinasArray = row.disciplinas 
-          ? row.disciplinas.split(',').map(s => s.trim()).filter(s => s)
+          ? row.disciplinas.split(/[,;]/).map(s => s.trim()).filter(s => s)
           : [];
 
-        // Processar subdisciplinas (separadas por vírgula)
+        // Processar subdisciplinas (separadas por vírgula ou ponto-e-vírgula)
         const subdisciplinasArray = row.subdisciplinas 
-          ? row.subdisciplinas.split(',').map(s => s.trim()).filter(s => s)
+          ? row.subdisciplinas.split(/[,;]/).map(s => s.trim()).filter(s => s)
           : [];
 
         // Validar se disciplinas existem no sistema
@@ -673,7 +673,7 @@ export default function DocumentosTab({
         );
 
         if (disciplinasValidas.length === 0 && disciplinasArray.length > 0) {
-          erros.push(`Linha ${i + 1}: Disciplinas "${disciplinasArray.join(', ')}" não encontradas`);
+          erros.push(`Linha ${i + 1}: Nenhuma disciplina válida encontrada em "${disciplinasArray.join(', ')}"`);
         }
 
         documentosParaImportar.push({
@@ -681,7 +681,7 @@ export default function DocumentosTab({
           arquivo: row.arquivo,
           descritivo: row.descritivo || '',
           disciplina: disciplinasValidas[0] || disciplinas[0]?.nome || '',
-          disciplinas: disciplinasValidas.length > 0 ? disciplinasValidas.slice(0, 2) : [],
+          disciplinas: disciplinasValidas.slice(0, 2),
           subdisciplinas: subdisciplinasArray,
           escala: row.escala ? parseFloat(row.escala) : null,
           fator_dificuldade: row.fator_dificuldade ? parseFloat(row.fator_dificuldade) : 1,
