@@ -2131,7 +2131,8 @@ export default function DocumentosTab({
                   <li>• Envie um arquivo CSV com os documentos</li>
                   <li>• Colunas obrigatórias: <code className="bg-white px-1 rounded">numero</code>, <code className="bg-white px-1 rounded">arquivo</code></li>
                   <li>• Colunas opcionais: <code className="bg-white px-1 rounded">descritivo</code>, <code className="bg-white px-1 rounded">pavimento_nome</code>, <code className="bg-white px-1 rounded">disciplinas</code>, <code className="bg-white px-1 rounded">subdisciplinas</code>, <code className="bg-white px-1 rounded">escala</code>, <code className="bg-white px-1 rounded">fator_dificuldade</code></li>
-                  <li>• Disciplinas e subdisciplinas devem ser separadas por <code className="bg-white px-1 rounded">,</code> (ex: Arquitetura,Hidráulica)</li>
+                  <li>• Múltiplas disciplinas/subdisciplinas devem ser separadas por <code className="bg-white px-1 rounded">,</code> ou <code className="bg-white px-1 rounded">;</code> (ex: Arquitetura,Hidráulica)</li>
+                  <li>• Máximo de 2 disciplinas por documento</li>
                   <li>• O pavimento_nome deve corresponder ao nome exato de um pavimento já cadastrado</li>
                   <li>• Baixe o template para ver exemplos completos</li>
                 </ul>
