@@ -703,6 +703,38 @@ export default function DocumentosTab({
           erros.push(`Linha ${i + 1}: Nenhuma disciplina válida encontrada em "${disciplinasArray.join(', ')}"`);
         }
 
+        // Processar datas de cadastro (formato ETAPA_REVISAO)
+        const datas = {};
+        headers.forEach(header => {
+          if (['numero', 'arquivo', 'descritivo', 'pavimento_nome', 'disciplinas', 'subdisciplinas', 'escala', 'fator_dificuldade'].includes(header)) {
+            return;
+          }
+
+          const data = row[header];
+          if (!data) return;
+
+          // Formato esperado: "ETAPA_REVISAO"
+          const parts = header.split('_');
+          if (parts.length < 2) return;
+
+          const revisao = parts.pop();
+          const etapa = parts.join('_');
+
+          // Converter data de dd/mm/aaaa para aaaa-mm-dd
+          let dataFormatada = data;
+          if (data.includes('/')) {
+            const [dia, mes, ano] = data.split('/');
+            if (dia && mes && ano) {
+              dataFormatada = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
+            }
+          }
+
+          if (!datas[etapa]) {
+            datas[etapa] = {};
+          }
+          datas[etapa][revisao] = dataFormatada;
+        });
+
         documentosParaImportar.push({
           numero: row.numero,
           arquivo: row.arquivo,
@@ -721,7 +753,8 @@ export default function DocumentosTab({
           tempo_ante_projeto: 0,
           tempo_projeto_basico: 0,
           tempo_projeto_executivo: 0,
-          tempo_liberado_obra: 0
+          tempo_liberado_obra: 0,
+          datas: Object.keys(datas).length > 0 ? datas : null
         });
       }
 
