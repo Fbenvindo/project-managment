@@ -72,10 +72,23 @@ export default function CadastroTab({ empreendimento }) {
         )
       ]);
       
+      // Ordenar por disciplina e depois por arquivo (mesma ordem do DocumentosTab)
       const sortedDocs = (docs || []).sort((a, b) => {
-        const numA = parseInt(a.numero) || 0;
-        const numB = parseInt(b.numero) || 0;
-        return numA - numB;
+        // Primeiro por disciplina
+        const discA = (a.disciplina || 'Sem Disciplina').toLowerCase();
+        const discB = (b.disciplina || 'Sem Disciplina').toLowerCase();
+        const discCompare = discA.localeCompare(discB, 'pt-BR', { sensitivity: 'base' });
+
+        if (discCompare !== 0) return discCompare;
+
+        // Depois por arquivo (alfabético natural)
+        const arquivoA = (a.arquivo || '').trim().toLowerCase();
+        const arquivoB = (b.arquivo || '').trim().toLowerCase();
+        return arquivoA.localeCompare(arquivoB, 'pt-BR', {
+          numeric: true,
+          sensitivity: 'base',
+          ignorePunctuation: false
+        });
       });
       setDocumentos(sortedDocs);
       
