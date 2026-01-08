@@ -736,10 +736,13 @@ export default function DocumentosTab({
 
       let sucessos = 0;
       let falhas = 0;
+      const documentosCriados = [];
 
+      // Primeiro, importar documentos
       for (const doc of documentosParaImportar) {
         try {
-          await retryWithBackoff(() => Documento.create(doc), 3, 1000, `importDoc-${doc.numero}`);
+          const docCriado = await retryWithBackoff(() => Documento.create(doc), 3, 1000, `importDoc-${doc.numero}`);
+          documentosCriados.push({ original: doc, criado: docCriado });
           sucessos++;
         } catch (error) {
           console.error(`Erro ao importar ${doc.numero}:`, error);
@@ -747,8 +750,34 @@ export default function DocumentosTab({
         }
       }
 
-      alert(`Importação concluída!\n\nSucessos: ${sucessos}\nFalhas: ${falhas}`);
-      
+      // Agora, importar datas de cadastro se houver
+      let sucessosCadastro = 0;
+      let falhasCadastro = 0;
+
+      for (const { original, criado } of documentosCriados) {
+        if (original.datas && Object.keys(original.datas).length > 0) {
+          try {
+            await retryWithBackoff(() => window.DataCadastro.create({
+              empreendimento_id: empreendimento.id,
+              ordem: documentosCriados.indexOf(documentosCriados.find(d => d.criado.id === criado.id)),
+              documento_id: criado.id,
+              datas: original.datas
+            }), 3, 1000, `importCadastro-${criado.id}`);
+            sucessosCadastro++;
+          } catch (error) {
+            console.error(`Erro ao importar datas de ${original.numero}:`, error);
+            falhasCadastro++;
+          }
+        }
+      }
+
+      let mensagem = `Importação concluída!\n\nDocumentos: ${sucessos} sucessos, ${falhas} falhas`;
+      if (sucessosCadastro > 0 || falhasCadastro > 0) {
+        mensagem += `\nDatas de Cadastro: ${sucessosCadastro} sucessos, ${falhasCadastro} falhas`;
+      }
+
+      alert(mensagem);
+
       if (sucessos > 0) {
         await onUpdate();
         setShowImportModal(false);
