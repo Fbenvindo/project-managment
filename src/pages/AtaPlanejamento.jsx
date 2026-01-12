@@ -436,7 +436,7 @@ export default function AtaPlanejamento() {
       emissao: '/ /',
       status: 'rascunho'
     });
-    setProvidencias((ata.providencias || []).map((p, idx) => ({ ...p, id: Date.now() + idx, status: 'pendente' })));
+    setProvidencias((ata.providencias || []).map((p, idx) => ({ ...p, id: Date.now() + idx })));
     setShowSelectAtaModal(false);
     setViewMode('edit');
   };
