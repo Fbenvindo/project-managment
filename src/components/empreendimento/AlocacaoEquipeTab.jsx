@@ -438,11 +438,18 @@ export default function AlocacaoEquipeTab({
                             return (
                               <td 
                                 key={dataStr}
-                                className={`border border-gray-300 p-0.5 text-center ${
+                                className={`border border-gray-300 p-0.5 text-center cursor-pointer hover:bg-yellow-100 ${
                                   dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-200' : ''
                                 }`}
                                 style={hasItems ? { backgroundColor: '#FEF3C7' } : {}}
-                                title={hasItems ? items.map(i => `${i.label} (${i.empNome})`).join(', ') : ''}
+                                title={hasItems ? items.map(i => `${i.label} (${i.empNome})`).join(', ') : 'Clique para adicionar OS'}
+                                onClick={() => {
+                                  const os = prompt('Digite a OS para este dia:');
+                                  if (os && os.trim()) {
+                                    // TODO: Salvar OS no backend
+                                    alert(`OS "${os}" adicionada para ${usuario.nome || usuario.full_name} em ${format(dia, 'dd/MM/yyyy')}`);
+                                  }
+                                }}
                               >
                                 <div className="flex flex-wrap gap-0.5 justify-center">
                                   {items.map((item, idx) => (
