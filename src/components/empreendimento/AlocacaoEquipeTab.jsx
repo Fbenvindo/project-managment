@@ -115,10 +115,8 @@ export default function AlocacaoEquipeTab({
   };
 
   useEffect(() => {
-    if (!planejamentosProp?.length) {
-      loadData();
-    }
-  }, [planejamentosProp]);
+    loadData();
+  }, []);
 
   // Funções para gerenciar equipes
   const handleSaveEquipe = async (e) => {
