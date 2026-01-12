@@ -238,6 +238,21 @@ export default function AlocacaoEquipeTab({
     });
   };
 
+  const handleRemoveOS = (usuario, dataStr, osLabel) => {
+    const email = usuario.email;
+    setOsManuais(prev => {
+      const novo = { ...prev };
+      if (novo[email]?.[dataStr]) {
+        novo[email][dataStr] = novo[email][dataStr].filter(item => item.os !== osLabel);
+        if (novo[email][dataStr].length === 0) {
+          delete novo[email][dataStr];
+        }
+      }
+      console.log('🗑️ OS removida:', { email, dataStr, os: osLabel });
+      return novo;
+    });
+  };
+
   // Gerar dias da semana atual + offset (3 semanas = 21 dias)
   const diasExibidos = useMemo(() => {
     const hoje = new Date();
@@ -500,13 +515,29 @@ export default function AlocacaoEquipeTab({
                                 onClick={() => handleAddOS(usuario, dia)}
                               >
                                 <div className="flex flex-wrap gap-0.5 justify-center">
-                                  {allItems.map((item, idx) => (
+                                  {itemsReprogramados.map((item, idx) => (
                                     <span 
-                                      key={idx} 
+                                      key={`rep-${idx}`} 
                                       className="px-1 rounded text-white text-[10px] font-medium border border-yellow-500"
                                       style={{ backgroundColor: item.cor }}
                                     >
                                       {item.label}
+                                    </span>
+                                  ))}
+                                  {itemsManuais.map((item, idx) => (
+                                    <span 
+                                      key={`man-${idx}`} 
+                                      className="px-1 rounded text-white text-[10px] font-medium border border-yellow-500 cursor-pointer hover:opacity-70"
+                                      style={{ backgroundColor: item.cor }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (window.confirm(`Remover OS "${item.os}" deste dia?`)) {
+                                          handleRemoveOS(usuario, dataStr, item.os);
+                                        }
+                                      }}
+                                      title="Clique para remover"
+                                    >
+                                      {item.label} ×
                                     </span>
                                   ))}
 
