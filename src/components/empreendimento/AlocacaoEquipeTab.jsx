@@ -195,6 +195,12 @@ export default function AlocacaoEquipeTab({
     const dataStr = format(dia, 'yyyy-MM-dd');
     const email = usuario.email;
 
+    // Verificar se já existe
+    if (osManuais[email]?.[dataStr]?.find(item => item.os === os.trim())) {
+      alert('Esta OS já foi adicionada para este dia.');
+      return;
+    }
+
     // Buscar empreendimento pela OS (opcional, só para pegar cor)
     const emp = empreendimentos.find(e => e.os === os.trim());
     
@@ -226,15 +232,8 @@ export default function AlocacaoEquipeTab({
       const novo = { ...prev };
       if (!novo[email]) novo[email] = {};
       if (!novo[email][dataStr]) novo[email][dataStr] = [];
-      
-      // Verificar se já existe
-      const existe = novo[email][dataStr].find(item => item.os === os.trim());
-      if (existe) {
-        alert('Esta OS já foi adicionada para este dia.');
-        return prev;
-      }
-      
       novo[email][dataStr] = [...novo[email][dataStr], novoItem];
+      console.log('✅ OS adicionada:', { email, dataStr, os: os.trim(), cor: empCor });
       return novo;
     });
   };
