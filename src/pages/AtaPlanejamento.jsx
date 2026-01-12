@@ -749,33 +749,38 @@ export default function AtaPlanejamento() {
                   className="mb-3"
                 />
                 <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                  {atasRegistradas
-                    .filter(ata => {
-                      if (!searchAta) return true;
-                      const search = searchAta.toLowerCase();
-                      return (
-                        ata.assunto?.toLowerCase().includes(search) ||
-                        ata.data?.includes(search) ||
-                        ata.local?.toLowerCase().includes(search)
-                      );
-                    })
-                    .map(ata => (
-                      <Button
-                        key={ata.id}
-                        onClick={() => handleCreateFromPrevious(ata)}
-                        className="w-full justify-start h-auto py-3"
-                        variant="outline"
-                      >
-                        <div className="text-left">
-                          <div className="font-medium">{ata.assunto}</div>
-                          <p className="text-xs text-gray-500">
-                            {ata.data ? format(new Date(ata.data), 'dd/MM/yyyy', { locale: ptBR }) : 'Sem data'}
-                            {ata.local && ` - ${ata.local}`}
-                            {` • ${ata.providencias?.length || 0} providência(s)`}
-                          </p>
-                        </div>
-                      </Button>
-                    ))}
+                  {atasRegistradas.length === 0 ? (
+                    <p className="text-sm text-gray-500 text-center py-4">Nenhuma ATA registrada ainda.</p>
+                  ) : (
+                    atasRegistradas
+                      .filter(ata => {
+                        if (!searchAta) return true;
+                        const search = searchAta.toLowerCase();
+                        const dataFormatada = ata.data ? format(new Date(ata.data), 'dd/MM/yyyy', { locale: ptBR }) : '';
+                        return (
+                          ata.assunto?.toLowerCase().includes(search) ||
+                          dataFormatada.includes(search) ||
+                          ata.local?.toLowerCase().includes(search)
+                        );
+                      })
+                      .map(ata => (
+                        <Button
+                          key={ata.id}
+                          onClick={() => handleCreateFromPrevious(ata)}
+                          className="w-full justify-start h-auto py-3"
+                          variant="outline"
+                        >
+                          <div className="text-left w-full">
+                            <div className="font-medium">{ata.assunto || 'Sem assunto'}</div>
+                            <p className="text-xs text-gray-500">
+                              {ata.data ? format(new Date(ata.data), 'dd/MM/yyyy', { locale: ptBR }) : 'Sem data'}
+                              {ata.local && ` - ${ata.local}`}
+                              {` • ${ata.providencias?.length || 0} providência(s)`}
+                            </p>
+                          </div>
+                        </Button>
+                      ))
+                  )}
                 </div>
               </div>
             </div>
