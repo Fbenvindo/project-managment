@@ -490,12 +490,65 @@ export default function AlocacaoEquipeTab({
                     
                     return (
                       <React.Fragment key={usuario.id}>
-                        {/* Linha Programado */}
-                        <tr className="bg-gray-100">
-                          <td className="border border-gray-300 p-1 sticky left-0 bg-gray-100 z-10" rowSpan={3}>
+                        {/* Linha Previsto */}
+                        <tr className="bg-gray-50">
+                          <td className="border border-gray-300 p-1 sticky left-0 bg-gray-50 z-10" rowSpan={2}>
                             <div className="font-medium">{usuario.nome || usuario.full_name}</div>
                             <div className="text-gray-500 text-xs">{usuario.cargo || ''}</div>
                           </td>
+                          <td className="border border-gray-300 p-1 text-xs">Previsto</td>
+                          {diasExibidos.map(dia => {
+                            const dataStr = format(dia, 'yyyy-MM-dd');
+                            const itemsReprogramados = alocacaoUser.reprogramado[dataStr] || [];
+                            const itemsManuais = osManuaisUser[dataStr] || [];
+                            const allItems = [...itemsReprogramados, ...itemsManuais];
+                            const hasItems = allItems.length > 0;
+                            
+                            return (
+                              <td 
+                                key={dataStr}
+                                className={`border border-gray-300 p-0.5 text-center cursor-pointer hover:bg-yellow-100 ${
+                                  dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-200' : ''
+                                }`}
+                                style={hasItems ? { backgroundColor: '#FEF3C7' } : {}}
+                                title={hasItems ? allItems.map(i => `${i.label} (${i.empNome})`).join(', ') : 'Clique para adicionar OS'}
+                                onClick={() => handleAddOS(usuario, dia)}
+                              >
+                                <div className="flex flex-wrap gap-0.5 justify-center">
+                                  {itemsReprogramados.map((item, idx) => (
+                                    <span 
+                                      key={`rep-${idx}`} 
+                                      className="px-1 rounded text-white text-[10px] font-medium border border-yellow-500"
+                                      style={{ backgroundColor: item.cor }}
+                                    >
+                                      {item.label}
+                                    </span>
+                                  ))}
+                                  {itemsManuais.map((item, idx) => (
+                                    <span 
+                                      key={`man-${idx}`} 
+                                      className="px-1 rounded text-white text-[10px] font-medium border border-yellow-500 cursor-pointer hover:opacity-70"
+                                      style={{ backgroundColor: item.cor }}
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        if (window.confirm(`Remover OS "${item.os}" deste dia?`)) {
+                                          handleRemoveOS(usuario, dataStr, item.os);
+                                        }
+                                      }}
+                                      title="Clique para remover"
+                                    >
+                                      {item.label} ×
+                                    </span>
+                                  ))}
+
+                                </div>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                        
+                        {/* Linha Programado */}
+                        <tr className="bg-gray-100">
                           <td className="border border-gray-300 p-1 text-xs">Programado</td>
                           {diasExibidos.map(dia => {
                             const dataStr = format(dia, 'yyyy-MM-dd');
@@ -521,79 +574,6 @@ export default function AlocacaoEquipeTab({
                                     </span>
                                   ))}
 
-                                </div>
-                              </td>
-                            );
-                          })}
-                        </tr>
-                        
-                        {/* Linha Reprogramado */}
-                        <tr className="bg-gray-50">
-                          <td className="border border-gray-300 p-1 text-xs">Reprogramado</td>
-                          {diasExibidos.map(dia => {
-                            const dataStr = format(dia, 'yyyy-MM-dd');
-                            const itemsReprogramados = alocacaoUser.reprogramado[dataStr] || [];
-                            const hasItems = itemsReprogramados.length > 0;
-                            
-                            return (
-                              <td 
-                                key={dataStr}
-                                className={`border border-gray-300 p-0.5 text-center ${
-                                  dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-200' : ''
-                                }`}
-                                style={hasItems ? { backgroundColor: '#FEF3C7' } : {}}
-                                title={hasItems ? itemsReprogramados.map(i => `${i.label} (${i.empNome})`).join(', ') : ''}
-                              >
-                                <div className="flex flex-wrap gap-0.5 justify-center">
-                                  {itemsReprogramados.map((item, idx) => (
-                                    <span 
-                                      key={idx} 
-                                      className="px-1 rounded text-white text-[10px] font-medium border border-yellow-500"
-                                      style={{ backgroundColor: item.cor }}
-                                    >
-                                      {item.label}
-                                    </span>
-                                  ))}
-                                </div>
-                              </td>
-                            );
-                          })}
-                        </tr>
-                        
-                        {/* Linha Previsto */}
-                        <tr className="bg-white">
-                          <td className="border border-gray-300 p-1 text-xs">Previsto</td>
-                          {diasExibidos.map(dia => {
-                            const dataStr = format(dia, 'yyyy-MM-dd');
-                            const itemsManuais = osManuaisUser[dataStr] || [];
-                            const hasItems = itemsManuais.length > 0;
-                            
-                            return (
-                              <td 
-                                key={dataStr}
-                                className={`border border-gray-300 p-0.5 text-center cursor-pointer hover:bg-blue-50 ${
-                                  dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-200' : ''
-                                }`}
-                                title={hasItems ? itemsManuais.map(i => `${i.label} (${i.empNome})`).join(', ') : 'Clique para adicionar OS'}
-                                onClick={() => handleAddOS(usuario, dia)}
-                              >
-                                <div className="flex flex-wrap gap-0.5 justify-center">
-                                  {itemsManuais.map((item, idx) => (
-                                    <span 
-                                      key={idx} 
-                                      className="px-1 rounded text-white text-[10px] font-medium cursor-pointer hover:opacity-70"
-                                      style={{ backgroundColor: item.cor }}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (window.confirm(`Remover OS "${item.os}" deste dia?`)) {
-                                          handleRemoveOS(usuario, dataStr, item.os);
-                                        }
-                                      }}
-                                      title="Clique para remover"
-                                    >
-                                      {item.label} ×
-                                    </span>
-                                  ))}
                                 </div>
                               </td>
                             );
