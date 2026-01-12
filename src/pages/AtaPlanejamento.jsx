@@ -299,6 +299,7 @@ export default function AtaPlanejamento() {
   });
   const [showSelectAtaModal, setShowSelectAtaModal] = useState(false);
   const [searchAta, setSearchAta] = useState('');
+  const [filtroProjetoSelecionado, setFiltroProjetoSelecionado] = useState('todos');
 
   useEffect(() => {
     loadData();
@@ -589,8 +590,13 @@ export default function AtaPlanejamento() {
 
   // Agrupar providências por Projeto
   const providenciasAgrupadas = useMemo(() => {
+    // Filtrar primeiro
+    const providenciasFiltradas = filtroProjetoSelecionado === 'todos' 
+      ? providencias 
+      : providencias.filter(p => p.projeto === filtroProjetoSelecionado);
+    
     const grupos = {};
-    providencias.forEach(p => {
+    providenciasFiltradas.forEach(p => {
       const key = p.projeto;
       if (!grupos[key]) {
         grupos[key] = {
@@ -601,6 +607,12 @@ export default function AtaPlanejamento() {
       grupos[key].items.push(p);
     });
     return Object.values(grupos);
+  }, [providencias, filtroProjetoSelecionado]);
+
+  // Lista de projetos únicos para o filtro
+  const projetosUnicos = useMemo(() => {
+    const projetos = [...new Set(providencias.map(p => p.projeto))].filter(Boolean);
+    return projetos.sort();
   }, [providencias]);
 
   if (isLoading) {
@@ -916,10 +928,45 @@ export default function AtaPlanejamento() {
           ))}
         </div>
 
+        {/* Filtro de Projeto - apenas na tela */}
+        {providencias.length > 0 && (
+          <div className="border-b border-gray-400 p-3 bg-gray-50 no-print flex items-center gap-3">
+            <label className="text-sm font-medium text-gray-700">Filtrar por Projeto:</label>
+            <Select
+              value={filtroProjetoSelecionado}
+              onValueChange={setFiltroProjetoSelecionado}
+            >
+              <SelectTrigger className="w-64 h-9 text-sm">
+                <SelectValue placeholder="Todos os projetos" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="todos">Todos os projetos ({providencias.length})</SelectItem>
+                {projetosUnicos.map(projeto => (
+                  <SelectItem key={projeto} value={projeto}>
+                    {projeto} ({providencias.filter(p => p.projeto === projeto).length})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {filtroProjetoSelecionado !== 'todos' && (
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setFiltroProjetoSelecionado('todos')}
+                className="h-9"
+              >
+                Limpar Filtro
+              </Button>
+            )}
+          </div>
+        )}
+
         {/* Tabela de Providências */}
         {providenciasAgrupadas.length === 0 ? (
           <div className="p-4 text-center text-gray-500 text-sm">
-            Nenhuma providência cadastrada. Clique em "Adicionar Providência" para começar.
+            {providencias.length === 0 
+              ? 'Nenhuma providência cadastrada. Clique em "Adicionar Providência" para começar.'
+              : 'Nenhuma providência encontrada para o projeto selecionado.'}
           </div>
         ) : (
           <table className="w-full text-xs">
