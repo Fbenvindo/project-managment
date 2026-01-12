@@ -300,6 +300,9 @@ export default function AtaPlanejamento() {
   const [showSelectAtaModal, setShowSelectAtaModal] = useState(false);
   const [searchAta, setSearchAta] = useState('');
   const [filtroProjetoSelecionado, setFiltroProjetoSelecionado] = useState('todos');
+  const [filtroUsuario, setFiltroUsuario] = useState('todos');
+  const [filtroDataInicio, setFiltroDataInicio] = useState('');
+  const [filtroDataFim, setFiltroDataFim] = useState('');
 
   useEffect(() => {
     loadData();
@@ -590,10 +593,39 @@ export default function AtaPlanejamento() {
 
   // Agrupar providências por Projeto
   const providenciasAgrupadas = useMemo(() => {
-    // Filtrar primeiro
-    const providenciasFiltradas = filtroProjetoSelecionado === 'todos' 
-      ? providencias 
-      : providencias.filter(p => p.projeto === filtroProjetoSelecionado);
+    // Aplicar filtros
+    let providenciasFiltradas = [...providencias];
+    
+    // Filtro por projeto
+    if (filtroProjetoSelecionado !== 'todos') {
+      providenciasFiltradas = providenciasFiltradas.filter(p => p.projeto === filtroProjetoSelecionado);
+    }
+    
+    // Filtro por usuário (responsável)
+    if (filtroUsuario !== 'todos') {
+      providenciasFiltradas = providenciasFiltradas.filter(p => 
+        p.responsaveis?.includes(filtroUsuario)
+      );
+    }
+    
+    // Filtro por data
+    if (filtroDataInicio) {
+      providenciasFiltradas = providenciasFiltradas.filter(p => {
+        const dataReuniao = p.dataReuniao;
+        const dataRetorno = p.dataRetorno;
+        return (dataReuniao && dataReuniao >= filtroDataInicio) || 
+               (dataRetorno && dataRetorno >= filtroDataInicio);
+      });
+    }
+    
+    if (filtroDataFim) {
+      providenciasFiltradas = providenciasFiltradas.filter(p => {
+        const dataReuniao = p.dataReuniao;
+        const dataRetorno = p.dataRetorno;
+        return (dataReuniao && dataReuniao <= filtroDataFim) || 
+               (dataRetorno && dataRetorno <= filtroDataFim);
+      });
+    }
     
     const grupos = {};
     providenciasFiltradas.forEach(p => {
@@ -607,12 +639,23 @@ export default function AtaPlanejamento() {
       grupos[key].items.push(p);
     });
     return Object.values(grupos);
-  }, [providencias, filtroProjetoSelecionado]);
+  }, [providencias, filtroProjetoSelecionado, filtroUsuario, filtroDataInicio, filtroDataFim]);
 
   // Lista de projetos únicos para o filtro
   const projetosUnicos = useMemo(() => {
     const projetos = [...new Set(providencias.map(p => p.projeto))].filter(Boolean);
     return projetos.sort();
+  }, [providencias]);
+
+  // Lista de usuários únicos (responsáveis) para o filtro
+  const usuariosUnicos = useMemo(() => {
+    const usuarios = new Set();
+    providencias.forEach(p => {
+      if (p.responsaveis && Array.isArray(p.responsaveis)) {
+        p.responsaveis.forEach(r => usuarios.add(r));
+      }
+    });
+    return Array.from(usuarios).sort();
   }, [providencias]);
 
   if (isLoading) {
@@ -928,36 +971,86 @@ export default function AtaPlanejamento() {
           ))}
         </div>
 
-        {/* Filtro de Projeto - apenas na tela */}
+        {/* Filtros - apenas na tela */}
         {providencias.length > 0 && (
-          <div className="border-b border-gray-400 p-3 bg-gray-50 no-print flex items-center gap-3">
-            <label className="text-sm font-medium text-gray-700">Filtrar por Projeto:</label>
-            <Select
-              value={filtroProjetoSelecionado}
-              onValueChange={setFiltroProjetoSelecionado}
-            >
-              <SelectTrigger className="w-64 h-9 text-sm">
-                <SelectValue placeholder="Todos os projetos" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="todos">Todos os projetos ({providencias.length})</SelectItem>
-                {projetosUnicos.map(projeto => (
-                  <SelectItem key={projeto} value={projeto}>
-                    {projeto} ({providencias.filter(p => p.projeto === projeto).length})
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {filtroProjetoSelecionado !== 'todos' && (
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={() => setFiltroProjetoSelecionado('todos')}
-                className="h-9"
-              >
-                Limpar Filtro
-              </Button>
-            )}
+          <div className="border-b border-gray-400 p-3 bg-gray-50 no-print space-y-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Projeto:</label>
+                <Select
+                  value={filtroProjetoSelecionado}
+                  onValueChange={setFiltroProjetoSelecionado}
+                >
+                  <SelectTrigger className="w-48 h-9 text-sm">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos ({providencias.length})</SelectItem>
+                    {projetosUnicos.map(projeto => (
+                      <SelectItem key={projeto} value={projeto}>
+                        {projeto} ({providencias.filter(p => p.projeto === projeto).length})
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Responsável:</label>
+                <Select
+                  value={filtroUsuario}
+                  onValueChange={setFiltroUsuario}
+                >
+                  <SelectTrigger className="w-48 h-9 text-sm">
+                    <SelectValue placeholder="Todos" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="todos">Todos</SelectItem>
+                    {usuariosUnicos.map(usuario => (
+                      <SelectItem key={usuario} value={usuario}>
+                        {usuario}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">Data de:</label>
+                <Input
+                  type="date"
+                  value={filtroDataInicio}
+                  onChange={(e) => setFiltroDataInicio(e.target.value)}
+                  className="w-40 h-9 text-sm"
+                />
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label className="text-sm font-medium text-gray-700">até:</label>
+                <Input
+                  type="date"
+                  value={filtroDataFim}
+                  onChange={(e) => setFiltroDataFim(e.target.value)}
+                  className="w-40 h-9 text-sm"
+                />
+              </div>
+
+              {(filtroProjetoSelecionado !== 'todos' || filtroUsuario !== 'todos' || filtroDataInicio || filtroDataFim) && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => {
+                    setFiltroProjetoSelecionado('todos');
+                    setFiltroUsuario('todos');
+                    setFiltroDataInicio('');
+                    setFiltroDataFim('');
+                  }}
+                  className="h-9"
+                >
+                  Limpar Filtros
+                </Button>
+              )}
+            </div>
           </div>
         )}
 
