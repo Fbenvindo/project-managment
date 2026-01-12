@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -577,7 +576,7 @@ export default function NovoPlanejamentoModal({
       }
 
       alert(`${createdCount} planejamento${createdCount > 1 ? 's' : ''} criado${createdCount > 1 ? 's' : ''} com sucesso!`);
-      if (onSuccess) onSuccess();
+      if (onSuccess) onSuccess(true); // Passa flag indicando sucesso
     } catch (error) {
       console.error("Erro ao criar planejamento individual:", error);
       alert("Erro ao criar planejamento. Verifique os dados e tente novamente.");
@@ -690,7 +689,7 @@ export default function NovoPlanejamentoModal({
 
       setGenerationStatus({ message: `Concluído! ${totalPlanosCriados} planejamentos foram criados com sucesso.`, error: false });
       alert(`Concluído! ${totalPlanosCriados} planejamentos foram criados com sucesso.`);
-      if (onSuccess) onSuccess();
+      if (onSuccess) onSuccess(true);
 
     } catch (error) {
       console.error("Erro na geração de planejamento por função:", error);
@@ -771,7 +770,7 @@ export default function NovoPlanejamentoModal({
       }
 
       alert(`${createdCount} planejamento${createdCount > 1 ? 's' : ''} de documento criado${createdCount > 1 ? 's' : ''} com sucesso!`);
-      if (onSuccess) onSuccess();
+      if (onSuccess) onSuccess(true);
     } catch (error) {
       console.error("Erro ao criar planejamento de documento:", error);
       alert("Erro ao criar planejamento de documento. Verifique os dados e tente novamente.");
