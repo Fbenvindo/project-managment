@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Documento, Analitico, Atividade, Execucao, User, Empreendimento } from '@/entities/all';
+import { Documento, PlanejamentoAtividade, Atividade, Execucao, Empreendimento } from '@/entities/all';
+import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Button } from '@/components/ui/button';
@@ -10,7 +11,7 @@ import { Play, Square, Filter, ClipboardList, CheckSquare } from "lucide-react";
 
 export default function AnaliseConcepcaoPlanejamento() {
     const [documentos, setDocumentos] = useState([]);
-    const [analiticos, setAnaliticos] = useState([]);
+    const [planejamentos, setPlanejamentos] = useState([]);
     const [atividadesMap, setAtividadesMap] = useState({});
     const [execucoesMap, setExecucoesMap] = useState({});
     const [empreendimentos, setEmpreendimentos] = useState([]);
@@ -33,26 +34,26 @@ export default function AnaliseConcepcaoPlanejamento() {
     const loadData = async () => {
         setIsLoading(true);
         try {
-            const [docsData, analsData, ativsData, execsData, currentUser, empData] = await Promise.all([
+            const [docsData, planejamentosData, ativsData, execsData, currentUser, empData] = await Promise.all([
                 Documento.list(),
-                Analitico.list(),
+                PlanejamentoAtividade.list(),
                 Atividade.list(),
                 Execucao.list(),
-                User.me(),
+                base44.auth.me(),
                 Empreendimento.list()
             ]);
 
             const aMap = ativsData.reduce((acc, ativ) => { acc[ativ.id] = ativ; return acc; }, {});
             const eMap = execsData.reduce((acc, exec) => {
-                if (!acc[exec.analitico_id]) acc[exec.analitico_id] = [];
-                acc[exec.analitico_id].push(exec);
+                if (!acc[exec.planejamento_id]) acc[exec.planejamento_id] = [];
+                acc[exec.planejamento_id].push(exec);
                 return acc;
             }, {});
 
             setAtividadesMap(aMap);
             setExecucoesMap(eMap);
             setDocumentos(docsData);
-            setAnaliticos(analsData);
+            setPlanejamentos(planejamentosData);
             setEmpreendimentos(empData);
             setUser(currentUser);
         } catch (error) {
@@ -61,15 +62,15 @@ export default function AnaliseConcepcaoPlanejamento() {
         setIsLoading(false);
     };
 
-    const handleStartExecution = async (analiticoId) => {
-        const analitico = analiticos.find(a => a.id === analiticoId);
-        if (!analitico || !user) return;
-        const atividade = atividadesMap[analitico.atividade_id];
+    const handleStartExecution = async (planejamentoId) => {
+        const planejamento = planejamentos.find(a => a.id === planejamentoId);
+        if (!planejamento || !user) return;
+        const atividade = atividadesMap[planejamento.atividade_id];
         
         await Execucao.create({
-            analitico_id: analiticoId,
-            descritivo: atividade.atividade,
-            empreendimento_id: analitico.empreendimento_id,
+            planejamento_id: planejamentoId,
+            descritivo: planejamento.descritivo || atividade?.atividade || 'Atividade',
+            empreendimento_id: planejamento.empreendimento_id,
             usuario: user.email,
             inicio: new Date().toISOString(),
             status: "Em andamento"
@@ -89,17 +90,18 @@ export default function AnaliseConcepcaoPlanejamento() {
         const tempoTotal = (termino - inicio) / (1000 * 60 * 60);
 
         await Execucao.update(selectedExecucao.id, {
-            status: finalStatus,
+            status: finalStatus === "Finalizado" ? "Finalizado" : "Paralisado",
             termino: termino.toISOString(),
             tempo_total: tempoTotal
         });
         setIsStopModalOpen(false);
         setSelectedExecucao(null);
+        setFinalStatus("Finalizado");
         await loadData();
     };
     
-    const getStatusBadge = (analitico) => {
-        const execucoes = execucoesMap[analitico.id] || [];
+    const getStatusBadge = (planejamento) => {
+        const execucoes = execucoesMap[planejamento.id] || [];
         const execucaoAtiva = execucoes.find(e => e.status === "Em andamento" && e.usuario === user?.email);
 
         if (execucaoAtiva) {
@@ -110,40 +112,47 @@ export default function AnaliseConcepcaoPlanejamento() {
             );
         }
         return (
-            <Button size="sm" onClick={() => handleStartExecution(analitico.id)}>
+            <Button size="sm" onClick={() => handleStartExecution(planejamento.id)}>
                 <Play className="w-4 h-4 mr-2" /> Iniciar
             </Button>
         );
     };
 
-    const filteredAnaliticos = useMemo(() => {
-        return analiticos.filter(anal => {
-            const atividade = atividadesMap[anal.atividade_id];
+    const filteredPlanejamentos = useMemo(() => {
+        return planejamentos.filter(plan => {
+            const atividade = atividadesMap[plan.atividade_id];
             if (!atividade) return false;
             
-            const etapaMatch = selectedEtapas.includes(atividade.etapa);
-            const empreendimentoMatch = filterEmpreendimento === "todos" || anal.empreendimento_id === filterEmpreendimento;
+            const etapaMatch = selectedEtapas.includes(plan.etapa || atividade.etapa);
+            const empreendimentoMatch = filterEmpreendimento === "todos" || plan.empreendimento_id === filterEmpreendimento;
             const disciplinaMatch = filterDisciplina === "todos" || atividade.disciplina === filterDisciplina;
             
             return etapaMatch && empreendimentoMatch && disciplinaMatch;
         });
-    }, [analiticos, atividadesMap, selectedEtapas, filterEmpreendimento, filterDisciplina]);
+    }, [planejamentos, atividadesMap, selectedEtapas, filterEmpreendimento, filterDisciplina]);
 
     const groupedByDocumento = useMemo(() => {
         const grouped = {};
-        filteredAnaliticos.forEach(anal => {
-            if (!grouped[anal.documento_id]) {
-                const doc = documentos.find(d => d.id === anal.documento_id);
+        filteredPlanejamentos.forEach(plan => {
+            if (!plan.documento_id) return;
+            if (!grouped[plan.documento_id]) {
+                const doc = documentos.find(d => d.id === plan.documento_id);
                 if (doc) {
-                    grouped[anal.documento_id] = { doc, analiticos: [] };
+                    grouped[plan.documento_id] = { doc, planejamentos: [] };
                 }
             }
-            if (grouped[anal.documento_id]) {
-                grouped[anal.documento_id].analiticos.push(anal);
+            if (grouped[plan.documento_id]) {
+                grouped[plan.documento_id].planejamentos.push(plan);
             }
         });
-        return Object.values(grouped).sort((a,b) => a.doc.disciplina.localeCompare(b.doc.disciplina) || a.doc.numero.localeCompare(b.doc.numero));
-    }, [filteredAnaliticos, documentos]);
+        return Object.values(grouped).sort((a,b) => {
+            const disciplinaA = a.doc.disciplina || '';
+            const disciplinaB = b.doc.disciplina || '';
+            const numeroA = a.doc.numero || '';
+            const numeroB = b.doc.numero || '';
+            return disciplinaA.localeCompare(disciplinaB) || numeroA.localeCompare(numeroB);
+        });
+    }, [filteredPlanejamentos, documentos]);
     
     const disciplinasDisponiveis = [...new Set(Object.values(atividadesMap).map(a => a.disciplina))];
     const etapasDisponiveis = ["Concepção", "Planejamento"];
@@ -216,32 +225,42 @@ export default function AnaliseConcepcaoPlanejamento() {
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {groupedByDocumento.map(({ doc, analiticos: docAnaliticos }) => (
-                                        <React.Fragment key={doc.id}>
-                                            <TableRow className="bg-gray-50 hover:bg-gray-100">
-                                                <TableCell colSpan={5} className="font-semibold p-3">
-                                                    <div className="flex flex-col">
-                                                        <span>{doc.numero}</span>
-                                                        <span className="text-xs text-gray-500 font-normal">{empreendimentos.find(e => e.id === doc.empreendimento_id)?.nome}</span>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                            {docAnaliticos.map((analitico, idx) => {
-                                                const atividade = atividadesMap[analitico.atividade_id];
-                                                const execucoes = execucoesMap[analitico.id] || [];
-                                                const tempoExecutadoTotal = execucoes.reduce((sum, e) => sum + (e.tempo_total || 0), 0);
-                                                return (
-                                                    <TableRow key={analitico.id}>
-                                                        <TableCell>{idx === 0 ? `${doc.disciplina}` : ""}</TableCell>
-                                                        <TableCell>{atividade?.atividade || 'Atividade não encontrada'}</TableCell>
-                                                        <TableCell className="text-center">{analitico.tempo_real?.toFixed(1) || "0.0"}h</TableCell>
-                                                        <TableCell className="text-center">{tempoExecutadoTotal.toFixed(1)}h</TableCell>
-                                                        <TableCell className="text-center">{getStatusBadge(analitico)}</TableCell>
-                                                    </TableRow>
-                                                );
-                                            })}
-                                        </React.Fragment>
-                                    ))}
+                                    {groupedByDocumento.length === 0 ? (
+                                        <TableRow>
+                                            <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                                                Nenhuma atividade de Concepção ou Planejamento encontrada com os filtros selecionados.
+                                            </TableCell>
+                                        </TableRow>
+                                    ) : (
+                                        groupedByDocumento.map(({ doc, planejamentos: docPlanejamentos }) => (
+                                            <React.Fragment key={doc.id}>
+                                                <TableRow className="bg-gray-50 hover:bg-gray-100">
+                                                    <TableCell colSpan={5} className="font-semibold p-3">
+                                                        <div className="flex flex-col">
+                                                            <span>{doc.numero}</span>
+                                                            <span className="text-xs text-gray-500 font-normal">{empreendimentos.find(e => e.id === doc.empreendimento_id)?.nome}</span>
+                                                        </div>
+                                                    </TableCell>
+                                                </TableRow>
+                                                {docPlanejamentos.map((planejamento, idx) => {
+                                                    const atividade = atividadesMap[planejamento.atividade_id];
+                                                    const execucoes = execucoesMap[planejamento.id] || [];
+                                                    const tempoExecutadoTotal = execucoes
+                                                        .filter(e => e.status === "Finalizado")
+                                                        .reduce((sum, e) => sum + (e.tempo_total || 0), 0);
+                                                    return (
+                                                        <TableRow key={planejamento.id}>
+                                                            <TableCell>{idx === 0 ? `${doc.disciplina || '-'}` : ""}</TableCell>
+                                                            <TableCell>{planejamento.descritivo || atividade?.atividade || 'Atividade não encontrada'}</TableCell>
+                                                            <TableCell className="text-center">{planejamento.tempo_planejado?.toFixed(1) || "0.0"}h</TableCell>
+                                                            <TableCell className="text-center">{tempoExecutadoTotal.toFixed(1)}h</TableCell>
+                                                            <TableCell className="text-center">{getStatusBadge(planejamento)}</TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })}
+                                            </React.Fragment>
+                                        ))
+                                    )}
                                 </TableBody>
                             </Table>
                         </CardContent>
