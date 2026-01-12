@@ -490,12 +490,45 @@ export default function AlocacaoEquipeTab({
                     
                     return (
                       <React.Fragment key={usuario.id}>
-                        {/* Linha Previsto */}
-                        <tr className="bg-gray-50">
-                          <td className="border border-gray-300 p-1 sticky left-0 bg-gray-50 z-10" rowSpan={2}>
+                        {/* Linha Programado */}
+                        <tr className="bg-gray-100">
+                          <td className="border border-gray-300 p-1 sticky left-0 bg-gray-100 z-10" rowSpan={2}>
                             <div className="font-medium">{usuario.nome || usuario.full_name}</div>
                             <div className="text-gray-500 text-xs">{usuario.cargo || ''}</div>
                           </td>
+                          <td className="border border-gray-300 p-1 text-xs">Programado</td>
+                          {diasExibidos.map(dia => {
+                            const dataStr = format(dia, 'yyyy-MM-dd');
+                            const items = alocacaoUser.planejado[dataStr] || [];
+                            const hasItems = items.length > 0;
+                            
+                            return (
+                              <td 
+                                key={dataStr}
+                                className={`border border-gray-300 p-0.5 text-center ${
+                                  dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-200' : ''
+                                }`}
+                                title={hasItems ? items.map(i => `${i.label} (${i.empNome})`).join(', ') : ''}
+                              >
+                                <div className="flex flex-wrap gap-0.5 justify-center">
+                                  {items.map((item, idx) => (
+                                    <span 
+                                      key={idx} 
+                                      className="px-1 rounded text-white text-[10px] font-medium"
+                                      style={{ backgroundColor: item.cor }}
+                                    >
+                                      {item.label}
+                                    </span>
+                                  ))}
+
+                                </div>
+                              </td>
+                            );
+                          })}
+                        </tr>
+                        
+                        {/* Linha Previsto */}
+                        <tr className="bg-gray-50">
                           <td className="border border-gray-300 p-1 text-xs">Previsto</td>
                           {diasExibidos.map(dia => {
                             const dataStr = format(dia, 'yyyy-MM-dd');
@@ -538,39 +571,6 @@ export default function AlocacaoEquipeTab({
                                       title="Clique para remover"
                                     >
                                       {item.label} ×
-                                    </span>
-                                  ))}
-
-                                </div>
-                              </td>
-                            );
-                          })}
-                        </tr>
-                        
-                        {/* Linha Programado */}
-                        <tr className="bg-gray-100">
-                          <td className="border border-gray-300 p-1 text-xs">Programado</td>
-                          {diasExibidos.map(dia => {
-                            const dataStr = format(dia, 'yyyy-MM-dd');
-                            const items = alocacaoUser.planejado[dataStr] || [];
-                            const hasItems = items.length > 0;
-                            
-                            return (
-                              <td 
-                                key={dataStr}
-                                className={`border border-gray-300 p-0.5 text-center ${
-                                  dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-200' : ''
-                                }`}
-                                title={hasItems ? items.map(i => `${i.label} (${i.empNome})`).join(', ') : ''}
-                              >
-                                <div className="flex flex-wrap gap-0.5 justify-center">
-                                  {items.map((item, idx) => (
-                                    <span 
-                                      key={idx} 
-                                      className="px-1 rounded text-white text-[10px] font-medium"
-                                      style={{ backgroundColor: item.cor }}
-                                    >
-                                      {item.label}
                                     </span>
                                   ))}
 
