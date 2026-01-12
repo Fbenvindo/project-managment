@@ -262,7 +262,8 @@ export default function Dashboard() {
           atividades={atividades}
           onSuccess={() => {
             setShowNovoPlanejamentoModal(false);
-            handleManualRefresh();
+            // Não chamar handleManualRefresh() para não resetar o calendário
+            // O calendário já escuta o updateKey do contexto via triggerUpdate
           }}
         />
       )}
