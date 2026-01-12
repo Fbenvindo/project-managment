@@ -60,6 +60,7 @@ export default function AlocacaoEquipeTab({
   // Para usuários, mesclar props com atualizações locais
   const usuariosBase = usuariosProp?.length > 0 ? usuariosProp : usuariosLocal;
   const [usuariosEditados, setUsuariosEditados] = useState({});
+  const [osManuais, setOsManuais] = useState({}); // { [usuario_email]: { [dataStr]: [{ label, cor, empNome, os }] } }
   
   // Aplicar edições locais sobre os dados base
   const usuarios = useMemo(() => {
@@ -186,6 +187,45 @@ export default function AlocacaoEquipeTab({
   };
 
   const getMembros = (equipeId) => usuarios.filter(u => u.equipe_id === equipeId);
+
+  const handleAddOS = (usuario, dia) => {
+    const os = prompt('Digite o número da OS:');
+    if (!os || !os.trim()) return;
+
+    // Buscar empreendimento pela OS
+    const emp = empreendimentos.find(e => e.os === os.trim());
+    
+    if (!emp) {
+      alert(`Empreendimento com OS "${os}" não encontrado. Verifique o número.`);
+      return;
+    }
+
+    const dataStr = format(dia, 'yyyy-MM-dd');
+    const email = usuario.email;
+    const empCor = coresEmpreendimentos[emp.id] || '#6B7280';
+    const novoItem = {
+      label: os.trim(),
+      cor: empCor,
+      empNome: emp.nome,
+      os: os.trim()
+    };
+
+    setOsManuais(prev => {
+      const novo = { ...prev };
+      if (!novo[email]) novo[email] = {};
+      if (!novo[email][dataStr]) novo[email][dataStr] = [];
+      
+      // Verificar se já existe
+      const existe = novo[email][dataStr].find(item => item.os === os.trim());
+      if (existe) {
+        alert('Esta OS já foi adicionada para este dia.');
+        return prev;
+      }
+      
+      novo[email][dataStr] = [...novo[email][dataStr], novoItem];
+      return novo;
+    });
+  };
 
   // Gerar dias da semana atual + offset (3 semanas = 21 dias)
   const diasExibidos = useMemo(() => {
@@ -420,6 +460,7 @@ export default function AlocacaoEquipeTab({
                   {usuariosEquipe.map(usuario => {
                     const email = usuario.email;
                     const alocacaoUser = alocacaoPorUsuarioDia[email] || { planejado: {}, reprogramado: {} };
+                    const osManuaisUser = osManuais[email] || {};
                     
                     return (
                       <React.Fragment key={usuario.id}>
@@ -432,8 +473,10 @@ export default function AlocacaoEquipeTab({
                           <td className="border border-gray-300 p-1 text-xs">Previsto</td>
                           {diasExibidos.map(dia => {
                             const dataStr = format(dia, 'yyyy-MM-dd');
-                            const items = alocacaoUser.reprogramado[dataStr] || [];
-                            const hasItems = items.length > 0;
+                            const itemsReprogramados = alocacaoUser.reprogramado[dataStr] || [];
+                            const itemsManuais = osManuaisUser[dataStr] || [];
+                            const allItems = [...itemsReprogramados, ...itemsManuais];
+                            const hasItems = allItems.length > 0;
                             
                             return (
                               <td 
@@ -442,17 +485,11 @@ export default function AlocacaoEquipeTab({
                                   dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-200' : ''
                                 }`}
                                 style={hasItems ? { backgroundColor: '#FEF3C7' } : {}}
-                                title={hasItems ? items.map(i => `${i.label} (${i.empNome})`).join(', ') : 'Clique para adicionar OS'}
-                                onClick={() => {
-                                  const os = prompt('Digite a OS para este dia:');
-                                  if (os && os.trim()) {
-                                    // TODO: Salvar OS no backend
-                                    alert(`OS "${os}" adicionada para ${usuario.nome || usuario.full_name} em ${format(dia, 'dd/MM/yyyy')}`);
-                                  }
-                                }}
+                                title={hasItems ? allItems.map(i => `${i.label} (${i.empNome})`).join(', ') : 'Clique para adicionar OS'}
+                                onClick={() => handleAddOS(usuario, dia)}
                               >
                                 <div className="flex flex-wrap gap-0.5 justify-center">
-                                  {items.map((item, idx) => (
+                                  {allItems.map((item, idx) => (
                                     <span 
                                       key={idx} 
                                       className="px-1 rounded text-white text-[10px] font-medium border border-yellow-500"
