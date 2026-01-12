@@ -192,21 +192,33 @@ export default function AlocacaoEquipeTab({
     const os = prompt('Digite o número da OS:');
     if (!os || !os.trim()) return;
 
-    // Buscar empreendimento pela OS
-    const emp = empreendimentos.find(e => e.os === os.trim());
-    
-    if (!emp) {
-      alert(`Empreendimento com OS "${os}" não encontrado. Verifique o número.`);
-      return;
-    }
-
     const dataStr = format(dia, 'yyyy-MM-dd');
     const email = usuario.email;
-    const empCor = coresEmpreendimentos[emp.id] || '#6B7280';
+
+    // Buscar empreendimento pela OS (opcional, só para pegar cor)
+    const emp = empreendimentos.find(e => e.os === os.trim());
+    
+    // Se não encontrar, usar cor padrão baseada em hash da OS
+    let empCor = '#6B7280';
+    let empNome = os.trim();
+    
+    if (emp) {
+      empCor = coresEmpreendimentos[emp.id] || '#6B7280';
+      empNome = emp.nome;
+    } else {
+      // Gerar cor baseada no hash da OS
+      const cores = [
+        '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', 
+        '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'
+      ];
+      const hash = os.trim().split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      empCor = cores[hash % cores.length];
+    }
+
     const novoItem = {
       label: os.trim(),
       cor: empCor,
-      empNome: emp.nome,
+      empNome: empNome,
       os: os.trim()
     };
 
