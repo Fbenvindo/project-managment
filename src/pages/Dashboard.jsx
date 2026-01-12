@@ -34,7 +34,8 @@ export default function Dashboard() {
     isLoadingPlanejamentos,
     hasPermission,
     isAdmin,
-    nivelUsuario
+    nivelUsuario,
+    triggerUpdate
   } = useContext(ActivityTimerContext);
 
   const [disciplinas, setDisciplinas] = useState([]);
@@ -262,8 +263,7 @@ export default function Dashboard() {
           atividades={atividades}
           onSuccess={() => {
             setShowNovoPlanejamentoModal(false);
-            // Não chamar handleManualRefresh() para não resetar o calendário
-            // O calendário já escuta o updateKey do contexto via triggerUpdate
+            triggerUpdate(); // Atualiza o calendário mantendo o usuário filtrado
           }}
         />
       )}
