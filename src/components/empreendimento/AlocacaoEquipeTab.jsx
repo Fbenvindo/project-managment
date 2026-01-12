@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ChevronLeft, ChevronRight, Users, RefreshCw, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { format, addDays, startOfWeek, parseISO, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { PlanejamentoAtividade, Empreendimento, Documento, Equipe, Usuario } from "@/entities/all";
+import { PlanejamentoAtividade, Empreendimento, Documento, Equipe, Usuario, OSManual } from "@/entities/all";
 import { retryWithBackoff } from "../utils/apiUtils";
+import { base44 } from "@/api/base44Client";
 
 // Função para parsear datas locais
 const parseLocalDate = (dateString) => {
@@ -61,6 +62,8 @@ export default function AlocacaoEquipeTab({
   const usuariosBase = usuariosProp?.length > 0 ? usuariosProp : usuariosLocal;
   const [usuariosEditados, setUsuariosEditados] = useState({});
   const [osManuais, setOsManuais] = useState({}); // { [usuario_email]: { [dataStr]: [{ label, cor, empNome, os }] } }
+  const [showPreencherMassaModal, setShowPreencherMassaModal] = useState(false);
+  const [preenchimentoData, setPreenchimentoData] = useState({ usuario: '', dataInicio: '', dataFim: '', os: '' });
   
   // Aplicar edições locais sobre os dados base
   const usuarios = useMemo(() => {
@@ -76,12 +79,13 @@ export default function AlocacaoEquipeTab({
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [plans, emps, docs, teams, users] = await Promise.all([
+      const [plans, emps, docs, teams, users, osManuals] = await Promise.all([
         retryWithBackoff(() => PlanejamentoAtividade.list(), 3, 2000, 'AlocacaoEquipe-Planejamentos'),
         retryWithBackoff(() => Empreendimento.list(), 3, 2000, 'AlocacaoEquipe-Empreendimentos'),
         retryWithBackoff(() => Documento.list(), 3, 2000, 'AlocacaoEquipe-Documentos'),
         retryWithBackoff(() => Equipe.list(), 3, 2000, 'AlocacaoEquipe-Equipes'),
-        retryWithBackoff(() => Usuario.list(), 3, 2000, 'AlocacaoEquipe-Usuarios')
+        retryWithBackoff(() => Usuario.list(), 3, 2000, 'AlocacaoEquipe-Usuarios'),
+        retryWithBackoff(() => OSManual.list(), 3, 2000, 'AlocacaoEquipe-OSManual')
       ]);
       
       setPlanejamentosLocal(plans || []);
@@ -89,6 +93,20 @@ export default function AlocacaoEquipeTab({
       setDocumentosLocal(docs || []);
       setEquipesLocal(teams || []);
       setUsuariosLocal(users || []);
+      
+      // Carregar OS manuais
+      const osManuaisMap = {};
+      (osManuals || []).forEach(osm => {
+        if (!osManuaisMap[osm.usuario_email]) osManuaisMap[osm.usuario_email] = {};
+        if (!osManuaisMap[osm.usuario_email][osm.data]) osManuaisMap[osm.usuario_email][osm.data] = [];
+        osManuaisMap[osm.usuario_email][osm.data].push({
+          label: osm.os,
+          cor: osm.cor,
+          empNome: osm.empreendimento_nome,
+          os: osm.os
+        });
+      });
+      setOsManuais(osManuaisMap);
     } catch (error) {
       console.error('Erro ao carregar dados de alocação:', error);
     } finally {
@@ -188,7 +206,7 @@ export default function AlocacaoEquipeTab({
 
   const getMembros = (equipeId) => usuarios.filter(u => u.equipe_id === equipeId);
 
-  const handleAddOS = (usuario, dia) => {
+  const handleAddOS = async (usuario, dia) => {
     const os = prompt('Digite o número da OS:');
     if (!os || !os.trim()) return;
 
@@ -204,7 +222,6 @@ export default function AlocacaoEquipeTab({
     // Buscar empreendimento pela OS (opcional, só para pegar cor)
     const emp = empreendimentos.find(e => e.os === os.trim());
     
-    // Se não encontrar, usar cor padrão baseada em hash da OS
     let empCor = '#6B7280';
     let empNome = os.trim();
     
@@ -212,7 +229,6 @@ export default function AlocacaoEquipeTab({
       empCor = coresEmpreendimentos[emp.id] || '#6B7280';
       empNome = emp.nome;
     } else {
-      // Gerar cor baseada no hash da OS
       const cores = [
         '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', 
         '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'
@@ -228,29 +244,128 @@ export default function AlocacaoEquipeTab({
       os: os.trim()
     };
 
-    setOsManuais(prev => {
-      const novo = { ...prev };
-      if (!novo[email]) novo[email] = {};
-      if (!novo[email][dataStr]) novo[email][dataStr] = [];
-      novo[email][dataStr] = [...novo[email][dataStr], novoItem];
-      console.log('✅ OS adicionada:', { email, dataStr, os: os.trim(), cor: empCor });
-      return novo;
-    });
+    // Salvar no banco
+    try {
+      await base44.entities.OSManual.create({
+        usuario_email: email,
+        data: dataStr,
+        os: os.trim(),
+        empreendimento_nome: empNome,
+        cor: empCor
+      });
+      
+      setOsManuais(prev => {
+        const novo = { ...prev };
+        if (!novo[email]) novo[email] = {};
+        if (!novo[email][dataStr]) novo[email][dataStr] = [];
+        novo[email][dataStr] = [...novo[email][dataStr], novoItem];
+        return novo;
+      });
+    } catch (error) {
+      console.error('Erro ao salvar OS:', error);
+      alert('Erro ao salvar OS.');
+    }
   };
 
-  const handleRemoveOS = (usuario, dataStr, osLabel) => {
+  const handleRemoveOS = async (usuario, dataStr, osLabel) => {
     const email = usuario.email;
-    setOsManuais(prev => {
-      const novo = { ...prev };
-      if (novo[email]?.[dataStr]) {
-        novo[email][dataStr] = novo[email][dataStr].filter(item => item.os !== osLabel);
-        if (novo[email][dataStr].length === 0) {
-          delete novo[email][dataStr];
+    
+    try {
+      // Buscar e deletar do banco
+      const osManuals = await base44.entities.OSManual.filter({ 
+        usuario_email: email, 
+        data: dataStr, 
+        os: osLabel 
+      });
+      
+      for (const osm of osManuals) {
+        await base44.entities.OSManual.delete(osm.id);
+      }
+      
+      setOsManuais(prev => {
+        const novo = { ...prev };
+        if (novo[email]?.[dataStr]) {
+          novo[email][dataStr] = novo[email][dataStr].filter(item => item.os !== osLabel);
+          if (novo[email][dataStr].length === 0) {
+            delete novo[email][dataStr];
+          }
+        }
+        return novo;
+      });
+    } catch (error) {
+      console.error('Erro ao remover OS:', error);
+      alert('Erro ao remover OS.');
+    }
+  };
+
+  const handlePreencherMassa = async () => {
+    const { usuario, dataInicio, dataFim, os } = preenchimentoData;
+    
+    if (!usuario || !dataInicio || !dataFim || !os.trim()) {
+      alert('Preencha todos os campos.');
+      return;
+    }
+
+    const inicio = parseLocalDate(dataInicio);
+    const fim = parseLocalDate(dataFim);
+    
+    if (!inicio || !fim || inicio > fim) {
+      alert('Datas inválidas.');
+      return;
+    }
+
+    // Buscar empreendimento
+    const emp = empreendimentos.find(e => e.os === os.trim());
+    let empCor = '#6B7280';
+    let empNome = os.trim();
+    
+    if (emp) {
+      empCor = coresEmpreendimentos[emp.id] || '#6B7280';
+      empNome = emp.nome;
+    } else {
+      const cores = ['#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'];
+      const hash = os.trim().split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+      empCor = cores[hash % cores.length];
+    }
+
+    // Gerar lista de datas
+    const datasParaCriar = [];
+    let dataAtual = new Date(inicio);
+    
+    while (dataAtual <= fim) {
+      const diaSemana = dataAtual.getDay();
+      if (diaSemana !== 0 && diaSemana !== 6) { // Pular finais de semana
+        const dataStr = format(dataAtual, 'yyyy-MM-dd');
+        
+        // Verificar se já existe
+        if (!osManuais[usuario]?.[dataStr]?.find(item => item.os === os.trim())) {
+          datasParaCriar.push({
+            usuario_email: usuario,
+            data: dataStr,
+            os: os.trim(),
+            empreendimento_nome: empNome,
+            cor: empCor
+          });
         }
       }
-      console.log('🗑️ OS removida:', { email, dataStr, os: osLabel });
-      return novo;
-    });
+      dataAtual = addDays(dataAtual, 1);
+    }
+
+    if (datasParaCriar.length === 0) {
+      alert('Nenhuma data nova para adicionar (já existem ou são finais de semana).');
+      return;
+    }
+
+    try {
+      await base44.entities.OSManual.bulkCreate(datasParaCriar);
+      await loadData();
+      setShowPreencherMassaModal(false);
+      setPreenchimentoData({ usuario: '', dataInicio: '', dataFim: '', os: '' });
+      alert(`${datasParaCriar.length} OS adicionadas com sucesso!`);
+    } catch (error) {
+      console.error('Erro ao preencher em massa:', error);
+      alert('Erro ao preencher em massa.');
+    }
   };
 
   // Gerar dias da semana atual + offset (3 semanas = 21 dias)
@@ -441,6 +556,10 @@ export default function AlocacaoEquipeTab({
             <Button variant="outline" size="sm" onClick={() => setShowEquipeModal(true)}>
               <Users className="w-4 h-4 mr-1" />
               Equipes
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => setShowPreencherMassaModal(true)}>
+              <Plus className="w-4 h-4 mr-1" />
+              Preencher em Massa
             </Button>
             <Button variant="outline" size="sm" onClick={() => setWeekOffset(prev => prev - 1)}>
             <ChevronLeft className="w-4 h-4" />
@@ -702,6 +821,64 @@ export default function AlocacaoEquipeTab({
         </div>
       </DialogContent>
     </Dialog>
+
+      {/* Modal de Preenchimento em Massa */}
+      <Dialog open={showPreencherMassaModal} onOpenChange={setShowPreencherMassaModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Preencher Previsto em Massa</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>Usuário</Label>
+              <Select value={preenchimentoData.usuario} onValueChange={(v) => setPreenchimentoData(prev => ({ ...prev, usuario: v }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione um usuário" />
+                </SelectTrigger>
+                <SelectContent>
+                  {usuarios.filter(u => u.nome || u.full_name).map(u => (
+                    <SelectItem key={u.id} value={u.email}>
+                      {u.nome || u.full_name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>Data Início</Label>
+              <Input 
+                type="date" 
+                value={preenchimentoData.dataInicio}
+                onChange={(e) => setPreenchimentoData(prev => ({ ...prev, dataInicio: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Data Fim</Label>
+              <Input 
+                type="date" 
+                value={preenchimentoData.dataFim}
+                onChange={(e) => setPreenchimentoData(prev => ({ ...prev, dataFim: e.target.value }))}
+              />
+            </div>
+            <div>
+              <Label>Número da OS</Label>
+              <Input 
+                placeholder="Digite o número da OS"
+                value={preenchimentoData.os}
+                onChange={(e) => setPreenchimentoData(prev => ({ ...prev, os: e.target.value }))}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowPreencherMassaModal(false)}>
+                Cancelar
+              </Button>
+              <Button onClick={handlePreencherMassa}>
+                Preencher
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
