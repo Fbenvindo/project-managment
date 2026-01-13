@@ -819,10 +819,9 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                 </thead>
                 <tbody>
                   <tr className="hover:bg-gray-50">
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Telefonia</label>
+              <td className="border border-gray-300 p-2">
                 <Select value={controleOS.conc_telefonia} onValueChange={(v) => handleFieldChange('conc_telefonia', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.conc_telefonia)}>
+                  <SelectTrigger className={`h-8 text-xs ${getStatusColor(controleOS.conc_telefonia)}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -831,12 +830,10 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Gás</label>
+              </td>
+              <td className="border border-gray-300 p-2">
                 <Select value={controleOS.conc_gas} onValueChange={(v) => handleFieldChange('conc_gas', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.conc_gas)}>
+                  <SelectTrigger className={`h-8 text-xs ${getStatusColor(controleOS.conc_gas)}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -845,12 +842,10 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Elétrica</label>
+              </td>
+              <td className="border border-gray-300 p-2">
                 <Select value={controleOS.conc_eletrica} onValueChange={(v) => handleFieldChange('conc_eletrica', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.conc_eletrica)}>
+                  <SelectTrigger className={`h-8 text-xs ${getStatusColor(controleOS.conc_eletrica)}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -859,12 +854,10 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Hidráulica</label>
+              </td>
+              <td className="border border-gray-300 p-2">
                 <Select value={controleOS.conc_hidraulica} onValueChange={(v) => handleFieldChange('conc_hidraulica', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.conc_hidraulica)}>
+                  <SelectTrigger className={`h-8 text-xs ${getStatusColor(controleOS.conc_hidraulica)}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -873,12 +866,10 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Água Pluvial</label>
+              </td>
+              <td className="border border-gray-300 p-2">
                 <Select value={controleOS.conc_agua_pluvial} onValueChange={(v) => handleFieldChange('conc_agua_pluvial', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.conc_agua_pluvial)}>
+                  <SelectTrigger className={`h-8 text-xs ${getStatusColor(controleOS.conc_agua_pluvial)}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -887,12 +878,10 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                     ))}
                   </SelectContent>
                 </Select>
-              </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Incêndio</label>
+              </td>
+              <td className="border border-gray-300 p-2">
                 <Select value={controleOS.conc_incendio} onValueChange={(v) => handleFieldChange('conc_incendio', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.conc_incendio)}>
+                  <SelectTrigger className={`h-8 text-xs ${getStatusColor(controleOS.conc_incendio)}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -901,9 +890,11 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                     ))}
                   </SelectContent>
                 </Select>
+              </td>
+              </tr>
+              </tbody>
+              </table>
               </div>
-            </div>
-          </div>
 
           {/* Avanço */}
           <div>
