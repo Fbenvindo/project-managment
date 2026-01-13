@@ -732,7 +732,7 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                   </Select>
                 </div>
                 <div>
-                  <label className="text-xs text-gray-600 mb-1 block">MatLib</label>
+                  <label className="text-xs text-gray-600 mb-1 block">Memorial</label>
                   <Select value={controleOS.planejamento?.memorial?.matlib || 'NA'} onValueChange={(v) => handlePlanejamentoChange('memorial', 'matlib', v)}>
                     <SelectTrigger className={getStatusColor(controleOS.planejamento?.memorial?.matlib || 'NA')}>
                       <SelectValue />
