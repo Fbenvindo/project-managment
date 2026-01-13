@@ -732,12 +732,11 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                 </tbody>
                 </table>
                 </div>
-          </div>
-
           {/* Concessionárias */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Concessionárias</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          <div className="mt-4">
+            <div className="bg-gray-900 text-white font-bold text-sm px-4 py-2">Concessionárias</div>
+            <div className="overflow-x-auto border border-t-0 border-gray-300">
+              <div className="grid grid-cols-6 border-b border-gray-300">
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-1 block">Telefonia</label>
                 <Select value={controleOS.conc_telefonia} onValueChange={(v) => handleFieldChange('conc_telefonia', v)}>
