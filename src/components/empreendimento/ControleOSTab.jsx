@@ -244,9 +244,11 @@ export default function ControleOSTab({ empreendimento, atividades }) {
           </Button>
         </CardHeader>
         <CardContent className="space-y-6">
-          {/* Campos Fixos */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Gestão Geral</h3>
+          {/* Seções Principais - Layout em Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Campos Fixos */}
+            <div>
+              <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Gestão Geral</h3>
             <div className="overflow-x-auto border rounded-lg">
               <table className="w-full border-collapse bg-white">
                 <thead>
