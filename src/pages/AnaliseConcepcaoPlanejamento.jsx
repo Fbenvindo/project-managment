@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Play, Square, Filter, ClipboardList, CheckSquare } from "lucide-react";
+import CalendarioDiasHoras from '@/components/empreendimento/CalendarioDiasHoras';
 
 export default function AnaliseConcepcaoPlanejamento() {
     const [documentos, setDocumentos] = useState([]);
