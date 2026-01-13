@@ -638,22 +638,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
             </div>
           </div>
           <div className="flex items-center shrink-0 gap-2">
-            {/* Playlist Button */}
-            {plano.status !== 'concluido' && !plano.isLegacyExecution && plano.tipo_planejamento !== 'documento' && ( // Only show if not concluded AND not legacy execution AND not document planning
-              <button
-                onClick={(e) => {
-                  e.stopPropagation(); // Prevent parent div click from being triggered
-                  isNaPlaylist ? removeFromPlaylist(plano.id) : addToPlaylist(plano.id);
-                }}
-                className={`w-5 h-5 p-0 flex items-center justify-center rounded-full transition-colors 
-                            ${isNaPlaylist ? 'bg-purple-600 hover:bg-purple-700 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
-                title={isNaPlaylist ? "Remover da playlist" : "Adicionar à playlist"}
-              >
-                {isNaPlaylist ? <ListMusic className="w-3 h-3" /> : <PlusCircle className="w-3 h-3" />}
-              </button>
-            )}
-
-            {/* Existing Delete Button */}
+            {/* Delete Button */}
             {shouldShowDeleteButton() && (
               <Button
                 onClick={handleDeleteActivity}
