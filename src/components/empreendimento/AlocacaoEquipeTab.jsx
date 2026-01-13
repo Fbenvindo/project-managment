@@ -609,7 +609,7 @@ export default function AlocacaoEquipeTab({
                       <React.Fragment key={usuario.id}>
                         {/* Linha Programado */}
                         <tr className="bg-gray-100">
-                          <td className="border border-gray-300 p-1 sticky left-0 bg-gray-100 z-10" rowSpan={3}>
+                          <td className="border border-gray-300 p-1 sticky left-0 bg-gray-100 z-10" rowSpan={2}>
                             <div className="font-medium">{usuario.nome || usuario.full_name}</div>
                             <div className="text-gray-500 text-xs">{usuario.cargo || ''}</div>
                           </td>
@@ -677,39 +677,6 @@ export default function AlocacaoEquipeTab({
                                       title="Clique para remover"
                                     >
                                       {item.label} ×
-                                    </span>
-                                  ))}
-                                </div>
-                              </td>
-                            );
-                          })}
-                        </tr>
-                        
-                        {/* Linha Reprogramado */}
-                        <tr className="bg-yellow-50">
-                          <td className="border border-gray-300 p-1 text-xs">Reprogramado</td>
-                          {diasExibidos.map(dia => {
-                            const dataStr = format(dia, 'yyyy-MM-dd');
-                            const items = alocacaoUser.reprogramado[dataStr] || [];
-                            const hasItems = items.length > 0;
-                            
-                            return (
-                              <td 
-                                key={dataStr}
-                                className={`border border-gray-300 p-0.5 text-center ${
-                                  dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-200' : ''
-                                }`}
-                                style={hasItems ? { backgroundColor: '#FEF3C7' } : {}}
-                                title={hasItems ? items.map(i => `${i.label} (${i.empNome})`).join(', ') : ''}
-                              >
-                                <div className="flex flex-wrap gap-0.5 justify-center">
-                                  {items.map((item, idx) => (
-                                    <span 
-                                      key={idx} 
-                                      className="px-1 rounded text-white text-[10px] font-medium border border-yellow-500"
-                                      style={{ backgroundColor: item.cor }}
-                                    >
-                                      {item.label}
                                     </span>
                                   ))}
                                 </div>
