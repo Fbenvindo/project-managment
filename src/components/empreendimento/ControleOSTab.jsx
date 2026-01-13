@@ -423,9 +423,16 @@ export default function ControleOSTab({ empreendimento, atividades }) {
           )}
 
           {/* ART (Manual) */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">ART</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+           <div className="mt-4">
+            <div className="bg-gray-900 text-white font-bold text-sm px-4 py-2">ART</div>
+            <div className="overflow-x-auto border border-t-0 border-gray-300">
+              <div className="grid grid-cols-4 border-b border-gray-300">
+                <div className="px-4 py-2 border-r border-gray-300 flex items-center justify-center font-medium text-xs">ART - EE/AIS</div>
+                <div className="px-4 py-2 border-r border-gray-300 flex items-center justify-center font-medium text-xs">ART - HID/IN</div>
+                <div className="px-4 py-2 border-r border-gray-300 flex items-center justify-center font-medium text-xs">ART - HVAC</div>
+                <div className="px-4 py-2 flex items-center justify-center font-medium text-xs">ART - BOMB</div>
+              </div>
+            <div className="grid grid-cols-4">
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-1 block">ART - EE/AIS</label>
                 <Select value={controleOS.art_ee_ais} onValueChange={(v) => handleFieldChange('art_ee_ais', v)}>
