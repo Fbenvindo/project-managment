@@ -732,8 +732,9 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                 </td>
                 </tr>
                 </tbody>
-                </table>
-                </div>
+              </table>
+            </div>
+
           {/* Concessionárias */}
           <div className="mt-4">
             <div className="bg-gray-900 text-white font-bold text-sm px-4 py-2">Concessionárias</div>
