@@ -7,6 +7,7 @@ import { ClipboardList, Search, Loader2, Building2, ExternalLink } from "lucide-
 import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
+import ControleOSSpreadsheet from "../components/empreendimento/ControleOSSpreadsheet";
 
 const getStatusColor = (status) => {
   const colors = {
