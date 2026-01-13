@@ -887,12 +887,10 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                   </Select>
                 </div>
               </div>
-            </div>
-            </div>
+              </div>
+              </div>
 
-
-
-          {/* Avanço */}
+              {/* Avanço */}
           <div>
             <div className="flex items-center justify-between mb-4 border-b pb-2">
               <h3 className="text-lg font-semibold text-gray-800">Avanço</h3>
