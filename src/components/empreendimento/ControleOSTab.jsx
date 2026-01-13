@@ -265,14 +265,14 @@ export default function ControleOSTab({ empreendimento, atividades }) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="border rounded-lg bg-white">
-        <div className="flex items-center justify-between p-4 bg-gray-800 text-white rounded-t-lg">
-          <div className="flex items-center gap-2">
+    <div className="space-y-6">
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="flex items-center gap-2">
             <ClipboardList className="w-5 h-5" />
-            <h2 className="text-lg font-bold">Controle de Ordem de Serviço</h2>
-          </div>
-          <Button onClick={handleSave} disabled={isSaving} className="bg-green-600 hover:bg-green-700">
+            Controle de Ordem de Serviço
+          </CardTitle>
+          <Button onClick={handleSave} disabled={isSaving}>
             {isSaving ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -285,50 +285,213 @@ export default function ControleOSTab({ empreendimento, atividades }) {
               </>
             )}
           </Button>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="bg-gray-100 border-b-2 border-gray-300">
-                <th className="border border-gray-300 p-2 text-left font-bold bg-gray-800 text-white w-16">OS</th>
-                <th className="border border-gray-300 p-2 text-left font-bold bg-gray-600 text-white">Gestão</th>
-                <th className="border border-gray-300 p-2 text-left font-bold bg-gray-600 text-white">Formalização</th>
-                <th className="border border-gray-300 p-2 text-center font-bold bg-blue-600 text-white">Abertura</th>
-                <th className="border border-gray-300 p-2 text-center font-bold bg-blue-600 text-white">Atividades Planej.</th>
-                <th className="border border-gray-300 p-2 text-center font-bold bg-blue-600 text-white">Kick off</th>
-                <th className="border border-gray-300 p-2 text-center font-bold bg-purple-600 text-white">Cronograma</th>
-                <th className="border border-gray-300 p-2 text-center font-bold bg-purple-600 text-white">Markup</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr className="hover:bg-gray-50">
-                <td className="border border-gray-300 p-2 font-semibold bg-gray-50">{controleOS.os}</td>
-                <td className="border border-gray-300 p-2">
-                  <Select value={controleOS.gestao} onValueChange={(v) => handleFieldChange('gestao', v)}>
-                    <SelectTrigger className="h-8 text-xs">
-                      <SelectValue placeholder="Selecione" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {usuarios.map(user => (
-                        <SelectItem key={user.email} value={user.nome || user.email}>
-                          {user.nome || user.email}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </td>
-                <td className="border border-gray-300 p-2">
-                  <input 
-                    type="text"
-                    value={controleOS.formalizacao} 
-                    onChange={(e) => handleFieldChange('formalizacao', e.target.value)}
-                    className="w-full h-8 px-2 text-xs border border-gray-300 rounded"
-                    placeholder="-"
-                  />
-                </td>
-                <td className="border border-gray-300 p-2">
-                  <Select value={controleOS.abertura_os_servidor} onValueChange={(v) => handleFieldChange('abertura_os_servidor', v)}>
-                    <SelectTrigger className={`h-8 text-xs ${getStatusColor(controleOS.abertura_os_servidor)}`}>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {/* Campos Fixos */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Gestão Geral</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Gestão</label>
+                <Select value={controleOS.gestao} onValueChange={(v) => handleFieldChange('gestao', v)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um usuário" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {usuarios.map(user => (
+                      <SelectItem key={user.email} value={user.nome || user.email}>
+                        {user.nome || user.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Formalização</label>
+                <Input 
+                  value={controleOS.formalizacao} 
+                  onChange={(e) => handleFieldChange('formalizacao', e.target.value)}
+                  placeholder="Descrição da formalização"
+                  className="w-full"
+                />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Abertura OS - Servidor</label>
+                <Select value={controleOS.abertura_os_servidor} onValueChange={(v) => handleFieldChange('abertura_os_servidor', v)}>
+                  <SelectTrigger className={getStatusColor(controleOS.abertura_os_servidor)}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Atividades de Planejamento</label>
+                <Select value={controleOS.atividades_planejamento} onValueChange={(v) => handleFieldChange('atividades_planejamento', v)}>
+                  <SelectTrigger className={getStatusColor(controleOS.atividades_planejamento)}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Kick off com Cliente</label>
+                <Select value={controleOS.kickoff_cliente} onValueChange={(v) => handleFieldChange('kickoff_cliente', v)}>
+                  <SelectTrigger className={getStatusColor(controleOS.kickoff_cliente)}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Cronograma</label>
+                <Select value={controleOS.cronograma} onValueChange={(v) => handleFieldChange('cronograma', v)}>
+                  <SelectTrigger className={getStatusColor(controleOS.cronograma)}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Markup</label>
+                <Select value={controleOS.markup} onValueChange={(v) => handleFieldChange('markup', v)}>
+                  <SelectTrigger className={getStatusColor(controleOS.markup)}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Atividades Vinculadas do Empreendimento */}
+          {atividadesVinculadas.length > 0 && (
+            <div>
+              <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Atividades do Empreendimento</h3>
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                {atividadesVinculadas.map(ativ => {
+                  const status = controleOS.atividades_vinculadas?.[ativ.key] || 'NA';
+                  return (
+                    <div key={ativ.key}>
+                      <label className="text-sm font-medium text-gray-700 mb-1 block truncate" title={ativ.nome}>
+                        {ativ.nome}
+                      </label>
+                      <Select value={status} onValueChange={(v) => handleAtividadeChange(ativ.key, v)}>
+                        <SelectTrigger className={getStatusColor(status)}>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {STATUS_OPTIONS.map(opt => (
+                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* ART (Manual) */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">ART</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">ART - EE/AIS</label>
+                <Select value={controleOS.art_ee_ais} onValueChange={(v) => handleFieldChange('art_ee_ais', v)}>
+                  <SelectTrigger className={getStatusColor(controleOS.art_ee_ais)}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">ART - HID/IN</label>
+                <Select value={controleOS.art_hid_in} onValueChange={(v) => handleFieldChange('art_hid_in', v)}>
+                  <SelectTrigger className={getStatusColor(controleOS.art_hid_in)}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">ART - HVAC</label>
+                <Select value={controleOS.art_hvac} onValueChange={(v) => handleFieldChange('art_hvac', v)}>
+                  <SelectTrigger className={getStatusColor(controleOS.art_hvac)}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">ART - BOMB</label>
+                <Select value={controleOS.art_bomb} onValueChange={(v) => handleFieldChange('art_bomb', v)}>
+                  <SelectTrigger className={getStatusColor(controleOS.art_bomb)}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Planejamento */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Planejamento</h3>
+            
+            {/* Hidráulica */}
+            <div className="mb-6">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Hidráulica</h4>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-xs text-gray-600 mb-1 block">Concepção</label>
+                  <Select value={controleOS.planejamento?.hidraulica?.concepcao || 'NA'} onValueChange={(v) => handlePlanejamentoChange('hidraulica', 'concepcao', v)}>
+                    <SelectTrigger className={getStatusColor(controleOS.planejamento?.hidraulica?.concepcao || 'NA')}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -337,10 +500,11 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                       ))}
                     </SelectContent>
                   </Select>
-                </td>
-                <td className="border border-gray-300 p-2">
-                  <Select value={controleOS.atividades_planejamento} onValueChange={(v) => handleFieldChange('atividades_planejamento', v)}>
-                    <SelectTrigger className={`h-8 text-xs ${getStatusColor(controleOS.atividades_planejamento)}`}>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600 mb-1 block">Cálculo</label>
+                  <Select value={controleOS.planejamento?.hidraulica?.calculo || 'NA'} onValueChange={(v) => handlePlanejamentoChange('hidraulica', 'calculo', v)}>
+                    <SelectTrigger className={getStatusColor(controleOS.planejamento?.hidraulica?.calculo || 'NA')}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -349,10 +513,11 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                       ))}
                     </SelectContent>
                   </Select>
-                </td>
-                <td className="border border-gray-300 p-2">
-                  <Select value={controleOS.kickoff_cliente} onValueChange={(v) => handleFieldChange('kickoff_cliente', v)}>
-                    <SelectTrigger className={`h-8 text-xs ${getStatusColor(controleOS.kickoff_cliente)}`}>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600 mb-1 block">Diagrama</label>
+                  <Select value={controleOS.planejamento?.hidraulica?.diagrama || 'NA'} onValueChange={(v) => handlePlanejamentoChange('hidraulica', 'diagrama', v)}>
+                    <SelectTrigger className={getStatusColor(controleOS.planejamento?.hidraulica?.diagrama || 'NA')}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -361,10 +526,18 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                       ))}
                     </SelectContent>
                   </Select>
-                </td>
-                <td className="border border-gray-300 p-2">
-                  <Select value={controleOS.cronograma} onValueChange={(v) => handleFieldChange('cronograma', v)}>
-                    <SelectTrigger className={`h-8 text-xs ${getStatusColor(controleOS.cronograma)}`}>
+                </div>
+              </div>
+            </div>
+
+            {/* Elétrica */}
+            <div className="mb-6">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Elétrica</h4>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-xs text-gray-600 mb-1 block">Concepção</label>
+                  <Select value={controleOS.planejamento?.eletrica?.concepcao || 'NA'} onValueChange={(v) => handlePlanejamentoChange('eletrica', 'concepcao', v)}>
+                    <SelectTrigger className={getStatusColor(controleOS.planejamento?.eletrica?.concepcao || 'NA')}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -373,10 +546,11 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                       ))}
                     </SelectContent>
                   </Select>
-                </td>
-                <td className="border border-gray-300 p-2">
-                  <Select value={controleOS.markup} onValueChange={(v) => handleFieldChange('markup', v)}>
-                    <SelectTrigger className={`h-8 text-xs ${getStatusColor(controleOS.markup)}`}>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600 mb-1 block">Cálculo</label>
+                  <Select value={controleOS.planejamento?.eletrica?.calculo || 'NA'} onValueChange={(v) => handlePlanejamentoChange('eletrica', 'calculo', v)}>
+                    <SelectTrigger className={getStatusColor(controleOS.planejamento?.eletrica?.calculo || 'NA')}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
@@ -385,12 +559,381 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                       ))}
                     </SelectContent>
                   </Select>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        </div>
-        </div>
-        );
-        }
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600 mb-1 block">Diagrama</label>
+                  <Select value={controleOS.planejamento?.eletrica?.diagrama || 'NA'} onValueChange={(v) => handlePlanejamentoChange('eletrica', 'diagrama', v)}>
+                    <SelectTrigger className={getStatusColor(controleOS.planejamento?.eletrica?.diagrama || 'NA')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Incêndio */}
+            <div className="mb-6">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Incêndio</h4>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-xs text-gray-600 mb-1 block">Concepção</label>
+                  <Select value={controleOS.planejamento?.incendio?.concepcao || 'NA'} onValueChange={(v) => handlePlanejamentoChange('incendio', 'concepcao', v)}>
+                    <SelectTrigger className={getStatusColor(controleOS.planejamento?.incendio?.concepcao || 'NA')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600 mb-1 block">Cálculo</label>
+                  <Select value={controleOS.planejamento?.incendio?.calculo || 'NA'} onValueChange={(v) => handlePlanejamentoChange('incendio', 'calculo', v)}>
+                    <SelectTrigger className={getStatusColor(controleOS.planejamento?.incendio?.calculo || 'NA')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600 mb-1 block">Diagrama</label>
+                  <Select value={controleOS.planejamento?.incendio?.diagrama || 'NA'} onValueChange={(v) => handlePlanejamentoChange('incendio', 'diagrama', v)}>
+                    <SelectTrigger className={getStatusColor(controleOS.planejamento?.incendio?.diagrama || 'NA')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Sistemas Eletrônicos */}
+            <div className="mb-6">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Sistemas Eletrônicos</h4>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-xs text-gray-600 mb-1 block">Concepção</label>
+                  <Select value={controleOS.planejamento?.sistemas_eletronicos?.concepcao || 'NA'} onValueChange={(v) => handlePlanejamentoChange('sistemas_eletronicos', 'concepcao', v)}>
+                    <SelectTrigger className={getStatusColor(controleOS.planejamento?.sistemas_eletronicos?.concepcao || 'NA')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600 mb-1 block">Cálculo</label>
+                  <Select value={controleOS.planejamento?.sistemas_eletronicos?.calculo || 'NA'} onValueChange={(v) => handlePlanejamentoChange('sistemas_eletronicos', 'calculo', v)}>
+                    <SelectTrigger className={getStatusColor(controleOS.planejamento?.sistemas_eletronicos?.calculo || 'NA')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600 mb-1 block">Diagrama</label>
+                  <Select value={controleOS.planejamento?.sistemas_eletronicos?.diagrama || 'NA'} onValueChange={(v) => handlePlanejamentoChange('sistemas_eletronicos', 'diagrama', v)}>
+                    <SelectTrigger className={getStatusColor(controleOS.planejamento?.sistemas_eletronicos?.diagrama || 'NA')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Ar Condicionado */}
+            <div className="mb-6">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Ar Condicionado</h4>
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label className="text-xs text-gray-600 mb-1 block">Concepção</label>
+                  <Select value={controleOS.planejamento?.ar_condicionado?.concepcao || 'NA'} onValueChange={(v) => handlePlanejamentoChange('ar_condicionado', 'concepcao', v)}>
+                    <SelectTrigger className={getStatusColor(controleOS.planejamento?.ar_condicionado?.concepcao || 'NA')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600 mb-1 block">Cálculo</label>
+                  <Select value={controleOS.planejamento?.ar_condicionado?.calculo || 'NA'} onValueChange={(v) => handlePlanejamentoChange('ar_condicionado', 'calculo', v)}>
+                    <SelectTrigger className={getStatusColor(controleOS.planejamento?.ar_condicionado?.calculo || 'NA')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600 mb-1 block">Diagrama</label>
+                  <Select value={controleOS.planejamento?.ar_condicionado?.diagrama || 'NA'} onValueChange={(v) => handlePlanejamentoChange('ar_condicionado', 'diagrama', v)}>
+                    <SelectTrigger className={getStatusColor(controleOS.planejamento?.ar_condicionado?.diagrama || 'NA')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+
+            {/* Memorial */}
+            <div className="mb-6">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3">Memorial</h4>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-xs text-gray-600 mb-1 block">Esp. Téc.</label>
+                  <Select value={controleOS.planejamento?.memorial?.esp_tec || 'NA'} onValueChange={(v) => handlePlanejamentoChange('memorial', 'esp_tec', v)}>
+                    <SelectTrigger className={getStatusColor(controleOS.planejamento?.memorial?.esp_tec || 'NA')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600 mb-1 block">MatLib</label>
+                  <Select value={controleOS.planejamento?.memorial?.matlib || 'NA'} onValueChange={(v) => handlePlanejamentoChange('memorial', 'matlib', v)}>
+                    <SelectTrigger className={getStatusColor(controleOS.planejamento?.memorial?.matlib || 'NA')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Concessionárias */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Concessionárias</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Telefonia</label>
+                <Select value={controleOS.conc_telefonia} onValueChange={(v) => handleFieldChange('conc_telefonia', v)}>
+                  <SelectTrigger className={getStatusColor(controleOS.conc_telefonia)}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Gás</label>
+                <Select value={controleOS.conc_gas} onValueChange={(v) => handleFieldChange('conc_gas', v)}>
+                  <SelectTrigger className={getStatusColor(controleOS.conc_gas)}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Elétrica</label>
+                <Select value={controleOS.conc_eletrica} onValueChange={(v) => handleFieldChange('conc_eletrica', v)}>
+                  <SelectTrigger className={getStatusColor(controleOS.conc_eletrica)}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Hidráulica</label>
+                <Select value={controleOS.conc_hidraulica} onValueChange={(v) => handleFieldChange('conc_hidraulica', v)}>
+                  <SelectTrigger className={getStatusColor(controleOS.conc_hidraulica)}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Água Pluvial</label>
+                <Select value={controleOS.conc_agua_pluvial} onValueChange={(v) => handleFieldChange('conc_agua_pluvial', v)}>
+                  <SelectTrigger className={getStatusColor(controleOS.conc_agua_pluvial)}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Incêndio</label>
+                <Select value={controleOS.conc_incendio} onValueChange={(v) => handleFieldChange('conc_incendio', v)}>
+                  <SelectTrigger className={getStatusColor(controleOS.conc_incendio)}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </div>
+
+          {/* Avanço */}
+          <div>
+            <div className="flex items-center justify-between mb-4 border-b pb-2">
+              <h3 className="text-lg font-semibold text-gray-800">Avanço</h3>
+              <Button onClick={handleAddAvancoItem} size="sm" variant="outline">
+                <Plus className="w-4 h-4 mr-2" />
+                Adicionar Item
+              </Button>
+            </div>
+            
+            {controleOS.avanco && controleOS.avanco.length > 0 ? (
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-800">
+                      <TableHead className="text-white font-semibold">Etapa</TableHead>
+                      <TableHead className="text-white font-semibold w-[200px]">Status</TableHead>
+                      <TableHead className="text-white font-semibold">Observações</TableHead>
+                      <TableHead className="text-white font-semibold w-[60px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {controleOS.avanco.map((item, index) => (
+                      <TableRow key={index}>
+                        <TableCell>
+                          <Select 
+                            value={item.etapa || ''} 
+                            onValueChange={(v) => handleAvancoChange(index, 'etapa', v)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Nome da etapa" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ETAPAS_OPTIONS.map(etapa => (
+                                <SelectItem key={etapa} value={etapa}>{etapa}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Select 
+                            value={item.status || 'NA'} 
+                            onValueChange={(v) => handleAvancoChange(index, 'status', v)}
+                          >
+                            <SelectTrigger className={getStatusColor(item.status || 'NA')}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {STATUS_OPTIONS.map(opt => (
+                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Textarea
+                            value={item.observacoes || ''}
+                            onChange={(e) => handleAvancoChange(index, 'observacoes', e.target.value)}
+                            placeholder="Observações"
+                            className="min-h-[60px] w-full"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveAvancoItem(index)}
+                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500 border border-dashed rounded-lg">
+                Nenhum item de avanço adicionado. Clique em "Adicionar Item" para começar.
+              </div>
+            )}
+          </div>
+
+          {/* Observações */}
+          <div>
+            <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Observações</h3>
+            <Textarea
+              value={controleOS.observacoes || ''}
+              onChange={(e) => handleFieldChange('observacoes', e.target.value)}
+              placeholder="Adicione observações gerais sobre o controle de OS..."
+              className="min-h-[100px]"
+            />
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
