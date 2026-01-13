@@ -716,8 +716,8 @@ export default function ControleOSTab({ empreendimento, atividades }) {
 
             {/* Memorial */}
             <div className="mb-6">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">Memorial</h4>
-              <div className="grid grid-cols-2 gap-4">
+              <h4 className="text-sm font-semibold text-gray-700 mb-3 border-b pb-1">Memorial / Esp. Tec. / Mark-up</h4>
+              <div className="grid grid-cols-3 gap-4">
                 <div>
                   <label className="text-xs text-gray-600 mb-1 block">Esp. Téc.</label>
                   <Select value={controleOS.planejamento?.memorial?.esp_tec || 'NA'} onValueChange={(v) => handlePlanejamentoChange('memorial', 'esp_tec', v)}>
@@ -735,6 +735,19 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                   <label className="text-xs text-gray-600 mb-1 block">MatLib</label>
                   <Select value={controleOS.planejamento?.memorial?.matlib || 'NA'} onValueChange={(v) => handlePlanejamentoChange('memorial', 'matlib', v)}>
                     <SelectTrigger className={getStatusColor(controleOS.planejamento?.memorial?.matlib || 'NA')}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-xs text-gray-600 mb-1 block">Mark-up</label>
+                  <Select value={controleOS.markup || 'NA'} onValueChange={(v) => handleFieldChange('markup', v)}>
+                    <SelectTrigger className={getStatusColor(controleOS.markup)}>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
