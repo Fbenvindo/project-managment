@@ -8,7 +8,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Play, Square, Filter, ClipboardList, CheckSquare } from "lucide-react";
-import CalendarioDiasHoras from '@/components/empreendimento/CalendarioDiasHoras';
 
 export default function AnaliseConcepcaoPlanejamento() {
     const [documentos, setDocumentos] = useState([]);
@@ -145,34 +144,6 @@ export default function AnaliseConcepcaoPlanejamento() {
         });
     }, [planejamentos, atividadesMap, selectedEtapas, filterEmpreendimento, filterDisciplina]);
 
-    const horasPorDia = useMemo(() => {
-        const horas = {};
-        
-        // Horas executadas finalizadas
-        Object.entries(execucoesMap).forEach(([planejamentoId, execucoes]) => {
-            execucoes.forEach(exec => {
-                if (exec.status === "Finalizado" && exec.termino && exec.usuario === user?.email) {
-                    const data = new Date(exec.termino).toLocaleDateString('pt-BR');
-                    if (!horas[data]) horas[data] = { executado: 0, alocado: 0 };
-                    horas[data].executado += exec.tempo_total || 0;
-                }
-            });
-        });
-
-        // Horas planejadas alocadas para o usuário
-        planejamentos.forEach(plan => {
-            if (plan.executores?.includes(user?.email) || plan.executor_principal === user?.email) {
-                if (plan.inicio_planejado) {
-                    const data = new Date(plan.inicio_planejado).toLocaleDateString('pt-BR');
-                    if (!horas[data]) horas[data] = { executado: 0, alocado: 0 };
-                    horas[data].alocado += plan.tempo_planejado || 0;
-                }
-            }
-        });
-
-        return horas;
-    }, [execucoesMap, planejamentos, user]);
-
     const groupedByDocumento = useMemo(() => {
         const grouped = {};
         filteredPlanejamentos.forEach(plan => {
@@ -255,12 +226,6 @@ export default function AnaliseConcepcaoPlanejamento() {
 
                 {isLoading ? <Skeleton className="h-96 w-full" /> : (
                     <Card className="bg-white border-0 shadow-lg">
-                        {Object.keys(horasPorDia).length > 0 && (
-                            <div className="p-6 border-b border-gray-100">
-                                <h3 className="text-sm font-semibold text-gray-700 mb-4">Horas Alocadas por Dia</h3>
-                                <CalendarioDiasHoras horasPorDia={horasPorDia} />
-                            </div>
-                        )}
                         <CardContent className="p-0">
                             <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
                                 <Table className="min-w-max">
