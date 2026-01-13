@@ -730,27 +730,26 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                   Adicionar Item
                 </Button>
                 </div>
-            
-            {controleOS.avanco && controleOS.avanco.length > 0 ? (
-              <div className="border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gray-800">
-                      <TableHead className="text-white font-semibold">Etapa</TableHead>
-                      <TableHead className="text-white font-semibold w-[200px]">Status</TableHead>
-                      <TableHead className="text-white font-semibold">Observações</TableHead>
-                      <TableHead className="text-white font-semibold w-[60px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+            <div className="overflow-x-auto">
+              {controleOS.avanco && controleOS.avanco.length > 0 ? (
+                <table className="w-full border-collapse text-sm">
+                  <thead>
+                    <tr className="bg-gray-100 border-b-2 border-gray-300">
+                      <th className="border border-gray-300 p-2 text-left font-bold bg-gray-600 text-white">Etapa</th>
+                      <th className="border border-gray-300 p-2 text-center font-bold bg-gray-600 text-white">Status</th>
+                      <th className="border border-gray-300 p-2 text-left font-bold bg-gray-600 text-white">Observações</th>
+                      <th className="border border-gray-300 p-2 text-center font-bold bg-gray-600 text-white w-[50px]"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
                     {controleOS.avanco.map((item, index) => (
-                      <TableRow key={index}>
-                        <TableCell>
+                      <tr key={index} className="hover:bg-gray-50">
+                        <td className="border border-gray-300 p-2">
                           <Select 
                             value={item.etapa || ''} 
                             onValueChange={(v) => handleAvancoChange(index, 'etapa', v)}
                           >
-                            <SelectTrigger>
+                            <SelectTrigger className="h-8 text-xs">
                               <SelectValue placeholder="Nome da etapa" />
                             </SelectTrigger>
                             <SelectContent>
@@ -759,13 +758,13 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                               ))}
                             </SelectContent>
                           </Select>
-                        </TableCell>
-                        <TableCell>
+                        </td>
+                        <td className="border border-gray-300 p-2">
                           <Select 
                             value={item.status || 'NA'} 
                             onValueChange={(v) => handleAvancoChange(index, 'status', v)}
                           >
-                            <SelectTrigger className={getStatusColor(item.status || 'NA')}>
+                            <SelectTrigger className={`h-8 text-xs ${getStatusColor(item.status || 'NA')}`}>
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -774,36 +773,35 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                               ))}
                             </SelectContent>
                           </Select>
-                        </TableCell>
-                        <TableCell>
+                        </td>
+                        <td className="border border-gray-300 p-2">
                           <Textarea
                             value={item.observacoes || ''}
                             onChange={(e) => handleAvancoChange(index, 'observacoes', e.target.value)}
                             placeholder="Observações"
-                            className="min-h-[60px] w-full"
+                            className="min-h-[40px] w-full text-xs"
                           />
-                        </TableCell>
-                        <TableCell>
+                        </td>
+                        <td className="border border-gray-300 p-2 text-center">
                           <Button
                             variant="ghost"
                             size="sm"
                             onClick={() => handleRemoveAvancoItem(index)}
-                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                            className="text-red-600 hover:text-red-800 hover:bg-red-50 h-6 px-2"
                           >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3 h-3" />
                           </Button>
-                        </TableCell>
-                      </TableRow>
+                        </td>
+                      </tr>
                     ))}
-                  </TableBody>
-                </Table>
-              </div>
-            ) : (
-              <div className="text-center py-8 text-gray-500 border border-dashed rounded-lg">
-                Nenhum item de avanço adicionado. Clique em "Adicionar Item" para começar.
-              </div>
-            )}
-          </div>
+                  </tbody>
+                </table>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  Nenhum item de avanço adicionado. Clique em "Adicionar Item" para começar.
+                </div>
+              )}
+            </div>
 
           {/* Observações */}
           <div>
