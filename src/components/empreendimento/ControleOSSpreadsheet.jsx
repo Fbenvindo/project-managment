@@ -195,7 +195,8 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
               Nenhum empreendimento encontrado
             </div>
           ) : (
-            <div className="flex bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+            <div className="w-full overflow-x-auto">
+              <div className="inline-flex bg-white rounded-lg shadow border border-gray-200">
               {/* Coluna Projeto Fixa */}
               <div className="sticky left-0 z-20 flex-shrink-0">
                 <table className="border-collapse text-xs">
