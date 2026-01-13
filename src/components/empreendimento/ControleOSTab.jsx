@@ -488,11 +488,20 @@ export default function ControleOSTab({ empreendimento, atividades }) {
            <div className="mt-4">
             <div className="bg-gray-900 text-white font-bold text-sm px-4 py-2">Planejamento</div>
             <div className="overflow-x-auto border border-t-0 border-gray-300">
-            
-            {/* Hidráulica */}
-            <div className="mb-6">
-              <h4 className="text-sm font-semibold text-gray-700 mb-3">Hidráulica</h4>
-              <div className="grid grid-cols-3 gap-4">
+            <table className="w-full border-collapse text-xs">
+              <thead>
+                <tr className="bg-gray-100 border-b border-gray-300">
+                  <th className="px-3 py-2 text-left font-semibold border-r border-gray-300 bg-gray-900 text-white">Disciplina</th>
+                  <th className="px-3 py-2 text-center font-semibold border-r border-gray-300">Concepção</th>
+                  <th className="px-3 py-2 text-center font-semibold border-r border-gray-300">Cálculo</th>
+                  <th className="px-3 py-2 text-center font-semibold">Diagrama</th>
+                </tr>
+              </thead>
+              <tbody>
+                {/* Hidráulica */}
+                <tr className="border-b border-gray-300">
+                  <td className="px-3 py-2 font-medium border-r border-gray-300 bg-gray-50">Hidráulica</td>
+                  <td className="px-3 py-2 border-r border-gray-300 flex items-center justify-center">
                 <div>
                   <label className="text-xs text-gray-600 mb-1 block">Concepção</label>
                   <Select value={controleOS.planejamento?.hidraulica?.concepcao || 'NA'} onValueChange={(v) => handlePlanejamentoChange('hidraulica', 'concepcao', v)}>
