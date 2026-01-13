@@ -64,12 +64,48 @@ export default function ControleOSTab({ empreendimento, atividades }) {
     loadControleOS();
   }, [empreendimento?.id]);
 
+  useEffect(() => {
+    if (controleOS && atividades) {
+      updateMarkupStatus();
+    }
+  }, [atividades, controleOS?.id]);
+
   const loadUsuarios = async () => {
     try {
       const usuariosData = await base44.entities.Usuario.list();
       setUsuarios(usuariosData || []);
     } catch (error) {
       console.error('Erro ao carregar usuários:', error);
+    }
+  };
+
+  const mapStatusToControleOS = (status) => {
+    const statusMap = {
+      'nao_iniciado': 'Pendente',
+      'em_andamento': 'Em andamento',
+      'concluido': 'Concluído',
+      'atrasado': 'Pendente',
+      'pausado': 'Hold'
+    };
+    return statusMap[status?.toLowerCase()] || 'NA';
+  };
+
+  const updateMarkupStatus = () => {
+    if (!atividades || !empreendimento) return;
+    
+    const markupAtividade = atividades.find(ativ => 
+      ativ.empreendimento_id === empreendimento.id &&
+      ativ.atividade?.toLowerCase().includes('markup')
+    );
+    
+    if (markupAtividade && markupAtividade.status) {
+      const novoStatus = mapStatusToControleOS(markupAtividade.status);
+      if (novoStatus !== controleOS.markup) {
+        setControleOS(prev => ({
+          ...prev,
+          markup: novoStatus
+        }));
+      }
     }
   };
 
