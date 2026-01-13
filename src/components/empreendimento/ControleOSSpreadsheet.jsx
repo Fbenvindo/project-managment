@@ -335,7 +335,6 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                     </tbody>
                   </table>
                 </div>
-                </div>
               </div>
             </div>
            )}
