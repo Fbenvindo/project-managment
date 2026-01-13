@@ -433,61 +433,57 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                 <div className="px-4 py-2 flex items-center justify-center font-medium text-xs">ART - BOMB</div>
               </div>
             <div className="grid grid-cols-4">
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">ART - EE/AIS</label>
-                <Select value={controleOS.art_ee_ais} onValueChange={(v) => handleFieldChange('art_ee_ais', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.art_ee_ais)}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUS_OPTIONS.map(opt => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <div className="px-4 py-2 border-r border-gray-300 border-b border-gray-300 flex items-center justify-center">
+                 <Select value={controleOS.art_ee_ais} onValueChange={(v) => handleFieldChange('art_ee_ais', v)}>
+                   <SelectTrigger className={`w-20 h-7 text-xs border-0 ${getStatusColor(controleOS.art_ee_ais)}`}>
+                     <SelectValue />
+                   </SelectTrigger>
+                   <SelectContent>
+                     {STATUS_OPTIONS.map(opt => (
+                       <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                     ))}
+                   </SelectContent>
+                 </Select>
+               </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">ART - HID/IN</label>
-                <Select value={controleOS.art_hid_in} onValueChange={(v) => handleFieldChange('art_hid_in', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.art_hid_in)}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUS_OPTIONS.map(opt => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+               <div className="px-4 py-2 border-r border-gray-300 border-b border-gray-300 flex items-center justify-center">
+                 <Select value={controleOS.art_hid_in} onValueChange={(v) => handleFieldChange('art_hid_in', v)}>
+                   <SelectTrigger className={`w-20 h-7 text-xs border-0 ${getStatusColor(controleOS.art_hid_in)}`}>
+                     <SelectValue />
+                   </SelectTrigger>
+                   <SelectContent>
+                     {STATUS_OPTIONS.map(opt => (
+                       <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                     ))}
+                   </SelectContent>
+                 </Select>
+               </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">ART - HVAC</label>
-                <Select value={controleOS.art_hvac} onValueChange={(v) => handleFieldChange('art_hvac', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.art_hvac)}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUS_OPTIONS.map(opt => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+               <div className="px-4 py-2 border-r border-gray-300 border-b border-gray-300 flex items-center justify-center">
+                 <Select value={controleOS.art_hvac} onValueChange={(v) => handleFieldChange('art_hvac', v)}>
+                   <SelectTrigger className={`w-20 h-7 text-xs border-0 ${getStatusColor(controleOS.art_hvac)}`}>
+                     <SelectValue />
+                   </SelectTrigger>
+                   <SelectContent>
+                     {STATUS_OPTIONS.map(opt => (
+                       <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                     ))}
+                   </SelectContent>
+                 </Select>
+               </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">ART - BOMB</label>
-                <Select value={controleOS.art_bomb} onValueChange={(v) => handleFieldChange('art_bomb', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.art_bomb)}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUS_OPTIONS.map(opt => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+               <div className="px-4 py-2 border-b border-gray-300 flex items-center justify-center">
+                 <Select value={controleOS.art_bomb} onValueChange={(v) => handleFieldChange('art_bomb', v)}>
+                   <SelectTrigger className={`w-20 h-7 text-xs border-0 ${getStatusColor(controleOS.art_bomb)}`}>
+                     <SelectValue />
+                   </SelectTrigger>
+                   <SelectContent>
+                     {STATUS_OPTIONS.map(opt => (
+                       <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                     ))}
+                   </SelectContent>
+                 </Select>
+               </div>
             </div>
           </div>
 
