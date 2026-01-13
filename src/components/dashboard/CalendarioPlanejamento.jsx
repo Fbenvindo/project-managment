@@ -624,15 +624,19 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
 
         {/* Top Row: Activity Name + Action Icons */}
         <div className="flex items-start justify-between mb-1.5">
-          <p className={`font-medium text-gray-800 flex-1 mr-2 break-words ${hasSelections || isSelected ? 'ml-12' : 'ml-6'}`} title={displayName}>
-            {displayName}
-            {plano.isQuickActivity && ( // Use isQuickActivity flag
-              <Badge variant="outline" className="ml-2 px-1 py-0.5 text-xs bg-gray-100 text-gray-600 border-gray-300">Execução Rápida</Badge>
-            )}
-            {plano.tipo_planejamento === 'documento' && (
-              <Badge variant="outline" className="ml-2 px-1 py-0.5 text-xs bg-blue-100 text-blue-600 border-blue-300">Planejamento Doc.</Badge>
-            )}
-          </p>
+          <div className={`flex-1 mr-2 overflow-hidden ${hasSelections || isSelected ? 'ml-12' : 'ml-6'}`}>
+            <p className="font-medium text-gray-800 break-words line-clamp-2" title={displayName}>
+              {displayName}
+            </p>
+            <div className="flex flex-wrap gap-1 mt-1">
+              {plano.isQuickActivity && (
+                <Badge variant="outline" className="px-1 py-0.5 text-xs bg-gray-100 text-gray-600 border-gray-300">Execução Rápida</Badge>
+              )}
+              {plano.tipo_planejamento === 'documento' && (
+                <Badge variant="outline" className="px-1 py-0.5 text-xs bg-blue-100 text-blue-600 border-blue-300">Planejamento Doc.</Badge>
+              )}
+            </div>
+          </div>
           <div className="flex items-center shrink-0 gap-2">
             {/* Playlist Button */}
             {plano.status !== 'concluido' && !plano.isLegacyExecution && plano.tipo_planejamento !== 'documento' && ( // Only show if not concluded AND not legacy execution AND not document planning
@@ -755,7 +759,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
         
         {/* CORRIGIDO: Documento Row agora só renderiza para atividades normais, não para planejamentos de documento */}
         {plano.tipo_planejamento !== 'documento' && documentoDisplay && (
-          <p className="text-gray-600 font-mono mb-1.5 break-words" title={`Documento: ${documentoDisplay}`}>
+          <p className="text-gray-600 font-mono mb-1.5 truncate" title={`Documento: ${documentoDisplay}`}>
             {documentoDisplay}
           </p>
         )}
