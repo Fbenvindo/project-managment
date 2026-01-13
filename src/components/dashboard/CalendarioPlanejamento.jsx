@@ -759,16 +759,16 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
         
         {/* CORRIGIDO: Documento Row agora só renderiza para atividades normais, não para planejamentos de documento */}
         {plano.tipo_planejamento !== 'documento' && documentoDisplay && (
-          <p className="text-gray-600 font-mono mb-1.5 truncate" title={`Documento: ${documentoDisplay}`}>
+          <p className="text-gray-600 font-mono mb-1.5 break-words text-xs leading-tight" title={`Documento: ${documentoDisplay}`}>
             {documentoDisplay}
           </p>
         )}
         
         {/* Executor Row */}
         {planoExecutor && (
-          <div className="flex items-center gap-1.5 text-gray-700">
-            <User className="w-3 h-3 flex-shrink-0"/>
-            <span className="truncate" title={planoExecutor.nome || planoExecutor.email}>
+          <div className="flex items-start gap-1.5 text-gray-700">
+            <User className="w-3 h-3 flex-shrink-0 mt-0.5"/>
+            <span className="break-words text-xs leading-tight" title={planoExecutor.nome || planoExecutor.email}>
               {planoExecutor.nome || planoExecutor.email}
             </span>
           </div>
@@ -1001,13 +1001,13 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
                     <LineChart className="w-3.5 h-3.5" />
                   </Button>
             </div>
-            <p className="font-bold text-xs truncate text-gray-800" title={empreendimentoNome}>
+            <p className="font-bold text-xs break-words leading-tight text-gray-800" title={empreendimentoNome}>
               {empreendimentoNome}
             </p>
             {empreendimentoNome !== 'Atividades Rápidas' && (
-              <div className="flex items-center gap-1.5 mt-1">
-                  <User className="w-3 h-3 flex-shrink-0"/>
-                  <p className="text-xs font-medium truncate" title={executorNome}>{executorNome}</p>
+              <div className="flex items-start gap-1.5 mt-1">
+                  <User className="w-3 h-3 flex-shrink-0 mt-0.5"/>
+                  <p className="text-xs font-medium break-words leading-tight" title={executorNome}>{executorNome}</p>
               </div>
             )}
           </div>
