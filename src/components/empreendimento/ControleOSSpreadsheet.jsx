@@ -226,42 +226,6 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
               {/* Tabelas sem coluna Projeto */}
               <div className="flex-1 overflow-x-auto">
                 <div className="inline-flex gap-0">
-                  {/* PROJETO sem coluna Projeto */}
-                  <table className="border-collapse text-xs">
-                    <thead className="bg-gray-800 text-white">
-                      <tr>
-                        <th colSpan={projetoColumns.length - 1} className="border border-gray-300 px-4 py-2 text-left font-bold">
-                          PROJETO
-                        </th>
-                      </tr>
-                      <tr>
-                        {projetoColumns.slice(1).map((col) => (
-                          <th
-                            key={col.key}
-                            className="border border-gray-300 px-2 py-2 text-left font-semibold whitespace-nowrap"
-                            style={{ width: col.width, minWidth: col.width }}
-                          >
-                            {col.label}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                          {projetoColumns.slice(1).map((col) => {
-                            const value = row[col.key] || 'NA';
-                            return (
-                              <td key={col.key} className="border border-gray-300 px-2 py-1.5 whitespace-nowrap">
-                                {col.isStatus ? <StatusCell status={value} /> : value}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  
                   {/* ART sem coluna Projeto */}
                   <table className="border-collapse text-xs">
                     <thead className="bg-gray-800 text-white">
