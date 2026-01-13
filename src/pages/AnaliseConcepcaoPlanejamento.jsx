@@ -256,25 +256,9 @@ export default function AnaliseConcepcaoPlanejamento() {
                 {isLoading ? <Skeleton className="h-96 w-full" /> : (
                     <Card className="bg-white border-0 shadow-lg">
                         {Object.keys(horasPorDia).length > 0 && (
-                            <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-blue-100">
-                                <h3 className="text-sm font-semibold text-gray-700 mb-3">Horas por Dia</h3>
-                                <div className="flex flex-wrap gap-3">
-                                    {Object.entries(horasPorDia).sort().map(([data, { alocado, executado }]) => (
-                                        <div key={data} className="bg-white px-4 py-3 rounded-lg shadow-sm border border-blue-200">
-                                            <p className="text-xs text-gray-500 mb-2">{data}</p>
-                                            <div className="space-y-1">
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <span className="text-xs text-gray-600">Alocado:</span>
-                                                    <span className="text-sm font-semibold text-blue-600">{alocado.toFixed(1)}h</span>
-                                                </div>
-                                                <div className="flex items-center justify-between gap-2">
-                                                    <span className="text-xs text-gray-600">Executado:</span>
-                                                    <span className="text-sm font-semibold text-green-600">{executado.toFixed(1)}h</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
+                            <div className="p-6 border-b border-gray-100">
+                                <h3 className="text-sm font-semibold text-gray-700 mb-4">Horas Alocadas por Dia</h3>
+                                <CalendarioDiasHoras horasPorDia={horasPorDia} />
                             </div>
                         )}
                         <CardContent className="p-0">
