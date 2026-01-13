@@ -98,10 +98,19 @@ export default function AnaliseConcepcaoPlanejamento() {
             termino: termino.toISOString(),
             tempo_total: tempoTotal
         });
+        
+        setExecucoesMap(prev => ({
+            ...prev,
+            [selectedExecucao.planejamento_id]: prev[selectedExecucao.planejamento_id].map(e => 
+                e.id === selectedExecucao.id 
+                    ? { ...e, status: finalStatus === "Finalizado" ? "Finalizado" : "Paralisado", termino: termino.toISOString(), tempo_total: tempoTotal }
+                    : e
+            )
+        }));
+        
         setIsStopModalOpen(false);
         setSelectedExecucao(null);
         setFinalStatus("Finalizado");
-        await loadData();
     };
     
     const getStatusBadge = (planejamento) => {
