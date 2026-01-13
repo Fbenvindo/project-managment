@@ -571,7 +571,7 @@ export default function AlocacaoEquipeTab({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-auto max-h-[600px]">
+        <div className="overflow-auto max-h-[calc(100vh-250px)]">
           <table className="w-full border-collapse text-xs">
             <thead className="sticky top-0 z-20">
               <tr className="bg-gray-800 text-white">
