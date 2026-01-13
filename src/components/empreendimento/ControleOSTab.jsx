@@ -1209,78 +1209,48 @@ export default function ControleOSTab({ empreendimento, atividades }) {
             </div>
             
             {controleOS.avanco && controleOS.avanco.length > 0 ? (
-              <div className="border rounded-lg overflow-hidden">
-                <Table>
-                  <TableHeader>
-                    <TableRow className="bg-gray-800">
-                      <TableHead className="text-white font-semibold">Etapa</TableHead>
-                      <TableHead className="text-white font-semibold w-[200px]">Status</TableHead>
-                      <TableHead className="text-white font-semibold">Observações</TableHead>
-                      <TableHead className="text-white font-semibold w-[60px]"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+              <div className="border border-gray-300 rounded-lg overflow-hidden">
+                <table className="w-full border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-gray-800 text-white">
+                      <th className="border border-gray-300 font-semibold p-2 text-left">Etapa</th>
+                      <th className="border border-gray-300 font-semibold p-2 text-left w-24">Status</th>
+                      <th className="border border-gray-300 font-semibold p-2 text-left">Observações</th>
+                      <th className="border border-gray-300 font-semibold p-2 w-12"></th>
+                    </tr>
+                  </thead>
+                  <tbody>
                     {controleOS.avanco.map((item, index) => (
-                      <TableRow key={index}>
-                        <TableCell>
-                          <Select 
-                            value={item.etapa || ''} 
-                            onValueChange={(v) => handleAvancoChange(index, 'etapa', v)}
-                          >
-                            <SelectTrigger>
-                              <SelectValue placeholder="Nome da etapa" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {ETAPAS_OPTIONS.map(etapa => (
-                                <SelectItem key={etapa} value={etapa}>{etapa}</SelectItem>
-                              ))}
-                            </SelectContent>
+                      <tr key={index}>
+                        <td className="border border-gray-300 p-1">
+                          <Select value={item.etapa || ''} onValueChange={(v) => handleAvancoChange(index, 'etapa', v)}>
+                            <SelectTrigger className="h-7 text-xs"><SelectValue placeholder="Selecione" /></SelectTrigger>
+                            <SelectContent>{ETAPAS_OPTIONS.map(etapa => (<SelectItem key={etapa} value={etapa}>{etapa}</SelectItem>))}</SelectContent>
                           </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Select 
-                            value={item.status || 'NA'} 
-                            onValueChange={(v) => handleAvancoChange(index, 'status', v)}
-                          >
-                            <SelectTrigger className={getStatusColor(item.status || 'NA')}>
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {STATUS_OPTIONS.map(opt => (
-                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                              ))}
-                            </SelectContent>
+                        </td>
+                        <td className="border border-gray-300 p-1">
+                          <Select value={item.status || 'NA'} onValueChange={(v) => handleAvancoChange(index, 'status', v)}>
+                            <SelectTrigger className={`h-7 text-xs ${getStatusColor(item.status || 'NA')}`}><SelectValue /></SelectTrigger>
+                            <SelectContent>{STATUS_OPTIONS.map(opt => (<SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>))}</SelectContent>
                           </Select>
-                        </TableCell>
-                        <TableCell>
-                          <Textarea
-                            value={item.observacoes || ''}
-                            onChange={(e) => handleAvancoChange(index, 'observacoes', e.target.value)}
-                            placeholder="Observações"
-                            className="min-h-[60px] w-full"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleRemoveAvancoItem(index)}
-                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+                        </td>
+                        <td className="border border-gray-300 p-1">
+                          <input type="text" value={item.observacoes || ''} onChange={(e) => handleAvancoChange(index, 'observacoes', e.target.value)} placeholder="Obs." className="w-full px-2 py-1 text-xs border border-gray-300 rounded" />
+                        </td>
+                        <td className="border border-gray-300 p-1 text-center">
+                          <Button variant="ghost" size="icon" onClick={() => handleRemoveAvancoItem(index)} className="h-6 w-6 text-red-600 hover:text-red-800 hover:bg-red-50"><Trash2 className="w-3 h-3" /></Button>
+                        </td>
+                      </tr>
                     ))}
-                  </TableBody>
-                </Table>
+                  </tbody>
+                </table>
               </div>
             ) : (
-              <div className="text-center py-8 text-gray-500 border border-dashed rounded-lg">
-                Nenhum item de avanço adicionado. Clique em "Adicionar Item" para começar.
+              <div className="text-center py-4 text-gray-500 border border-dashed border-gray-300 rounded-lg text-xs">
+                Nenhum item de avanço. Clique em "Adicionar" para começar.
               </div>
             )}
-          </div>
+            </div>
 
           {/* Observações */}
           <div>
