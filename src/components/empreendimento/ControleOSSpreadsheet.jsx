@@ -2,22 +2,6 @@ import React, { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Grid3x3, List } from "lucide-react";
 
-const getStatusColor = (status) => {
-  const colors = {
-    "NA": "bg-gray-100 text-gray-700",
-    "Concluído": "bg-green-100 text-green-700",
-    "Pendente": "bg-red-100 text-red-700",
-    "Em andamento": "bg-yellow-100 text-yellow-700",
-    "Hold": "bg-orange-100 text-orange-700",
-    "Paralisado": "bg-orange-200 text-orange-800",
-    "Técnico": "bg-blue-100 text-blue-700",
-    "Ag. Liberação": "bg-cyan-100 text-cyan-700",
-    "Finalizado": "bg-purple-100 text-purple-700",
-    "Em aprovação": "bg-yellow-200 text-yellow-800"
-  };
-  return colors[status] || "bg-gray-100 text-gray-700";
-};
-
 const getStatusBgColor = (status) => {
   const colors = {
     "NA": "#f3f4f6",
@@ -34,6 +18,61 @@ const getStatusBgColor = (status) => {
   return colors[status] || "#f3f4f6";
 };
 
+const StatusCell = ({ status }) => (
+  <div
+    className="px-2 py-1 text-xs font-medium text-center rounded whitespace-nowrap"
+    style={{ backgroundColor: getStatusBgColor(status), color: '#1f2937' }}
+  >
+    {status}
+  </div>
+);
+
+const SpreadsheetTable = ({ title, columns, data, stickyFirst = true }) => (
+  <div className="overflow-x-auto bg-white rounded-lg shadow border border-gray-200">
+    <table className="w-full border-collapse text-xs">
+      <thead className="bg-gray-800 text-white">
+        <tr>
+          <th colSpan={columns.length} className="border border-gray-300 px-4 py-2 text-left font-bold">
+            {title}
+          </th>
+        </tr>
+        <tr>
+          {columns.map((col) => (
+            <th
+              key={col.key}
+              className="border border-gray-300 px-2 py-2 text-left font-semibold whitespace-nowrap"
+              style={{ width: col.width, minWidth: col.width }}
+            >
+              {col.label}
+            </th>
+          ))}
+        </tr>
+      </thead>
+      <tbody>
+        {data.map((row, idx) => (
+          <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+            {columns.map((col) => {
+              const value = row[col.key] || 'NA';
+              const isStatusCell = col.isStatus;
+              
+              return (
+                <td 
+                  key={col.key} 
+                  className={`border border-gray-300 px-2 py-1.5 whitespace-nowrap ${
+                    stickyFirst && col.key === columns[0].key ? 'sticky left-0 bg-white z-10 font-medium' : ''
+                  }`}
+                >
+                  {isStatusCell ? <StatusCell status={value} /> : value}
+                </td>
+              );
+            })}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  </div>
+);
+
 export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, searchTerm }) {
   const [isGridView, setIsGridView] = useState(true);
 
@@ -45,54 +84,55 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
   }, [empreendimentos]);
 
   const filteredControles = useMemo(() => {
-    return controlesOS.filter(controle => {
-      const emp = empreendimentosMap[controle.empreendimento_id];
+    return controlesOS.map(controle => ({
+      ...controle,
+      id: controle.id,
+      projeto: empreendimentosMap[controle.empreendimento_id]?.nome || 'N/A'
+    })).filter(controle => {
       const searchLower = searchTerm?.toLowerCase() || '';
       return (
-        emp?.nome?.toLowerCase().includes(searchLower) ||
-        emp?.cliente?.toLowerCase().includes(searchLower) ||
+        controle.projeto?.toLowerCase().includes(searchLower) ||
+        empreendimentosMap[controle.empreendimento_id]?.cliente?.toLowerCase().includes(searchLower) ||
         controle.os?.toLowerCase().includes(searchLower)
       );
     });
   }, [controlesOS, searchTerm, empreendimentosMap]);
 
-  const columns = [
-    { key: 'projeto', label: 'PROJETO', width: '180px' },
-    { key: 'os', label: 'OS', width: '60px' },
-    { key: 'gestao', label: 'Gestão', width: '70px' },
-    { key: 'formalizacao', label: 'Formalização', width: '80px' },
-    { key: 'abertura_os_servidor', label: 'Abertura OS', width: '80px' },
-    { key: 'atividades_planejamento', label: 'Ativ. Planejamento', width: '90px' },
-    { key: 'kickoff_cliente', label: 'Kickoff', width: '80px' },
-    { key: 'cronograma', label: 'Cronograma', width: '80px' },
-    { key: 'markup', label: 'Markup', width: '80px' },
-    { key: 'art_ee_ais', label: 'ART EE/AIS', width: '80px' },
-    { key: 'art_hid_in', label: 'ART HID/IN', width: '80px' },
-    { key: 'art_hvac', label: 'ART HVAC', width: '80px' },
-    { key: 'art_bomb', label: 'ART BOMB', width: '80px' },
-    { key: 'conc_telefonia', label: 'Telefonia', width: '80px' },
-    { key: 'conc_gas', label: 'Gás', width: '70px' },
-    { key: 'conc_eletrica', label: 'Elétrica', width: '70px' },
-    { key: 'conc_hidraulica', label: 'Hidráulica', width: '80px' },
-    { key: 'conc_agua_pluvial', label: 'Água Pluvial', width: '90px' },
-    { key: 'conc_incendio', label: 'Incêndio', width: '80px' }
+  // Seção PROJETO
+  const projetoColumns = [
+    { key: 'projeto', label: 'PROJETO', width: '200px' },
+    { key: 'os', label: 'OS', width: '60px', isStatus: false },
+    { key: 'gestao', label: 'Gestão', width: '70px', isStatus: true },
+    { key: 'formalizacao', label: 'Formalização', width: '80px', isStatus: true },
+    { key: 'abertura_os_servidor', label: 'Abertura OS', width: '80px', isStatus: true },
+    { key: 'atividades_planejamento', label: 'Ativ. Planejamento', width: '90px', isStatus: true },
+    { key: 'kickoff_cliente', label: 'Kickoff', width: '80px', isStatus: true },
+    { key: 'cronograma', label: 'Cronograma', width: '80px', isStatus: true },
+    { key: 'markup', label: 'Markup', width: '80px', isStatus: true }
   ];
 
-  const getValue = (controle, key) => {
-    return controle[key] || 'NA';
-  };
+  // Seção ART
+  const artColumns = [
+    { key: 'projeto', label: 'PROJETO', width: '200px' },
+    { key: 'art_ee_ais', label: 'ART - ELÉTRICA', width: '100px', isStatus: true },
+    { key: 'art_hid_in', label: 'ART - HIDRÁULICA', width: '110px', isStatus: true },
+    { key: 'art_hvac', label: 'ART - HVAC', width: '90px', isStatus: true },
+    { key: 'art_bomb', label: 'ART - BOMB', width: '90px', isStatus: true }
+  ];
 
-  const StatusCell = ({ status }) => (
-    <div
-      className={`px-2 py-1 text-xs font-medium text-center rounded whitespace-nowrap ${getStatusColor(status)}`}
-      style={{ backgroundColor: getStatusBgColor(status) }}
-    >
-      {status}
-    </div>
-  );
+  // Seção CONCESSIONÁRIAS
+  const concessionariaColumns = [
+    { key: 'projeto', label: 'PROJETO', width: '200px' },
+    { key: 'conc_telefonia', label: 'TELEFONIA', width: '90px', isStatus: true },
+    { key: 'conc_gas', label: 'GÁS', width: '80px', isStatus: true },
+    { key: 'conc_eletrica', label: 'ELÉTRICA', width: '90px', isStatus: true },
+    { key: 'conc_hidraulica', label: 'HIDRÁULICA', width: '100px', isStatus: true },
+    { key: 'conc_agua_pluvial', label: 'ÁGUA PLUVIAL', width: '110px', isStatus: true },
+    { key: 'conc_incendio', label: 'INCÊNDIO', width: '90px', isStatus: true }
+  ];
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/* Toggle View */}
       <div className="flex gap-2 justify-end mb-4">
         <Button
@@ -116,54 +156,32 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
       </div>
 
       {isGridView ? (
-        // Grid/Spreadsheet View
-        <div className="overflow-x-auto bg-white rounded-lg shadow border border-gray-200">
-          <table className="w-full border-collapse text-xs">
-            <thead className="sticky top-0 z-10 bg-gray-800 text-white">
-              <tr>
-                {columns.map((col) => (
-                  <th
-                    key={col.key}
-                    className="border border-gray-300 px-2 py-2 text-left font-semibold whitespace-nowrap"
-                    style={{ width: col.width, minWidth: col.width }}
-                  >
-                    {col.label}
-                  </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {filteredControles.map((controle, idx) => {
-                const emp = empreendimentosMap[controle.empreendimento_id];
-                return (
-                  <tr key={controle.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    <td className="border border-gray-300 px-2 py-1.5 font-medium text-gray-900 whitespace-nowrap sticky left-0 bg-white z-10">
-                      <div className="max-w-xs truncate" title={emp?.nome || 'N/A'}>
-                        {emp?.nome || 'N/A'}
-                      </div>
-                    </td>
-                    <td className="border border-gray-300 px-2 py-1.5 text-gray-700 whitespace-nowrap text-center">
-                      {controle.os || 'N/A'}
-                    </td>
-                    {columns.slice(2).map((col) => (
-                      <td key={col.key} className="border border-gray-300 px-1 py-1.5 whitespace-nowrap">
-                        <StatusCell status={getValue(controle, col.key)} />
-                      </td>
-                    ))}
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-
-          {filteredControles.length === 0 && (
+        <>
+          {filteredControles.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               Nenhum empreendimento encontrado
             </div>
+          ) : (
+            <>
+              <SpreadsheetTable 
+                title="PROJETO"
+                columns={projetoColumns}
+                data={filteredControles}
+              />
+              <SpreadsheetTable 
+                title="ART"
+                columns={artColumns}
+                data={filteredControles}
+              />
+              <SpreadsheetTable 
+                title="CONCESSIONÁRIAS"
+                columns={concessionariaColumns}
+                data={filteredControles}
+              />
+            </>
           )}
-        </div>
+        </>
       ) : (
-        // Cards View (fallback to existing view)
         <div className="text-center py-8 text-gray-600">
           Modo de cartões - volte para a visualização de planilha
         </div>
