@@ -25,6 +25,8 @@ import AnaliseConcepcaoPlanejamentoTab from "../components/empreendimento/Analis
 import GestaoTab from "../components/empreendimento/GestaoTab";
 import PRETab from "../components/empreendimento/PRETab";
 import CadastroTab from "../components/empreendimento/CadastroTab";
+import ControleOSTab from "../components/empreendimento/ControleOSTab";
+import AlocacaoEquipeTab from "../components/empreendimento/AlocacaoEquipeTab";
 import { ActivityTimerContext } from "@/components/contexts/ActivityTimerContext";
 
 export default function EmpreendimentoPage() {
@@ -39,7 +41,9 @@ export default function EmpreendimentoPage() {
     atividades_projeto: { data: [], loaded: false, loading: false },
     catalogo_atividades: { data: [], loaded: false, loading: false },
     documentacao: { data: [], loaded: false, loading: false },
-    gestao: { data: [], loaded: false, loading: false }
+    gestao: { data: [], loaded: false, loading: false },
+    controle_os: { data: [], loaded: false, loading: false },
+    alocacao_equipe: { data: [], loaded: false, loading: false }
   });
 
   const [sharedData, setSharedData] = useState({
@@ -186,6 +190,42 @@ export default function EmpreendimentoPage() {
         case 'gestao':
             data = {};
             break;
+        
+        case 'controle_os':
+            data = {};
+            break;
+        
+        case 'alocacao_equipe':
+            const [planosAtiv, planosDoc, empsData, docsData, equipesData] = await Promise.all([
+              retryWithExtendedBackoff(() => PlanejamentoAtividade.list(), 'loadAllPlanejamentosAtividade'),
+              (async () => {
+                try {
+                  const { PlanejamentoDocumento } = await import('@/entities/all');
+                  return await retryWithExtendedBackoff(() => PlanejamentoDocumento.list(), 'loadAllPlanejamentosDocumento');
+                } catch {
+                  return [];
+                }
+              })(),
+              retryWithExtendedBackoff(() => Empreendimento.list(), 'loadAllEmpreendimentos'),
+              retryWithExtendedBackoff(() => Documento.list(), 'loadAllDocumentos'),
+              (async () => {
+                try {
+                  const { Equipe } = await import('@/entities/all');
+                  return await retryWithExtendedBackoff(() => Equipe.list(), 'loadEquipes');
+                } catch {
+                  return [];
+                }
+              })()
+            ]);
+            
+            data = {
+              planejamentos: [...(planosAtiv || []), ...(planosDoc || [])],
+              empreendimentos: empsData || [],
+              documentos: docsData || [],
+              equipes: equipesData || []
+            };
+            break;
+        
         default:
             console.warn(`Aba desconhecida: ${tabName}`);
             break;
@@ -271,7 +311,9 @@ export default function EmpreendimentoPage() {
       atividades_projeto: { data: [], loaded: false, loading: false },
       catalogo_atividades: { data: [], loaded: false, loading: false },
       documentacao: { data: [], loaded: false, loading: false },
-      gestao: { data: [], loaded: false, loading: false }
+      gestao: { data: [], loaded: false, loading: false },
+      controle_os: { data: [], loaded: false, loading: false },
+      alocacao_equipe: { data: [], loaded: false, loading: false }
     });
     setSharedData(prev => ({ ...prev, loaded: false }));
     loadEmpreendimento();
@@ -325,7 +367,7 @@ export default function EmpreendimentoPage() {
         <EmpreendimentoHeader empreendimento={empreendimento} />
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className={`grid w-full ${hasAccessToGestao ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-8' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-7'} bg-white shadow-sm`}>
+          <TabsList className={`grid w-full ${hasAccessToGestao ? 'grid-cols-2 sm:grid-cols-5 lg:grid-cols-10' : 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-9'} bg-white shadow-sm`}>
             <TabsTrigger value="documentos">Documentos</TabsTrigger>
             <TabsTrigger value="cadastro">Cadastro</TabsTrigger>
             <TabsTrigger value="pavimentos">Pavimentos</TabsTrigger>
@@ -335,6 +377,8 @@ export default function EmpreendimentoPage() {
             </TabsTrigger>
             <TabsTrigger value="documentacao">Documentação</TabsTrigger>
             <TabsTrigger value="pre">PRE</TabsTrigger>
+            <TabsTrigger value="controle_os">Controle OS</TabsTrigger>
+            <TabsTrigger value="alocacao_equipe">Alocação Equipe</TabsTrigger>
             {hasAccessToGestao && (
               <TabsTrigger value="gestao">Gestão</TabsTrigger>
             )}
@@ -454,6 +498,37 @@ export default function EmpreendimentoPage() {
 
           <TabsContent value="pre">
             <PRETab empreendimento={empreendimento} />
+          </TabsContent>
+
+          <TabsContent value="controle_os">
+            {sharedData.loading ? (
+              <div className="flex flex-col items-center justify-center h-96">
+                <RefreshCw className="w-8 h-8 animate-spin text-blue-500 mb-4" />
+                <p className="text-gray-600">Carregando...</p>
+              </div>
+            ) : sharedData.loaded ? (
+              <ControleOSTab 
+                empreendimento={empreendimento}
+                atividades={sharedData.atividades || []}
+              />
+            ) : null}
+          </TabsContent>
+
+          <TabsContent value="alocacao_equipe">
+            {tabData.alocacao_equipe.loading || sharedData.loading ? (
+              <div className="flex flex-col items-center justify-center h-96">
+                <RefreshCw className="w-8 h-8 animate-spin text-blue-500 mb-4" />
+                <p className="text-gray-600">Carregando alocação...</p>
+              </div>
+            ) : tabData.alocacao_equipe.loaded && sharedData.loaded ? (
+              <AlocacaoEquipeTab
+                planejamentos={tabData.alocacao_equipe.data.planejamentos || []}
+                usuarios={sharedData.usuarios}
+                empreendimentos={tabData.alocacao_equipe.data.empreendimentos || []}
+                documentos={tabData.alocacao_equipe.data.documentos || []}
+                equipes={tabData.alocacao_equipe.data.equipes || []}
+              />
+            ) : null}
           </TabsContent>
 
           {hasAccessToGestao && (

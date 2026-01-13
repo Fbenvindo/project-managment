@@ -75,6 +75,12 @@ const LayoutComponent = ({ children, currentPageName }) => {
         icon: Calendar,
         show: true
       });
+      items.push({
+        title: "Controle OS",
+        url: createPageUrl("ControleOSGlobal"),
+        icon: Briefcase,
+        show: true
+      });
     }
 
     if (hasPermission('coordenador')) {
