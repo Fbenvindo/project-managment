@@ -486,7 +486,7 @@ export default function ControleOSTab({ empreendimento, atividades }) {
 
           {/* Planejamento */}
            <div className="mt-4">
-            <div className="bg-gray-900 text-white font-bold text-sm px-4 py-2">Planejamento</div>
+            <div className="bg-gray-900 text-white font-bold text-sm px-4 py-2">ART</div>
             <div className="overflow-x-auto border border-t-0 border-gray-300">
             <table className="w-full border-collapse text-xs">
               <thead>
