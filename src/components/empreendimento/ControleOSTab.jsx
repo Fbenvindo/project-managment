@@ -390,9 +390,9 @@ export default function ControleOSTab({ empreendimento, atividades }) {
             </tbody>
           </table>
         </div>
+        </div>
 
-
-          {/* Atividades Vinculadas do Empreendimento */}
+        {/* Atividades Vinculadas do Empreendimento */}
           {atividadesVinculadas.length > 0 && (
             <div>
               <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Atividades do Empreendimento</h3>
@@ -420,8 +420,6 @@ export default function ControleOSTab({ empreendimento, atividades }) {
               </div>
             </div>
           )}
-
-          </div>
 
           <div className="border rounded-lg bg-white mt-4">
             <div className="p-4 bg-gray-800 text-white font-bold rounded-t-lg">ART</div>
@@ -624,10 +622,9 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                 </tbody>
               </table>
             </div>
+            </div>
 
-          </div>
-
-          <div className="border rounded-lg bg-white mt-4">
+            <div className="border rounded-lg bg-white mt-4">
             <div className="p-4 bg-gray-800 text-white font-bold rounded-t-lg">CONCESSIONÁRIAS</div>
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm">
@@ -719,10 +716,9 @@ export default function ControleOSTab({ empreendimento, atividades }) {
               </tbody>
               </table>
               </div>
+           </div>
 
-            </div>
-
-            <div className="border rounded-lg bg-white mt-4">
+       <div className="border rounded-lg bg-white mt-4">
               <div className="flex items-center justify-between p-4 bg-gray-800 text-white rounded-t-lg">
                 <h2 className="text-lg font-bold">Avanço</h2>
                 <Button onClick={handleAddAvancoItem} size="sm" className="bg-green-600 hover:bg-green-700 text-white">
@@ -802,9 +798,9 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                 </div>
               )}
             </div>
-</div>
+           </div>
 
-<div className="border rounded-lg bg-white mt-4">
+       <div className="border rounded-lg bg-white mt-4">
   <div className="p-4 bg-gray-800 text-white font-bold rounded-t-lg">Observações</div>
   <div className="p-4">
     <Textarea
