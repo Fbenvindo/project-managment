@@ -745,8 +745,8 @@ export default function ControleOSTab({ empreendimento, atividades }) {
               <div className="px-4 py-2 border-r border-gray-300 flex items-center justify-center font-medium text-xs">Hidráulica</div>
               <div className="px-4 py-2 border-r border-gray-300 flex items-center justify-center font-medium text-xs">Água Pluvial</div>
               <div className="px-4 py-2 flex items-center justify-center font-medium text-xs">Incêndio</div>
-            </div>
-            <div className="grid grid-cols-6">
+              </div>
+              <div className="grid grid-cols-6">
               <div className="px-4 py-2 border-r border-gray-300 border-b border-gray-300 flex items-center justify-center">
                 <Select value={controleOS.conc_telefonia} onValueChange={(v) => handleFieldChange('conc_telefonia', v)}>
                   <SelectTrigger className={`w-20 h-7 text-xs border-0 ${getStatusColor(controleOS.conc_telefonia)}`}>
