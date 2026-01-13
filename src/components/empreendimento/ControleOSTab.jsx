@@ -390,7 +390,7 @@ export default function ControleOSTab({ empreendimento, atividades }) {
             </tbody>
           </table>
         </div>
-
-    </div>
-  );
-}
+        </div>
+        </div>
+        );
+        }
