@@ -718,7 +718,6 @@ export default function ControleOSTab({ empreendimento, atividades }) {
               className="min-h-[80px] text-xs"
             />
             </div>
-            </div>
             </CardContent>
             </Card>
             </div>
