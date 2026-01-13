@@ -152,7 +152,8 @@ const CalendarFilters = ({
   isApoio,
   podeVerOutros,
   usuariosPermitidos,
-  currentUserEmail
+  currentUserEmail,
+  viewType
 }) => {
   // Debug log
   console.log('🔍 CalendarFilters Debug:', {
@@ -241,10 +242,31 @@ const CalendarFilters = ({
 
         {/* Controles de Visualização */}
         {hasSelectedUser && (
-          <div className="flex items-center gap-2">
-              <Button variant={viewMode === 'day' ? 'default' : 'outline'} size="sm" onClick={() => onViewModeChange('day')}>Dia</Button>
-              <Button variant={viewMode === 'week' ? 'default' : 'outline'} size="sm" onClick={() => onViewModeChange('week')}>Semana</Button>
-              <Button variant={viewMode === 'month' ? 'default' : 'outline'} size="sm" onClick={() => onViewModeChange('month')}>Mês</Button>
+          <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <Button variant={viewMode === 'day' ? 'default' : 'outline'} size="sm" onClick={() => onViewModeChange('day')}>Dia</Button>
+                <Button variant={viewMode === 'week' ? 'default' : 'outline'} size="sm" onClick={() => onViewModeChange('week')}>Semana</Button>
+                <Button variant={viewMode === 'month' ? 'default' : 'outline'} size="sm" onClick={() => onViewModeChange('month')}>Mês</Button>
+              </div>
+              <div className="h-6 w-px bg-gray-300"></div>
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant={filters.viewType === 'sintetico' ? 'default' : 'outline'} 
+                  size="sm" 
+                  onClick={() => onFilterChange('viewType', 'sintetico')}
+                  className={filters.viewType === 'sintetico' ? 'bg-purple-600 hover:bg-purple-700' : ''}
+                >
+                  Sintético
+                </Button>
+                <Button 
+                  variant={filters.viewType === 'analitico' ? 'default' : 'outline'} 
+                  size="sm" 
+                  onClick={() => onFilterChange('viewType', 'analitico')}
+                  className={filters.viewType === 'analitico' ? 'bg-purple-600 hover:bg-purple-700' : ''}
+                >
+                  Analítico
+                </Button>
+              </div>
           </div>
         )}
     </div>
@@ -1101,6 +1123,39 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
     setExpandedGroups(newExpanded);
   };
 
+  // **NOVO**: No modo analítico, mostrar atividades diretamente sem grupos
+  if (viewType === 'analitico') {
+    return (
+      <div className={`space-y-1 ${containerClass}`}>
+        {activities.map((atividade, index) => (
+          <Draggable 
+            key={atividade.id} 
+            draggableId={atividade.id} 
+            index={index}
+            isDragDisabled={!canReprogram || atividade.status === 'concluido' || atividade.isLegacyExecution || isReprogramando === atividade.id}
+          >
+            {(provided, snapshot) => (
+              <ActivityItem 
+                plano={atividade} 
+                dayKey={dayKey} 
+                onDelete={onActivityDelete}
+                executorMap={executorMap}
+                allPlanejamentos={allPlanejamentos}
+                provided={provided}
+                isDragging={snapshot.isDragging}
+                isReprogramando={isReprogramando === atividade.id}
+                isSelected={selectedActivities.has(atividade.id)}
+                onToggleSelect={onToggleSelect}
+                hasSelections={hasSelections}
+              />
+            )}
+          </Draggable>
+        ))}
+      </div>
+    );
+  }
+
+  // **MODO SINTÉTICO**: Mostrar apenas os grupos (pastas)
   return (
     <div className={`space-y-1 ${containerClass}`}>
       {Object.entries(activityGroups).map(([groupKey, groupData]) => {
@@ -1173,7 +1228,7 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
 };
 
 // --- Sub-componente para Container de Atividades (reutilizável) ---
-const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections }) => {
+const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
   const dayKey = format(day, 'yyyy-MM-dd');
   
   // **NOVO**: Verificar se pode arrastar o dia inteiro
@@ -1273,6 +1328,7 @@ const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDel
               selectedActivities={selectedActivities}
               onToggleSelect={onToggleSelect}
               hasSelections={hasSelections}
+              viewType={viewType}
             />
             {provided.placeholder}
           </div>
@@ -1283,7 +1339,7 @@ const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDel
 };
 
 // --- Sub-componente para a Visualização Mensal ---
-const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections }) => {
+const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
   const monthDays = useMemo(() => {
     const start = startOfWeek(startOfMonth(date), { locale: ptBR });
     const end = endOfWeek(endOfMonth(date), { locale: ptBR });
@@ -1319,6 +1375,7 @@ const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onSho
             selectedActivities={selectedActivities}
             onToggleSelect={onToggleSelect}
             hasSelections={hasSelections}
+            viewType={viewType}
           />
         );
       })}
@@ -1328,7 +1385,7 @@ const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onSho
 
 
 // --- Sub-componente para a Visualização Semanal ---
-const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections }) => {
+const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
   // NOVO: Estado para controlar o dia expandido
   const [expandedDay, setExpandedDay] = useState(null);
 
@@ -1390,6 +1447,7 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
                     selectedActivities={selectedActivities}
                     onToggleSelect={onToggleSelect}
                     hasSelections={hasSelections}
+                    viewType={viewType}
                   />
                   {provided.placeholder}
                 </div>
@@ -1404,7 +1462,7 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
 
 
 // --- Sub-componente para a Visualização Diária ---
-const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections }) => { 
+const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => { 
   const dayKey = format(date, 'yyyy-MM-dd');
   const activities = activitiesByDay[dayKey] || [];
   
@@ -1433,6 +1491,7 @@ const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowP
                     selectedActivities={selectedActivities}
                     onToggleSelect={onToggleSelect}
                     hasSelections={hasSelections}
+                    viewType={viewType}
                   />
                 ) : (
                     <div className="text-center py-12 text-gray-500">
@@ -1497,6 +1556,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   const [showPrevisaoModal, setShowPrevisaoModal] = useState(false);
   const [planejamentosParaPrevisao, setPlanejamentosParaPrevisao] = useState([]);
   const [isReprogramando, setIsReprogramando] = useState(null);
+  const [viewType, setViewType] = useState('analitico'); // 'sintetico' ou 'analitico'
   
   const hasSelectedUser = !!filters.user;
   const isViewingAllUsers = filters.user === 'all';
@@ -2260,9 +2320,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     const hasSelections = selectedActivities.size > 0;
 
     // **MODIFICADO**: Passa 'enrichedData' (que são todos) para as views em vez de 'planejamentos'
-    if (viewMode === 'month') return <MonthView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} />;
-    if (viewMode === 'week') return <WeekView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} />;
-    if (viewMode === 'day') return <DayView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} />;
+    if (viewMode === 'month') return <MonthView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} />;
+    if (viewMode === 'week') return <WeekView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} />;
+    if (viewMode === 'day') return <DayView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} />;
     return null;
   };
 
@@ -2336,7 +2396,13 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           podeVerOutros={podeVisualizarOutros}
           currentUserEmail={user?.email}
           usuariosPermitidos={usuariosPermitidos}
+          viewType={viewType}
           onFilterChange={(key, value) => {
+            // Tratar mudança de viewType separadamente
+            if (key === 'viewType') {
+              setViewType(value);
+              return;
+            }
             // **MODIFICADO**: Gestão, Colaboradores e APOIO (sem permissão especial) não podem mudar de usuário
             const usuariosPermitidosLocal = userProfile?.usuarios_permitidos_visualizar || [];
             const temPermissao = Array.isArray(usuariosPermitidosLocal) && usuariosPermitidosLocal.length > 0;
