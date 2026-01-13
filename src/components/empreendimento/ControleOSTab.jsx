@@ -736,11 +736,17 @@ export default function ControleOSTab({ empreendimento, atividades }) {
           <div className="mt-4">
             <div className="bg-gray-900 text-white font-bold text-sm px-4 py-2">Concessionárias</div>
             <div className="overflow-x-auto border border-t-0 border-gray-300">
-              <div className="grid grid-cols-6 border-b border-gray-300">
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Telefonia</label>
+                <div className="px-4 py-2 border-r border-gray-300 flex items-center justify-center font-medium text-xs">Telefonia</div>
+              <div className="px-4 py-2 border-r border-gray-300 flex items-center justify-center font-medium text-xs">Gás</div>
+              <div className="px-4 py-2 border-r border-gray-300 flex items-center justify-center font-medium text-xs">Elétrica</div>
+              <div className="px-4 py-2 border-r border-gray-300 flex items-center justify-center font-medium text-xs">Hidráulica</div>
+              <div className="px-4 py-2 border-r border-gray-300 flex items-center justify-center font-medium text-xs">Água Pluvial</div>
+              <div className="px-4 py-2 flex items-center justify-center font-medium text-xs">Incêndio</div>
+            </div>
+            <div className="grid grid-cols-6">
+              <div className="px-4 py-2 border-r border-gray-300 border-b border-gray-300 flex items-center justify-center">
                 <Select value={controleOS.conc_telefonia} onValueChange={(v) => handleFieldChange('conc_telefonia', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.conc_telefonia)}>
+                  <SelectTrigger className={`w-20 h-7 text-xs border-0 ${getStatusColor(controleOS.conc_telefonia)}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -750,11 +756,9 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                   </SelectContent>
                 </Select>
               </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Gás</label>
+              <div className="px-4 py-2 border-r border-gray-300 border-b border-gray-300 flex items-center justify-center">
                 <Select value={controleOS.conc_gas} onValueChange={(v) => handleFieldChange('conc_gas', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.conc_gas)}>
+                  <SelectTrigger className={`w-20 h-7 text-xs border-0 ${getStatusColor(controleOS.conc_gas)}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -764,11 +768,9 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                   </SelectContent>
                 </Select>
               </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Elétrica</label>
+              <div className="px-4 py-2 border-r border-gray-300 border-b border-gray-300 flex items-center justify-center">
                 <Select value={controleOS.conc_eletrica} onValueChange={(v) => handleFieldChange('conc_eletrica', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.conc_eletrica)}>
+                  <SelectTrigger className={`w-20 h-7 text-xs border-0 ${getStatusColor(controleOS.conc_eletrica)}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -778,11 +780,9 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                   </SelectContent>
                 </Select>
               </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Hidráulica</label>
+              <div className="px-4 py-2 border-r border-gray-300 border-b border-gray-300 flex items-center justify-center">
                 <Select value={controleOS.conc_hidraulica} onValueChange={(v) => handleFieldChange('conc_hidraulica', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.conc_hidraulica)}>
+                  <SelectTrigger className={`w-20 h-7 text-xs border-0 ${getStatusColor(controleOS.conc_hidraulica)}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -792,11 +792,9 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                   </SelectContent>
                 </Select>
               </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Água Pluvial</label>
+              <div className="px-4 py-2 border-r border-gray-300 border-b border-gray-300 flex items-center justify-center">
                 <Select value={controleOS.conc_agua_pluvial} onValueChange={(v) => handleFieldChange('conc_agua_pluvial', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.conc_agua_pluvial)}>
+                  <SelectTrigger className={`w-20 h-7 text-xs border-0 ${getStatusColor(controleOS.conc_agua_pluvial)}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -806,11 +804,9 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                   </SelectContent>
                 </Select>
               </div>
-
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Incêndio</label>
+              <div className="px-4 py-2 border-b border-gray-300 flex items-center justify-center">
                 <Select value={controleOS.conc_incendio} onValueChange={(v) => handleFieldChange('conc_incendio', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.conc_incendio)}>
+                  <SelectTrigger className={`w-20 h-7 text-xs border-0 ${getStatusColor(controleOS.conc_incendio)}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
