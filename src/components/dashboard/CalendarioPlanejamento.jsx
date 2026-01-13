@@ -2366,7 +2366,14 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
             <CardTitle className="flex items-center gap-2 text-2xl font-bold text-gray-900 capitalize">
               <Calendar className="w-6 h-6 text-blue-600" />
               {hasSelectedUser ? (
-                `Calendário - ${selectedUserName} (${filteredPlanejamentos.length})`
+                <div className="flex items-center gap-3">
+                  <span>{`Calendário - ${selectedUserName} (${filteredPlanejamentos.length})`}</span>
+                  {viewMode === 'day' && (
+                    <span className="text-sm font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">
+                      {horasDoDia}h planejadas
+                    </span>
+                  )}
+                </div>
               ) : (
                 'Calendário de Planejamento'
               )}
