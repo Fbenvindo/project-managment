@@ -22,6 +22,16 @@ const STATUS_OPTIONS = [
   { value: "Em aprovação", label: "Em aprovação", color: "bg-yellow-300 text-yellow-900" }
 ];
 
+const ETAPAS_OPTIONS = [
+  "Pré-Executivo",
+  "Projeto Executivo",
+  "Liberado Obra",
+  "Acompanhamento Obra",
+  "Anis Projeto",
+  "Emissão Executivo",
+  "As Projetado"
+];
+
 const getStatusColor = (status) => {
   const option = STATUS_OPTIONS.find(opt => opt.value === status);
   return option?.color || "bg-gray-200 text-gray-800";
@@ -763,12 +773,19 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                     {controleOS.avanco.map((item, index) => (
                       <TableRow key={index}>
                         <TableCell>
-                          <Input
-                            value={item.etapa || ''}
-                            onChange={(e) => handleAvancoChange(index, 'etapa', e.target.value)}
-                            placeholder="Nome da etapa"
-                            className="w-full"
-                          />
+                          <Select 
+                            value={item.etapa || ''} 
+                            onValueChange={(v) => handleAvancoChange(index, 'etapa', v)}
+                          >
+                            <SelectTrigger>
+                              <SelectValue placeholder="Nome da etapa" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ETAPAS_OPTIONS.map(etapa => (
+                                <SelectItem key={etapa} value={etapa}>{etapa}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                         <TableCell>
                           <Select 
