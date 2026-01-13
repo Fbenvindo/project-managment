@@ -214,8 +214,8 @@ export default function AnaliseConcepcaoPlanejamento() {
                 {isLoading ? <Skeleton className="h-96 w-full" /> : (
                     <Card className="bg-white border-0 shadow-lg">
                         <CardContent className="p-0">
-                            <div className="overflow-auto max-h-[600px]">
-                                <Table>
+                            <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
+                                <Table className="min-w-max">
                                     <TableHeader className="sticky top-0 bg-white z-10">
                                         <TableRow>
                                             <TableHead>Documento</TableHead>
