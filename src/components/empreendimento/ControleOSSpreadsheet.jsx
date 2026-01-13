@@ -219,9 +219,9 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
             </div>
           ) : (
             <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-              <div className="flex">
+              <div className="flex h-full">
                 {/* Coluna Projeto Fixa */}
-                <div className="flex-shrink-0 bg-white border-r border-gray-300">
+                <div className="sticky left-0 z-10 bg-white border-r border-gray-300 flex-shrink-0">
                   <table className="border-collapse text-xs">
                     <thead className="bg-gray-800 text-white">
                       <tr>
@@ -249,7 +249,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                 
                 {/* Tabelas com scroll horizontal */}
                 <div className="flex-1 overflow-x-auto">
-                  <div className="inline-flex">
+                  <div className="flex gap-0">
                     {/* ART sem coluna Projeto */}
                   <table className="border-collapse text-xs">
                     <thead className="bg-gray-800 text-white">
