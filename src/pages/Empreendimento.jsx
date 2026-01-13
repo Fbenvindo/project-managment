@@ -451,7 +451,9 @@ export default function EmpreendimentoPage() {
                     ...prev,
                     documentacao: { ...prev.documentacao, loaded: false }
                   }));
+                  setSharedData(prev => ({ ...prev, loaded: false }));
                   loadTabData('documentacao');
+                  loadSharedData();
                 }}
               />
             ) : null}

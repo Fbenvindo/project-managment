@@ -5,6 +5,7 @@ import AtividadesRapidas from './pages/AtividadesRapidas';
 import Comercial from './pages/Comercial';
 import ComercialDetalhes from './pages/ComercialDetalhes';
 import Configuracoes from './pages/Configuracoes';
+import ControleOSGlobal from './pages/ControleOSGlobal';
 import Dashboard from './pages/Dashboard';
 import Empreendimento from './pages/Empreendimento';
 import Empreendimentos from './pages/Empreendimentos';
@@ -16,7 +17,6 @@ import Propostas from './pages/Propostas';
 import Relatorios from './pages/Relatorios';
 import SeletorPlanejamento from './pages/SeletorPlanejamento';
 import Usuarios from './pages/Usuarios';
-import ControleOSGlobal from './pages/ControleOSGlobal';
 import __Layout from './Layout.jsx';
 
 
@@ -28,6 +28,7 @@ export const PAGES = {
     "Comercial": Comercial,
     "ComercialDetalhes": ComercialDetalhes,
     "Configuracoes": Configuracoes,
+    "ControleOSGlobal": ControleOSGlobal,
     "Dashboard": Dashboard,
     "Empreendimento": Empreendimento,
     "Empreendimentos": Empreendimentos,
@@ -39,7 +40,6 @@ export const PAGES = {
     "Relatorios": Relatorios,
     "SeletorPlanejamento": SeletorPlanejamento,
     "Usuarios": Usuarios,
-    "ControleOSGlobal": ControleOSGlobal,
 }
 
 export const pagesConfig = {
