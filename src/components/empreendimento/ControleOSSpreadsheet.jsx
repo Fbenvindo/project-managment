@@ -164,6 +164,29 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
     { key: 'conc_incendio', label: 'INCÊNDIO', width: '90px', isStatus: true }
   ];
 
+  // Seção PLANEJAMENTO
+  const planejamentoColumns = [
+    { key: 'projeto', label: 'PROJETO', width: '200px' },
+    { key: 'planejamento_hidraulica_concepcao', label: 'HID. Conc.', width: '80px', isStatus: true },
+    { key: 'planejamento_hidraulica_calculo', label: 'HID. Calc.', width: '80px', isStatus: true },
+    { key: 'planejamento_hidraulica_diagrama', label: 'HID. Diag.', width: '80px', isStatus: true },
+    { key: 'planejamento_eletrica_concepcao', label: 'ELE. Conc.', width: '80px', isStatus: true },
+    { key: 'planejamento_eletrica_calculo', label: 'ELE. Calc.', width: '80px', isStatus: true },
+    { key: 'planejamento_eletrica_diagrama', label: 'ELE. Diag.', width: '80px', isStatus: true },
+    { key: 'planejamento_incendio_concepcao', label: 'INC. Conc.', width: '80px', isStatus: true },
+    { key: 'planejamento_incendio_calculo', label: 'INC. Calc.', width: '80px', isStatus: true },
+    { key: 'planejamento_incendio_diagrama', label: 'INC. Diag.', width: '80px', isStatus: true }
+  ];
+
+  // Seção MONITORAMENTO
+  const monitoramentoColumns = [
+    { key: 'projeto', label: 'PROJETO', width: '200px' },
+    { key: 'monitoramento_briefing', label: 'Briefing', width: '90px', isStatus: true },
+    { key: 'monitoramento_cronograma', label: 'Cronograma', width: '100px', isStatus: true },
+    { key: 'monitoramento_lmd', label: 'LMD', width: '80px', isStatus: true },
+    { key: 'monitoramento_entregas_x_etapas', label: 'Entregas x Etapas', width: '130px', isStatus: true }
+  ];
+
   return (
     <div className="space-y-6">
       {/* Toggle View */}
