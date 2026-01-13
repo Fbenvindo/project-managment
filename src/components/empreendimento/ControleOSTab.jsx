@@ -802,19 +802,19 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                 </div>
               )}
             </div>
+</div>
 
-          {/* Observações */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Observações</h3>
-            <Textarea
-              value={controleOS.observacoes || ''}
-              onChange={(e) => handleFieldChange('observacoes', e.target.value)}
-              placeholder="Adicione observações gerais sobre o controle de OS..."
-              className="min-h-[100px]"
-            />
-          </div>
-        </CardContent>
-      </Card>
+<div className="border rounded-lg bg-white mt-4">
+  <div className="p-4 bg-gray-800 text-white font-bold rounded-t-lg">Observações</div>
+  <div className="p-4">
+    <Textarea
+      value={controleOS.observacoes || ''}
+      onChange={(e) => handleFieldChange('observacoes', e.target.value)}
+      placeholder="Adicione observações gerais sobre o controle de OS..."
+      className="min-h-[80px] text-sm"
+    />
+  </div>
+</div>
     </div>
   );
 }
