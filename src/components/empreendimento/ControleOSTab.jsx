@@ -374,8 +374,8 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                   </Select>
                 </div>
 
-                <div className="flex flex-col min-w-[150px]">
-                  <label className="text-sm font-medium text-gray-700 mb-1">Markup</label>
+                <div className="w-[140px]">
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Markup</label>
                   <Select value={controleOS.markup} onValueChange={(v) => handleFieldChange('markup', v)}>
                     <SelectTrigger className={`h-9 ${getStatusColor(controleOS.markup)}`}>
                       <SelectValue />
