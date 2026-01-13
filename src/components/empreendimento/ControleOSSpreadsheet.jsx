@@ -320,6 +320,78 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                       ))}
                     </tbody>
                   </table>
+
+                  {/* PLANEJAMENTO sem coluna Projeto */}
+                  <table className="border-collapse text-xs">
+                    <thead className="bg-gray-800 text-white">
+                      <tr>
+                        <th colSpan={planejamentoColumns.length - 1} className="border border-gray-300 px-4 py-2 text-left font-bold">
+                          PLANEJAMENTO
+                        </th>
+                      </tr>
+                      <tr>
+                        {planejamentoColumns.slice(1).map((col) => (
+                          <th
+                            key={col.key}
+                            className="border border-gray-300 px-2 py-2 text-left font-semibold whitespace-nowrap"
+                            style={{ width: col.width, minWidth: col.width }}
+                          >
+                            {col.label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredControles.map((row, idx) => (
+                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          {planejamentoColumns.slice(1).map((col) => {
+                            const value = row[col.key] || 'NA';
+                            return (
+                              <td key={col.key} className="border border-gray-300 px-2 py-1.5 whitespace-nowrap">
+                                {col.isStatus ? <StatusCell status={value} /> : value}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {/* MONITORAMENTO sem coluna Projeto */}
+                  <table className="border-collapse text-xs">
+                    <thead className="bg-gray-800 text-white">
+                      <tr>
+                        <th colSpan={monitoramentoColumns.length - 1} className="border border-gray-300 px-4 py-2 text-left font-bold">
+                          MONITORAMENTO
+                        </th>
+                      </tr>
+                      <tr>
+                        {monitoramentoColumns.slice(1).map((col) => (
+                          <th
+                            key={col.key}
+                            className="border border-gray-300 px-2 py-2 text-left font-semibold whitespace-nowrap"
+                            style={{ width: col.width, minWidth: col.width }}
+                          >
+                            {col.label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredControles.map((row, idx) => (
+                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          {monitoramentoColumns.slice(1).map((col) => {
+                            const value = row[col.key] || 'NA';
+                            return (
+                              <td key={col.key} className="border border-gray-300 px-2 py-1.5 whitespace-nowrap">
+                                {col.isStatus ? <StatusCell status={value} /> : value}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </div>
