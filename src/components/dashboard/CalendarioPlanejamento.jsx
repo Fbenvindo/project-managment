@@ -1156,6 +1156,39 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
   }
 
   // **MODO SINTÉTICO**: Mostrar apenas os grupos (pastas)
+  // **NOVO**: No modo analítico, mostrar atividades diretamente sem grupos
+  if (viewType === 'analitico') {
+    return (
+      <div className={`space-y-1 ${containerClass}`}>
+        {activities.map((atividade, index) => (
+          <Draggable 
+            key={atividade.id} 
+            draggableId={atividade.id} 
+            index={index}
+            isDragDisabled={!canReprogram || atividade.status === 'concluido' || atividade.isLegacyExecution || isReprogramando === atividade.id}
+          >
+            {(provided, snapshot) => (
+              <ActivityItem 
+                plano={atividade} 
+                dayKey={dayKey} 
+                onDelete={onActivityDelete}
+                executorMap={executorMap}
+                allPlanejamentos={allPlanejamentos}
+                provided={provided}
+                isDragging={snapshot.isDragging}
+                isReprogramando={isReprogramando === atividade.id}
+                isSelected={selectedActivities.has(atividade.id)}
+                onToggleSelect={onToggleSelect}
+                hasSelections={hasSelections}
+              />
+            )}
+          </Draggable>
+        ))}
+      </div>
+    );
+  }
+
+  // **MODO SINTÉTICO**: Mostrar apenas os grupos (pastas)
   return (
     <div className={`space-y-1 ${containerClass}`}>
       {Object.entries(activityGroups).map(([groupKey, groupData]) => {
