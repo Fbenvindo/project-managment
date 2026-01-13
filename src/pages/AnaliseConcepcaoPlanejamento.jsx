@@ -67,7 +67,7 @@ export default function AnaliseConcepcaoPlanejamento() {
         if (!planejamento || !user) return;
         const atividade = atividadesMap[planejamento.atividade_id];
         
-        await Execucao.create({
+        const execucao = await Execucao.create({
             planejamento_id: planejamentoId,
             descritivo: planejamento.descritivo || atividade?.atividade || 'Atividade',
             empreendimento_id: planejamento.empreendimento_id,
@@ -75,7 +75,11 @@ export default function AnaliseConcepcaoPlanejamento() {
             inicio: new Date().toISOString(),
             status: "Em andamento"
         });
-        await loadData();
+        
+        setExecucoesMap(prev => ({
+            ...prev,
+            [planejamentoId]: [...(prev[planejamentoId] || []), execucao]
+        }));
     };
 
     const openStopModal = (execucao) => {
