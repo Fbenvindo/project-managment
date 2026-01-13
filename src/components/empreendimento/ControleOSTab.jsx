@@ -806,8 +806,8 @@ export default function ControleOSTab({ empreendimento, atividades }) {
             )}
             </div>
 
-          {/* Observações */}
-          <div className="mt-4 p-4 border border-gray-300 rounded-lg">
+            {/* Observações */}
+            <div className="mt-4 p-4 border border-gray-300 rounded-lg">
             <label className="text-xs font-bold text-gray-800 uppercase block mb-2">Observações</label>
             <Textarea
               value={controleOS.observacoes || ''}
@@ -815,10 +815,10 @@ export default function ControleOSTab({ empreendimento, atividades }) {
               placeholder="Adicione observações gerais..."
               className="min-h-[80px] text-xs"
             />
-          </div>
-          </div>
-          </CardContent>
-          </Card>
-          </div>
-          );
-          }
+            </div>
+            </div>
+            </CardContent>
+            </Card>
+            </div>
+            );
+            }
