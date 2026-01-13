@@ -725,11 +725,11 @@ export default function ControleOSTab({ empreendimento, atividades }) {
             <div className="border rounded-lg bg-white mt-4">
               <div className="flex items-center justify-between p-4 bg-gray-800 text-white rounded-t-lg">
                 <h2 className="text-lg font-bold">Avanço</h2>
-              <Button onClick={handleAddAvancoItem} size="sm" variant="outline">
-                <Plus className="w-4 h-4 mr-2" />
-                Adicionar Item
-              </Button>
-            </div>
+                <Button onClick={handleAddAvancoItem} size="sm" className="bg-green-600 hover:bg-green-700 text-white">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Adicionar Item
+                </Button>
+                </div>
             
             {controleOS.avanco && controleOS.avanco.length > 0 ? (
               <div className="border rounded-lg overflow-hidden">
