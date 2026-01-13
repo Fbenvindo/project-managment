@@ -162,23 +162,29 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
               Nenhum empreendimento encontrado
             </div>
           ) : (
-            <>
-              <SpreadsheetTable 
-                title="PROJETO"
-                columns={projetoColumns}
-                data={filteredControles}
-              />
-              <SpreadsheetTable 
-                title="ART"
-                columns={artColumns}
-                data={filteredControles}
-              />
-              <SpreadsheetTable 
-                title="CONCESSIONÁRIAS"
-                columns={concessionariaColumns}
-                data={filteredControles}
-              />
-            </>
+            <div className="flex gap-4 overflow-x-auto pb-4">
+              <div className="flex-shrink-0 min-w-fit">
+                <SpreadsheetTable 
+                  title="PROJETO"
+                  columns={projetoColumns}
+                  data={filteredControles}
+                />
+              </div>
+              <div className="flex-shrink-0 min-w-fit">
+                <SpreadsheetTable 
+                  title="ART"
+                  columns={artColumns}
+                  data={filteredControles}
+                />
+              </div>
+              <div className="flex-shrink-0 min-w-fit">
+                <SpreadsheetTable 
+                  title="CONCESSIONÁRIAS"
+                  columns={concessionariaColumns}
+                  data={filteredControles}
+                />
+              </div>
+            </div>
           )}
         </>
       ) : (
