@@ -27,51 +27,84 @@ const StatusCell = ({ status }) => (
   </div>
 );
 
-const SpreadsheetTable = ({ title, columns, data, stickyFirst = true }) => (
-  <div className="overflow-x-auto bg-white rounded-lg shadow border border-gray-200">
-    <table className="w-full border-collapse text-xs">
-      <thead className="bg-gray-800 text-white">
-        <tr>
-          <th colSpan={columns.length} className="border border-gray-300 px-4 py-2 text-left font-bold">
-            {title}
-          </th>
-        </tr>
-        <tr>
-          {columns.map((col) => (
-            <th
-              key={col.key}
-              className="border border-gray-300 px-2 py-2 text-left font-semibold whitespace-nowrap"
-              style={{ width: col.width, minWidth: col.width }}
-            >
-              {col.label}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody>
-        {data.map((row, idx) => (
-          <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-            {columns.map((col) => {
-              const value = row[col.key] || 'NA';
-              const isStatusCell = col.isStatus;
-              
-              return (
-                <td 
-                  key={col.key} 
-                  className={`border border-gray-300 px-2 py-1.5 whitespace-nowrap ${
-                    stickyFirst && col.key === columns[0].key ? 'sticky left-0 bg-white z-10 font-medium' : ''
-                  }`}
-                >
-                  {isStatusCell ? <StatusCell status={value} /> : value}
+const SpreadsheetTable = ({ title, columns, data, stickyFirst = true }) => {
+  const projectoColumn = columns[0];
+  const otherColumns = columns.slice(1);
+  
+  return (
+    <div className="flex bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+      {/* Coluna Projeto Fixa */}
+      <div className="flex-shrink-0">
+        <table className="border-collapse text-xs">
+          <thead className="bg-gray-800 text-white">
+            <tr>
+              <th colSpan={1} className="border border-gray-300 px-4 py-2 text-left font-bold">
+                {title}
+              </th>
+            </tr>
+            <tr>
+              <th className="border border-gray-300 px-2 py-2 text-left font-semibold whitespace-nowrap" style={{ width: projectoColumn.width, minWidth: projectoColumn.width }}>
+                {projectoColumn.label}
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row, idx) => (
+              <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                <td className="border border-gray-300 px-2 py-1.5 whitespace-nowrap font-medium">
+                  {row[projectoColumn.key] || 'NA'}
                 </td>
-              );
-            })}
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  </div>
-);
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      
+      {/* Outras Colunas com Scroll */}
+      <div className="flex-1 overflow-x-auto">
+        <table className="border-collapse text-xs w-full">
+          <thead className="bg-gray-800 text-white">
+            <tr>
+              <th colSpan={otherColumns.length} className="border border-gray-300 px-4 py-2 text-left font-bold">
+                {title}
+              </th>
+            </tr>
+            <tr>
+              {otherColumns.map((col) => (
+                <th
+                  key={col.key}
+                  className="border border-gray-300 px-2 py-2 text-left font-semibold whitespace-nowrap"
+                  style={{ width: col.width, minWidth: col.width }}
+                >
+                  {col.label}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {data.map((row, idx) => (
+              <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                {otherColumns.map((col) => {
+                  const value = row[col.key] || 'NA';
+                  const isStatusCell = col.isStatus;
+                  
+                  return (
+                    <td 
+                      key={col.key} 
+                      className="border border-gray-300 px-2 py-1.5 whitespace-nowrap"
+                    >
+                      {isStatusCell ? <StatusCell status={value} /> : value}
+                    </td>
+                  );
+                })}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+};
 
 export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, searchTerm }) {
   const [isGridView, setIsGridView] = useState(true);
