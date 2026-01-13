@@ -289,9 +289,18 @@ export default function ControleOSTab({ empreendimento, atividades }) {
       <Card className="border-0 shadow-sm rounded-t-none">
         <CardContent className="p-0">
           {/* Campos Fixos */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Gestão Geral</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
+           <div className="overflow-x-auto">
+            <div className="inline-block min-w-full border border-gray-300">
+              <div className="bg-gray-900 text-white font-bold text-sm grid grid-cols-7 border-b border-gray-300 sticky top-0">
+                <div className="px-4 py-2 border-r border-gray-400">Gestão</div>
+                <div className="px-4 py-2 border-r border-gray-400">Formalização</div>
+                <div className="px-4 py-2 border-r border-gray-400">Abertura OS</div>
+                <div className="px-4 py-2 border-r border-gray-400">Plan. Ativ.</div>
+                <div className="px-4 py-2 border-r border-gray-400">Kickoff</div>
+                <div className="px-4 py-2 border-r border-gray-400">Cronograma</div>
+                <div className="px-4 py-2">Markup</div>
+              </div>
+              <div className="grid grid-cols-7">
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-1 block">Gestão</label>
                 <Select value={controleOS.gestao} onValueChange={(v) => handleFieldChange('gestao', v)}>
