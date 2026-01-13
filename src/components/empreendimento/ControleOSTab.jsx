@@ -485,8 +485,9 @@ export default function ControleOSTab({ empreendimento, atividades }) {
           </div>
 
           {/* Planejamento */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Planejamento</h3>
+           <div className="mt-4">
+            <div className="bg-gray-900 text-white font-bold text-sm px-4 py-2">Planejamento</div>
+            <div className="overflow-x-auto border border-t-0 border-gray-300">
             
             {/* Hidráulica */}
             <div className="mb-6">
