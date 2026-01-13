@@ -339,7 +339,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                 </div>
                 )}
                 </>
-      ) : (
+                ) : (
         <div className="text-center py-8 text-gray-600">
           Modo de cartões - volte para a visualização de planilha
         </div>
