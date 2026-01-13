@@ -70,16 +70,6 @@ export default function ControleOSTab({ empreendimento, atividades }) {
     }
   }, [atividades, controleOS?.id]);
 
-  useEffect(() => {
-    if (!controleOS?.id) return;
-    
-    const interval = setInterval(() => {
-      updateMarkupStatus();
-    }, 5000);
-    
-    return () => clearInterval(interval);
-  }, [controleOS?.id, atividades]);
-
   const loadUsuarios = async () => {
     try {
       const usuariosData = await base44.entities.Usuario.list();
