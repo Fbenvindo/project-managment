@@ -801,10 +801,24 @@ export default function ControleOSTab({ empreendimento, atividades }) {
             </div>
           </div>
 
-          {/* Concessionárias */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Concessionárias</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          </div>
+
+          <div className="border rounded-lg bg-white mt-4">
+            <div className="p-4 bg-gray-800 text-white font-bold rounded-t-lg">CONCESSIONÁRIAS</div>
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr className="bg-gray-100 border-b-2 border-gray-300">
+                    <th className="border border-gray-300 p-2 text-center font-bold bg-blue-600 text-white">Telefonia</th>
+                    <th className="border border-gray-300 p-2 text-center font-bold bg-blue-600 text-white">Gás</th>
+                    <th className="border border-gray-300 p-2 text-center font-bold bg-blue-600 text-white">Elétrica</th>
+                    <th className="border border-gray-300 p-2 text-center font-bold bg-blue-600 text-white">Hidráulica</th>
+                    <th className="border border-gray-300 p-2 text-center font-bold bg-blue-600 text-white">Água Pluvial</th>
+                    <th className="border border-gray-300 p-2 text-center font-bold bg-blue-600 text-white">Incêndio</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr className="hover:bg-gray-50">
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-1 block">Telefonia</label>
                 <Select value={controleOS.conc_telefonia} onValueChange={(v) => handleFieldChange('conc_telefonia', v)}>
