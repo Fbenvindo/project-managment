@@ -720,10 +720,11 @@ export default function ControleOSTab({ empreendimento, atividades }) {
               </table>
               </div>
 
-          {/* Avanço */}
-          <div>
-            <div className="flex items-center justify-between mb-4 border-b pb-2">
-              <h3 className="text-lg font-semibold text-gray-800">Avanço</h3>
+            </div>
+
+            <div className="border rounded-lg bg-white mt-4">
+              <div className="flex items-center justify-between p-4 bg-gray-800 text-white rounded-t-lg">
+                <h2 className="text-lg font-bold">Avanço</h2>
               <Button onClick={handleAddAvancoItem} size="sm" variant="outline">
                 <Plus className="w-4 h-4 mr-2" />
                 Adicionar Item
