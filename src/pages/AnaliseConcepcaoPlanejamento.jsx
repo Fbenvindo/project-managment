@@ -144,6 +144,19 @@ export default function AnaliseConcepcaoPlanejamento() {
         });
     }, [planejamentos, atividadesMap, selectedEtapas, filterEmpreendimento, filterDisciplina]);
 
+    const horasPorDia = useMemo(() => {
+        const horas = {};
+        Object.entries(execucoesMap).forEach(([planejamentoId, execucoes]) => {
+            execucoes.forEach(exec => {
+                if (exec.status === "Finalizado" && exec.termino) {
+                    const data = new Date(exec.termino).toLocaleDateString('pt-BR');
+                    horas[data] = (horas[data] || 0) + (exec.tempo_total || 0);
+                }
+            });
+        });
+        return horas;
+    }, [execucoesMap]);
+
     const groupedByDocumento = useMemo(() => {
         const grouped = {};
         filteredPlanejamentos.forEach(plan => {
