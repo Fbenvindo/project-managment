@@ -265,28 +265,29 @@ export default function ControleOSTab({ empreendimento, atividades }) {
   }
 
   return (
-    <div className="space-y-6">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <ClipboardList className="w-5 h-5" />
-            Controle de Ordem de Serviço
-          </CardTitle>
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Salvando...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4 mr-2" />
-                Salvar
-              </>
-            )}
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-6">
+    <div className="space-y-4">
+      <div className="flex items-center justify-between px-4 py-3 bg-gray-900 text-white rounded-t-lg">
+        <h2 className="text-lg font-bold flex items-center gap-2">
+          <ClipboardList className="w-5 h-5" />
+          Controle de Ordem de Serviço
+        </h2>
+        <Button onClick={handleSave} disabled={isSaving} size="sm" className="bg-blue-600 hover:bg-blue-700">
+          {isSaving ? (
+            <>
+              <Loader2 className="w-3 h-3 mr-2 animate-spin" />
+              Salvando...
+            </>
+          ) : (
+            <>
+              <Save className="w-3 h-3 mr-2" />
+              Salvar
+            </>
+          )}
+        </Button>
+      </div>
+      
+      <Card className="border-0 shadow-sm rounded-t-none">
+        <CardContent className="p-0">
           {/* Campos Fixos */}
           <div>
             <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Gestão Geral</h3>
