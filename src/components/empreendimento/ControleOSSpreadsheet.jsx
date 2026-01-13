@@ -221,7 +221,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
             <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
               <div className="flex h-full">
                 {/* Coluna Projeto Fixa */}
-                <div className="sticky left-0 z-10 bg-white border-r border-gray-300 flex-shrink-0">
+                <div className="sticky left-0 z-5 bg-white border-r border-gray-300 flex-shrink-0">
                   <table className="border-collapse text-xs">
                     <thead className="bg-gray-800 text-white">
                       <tr>
