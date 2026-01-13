@@ -291,10 +291,10 @@ export default function ControleOSTab({ empreendimento, atividades }) {
           <div>
             <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Gestão Geral</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-7 gap-4">
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Gestão</label>
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1">Gestão</label>
                 <Select value={controleOS.gestao} onValueChange={(v) => handleFieldChange('gestao', v)}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9">
                     <SelectValue placeholder="Selecione um usuário" />
                   </SelectTrigger>
                   <SelectContent>
@@ -307,20 +307,20 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                 </Select>
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Formalização</label>
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1">Formalização</label>
                 <Input 
                   value={controleOS.formalizacao} 
                   onChange={(e) => handleFieldChange('formalizacao', e.target.value)}
-                  placeholder="Descrição da formalização"
-                  className="w-full"
+                  placeholder="Descrição"
+                  className="h-9"
                 />
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Abertura OS - Servidor</label>
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1">Abertura OS - Servidor</label>
                 <Select value={controleOS.abertura_os_servidor} onValueChange={(v) => handleFieldChange('abertura_os_servidor', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.abertura_os_servidor)}>
+                  <SelectTrigger className={`h-9 ${getStatusColor(controleOS.abertura_os_servidor)}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -331,10 +331,10 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                 </Select>
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Atividades de Planejamento</label>
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1">Atividades de Planejamento</label>
                 <Select value={controleOS.atividades_planejamento} onValueChange={(v) => handleFieldChange('atividades_planejamento', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.atividades_planejamento)}>
+                  <SelectTrigger className={`h-9 ${getStatusColor(controleOS.atividades_planejamento)}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -345,10 +345,10 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                 </Select>
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Kick off com Cliente</label>
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1">Kick off com Cliente</label>
                 <Select value={controleOS.kickoff_cliente} onValueChange={(v) => handleFieldChange('kickoff_cliente', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.kickoff_cliente)}>
+                  <SelectTrigger className={`h-9 ${getStatusColor(controleOS.kickoff_cliente)}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -359,10 +359,10 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                 </Select>
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Cronograma</label>
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1">Cronograma</label>
                 <Select value={controleOS.cronograma} onValueChange={(v) => handleFieldChange('cronograma', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.cronograma)}>
+                  <SelectTrigger className={`h-9 ${getStatusColor(controleOS.cronograma)}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -373,10 +373,10 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                 </Select>
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">Markup</label>
+              <div className="flex flex-col">
+                <label className="text-sm font-medium text-gray-700 mb-1">Markup</label>
                 <Select value={controleOS.markup} onValueChange={(v) => handleFieldChange('markup', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.markup)}>
+                  <SelectTrigger className={`h-9 ${getStatusColor(controleOS.markup)}`}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
