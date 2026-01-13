@@ -2230,6 +2230,39 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   const goToToday = () => setCurrentDate(new Date());
 
   // Formatar o título do cabeçalho
+  const horasDoDia = useMemo(() => {
+    const dayKey = format(currentDate, 'yyyy-MM-dd');
+    const dayActivities = activitiesByDay[dayKey] || [];
+    
+    let soma = 0;
+    dayActivities.forEach((atividade) => {
+      const horasAlocadasDia = Number(atividade.horas_por_dia?.[dayKey]) || 0;
+      const tempoExecutado = Number(atividade.tempo_executado) || 0;
+      const horasExecutadasNoDia = Number(atividade.horas_executadas_por_dia?.[dayKey]) || 0;
+      const isQuickActivity = atividade.isQuickActivity || atividade.is_quick_activity;
+      
+      if (atividade.isLegacyExecution) {
+        soma += tempoExecutado;
+      } else if (isQuickActivity) {
+        soma += horasExecutadasNoDia > 0 ? horasExecutadasNoDia : tempoExecutado;
+      } else if (atividade.status === 'concluido') {
+        if (horasExecutadasNoDia > 0) {
+          soma += horasExecutadasNoDia;
+        } else if (horasAlocadasDia > 0) {
+          soma += horasAlocadasDia;
+        } else {
+          soma += tempoExecutado;
+        }
+      } else if (atividade.descritivo && atividade.descritivo.includes('Ajuda') && horasExecutadasNoDia > 0) {
+        soma += horasExecutadasNoDia;
+      } else {
+        soma += horasAlocadasDia;
+      }
+    });
+    
+    return Math.round(soma * 10) / 10;
+  }, [currentDate, activitiesByDay, viewMode]);
+
   const headerTitle = useMemo(() => {
     switch(viewMode) {
       case 'month': return format(currentDate, 'MMMM yyyy', { locale: ptBR });
