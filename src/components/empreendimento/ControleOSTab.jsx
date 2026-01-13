@@ -89,8 +89,10 @@ export default function ControleOSTab({ empreendimento, atividades }) {
         const inicial = {
           empreendimento_id: empreendimento.id,
           os: empreendimento.os || '',
-          gestao: 'NA',
-          formalizacao: 'NA',
+          gestao: '',
+          formalizacao: '',
+          cronograma: 'NA',
+          markup: 'NA',
           abertura_os_servidor: 'NA',
           atividades_planejamento: 'NA',
           kickoff_cliente: 'NA',
@@ -262,6 +264,34 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                   placeholder="Descrição da formalização"
                   className="w-full"
                 />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Cronograma</label>
+                <Select value={controleOS.cronograma} onValueChange={(v) => handleFieldChange('cronograma', v)}>
+                  <SelectTrigger className={getStatusColor(controleOS.cronograma)}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Markup</label>
+                <Select value={controleOS.markup} onValueChange={(v) => handleFieldChange('markup', v)}>
+                  <SelectTrigger className={getStatusColor(controleOS.markup)}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
 
               <div>
