@@ -251,18 +251,18 @@ const CalendarFilters = ({
               <div className="h-6 w-px bg-gray-300"></div>
               <div className="flex items-center gap-2">
                 <Button 
-                  variant={filters.viewType === 'sintetico' ? 'default' : 'outline'} 
+                  variant={viewType === 'sintetico' ? 'default' : 'outline'} 
                   size="sm" 
                   onClick={() => onFilterChange('viewType', 'sintetico')}
-                  className={filters.viewType === 'sintetico' ? 'bg-purple-600 hover:bg-purple-700' : ''}
+                  className={viewType === 'sintetico' ? 'bg-purple-600 hover:bg-purple-700' : ''}
                 >
                   Sintético
                 </Button>
                 <Button 
-                  variant={filters.viewType === 'analitico' ? 'default' : 'outline'} 
+                  variant={viewType === 'analitico' ? 'default' : 'outline'} 
                   size="sm" 
                   onClick={() => onFilterChange('viewType', 'analitico')}
-                  className={filters.viewType === 'analitico' ? 'bg-purple-600 hover:bg-purple-700' : ''}
+                  className={viewType === 'analitico' ? 'bg-purple-600 hover:bg-purple-700' : ''}
                 >
                   Analítico
                 </Button>
