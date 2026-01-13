@@ -98,15 +98,30 @@ export default function ControleOSTab({ empreendimento, atividades }) {
       ativ.atividade?.toLowerCase().includes('markup')
     );
     
-    if (markupAtividade && markupAtividade.status) {
-      const novoStatus = mapStatusToControleOS(markupAtividade.status);
-      if (novoStatus !== controleOS.markup) {
-        setControleOS(prev => ({
-          ...prev,
-          markup: novoStatus
-        }));
+    const cronogramaAtividade = atividades.find(ativ => 
+      ativ.empreendimento_id === empreendimento.id &&
+      ativ.atividade?.toLowerCase().includes('cronograma')
+    );
+    
+    setControleOS(prev => {
+      let updated = { ...prev };
+      
+      if (markupAtividade && markupAtividade.status) {
+        const novoStatus = mapStatusToControleOS(markupAtividade.status);
+        if (novoStatus !== prev.markup) {
+          updated.markup = novoStatus;
+        }
       }
-    }
+      
+      if (cronogramaAtividade && cronogramaAtividade.status) {
+        const novoStatus = mapStatusToControleOS(cronogramaAtividade.status);
+        if (novoStatus !== prev.cronograma) {
+          updated.cronograma = novoStatus;
+        }
+      }
+      
+      return updated;
+    });
   };
 
   const loadControleOS = async () => {
