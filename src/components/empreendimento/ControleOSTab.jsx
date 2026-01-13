@@ -391,9 +391,8 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                 </div>
               </div>
               </div>
-              </div>
 
-          {/* Atividades Vinculadas do Empreendimento */}
+              {/* Atividades Vinculadas do Empreendimento */}
           {atividadesVinculadas.length > 0 && (
             <div>
               <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Atividades do Empreendimento</h3>
