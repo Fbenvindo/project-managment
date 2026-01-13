@@ -751,32 +751,30 @@ export default function ControleOSTab({ empreendimento, atividades }) {
             </div>
           </div>
 
-          {/* Atividades Vinculadas do Empreendimento */}
+          {/* Atividades Vinculadas */}
           {atividadesVinculadas.length > 0 && (
-            <div>
-              <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Atividades do Empreendimento</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {atividadesVinculadas.map(ativ => {
-                  const status = controleOS.atividades_vinculadas?.[ativ.key] || 'NA';
-                  return (
-                    <div key={ativ.key}>
-                      <label className="text-sm font-medium text-gray-700 mb-1 block truncate" title={ativ.nome}>
-                        {ativ.nome}
-                      </label>
-                      <Select value={status} onValueChange={(v) => handleAtividadeChange(ativ.key, v)}>
-                        <SelectTrigger className={getStatusColor(status)}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {STATUS_OPTIONS.map(opt => (
-                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="mt-4">
+              <h3 className="text-xs font-bold text-gray-800 mb-2 uppercase">Atividades do Empreendimento</h3>
+              <table className="w-full border-collapse text-xs">
+                <tbody>
+                  <tr>
+                    {atividadesVinculadas.map(ativ => {
+                      const status = controleOS.atividades_vinculadas?.[ativ.key] || 'NA';
+                      return (
+                        <React.Fragment key={ativ.key}>
+                          <td className="border border-gray-300 bg-gray-100 font-semibold p-1 w-20 truncate" title={ativ.nome}>{ativ.nome}</td>
+                          <td className="border border-gray-300 p-1">
+                            <Select value={status} onValueChange={(v) => handleAtividadeChange(ativ.key, v)}>
+                              <SelectTrigger className={`h-7 text-xs ${getStatusColor(status)}`}><SelectValue /></SelectTrigger>
+                              <SelectContent>{STATUS_OPTIONS.map(opt => (<SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>))}</SelectContent>
+                            </Select>
+                          </td>
+                        </React.Fragment>
+                      );
+                    })}
+                  </tr>
+                </tbody>
+              </table>
             </div>
           )}
 
