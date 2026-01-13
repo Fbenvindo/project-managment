@@ -1412,13 +1412,42 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
               >
                 {/* Header do Dia Clicável */}
                 <div 
-                  className={`flex items-center justify-between p-2 cursor-pointer hover:bg-gray-100 border-b border-gray-100 sticky top-0 z-10
+                  className={`flex flex-col p-2 cursor-pointer hover:bg-gray-100 border-b border-gray-100 sticky top-0 z-10
                     ${isToday ? 'bg-blue-50' : 'bg-gray-50/50'}
                   `}
                   onClick={() => toggleExpand(dayKey)}
                 >
-                  <h3 className="font-semibold text-gray-700 capitalize">{format(day, 'EEE, d', { locale: ptBR })}</h3>
-                  <ChevronsUpDown className="w-4 h-4 text-gray-400" />
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-semibold text-gray-700 capitalize">{format(day, 'EEE, d', { locale: ptBR })}</h3>
+                    <ChevronsUpDown className="w-4 h-4 text-gray-400" />
+                  </div>
+                  {dayActivities.length > 0 && (
+                    <div className="mt-1 text-xs text-gray-600 font-medium">
+                      <span className="inline-block px-2 py-0.5 bg-white rounded border border-gray-200">
+                        {(() => {
+                          let total = 0;
+                          dayActivities.forEach(ativ => {
+                            const horasAlocadas = Number(ativ.horas_por_dia?.[dayKey]) || 0;
+                            const tempoExecutado = Number(ativ.tempo_executado) || 0;
+                            const horasExecutadas = Number(ativ.horas_executadas_por_dia?.[dayKey]) || 0;
+                            
+                            if (ativ.isLegacyExecution) {
+                              total += tempoExecutado;
+                            } else if (ativ.isQuickActivity || ativ.is_quick_activity) {
+                              total += horasExecutadas > 0 ? horasExecutadas : tempoExecutado;
+                            } else if (ativ.status === 'concluido') {
+                              total += horasExecutadas > 0 ? horasExecutadas : (horasAlocadas > 0 ? horasAlocadas : tempoExecutado);
+                            } else if (ativ.descritivo?.includes('Ajuda') && horasExecutadas > 0) {
+                              total += horasExecutadas;
+                            } else {
+                              total += horasAlocadas;
+                            }
+                          });
+                          return `${(Math.round(total * 10) / 10).toFixed(1)}h`;
+                        })()}
+                      </span>
+                    </div>
+                  )}
                 </div>
                 
                 {/* Container das Atividades */}
