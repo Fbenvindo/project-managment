@@ -239,6 +239,19 @@ export default function AnaliseConcepcaoPlanejamento() {
 
                 {isLoading ? <Skeleton className="h-96 w-full" /> : (
                     <Card className="bg-white border-0 shadow-lg">
+                        {Object.keys(horasPorDia).length > 0 && (
+                            <div className="p-6 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-blue-100">
+                                <h3 className="text-sm font-semibold text-gray-700 mb-3">Horas Executadas por Dia</h3>
+                                <div className="flex flex-wrap gap-3">
+                                    {Object.entries(horasPorDia).sort().map(([data, horas]) => (
+                                        <div key={data} className="bg-white px-3 py-2 rounded-lg shadow-sm border border-blue-200">
+                                            <p className="text-xs text-gray-500">{data}</p>
+                                            <p className="text-lg font-bold text-blue-600">{horas.toFixed(1)}h</p>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                         <CardContent className="p-0">
                             <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
                                 <Table className="min-w-max">
