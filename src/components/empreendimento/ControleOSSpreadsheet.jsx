@@ -218,37 +218,37 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
               Nenhum empreendimento encontrado
             </div>
           ) : (
-            <div className="flex bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-              {/* Coluna Projeto Fixa */}
-              <div className="sticky left-0 z-20 flex-shrink-0">
-                <table className="border-collapse text-xs">
-                  <thead className="bg-gray-800 text-white">
-                    <tr>
-                      <th colSpan={1} className="border border-gray-300 px-4 py-2 text-left font-bold">
-                        PROJETO
-                      </th>
-                    </tr>
-                    <tr>
-                      <th className="border border-gray-300 px-2 py-2 text-left font-semibold whitespace-nowrap" style={{ width: '200px', minWidth: '200px' }}>
-                        PROJETO
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredControles.map((row, idx) => (
-                      <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="border border-gray-300 px-2 py-1.5 whitespace-nowrap font-medium bg-inherit sticky left-0 z-10">
-                          {row.projeto || 'NA'}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-              
-              {/* Tabelas sem coluna Projeto */}
-              <div className="flex-1 overflow-x-auto">
-                <div className="inline-flex gap-0">
+            <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <div className="inline-flex">
+                  {/* Coluna Projeto Fixa dentro do scroll */}
+                  <div className="sticky left-0 z-20 bg-white">
+                    <table className="border-collapse text-xs">
+                      <thead className="bg-gray-800 text-white">
+                        <tr>
+                          <th colSpan={1} className="border border-gray-300 px-4 py-2 text-left font-bold">
+                            PROJETO
+                          </th>
+                        </tr>
+                        <tr>
+                          <th className="border border-gray-300 px-2 py-2 text-left font-semibold whitespace-nowrap" style={{ width: '200px', minWidth: '200px' }}>
+                            PROJETO
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredControles.map((row, idx) => (
+                          <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                            <td className="border border-gray-300 px-2 py-1.5 whitespace-nowrap font-medium">
+                              {row.projeto || 'NA'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  
+                  {/* Tabelas sem coluna Projeto */}
                   {/* ART sem coluna Projeto */}
                   <table className="border-collapse text-xs">
                     <thead className="bg-gray-800 text-white">
