@@ -146,16 +146,31 @@ export default function AnaliseConcepcaoPlanejamento() {
 
     const horasPorDia = useMemo(() => {
         const horas = {};
+        
+        // Horas executadas finalizadas
         Object.entries(execucoesMap).forEach(([planejamentoId, execucoes]) => {
             execucoes.forEach(exec => {
-                if (exec.status === "Finalizado" && exec.termino) {
+                if (exec.status === "Finalizado" && exec.termino && exec.usuario === user?.email) {
                     const data = new Date(exec.termino).toLocaleDateString('pt-BR');
-                    horas[data] = (horas[data] || 0) + (exec.tempo_total || 0);
+                    if (!horas[data]) horas[data] = { executado: 0, alocado: 0 };
+                    horas[data].executado += exec.tempo_total || 0;
                 }
             });
         });
+
+        // Horas planejadas alocadas para o usuário
+        planejamentos.forEach(plan => {
+            if (plan.executores?.includes(user?.email) || plan.executor_principal === user?.email) {
+                if (plan.inicio_planejado) {
+                    const data = new Date(plan.inicio_planejado).toLocaleDateString('pt-BR');
+                    if (!horas[data]) horas[data] = { executado: 0, alocado: 0 };
+                    horas[data].alocado += plan.tempo_planejado || 0;
+                }
+            }
+        });
+
         return horas;
-    }, [execucoesMap]);
+    }, [execucoesMap, planejamentos, user]);
 
     const groupedByDocumento = useMemo(() => {
         const grouped = {};
