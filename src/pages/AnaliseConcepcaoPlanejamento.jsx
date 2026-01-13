@@ -214,55 +214,57 @@ export default function AnaliseConcepcaoPlanejamento() {
                 {isLoading ? <Skeleton className="h-96 w-full" /> : (
                     <Card className="bg-white border-0 shadow-lg">
                         <CardContent className="p-0">
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Documento</TableHead>
-                                        <TableHead>Atividade</TableHead>
-                                        <TableHead className="text-center">Tempo Real</TableHead>
-                                        <TableHead className="text-center">Tempo Executado</TableHead>
-                                        <TableHead className="text-center">Ações</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {groupedByDocumento.length === 0 ? (
+                            <div className="overflow-auto max-h-[600px]">
+                                <Table>
+                                    <TableHeader className="sticky top-0 bg-white z-10">
                                         <TableRow>
-                                            <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                                                Nenhuma atividade de Concepção ou Planejamento encontrada com os filtros selecionados.
-                                            </TableCell>
+                                            <TableHead>Documento</TableHead>
+                                            <TableHead>Atividade</TableHead>
+                                            <TableHead className="text-center">Tempo Real</TableHead>
+                                            <TableHead className="text-center">Tempo Executado</TableHead>
+                                            <TableHead className="text-center">Ações</TableHead>
                                         </TableRow>
-                                    ) : (
-                                        groupedByDocumento.map(({ doc, planejamentos: docPlanejamentos }) => (
-                                            <React.Fragment key={doc.id}>
-                                                <TableRow className="bg-gray-50 hover:bg-gray-100">
-                                                    <TableCell colSpan={5} className="font-semibold p-3">
-                                                        <div className="flex flex-col">
-                                                            <span>{doc.numero}</span>
-                                                            <span className="text-xs text-gray-500 font-normal">{empreendimentos.find(e => e.id === doc.empreendimento_id)?.nome}</span>
-                                                        </div>
-                                                    </TableCell>
-                                                </TableRow>
-                                                {docPlanejamentos.map((planejamento, idx) => {
-                                                    const atividade = atividadesMap[planejamento.atividade_id];
-                                                    const execucoes = execucoesMap[planejamento.id] || [];
-                                                    const tempoExecutadoTotal = execucoes
-                                                        .filter(e => e.status === "Finalizado")
-                                                        .reduce((sum, e) => sum + (e.tempo_total || 0), 0);
-                                                    return (
-                                                        <TableRow key={planejamento.id}>
-                                                            <TableCell>{idx === 0 ? `${doc.disciplina || '-'}` : ""}</TableCell>
-                                                            <TableCell>{planejamento.descritivo || atividade?.atividade || 'Atividade não encontrada'}</TableCell>
-                                                            <TableCell className="text-center">{planejamento.tempo_planejado?.toFixed(1) || "0.0"}h</TableCell>
-                                                            <TableCell className="text-center">{tempoExecutadoTotal.toFixed(1)}h</TableCell>
-                                                            <TableCell className="text-center">{getStatusBadge(planejamento)}</TableCell>
-                                                        </TableRow>
-                                                    );
-                                                })}
-                                            </React.Fragment>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {groupedByDocumento.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                                                    Nenhuma atividade de Concepção ou Planejamento encontrada com os filtros selecionados.
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            groupedByDocumento.map(({ doc, planejamentos: docPlanejamentos }) => (
+                                                <React.Fragment key={doc.id}>
+                                                    <TableRow className="bg-gray-50 hover:bg-gray-100">
+                                                        <TableCell colSpan={5} className="font-semibold p-3">
+                                                            <div className="flex flex-col">
+                                                                <span>{doc.numero}</span>
+                                                                <span className="text-xs text-gray-500 font-normal">{empreendimentos.find(e => e.id === doc.empreendimento_id)?.nome}</span>
+                                                            </div>
+                                                        </TableCell>
+                                                    </TableRow>
+                                                    {docPlanejamentos.map((planejamento, idx) => {
+                                                        const atividade = atividadesMap[planejamento.atividade_id];
+                                                        const execucoes = execucoesMap[planejamento.id] || [];
+                                                        const tempoExecutadoTotal = execucoes
+                                                            .filter(e => e.status === "Finalizado")
+                                                            .reduce((sum, e) => sum + (e.tempo_total || 0), 0);
+                                                        return (
+                                                            <TableRow key={planejamento.id}>
+                                                                <TableCell>{idx === 0 ? `${doc.disciplina || '-'}` : ""}</TableCell>
+                                                                <TableCell>{planejamento.descritivo || atividade?.atividade || 'Atividade não encontrada'}</TableCell>
+                                                                <TableCell className="text-center">{planejamento.tempo_planejado?.toFixed(1) || "0.0"}h</TableCell>
+                                                                <TableCell className="text-center">{tempoExecutadoTotal.toFixed(1)}h</TableCell>
+                                                                <TableCell className="text-center">{getStatusBadge(planejamento)}</TableCell>
+                                                            </TableRow>
+                                                        );
+                                                    })}
+                                                </React.Fragment>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
                         </CardContent>
                     </Card>
                 )}
