@@ -73,50 +73,7 @@ export default function ControleOSTab({ empreendimento, atividades }) {
     }
   };
 
-  const mapStatusToControleOS = (status) => {
-    const statusMap = {
-      'nao_iniciado': 'Pendente',
-      'em_andamento': 'Em andamento',
-      'concluido': 'Concluído',
-      'atrasado': 'Pendente',
-      'pausado': 'Hold'
-    };
-    return statusMap[status?.toLowerCase()] || 'NA';
-  };
 
-  const updateMarkupStatus = () => {
-    if (!atividades || !empreendimento) return;
-    
-    const markupAtividade = atividades.find(ativ => 
-      ativ.empreendimento_id === empreendimento.id &&
-      ativ.atividade?.toLowerCase().includes('markup')
-    );
-    
-    const cronogramaAtividade = atividades.find(ativ => 
-      ativ.empreendimento_id === empreendimento.id &&
-      ativ.atividade?.toLowerCase().includes('cronograma')
-    );
-    
-    setControleOS(prev => {
-      let updated = { ...prev };
-      
-      if (markupAtividade && markupAtividade.status) {
-        const novoStatus = mapStatusToControleOS(markupAtividade.status);
-        if (novoStatus !== prev.markup) {
-          updated.markup = novoStatus;
-        }
-      }
-      
-      if (cronogramaAtividade && cronogramaAtividade.status) {
-        const novoStatus = mapStatusToControleOS(cronogramaAtividade.status);
-        if (novoStatus !== prev.cronograma) {
-          updated.cronograma = novoStatus;
-        }
-      }
-      
-      return updated;
-    });
-  };
 
   const loadControleOS = async () => {
     if (!empreendimento?.id) return;
