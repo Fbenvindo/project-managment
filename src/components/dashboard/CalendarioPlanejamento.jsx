@@ -1074,7 +1074,7 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
 };
 
 // --- Sub-componente para Container de Atividades (reutilizável) ---
-const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections }) => { 
+const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => { 
   const [expandedGroups, setExpandedGroups] = useState(new Set());
 
   const activityGroups = useMemo(() => {
