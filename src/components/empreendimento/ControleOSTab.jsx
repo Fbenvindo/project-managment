@@ -531,21 +531,7 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                 </Select>
               </div>
 
-              <div>
-                <label className="text-sm font-medium text-gray-700 mb-1 block">ART - BOMB</label>
-                <Select value={controleOS.art_bomb} onValueChange={(v) => handleFieldChange('art_bomb', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.art_bomb)}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUS_OPTIONS.map(opt => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-          </div>
+
 
           {/* Planejamento */}
           <div>
