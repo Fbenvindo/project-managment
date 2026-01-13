@@ -195,27 +195,145 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
               Nenhum empreendimento encontrado
             </div>
           ) : (
-            <div className="flex gap-4 overflow-x-auto pb-4">
-              <div className="flex-shrink-0 min-w-fit">
-                <SpreadsheetTable 
-                  title="PROJETO"
-                  columns={projetoColumns}
-                  data={filteredControles}
-                />
+            <div className="flex bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
+              {/* Coluna Projeto Fixa */}
+              <div className="flex-shrink-0">
+                <table className="border-collapse text-xs">
+                  <thead className="bg-gray-800 text-white">
+                    <tr>
+                      <th colSpan={1} className="border border-gray-300 px-4 py-2 text-left font-bold">
+                        PROJETO
+                      </th>
+                    </tr>
+                    <tr>
+                      <th className="border border-gray-300 px-2 py-2 text-left font-semibold whitespace-nowrap" style={{ width: '200px', minWidth: '200px' }}>
+                        PROJETO
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredControles.map((row, idx) => (
+                      <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <td className="border border-gray-300 px-2 py-1.5 whitespace-nowrap font-medium">
+                          {row.projeto || 'NA'}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-              <div className="flex-shrink-0 min-w-fit">
-                <SpreadsheetTable 
-                  title="ART"
-                  columns={artColumns}
-                  data={filteredControles}
-                />
-              </div>
-              <div className="flex-shrink-0 min-w-fit">
-                <SpreadsheetTable 
-                  title="CONCESSIONÁRIAS"
-                  columns={concessionariaColumns}
-                  data={filteredControles}
-                />
+              
+              {/* Tabelas sem coluna Projeto */}
+              <div className="flex-1 overflow-x-auto">
+                <div className="inline-flex gap-0">
+                  {/* PROJETO sem coluna Projeto */}
+                  <table className="border-collapse text-xs">
+                    <thead className="bg-gray-800 text-white">
+                      <tr>
+                        <th colSpan={projetoColumns.length - 1} className="border border-gray-300 px-4 py-2 text-left font-bold">
+                          PROJETO
+                        </th>
+                      </tr>
+                      <tr>
+                        {projetoColumns.slice(1).map((col) => (
+                          <th
+                            key={col.key}
+                            className="border border-gray-300 px-2 py-2 text-left font-semibold whitespace-nowrap"
+                            style={{ width: col.width, minWidth: col.width }}
+                          >
+                            {col.label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredControles.map((row, idx) => (
+                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          {projetoColumns.slice(1).map((col) => {
+                            const value = row[col.key] || 'NA';
+                            return (
+                              <td key={col.key} className="border border-gray-300 px-2 py-1.5 whitespace-nowrap">
+                                {col.isStatus ? <StatusCell status={value} /> : value}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  
+                  {/* ART sem coluna Projeto */}
+                  <table className="border-collapse text-xs">
+                    <thead className="bg-gray-800 text-white">
+                      <tr>
+                        <th colSpan={artColumns.length - 1} className="border border-gray-300 px-4 py-2 text-left font-bold">
+                          ART
+                        </th>
+                      </tr>
+                      <tr>
+                        {artColumns.slice(1).map((col) => (
+                          <th
+                            key={col.key}
+                            className="border border-gray-300 px-2 py-2 text-left font-semibold whitespace-nowrap"
+                            style={{ width: col.width, minWidth: col.width }}
+                          >
+                            {col.label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredControles.map((row, idx) => (
+                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          {artColumns.slice(1).map((col) => {
+                            const value = row[col.key] || 'NA';
+                            return (
+                              <td key={col.key} className="border border-gray-300 px-2 py-1.5 whitespace-nowrap">
+                                {col.isStatus ? <StatusCell status={value} /> : value}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  
+                  {/* CONCESSIONÁRIAS sem coluna Projeto */}
+                  <table className="border-collapse text-xs">
+                    <thead className="bg-gray-800 text-white">
+                      <tr>
+                        <th colSpan={concessionariaColumns.length - 1} className="border border-gray-300 px-4 py-2 text-left font-bold">
+                          CONCESSIONÁRIAS
+                        </th>
+                      </tr>
+                      <tr>
+                        {concessionariaColumns.slice(1).map((col) => (
+                          <th
+                            key={col.key}
+                            className="border border-gray-300 px-2 py-2 text-left font-semibold whitespace-nowrap"
+                            style={{ width: col.width, minWidth: col.width }}
+                          >
+                            {col.label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredControles.map((row, idx) => (
+                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          {concessionariaColumns.slice(1).map((col) => {
+                            const value = row[col.key] || 'NA';
+                            return (
+                              <td key={col.key} className="border border-gray-300 px-2 py-1.5 whitespace-nowrap">
+                                {col.isStatus ? <StatusCell status={value} /> : value}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
           )}
