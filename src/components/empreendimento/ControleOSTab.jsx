@@ -4,7 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Save, Loader2, ClipboardList } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Save, Loader2, ClipboardList, Plus, Trash2 } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 
 const STATUS_OPTIONS = [
@@ -90,6 +92,7 @@ export default function ControleOSTab({ empreendimento, atividades }) {
             ar_condicionado: { concepcao: 'NA', calculo: 'NA', diagrama: 'NA' },
             memorial: { esp_tec: 'NA', matlib: 'NA' }
           },
+          avanco: [],
           observacoes: ''
         };
         
@@ -130,6 +133,29 @@ export default function ControleOSTab({ empreendimento, atividades }) {
           [campo]: status
         }
       }
+    }));
+  };
+
+  const handleAddAvancoItem = () => {
+    setControleOS(prev => ({
+      ...prev,
+      avanco: [...(prev.avanco || []), { etapa: '', status: 'NA', observacoes: '' }]
+    }));
+  };
+
+  const handleRemoveAvancoItem = (index) => {
+    setControleOS(prev => ({
+      ...prev,
+      avanco: prev.avanco.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleAvancoChange = (index, field, value) => {
+    setControleOS(prev => ({
+      ...prev,
+      avanco: prev.avanco.map((item, i) => 
+        i === index ? { ...item, [field]: value } : item
+      )
     }));
   };
 
@@ -710,6 +736,83 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                 </Select>
               </div>
             </div>
+          </div>
+
+          {/* Avanço */}
+          <div>
+            <div className="flex items-center justify-between mb-4 border-b pb-2">
+              <h3 className="text-lg font-semibold text-gray-800">Avanço</h3>
+              <Button onClick={handleAddAvancoItem} size="sm" variant="outline">
+                <Plus className="w-4 h-4 mr-2" />
+                Adicionar Item
+              </Button>
+            </div>
+            
+            {controleOS.avanco && controleOS.avanco.length > 0 ? (
+              <div className="border rounded-lg overflow-hidden">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="bg-gray-800">
+                      <TableHead className="text-white font-semibold">Etapa</TableHead>
+                      <TableHead className="text-white font-semibold w-[200px]">Status</TableHead>
+                      <TableHead className="text-white font-semibold">Observações</TableHead>
+                      <TableHead className="text-white font-semibold w-[60px]"></TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {controleOS.avanco.map((item, index) => (
+                      <TableRow key={index}>
+                        <TableCell>
+                          <Input
+                            value={item.etapa || ''}
+                            onChange={(e) => handleAvancoChange(index, 'etapa', e.target.value)}
+                            placeholder="Nome da etapa"
+                            className="w-full"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Select 
+                            value={item.status || 'NA'} 
+                            onValueChange={(v) => handleAvancoChange(index, 'status', v)}
+                          >
+                            <SelectTrigger className={getStatusColor(item.status || 'NA')}>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {STATUS_OPTIONS.map(opt => (
+                                <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <Textarea
+                            value={item.observacoes || ''}
+                            onChange={(e) => handleAvancoChange(index, 'observacoes', e.target.value)}
+                            placeholder="Observações"
+                            className="min-h-[60px] w-full"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleRemoveAvancoItem(index)}
+                            className="text-red-600 hover:text-red-800 hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            ) : (
+              <div className="text-center py-8 text-gray-500 border border-dashed rounded-lg">
+                Nenhum item de avanço adicionado. Clique em "Adicionar Item" para começar.
+              </div>
+            )}
           </div>
 
           {/* Observações */}
