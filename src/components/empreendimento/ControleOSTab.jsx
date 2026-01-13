@@ -768,9 +768,83 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                 </div>
               </div>
             </div>
-          </div>
+            </div>
 
-          {/* Concessionárias */}
+            {/* Monitoramento */}
+            <div>
+            <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Monitoramento</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Briefing</label>
+                <Select value={controleOS.monitoramento?.briefing || 'NA'} onValueChange={(v) => setControleOS(prev => ({
+                  ...prev,
+                  monitoramento: { ...prev.monitoramento, briefing: v }
+                }))}>
+                  <SelectTrigger className={getStatusColor(controleOS.monitoramento?.briefing || 'NA')}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Cronograma</label>
+                <Select value={controleOS.monitoramento?.cronograma || 'NA'} onValueChange={(v) => setControleOS(prev => ({
+                  ...prev,
+                  monitoramento: { ...prev.monitoramento, cronograma: v }
+                }))}>
+                  <SelectTrigger className={getStatusColor(controleOS.monitoramento?.cronograma || 'NA')}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">LMD</label>
+                <Select value={controleOS.monitoramento?.lmd || 'NA'} onValueChange={(v) => setControleOS(prev => ({
+                  ...prev,
+                  monitoramento: { ...prev.monitoramento, lmd: v }
+                }))}>
+                  <SelectTrigger className={getStatusColor(controleOS.monitoramento?.lmd || 'NA')}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 mb-1 block">Entregas x Etapas</label>
+                <Select value={controleOS.monitoramento?.entregas_x_etapas || 'NA'} onValueChange={(v) => setControleOS(prev => ({
+                  ...prev,
+                  monitoramento: { ...prev.monitoramento, entregas_x_etapas: v }
+                }))}>
+                  <SelectTrigger className={getStatusColor(controleOS.monitoramento?.entregas_x_etapas || 'NA')}>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {STATUS_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            </div>
+
+            {/* Concessionárias */}
           <div>
             <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Concessionárias</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
