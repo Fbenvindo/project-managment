@@ -498,17 +498,20 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                 </tr>
               </thead>
               <tbody>
-                <Select value={controleOS.planejamento?.hidraulica?.concepcao || 'NA'} onValueChange={(v) => handlePlanejamentoChange('hidraulica', 'concepcao', v)}>
-                  <SelectTrigger className={`w-20 h-7 text-xs border-0 ${getStatusColor(controleOS.planejamento?.hidraulica?.concepcao || 'NA')}`}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUS_OPTIONS.map(opt => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                </td>
+                <tr className="border-b border-gray-300">
+                  <td className="px-3 py-2 font-medium border-r border-gray-300 bg-gray-50">Hidráulica</td>
+                  <td className="px-3 py-2 border-r border-gray-300 flex items-center justify-center">
+                    <Select value={controleOS.planejamento?.hidraulica?.concepcao || 'NA'} onValueChange={(v) => handlePlanejamentoChange('hidraulica', 'concepcao', v)}>
+                      <SelectTrigger className={`w-20 h-7 text-xs border-0 ${getStatusColor(controleOS.planejamento?.hidraulica?.concepcao || 'NA')}`}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUS_OPTIONS.map(opt => (
+                          <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </td>
                 <td className="px-3 py-2 border-r border-gray-300 flex items-center justify-center">
                 <Select value={controleOS.planejamento?.hidraulica?.calculo || 'NA'} onValueChange={(v) => handlePlanejamentoChange('hidraulica', 'calculo', v)}>
                   <SelectTrigger className={`w-20 h-7 text-xs border-0 ${getStatusColor(controleOS.planejamento?.hidraulica?.calculo || 'NA')}`}>
