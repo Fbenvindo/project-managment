@@ -571,11 +571,11 @@ export default function AlocacaoEquipeTab({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="overflow-x-auto">
+        <div className="overflow-auto max-h-[600px]">
           <table className="w-full border-collapse text-xs">
-            <thead>
+            <thead className="sticky top-0 z-20">
               <tr className="bg-gray-800 text-white">
-                <th className="border border-gray-600 p-1 text-left sticky left-0 bg-gray-800 z-10 min-w-[120px]">Nome</th>
+                <th className="border border-gray-600 p-1 text-left sticky left-0 bg-gray-800 z-30 min-w-[120px]">Nome</th>
                 <th className="border border-gray-600 p-1 text-left min-w-[60px]">Item</th>
                 {diasExibidos.map(dia => (
                   <th 
