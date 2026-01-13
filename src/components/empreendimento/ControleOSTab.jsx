@@ -360,8 +360,8 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                   </Select>
                 </div>
 
-                <div className="flex flex-col min-w-[150px]">
-                  <label className="text-sm font-medium text-gray-700 mb-1">Cronograma</label>
+                <div className="w-[140px]">
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Cronograma</label>
                   <Select value={controleOS.cronograma} onValueChange={(v) => handleFieldChange('cronograma', v)}>
                     <SelectTrigger className={`h-9 ${getStatusColor(controleOS.cronograma)}`}>
                       <SelectValue />
