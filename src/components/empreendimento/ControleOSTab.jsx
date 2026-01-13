@@ -332,8 +332,8 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                   </Select>
                 </div>
 
-                <div className="flex flex-col min-w-[150px]">
-                  <label className="text-sm font-medium text-gray-700 mb-1">Atividades de Planejamento</label>
+                <div className="w-[140px]">
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Atividades de Planejamento</label>
                   <Select value={controleOS.atividades_planejamento} onValueChange={(v) => handleFieldChange('atividades_planejamento', v)}>
                     <SelectTrigger className={`h-9 ${getStatusColor(controleOS.atividades_planejamento)}`}>
                       <SelectValue />
