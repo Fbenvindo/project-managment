@@ -624,8 +624,8 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
 
         {/* Top Row: Activity Name + Action Icons */}
         <div className="flex items-start justify-between mb-1.5">
-          <div className={`flex-1 mr-2 overflow-hidden ${hasSelections || isSelected ? 'ml-12' : 'ml-6'}`}>
-            <p className="font-medium text-gray-800 break-words line-clamp-2" title={displayName}>
+          <div className={`flex-1 mr-2 ${hasSelections || isSelected ? 'ml-12' : 'ml-6'}`}>
+            <p className="font-medium text-gray-800 break-words" title={displayName}>
               {displayName}
             </p>
             <div className="flex flex-wrap gap-1 mt-1">
@@ -759,7 +759,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
         
         {/* CORRIGIDO: Documento Row agora só renderiza para atividades normais, não para planejamentos de documento */}
         {plano.tipo_planejamento !== 'documento' && documentoDisplay && (
-          <p className="text-gray-600 font-mono mb-1.5 truncate" title={`Documento: ${documentoDisplay}`}>
+          <p className="text-gray-600 font-mono mb-1.5 break-words" title={`Documento: ${documentoDisplay}`}>
             {documentoDisplay}
           </p>
         )}
@@ -768,7 +768,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
         {planoExecutor && (
           <div className="flex items-center gap-1.5 text-gray-700">
             <User className="w-3 h-3 flex-shrink-0"/>
-            <span className="truncate" title={planoExecutor.nome || planoExecutor.email}>
+            <span className="break-words" title={planoExecutor.nome || planoExecutor.email}>
               {planoExecutor.nome || planoExecutor.email}
             </span>
           </div>
