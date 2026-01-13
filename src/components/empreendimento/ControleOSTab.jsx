@@ -290,10 +290,10 @@ export default function ControleOSTab({ empreendimento, atividades }) {
           {/* Campos Fixos */}
           <div>
             <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Gestão Geral</h3>
-            <div className="overflow-x-auto">
-              <div className="flex gap-4 pb-4" style={{ minWidth: 'fit-content' }}>
-                <div className="flex flex-col min-w-[150px]">
-                  <label className="text-sm font-medium text-gray-700 mb-1">Gestão</label>
+            <div className="overflow-x-auto pb-2">
+              <div className="flex gap-4" style={{ minWidth: 'fit-content' }}>
+                <div className="w-[140px]">
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Gestão</label>
                   <Select value={controleOS.gestao} onValueChange={(v) => handleFieldChange('gestao', v)}>
                     <SelectTrigger className="h-9">
                       <SelectValue placeholder="Selecione um usuário" />
