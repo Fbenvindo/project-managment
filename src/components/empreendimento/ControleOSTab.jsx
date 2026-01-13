@@ -64,12 +64,6 @@ export default function ControleOSTab({ empreendimento, atividades }) {
     loadControleOS();
   }, [empreendimento?.id]);
 
-  useEffect(() => {
-    if (controleOS && atividades) {
-      updateMarkupStatus();
-    }
-  }, [atividades, controleOS?.id]);
-
   const loadUsuarios = async () => {
     try {
       const usuariosData = await base44.entities.Usuario.list();
