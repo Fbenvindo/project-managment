@@ -166,6 +166,12 @@ export default function ControleOSTab({ empreendimento, atividades }) {
             ar_condicionado: { concepcao: 'NA', calculo: 'NA', diagrama: 'NA' },
             memorial: { esp_tec: 'NA', matlib: 'NA' }
           },
+          monitoramento: {
+            briefing: 'NA',
+            cronograma: 'NA',
+            lmd: 'NA',
+            entregas_x_etapas: 'NA'
+          },
           avanco: [],
           observacoes: ''
         };
