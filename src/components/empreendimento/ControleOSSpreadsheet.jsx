@@ -197,7 +197,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
           ) : (
             <div className="flex bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
               {/* Coluna Projeto Fixa */}
-              <div className="flex-shrink-0">
+              <div className="sticky left-0 z-20 flex-shrink-0">
                 <table className="border-collapse text-xs">
                   <thead className="bg-gray-800 text-white">
                     <tr>
@@ -214,7 +214,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                   <tbody>
                     {filteredControles.map((row, idx) => (
                       <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="border border-gray-300 px-2 py-1.5 whitespace-nowrap font-medium">
+                        <td className="border border-gray-300 px-2 py-1.5 whitespace-nowrap font-medium bg-inherit sticky left-0 z-10">
                           {row.projeto || 'NA'}
                         </td>
                       </tr>
