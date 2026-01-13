@@ -41,6 +41,7 @@ export default function ControleOSTab({ empreendimento, atividades }) {
   const [controleOS, setControleOS] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [usuarios, setUsuarios] = useState([]);
 
   // Identificar atividades do empreendimento que devem aparecer como colunas
   const atividadesVinculadas = useMemo(() => {
@@ -59,8 +60,18 @@ export default function ControleOSTab({ empreendimento, atividades }) {
   }, [atividades, empreendimento]);
 
   useEffect(() => {
+    loadUsuarios();
     loadControleOS();
   }, [empreendimento?.id]);
+
+  const loadUsuarios = async () => {
+    try {
+      const usuariosData = await base44.entities.Usuario.list();
+      setUsuarios(usuariosData || []);
+    } catch (error) {
+      console.error('Erro ao carregar usuários:', error);
+    }
+  };
 
   const loadControleOS = async () => {
     if (!empreendimento?.id) return;
@@ -230,12 +241,14 @@ export default function ControleOSTab({ empreendimento, atividades }) {
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-1 block">Gestão</label>
                 <Select value={controleOS.gestao} onValueChange={(v) => handleFieldChange('gestao', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.gestao)}>
-                    <SelectValue />
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione um usuário" />
                   </SelectTrigger>
                   <SelectContent>
-                    {STATUS_OPTIONS.map(opt => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                    {usuarios.map(user => (
+                      <SelectItem key={user.email} value={user.nome || user.email}>
+                        {user.nome || user.email}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -243,16 +256,12 @@ export default function ControleOSTab({ empreendimento, atividades }) {
 
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-1 block">Formalização</label>
-                <Select value={controleOS.formalizacao} onValueChange={(v) => handleFieldChange('formalizacao', v)}>
-                  <SelectTrigger className={getStatusColor(controleOS.formalizacao)}>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {STATUS_OPTIONS.map(opt => (
-                      <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <Input 
+                  value={controleOS.formalizacao} 
+                  onChange={(e) => handleFieldChange('formalizacao', e.target.value)}
+                  placeholder="Descrição da formalização"
+                  className="w-full"
+                />
               </div>
 
               <div>
