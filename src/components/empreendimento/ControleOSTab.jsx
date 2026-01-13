@@ -318,8 +318,8 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                   />
                 </div>
 
-                <div className="flex flex-col min-w-[150px]">
-                  <label className="text-sm font-medium text-gray-700 mb-1">Abertura OS - Servidor</label>
+                <div className="w-[140px]">
+                  <label className="text-sm font-medium text-gray-700 mb-1 block">Abertura OS - Servidor</label>
                   <Select value={controleOS.abertura_os_servidor} onValueChange={(v) => handleFieldChange('abertura_os_servidor', v)}>
                     <SelectTrigger className={`h-9 ${getStatusColor(controleOS.abertura_os_servidor)}`}>
                       <SelectValue />
