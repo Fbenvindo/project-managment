@@ -266,13 +266,13 @@ export default function ControleOSTab({ empreendimento, atividades }) {
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
+      <div className="border rounded-lg bg-white">
+        <div className="flex items-center justify-between p-4 bg-gray-800 text-white rounded-t-lg">
+          <div className="flex items-center gap-2">
             <ClipboardList className="w-5 h-5" />
-            Controle de Ordem de Serviço
-          </CardTitle>
-          <Button onClick={handleSave} disabled={isSaving}>
+            <h2 className="text-lg font-bold">Controle de Ordem de Serviço</h2>
+          </div>
+          <Button onClick={handleSave} disabled={isSaving} className="bg-green-600 hover:bg-green-700">
             {isSaving ? (
               <>
                 <Loader2 className="w-4 h-4 mr-2 animate-spin" />
@@ -285,8 +285,111 @@ export default function ControleOSTab({ empreendimento, atividades }) {
               </>
             )}
           </Button>
-        </CardHeader>
-        <CardContent className="space-y-6">
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full border-collapse text-sm">
+            <thead>
+              <tr className="bg-gray-100 border-b-2 border-gray-300">
+                <th className="border border-gray-300 p-2 text-left font-bold bg-gray-800 text-white w-16">OS</th>
+                <th className="border border-gray-300 p-2 text-left font-bold bg-gray-600 text-white">Gestão</th>
+                <th className="border border-gray-300 p-2 text-left font-bold bg-gray-600 text-white">Formalização</th>
+                <th className="border border-gray-300 p-2 text-center font-bold bg-blue-600 text-white">Abertura</th>
+                <th className="border border-gray-300 p-2 text-center font-bold bg-blue-600 text-white">Atividades Planej.</th>
+                <th className="border border-gray-300 p-2 text-center font-bold bg-blue-600 text-white">Kick off</th>
+                <th className="border border-gray-300 p-2 text-center font-bold bg-purple-600 text-white">Cronograma</th>
+                <th className="border border-gray-300 p-2 text-center font-bold bg-purple-600 text-white">Markup</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="hover:bg-gray-50">
+                <td className="border border-gray-300 p-2 font-semibold bg-gray-50">{controleOS.os}</td>
+                <td className="border border-gray-300 p-2">
+                  <Select value={controleOS.gestao} onValueChange={(v) => handleFieldChange('gestao', v)}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {usuarios.map(user => (
+                        <SelectItem key={user.email} value={user.nome || user.email}>
+                          {user.nome || user.email}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </td>
+                <td className="border border-gray-300 p-2">
+                  <input 
+                    type="text"
+                    value={controleOS.formalizacao} 
+                    onChange={(e) => handleFieldChange('formalizacao', e.target.value)}
+                    className="w-full h-8 px-2 text-xs border border-gray-300 rounded"
+                    placeholder="-"
+                  />
+                </td>
+                <td className="border border-gray-300 p-2">
+                  <Select value={controleOS.abertura_os_servidor} onValueChange={(v) => handleFieldChange('abertura_os_servidor', v)}>
+                    <SelectTrigger className={`h-8 text-xs ${getStatusColor(controleOS.abertura_os_servidor)}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </td>
+                <td className="border border-gray-300 p-2">
+                  <Select value={controleOS.atividades_planejamento} onValueChange={(v) => handleFieldChange('atividades_planejamento', v)}>
+                    <SelectTrigger className={`h-8 text-xs ${getStatusColor(controleOS.atividades_planejamento)}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </td>
+                <td className="border border-gray-300 p-2">
+                  <Select value={controleOS.kickoff_cliente} onValueChange={(v) => handleFieldChange('kickoff_cliente', v)}>
+                    <SelectTrigger className={`h-8 text-xs ${getStatusColor(controleOS.kickoff_cliente)}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </td>
+                <td className="border border-gray-300 p-2">
+                  <Select value={controleOS.cronograma} onValueChange={(v) => handleFieldChange('cronograma', v)}>
+                    <SelectTrigger className={`h-8 text-xs ${getStatusColor(controleOS.cronograma)}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </td>
+                <td className="border border-gray-300 p-2">
+                  <Select value={controleOS.markup} onValueChange={(v) => handleFieldChange('markup', v)}>
+                    <SelectTrigger className={`h-8 text-xs ${getStatusColor(controleOS.markup)}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map(opt => (
+                        <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
           {/* Campos Fixos */}
           <div>
             <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Gestão Geral</h3>
