@@ -816,42 +816,28 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
 
     let soma = 0;
     atividades.forEach((atividade) => {
-      const horasAlocadasDia = Number(atividade.horas_por_dia?.[dayKey]) || 0;
-      const tempoExecutado = Number(atividade.tempo_executado) || 0;
       const horasExecutadasNoDia = Number(atividade.horas_executadas_por_dia?.[dayKey]) || 0;
-      
-      console.log(`💡 [${dayKey}] Atividade: ${atividade.descritivo || 'sem nome'}`, {
-        horasAlocadasDia,
-        tempoExecutado,
-        horasExecutadasNoDia,
-        isLegacy: atividade.isLegacyExecution,
-        isQuick: atividade.isQuickActivity || atividade.is_quick_activity,
-        status: atividade.status
-      });
+      const tempoExecutado = Number(atividade.tempo_executado) || 0;
       
       // Para atividades legadas, usar tempo_executado
       if (atividade.isLegacyExecution) {
         soma += tempoExecutado;
       }
-      // Para atividades rápidas
-      else if (atividade.isQuickActivity || atividade.is_quick_activity) {
+      // Para atividades rápidas OU concluídas: usar SEMPRE horas executadas
+      else if (atividade.isQuickActivity || atividade.is_quick_activity || atividade.status === 'concluido') {
         soma += horasExecutadasNoDia;
-      }
-      // Para atividades concluídas
-      else if (atividade.status === 'concluido') {
-        soma += horasExecutadasNoDia > 0 ? horasExecutadasNoDia : horasAlocadasDia;
       }
       // Para atividades de ajuda, usar horas executadas se disponíveis
       else if (atividade.descritivo?.includes('Ajuda') && horasExecutadasNoDia > 0) {
         soma += horasExecutadasNoDia;
       }
-      // Para todas as outras atividades, usar alocação
+      // Para todas as outras atividades, usar alocação planejada
       else {
+        const horasAlocadasDia = Number(atividade.horas_por_dia?.[dayKey]) || 0;
         soma += horasAlocadasDia;
       }
     });
 
-    console.log(`📊 Total horas dia ${dayKey}: ${soma}`);
     return Math.round(soma * 10) / 10;
   }, [atividades, dayKey]);
   
