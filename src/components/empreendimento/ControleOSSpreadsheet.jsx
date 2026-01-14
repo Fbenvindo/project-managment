@@ -676,6 +676,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                                     status={value} 
                                     editable={editable}
                                     onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                    customOptions={col.statusOptions}
                                   />
                                 ) : value}
                               </td>
@@ -718,6 +719,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                                     status={value} 
                                     editable={editable}
                                     onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                    customOptions={col.statusOptions}
                                   />
                                 ) : value}
                               </td>
@@ -760,6 +762,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                                     status={value} 
                                     editable={editable}
                                     onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                    customOptions={col.statusOptions}
                                   />
                                 ) : value}
                               </td>
@@ -802,6 +805,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                                     status={value} 
                                     editable={editable}
                                     onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                    customOptions={col.statusOptions}
                                   />
                                 ) : value}
                               </td>
@@ -844,6 +848,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                                     status={value} 
                                     editable={editable}
                                     onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                    customOptions={col.statusOptions}
                                   />
                                 ) : value}
                               </td>
@@ -886,6 +891,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                                     status={value} 
                                     editable={editable}
                                     onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                    customOptions={col.statusOptions}
                                   />
                                 ) : value}
                               </td>
@@ -928,6 +934,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                                     status={value} 
                                     editable={editable}
                                     onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                    customOptions={col.statusOptions}
                                   />
                                 ) : value}
                               </td>
@@ -970,6 +977,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                                     status={value} 
                                     editable={editable}
                                     onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                    customOptions={col.statusOptions}
                                   />
                                 ) : value}
                               </td>
@@ -1012,6 +1020,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                                     status={value} 
                                     editable={editable}
                                     onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                    customOptions={col.statusOptions}
                                   />
                                 ) : value}
                               </td>
@@ -1054,6 +1063,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                                     status={value} 
                                     editable={editable}
                                     onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                    customOptions={col.statusOptions}
                                   />
                                 ) : value}
                               </td>
@@ -1096,6 +1106,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                                     status={value} 
                                     editable={editable}
                                     onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                    customOptions={col.statusOptions}
                                   />
                                 ) : value}
                               </td>
