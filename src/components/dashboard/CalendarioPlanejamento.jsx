@@ -836,10 +836,9 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
       if (atividade.isLegacyExecution) {
         soma += tempoExecutado;
       }
-      // Para atividades rápidas: SEMPRE usar horas executadas no dia (é o único dado confiável)
+      // Para atividades rápidas: APENAS usar horas executadas neste dia específico
       else if (isQuickActivity) {
-        // Atividades rápidas só aparecem onde foram executadas
-        soma += horasExecutadasNoDia > 0 ? horasExecutadasNoDia : tempoExecutado;
+        soma += horasExecutadasNoDia;
       }
       // Para atividades concluídas normais: priorizar horas executadas no dia
       else if (atividade.status === 'concluido') {
@@ -2273,7 +2272,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       if (atividade.isLegacyExecution) {
         soma += tempoExecutado;
       } else if (isQuickActivity) {
-        soma += horasExecutadasNoDia > 0 ? horasExecutadasNoDia : tempoExecutado;
+        soma += horasExecutadasNoDia;
       } else if (atividade.status === 'concluido') {
         if (horasExecutadasNoDia > 0) {
           soma += horasExecutadasNoDia;
