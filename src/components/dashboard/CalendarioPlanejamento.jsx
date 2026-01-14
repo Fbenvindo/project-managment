@@ -1559,18 +1559,13 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   const hasSelectedUser = !!filters.user;
   const isViewingAllUsers = filters.user === 'all';
 
-  // **MODIFICADO**: useEffect para auto-selecionar usuário se for gestão, colaborador OU apoio (sem permissão especial)
+  // Auto-selecionar o próprio usuário no primeiro acesso
   useEffect(() => {
-    // Verifica se tem usuários permitidos (array válido com conteúdo)
-    const usuariosPermitidos = userProfile?.usuarios_permitidos_visualizar || [];
-    const temPermissao = Array.isArray(usuariosPermitidos) && usuariosPermitidos.length > 0;
-
-    if ((isGestao || isColaborador || isApoio) && !temPermissao && user?.email && !filters.user) {
-      const tipoUsuario = isGestao ? 'gestão' : isColaborador ? 'colaborador' : 'apoio';
-      console.log(`🔒 Perfil ${tipoUsuario} detectado (sem permissão especial) - auto-selecionando próprio usuário: ${user.email}`);
+    if (user?.email && !filters.user) {
+      console.log(`🔄 Auto-selecionando usuário: ${user.email}`);
       setFilters(prev => ({ ...prev, user: user.email }));
     }
-  }, [isGestao, isColaborador, isApoio, userProfile?.usuarios_permitidos_visualizar, user?.email, filters.user]);
+  }, [user?.email, filters.user]);
 
   const executorMap = useMemo(() => {
     return usuarios.reduce((acc, u) => {
