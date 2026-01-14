@@ -119,7 +119,9 @@ export default function AnaliseConcepcaoPlanejamento() {
             await PlanejamentoAtividade.update(planejamento.id, {
                 horas_por_dia: horasPorDia,
                 horas_executadas_por_dia: horasExecutadasPorDia,
-                tempo_executado: totalTempoExecutado
+                tempo_executado: totalTempoExecutado,
+                tempo_planejado: totalTempoExecutado,
+                is_quick_activity: true
             });
 
             // Atualizar estado local
