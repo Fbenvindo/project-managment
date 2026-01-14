@@ -829,15 +829,9 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
       else if (atividade.isQuickActivity || atividade.is_quick_activity) {
         horasDoDia = horasExecutadasNoDia;
       }
-      else if (atividade.status === 'concluido') {
-        // Para atividades concluídas, usar sempre o tempo executado total
-        horasDoDia = horasExecutadasNoDia > 0 ? horasExecutadasNoDia : tempoExecutado;
-      }
-      else if (atividade.descritivo && atividade.descritivo.includes('Ajuda') && horasExecutadasNoDia > 0) {
-        horasDoDia = horasExecutadasNoDia;
-      }
       else {
-        horasDoDia = horasAlocadasDia;
+        // Simples: usar horas executadas do dia se tiver, senão usar alocado
+        horasDoDia = horasExecutadasNoDia > 0 ? horasExecutadasNoDia : horasAlocadasDia;
       }
 
       console.log(`   [${idx + 1}] ${atividade.descritivo || atividade.atividade?.atividade || 'sem nome'}:`, {
