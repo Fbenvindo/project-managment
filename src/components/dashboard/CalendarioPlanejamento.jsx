@@ -332,21 +332,13 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   if (plano.isLegacyExecution) {
     horasDoDia = tempoExecutado;
   }
-  // Para atividades rápidas
+  // Para atividades rápidas: usar horas executadas do dia se tiver, senão usar total
   else if (plano.isQuickActivity || plano.is_quick_activity) {
     horasDoDia = horasExecutadasNoDia > 0 ? horasExecutadasNoDia : tempoExecutado;
   }
-  // Para atividades normais
+  // Para atividades normais: apenas contar horas que têm data específica registrada
   else {
-    // Usar horas executadas do dia se tiver; senão usar alocado
-    // Se concluída mas sem horas_executadas_por_dia, usar tempo_executado como fallback
-    if (horasExecutadasNoDia > 0) {
-      horasDoDia = horasExecutadasNoDia;
-    } else if (plano.status === 'concluido' && tempoExecutado > 0 && Object.keys(plano.horas_executadas_por_dia || {}).length === 0) {
-      horasDoDia = tempoExecutado;
-    } else {
-      horasDoDia = horasAlocadasDia;
-    }
+    horasDoDia = horasExecutadasNoDia;
   }
 
   const isNaPlaylist = playlist.includes(plano.id);
