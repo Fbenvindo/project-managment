@@ -107,15 +107,18 @@ export default function AnaliseConcepcaoPlanejamento() {
             const horasExecutadasPorDia = planejamento.horas_executadas_por_dia || {};
             horasExecutadasPorDia[diaKey] = (horasExecutadasPorDia[diaKey] || 0) + tempoTotal;
 
+            // Calcular tempo_executado como soma total de horas_executadas_por_dia
+            const totalTempoExecutado = Object.values(horasExecutadasPorDia).reduce((sum, h) => sum + (Number(h) || 0), 0);
+
             await PlanejamentoAtividade.update(planejamento.id, {
                 horas_executadas_por_dia: horasExecutadasPorDia,
-                tempo_executado: (planejamento.tempo_executado || 0) + tempoTotal
+                tempo_executado: totalTempoExecutado
             });
 
             // Atualizar estado local
             setPlanejamentos(prev => prev.map(p => 
                 p.id === planejamento.id 
-                    ? { ...p, horas_executadas_por_dia: horasExecutadasPorDia, tempo_executado: (p.tempo_executado || 0) + tempoTotal }
+                    ? { ...p, horas_executadas_por_dia: horasExecutadasPorDia, tempo_executado: totalTempoExecutado }
                     : p
             ));
         }
