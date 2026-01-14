@@ -819,33 +819,30 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
       const horasAlocadasDia = Number(atividade.horas_por_dia?.[dayKey]) || 0;
       const tempoExecutado = Number(atividade.tempo_executado) || 0;
       const horasExecutadasNoDia = Number(atividade.horas_executadas_por_dia?.[dayKey]) || 0;
-      const isQuickActivity = atividade.isQuickActivity || atividade.is_quick_activity;
       
       // Para atividades legadas, usar tempo_executado
       if (atividade.isLegacyExecution) {
         soma += tempoExecutado;
       }
-      // Para atividades rápidas: APENAS usar horas executadas neste dia específico
-      else if (isQuickActivity) {
+      // Para atividades rápidas
+      else if (atividade.isQuickActivity || atividade.is_quick_activity) {
         soma += horasExecutadasNoDia;
       }
-      // Para atividades concluídas normais
+      // Para atividades concluídas
       else if (atividade.status === 'concluido') {
-        // SEMPRE priorizar: horas_executadas_no_dia > horas_alocadas_no_dia > 0
         soma += horasExecutadasNoDia > 0 ? horasExecutadasNoDia : horasAlocadasDia;
       }
-      // Para atividades de ajuda a colaborador, usar horas executadas no dia
-      else if (atividade.descritivo && atividade.descritivo.includes('Ajuda') && horasExecutadasNoDia > 0) {
+      // Para atividades de ajuda, usar horas executadas se disponíveis
+      else if (atividade.descritivo?.includes('Ajuda') && horasExecutadasNoDia > 0) {
         soma += horasExecutadasNoDia;
       }
-      // Para outras atividades, usar a alocação do dia específico
+      // Para todas as outras atividades, usar alocação
       else {
         soma += horasAlocadasDia;
       }
     });
 
-    const totalArredondado = Math.round(soma * 10) / 10;
-    return totalArredondado;
+    return Math.round(soma * 10) / 10;
   }, [atividades, dayKey]);
   
   const statusCounts = atividades.reduce((acc, atividade) => {
