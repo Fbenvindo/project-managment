@@ -383,6 +383,12 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
     });
     }, [controlesOS, empreendimentos, searchTerm, empreendimentosMap]);
 
+  // Opções padrão para colunas de planejamento
+  const planejamentoOptions = [
+    "NA", "Concluído", "Pendente", "Em andamento", "Hold", 
+    "Paralisado", "Técnico", "Ag. Liberação", "Finalizado"
+  ];
+
   // Opções específicas para Cronograma
   const cronogramaOptions = [
     "NA",
@@ -413,6 +419,12 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
     "Pendente"
   ];
 
+  // Opções para concessionárias
+  const concessionariaOptions = [
+    "NA", "Concluído", "Pendente", "Em andamento", "Hold", 
+    "Paralisado", "Técnico", "Ag. Liberação", "Finalizado", "Em aprovação"
+  ];
+
   // Seção PROJETO
   const projetoColumns = [
     { key: 'projeto', label: 'PROJETO', width: '200px' },
@@ -435,12 +447,6 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
     { key: 'art_bomb', label: 'ART - BOMB', width: '90px', isStatus: true, statusOptions: planejamentoOptions }
   ];
 
-  // Opções para concessionárias
-  const concessionariaOptions = [
-    "NA", "Concluído", "Pendente", "Em andamento", "Hold", 
-    "Paralisado", "Técnico", "Ag. Liberação", "Finalizado", "Em aprovação"
-  ];
-
   // Seção CONCESSIONÁRIAS
   const concessionariaColumns = [
     { key: 'projeto', label: 'PROJETO', width: '200px' },
@@ -450,12 +456,6 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
     { key: 'conc_hidraulica', label: 'HIDRÁULICA', width: '100px', isStatus: true, statusOptions: concessionariaOptions },
     { key: 'conc_agua_pluvial', label: 'ÁGUA PLUVIAL', width: '110px', isStatus: true, statusOptions: concessionariaOptions },
     { key: 'conc_incendio', label: 'INCÊNDIO', width: '90px', isStatus: true, statusOptions: concessionariaOptions }
-  ];
-
-  // Opções padrão para colunas de planejamento
-  const planejamentoOptions = [
-    "NA", "Concluído", "Pendente", "Em andamento", "Hold", 
-    "Paralisado", "Técnico", "Ag. Liberação", "Finalizado"
   ];
 
   // Seção PLANEJAMENTO - Hidráulica
