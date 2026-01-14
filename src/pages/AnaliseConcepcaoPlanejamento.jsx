@@ -93,11 +93,32 @@ export default function AnaliseConcepcaoPlanejamento() {
         const termino = new Date();
         const tempoTotal = (termino - inicio) / (1000 * 60 * 60);
 
+        // Atualizar Execucao
         await Execucao.update(selectedExecucao.id, {
             status: finalStatus === "Finalizado" ? "Finalizado" : "Paralisado",
             termino: termino.toISOString(),
             tempo_total: tempoTotal
         });
+
+        // Atualizar PlanejamentoAtividade com horas_executadas_por_dia
+        const planejamento = planejamentos.find(p => p.id === selectedExecucao.planejamento_id);
+        if (planejamento) {
+            const diaKey = new Date(selectedExecucao.inicio).toISOString().split('T')[0]; // YYYY-MM-DD
+            const horasExecutadasPorDia = planejamento.horas_executadas_por_dia || {};
+            horasExecutadasPorDia[diaKey] = (horasExecutadasPorDia[diaKey] || 0) + tempoTotal;
+
+            await PlanejamentoAtividade.update(planejamento.id, {
+                horas_executadas_por_dia: horasExecutadasPorDia,
+                tempo_executado: (planejamento.tempo_executado || 0) + tempoTotal
+            });
+
+            // Atualizar estado local
+            setPlanejamentos(prev => prev.map(p => 
+                p.id === planejamento.id 
+                    ? { ...p, horas_executadas_por_dia: horasExecutadasPorDia, tempo_executado: (p.tempo_executado || 0) + tempoTotal }
+                    : p
+            ));
+        }
         
         setExecucoesMap(prev => ({
             ...prev,
