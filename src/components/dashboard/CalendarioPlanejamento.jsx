@@ -838,18 +838,8 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
         horasDoDia = horasExecutadasNoDia;
       }
       else if (atividade.status === 'concluido') {
-        // Se tem horas executadas mapeadas por dia, usar isso
-        if (horasExecutadasNoDia > 0) {
-          horasDoDia = horasExecutadasNoDia;
-        }
-        // Senão, se tem tempo executado total e alocação é muito baixa, usar o tempo executado
-        else if (tempoExecutado > 0 && horasAlocadasDia < 0.1) {
-          horasDoDia = tempoExecutado;
-        }
-        // Caso contrário, usar alocação
-        else {
-          horasDoDia = horasAlocadasDia;
-        }
+        // Para atividades concluídas, usar sempre o tempo executado total
+        horasDoDia = horasExecutadasNoDia > 0 ? horasExecutadasNoDia : tempoExecutado;
       }
       else if (atividade.descritivo && atividade.descritivo.includes('Ajuda') && horasExecutadasNoDia > 0) {
         horasDoDia = horasExecutadasNoDia;
