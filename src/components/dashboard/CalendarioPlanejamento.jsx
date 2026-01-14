@@ -824,48 +824,45 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
       return 0;
     }
 
-    console.log(`🔢 [GRUPO ${dayKey}] Calculando total de horas:`, {
-      empreendimento: empreendimento?.nome,
-      executor: executor?.email,
-      totalAtividades: atividades.length
-    });
-
     let soma = 0;
-    atividades.forEach((atividade, idx) => {
+    atividades.forEach((atividade) => {
       const horasAlocadasDia = Number(atividade.horas_por_dia?.[dayKey]) || 0;
       const horasExecutadasNoDia = Number(atividade.horas_executadas_por_dia?.[dayKey]) || 0;
       const tempoExecutado = Number(atividade.tempo_executado) || 0;
-      
-      let horasDoDia;
+
+      let horasDoDia = 0;
 
       if (atividade.isLegacyExecution) {
         horasDoDia = tempoExecutado;
       }
       else if (atividade.isQuickActivity || atividade.is_quick_activity) {
-        horasDoDia = horasExecutadasNoDia;
-      }
-      else {
-        // Simples: usar horas executadas do dia se tiver, senão usar alocado
         horasDoDia = horasExecutadasNoDia > 0 ? horasExecutadasNoDia : horasAlocadasDia;
       }
-
-      console.log(`   [${idx + 1}] ${atividade.descritivo || atividade.atividade?.atividade || 'sem nome'}:`, {
-        horasDoDia,
-        horasAlocadasDia,
-        horasExecutadasNoDia,
-        tempoExecutado,
-        status: atividade.status,
-        isQuick: atividade.isQuickActivity || atividade.is_quick_activity,
-        isLegacy: atividade.isLegacyExecution,
-        horas_executadas_por_dia: atividade.horas_executadas_por_dia
-      });
+      else {
+        // Prioridade 1: Se tem horas executadas neste dia
+        if (horasExecutadasNoDia > 0) {
+          horasDoDia = horasExecutadasNoDia;
+        }
+        // Prioridade 2: Se concluída mas horas_executadas_por_dia vazio, distribuir tempo_executado
+        else if (atividade.status === 'concluido' && tempoExecutado > 0 && Object.keys(atividade.horas_executadas_por_dia || {}).length === 0) {
+          const diasPlanejados = Object.keys(atividade.horas_por_dia || {});
+          if (diasPlanejados.length > 0 && diasPlanejados.includes(dayKey)) {
+            horasDoDia = tempoExecutado / diasPlanejados.length;
+          } else {
+            horasDoDia = tempoExecutado;
+          }
+        }
+        // Prioridade 3: Usar horas planejadas
+        else {
+          horasDoDia = horasAlocadasDia;
+        }
+      }
 
       soma += horasDoDia;
     });
 
-    console.log(`   ✅ TOTAL DO GRUPO: ${Math.round(soma * 10) / 10}h`);
     return Math.round(soma * 10) / 10;
-  }, [atividades, dayKey, empreendimento, executor]);
+  }, [atividades, dayKey]);
   
   const statusCounts = atividades.reduce((acc, atividade) => {
     const realStatus = calculateActivityStatus(atividade, allPlanejamentos);
