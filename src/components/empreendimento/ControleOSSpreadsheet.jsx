@@ -501,7 +501,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
   // Seção MARK-UP
   const markupColumns = [
     { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'markup_status', label: 'MARK-UP', width: '100px', isStatus: true }
+    { key: 'markup_status', label: 'MARK-UP', width: '100px', isStatus: true, statusOptions: markupOptions }
   ];
 
   // Seção MONITORAMENTO
