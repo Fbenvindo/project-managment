@@ -277,12 +277,12 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                 <div className="sticky left-0 z-5 bg-white border-r border-gray-300 flex-shrink-0">
                   <table className="border-collapse text-xs">
                     <thead className="bg-gray-800 text-white">
-                      <tr>
+                      <tr style={{ height: '40px' }}>
                         <th colSpan={1} className="border border-gray-300 px-4 py-2 text-left font-bold">
                           PROJETO
                         </th>
                       </tr>
-                      <tr>
+                      <tr style={{ height: '40px' }}>
                         <th className="border border-gray-300 px-2 py-2 text-left font-semibold whitespace-nowrap" style={{ width: '200px', minWidth: '200px' }}>
                           PROJETO
                         </th>
@@ -306,12 +306,12 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                     {/* ART sem coluna Projeto */}
                   <table className="border-collapse text-xs">
                     <thead className="bg-gray-800 text-white">
-                      <tr>
+                      <tr style={{ height: '40px' }}>
                         <th colSpan={artColumns.length - 1} className="border border-gray-300 px-4 py-2 text-left font-bold">
                           ART
                         </th>
                       </tr>
-                      <tr>
+                      <tr style={{ height: '40px' }}>
                         {artColumns.slice(1).map((col) => (
                           <th
                             key={col.key}
@@ -342,12 +342,12 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                   {/* CONCESSIONÁRIAS sem coluna Projeto */}
                   <table className="border-collapse text-xs">
                     <thead className="bg-gray-800 text-white">
-                      <tr>
+                      <tr style={{ height: '40px' }}>
                         <th colSpan={concessionariaColumns.length - 1} className="border border-gray-300 px-4 py-2 text-left font-bold">
                           CONCESSIONÁRIAS
                         </th>
                       </tr>
-                      <tr>
+                      <tr style={{ height: '40px' }}>
                         {concessionariaColumns.slice(1).map((col) => (
                           <th
                             key={col.key}
@@ -378,12 +378,12 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                   {/* MONITORAMENTO sem coluna Projeto */}
                   <table className="border-collapse text-xs">
                     <thead className="bg-gray-800 text-white">
-                      <tr>
+                      <tr style={{ height: '40px' }}>
                         <th colSpan={monitoramentoColumns.length - 1} className="border border-gray-300 px-4 py-2 text-left font-bold">
                           MONITORAMENTO
                         </th>
                       </tr>
-                      <tr>
+                      <tr style={{ height: '40px' }}>
                         {monitoramentoColumns.slice(1).map((col) => (
                           <th
                             key={col.key}
@@ -414,12 +414,12 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                   {/* PLANEJAMENTO sem coluna Projeto */}
                   <table className="border-collapse text-xs">
                     <thead className="bg-gray-800 text-white">
-                      <tr>
+                      <tr style={{ height: '40px' }}>
                         <th colSpan={planejamentoColumns.length - 1} className="border border-gray-300 px-4 py-2 text-left font-bold">
                           PLANEJAMENTO
                         </th>
                       </tr>
-                      <tr>
+                      <tr style={{ height: '40px' }}>
                         {planejamentoColumns.slice(1).map((col) => (
                           <th
                             key={col.key}
