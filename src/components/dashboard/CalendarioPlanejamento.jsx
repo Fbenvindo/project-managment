@@ -1417,8 +1417,9 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
                             const horasAlocadas = Number(ativ.horas_por_dia?.[dayKey]) || 0;
                             const horasExecutadas = Number(ativ.horas_executadas_por_dia?.[dayKey]) || 0;
 
-                            // Simples: usar horas executadas do dia se tiver, senão usar alocado
-                            total += horasExecutadas > 0 ? horasExecutadas : horasAlocadas;
+                            // Se tem horas executadas neste dia, somar; senão somar as alocadas
+                            const horasDia = horasExecutadas > 0 ? horasExecutadas : horasAlocadas;
+                            total += horasDia;
                           });
                           return `${(Math.round(total * 10) / 10).toFixed(1)}h`;
                         })()}
