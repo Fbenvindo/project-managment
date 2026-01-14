@@ -332,26 +332,27 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   }
   // Para atividades rápidas
   else if (plano.isQuickActivity || plano.is_quick_activity) {
-    horasDoDia = horasAlocadasDia > 0 ? horasAlocadasDia : horasExecutadasNoDia;
+    horasDoDia = horasExecutadasNoDia > 0 ? horasExecutadasNoDia : tempoExecutado;
   }
   // Para atividades normais
   else {
-    // Prioridade 1: Usar horas planejadas/alocadas (horas_por_dia)
-    if (horasAlocadasDia > 0) {
-      horasDoDia = horasAlocadasDia;
-    }
-    // Prioridade 2: Se não tem planejamento, usar horas executadas neste dia
-    else if (horasExecutadasNoDia > 0) {
+    // Prioridade 1: Se tem horas executadas neste dia
+    if (horasExecutadasNoDia > 0) {
       horasDoDia = horasExecutadasNoDia;
     }
-    // Prioridade 3: Se concluída mas sem dias específicos, distribuir tempo_executado
-    else if (plano.status === 'concluido' && tempoExecutado > 0 && Object.keys(plano.horas_por_dia || {}).length === 0) {
-      const diasPlanejados = Object.keys(plano.horas_executadas_por_dia || {});
+    // Prioridade 2: Se concluída mas horas_executadas_por_dia vazio, distribuir tempo_executado
+    else if (plano.status === 'concluido' && tempoExecutado > 0 && Object.keys(plano.horas_executadas_por_dia || {}).length === 0) {
+      // Distribuir tempo_executado entre os dias planejados
+      const diasPlanejados = Object.keys(plano.horas_por_dia || {});
       if (diasPlanejados.length > 0 && diasPlanejados.includes(dayKey)) {
         horasDoDia = tempoExecutado / diasPlanejados.length;
       } else {
-        horasDoDia = tempoExecutado;
+        horasDoDia = tempoExecutado; // Fallback: se não tem dias planejados, mostrar tudo neste dia
       }
+    }
+    // Prioridade 3: Usar horas planejadas
+    else {
+      horasDoDia = horasAlocadasDia;
     }
   }
 
