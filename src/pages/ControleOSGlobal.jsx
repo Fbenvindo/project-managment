@@ -78,8 +78,8 @@ export default function ControleOSGlobal() {
       // Verificar se é um campo de planejamento
       if (field.startsWith('planejamento_')) {
         const parts = field.replace('planejamento_', '').split('_');
-        const disciplina = parts[0]; // hidraulica, eletrica, incendio, sistemas, ar
-        const subField = parts.slice(1).join('_'); // concepcao, calculo, diagrama
+        const disciplina = parts[0]; // hidraulica, eletrica, incendio, sistemas, ar, memorial
+        const subField = parts.slice(1).join('_'); // concepcao, calculo, diagrama, esp_tec, matlib
 
         // Mapear nomes
         const disciplinaMap = {
@@ -87,7 +87,8 @@ export default function ControleOSGlobal() {
           'eletrica': 'eletrica',
           'incendio': 'incendio',
           'sistemas': 'sistemas_eletronicos',
-          'ar': 'ar_condicionado'
+          'ar': 'ar_condicionado',
+          'memorial': 'memorial'
         };
 
         const disciplinaKey = disciplinaMap[disciplina] || disciplina;

@@ -293,6 +293,9 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
           planejamento_ar_condicionado_concepcao: controle.planejamento?.ar_condicionado?.concepcao || 'NA',
           planejamento_ar_condicionado_calculo: controle.planejamento?.ar_condicionado?.calculo || 'NA',
           planejamento_ar_condicionado_diagrama: controle.planejamento?.ar_condicionado?.diagrama || 'NA',
+          planejamento_memorial_esp_tec: controle.planejamento?.memorial?.esp_tec || 'NA',
+          planejamento_memorial_matlib: controle.planejamento?.memorial?.matlib || 'NA',
+          markup_status: controle.markup_status || 'NA',
           monitoramento_briefing: controle.monitoramento?.briefing || 'NA',
           monitoramento_cronograma: controle.monitoramento?.cronograma || 'NA',
           monitoramento_lmd: controle.monitoramento?.lmd || 'NA',
@@ -337,6 +340,9 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
           planejamento_ar_condicionado_concepcao: 'NA',
           planejamento_ar_condicionado_calculo: 'NA',
           planejamento_ar_condicionado_diagrama: 'NA',
+          planejamento_memorial_esp_tec: 'NA',
+          planejamento_memorial_matlib: 'NA',
+          markup_status: 'NA',
           monitoramento_briefing: 'NA',
           monitoramento_cronograma: 'NA',
           monitoramento_lmd: 'NA',
@@ -435,6 +441,24 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
     { key: 'planejamento_ar_condicionado_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true },
     { key: 'planejamento_ar_condicionado_calculo', label: 'CÁLCULO', width: '100px', isStatus: true },
     { key: 'planejamento_ar_condicionado_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true }
+  ];
+
+  // Seção MEMORIAL
+  const memorialColumns = [
+    { key: 'projeto', label: 'PROJETO', width: '200px' },
+    { key: 'planejamento_memorial_esp_tec', label: 'MEMORIAL', width: '100px', isStatus: true }
+  ];
+
+  // Seção ESP. TEC.
+  const espTecColumns = [
+    { key: 'projeto', label: 'PROJETO', width: '200px' },
+    { key: 'planejamento_memorial_matlib', label: 'ESP. TEC.', width: '100px', isStatus: true }
+  ];
+
+  // Seção MARK-UP
+  const markupColumns = [
+    { key: 'projeto', label: 'PROJETO', width: '200px' },
+    { key: 'markup_status', label: 'MARK-UP', width: '100px', isStatus: true }
   ];
 
   // Seção MONITORAMENTO
@@ -882,6 +906,132 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                       {filteredControles.map((row, idx) => (
                         <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
                           {planejamentoArCondicionadoColumns.slice(1).map((col) => {
+                            const value = row[col.key] || 'NA';
+                            return (
+                              <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
+                                {col.isStatus ? (
+                                  <StatusCell 
+                                    status={value} 
+                                    editable={editable}
+                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                  />
+                                ) : value}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {/* MEMORIAL */}
+                  <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
+                    <thead className="bg-gray-800 text-white">
+                      <tr>
+                        <th colSpan={memorialColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
+                          MEMORIAL
+                        </th>
+                      </tr>
+                      <tr>
+                        {memorialColumns.slice(1).map((col) => (
+                          <th
+                            key={col.key}
+                            className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
+                            style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
+                          >
+                            {col.label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredControles.map((row, idx) => (
+                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
+                          {memorialColumns.slice(1).map((col) => {
+                            const value = row[col.key] || 'NA';
+                            return (
+                              <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
+                                {col.isStatus ? (
+                                  <StatusCell 
+                                    status={value} 
+                                    editable={editable}
+                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                  />
+                                ) : value}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {/* ESP. TEC. */}
+                  <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
+                    <thead className="bg-gray-800 text-white">
+                      <tr>
+                        <th colSpan={espTecColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
+                          ESP. TEC.
+                        </th>
+                      </tr>
+                      <tr>
+                        {espTecColumns.slice(1).map((col) => (
+                          <th
+                            key={col.key}
+                            className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
+                            style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
+                          >
+                            {col.label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredControles.map((row, idx) => (
+                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
+                          {espTecColumns.slice(1).map((col) => {
+                            const value = row[col.key] || 'NA';
+                            return (
+                              <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
+                                {col.isStatus ? (
+                                  <StatusCell 
+                                    status={value} 
+                                    editable={editable}
+                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                  />
+                                ) : value}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {/* MARK-UP */}
+                  <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
+                    <thead className="bg-gray-800 text-white">
+                      <tr>
+                        <th colSpan={markupColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
+                          MARK-UP
+                        </th>
+                      </tr>
+                      <tr>
+                        {markupColumns.slice(1).map((col) => (
+                          <th
+                            key={col.key}
+                            className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
+                            style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
+                          >
+                            {col.label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredControles.map((row, idx) => (
+                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
+                          {markupColumns.slice(1).map((col) => {
                             const value = row[col.key] || 'NA';
                             return (
                               <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
