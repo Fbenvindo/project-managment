@@ -52,6 +52,20 @@ export default function ControleOSGlobal() {
     }
   };
 
+  const handleUpdateControle = async (controleId, field, value) => {
+    try {
+      await base44.entities.ControleOS.update(controleId, { [field]: value });
+      
+      // Atualizar estado local
+      setControlesOS(prev => 
+        prev.map(c => c.id === controleId ? { ...c, [field]: value } : c)
+      );
+    } catch (error) {
+      console.error('Erro ao atualizar:', error);
+      alert('Erro ao salvar alteração');
+    }
+  };
+
   const empreendimentosMap = empreendimentos.reduce((acc, emp) => {
     acc[emp.id] = emp;
     return acc;
@@ -117,6 +131,8 @@ export default function ControleOSGlobal() {
             controlesOS={filteredControles} 
             empreendimentos={empreendimentos}
             searchTerm={searchTerm}
+            onUpdate={handleUpdateControle}
+            editable={true}
           />
         </Card>
       )}

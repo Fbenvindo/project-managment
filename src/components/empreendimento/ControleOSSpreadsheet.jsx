@@ -18,14 +18,55 @@ const getStatusBgColor = (status) => {
   return colors[status] || "#f3f4f6";
 };
 
-const StatusCell = ({ status }) => (
-  <div
-    className="px-2 py-1 text-xs font-medium text-center rounded whitespace-nowrap"
-    style={{ backgroundColor: getStatusBgColor(status), color: '#1f2937' }}
-  >
-    {status}
-  </div>
-);
+const StatusCell = ({ status, editable, onUpdate }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  
+  if (!editable) {
+    return (
+      <div
+        className="px-2 py-1 text-xs font-medium text-center rounded whitespace-nowrap"
+        style={{ backgroundColor: getStatusBgColor(status), color: '#1f2937' }}
+      >
+        {status}
+      </div>
+    );
+  }
+
+  const statusOptions = [
+    "NA", "Concluído", "Pendente", "Em andamento", "Hold", 
+    "Paralisado", "Técnico", "Ag. Liberação", "Finalizado", "Em aprovação"
+  ];
+
+  if (isEditing) {
+    return (
+      <select
+        value={status}
+        onChange={(e) => {
+          onUpdate(e.target.value);
+          setIsEditing(false);
+        }}
+        onBlur={() => setIsEditing(false)}
+        autoFocus
+        className="w-full px-2 py-1 text-xs font-medium rounded border-2 border-blue-500"
+        style={{ backgroundColor: getStatusBgColor(status), color: '#1f2937' }}
+      >
+        {statusOptions.map(opt => (
+          <option key={opt} value={opt}>{opt}</option>
+        ))}
+      </select>
+    );
+  }
+
+  return (
+    <div
+      className="px-2 py-1 text-xs font-medium text-center rounded whitespace-nowrap cursor-pointer hover:ring-2 hover:ring-blue-400"
+      style={{ backgroundColor: getStatusBgColor(status), color: '#1f2937' }}
+      onClick={() => setIsEditing(true)}
+    >
+      {status}
+    </div>
+  );
+};
 
 const SpreadsheetTable = ({ title, columns, data, stickyFirst = true }) => {
   const projectoColumn = columns[0];
@@ -106,7 +147,7 @@ const SpreadsheetTable = ({ title, columns, data, stickyFirst = true }) => {
   );
 };
 
-export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, searchTerm }) {
+export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, searchTerm, onUpdate, editable = false }) {
   const [isGridView, setIsGridView] = useState(true);
 
   const empreendimentosMap = useMemo(() => {
@@ -330,7 +371,13 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                             const value = row[col.key] || 'NA';
                             return (
                               <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
-                                {col.isStatus ? <StatusCell status={value} /> : value}
+                                {col.isStatus ? (
+                                  <StatusCell 
+                                    status={value} 
+                                    editable={editable}
+                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                  />
+                                ) : value}
                               </td>
                             );
                           })}
@@ -366,7 +413,13 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                             const value = row[col.key] || 'NA';
                             return (
                               <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
-                                {col.isStatus ? <StatusCell status={value} /> : value}
+                                {col.isStatus ? (
+                                  <StatusCell 
+                                    status={value} 
+                                    editable={editable}
+                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                  />
+                                ) : value}
                               </td>
                             );
                           })}
@@ -402,7 +455,13 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                             const value = row[col.key] || 'NA';
                             return (
                               <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
-                                {col.isStatus ? <StatusCell status={value} /> : value}
+                                {col.isStatus ? (
+                                  <StatusCell 
+                                    status={value} 
+                                    editable={editable}
+                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                  />
+                                ) : value}
                               </td>
                             );
                           })}
@@ -438,7 +497,13 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                             const value = row[col.key] || 'NA';
                             return (
                               <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
-                                {col.isStatus ? <StatusCell status={value} /> : value}
+                                {col.isStatus ? (
+                                  <StatusCell 
+                                    status={value} 
+                                    editable={editable}
+                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                  />
+                                ) : value}
                               </td>
                             );
                           })}
