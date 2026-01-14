@@ -1659,16 +1659,10 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         const atividadeIds = [...new Set(planejamentos.map(p => p.atividade_id).filter(Boolean))];
         const documentoIds = [...new Set(planejamentos.map(p => p.documento_id).filter(Boolean))];
 
-        // CRÍTICO: Buscar execuções usando o mesmo filtro de usuário que os planejamentos
-        // Isso garante consistência entre as telas
-        const userFilter = filters.user;
-        const execFilter = userFilter && userFilter !== 'all' ? { usuario: userFilter } : {};
-
-        const [empreendimentosData, atividadesData, documentosData, execucoesUsuario] = await Promise.all([
+        const [empreendimentosData, atividadesData, documentosData] = await Promise.all([
           empreendimentoIds.length > 0 ? retryWithBackoff(() => Empreendimento.filter({ id: { $in: empreendimentoIds } }), 3, 1000, 'enrich.empreendimentos') : Promise.resolve([]),
           atividadeIds.length > 0 ? retryWithBackoff(() => Atividade.filter({ id: { $in: atividadeIds } }), 3, 1000, 'enrich.atividades') : Promise.resolve([]),
           documentoIds.length > 0 ? retryWithBackoff(() => Documento.filter({ id: { $in: documentoIds } }), 3, 1000, 'enrich.documentos') : Promise.resolve([]),
-          userFilter ? retryWithBackoff(() => Execucao.filter(execFilter), 3, 1000, 'enrich.execucoes') : Promise.resolve([])
         ]);
 
         const empreendimentosMap = new Map((empreendimentosData || []).map(item => [item.id, item]));
@@ -1676,9 +1670,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         const documentosMap = new Map((documentosData || []).map(item => [item.id, item]));
 
         // Calcular horas executadas por dia para cada planejamento
-        // Usa APENAS execuções do usuário filtrado para garantir consistência
+        // USA as execuções já carregadas em loadCalendarData (state 'execucoes')
         const horasExecutadasPorPlanejamento = {};
-        (execucoesUsuario || []).forEach(exec => {
+        (execucoes || []).forEach(exec => {
           if (!exec.planejamento_id || !exec.inicio) return;
 
           // Usar a data de início da execução
@@ -1710,7 +1704,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     };
 
     enrichData();
-  }, [planejamentos, execucoes, isCalendarLoading, filters.user]); // Recomputa quando o usuário filtrado muda
+  }, [planejamentos, execucoes, isCalendarLoading]); // Usa execucoes do state que já foram filtradas
 
   const handleActivityDelete = useCallback(() => {
     if (hasSelectedUser) {
