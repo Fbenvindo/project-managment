@@ -338,12 +338,17 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   }
   // Para atividades concluídas
   else if (plano.status === 'concluido') {
+    // Priorizar horas executadas do dia; se não tiver, usar alocado
+    // Mas se alocado é muito baixo e tem tempo executado total, usar tempo executado
     if (horasExecutadasNoDia > 0) {
       horasDoDia = horasExecutadasNoDia;
-    } else if (tempoExecutado > 0 && horasAlocadasDia < 0.1) {
+    } else if (horasAlocadasDia > 0) {
+      horasDoDia = horasAlocadasDia;
+    } else if (tempoExecutado > 0) {
+      // Se não tem alocação no dia mas tem tempo executado total, usar tempo executado
       horasDoDia = tempoExecutado;
     } else {
-      horasDoDia = horasAlocadasDia;
+      horasDoDia = 0;
     }
   }
   // Para atividades que têm "Ajuda" no descritivo, usar horas executadas no dia
