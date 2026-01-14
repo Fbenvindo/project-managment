@@ -291,7 +291,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                     <tbody>
                       {filteredControles.map((row, idx) => (
                         <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '32px' }}>
-                          <td className="border border-gray-300 px-2 py-1.5 whitespace-nowrap font-medium">
+                          <td className="border border-gray-300 px-2 whitespace-nowrap font-medium" style={{ height: '32px', lineHeight: '32px', padding: '0 8px' }}>
                             {row.projeto || 'NA'}
                           </td>
                         </tr>
@@ -329,7 +329,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                           {artColumns.slice(1).map((col) => {
                             const value = row[col.key] || 'NA';
                             return (
-                              <td key={col.key} className="border border-gray-300 px-2 py-1.5 whitespace-nowrap">
+                              <td key={col.key} className="border border-gray-300 px-2 whitespace-nowrap" style={{ height: '32px', lineHeight: '32px', padding: '0 8px' }}>
                                 {col.isStatus ? <StatusCell status={value} /> : value}
                               </td>
                             );
@@ -365,7 +365,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                           {concessionariaColumns.slice(1).map((col) => {
                             const value = row[col.key] || 'NA';
                             return (
-                              <td key={col.key} className="border border-gray-300 px-2 py-1.5 whitespace-nowrap">
+                              <td key={col.key} className="border border-gray-300 px-2 whitespace-nowrap" style={{ height: '32px', lineHeight: '32px', padding: '0 8px' }}>
                                 {col.isStatus ? <StatusCell status={value} /> : value}
                               </td>
                             );
@@ -401,7 +401,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                           {monitoramentoColumns.slice(1).map((col) => {
                             const value = row[col.key] || 'NA';
                             return (
-                              <td key={col.key} className="border border-gray-300 px-2 py-1.5 whitespace-nowrap">
+                              <td key={col.key} className="border border-gray-300 px-2 whitespace-nowrap" style={{ height: '32px', lineHeight: '32px', padding: '0 8px' }}>
                                 {col.isStatus ? <StatusCell status={value} /> : value}
                               </td>
                             );
@@ -437,7 +437,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                           {planejamentoColumns.slice(1).map((col) => {
                             const value = row[col.key] || 'NA';
                             return (
-                              <td key={col.key} className="border border-gray-300 px-2 py-1.5 whitespace-nowrap">
+                              <td key={col.key} className="border border-gray-300 px-2 whitespace-nowrap" style={{ height: '32px', lineHeight: '32px', padding: '0 8px' }}>
                                 {col.isStatus ? <StatusCell status={value} /> : value}
                               </td>
                             );
