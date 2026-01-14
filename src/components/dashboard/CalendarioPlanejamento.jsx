@@ -1688,14 +1688,24 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
 
         console.log(`📊 Mapa de horas executadas por planejamento:`, horasExecutadasPorPlanejamento);
 
-        const finalData = planejamentos.map(plano => ({
-          ...plano,
-          empreendimento: empreendimentosMap.get(plano.empreendimento_id) || null,
-          atividade: atividadesMap.get(plano.atividade_id) || null,
-          documento: documentosMap.get(plano.documento_id) || null,
-          horas_executadas_por_dia: horasExecutadasPorPlanejamento[plano.id] || {},
-        }));
+        const finalData = planejamentos.map(plano => {
+          const horasExec = horasExecutadasPorPlanejamento[plano.id] || {};
+          console.log(`📝 Planejamento ${plano.id} (${plano.descritivo || 'sem nome'}):`, {
+            tempo_executado: plano.tempo_executado,
+            horas_executadas_por_dia: horasExec,
+            total_dias_com_exec: Object.keys(horasExec).length
+          });
+          
+          return {
+            ...plano,
+            empreendimento: empreendimentosMap.get(plano.empreendimento_id) || null,
+            atividade: atividadesMap.get(plano.atividade_id) || null,
+            documento: documentosMap.get(plano.documento_id) || null,
+            horas_executadas_por_dia: horasExec,
+          };
+        });
 
+        console.log(`✅ Enriquecimento concluído: ${finalData.length} planejamentos`);
         setEnrichedData(finalData);
 
       } catch (error) {
