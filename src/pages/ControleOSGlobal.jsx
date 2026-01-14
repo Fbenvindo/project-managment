@@ -55,8 +55,23 @@ export default function ControleOSGlobal() {
   const handleUpdateControle = async (controleId, field, value) => {
     try {
       // Encontrar o controle atual
-      const controle = controlesOS.find(c => c.id === controleId);
-      if (!controle) return;
+      let controle = controlesOS.find(c => c.id === controleId);
+      
+      // Se não existe controle (empreendimento sem controle OS), criar um novo
+      if (!controle) {
+        // O controleId na verdade é o empreendimento_id neste caso
+        const empreendimento = empreendimentos.find(e => e.id === controleId);
+        if (!empreendimento) return;
+        
+        const novoControle = await base44.entities.ControleOS.create({
+          empreendimento_id: controleId,
+          os: empreendimento.os || '',
+          [field]: value
+        });
+        
+        setControlesOS(prev => [...prev, novoControle]);
+        return;
+      }
 
       let updateData = {};
 
