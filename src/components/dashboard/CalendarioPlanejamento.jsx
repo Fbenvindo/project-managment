@@ -2278,21 +2278,10 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     let soma = 0;
     dayActivities.forEach((atividade) => {
       const horasAlocadasDia = Number(atividade.horas_por_dia?.[dayKey]) || 0;
-      const tempoExecutado = Number(atividade.tempo_executado) || 0;
       const horasExecutadasNoDia = Number(atividade.horas_executadas_por_dia?.[dayKey]) || 0;
-      const isQuickActivity = atividade.isQuickActivity || atividade.is_quick_activity;
       
-      if (atividade.isLegacyExecution) {
-        soma += tempoExecutado;
-      } else if (isQuickActivity) {
-        soma += horasExecutadasNoDia;
-      } else if (atividade.status === 'concluido') {
-        soma += horasExecutadasNoDia > 0 ? horasExecutadasNoDia : horasAlocadasDia;
-      } else if (atividade.descritivo && atividade.descritivo.includes('Ajuda') && horasExecutadasNoDia > 0) {
-        soma += horasExecutadasNoDia;
-      } else {
-        soma += horasAlocadasDia;
-      }
+      // Simples: usar horas executadas do dia se tiver, senão usar alocado
+      soma += horasExecutadasNoDia > 0 ? horasExecutadasNoDia : horasAlocadasDia;
     });
     
     return Math.round(soma * 10) / 10;
