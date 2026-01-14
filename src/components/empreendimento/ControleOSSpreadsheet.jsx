@@ -71,6 +71,7 @@ const StatusCell = ({ status, editable, onUpdate }) => {
 
 const GestaoCell = ({ value, editable, onUpdate, usuarios }) => {
   const [isEditing, setIsEditing] = useState(false);
+  const [tempValue, setTempValue] = useState(value || '');
   
   if (!editable) {
     return (
@@ -83,9 +84,11 @@ const GestaoCell = ({ value, editable, onUpdate, usuarios }) => {
   if (isEditing) {
     return (
       <select
-        value={value || ''}
+        value={tempValue}
         onChange={(e) => {
-          onUpdate(e.target.value);
+          const newValue = e.target.value;
+          setTempValue(newValue);
+          onUpdate(newValue);
           setIsEditing(false);
         }}
         onBlur={() => setIsEditing(false)}
@@ -105,7 +108,10 @@ const GestaoCell = ({ value, editable, onUpdate, usuarios }) => {
   return (
     <div
       className="px-2 py-1 text-xs cursor-pointer hover:ring-2 hover:ring-blue-400 rounded"
-      onClick={() => setIsEditing(true)}
+      onClick={() => {
+        setTempValue(value || '');
+        setIsEditing(true);
+      }}
     >
       {value || 'NA'}
     </div>
