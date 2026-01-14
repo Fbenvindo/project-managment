@@ -117,19 +117,72 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
   }, [empreendimentos]);
 
   const filteredControles = useMemo(() => {
-    return controlesOS.map(controle => ({
-      ...controle,
-      id: controle.id,
-      projeto: empreendimentosMap[controle.empreendimento_id]?.nome || 'N/A'
-    })).filter(controle => {
+    // Criar um mapa de controles por empreendimento_id
+    const controlesMap = controlesOS.reduce((acc, controle) => {
+      acc[controle.empreendimento_id] = controle;
+      return acc;
+    }, {});
+
+    // Criar lista com TODOS os empreendimentos
+    const allControles = empreendimentos.map(emp => {
+      const controle = controlesMap[emp.id];
+      if (controle) {
+        return {
+          ...controle,
+          projeto: emp.nome || 'N/A'
+        };
+      } else {
+        // Empreendimento sem controle OS - criar registro vazio
+        return {
+          id: emp.id,
+          empreendimento_id: emp.id,
+          projeto: emp.nome || 'N/A',
+          os: emp.os || '',
+          gestao: 'NA',
+          formalizacao: '',
+          cronograma: 'NA',
+          markup: 'NA',
+          abertura_os_servidor: 'NA',
+          atividades_planejamento: 'NA',
+          kickoff_cliente: 'NA',
+          art_ee_ais: 'NA',
+          art_hid_in: 'NA',
+          art_hvac: 'NA',
+          art_bomb: 'NA',
+          conc_telefonia: 'NA',
+          conc_gas: 'NA',
+          conc_eletrica: 'NA',
+          conc_hidraulica: 'NA',
+          conc_agua_pluvial: 'NA',
+          conc_incendio: 'NA',
+          planejamento_hidraulica_concepcao: 'NA',
+          planejamento_hidraulica_calculo: 'NA',
+          planejamento_hidraulica_diagrama: 'NA',
+          planejamento_eletrica_concepcao: 'NA',
+          planejamento_eletrica_calculo: 'NA',
+          planejamento_eletrica_diagrama: 'NA',
+          planejamento_incendio_concepcao: 'NA',
+          planejamento_incendio_calculo: 'NA',
+          planejamento_incendio_diagrama: 'NA',
+          monitoramento_briefing: 'NA',
+          monitoramento_cronograma: 'NA',
+          monitoramento_lmd: 'NA',
+          monitoramento_entregas_x_etapas: 'NA'
+        };
+      }
+    });
+
+    // Filtrar por searchTerm
+    return allControles.filter(controle => {
       const searchLower = searchTerm?.toLowerCase() || '';
+      const emp = empreendimentosMap[controle.empreendimento_id];
       return (
         controle.projeto?.toLowerCase().includes(searchLower) ||
-        empreendimentosMap[controle.empreendimento_id]?.cliente?.toLowerCase().includes(searchLower) ||
+        emp?.cliente?.toLowerCase().includes(searchLower) ||
         controle.os?.toLowerCase().includes(searchLower)
       );
     });
-  }, [controlesOS, searchTerm, empreendimentosMap]);
+  }, [controlesOS, empreendimentos, searchTerm, empreendimentosMap]);
 
   // Seção PROJETO
   const projetoColumns = [
