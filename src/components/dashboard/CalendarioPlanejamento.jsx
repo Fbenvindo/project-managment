@@ -812,11 +812,19 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
 // --- Sub-componente de Grupo de Atividades Diárias ---
 const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, onToggle, disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, groupKey, provided, isDragging }) => {
   const totalHoras = useMemo(() => {
-    if (!dayKey) return 0;
+    if (!dayKey) {
+      console.log(`⚠️ [GRUPO] dayKey é null/undefined`);
+      return 0;
+    }
+
+    console.log(`🔢 [GRUPO ${dayKey}] Calculando total de horas:`, {
+      empreendimento: empreendimento?.nome,
+      executor: executor?.email,
+      totalAtividades: atividades.length
+    });
 
     let soma = 0;
-    atividades.forEach((atividade) => {
-      // Usar a MESMA lógica do ActivityItem para consistência
+    atividades.forEach((atividade, idx) => {
       const horasAlocadasDia = Number(atividade.horas_por_dia?.[dayKey]) || 0;
       const horasExecutadasNoDia = Number(atividade.horas_executadas_por_dia?.[dayKey]) || 0;
       const tempoExecutado = Number(atividade.tempo_executado) || 0;
@@ -839,11 +847,23 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
         horasDoDia = horasAlocadasDia;
       }
 
+      console.log(`   [${idx + 1}] ${atividade.descritivo || atividade.atividade?.atividade || 'sem nome'}:`, {
+        horasDoDia,
+        horasAlocadasDia,
+        horasExecutadasNoDia,
+        tempoExecutado,
+        status: atividade.status,
+        isQuick: atividade.isQuickActivity || atividade.is_quick_activity,
+        isLegacy: atividade.isLegacyExecution,
+        horas_executadas_por_dia: atividade.horas_executadas_por_dia
+      });
+
       soma += horasDoDia;
     });
 
+    console.log(`   ✅ TOTAL DO GRUPO: ${Math.round(soma * 10) / 10}h`);
     return Math.round(soma * 10) / 10;
-  }, [atividades, dayKey]);
+  }, [atividades, dayKey, empreendimento, executor]);
   
   const statusCounts = atividades.reduce((acc, atividade) => {
     const realStatus = calculateActivityStatus(atividade, allPlanejamentos);
