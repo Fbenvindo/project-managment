@@ -54,11 +54,64 @@ export default function ControleOSGlobal() {
 
   const handleUpdateControle = async (controleId, field, value) => {
     try {
-      await base44.entities.ControleOS.update(controleId, { [field]: value });
+      // Encontrar o controle atual
+      const controle = controlesOS.find(c => c.id === controleId);
+      if (!controle) return;
+
+      let updateData = {};
+
+      // Verificar se é um campo de planejamento
+      if (field.startsWith('planejamento_')) {
+        const parts = field.replace('planejamento_', '').split('_');
+        const disciplina = parts[0]; // hidraulica, eletrica, incendio, sistemas, ar
+        const subField = parts.slice(1).join('_'); // concepcao, calculo, diagrama
+
+        // Mapear nomes
+        const disciplinaMap = {
+          'hidraulica': 'hidraulica',
+          'eletrica': 'eletrica',
+          'incendio': 'incendio',
+          'sistemas': 'sistemas_eletronicos',
+          'ar': 'ar_condicionado'
+        };
+
+        const disciplinaKey = disciplinaMap[disciplina] || disciplina;
+
+        updateData = {
+          planejamento: {
+            ...(controle.planejamento || {}),
+            [disciplinaKey]: {
+              ...(controle.planejamento?.[disciplinaKey] || {}),
+              [subField]: value
+            }
+          }
+        };
+      }
+      // Verificar se é um campo de monitoramento
+      else if (field.startsWith('monitoramento_')) {
+        const subField = field.replace('monitoramento_', '');
+        updateData = {
+          monitoramento: {
+            ...(controle.monitoramento || {}),
+            [subField]: value
+          }
+        };
+      }
+      // Campo simples
+      else {
+        updateData = { [field]: value };
+      }
+
+      await base44.entities.ControleOS.update(controleId, updateData);
       
       // Atualizar estado local
       setControlesOS(prev => 
-        prev.map(c => c.id === controleId ? { ...c, [field]: value } : c)
+        prev.map(c => {
+          if (c.id === controleId) {
+            return { ...c, ...updateData };
+          }
+          return c;
+        })
       );
     } catch (error) {
       console.error('Erro ao atualizar:', error);
