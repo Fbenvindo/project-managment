@@ -2323,13 +2323,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       } else if (isQuickActivity) {
         soma += horasExecutadasNoDia;
       } else if (atividade.status === 'concluido') {
-        if (horasExecutadasNoDia > 0) {
-          soma += horasExecutadasNoDia;
-        } else if (tempoExecutado > 0 && horasAlocadasDia < 0.1) {
-          soma += tempoExecutado;
-        } else {
-          soma += horasAlocadasDia;
-        }
+        soma += horasExecutadasNoDia > 0 ? horasExecutadasNoDia : horasAlocadasDia;
       } else if (atividade.descritivo && atividade.descritivo.includes('Ajuda') && horasExecutadasNoDia > 0) {
         soma += horasExecutadasNoDia;
       } else {
