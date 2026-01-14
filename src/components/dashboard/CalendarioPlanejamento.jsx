@@ -1660,6 +1660,8 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         const documentoIds = [...new Set(planejamentos.map(p => p.documento_id).filter(Boolean))];
         const planejamentoIds = planejamentos.map(p => p.id).filter(Boolean);
 
+        // CRÍTICO: Buscar TODAS as execuções relacionadas aos planejamentos, sem filtro de usuário
+        // Isso garante que as horas executadas sejam contabilizadas corretamente
         const [empreendimentosData, atividadesData, documentosData, execucoesData] = await Promise.all([
           empreendimentoIds.length > 0 ? retryWithBackoff(() => Empreendimento.filter({ id: { $in: empreendimentoIds } }), 3, 1000, 'enrich.empreendimentos') : Promise.resolve([]),
           atividadeIds.length > 0 ? retryWithBackoff(() => Atividade.filter({ id: { $in: atividadeIds } }), 3, 1000, 'enrich.atividades') : Promise.resolve([]),
