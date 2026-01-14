@@ -322,10 +322,8 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   const planoExecutor = plano.executor_principal ? executorMap[plano.executor_principal] : null;
 
   // **CORRIGIDO**: Determinar horasDoDia baseado no tipo de atividade
-  let horasDoDia;
+  let horasDoDia = 0;
   const horasAlocadasDia = Number(plano.horas_por_dia?.[dayKey]) || 0;
-
-  // Buscar horas executadas NESTE DIA específico (das execuções vinculadas)
   const horasExecutadasNoDia = Number(plano.horas_executadas_por_dia?.[dayKey]) || 0;
 
   // Se for atividade legada (execução antiga), usar tempo_executado
@@ -338,13 +336,22 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   }
   // Para atividades normais
   else {
-    // Usar horas executadas do dia se tiver; senão usar alocado
-    // Se concluída mas sem horas_executadas_por_dia, usar tempo_executado como fallback
+    // Prioridade 1: Se tem horas executadas neste dia
     if (horasExecutadasNoDia > 0) {
       horasDoDia = horasExecutadasNoDia;
-    } else if (plano.status === 'concluido' && tempoExecutado > 0 && Object.keys(plano.horas_executadas_por_dia || {}).length === 0) {
-      horasDoDia = tempoExecutado;
-    } else {
+    }
+    // Prioridade 2: Se concluída mas horas_executadas_por_dia vazio, distribuir tempo_executado
+    else if (plano.status === 'concluido' && tempoExecutado > 0 && Object.keys(plano.horas_executadas_por_dia || {}).length === 0) {
+      // Distribuir tempo_executado entre os dias planejados
+      const diasPlanejados = Object.keys(plano.horas_por_dia || {});
+      if (diasPlanejados.length > 0 && diasPlanejados.includes(dayKey)) {
+        horasDoDia = tempoExecutado / diasPlanejados.length;
+      } else {
+        horasDoDia = tempoExecutado; // Fallback: se não tem dias planejados, mostrar tudo neste dia
+      }
+    }
+    // Prioridade 3: Usar horas planejadas
+    else {
       horasDoDia = horasAlocadasDia;
     }
   }
