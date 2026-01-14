@@ -16,8 +16,10 @@ const getStatusBgColor = (status) => {
     "Concluído - R05": "#dcfce7",
     "Concluído - R06": "#dcfce7",
     "Concluído - R07": "#dcfce7",
+    "Concluído - PR": "#dcfce7",
     "Pendente": "#fee2e2",
     "Em andamento": "#fef3c7",
+    "Em Andamento": "#fef3c7",
     "Hold": "#fed7aa",
     "Paralisado": "#fed7aa",
     "Técnico": "#dbeafe",
@@ -398,6 +400,17 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
     "(Vazias)"
   ];
 
+  // Opções específicas para Markup
+  const markupOptions = [
+    "NA",
+    "Concluído",
+    "Concluído - EX",
+    "Concluído - PR",
+    "Em Andamento",
+    "Hold",
+    "Pendente"
+  ];
+
   // Seção PROJETO
   const projetoColumns = [
     { key: 'projeto', label: 'PROJETO', width: '200px' },
@@ -408,7 +421,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
     { key: 'atividades_planejamento', label: 'Ativ. Planejamento', width: '90px', isStatus: true },
     { key: 'kickoff_cliente', label: 'Kickoff', width: '80px', isStatus: true },
     { key: 'cronograma', label: 'Cronograma', width: '80px', isStatus: true, statusOptions: cronogramaOptions },
-    { key: 'markup', label: 'Markup', width: '80px', isStatus: true }
+    { key: 'markup', label: 'Markup', width: '80px', isStatus: true, statusOptions: markupOptions }
   ];
 
   // Seção ART
