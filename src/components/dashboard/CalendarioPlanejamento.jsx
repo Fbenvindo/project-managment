@@ -814,32 +814,59 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
   const totalHoras = useMemo(() => {
     if (!dayKey) return 0;
 
+    console.log(`🔢 [${dayKey}] Calculando total de horas para grupo:`, {
+      empreendimento: empreendimento?.nome,
+      executor: executor?.email,
+      totalAtividades: atividades.length
+    });
+
     let soma = 0;
-    atividades.forEach((atividade) => {
+    atividades.forEach((atividade, idx) => {
       const horasExecutadasNoDia = Number(atividade.horas_executadas_por_dia?.[dayKey]) || 0;
       const tempoExecutado = Number(atividade.tempo_executado) || 0;
+      const horasAlocadasDia = Number(atividade.horas_por_dia?.[dayKey]) || 0;
       
+      let horasContabilizadas = 0;
+      let motivo = '';
+
       // Para atividades legadas, usar tempo_executado
       if (atividade.isLegacyExecution) {
-        soma += tempoExecutado;
+        horasContabilizadas = tempoExecutado;
+        motivo = 'legada';
       }
       // Para atividades rápidas OU concluídas: usar SEMPRE horas executadas
       else if (atividade.isQuickActivity || atividade.is_quick_activity || atividade.status === 'concluido') {
-        soma += horasExecutadasNoDia;
+        horasContabilizadas = horasExecutadasNoDia;
+        motivo = 'rápida/concluída';
       }
       // Para atividades de ajuda, usar horas executadas se disponíveis
       else if (atividade.descritivo?.includes('Ajuda') && horasExecutadasNoDia > 0) {
-        soma += horasExecutadasNoDia;
+        horasContabilizadas = horasExecutadasNoDia;
+        motivo = 'ajuda';
       }
       // Para todas as outras atividades, usar alocação planejada
       else {
-        const horasAlocadasDia = Number(atividade.horas_por_dia?.[dayKey]) || 0;
-        soma += horasAlocadasDia;
+        horasContabilizadas = horasAlocadasDia;
+        motivo = 'planejada';
       }
+
+      console.log(`   [${idx + 1}] ${atividade.descritivo || 'sem nome'}: ${horasContabilizadas}h (${motivo})`, {
+        horasAlocadasDia,
+        horasExecutadasNoDia,
+        tempoExecutado,
+        status: atividade.status,
+        isQuick: atividade.isQuickActivity || atividade.is_quick_activity,
+        isLegacy: atividade.isLegacyExecution,
+        horas_por_dia: atividade.horas_por_dia,
+        horas_executadas_por_dia: atividade.horas_executadas_por_dia
+      });
+
+      soma += horasContabilizadas;
     });
 
+    console.log(`   ✅ TOTAL: ${Math.round(soma * 10) / 10}h`);
     return Math.round(soma * 10) / 10;
-  }, [atividades, dayKey]);
+  }, [atividades, dayKey, empreendimento, executor]);
   
   const statusCounts = atividades.reduce((acc, atividade) => {
     const realStatus = calculateActivityStatus(atividade, allPlanejamentos);
