@@ -1,6 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { Grid3x3, List } from "lucide-react";
+import { base44 } from "@/api/base44Client";
 
 const getStatusBgColor = (status) => {
   const colors = {
@@ -64,6 +65,93 @@ const StatusCell = ({ status, editable, onUpdate }) => {
       onClick={() => setIsEditing(true)}
     >
       {status}
+    </div>
+  );
+};
+
+const GestaoCell = ({ value, editable, onUpdate, usuarios }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  
+  if (!editable) {
+    return (
+      <div className="px-2 py-1 text-xs">
+        {value || 'NA'}
+      </div>
+    );
+  }
+
+  if (isEditing) {
+    return (
+      <select
+        value={value || ''}
+        onChange={(e) => {
+          onUpdate(e.target.value);
+          setIsEditing(false);
+        }}
+        onBlur={() => setIsEditing(false)}
+        autoFocus
+        className="w-full px-2 py-1 text-xs rounded border-2 border-blue-500"
+      >
+        <option value="">Selecione...</option>
+        {usuarios.map(user => (
+          <option key={user.email} value={user.nome || user.email}>
+            {user.nome || user.email}
+          </option>
+        ))}
+      </select>
+    );
+  }
+
+  return (
+    <div
+      className="px-2 py-1 text-xs cursor-pointer hover:ring-2 hover:ring-blue-400 rounded"
+      onClick={() => setIsEditing(true)}
+    >
+      {value || 'NA'}
+    </div>
+  );
+};
+
+const FormalizacaoCell = ({ value, editable, onUpdate }) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [localValue, setLocalValue] = useState(value || '');
+  
+  if (!editable) {
+    return (
+      <div className="px-2 py-1 text-xs">
+        {value || ''}
+      </div>
+    );
+  }
+
+  if (isEditing) {
+    return (
+      <input
+        type="text"
+        value={localValue}
+        onChange={(e) => setLocalValue(e.target.value)}
+        onBlur={() => {
+          onUpdate(localValue);
+          setIsEditing(false);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            onUpdate(localValue);
+            setIsEditing(false);
+          }
+        }}
+        autoFocus
+        className="w-full px-2 py-1 text-xs rounded border-2 border-blue-500"
+      />
+    );
+  }
+
+  return (
+    <div
+      className="px-2 py-1 text-xs cursor-pointer hover:ring-2 hover:ring-blue-400 rounded"
+      onClick={() => setIsEditing(true)}
+    >
+      {value || ''}
     </div>
   );
 };
@@ -149,6 +237,19 @@ const SpreadsheetTable = ({ title, columns, data, stickyFirst = true }) => {
 
 export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, searchTerm, onUpdate, editable = false }) {
   const [isGridView, setIsGridView] = useState(true);
+  const [usuarios, setUsuarios] = useState([]);
+
+  useEffect(() => {
+    const loadUsuarios = async () => {
+      try {
+        const users = await base44.entities.Usuario.list();
+        setUsuarios(users || []);
+      } catch (error) {
+        console.error('Erro ao carregar usuários:', error);
+      }
+    };
+    loadUsuarios();
+  }, []);
 
   const empreendimentosMap = useMemo(() => {
     return empreendimentos.reduce((acc, emp) => {
@@ -260,9 +361,9 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
   // Seção PROJETO
   const projetoColumns = [
     { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'os', label: 'OS', width: '60px', isStatus: false },
-    { key: 'gestao', label: 'Gestão', width: '70px', isStatus: true },
-    { key: 'formalizacao', label: 'Formalização', width: '80px', isStatus: true },
+    { key: 'os', label: 'OS', width: '60px', type: 'text' },
+    { key: 'gestao', label: 'Gestão', width: '120px', type: 'gestao' },
+    { key: 'formalizacao', label: 'Formalização', width: '150px', type: 'formalizacao' },
     { key: 'abertura_os_servidor', label: 'Abertura OS', width: '80px', isStatus: true },
     { key: 'atividades_planejamento', label: 'Ativ. Planejamento', width: '90px', isStatus: true },
     { key: 'kickoff_cliente', label: 'Kickoff', width: '80px', isStatus: true },
@@ -426,12 +527,25 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                     {filteredControles.map((row, idx) => (
                       <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
                         {projetoColumns.slice(1).map((col) => {
-                          const value = row[col.key] || 'NA';
+                          const value = row[col.key] || (col.type === 'text' ? '' : 'NA');
                           return (
                             <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
                               {col.isStatus ? (
                                 <StatusCell 
                                   status={value} 
+                                  editable={editable}
+                                  onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                />
+                              ) : col.type === 'gestao' ? (
+                                <GestaoCell 
+                                  value={value === 'NA' ? '' : value}
+                                  editable={editable}
+                                  onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                  usuarios={usuarios}
+                                />
+                              ) : col.type === 'formalizacao' ? (
+                                <FormalizacaoCell 
+                                  value={value}
                                   editable={editable}
                                   onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
                                 />
