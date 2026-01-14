@@ -1678,13 +1678,19 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
 
         // Calcular horas executadas por dia para cada planejamento
         // USA as execuções já carregadas em loadCalendarData (state 'execucoes')
+        console.log(`🔍 Enriquecendo dados - Total execuções: ${execucoes?.length || 0}`);
         const horasExecutadasPorPlanejamento = {};
         (execucoes || []).forEach(exec => {
-          if (!exec.planejamento_id || !exec.inicio) return;
+          if (!exec.planejamento_id || !exec.inicio) {
+            console.log(`⚠️ Execução sem planejamento_id ou inicio:`, exec.id);
+            return;
+          }
 
           // Usar a data de início da execução
           const diaExec = format(parseLocalDate(exec.inicio), 'yyyy-MM-dd');
           const tempoExec = Number(exec.tempo_total) || 0;
+
+          console.log(`✅ Exec ${exec.id} -> Plan ${exec.planejamento_id}: ${tempoExec}h no dia ${diaExec}`);
 
           if (!horasExecutadasPorPlanejamento[exec.planejamento_id]) {
             horasExecutadasPorPlanejamento[exec.planejamento_id] = {};
@@ -1693,6 +1699,8 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           horasExecutadasPorPlanejamento[exec.planejamento_id][diaExec] = 
             (horasExecutadasPorPlanejamento[exec.planejamento_id][diaExec] || 0) + tempoExec;
         });
+
+        console.log(`📊 Mapa de horas executadas por planejamento:`, horasExecutadasPorPlanejamento);
 
         const finalData = planejamentos.map(plano => ({
           ...plano,
