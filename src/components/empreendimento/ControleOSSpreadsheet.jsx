@@ -170,7 +170,26 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
       if (controle) {
         return {
           ...controle,
-          projeto: emp.nome || 'N/A'
+          projeto: emp.nome || 'N/A',
+          planejamento_hidraulica_concepcao: controle.planejamento?.hidraulica?.concepcao || 'NA',
+          planejamento_hidraulica_calculo: controle.planejamento?.hidraulica?.calculo || 'NA',
+          planejamento_hidraulica_diagrama: controle.planejamento?.hidraulica?.diagrama || 'NA',
+          planejamento_eletrica_concepcao: controle.planejamento?.eletrica?.concepcao || 'NA',
+          planejamento_eletrica_calculo: controle.planejamento?.eletrica?.calculo || 'NA',
+          planejamento_eletrica_diagrama: controle.planejamento?.eletrica?.diagrama || 'NA',
+          planejamento_incendio_concepcao: controle.planejamento?.incendio?.concepcao || 'NA',
+          planejamento_incendio_calculo: controle.planejamento?.incendio?.calculo || 'NA',
+          planejamento_incendio_diagrama: controle.planejamento?.incendio?.diagrama || 'NA',
+          planejamento_sistemas_eletronicos_concepcao: controle.planejamento?.sistemas_eletronicos?.concepcao || 'NA',
+          planejamento_sistemas_eletronicos_calculo: controle.planejamento?.sistemas_eletronicos?.calculo || 'NA',
+          planejamento_sistemas_eletronicos_diagrama: controle.planejamento?.sistemas_eletronicos?.diagrama || 'NA',
+          planejamento_ar_condicionado_concepcao: controle.planejamento?.ar_condicionado?.concepcao || 'NA',
+          planejamento_ar_condicionado_calculo: controle.planejamento?.ar_condicionado?.calculo || 'NA',
+          planejamento_ar_condicionado_diagrama: controle.planejamento?.ar_condicionado?.diagrama || 'NA',
+          monitoramento_briefing: controle.monitoramento?.briefing || 'NA',
+          monitoramento_cronograma: controle.monitoramento?.cronograma || 'NA',
+          monitoramento_lmd: controle.monitoramento?.lmd || 'NA',
+          monitoramento_entregas_x_etapas: controle.monitoramento?.entregas_x_etapas || 'NA'
         };
       } else {
         // Empreendimento sem controle OS - criar registro vazio
@@ -205,6 +224,12 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
           planejamento_incendio_concepcao: 'NA',
           planejamento_incendio_calculo: 'NA',
           planejamento_incendio_diagrama: 'NA',
+          planejamento_sistemas_eletronicos_concepcao: 'NA',
+          planejamento_sistemas_eletronicos_calculo: 'NA',
+          planejamento_sistemas_eletronicos_diagrama: 'NA',
+          planejamento_ar_condicionado_concepcao: 'NA',
+          planejamento_ar_condicionado_calculo: 'NA',
+          planejamento_ar_condicionado_diagrama: 'NA',
           monitoramento_briefing: 'NA',
           monitoramento_cronograma: 'NA',
           monitoramento_lmd: 'NA',
@@ -269,7 +294,13 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
     { key: 'planejamento_eletrica_diagrama', label: 'ELE. Diag.', width: '80px', isStatus: true },
     { key: 'planejamento_incendio_concepcao', label: 'INC. Conc.', width: '80px', isStatus: true },
     { key: 'planejamento_incendio_calculo', label: 'INC. Calc.', width: '80px', isStatus: true },
-    { key: 'planejamento_incendio_diagrama', label: 'INC. Diag.', width: '80px', isStatus: true }
+    { key: 'planejamento_incendio_diagrama', label: 'INC. Diag.', width: '80px', isStatus: true },
+    { key: 'planejamento_sistemas_eletronicos_concepcao', label: 'SE. Conc.', width: '80px', isStatus: true },
+    { key: 'planejamento_sistemas_eletronicos_calculo', label: 'SE. Calc.', width: '80px', isStatus: true },
+    { key: 'planejamento_sistemas_eletronicos_diagrama', label: 'SE. Diag.', width: '80px', isStatus: true },
+    { key: 'planejamento_ar_condicionado_concepcao', label: 'AC. Conc.', width: '80px', isStatus: true },
+    { key: 'planejamento_ar_condicionado_calculo', label: 'AC. Calc.', width: '80px', isStatus: true },
+    { key: 'planejamento_ar_condicionado_diagrama', label: 'AC. Diag.', width: '80px', isStatus: true }
   ];
 
   // Seção MONITORAMENTO
