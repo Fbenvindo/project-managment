@@ -283,24 +283,44 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
     { key: 'conc_incendio', label: 'INCÊNDIO', width: '90px', isStatus: true }
   ];
 
-  // Seção PLANEJAMENTO
-  const planejamentoColumns = [
+  // Seção PLANEJAMENTO - Hidráulica
+  const planejamentoHidraulicaColumns = [
     { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'planejamento_hidraulica_concepcao', label: 'HID. Conc.', width: '80px', isStatus: true },
-    { key: 'planejamento_hidraulica_calculo', label: 'HID. Calc.', width: '80px', isStatus: true },
-    { key: 'planejamento_hidraulica_diagrama', label: 'HID. Diag.', width: '80px', isStatus: true },
-    { key: 'planejamento_eletrica_concepcao', label: 'ELE. Conc.', width: '80px', isStatus: true },
-    { key: 'planejamento_eletrica_calculo', label: 'ELE. Calc.', width: '80px', isStatus: true },
-    { key: 'planejamento_eletrica_diagrama', label: 'ELE. Diag.', width: '80px', isStatus: true },
-    { key: 'planejamento_incendio_concepcao', label: 'INC. Conc.', width: '80px', isStatus: true },
-    { key: 'planejamento_incendio_calculo', label: 'INC. Calc.', width: '80px', isStatus: true },
-    { key: 'planejamento_incendio_diagrama', label: 'INC. Diag.', width: '80px', isStatus: true },
-    { key: 'planejamento_sistemas_eletronicos_concepcao', label: 'SE. Conc.', width: '80px', isStatus: true },
-    { key: 'planejamento_sistemas_eletronicos_calculo', label: 'SE. Calc.', width: '80px', isStatus: true },
-    { key: 'planejamento_sistemas_eletronicos_diagrama', label: 'SE. Diag.', width: '80px', isStatus: true },
-    { key: 'planejamento_ar_condicionado_concepcao', label: 'AC. Conc.', width: '80px', isStatus: true },
-    { key: 'planejamento_ar_condicionado_calculo', label: 'AC. Calc.', width: '80px', isStatus: true },
-    { key: 'planejamento_ar_condicionado_diagrama', label: 'AC. Diag.', width: '80px', isStatus: true }
+    { key: 'planejamento_hidraulica_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true },
+    { key: 'planejamento_hidraulica_calculo', label: 'CÁLCULO', width: '100px', isStatus: true },
+    { key: 'planejamento_hidraulica_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true }
+  ];
+
+  // Seção PLANEJAMENTO - Incêndio
+  const planejamentoIncendioColumns = [
+    { key: 'projeto', label: 'PROJETO', width: '200px' },
+    { key: 'planejamento_incendio_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true },
+    { key: 'planejamento_incendio_calculo', label: 'CÁLCULO', width: '100px', isStatus: true },
+    { key: 'planejamento_incendio_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true }
+  ];
+
+  // Seção PLANEJAMENTO - Elétrica
+  const planejamentoEletricaColumns = [
+    { key: 'projeto', label: 'PROJETO', width: '200px' },
+    { key: 'planejamento_eletrica_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true },
+    { key: 'planejamento_eletrica_calculo', label: 'CÁLCULO', width: '100px', isStatus: true },
+    { key: 'planejamento_eletrica_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true }
+  ];
+
+  // Seção PLANEJAMENTO - Sistemas Eletrônicos
+  const planejamentoSistemasColumns = [
+    { key: 'projeto', label: 'PROJETO', width: '200px' },
+    { key: 'planejamento_sistemas_eletronicos_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true },
+    { key: 'planejamento_sistemas_eletronicos_calculo', label: 'CÁLCULO', width: '100px', isStatus: true },
+    { key: 'planejamento_sistemas_eletronicos_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true }
+  ];
+
+  // Seção PLANEJAMENTO - Ar Condicionado
+  const planejamentoArCondicionadoColumns = [
+    { key: 'projeto', label: 'PROJETO', width: '200px' },
+    { key: 'planejamento_ar_condicionado_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true },
+    { key: 'planejamento_ar_condicionado_calculo', label: 'CÁLCULO', width: '100px', isStatus: true },
+    { key: 'planejamento_ar_condicionado_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true }
   ];
 
   // Seção MONITORAMENTO
@@ -543,16 +563,16 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                     </tbody>
                   </table>
 
-                  {/* PLANEJAMENTO sem coluna Projeto */}
+                  {/* PLANEJAMENTO - HIDRÁULICA */}
                   <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
                     <thead className="bg-gray-800 text-white">
                       <tr>
-                        <th colSpan={planejamentoColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
-                          PLANEJAMENTO
+                        <th colSpan={planejamentoHidraulicaColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
+                          HIDRÁULICA
                         </th>
                       </tr>
                       <tr>
-                        {planejamentoColumns.slice(1).map((col) => (
+                        {planejamentoHidraulicaColumns.slice(1).map((col) => (
                           <th
                             key={col.key}
                             className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
@@ -566,7 +586,175 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                     <tbody>
                       {filteredControles.map((row, idx) => (
                         <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
-                          {planejamentoColumns.slice(1).map((col) => {
+                          {planejamentoHidraulicaColumns.slice(1).map((col) => {
+                            const value = row[col.key] || 'NA';
+                            return (
+                              <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
+                                {col.isStatus ? (
+                                  <StatusCell 
+                                    status={value} 
+                                    editable={editable}
+                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                  />
+                                ) : value}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {/* PLANEJAMENTO - INCÊNDIO */}
+                  <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
+                    <thead className="bg-gray-800 text-white">
+                      <tr>
+                        <th colSpan={planejamentoIncendioColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
+                          INCÊNDIO
+                        </th>
+                      </tr>
+                      <tr>
+                        {planejamentoIncendioColumns.slice(1).map((col) => (
+                          <th
+                            key={col.key}
+                            className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
+                            style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
+                          >
+                            {col.label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredControles.map((row, idx) => (
+                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
+                          {planejamentoIncendioColumns.slice(1).map((col) => {
+                            const value = row[col.key] || 'NA';
+                            return (
+                              <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
+                                {col.isStatus ? (
+                                  <StatusCell 
+                                    status={value} 
+                                    editable={editable}
+                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                  />
+                                ) : value}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {/* PLANEJAMENTO - ELÉTRICA */}
+                  <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
+                    <thead className="bg-gray-800 text-white">
+                      <tr>
+                        <th colSpan={planejamentoEletricaColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
+                          ELÉTRICA
+                        </th>
+                      </tr>
+                      <tr>
+                        {planejamentoEletricaColumns.slice(1).map((col) => (
+                          <th
+                            key={col.key}
+                            className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
+                            style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
+                          >
+                            {col.label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredControles.map((row, idx) => (
+                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
+                          {planejamentoEletricaColumns.slice(1).map((col) => {
+                            const value = row[col.key] || 'NA';
+                            return (
+                              <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
+                                {col.isStatus ? (
+                                  <StatusCell 
+                                    status={value} 
+                                    editable={editable}
+                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                  />
+                                ) : value}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {/* PLANEJAMENTO - SISTEMAS ELETRÔNICOS */}
+                  <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
+                    <thead className="bg-gray-800 text-white">
+                      <tr>
+                        <th colSpan={planejamentoSistemasColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
+                          SISTEMAS ELETRÔNICOS
+                        </th>
+                      </tr>
+                      <tr>
+                        {planejamentoSistemasColumns.slice(1).map((col) => (
+                          <th
+                            key={col.key}
+                            className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
+                            style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
+                          >
+                            {col.label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredControles.map((row, idx) => (
+                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
+                          {planejamentoSistemasColumns.slice(1).map((col) => {
+                            const value = row[col.key] || 'NA';
+                            return (
+                              <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
+                                {col.isStatus ? (
+                                  <StatusCell 
+                                    status={value} 
+                                    editable={editable}
+                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                  />
+                                ) : value}
+                              </td>
+                            );
+                          })}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+
+                  {/* PLANEJAMENTO - AR CONDICIONADO */}
+                  <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
+                    <thead className="bg-gray-800 text-white">
+                      <tr>
+                        <th colSpan={planejamentoArCondicionadoColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
+                          AR CONDICIONADO
+                        </th>
+                      </tr>
+                      <tr>
+                        {planejamentoArCondicionadoColumns.slice(1).map((col) => (
+                          <th
+                            key={col.key}
+                            className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
+                            style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
+                          >
+                            {col.label}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredControles.map((row, idx) => (
+                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
+                          {planejamentoArCondicionadoColumns.slice(1).map((col) => {
                             const value = row[col.key] || 'NA';
                             return (
                               <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
