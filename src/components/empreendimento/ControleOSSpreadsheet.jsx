@@ -419,9 +419,9 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
     { key: 'os', label: 'OS', width: '60px', type: 'text' },
     { key: 'gestao', label: 'Gestão', width: '120px', type: 'gestao' },
     { key: 'formalizacao', label: 'Formalização', width: '150px', type: 'formalizacao' },
-    { key: 'abertura_os_servidor', label: 'Abertura OS', width: '80px', isStatus: true },
-    { key: 'atividades_planejamento', label: 'Ativ. Planejamento', width: '90px', isStatus: true },
-    { key: 'kickoff_cliente', label: 'Kickoff', width: '80px', isStatus: true },
+    { key: 'abertura_os_servidor', label: 'Abertura OS', width: '80px', isStatus: true, statusOptions: planejamentoOptions },
+    { key: 'atividades_planejamento', label: 'Ativ. Planejamento', width: '90px', isStatus: true, statusOptions: planejamentoOptions },
+    { key: 'kickoff_cliente', label: 'Kickoff', width: '80px', isStatus: true, statusOptions: planejamentoOptions },
     { key: 'cronograma', label: 'Cronograma', width: '80px', isStatus: true, statusOptions: cronogramaOptions },
     { key: 'markup', label: 'Markup', width: '80px', isStatus: true, statusOptions: markupOptions }
   ];
@@ -429,73 +429,85 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
   // Seção ART
   const artColumns = [
     { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'art_ee_ais', label: 'ART - ELÉTRICA', width: '100px', isStatus: true },
-    { key: 'art_hid_in', label: 'ART - HIDRÁULICA', width: '110px', isStatus: true },
-    { key: 'art_hvac', label: 'ART - HVAC', width: '90px', isStatus: true },
-    { key: 'art_bomb', label: 'ART - BOMB', width: '90px', isStatus: true }
+    { key: 'art_ee_ais', label: 'ART - ELÉTRICA', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+    { key: 'art_hid_in', label: 'ART - HIDRÁULICA', width: '110px', isStatus: true, statusOptions: planejamentoOptions },
+    { key: 'art_hvac', label: 'ART - HVAC', width: '90px', isStatus: true, statusOptions: planejamentoOptions },
+    { key: 'art_bomb', label: 'ART - BOMB', width: '90px', isStatus: true, statusOptions: planejamentoOptions }
+  ];
+
+  // Opções para concessionárias
+  const concessionariaOptions = [
+    "NA", "Concluído", "Pendente", "Em andamento", "Hold", 
+    "Paralisado", "Técnico", "Ag. Liberação", "Finalizado", "Em aprovação"
   ];
 
   // Seção CONCESSIONÁRIAS
   const concessionariaColumns = [
     { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'conc_telefonia', label: 'TELEFONIA', width: '90px', isStatus: true },
-    { key: 'conc_gas', label: 'GÁS', width: '80px', isStatus: true },
-    { key: 'conc_eletrica', label: 'ELÉTRICA', width: '90px', isStatus: true },
-    { key: 'conc_hidraulica', label: 'HIDRÁULICA', width: '100px', isStatus: true },
-    { key: 'conc_agua_pluvial', label: 'ÁGUA PLUVIAL', width: '110px', isStatus: true },
-    { key: 'conc_incendio', label: 'INCÊNDIO', width: '90px', isStatus: true }
+    { key: 'conc_telefonia', label: 'TELEFONIA', width: '90px', isStatus: true, statusOptions: concessionariaOptions },
+    { key: 'conc_gas', label: 'GÁS', width: '80px', isStatus: true, statusOptions: concessionariaOptions },
+    { key: 'conc_eletrica', label: 'ELÉTRICA', width: '90px', isStatus: true, statusOptions: concessionariaOptions },
+    { key: 'conc_hidraulica', label: 'HIDRÁULICA', width: '100px', isStatus: true, statusOptions: concessionariaOptions },
+    { key: 'conc_agua_pluvial', label: 'ÁGUA PLUVIAL', width: '110px', isStatus: true, statusOptions: concessionariaOptions },
+    { key: 'conc_incendio', label: 'INCÊNDIO', width: '90px', isStatus: true, statusOptions: concessionariaOptions }
+  ];
+
+  // Opções padrão para colunas de planejamento
+  const planejamentoOptions = [
+    "NA", "Concluído", "Pendente", "Em andamento", "Hold", 
+    "Paralisado", "Técnico", "Ag. Liberação", "Finalizado"
   ];
 
   // Seção PLANEJAMENTO - Hidráulica
   const planejamentoHidraulicaColumns = [
     { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'planejamento_hidraulica_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true },
-    { key: 'planejamento_hidraulica_calculo', label: 'CÁLCULO', width: '100px', isStatus: true },
-    { key: 'planejamento_hidraulica_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true }
+    { key: 'planejamento_hidraulica_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+    { key: 'planejamento_hidraulica_calculo', label: 'CÁLCULO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+    { key: 'planejamento_hidraulica_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
   ];
 
   // Seção PLANEJAMENTO - Incêndio
   const planejamentoIncendioColumns = [
     { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'planejamento_incendio_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true },
-    { key: 'planejamento_incendio_calculo', label: 'CÁLCULO', width: '100px', isStatus: true },
-    { key: 'planejamento_incendio_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true }
+    { key: 'planejamento_incendio_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+    { key: 'planejamento_incendio_calculo', label: 'CÁLCULO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+    { key: 'planejamento_incendio_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
   ];
 
   // Seção PLANEJAMENTO - Elétrica
   const planejamentoEletricaColumns = [
     { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'planejamento_eletrica_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true },
-    { key: 'planejamento_eletrica_calculo', label: 'CÁLCULO', width: '100px', isStatus: true },
-    { key: 'planejamento_eletrica_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true }
+    { key: 'planejamento_eletrica_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+    { key: 'planejamento_eletrica_calculo', label: 'CÁLCULO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+    { key: 'planejamento_eletrica_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
   ];
 
   // Seção PLANEJAMENTO - Sistemas Eletrônicos
   const planejamentoSistemasColumns = [
     { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'planejamento_sistemas_eletronicos_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true },
-    { key: 'planejamento_sistemas_eletronicos_calculo', label: 'CÁLCULO', width: '100px', isStatus: true },
-    { key: 'planejamento_sistemas_eletronicos_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true }
+    { key: 'planejamento_sistemas_eletronicos_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+    { key: 'planejamento_sistemas_eletronicos_calculo', label: 'CÁLCULO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+    { key: 'planejamento_sistemas_eletronicos_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
   ];
 
   // Seção PLANEJAMENTO - Ar Condicionado
   const planejamentoArCondicionadoColumns = [
     { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'planejamento_ar_condicionado_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true },
-    { key: 'planejamento_ar_condicionado_calculo', label: 'CÁLCULO', width: '100px', isStatus: true },
-    { key: 'planejamento_ar_condicionado_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true }
+    { key: 'planejamento_ar_condicionado_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+    { key: 'planejamento_ar_condicionado_calculo', label: 'CÁLCULO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+    { key: 'planejamento_ar_condicionado_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
   ];
 
   // Seção MEMORIAL
   const memorialColumns = [
     { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'planejamento_memorial_esp_tec', label: 'MEMORIAL', width: '100px', isStatus: true }
+    { key: 'planejamento_memorial_esp_tec', label: 'MEMORIAL', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
   ];
 
   // Seção ESP. TEC.
   const espTecColumns = [
     { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'planejamento_memorial_matlib', label: 'ESP. TEC.', width: '100px', isStatus: true }
+    { key: 'planejamento_memorial_matlib', label: 'ESP. TEC.', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
   ];
 
   // Seção MARK-UP
@@ -507,10 +519,10 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
   // Seção MONITORAMENTO
   const monitoramentoColumns = [
     { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'monitoramento_briefing', label: 'Briefing', width: '90px', isStatus: true },
-    { key: 'monitoramento_cronograma', label: 'Cronograma', width: '100px', isStatus: true },
-    { key: 'monitoramento_lmd', label: 'LMD', width: '80px', isStatus: true },
-    { key: 'monitoramento_entregas_x_etapas', label: 'Entregas x Etapas', width: '130px', isStatus: true }
+    { key: 'monitoramento_briefing', label: 'Briefing', width: '90px', isStatus: true, statusOptions: planejamentoOptions },
+    { key: 'monitoramento_cronograma', label: 'Cronograma', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+    { key: 'monitoramento_lmd', label: 'LMD', width: '80px', isStatus: true, statusOptions: planejamentoOptions },
+    { key: 'monitoramento_entregas_x_etapas', label: 'Entregas x Etapas', width: '130px', isStatus: true, statusOptions: planejamentoOptions }
   ];
 
   return (
