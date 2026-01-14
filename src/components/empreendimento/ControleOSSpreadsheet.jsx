@@ -16,7 +16,7 @@ const getStatusBgColor = (status) => {
     "Concluído - R05": "#dcfce7",
     "Concluído - R06": "#dcfce7",
     "Concluído - R07": "#dcfce7",
-    "Concluído - O": "#dcfce7",
+    "Concluído - LO": "#dcfce7",
     "Concluído - PR": "#dcfce7",
     "Pendente": "#fee2e2",
     "Em andamento": "#fef3c7",
@@ -405,10 +405,10 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
   const markupOptions = [
     "NA",
     "Concluído",
+    "Concluído - LO",
     "Concluído - EX",
-    "Concluído - O",
     "Concluído - PR",
-    "Em Andamento",
+    "Em andamento",
     "Hold",
     "Pendente"
   ];
