@@ -239,7 +239,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
     });
 
     // Filtrar por searchTerm
-    return allControles.filter(controle => {
+    const filtered = allControles.filter(controle => {
       const searchLower = searchTerm?.toLowerCase() || '';
       const emp = empreendimentosMap[controle.empreendimento_id];
       return (
@@ -248,7 +248,14 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
         controle.os?.toLowerCase().includes(searchLower)
       );
     });
-  }, [controlesOS, empreendimentos, searchTerm, empreendimentosMap]);
+
+    // Ordenar por nome do projeto em ordem crescente
+    return filtered.sort((a, b) => {
+      const projectoA = a.projeto?.toLowerCase() || '';
+      const projectoB = b.projeto?.toLowerCase() || '';
+      return projectoA.localeCompare(projectoB);
+    });
+    }, [controlesOS, empreendimentos, searchTerm, empreendimentosMap]);
 
   // Seção PROJETO
   const projetoColumns = [
