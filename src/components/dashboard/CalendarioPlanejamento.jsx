@@ -1667,12 +1667,24 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         const documentosMap = new Map((documentosData || []).map(item => [item.id, item]));
 
         // Calcular horas executadas por dia para cada planejamento
-        // USA as execuções já carregadas em loadCalendarData (state 'execucoes')
         console.log(`🔍 Enriquecendo dados - Total execuções: ${execucoes?.length || 0}`);
+        console.log(`📋 Amostra de execuções:`, execucoes?.slice(0, 3).map(e => ({
+          id: e.id,
+          planejamento_id: e.planejamento_id,
+          inicio: e.inicio,
+          tempo_total: e.tempo_total,
+          descritivo: e.descritivo
+        })));
+        
         const horasExecutadasPorPlanejamento = {};
         (execucoes || []).forEach(exec => {
-          if (!exec.planejamento_id || !exec.inicio) {
-            console.log(`⚠️ Execução sem planejamento_id ou inicio:`, exec.id);
+          if (!exec.planejamento_id) {
+            console.log(`⚠️ Execução ${exec.id} sem planejamento_id`);
+            return;
+          }
+          
+          if (!exec.inicio) {
+            console.log(`⚠️ Execução ${exec.id} sem data de inicio`);
             return;
           }
 
@@ -1690,7 +1702,8 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
             (horasExecutadasPorPlanejamento[exec.planejamento_id][diaExec] || 0) + tempoExec;
         });
 
-        console.log(`📊 Mapa de horas executadas por planejamento:`, horasExecutadasPorPlanejamento);
+        console.log(`📊 Total de planejamentos com execuções mapeadas: ${Object.keys(horasExecutadasPorPlanejamento).length}`);
+        console.log(`📊 Amostra do mapa:`, Object.entries(horasExecutadasPorPlanejamento).slice(0, 3));
 
         const finalData = planejamentos.map(plano => {
           const horasExec = horasExecutadasPorPlanejamento[plano.id] || {};
