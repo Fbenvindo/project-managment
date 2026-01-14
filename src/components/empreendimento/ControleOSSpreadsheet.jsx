@@ -283,7 +283,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                         </th>
                       </tr>
                       <tr style={{ height: '40px' }}>
-                        <th className="border border-gray-300 px-2 py-2 text-left font-semibold whitespace-nowrap" style={{ width: '200px', minWidth: '200px' }}>
+                        <th className="border border-gray-300 text-left font-semibold whitespace-nowrap" style={{ width: '200px', minWidth: '200px', height: '40px', lineHeight: '40px', padding: '0 8px' }}>
                           PROJETO
                         </th>
                       </tr>
