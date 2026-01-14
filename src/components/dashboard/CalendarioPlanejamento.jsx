@@ -1658,15 +1658,17 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         const empreendimentoIds = [...new Set(planejamentos.map(p => p.empreendimento_id).filter(Boolean))];
         const atividadeIds = [...new Set(planejamentos.map(p => p.atividade_id).filter(Boolean))];
         const documentoIds = [...new Set(planejamentos.map(p => p.documento_id).filter(Boolean))];
-        const planejamentoIds = planejamentos.map(p => p.id).filter(Boolean);
 
-        // CRÍTICO: Buscar TODAS as execuções relacionadas aos planejamentos, sem filtro de usuário
-        // Isso garante que as horas executadas sejam contabilizadas corretamente
-        const [empreendimentosData, atividadesData, documentosData, execucoesData] = await Promise.all([
+        // CRÍTICO: Buscar execuções usando o mesmo filtro de usuário que os planejamentos
+        // Isso garante consistência entre as telas
+        const userFilter = filters.user;
+        const execFilter = userFilter && userFilter !== 'all' ? { usuario: userFilter } : {};
+
+        const [empreendimentosData, atividadesData, documentosData, execucoesUsuario] = await Promise.all([
           empreendimentoIds.length > 0 ? retryWithBackoff(() => Empreendimento.filter({ id: { $in: empreendimentoIds } }), 3, 1000, 'enrich.empreendimentos') : Promise.resolve([]),
           atividadeIds.length > 0 ? retryWithBackoff(() => Atividade.filter({ id: { $in: atividadeIds } }), 3, 1000, 'enrich.atividades') : Promise.resolve([]),
           documentoIds.length > 0 ? retryWithBackoff(() => Documento.filter({ id: { $in: documentoIds } }), 3, 1000, 'enrich.documentos') : Promise.resolve([]),
-          planejamentoIds.length > 0 ? retryWithBackoff(() => Execucao.filter({ planejamento_id: { $in: planejamentoIds } }), 3, 1000, 'enrich.execucoes') : Promise.resolve([])
+          userFilter ? retryWithBackoff(() => Execucao.filter(execFilter), 3, 1000, 'enrich.execucoes') : Promise.resolve([])
         ]);
 
         const empreendimentosMap = new Map((empreendimentosData || []).map(item => [item.id, item]));
@@ -1674,8 +1676,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         const documentosMap = new Map((documentosData || []).map(item => [item.id, item]));
 
         // Calcular horas executadas por dia para cada planejamento
+        // Usa APENAS execuções do usuário filtrado para garantir consistência
         const horasExecutadasPorPlanejamento = {};
-        (execucoesData || []).forEach(exec => {
+        (execucoesUsuario || []).forEach(exec => {
           if (!exec.planejamento_id || !exec.inicio) return;
 
           // Usar a data de início da execução
@@ -1707,7 +1710,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     };
 
     enrichData();
-  }, [planejamentos, execucoes, isCalendarLoading]); // Added isCalendarLoading to dependencies for consistency
+  }, [planejamentos, execucoes, isCalendarLoading, filters.user]); // Recomputa quando o usuário filtrado muda
 
   const handleActivityDelete = useCallback(() => {
     if (hasSelectedUser) {
