@@ -1433,7 +1433,7 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
                             if (ativ.isLegacyExecution) {
                               total += tempoExecutado;
                             } else if (ativ.isQuickActivity || ativ.is_quick_activity) {
-                              total += horasExecutadas > 0 ? horasExecutadas : tempoExecutado;
+                              total += horasExecutadas;
                             } else if (ativ.status === 'concluido') {
                               total += horasExecutadas > 0 ? horasExecutadas : (horasAlocadas > 0 ? horasAlocadas : tempoExecutado);
                             } else if (ativ.descritivo?.includes('Ajuda') && horasExecutadas > 0) {
