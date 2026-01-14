@@ -196,9 +196,11 @@ export const ActivityTimerProvider = ({ children }) => {
                 console.log(`   💬 Salvando observação no planejamento`);
             }
 
-            // NÃO atualizar horas_por_dia aqui - manter o planejamento original
-            // As horas executadas são rastreadas via tempo_executado e as execuções individuais
-            // O calendário deve buscar as execuções para calcular horas reais por dia
+            // ATUALIZAR horas_executadas_por_dia com as horas do dia
+            const horasExecutadasPorDia = planejamento.horas_executadas_por_dia || {};
+            horasExecutadasPorDia[diaParaRegistrar] = (horasExecutadasPorDia[diaParaRegistrar] || 0) + tempoAdicional;
+            updateData.horas_executadas_por_dia = horasExecutadasPorDia;
+            console.log(`   📅 Atualizando horas_executadas_por_dia[${diaParaRegistrar}]: ${(horasExecutadasPorDia[diaParaRegistrar]).toFixed(4)}h`);
 
             if (isAtividadeRapida) {
                 updateData.tempo_planejado = novoTempoExecutado;
@@ -219,7 +221,7 @@ export const ActivityTimerProvider = ({ children }) => {
                     const horasLiberadas = totalHorasOriginais - novoTempoExecutado;
                     
                     console.log(`      ✅ Horas liberadas na agenda: ${horasLiberadas.toFixed(2)}h`);
-                    console.log(`      📊 horas_por_dia atualizado com execução real`);
+                    console.log(`      📊 horas_executadas_por_dia atualizado com execução real`);
 
                     if (horasLiberadas > 0.1 && planejamento.executor_principal) {
                         const dataFinalizacao = format(new Date(), 'yyyy-MM-dd');
