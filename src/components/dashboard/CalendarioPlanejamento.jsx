@@ -332,24 +332,13 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   if (plano.isLegacyExecution) {
     horasDoDia = tempoExecutado;
   }
-  // Para atividades rápidas ou concluídas
-  else if (plano.isQuickActivity || plano.is_quick_activity || plano.status === 'concluido') {
-    // Se tem horas executadas neste dia específico, usar
-    if (horasExecutadasNoDia > 0) {
-      horasDoDia = horasExecutadasNoDia;
-    }
-    // Se tem horas alocadas para este dia, usar
-    else if (horasAlocadasDia > 0) {
-      horasDoDia = horasAlocadasDia;
-    }
-    // Se não tem nenhum dos dois mas é atividade rápida, usar tempo_executado
-    else if (plano.isQuickActivity || plano.is_quick_activity) {
-      horasDoDia = tempoExecutado;
-    }
-    // Fallback para atividades concluídas sem dados de horas por dia
-    else {
-      horasDoDia = tempoExecutado;
-    }
+  // Para atividades rápidas
+  else if (plano.isQuickActivity || plano.is_quick_activity) {
+    horasDoDia = horasExecutadasNoDia;
+  }
+  // Para atividades concluídas
+  else if (plano.status === 'concluido') {
+    horasDoDia = horasExecutadasNoDia > 0 ? horasExecutadasNoDia : horasAlocadasDia;
   }
   // Para atividades que têm "Ajuda" no descritivo, usar horas executadas no dia
   else if (plano.descritivo && plano.descritivo.includes('Ajuda') && horasExecutadasNoDia > 0) {
@@ -840,15 +829,10 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
       else if (isQuickActivity) {
         soma += horasExecutadasNoDia;
       }
-      // Para atividades concluídas normais: priorizar horas executadas no dia
+      // Para atividades concluídas normais
       else if (atividade.status === 'concluido') {
-        if (horasExecutadasNoDia > 0) {
-          soma += horasExecutadasNoDia;
-        } else if (horasAlocadasDia > 0) {
-          soma += horasAlocadasDia;
-        } else {
-          soma += tempoExecutado;
-        }
+        // SEMPRE priorizar: horas_executadas_no_dia > horas_alocadas_no_dia > 0
+        soma += horasExecutadasNoDia > 0 ? horasExecutadasNoDia : horasAlocadasDia;
       }
       // Para atividades de ajuda a colaborador, usar horas executadas no dia
       else if (atividade.descritivo && atividade.descritivo.includes('Ajuda') && horasExecutadasNoDia > 0) {
@@ -1435,7 +1419,7 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
                             } else if (ativ.isQuickActivity || ativ.is_quick_activity) {
                               total += horasExecutadas;
                             } else if (ativ.status === 'concluido') {
-                              total += horasExecutadas > 0 ? horasExecutadas : (horasAlocadas > 0 ? horasAlocadas : tempoExecutado);
+                              total += horasExecutadas > 0 ? horasExecutadas : horasAlocadas;
                             } else if (ativ.descritivo?.includes('Ajuda') && horasExecutadas > 0) {
                               total += horasExecutadas;
                             } else {
@@ -2274,13 +2258,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       } else if (isQuickActivity) {
         soma += horasExecutadasNoDia;
       } else if (atividade.status === 'concluido') {
-        if (horasExecutadasNoDia > 0) {
-          soma += horasExecutadasNoDia;
-        } else if (horasAlocadasDia > 0) {
-          soma += horasAlocadasDia;
-        } else {
-          soma += tempoExecutado;
-        }
+        soma += horasExecutadasNoDia > 0 ? horasExecutadasNoDia : horasAlocadasDia;
       } else if (atividade.descritivo && atividade.descritivo.includes('Ajuda') && horasExecutadasNoDia > 0) {
         soma += horasExecutadasNoDia;
       } else {
