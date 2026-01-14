@@ -1445,21 +1445,15 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
                           let total = 0;
                           dayActivities.forEach(ativ => {
                             const horasAlocadas = Number(ativ.horas_por_dia?.[dayKey]) || 0;
-                            const tempoExecutado = Number(ativ.tempo_executado) || 0;
                             const horasExecutadas = Number(ativ.horas_executadas_por_dia?.[dayKey]) || 0;
+                            const tempoExecutado = Number(ativ.tempo_executado) || 0;
                             
                             if (ativ.isLegacyExecution) {
                               total += tempoExecutado;
                             } else if (ativ.isQuickActivity || ativ.is_quick_activity) {
                               total += horasExecutadas;
                             } else if (ativ.status === 'concluido') {
-                              if (horasExecutadas > 0) {
-                                total += horasExecutadas;
-                              } else if (tempoExecutado > 0 && horasAlocadas < 0.1) {
-                                total += tempoExecutado;
-                              } else {
-                                total += horasAlocadas;
-                              }
+                              total += horasExecutadas > 0 ? horasExecutadas : horasAlocadas;
                             } else if (ativ.descritivo?.includes('Ajuda') && horasExecutadas > 0) {
                               total += horasExecutadas;
                             } else {
