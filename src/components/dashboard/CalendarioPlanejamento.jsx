@@ -820,6 +820,15 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
       const tempoExecutado = Number(atividade.tempo_executado) || 0;
       const horasExecutadasNoDia = Number(atividade.horas_executadas_por_dia?.[dayKey]) || 0;
       
+      console.log(`💡 [${dayKey}] Atividade: ${atividade.descritivo || 'sem nome'}`, {
+        horasAlocadasDia,
+        tempoExecutado,
+        horasExecutadasNoDia,
+        isLegacy: atividade.isLegacyExecution,
+        isQuick: atividade.isQuickActivity || atividade.is_quick_activity,
+        status: atividade.status
+      });
+      
       // Para atividades legadas, usar tempo_executado
       if (atividade.isLegacyExecution) {
         soma += tempoExecutado;
@@ -842,6 +851,7 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
       }
     });
 
+    console.log(`📊 Total horas dia ${dayKey}: ${soma}`);
     return Math.round(soma * 10) / 10;
   }, [atividades, dayKey]);
   
