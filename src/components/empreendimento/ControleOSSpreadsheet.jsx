@@ -19,7 +19,7 @@ const getStatusBgColor = (status) => {
   return colors[status] || "#f3f4f6";
 };
 
-const StatusCell = ({ status, editable, onUpdate }) => {
+const StatusCell = ({ status, editable, onUpdate, customOptions }) => {
   const [isEditing, setIsEditing] = useState(false);
   
   if (!editable) {
@@ -33,7 +33,7 @@ const StatusCell = ({ status, editable, onUpdate }) => {
     );
   }
 
-  const statusOptions = [
+  const statusOptions = customOptions || [
     "NA", "Concluído", "Pendente", "Em andamento", "Hold", 
     "Paralisado", "Técnico", "Ag. Liberação", "Finalizado", "Em aprovação"
   ];
@@ -370,6 +370,24 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
     });
     }, [controlesOS, empreendimentos, searchTerm, empreendimentosMap]);
 
+  // Opções específicas para Cronograma
+  const cronogramaOptions = [
+    "NA",
+    "Concluído - EX",
+    "Concluído - EX R00",
+    "Concluído - LO",
+    "Concluído - R00",
+    "Concluído - R02",
+    "Concluído - R04",
+    "Concluído - R05",
+    "Concluído - R06",
+    "Concluído - R07",
+    "Hold",
+    "Paralisado",
+    "Pendente",
+    "(Vazias)"
+  ];
+
   // Seção PROJETO
   const projetoColumns = [
     { key: 'projeto', label: 'PROJETO', width: '200px' },
@@ -379,7 +397,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
     { key: 'abertura_os_servidor', label: 'Abertura OS', width: '80px', isStatus: true },
     { key: 'atividades_planejamento', label: 'Ativ. Planejamento', width: '90px', isStatus: true },
     { key: 'kickoff_cliente', label: 'Kickoff', width: '80px', isStatus: true },
-    { key: 'cronograma', label: 'Cronograma', width: '80px', isStatus: true },
+    { key: 'cronograma', label: 'Cronograma', width: '80px', isStatus: true, statusOptions: cronogramaOptions },
     { key: 'markup', label: 'Markup', width: '80px', isStatus: true }
   ];
 
@@ -565,6 +583,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                                   status={value} 
                                   editable={editable}
                                   onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                  customOptions={col.statusOptions}
                                 />
                               ) : col.type === 'gestao' ? (
                                 <GestaoCell 
