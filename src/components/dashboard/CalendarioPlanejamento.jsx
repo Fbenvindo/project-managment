@@ -1428,9 +1428,36 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
                           dayActivities.forEach(ativ => {
                             const horasAlocadas = Number(ativ.horas_por_dia?.[dayKey]) || 0;
                             const horasExecutadas = Number(ativ.horas_executadas_por_dia?.[dayKey]) || 0;
-
-                            // Se tem horas executadas neste dia, somar; senão somar as alocadas
-                            const horasDia = horasExecutadas > 0 ? horasExecutadas : horasAlocadas;
+                            const tempoExecutado = Number(ativ.tempo_executado) || 0;
+                            
+                            let horasDia = 0;
+                            
+                            if (ativ.isLegacyExecution) {
+                              horasDia = tempoExecutado;
+                            }
+                            else if (ativ.isQuickActivity || ativ.is_quick_activity) {
+                              horasDia = horasExecutadas > 0 ? horasExecutadas : horasAlocadas;
+                            }
+                            else {
+                              // Prioridade 1: Se tem horas executadas neste dia
+                              if (horasExecutadas > 0) {
+                                horasDia = horasExecutadas;
+                              }
+                              // Prioridade 2: Se concluída mas horas_executadas_por_dia vazio, distribuir tempo_executado
+                              else if (ativ.status === 'concluido' && tempoExecutado > 0 && Object.keys(ativ.horas_executadas_por_dia || {}).length === 0) {
+                                const diasPlanejados = Object.keys(ativ.horas_por_dia || {});
+                                if (diasPlanejados.length > 0 && diasPlanejados.includes(dayKey)) {
+                                  horasDia = tempoExecutado / diasPlanejados.length;
+                                } else {
+                                  horasDia = tempoExecutado;
+                                }
+                              }
+                              // Prioridade 3: Usar horas planejadas
+                              else {
+                                horasDia = horasAlocadas;
+                              }
+                            }
+                            
                             total += horasDia;
                           });
                           return `${(Math.round(total * 10) / 10).toFixed(1)}h`;
