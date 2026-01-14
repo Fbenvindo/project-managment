@@ -275,23 +275,23 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
               <div className="flex h-full">
                 {/* Coluna Projeto Fixa */}
                 <div className="sticky left-0 z-5 bg-white border-r border-gray-300 flex-shrink-0">
-                  <table className="text-xs" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+                  <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
                     <thead className="bg-gray-800 text-white">
                       <tr>
-                        <th colSpan={1} className="border border-gray-300 px-4 text-left font-bold" style={{ height: '38px', lineHeight: '38px' }}>
+                        <th colSpan={1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
                           PROJETO
                         </th>
                       </tr>
                       <tr>
-                        <th className="border border-gray-300 text-left font-semibold whitespace-nowrap" style={{ width: '200px', minWidth: '200px', height: '38px', lineHeight: '38px', padding: '0 8px' }}>
+                        <th className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle" style={{ width: '200px', minWidth: '200px', height: '38px', padding: '0 8px' }}>
                           PROJETO
                         </th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                          <td className="border border-gray-300 whitespace-nowrap font-medium" style={{ height: '30px', lineHeight: '30px', padding: '0 8px' }}>
+                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
+                          <td className="border border-gray-300 whitespace-nowrap font-medium align-middle" style={{ height: '30px', padding: '0 8px' }}>
                             {row.projeto || 'NA'}
                           </td>
                         </tr>
@@ -304,10 +304,10 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                 <div className="flex-1 overflow-x-auto">
                   <div className="flex gap-0">
                     {/* ART sem coluna Projeto */}
-                    <table className="text-xs" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+                    <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
                     <thead className="bg-gray-800 text-white">
                       <tr>
-                        <th colSpan={artColumns.length - 1} className="border border-gray-300 px-4 text-left font-bold" style={{ height: '38px', lineHeight: '38px' }}>
+                        <th colSpan={artColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
                           ART
                         </th>
                       </tr>
@@ -315,8 +315,8 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                         {artColumns.slice(1).map((col) => (
                           <th
                             key={col.key}
-                            className="border border-gray-300 px-2 text-left font-semibold whitespace-nowrap"
-                            style={{ width: col.width, minWidth: col.width, height: '38px', lineHeight: '38px' }}
+                            className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
+                            style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
                           >
                             {col.label}
                           </th>
@@ -325,11 +325,11 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                     </thead>
                     <tbody>
                       {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
                           {artColumns.slice(1).map((col) => {
                             const value = row[col.key] || 'NA';
                             return (
-                              <td key={col.key} className="border border-gray-300 whitespace-nowrap" style={{ height: '30px', lineHeight: '30px', padding: '0 8px' }}>
+                              <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
                                 {col.isStatus ? <StatusCell status={value} /> : value}
                               </td>
                             );
@@ -340,10 +340,10 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                     </table>
                   
                   {/* CONCESSIONÁRIAS sem coluna Projeto */}
-                  <table className="text-xs" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+                  <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
                     <thead className="bg-gray-800 text-white">
                       <tr>
-                        <th colSpan={concessionariaColumns.length - 1} className="border border-gray-300 px-4 text-left font-bold" style={{ height: '38px', lineHeight: '38px' }}>
+                        <th colSpan={concessionariaColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
                           CONCESSIONÁRIAS
                         </th>
                       </tr>
@@ -351,8 +351,8 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                         {concessionariaColumns.slice(1).map((col) => (
                           <th
                             key={col.key}
-                            className="border border-gray-300 px-2 text-left font-semibold whitespace-nowrap"
-                            style={{ width: col.width, minWidth: col.width, height: '38px', lineHeight: '38px' }}
+                            className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
+                            style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
                           >
                             {col.label}
                           </th>
@@ -361,11 +361,11 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                     </thead>
                     <tbody>
                       {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
                           {concessionariaColumns.slice(1).map((col) => {
                             const value = row[col.key] || 'NA';
                             return (
-                              <td key={col.key} className="border border-gray-300 whitespace-nowrap" style={{ height: '30px', lineHeight: '30px', padding: '0 8px' }}>
+                              <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
                                 {col.isStatus ? <StatusCell status={value} /> : value}
                               </td>
                             );
@@ -376,10 +376,10 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                   </table>
 
                   {/* MONITORAMENTO sem coluna Projeto */}
-                  <table className="text-xs" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+                  <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
                     <thead className="bg-gray-800 text-white">
                       <tr>
-                        <th colSpan={monitoramentoColumns.length - 1} className="border border-gray-300 px-4 text-left font-bold" style={{ height: '38px', lineHeight: '38px' }}>
+                        <th colSpan={monitoramentoColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
                           MONITORAMENTO
                         </th>
                       </tr>
@@ -387,8 +387,8 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                         {monitoramentoColumns.slice(1).map((col) => (
                           <th
                             key={col.key}
-                            className="border border-gray-300 px-2 text-left font-semibold whitespace-nowrap"
-                            style={{ width: col.width, minWidth: col.width, height: '38px', lineHeight: '38px' }}
+                            className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
+                            style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
                           >
                             {col.label}
                           </th>
@@ -397,11 +397,11 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                     </thead>
                     <tbody>
                       {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
                           {monitoramentoColumns.slice(1).map((col) => {
                             const value = row[col.key] || 'NA';
                             return (
-                              <td key={col.key} className="border border-gray-300 whitespace-nowrap" style={{ height: '30px', lineHeight: '30px', padding: '0 8px' }}>
+                              <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
                                 {col.isStatus ? <StatusCell status={value} /> : value}
                               </td>
                             );
@@ -412,10 +412,10 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                   </table>
 
                   {/* PLANEJAMENTO sem coluna Projeto */}
-                  <table className="text-xs" style={{ borderCollapse: 'separate', borderSpacing: 0 }}>
+                  <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
                     <thead className="bg-gray-800 text-white">
                       <tr>
-                        <th colSpan={planejamentoColumns.length - 1} className="border border-gray-300 px-4 text-left font-bold" style={{ height: '38px', lineHeight: '38px' }}>
+                        <th colSpan={planejamentoColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
                           PLANEJAMENTO
                         </th>
                       </tr>
@@ -423,8 +423,8 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                         {planejamentoColumns.slice(1).map((col) => (
                           <th
                             key={col.key}
-                            className="border border-gray-300 px-2 text-left font-semibold whitespace-nowrap"
-                            style={{ width: col.width, minWidth: col.width, height: '38px', lineHeight: '38px' }}
+                            className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
+                            style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
                           >
                             {col.label}
                           </th>
@@ -433,11 +433,11 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                     </thead>
                     <tbody>
                       {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
                           {planejamentoColumns.slice(1).map((col) => {
                             const value = row[col.key] || 'NA';
                             return (
-                              <td key={col.key} className="border border-gray-300 whitespace-nowrap" style={{ height: '30px', lineHeight: '30px', padding: '0 8px' }}>
+                              <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
                                 {col.isStatus ? <StatusCell status={value} /> : value}
                               </td>
                             );
