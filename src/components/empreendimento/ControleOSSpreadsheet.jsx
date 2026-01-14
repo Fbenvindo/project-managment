@@ -344,6 +344,48 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                 {/* Tabelas com scroll horizontal */}
                 <div className="flex-1 overflow-x-auto">
                   <div className="flex gap-0">
+                    {/* PROJETO - tabela completa sem coluna Projeto */}
+                <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
+                  <thead className="bg-gray-800 text-white">
+                    <tr>
+                      <th colSpan={projetoColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
+                        PROJETO
+                      </th>
+                    </tr>
+                    <tr>
+                      {projetoColumns.slice(1).map((col) => (
+                        <th
+                          key={col.key}
+                          className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
+                          style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
+                        >
+                          {col.label}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredControles.map((row, idx) => (
+                      <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
+                        {projetoColumns.slice(1).map((col) => {
+                          const value = row[col.key] || 'NA';
+                          return (
+                            <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
+                              {col.isStatus ? (
+                                <StatusCell 
+                                  status={value} 
+                                  editable={editable}
+                                  onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
+                                />
+                              ) : value}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+
                     {/* ART sem coluna Projeto */}
                     <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
                     <thead className="bg-gray-800 text-white">
