@@ -290,7 +290,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                     </thead>
                     <tbody>
                       {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '32px' }}>
                           <td className="border border-gray-300 px-2 py-1.5 whitespace-nowrap font-medium">
                             {row.projeto || 'NA'}
                           </td>
@@ -325,7 +325,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                     </thead>
                     <tbody>
                       {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '32px' }}>
                           {artColumns.slice(1).map((col) => {
                             const value = row[col.key] || 'NA';
                             return (
@@ -361,7 +361,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                     </thead>
                     <tbody>
                       {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '32px' }}>
                           {concessionariaColumns.slice(1).map((col) => {
                             const value = row[col.key] || 'NA';
                             return (
@@ -397,7 +397,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                     </thead>
                     <tbody>
                       {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '32px' }}>
                           {monitoramentoColumns.slice(1).map((col) => {
                             const value = row[col.key] || 'NA';
                             return (
@@ -433,7 +433,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                     </thead>
                     <tbody>
                       {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '32px' }}>
                           {planejamentoColumns.slice(1).map((col) => {
                             const value = row[col.key] || 'NA';
                             return (
