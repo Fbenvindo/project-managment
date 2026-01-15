@@ -506,12 +506,8 @@ export const ActivityTimerProvider = ({ children }) => {
                 console.log(`🔄 [pauseExecution] Atualizando planejamento ${execution.planejamento_id}...`);
                 // Usar a data de início da execução para registrar as horas no dia correto
                 const diaExecucao = execution.inicio ? format(parseISO(execution.inicio), 'yyyy-MM-dd') : format(agora, 'yyyy-MM-dd');
-                try {
-                    await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'pausado', observacao, diaExecucao);
-                    console.log('✅ [pauseExecution] Planejamento atualizado');
-                } catch (updateError) {
-                    console.warn('⚠️ [pauseExecution] Falha ao atualizar planejamento (continuando mesmo assim):', updateError.message);
-                }
+                await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'pausado', observacao, diaExecucao);
+                console.log('✅ [pauseExecution] Planejamento atualizado');
             }
             
             await new Promise(resolve => setTimeout(resolve, 500));
@@ -625,12 +621,8 @@ export const ActivityTimerProvider = ({ children }) => {
                 console.log(`\n🔄 [finishExecution] ATUALIZANDO PLANEJAMENTO ${execution.planejamento_id}...`);
                 // Usar a data de início da execução para registrar as horas no dia correto
                 const diaExecucao = execution.inicio ? format(parseISO(execution.inicio), 'yyyy-MM-dd') : format(agora, 'yyyy-MM-dd');
-                try {
-                    await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'concluido', observacao, diaExecucao);
-                    console.log('✅ [finishExecution] Planejamento atualizado\n');
-                } catch (updateError) {
-                    console.warn('⚠️ [finishExecution] Falha ao atualizar planejamento (continuando mesmo assim):', updateError.message);
-                }
+                await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'concluido', observacao, diaExecucao);
+                console.log('✅ [finishExecution] Planejamento atualizado\n');
 
                 if (playlist.includes(execution.planejamento_id)) {
                     console.log(`🗑️ Removendo planejamento ${execution.planejamento_id} da playlist por ter sido concluído.`);
