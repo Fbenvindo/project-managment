@@ -34,14 +34,20 @@ export default function AnaliseConcepcaoPlanejamento() {
     const loadData = async () => {
         setIsLoading(true);
         try {
-            const [docsData, planejamentosData, ativsData, execsData, currentUser, empData] = await Promise.all([
+            const [docsData, planejamentosAtivData, planejamentosDocData, ativsData, execsData, currentUser, empData] = await Promise.all([
                 Documento.list(),
                 PlanejamentoAtividade.list(),
+                PlanejamentoDocumento.list(),
                 Atividade.list(),
                 Execucao.list(),
                 base44.auth.me(),
                 Empreendimento.list()
             ]);
+
+            // Combinar planejamentos de atividade e documento
+            const planosAtivComTipo = planejamentosAtivData.map(p => ({ ...p, tipo_planejamento: 'atividade' }));
+            const planosDocComTipo = planejamentosDocData.map(p => ({ ...p, tipo_planejamento: 'documento' }));
+            const todosPlanejamentos = [...planosAtivComTipo, ...planosDocComTipo];
 
             const aMap = ativsData.reduce((acc, ativ) => { acc[ativ.id] = ativ; return acc; }, {});
             const eMap = execsData.reduce((acc, exec) => {
@@ -53,7 +59,7 @@ export default function AnaliseConcepcaoPlanejamento() {
             setAtividadesMap(aMap);
             setExecucoesMap(eMap);
             setDocumentos(docsData);
-            setPlanejamentos(planejamentosData);
+            setPlanejamentos(todosPlanejamentos);
             setEmpreendimentos(empData);
             setUser(currentUser);
         } catch (error) {
