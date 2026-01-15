@@ -118,13 +118,10 @@ export default function DocumentoForm({
 
     const pavimento = (pavimentos || []).find(p => p.id === formData.pavimento_id);
     const areaPavimento = pavimento ? Number(pavimento.area) : null;
-    const fatorDificuldade = parseFloat(formData.fator_dificuldade) || 1;
 
     console.log(`\n📊 [DocumentoForm] Calculando tempos para documento ${doc?.id || 'NOVO'}...`);
     console.log(`   Disciplinas: ${formData.disciplinas.join(', ')}`);
     console.log(`   Subdisciplinas: ${formData.subdisciplinas.join(', ')}`);
-    console.log(`   Área Pavimento: ${areaPavimento || 'N/A'} m²`);
-    console.log(`   Fator Dificuldade: ${fatorDificuldade}`);
 
     // **CORRIGIDO**: Separar exclusões globais de exclusões específicas de documentos
     const atividadesRelacionadas = allAtividades.filter(ativ => {
@@ -201,13 +198,8 @@ export default function DocumentoForm({
     });
 
     console.log(`   ✅ Total de atividades disponíveis: ${atividadesRelacionadas.length}`);
-    
-    if (atividadesRelacionadas.length > 0) {
-      console.log(`   📋 Primeiras atividades encontradas:`);
-      atividadesRelacionadas.slice(0, 3).forEach(ativ => {
-        console.log(`      - ${ativ.atividade} (${ativ.disciplina}/${ativ.subdisciplina}) - ${ativ.tempo}h/m² - Etapa: ${ativ.etapa}`);
-      });
-    }
+
+    const fatorDificuldade = parseFloat(formData.fator_dificuldade) || 1;
 
     const tempos = {
       total: 0,
@@ -242,24 +234,18 @@ export default function DocumentoForm({
 
       // TERCEIRO: Aplicar override de tempo se existir e não for -999 (já filtrado na criação do mapa)
       if (tempoOverridesMap.has(ativ.id)) {
-        const tempoOverride = parseFloat(tempoOverridesMap.get(ativ.id)) || 0;
-        if (tempoOverride !== 0) { // Só aplicar se não for conclusão
-          tempoBase = tempoOverride;
-          console.log(`   📝 Atividade "${ativ.atividade}" tem override de tempo: ${tempoBase}h/m²`);
-        }
+        tempoBase = parseFloat(tempoOverridesMap.get(ativ.id)) || 0;
+        console.log(`   📝 Atividade "${ativ.atividade}" tem override de tempo: ${tempoBase}h`);
       }
       
       // QUARTO: Calcular tempo final
-      // Se houver pavimento, usar tempo base * área * fator
       // Se não houver pavimento, usar apenas tempo base * fator
-      let tempoCalculado;
-      if (areaPavimento && areaPavimento > 0) {
-        tempoCalculado = tempoBase * areaPavimento * fatorDificuldade;
-        console.log(`   ✅ Atividade "${ativ.atividade}": ${tempoBase}h/m² × ${areaPavimento}m² × ${fatorDificuldade} = ${tempoCalculado.toFixed(2)}h`);
-      } else {
-        tempoCalculado = tempoBase * fatorDificuldade;
-        console.log(`   ✅ Atividade "${ativ.atividade}": ${tempoBase}h × ${fatorDificuldade} = ${tempoCalculado.toFixed(2)}h (sem área)`);
-      }
+      // Se houver pavimento, usar tempo base * área * fator
+      const tempoCalculado = areaPavimento && areaPavimento > 0
+        ? tempoBase * areaPavimento * fatorDificuldade
+        : tempoBase * fatorDificuldade;
+
+      console.log(`   ✅ Atividade "${ativ.atividade}": ${tempoCalculado.toFixed(2)}h`);
 
       // MODIFICADO: Usar etapa com override se existir
       const etapaFinal = etapaOverridesMap.has(ativ.id)

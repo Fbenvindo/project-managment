@@ -8,6 +8,14 @@ const getStatusBgColor = (status) => {
     "NA": "#f3f4f6",
     "Concluído": "#dcfce7",
     "Concluído - EX": "#dcfce7",
+    "Concluído - EX R00": "#dcfce7",
+    "Concluído - LO": "#dcfce7",
+    "Concluído - R00": "#dcfce7",
+    "Concluído - R02": "#dcfce7",
+    "Concluído - R04": "#dcfce7",
+    "Concluído - R05": "#dcfce7",
+    "Concluído - R06": "#dcfce7",
+    "Concluído - R07": "#dcfce7",
     "Concluído - LO": "#dcfce7",
     "Concluído - PR": "#dcfce7",
     "Pendente": "#fee2e2",
@@ -18,7 +26,8 @@ const getStatusBgColor = (status) => {
     "Técnico": "#dbeafe",
     "Ag. Liberação": "#cffafe",
     "Finalizado": "#f3e8ff",
-    "Em aprovação": "#fef08a"
+    "Em aprovação": "#fef08a",
+    "(Vazias)": "#f3f4f6"
   };
   return colors[status] || "#f3f4f6";
 };
@@ -383,10 +392,19 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
   // Opções específicas para Cronograma
   const cronogramaOptions = [
     "NA",
-    "Concluído",
+    "Concluído - EX",
+    "Concluído - EX R00",
+    "Concluído - LO",
+    "Concluído - R00",
+    "Concluído - R02",
+    "Concluído - R04",
+    "Concluído - R05",
+    "Concluído - R06",
+    "Concluído - R07",
     "Hold",
     "Paralisado",
-    "Pendente"
+    "Pendente",
+    "(Vazias)"
   ];
 
   // Opções específicas para Markup
