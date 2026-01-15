@@ -395,48 +395,7 @@ export const ActivityTimerProvider = ({ children }) => {
         }
 
         let planejamentoId = executionData.planejamento_id;
-        
-        if (!planejamentoId) {
-            try {
-                console.log(`✨ [Atividade Rápida] Criando novo PlanejamentoAtividade para: "${executionData.descritivo}"`);
-                
-                const hojeStr = format(new Date(), 'yyyy-MM-dd');
-                
-                const novoPlano = await retryWithBackoff(
-                    () => PlanejamentoAtividade.create({
-                        descritivo: executionData.descritivo,
-                        base_descritivo: executionData.base_descritivo,
-                        empreendimento_id: executionData.empreendimento_id || null,
-                        tempo_planejado: 0.01,
-                        executor_principal: user.email,
-                        executores: [user.email],
-                        status: 'nao_iniciado',
-                        horas_por_dia: { [hojeStr]: 0.01 },
-                        inicio_planejado: hojeStr,
-                        termino_planejado: hojeStr,
-                        is_quick_activity: true,
-                        etapa: executionData.etapa || 'Execução',
-                    }), 3, 1000, 'createNewRapidPlanning'
-                );
-                
-                if (!novoPlano || !novoPlano.id) {
-                    console.error("❌ Resposta de criação sem ID válido:", novoPlano);
-                    alert("Erro ao registrar planejamento: resposta inválida do servidor.");
-                    setIsStarting(null);
-                    return;
-                }
-                
-                planejamentoId = novoPlano.id;
-                console.log(`✅ Novo PlanejamentoAtividade para atividade rápida criado: ${planejamentoId}`);
-                console.log(`   Resposta completa:`, novoPlano);
-                
-            } catch (e) {
-                console.error("❌ Erro ao criar PlanejamentoAtividade para atividade rápida", e);
-                alert("Não foi possível registrar o planejamento da atividade. A execução não será iniciada.");
-                setIsStarting(null);
-                return;
-            }
-        }
+        // Atividades rápidas não têm planejamentoId - vão direto para Execução
 
         try {
             const idToStart = planejamentoId;
