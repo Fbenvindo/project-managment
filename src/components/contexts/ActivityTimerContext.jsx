@@ -418,11 +418,20 @@ export const ActivityTimerProvider = ({ children }) => {
                         etapa: executionData.etapa || 'Execução',
                     }), 3, 1000, 'createNewRapidPlanning'
                 );
+                
+                if (!novoPlano || !novoPlano.id) {
+                    console.error("❌ Resposta de criação sem ID válido:", novoPlano);
+                    alert("Erro ao registrar planejamento: resposta inválida do servidor.");
+                    setIsStarting(null);
+                    return;
+                }
+                
                 planejamentoId = novoPlano.id;
                 console.log(`✅ Novo PlanejamentoAtividade para atividade rápida criado: ${planejamentoId}`);
+                console.log(`   Resposta completa:`, novoPlano);
                 
             } catch (e) {
-                console.error("Erro ao criar PlanejamentoAtividade para atividade rápida", e);
+                console.error("❌ Erro ao criar PlanejamentoAtividade para atividade rápida", e);
                 alert("Não foi possível registrar o planejamento da atividade. A execução não será iniciada.");
                 setIsStarting(null);
                 return;
