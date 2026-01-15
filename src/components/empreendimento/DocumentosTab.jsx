@@ -244,11 +244,9 @@ export default function DocumentosTab({
                 const tempoBase = tempoOverridesChild.has(ativ.id)
                     ? parseFloat(tempoOverridesChild.get(ativ.id)) || 0
                     : parseFloat(ativ.tempo) || 0;
-                let tempoCalculado = tempoBase;
-                if (areaPavimentoChild && areaPavimentoChild > 0) {
-                  tempoCalculado = tempoBase * areaPavimentoChild;
-                }
-                return total + (tempoCalculado * fatorDificuldadeChild);
+                // CORRIGIDO: tempo base já é total, não h/m²
+                const tempoCalculado = tempoBase * fatorDificuldadeChild;
+                return total + tempoCalculado;
             }, 0);
 
             let novaDataTermino = null;
@@ -387,11 +385,9 @@ export default function DocumentosTab({
             const tempoBase = tempoOverrides.has(ativ.id)
                 ? parseFloat(tempoOverrides.get(ativ.id)) || 0
                 : parseFloat(ativ.tempo) || 0;
-            let tempoCalculado = tempoBase;
-            if (areaPavimento && areaPavimento > 0) {
-              tempoCalculado = tempoBase * areaPavimento;
-            }
-            return total + (tempoCalculado * fatorDificuldade);
+            // CORRIGIDO: tempo base já é total, não h/m²
+            const tempoCalculado = tempoBase * fatorDificuldade;
+            return total + tempoCalculado;
         }, 0);
 
         console.log(`⏱️ Tempo total calculado: ${tempoTotal.toFixed(1)}h (com fator ${fatorDificuldade} e área ${areaPavimento ? areaPavimento + 'm²' : 'N/A'})`);
@@ -1142,12 +1138,8 @@ export default function DocumentosTab({
 
         const fatorDificuldade = doc.fator_dificuldade || 1;
 
-        let tempoComFator;
-        if (areaPavimento && areaPavimento > 0) {
-          tempoComFator = tempoBase * areaPavimento * fatorDificuldade;
-        } else {
-          tempoComFator = tempoBase * fatorDificuldade;
-        }
+        // CORRIGIDO: tempo base já é total, não h/m²
+        const tempoComFator = tempoBase * fatorDificuldade;
 
         // Para exibição: mostrar tempo original mesmo se concluída
         const tempoBaseParaExibicao = estaConcluida ? tempoBaseOriginal : tempoBase;
