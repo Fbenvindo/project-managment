@@ -500,11 +500,28 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
 
       // Determine the correct entity to update
       const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
+      
+      // Buscar dias alocados existentes para distribuir o tempo atualizado
+      const diasPlanejados = Object.keys(plano.horas_por_dia || {});
+      const novasHorasPorDia = {};
+      
+      if (diasPlanejados.length > 0) {
+        // Distribuir o novo tempo igualmente pelos dias já planejados
+        const horasPorDia = timeValue / diasPlanejados.length;
+        diasPlanejados.forEach(dia => {
+          novasHorasPorDia[dia] = horasPorDia;
+        });
+      } else {
+        // Se não há dias planejados, usar o dia atual
+        const hoje = format(new Date(), 'yyyy-MM-dd');
+        novasHorasPorDia[hoje] = timeValue;
+      }
 
       await retryWithBackoff(
         () => entityToUpdate.update(plano.id, {
           tempo_executado: timeValue,
-          tempo_planejado: timeValue, // Para atividades rápidas/documentos, o planejado se iguala ao executado
+          tempo_planejado: timeValue,
+          horas_por_dia: novasHorasPorDia,
           status: 'concluido',
           termino_real: format(new Date(), 'yyyy-MM-dd')
         }),
