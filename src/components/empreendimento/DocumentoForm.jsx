@@ -118,10 +118,13 @@ export default function DocumentoForm({
 
     const pavimento = (pavimentos || []).find(p => p.id === formData.pavimento_id);
     const areaPavimento = pavimento ? Number(pavimento.area) : null;
+    const fatorDificuldade = parseFloat(formData.fator_dificuldade) || 1;
 
     console.log(`\n📊 [DocumentoForm] Calculando tempos para documento ${doc?.id || 'NOVO'}...`);
     console.log(`   Disciplinas: ${formData.disciplinas.join(', ')}`);
     console.log(`   Subdisciplinas: ${formData.subdisciplinas.join(', ')}`);
+    console.log(`   Área Pavimento: ${areaPavimento || 'N/A'} m²`);
+    console.log(`   Fator Dificuldade: ${fatorDificuldade}`);
 
     // **CORRIGIDO**: Separar exclusões globais de exclusões específicas de documentos
     const atividadesRelacionadas = allAtividades.filter(ativ => {
