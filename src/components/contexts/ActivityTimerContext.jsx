@@ -674,39 +674,12 @@ export const ActivityTimerProvider = ({ children }) => {
                 console.log(`\n🔄 [finishExecution] ATUALIZANDO PLANEJAMENTO ${execution.planejamento_id}...`);
                 // Usar a data de início da execução para registrar as horas no dia correto
                 const diaExecucao = execution.inicio ? format(parseISO(execution.inicio), 'yyyy-MM-dd') : format(agora, 'yyyy-MM-dd');
+                await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'concluido', observacao, diaExecucao);
+                console.log('✅ [finishExecution] Planejamento atualizado\n');
                 
-                // Detectar automaticamente o tipo de planejamento
-                let planejamentoEncontrado = null;
-                try {
-                    const resultAtiv = await retryWithBackoff(() => PlanejamentoAtividade.filter({ id: execution.planejamento_id }, null, 1), 2, 500, 'finishExecution.findAtiv');
-                    if (resultAtiv && resultAtiv.length > 0) {
-                        planejamentoEncontrado = 'atividade';
-                    }
-                } catch (e) {
-                    console.log("   Não encontrado em PlanejamentoAtividade, tentando PlanejamentoDocumento...");
-                }
-                
-                if (!planejamentoEncontrado) {
-                    try {
-                        const resultDoc = await retryWithBackoff(() => PlanejamentoDocumento.filter({ id: execution.planejamento_id }, null, 1), 2, 500, 'finishExecution.findDoc');
-                        if (resultDoc && resultDoc.length > 0) {
-                            planejamentoEncontrado = 'documento';
-                        }
-                    } catch (e) {
-                        console.log("   Também não encontrado em PlanejamentoDocumento");
-                    }
-                }
-                
-                if (planejamentoEncontrado) {
-                    await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'concluido', observacao, diaExecucao);
-                    console.log('✅ [finishExecution] Planejamento atualizado\n');
-                    
-                    if (playlist.includes(execution.planejamento_id)) {
-                        console.log(`🗑️ Removendo planejamento ${execution.planejamento_id} da playlist por ter sido concluído.`);
-                        await removeFromPlaylist(execution.planejamento_id);
-                    }
-                } else {
-                    console.warn(`⚠️ [finishExecution] Planejamento ${execution.planejamento_id} não encontrado em nenhuma entidade`);
+                if (playlist.includes(execution.planejamento_id)) {
+                    console.log(`🗑️ Removendo planejamento ${execution.planejamento_id} da playlist por ter sido concluído.`);
+                    await removeFromPlaylist(execution.planejamento_id);
                 }
             } else {
                 console.warn(`⚠️ [finishExecution] Execução sem planejamento_id - não há planejamento para atualizar`);
