@@ -38,7 +38,8 @@ const LayoutComponent = ({ children, currentPageName }) => {
       }
     ];
 
-    if (hasPermission('apoio')) {
+    // Empreendimentos: apoio e consultor
+    if (hasPermission('apoio') || perfilAtual === 'consultor') {
       items.push({
         title: "Empreendimentos",
         url: createPageUrl("Empreendimentos"),
@@ -83,7 +84,8 @@ const LayoutComponent = ({ children, currentPageName }) => {
       });
     }
 
-    if (hasPermission('coordenador')) {
+    // Relatórios: coordenador e consultor
+    if (hasPermission('coordenador') || perfilAtual === 'consultor') {
       items.push({
         title: "Relatórios",
         url: createPageUrl("Relatorios"),
@@ -92,7 +94,8 @@ const LayoutComponent = ({ children, currentPageName }) => {
       });
     }
 
-    if (hasPermission('coordenador')) {
+    // ATA de Reunião: coordenador e consultor
+    if (hasPermission('coordenador') || perfilAtual === 'consultor') {
       items.push({
         title: "ATA de Reunião",
         url: createPageUrl("AtaPlanejamento"),
@@ -101,12 +104,15 @@ const LayoutComponent = ({ children, currentPageName }) => {
       });
     }
 
-    items.push({
-      title: "Atividades Rápidas",
-      url: createPageUrl("AtividadesRapidas"),
-      icon: Zap,
-      show: true
-    });
+    // Atividades Rápidas: todos EXCETO consultor
+    if (perfilAtual !== 'consultor') {
+      items.push({
+        title: "Atividades Rápidas",
+        url: createPageUrl("AtividadesRapidas"),
+        icon: Zap,
+        show: true
+      });
+    }
 
     // Usuários: apenas para Lider, Direção e Admin (não para Gestão)
     if (isAdmin || perfilAtual === 'lider' || perfilAtual === 'direcao') {
@@ -135,16 +141,17 @@ const LayoutComponent = ({ children, currentPageName }) => {
 
   const getPerfilLabel = (perfilAtual, isAdmin) => {
     if (isAdmin) return 'Administrador';
-    
+
     const labels = {
       'direcao': 'Direção',
       'gestao': 'Gestão',
       'lider': 'Líder',
       'coordenador': 'Coordenador',
       'apoio': 'Apoio',
+      'consultor': 'Consultor',
       'user': 'Colaborador'
     };
-    
+
     return labels[perfilAtual] || 'Colaborador';
   };
 

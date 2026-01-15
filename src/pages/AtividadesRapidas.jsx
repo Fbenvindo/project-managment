@@ -15,7 +15,7 @@ import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 export default function AtividadesRapidasPage() {
-  const { user, startExecution } = useContext(ActivityTimerContext);
+  const { user, startExecution, userProfile } = useContext(ActivityTimerContext);
   const [atividadesGenericas, setAtividadesGenericas] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [empreendimentos, setEmpreendimentos] = useState([]);
@@ -138,6 +138,25 @@ export default function AtividadesRapidasPage() {
       return 'Data inválida';
     }
   };
+
+  // Bloquear acesso para perfil consultor
+  if (userProfile?.perfil === 'consultor') {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
+        <div className="max-w-7xl mx-auto">
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center p-12">
+              <XCircle className="w-16 h-16 text-red-400 mb-4" />
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Acesso Restrito</h2>
+              <p className="text-gray-600 text-center">
+                Seu perfil de Consultor não possui permissão para criar atividades rápidas.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoadingData) {
     return (
