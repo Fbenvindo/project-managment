@@ -89,6 +89,7 @@ export const ActivityTimerProvider = ({ children }) => {
         'lider': 4,
         'coordenador': 3,
         'apoio': 2,
+        'consultor': 1,
         'user': 1
     };
 
