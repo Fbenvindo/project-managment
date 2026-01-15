@@ -1627,20 +1627,57 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     try {
         console.log(`📅 Carregando dados do calendário para: ${userFilter}`);
 
-        const planFilter = userFilter !== 'all' ? { executor_principal: userFilter } : {};
-        const execFilter = userFilter !== 'all' ? { usuario: userFilter } : {};
+        // Buscar atividades onde o usuário é executor principal OU está na lista de executores
+        let planosAtividade = [];
+        let planosDocumento = [];
 
-        const [planosAtividade, planosDocumento, execs] = await Promise.all([
-            retryWithBackoff(() => PlanejamentoAtividade.filter(planFilter), 3, 1500, 'calendar.loadPlansAtividade'),
-            retryWithBackoff(() => PlanejamentoDocumento.filter(planFilter), 3, 1500, 'calendar.loadPlansDocumento'),
-            retryWithBackoff(() => Execucao.filter(execFilter), 3, 1500, 'calendar.loadExecs')
-        ]);
+        if (userFilter !== 'all') {
+          // Buscar como executor principal
+          const planosExecPrincipal = await retryWithBackoff(() => PlanejamentoAtividade.filter({ executor_principal: userFilter }), 3, 1500, 'calendar.loadPlansAtividade.principal');
+          const planosDocExecPrincipal = await retryWithBackoff(() => PlanejamentoDocumento.filter({ executor_principal: userFilter }), 3, 1500, 'calendar.loadPlansDocumento.principal');
+
+          console.log(`📊 Executor principal: ${planosExecPrincipal.length} atividades, ${planosDocExecPrincipal.length} documentos`);
+
+          // Buscar TODOS os planejamentos e filtrar onde o usuário está na lista de executores
+          const todosPlanos = await retryWithBackoff(() => PlanejamentoAtividade.list(), 3, 1500, 'calendar.loadPlansAtividade.all');
+          const todosDocPlanos = await retryWithBackoff(() => PlanejamentoDocumento.list(), 3, 1500, 'calendar.loadPlansDocumento.all');
+
+          console.log(`📊 Total de planejamentos no sistema: ${todosPlanos.length} atividades, ${todosDocPlanos.length} documentos`);
+
+          const planosComExecutor = todosPlanos.filter(p => {
+            const temExecutor = p.executores && Array.isArray(p.executores) && p.executores.includes(userFilter) && p.executor_principal !== userFilter;
+            if (temExecutor) {
+              console.log(`✅ Atividade ${p.id} incluída - executores:`, p.executores, `principal: ${p.executor_principal}`);
+            }
+            return temExecutor;
+          });
+
+          const docPlanosComExecutor = todosDocPlanos.filter(p => {
+            const temExecutor = p.executores && Array.isArray(p.executores) && p.executores.includes(userFilter) && p.executor_principal !== userFilter;
+            if (temExecutor) {
+              console.log(`✅ Documento ${p.id} incluído - executores:`, p.executores, `principal: ${p.executor_principal}`);
+            }
+            return temExecutor;
+          });
+
+          console.log(`📊 Como executor adicional: ${planosComExecutor.length} atividades, ${docPlanosComExecutor.length} documentos`);
+
+          // Combinar todos os resultados
+          planosAtividade = [...planosExecPrincipal, ...planosComExecutor];
+          planosDocumento = [...planosDocExecPrincipal, ...docPlanosComExecutor];
+        } else {
+          planosAtividade = await retryWithBackoff(() => PlanejamentoAtividade.list(), 3, 1500, 'calendar.loadPlansAtividade');
+          planosDocumento = await retryWithBackoff(() => PlanejamentoDocumento.list(), 3, 1500, 'calendar.loadPlansDocumento');
+        }
+
+        const execFilter = userFilter !== 'all' ? { usuario: userFilter } : {};
+        const execs = await retryWithBackoff(() => Execucao.filter(execFilter), 3, 1500, 'calendar.loadExecs');
         
         const planosAtividadeComTipo = (planosAtividade || []).map(p => ({ ...p, tipo_planejamento: 'atividade' }));
         const planosDocumentoComTipo = (planosDocumento || []).map(p => ({ ...p, tipo_planejamento: 'documento' }));
         const todosPlanejamentos = [...planosAtividadeComTipo, ...planosDocumentoComTipo];
 
-        console.log(`✅ Dados carregados: ${todosPlanejamentos.length} planejamentos, ${execs?.length || 0} execuções`);
+        console.log(`✅ Dados carregados: ${todosPlanejamentos.length} planejamentos (${planosAtividade.length} atividades + ${planosDocumento.length} documentos), ${execs?.length || 0} execuções`);
 
         setPlanejamentos(todosPlanejamentos);
         setExecucoes(execs || []);
