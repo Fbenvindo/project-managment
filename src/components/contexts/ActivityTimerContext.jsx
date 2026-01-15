@@ -621,9 +621,13 @@ export const ActivityTimerProvider = ({ children }) => {
                 console.log(`\n🔄 [finishExecution] ATUALIZANDO PLANEJAMENTO ${execution.planejamento_id}...`);
                 // Usar a data de início da execução para registrar as horas no dia correto
                 const diaExecucao = execution.inicio ? format(parseISO(execution.inicio), 'yyyy-MM-dd') : format(agora, 'yyyy-MM-dd');
-                await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'concluido', observacao, diaExecucao);
-                console.log('✅ [finishExecution] Planejamento atualizado\n');
-                
+                try {
+                    await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'concluido', observacao, diaExecucao);
+                    console.log('✅ [finishExecution] Planejamento atualizado\n');
+                } catch (updateError) {
+                    console.warn('⚠️ [finishExecution] Falha ao atualizar planejamento (continuando mesmo assim):', updateError.message);
+                }
+
                 if (playlist.includes(execution.planejamento_id)) {
                     console.log(`🗑️ Removendo planejamento ${execution.planejamento_id} da playlist por ter sido concluído.`);
                     await removeFromPlaylist(execution.planejamento_id);
