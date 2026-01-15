@@ -450,12 +450,23 @@ export const ActivityTimerProvider = ({ children }) => {
             setActiveExecution(newExec);
 
             if (newExec.planejamento_id) {
-                retryWithBackoff(() => PlanejamentoAtividade.update(newExec.planejamento_id, { status: "em_andamento" }), 3, 1000, 'startExecution.updateBackground')
-                    .then(() => {
-                        console.log(`✅ Fundo: Planejamento ${newExec.planejamento_id} atualizado para em_andamento.`);
+                // Tentar atualizar o status para em_andamento - detectar automaticamente o tipo
+                (async () => {
+                    try {
+                        // Tentar primeiro PlanejamentoAtividade
+                        try {
+                            await retryWithBackoff(() => PlanejamentoAtividade.update(newExec.planejamento_id, { status: "em_andamento" }), 2, 500, 'startExecution.updateAtividade');
+                            console.log(`✅ Fundo: PlanejamentoAtividade ${newExec.planejamento_id} atualizado para em_andamento.`);
+                        } catch (e1) {
+                            // Se falhar, tentar PlanejamentoDocumento
+                            await retryWithBackoff(() => PlanejamentoDocumento.update(newExec.planejamento_id, { status: "em_andamento" }), 2, 500, 'startExecution.updateDocumento');
+                            console.log(`✅ Fundo: PlanejamentoDocumento ${newExec.planejamento_id} atualizado para em_andamento.`);
+                        }
                         triggerUpdate();
-                    })
-                    .catch(e => console.error("Falha em segundo plano ao atualizar status do planejamento", e));
+                    } catch (e) {
+                        console.error("Falha em segundo plano ao atualizar status do planejamento", e);
+                    }
+                })();
             } else {
                  triggerUpdate();
             }
