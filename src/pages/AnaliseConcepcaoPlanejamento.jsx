@@ -303,12 +303,16 @@ export default function AnaliseConcepcaoPlanejamento() {
                                                         const tempoExecutadoTotal = execucoes
                                                             .filter(e => e.status === "Finalizado")
                                                             .reduce((sum, e) => sum + (e.tempo_total || 0), 0);
+
+                                                        // Usar tempo_executado do planejamento se disponível
+                                                        const tempoExibir = planejamento.tempo_executado || tempoExecutadoTotal;
+
                                                         return (
                                                             <TableRow key={planejamento.id}>
                                                                 <TableCell>{idx === 0 ? `${doc.disciplina || '-'}` : ""}</TableCell>
                                                                 <TableCell>{planejamento.descritivo || atividade?.atividade || 'Atividade não encontrada'}</TableCell>
-                                                                <TableCell className="text-center">{planejamento.tempo_planejado?.toFixed(1) || "0.0"}h</TableCell>
-                                                                <TableCell className="text-center">{tempoExecutadoTotal.toFixed(1)}h</TableCell>
+                                                                <TableCell className="text-center">{(planejamento.tempo_planejado || 0).toFixed(1)}h</TableCell>
+                                                                <TableCell className="text-center">{tempoExibir.toFixed(1)}h</TableCell>
                                                                 <TableCell className="text-center">{getStatusBadge(planejamento)}</TableCell>
                                                             </TableRow>
                                                         );
