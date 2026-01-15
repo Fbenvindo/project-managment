@@ -424,27 +424,7 @@ export const ActivityTimerProvider = ({ children }) => {
 
             console.log('✅ Nova execução iniciada:', newExec.id);
             setActiveExecution(newExec);
-
-            if (newExec.planejamento_id) {
-                // Atualizar status em background - tentar ambos tipos (Atividade ou Documento)
-                (async () => {
-                    try {
-                        try {
-                            await retryWithBackoff(() => PlanejamentoAtividade.update(newExec.planejamento_id, { status: "em_andamento" }), 2, 500, 'startExecution.updateAtividade');
-                            console.log(`✅ Fundo: PlanejamentoAtividade ${newExec.planejamento_id} atualizado para em_andamento.`);
-                        } catch (e1) {
-                            // Se falhar, tentar PlanejamentoDocumento
-                            await retryWithBackoff(() => PlanejamentoDocumento.update(newExec.planejamento_id, { status: "em_andamento" }), 2, 500, 'startExecution.updateDocumento');
-                            console.log(`✅ Fundo: PlanejamentoDocumento ${newExec.planejamento_id} atualizado para em_andamento.`);
-                        }
-                        triggerUpdate();
-                    } catch (e) {
-                        console.error("Falha em segundo plano ao atualizar status do planejamento", e);
-                    }
-                })();
-            } else {
-                 triggerUpdate();
-            }
+            triggerUpdate();
 
         } catch (error) {
             console.error('❌ Erro ao iniciar execução:', error);
