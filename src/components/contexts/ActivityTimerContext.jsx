@@ -426,27 +426,16 @@ export const ActivityTimerProvider = ({ children }) => {
             setActiveExecution(newExec);
 
             if (newExec.planejamento_id) {
-                // Atualizar status em background - já sabemos o tipo pois foi criado ou buscado
+                // Atualizar status em background - tentar ambos tipos (Atividade ou Documento)
                 (async () => {
                     try {
-                        // Se é atividade rápida (criada agora), buscar em PlanejamentoAtividade
-                        // Senão, tentar ambos
-                        const isQuickActivity = !executionData.planejamento_id;
-                        
-                        if (isQuickActivity) {
-                            // Atividade rápida - sempre em PlanejamentoAtividade
+                        try {
                             await retryWithBackoff(() => PlanejamentoAtividade.update(newExec.planejamento_id, { status: "em_andamento" }), 2, 500, 'startExecution.updateAtividade');
-                            console.log(`✅ Fundo: PlanejamentoAtividade (atividade rápida) ${newExec.planejamento_id} atualizado para em_andamento.`);
-                        } else {
-                            // Atividade normal - tentar ambos
-                            try {
-                                await retryWithBackoff(() => PlanejamentoAtividade.update(newExec.planejamento_id, { status: "em_andamento" }), 2, 500, 'startExecution.updateAtividade');
-                                console.log(`✅ Fundo: PlanejamentoAtividade ${newExec.planejamento_id} atualizado para em_andamento.`);
-                            } catch (e1) {
-                                // Se falhar, tentar PlanejamentoDocumento
-                                await retryWithBackoff(() => PlanejamentoDocumento.update(newExec.planejamento_id, { status: "em_andamento" }), 2, 500, 'startExecution.updateDocumento');
-                                console.log(`✅ Fundo: PlanejamentoDocumento ${newExec.planejamento_id} atualizado para em_andamento.`);
-                            }
+                            console.log(`✅ Fundo: PlanejamentoAtividade ${newExec.planejamento_id} atualizado para em_andamento.`);
+                        } catch (e1) {
+                            // Se falhar, tentar PlanejamentoDocumento
+                            await retryWithBackoff(() => PlanejamentoDocumento.update(newExec.planejamento_id, { status: "em_andamento" }), 2, 500, 'startExecution.updateDocumento');
+                            console.log(`✅ Fundo: PlanejamentoDocumento ${newExec.planejamento_id} atualizado para em_andamento.`);
                         }
                         triggerUpdate();
                     } catch (e) {
