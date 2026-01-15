@@ -214,6 +214,9 @@ export const ActivityTimerProvider = ({ children }) => {
                 if (finalStatus === 'concluido') {
                     updateData.status = 'concluido';
                     updateData.termino_real = format(new Date(), 'yyyy-MM-dd');
+                    if (!planejamento.inicio_real) {
+                        updateData.inicio_real = diaParaRegistrar;
+                    }
 
                     console.log(`   🏁 Finalizando atividade normal...`);
                     console.log(`      Tempo planejado original: ${planejamento.tempo_planejado}h`);
@@ -246,9 +249,15 @@ export const ActivityTimerProvider = ({ children }) => {
                     if (novoTempoExecutado >= (Number(planejamento.tempo_planejado) || 0)) {
                         updateData.status = 'concluido';
                         updateData.termino_real = format(new Date(), 'yyyy-MM-dd');
+                        if (!planejamento.inicio_real) {
+                            updateData.inicio_real = diaParaRegistrar;
+                        }
                         console.log(`   🎯 Tempo planejado atingido - marcando como concluída`);
                     } else {
                         updateData.status = 'em_andamento';
+                        if (!planejamento.inicio_real) {
+                            updateData.inicio_real = diaParaRegistrar;
+                        }
                         console.log(`   ▶️ Marcando como em andamento`);
                     }
                 }
