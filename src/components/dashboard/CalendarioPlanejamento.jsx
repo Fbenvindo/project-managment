@@ -1622,19 +1622,37 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       setEnrichedData([]); // Clear enriched data as well
       return;
     }
-    
+
     setIsCalendarLoading(true);
     try {
         console.log(`📅 Carregando dados do calendário para: ${userFilter}`);
-        
-        const planFilter = userFilter !== 'all' ? { executor_principal: userFilter } : {};
-        const execFilter = userFilter !== 'all' ? { usuario: userFilter } : {};
 
-        const [planosAtividade, planosDocumento, execs] = await Promise.all([
-            retryWithBackoff(() => PlanejamentoAtividade.filter(planFilter), 3, 1500, 'calendar.loadPlansAtividade'),
-            retryWithBackoff(() => PlanejamentoDocumento.filter(planFilter), 3, 1500, 'calendar.loadPlansDocumento'),
-            retryWithBackoff(() => Execucao.filter(execFilter), 3, 1500, 'calendar.loadExecs')
-        ]);
+        // Buscar atividades onde o usuário é executor principal OU está na lista de executores
+        let planosAtividade = [];
+        let planosDocumento = [];
+
+        if (userFilter !== 'all') {
+          // Buscar como executor principal
+          const planosExecPrincipal = await retryWithBackoff(() => PlanejamentoAtividade.filter({ executor_principal: userFilter }), 3, 1500, 'calendar.loadPlansAtividade.principal');
+          const planosDocExecPrincipal = await retryWithBackoff(() => PlanejamentoDocumento.filter({ executor_principal: userFilter }), 3, 1500, 'calendar.loadPlansDocumento.principal');
+
+          // Buscar TODOS os planejamentos e filtrar onde o usuário está na lista de executores
+          const todosPlanos = await retryWithBackoff(() => PlanejamentoAtividade.list(), 3, 1500, 'calendar.loadPlansAtividade.all');
+          const todosDocPlanos = await retryWithBackoff(() => PlanejamentoDocumento.list(), 3, 1500, 'calendar.loadPlansDocumento.all');
+
+          const planosComExecutor = todosPlanos.filter(p => p.executores && Array.isArray(p.executores) && p.executores.includes(userFilter) && p.executor_principal !== userFilter);
+          const docPlanosComExecutor = todosDocPlanos.filter(p => p.executores && Array.isArray(p.executores) && p.executores.includes(userFilter) && p.executor_principal !== userFilter);
+
+          // Combinar todos os resultados
+          planosAtividade = [...planosExecPrincipal, ...planosComExecutor];
+          planosDocumento = [...planosDocExecPrincipal, ...docPlanosComExecutor];
+        } else {
+          planosAtividade = await retryWithBackoff(() => PlanejamentoAtividade.list(), 3, 1500, 'calendar.loadPlansAtividade');
+          planosDocumento = await retryWithBackoff(() => PlanejamentoDocumento.list(), 3, 1500, 'calendar.loadPlansDocumento');
+        }
+
+        const execFilter = userFilter !== 'all' ? { usuario: userFilter } : {};
+        const execs = await retryWithBackoff(() => Execucao.filter(execFilter), 3, 1500, 'calendar.loadExecs');
         
         const planosAtividadeComTipo = (planosAtividade || []).map(p => ({ ...p, tipo_planejamento: 'atividade' }));
         const planosDocumentoComTipo = (planosDocumento || []).map(p => ({ ...p, tipo_planejamento: 'documento' }));
