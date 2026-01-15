@@ -2542,7 +2542,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           isViewingAllUsers={isViewingAllUsers}
           isGestao={isGestao}
           isApoio={isApoio}
-          usuariosPermitidos={usuariosPermitidos}
           />
         <DragDropContext onDragEnd={onDragEnd}>
           <CardContent className="p-0 flex-1">
