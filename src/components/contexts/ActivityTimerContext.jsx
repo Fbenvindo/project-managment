@@ -255,16 +255,23 @@ export const ActivityTimerProvider = ({ children }) => {
 
             console.log(`   💾 Salvando atualização no banco...`);
             console.log(`   📦 Dados a serem salvos:`, updateData);
+            console.log(`   📦 Tipo de entidade: ${isDocumento ? 'PlanejamentoDocumento' : 'PlanejamentoAtividade'}`);
 
             const entityToUpdate = isDocumento ? PlanejamentoDocumento : PlanejamentoAtividade;
-            await retryWithBackoff(
+            
+            const updatedPlano = await retryWithBackoff(
                 () => entityToUpdate.update(planejamento.id, updateData),
                 3, 1000, 'updatePlanejamento.update'
             );
             
             console.log(`✅ [updatePlanejamento] ${isDocumento ? 'PlanejamentoDocumento' : 'PlanejamentoAtividade'} ${planejamento.id} ATUALIZADO COM SUCESSO`);
-            console.log(`   Novo tempo_executado: ${updateData.tempo_executado?.toFixed(2)}h`);
-            console.log(`   Status: ${updateData.status}`);
+            console.log(`   Resposta do servidor:`, updatedPlano);
+            console.log(`   Novo tempo_executado: ${updatedPlano.tempo_executado?.toFixed(2)}h`);
+            console.log(`   Status salvo: ${updatedPlano.status}`);
+            console.log(`   Status esperado: ${updateData.status}`);
+            if (updatedPlano.status !== updateData.status) {
+                console.error(`   ❌ ERRO: Status não foi atualizado corretamente! Esperado: ${updateData.status}, Recebido: ${updatedPlano.status}`);
+            }
             if (updateData.observacao) {
                 console.log(`   Observação salva: "${updateData.observacao}"`);
             }
