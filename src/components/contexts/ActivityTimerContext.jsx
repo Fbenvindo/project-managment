@@ -506,8 +506,12 @@ export const ActivityTimerProvider = ({ children }) => {
                 console.log(`🔄 [pauseExecution] Atualizando planejamento ${execution.planejamento_id}...`);
                 // Usar a data de início da execução para registrar as horas no dia correto
                 const diaExecucao = execution.inicio ? format(parseISO(execution.inicio), 'yyyy-MM-dd') : format(agora, 'yyyy-MM-dd');
-                await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'pausado', observacao, diaExecucao);
-                console.log('✅ [pauseExecution] Planejamento atualizado');
+                try {
+                    await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'pausado', observacao, diaExecucao);
+                    console.log('✅ [pauseExecution] Planejamento atualizado');
+                } catch (updateError) {
+                    console.warn('⚠️ [pauseExecution] Falha ao atualizar planejamento (continuando mesmo assim):', updateError.message);
+                }
             }
             
             await new Promise(resolve => setTimeout(resolve, 500));
