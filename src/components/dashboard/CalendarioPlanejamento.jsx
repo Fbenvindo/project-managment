@@ -1657,9 +1657,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         const planosAtividadeComTipo = (planosAtividade || []).map(p => ({ ...p, tipo_planejamento: 'atividade' }));
         const planosDocumentoComTipo = (planosDocumento || []).map(p => ({ ...p, tipo_planejamento: 'documento' }));
         const todosPlanejamentos = [...planosAtividadeComTipo, ...planosDocumentoComTipo];
-        
-        console.log(`✅ Dados carregados: ${todosPlanejamentos.length} planejamentos, ${execs?.length || 0} execuções`);
-        
+
+        console.log(`✅ Dados carregados: ${todosPlanejamentos.length} planejamentos (${planosAtividade.length} atividades + ${planosDocumento.length} documentos), ${execs?.length || 0} execuções`);
+
         setPlanejamentos(todosPlanejamentos);
         setExecucoes(execs || []);
         
