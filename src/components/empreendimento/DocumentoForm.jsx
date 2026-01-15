@@ -201,8 +201,13 @@ export default function DocumentoForm({
     });
 
     console.log(`   ✅ Total de atividades disponíveis: ${atividadesRelacionadas.length}`);
-
-    const fatorDificuldade = parseFloat(formData.fator_dificuldade) || 1;
+    
+    if (atividadesRelacionadas.length > 0) {
+      console.log(`   📋 Primeiras atividades encontradas:`);
+      atividadesRelacionadas.slice(0, 3).forEach(ativ => {
+        console.log(`      - ${ativ.atividade} (${ativ.disciplina}/${ativ.subdisciplina}) - ${ativ.tempo}h/m² - Etapa: ${ativ.etapa}`);
+      });
+    }
 
     const tempos = {
       total: 0,
