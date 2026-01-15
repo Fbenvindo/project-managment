@@ -122,7 +122,9 @@ export default function AnaliseConcepcaoPlanejamento() {
               horasPorDia = horasExecutadasPorDia;
             }
 
-            await PlanejamentoAtividade.update(planejamento.id, {
+            // Atualizar o tipo correto de planejamento
+            const EntityToUpdate = planejamento.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
+            await EntityToUpdate.update(planejamento.id, {
                 horas_por_dia: horasPorDia,
                 horas_executadas_por_dia: horasExecutadasPorDia,
                 tempo_executado: totalTempoExecutado,
