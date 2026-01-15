@@ -348,7 +348,7 @@ export default function DocumentosTab({
             return false;
           }
 
-          const disciplinaMatch = ativ.disciplina === 'Gestão';
+          const disciplinaMatch = ativ.disciplina === disciplinaDoc;
           const subdisciplinaMatch = subdisciplinasDoc.includes(ativ.subdisciplina);
           return disciplinaMatch && subdisciplinaMatch;
         });
@@ -1059,7 +1059,7 @@ export default function DocumentosTab({
           return false;
         }
 
-        const disciplinaMatch = ativ.disciplina === 'Gestão';
+        const disciplinaMatch = ativ.disciplina === disciplinaDoc;
         const subdisciplinaMatch = subdisciplinasDoc.includes(ativ.subdisciplina);
         return disciplinaMatch && subdisciplinaMatch;
       });
