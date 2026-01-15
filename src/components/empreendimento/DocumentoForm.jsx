@@ -238,14 +238,18 @@ export default function DocumentoForm({
         console.log(`   📝 Atividade "${ativ.atividade}" tem override de tempo: ${tempoBase}h`);
       }
       
+      console.log(`   🔍 Atividade "${ativ.atividade}": tempoBase=${tempoBase}h, área=${areaPavimento}m², fator=${fatorDificuldade}`);
+      
       // QUARTO: Calcular tempo final
-      // Se não houver pavimento, usar apenas tempo base * fator
-      // Se houver pavimento, usar tempo base * área * fator
-      const tempoCalculado = areaPavimento && areaPavimento > 0
-        ? tempoBase * areaPavimento * fatorDificuldade
-        : tempoBase * fatorDificuldade;
+      // CORRIGIDO: O tempo base JÁ É EM HORAS TOTAIS, NÃO h/m²
+      // Apenas multiplicar pelo fator de dificuldade
+      const tempoCalculado = tempoBase * fatorDificuldade;
 
-      console.log(`   ✅ Atividade "${ativ.atividade}": ${tempoCalculado.toFixed(2)}h`);
+      console.log(`   ✅ Atividade "${ativ.atividade}": ${tempoCalculado.toFixed(2)}h (SEM multiplicar pela área)`);
+      
+      if (areaPavimento && areaPavimento > 0) {
+        console.log(`   ⚠️ AVISO: Área ${areaPavimento}m² NÃO foi multiplicada - tempo base já é total`);
+      }
 
       // MODIFICADO: Usar etapa com override se existir
       const etapaFinal = etapaOverridesMap.has(ativ.id)
