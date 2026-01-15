@@ -1636,12 +1636,31 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           const planosExecPrincipal = await retryWithBackoff(() => PlanejamentoAtividade.filter({ executor_principal: userFilter }), 3, 1500, 'calendar.loadPlansAtividade.principal');
           const planosDocExecPrincipal = await retryWithBackoff(() => PlanejamentoDocumento.filter({ executor_principal: userFilter }), 3, 1500, 'calendar.loadPlansDocumento.principal');
 
+          console.log(`📊 Executor principal: ${planosExecPrincipal.length} atividades, ${planosDocExecPrincipal.length} documentos`);
+
           // Buscar TODOS os planejamentos e filtrar onde o usuário está na lista de executores
           const todosPlanos = await retryWithBackoff(() => PlanejamentoAtividade.list(), 3, 1500, 'calendar.loadPlansAtividade.all');
           const todosDocPlanos = await retryWithBackoff(() => PlanejamentoDocumento.list(), 3, 1500, 'calendar.loadPlansDocumento.all');
 
-          const planosComExecutor = todosPlanos.filter(p => p.executores && Array.isArray(p.executores) && p.executores.includes(userFilter) && p.executor_principal !== userFilter);
-          const docPlanosComExecutor = todosDocPlanos.filter(p => p.executores && Array.isArray(p.executores) && p.executores.includes(userFilter) && p.executor_principal !== userFilter);
+          console.log(`📊 Total de planejamentos no sistema: ${todosPlanos.length} atividades, ${todosDocPlanos.length} documentos`);
+
+          const planosComExecutor = todosPlanos.filter(p => {
+            const temExecutor = p.executores && Array.isArray(p.executores) && p.executores.includes(userFilter) && p.executor_principal !== userFilter;
+            if (temExecutor) {
+              console.log(`✅ Atividade ${p.id} incluída - executores:`, p.executores, `principal: ${p.executor_principal}`);
+            }
+            return temExecutor;
+          });
+
+          const docPlanosComExecutor = todosDocPlanos.filter(p => {
+            const temExecutor = p.executores && Array.isArray(p.executores) && p.executores.includes(userFilter) && p.executor_principal !== userFilter;
+            if (temExecutor) {
+              console.log(`✅ Documento ${p.id} incluído - executores:`, p.executores, `principal: ${p.executor_principal}`);
+            }
+            return temExecutor;
+          });
+
+          console.log(`📊 Como executor adicional: ${planosComExecutor.length} atividades, ${docPlanosComExecutor.length} documentos`);
 
           // Combinar todos os resultados
           planosAtividade = [...planosExecPrincipal, ...planosComExecutor];
