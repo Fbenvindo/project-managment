@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2, Save, Loader2, Upload, Download } from "lucide-react";
+import { Plus, Trash2, Save, Loader2, Upload, Download, Copy, ArrowDown, ArrowRight } from "lucide-react";
 import { DataCadastro, Documento } from "@/entities/all";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { format } from "date-fns";
@@ -244,6 +244,96 @@ export default function CadastroTab({ empreendimento }) {
       novasDatas[etapa][revisao] = valor;
       
       return { ...linha, datas: novasDatas };
+    }));
+  };
+
+  const copiarDataParaBaixo = (linhaId, etapa, revisao) => {
+    const linhaIndex = linhas.findIndex(l => l.id === linhaId);
+    if (linhaIndex === -1) return;
+    
+    const valorOriginal = getDataValue(linhas[linhaIndex], etapa, revisao);
+    if (!valorOriginal) {
+      alert('Selecione uma data primeiro');
+      return;
+    }
+    
+    if (!confirm(`Copiar a data ${format(new Date(valorOriginal), 'dd/MM/yyyy')} para todas as células abaixo nesta coluna?`)) return;
+    
+    setHasUnsavedChanges(true);
+    setLinhas(prev => prev.map((linha, idx) => {
+      if (idx <= linhaIndex) return linha;
+      
+      const novasDatas = { ...linha.datas };
+      if (!novasDatas[etapa]) {
+        novasDatas[etapa] = {};
+      }
+      novasDatas[etapa][revisao] = valorOriginal;
+      
+      return { ...linha, datas: novasDatas };
+    }));
+  };
+
+  const copiarLinhaParaProxima = (linhaId) => {
+    const linhaIndex = linhas.findIndex(l => l.id === linhaId);
+    if (linhaIndex === -1 || linhaIndex === linhas.length - 1) return;
+    
+    const linhaOriginal = linhas[linhaIndex];
+    if (!linhaOriginal.datas || Object.keys(linhaOriginal.datas).length === 0) {
+      alert('Esta linha não possui datas para copiar');
+      return;
+    }
+    
+    if (!confirm('Copiar todas as datas desta linha para a próxima linha?')) return;
+    
+    setHasUnsavedChanges(true);
+    setLinhas(prev => prev.map((linha, idx) => {
+      if (idx !== linhaIndex + 1) return linha;
+      
+      return { ...linha, datas: { ...linhaOriginal.datas } };
+    }));
+  };
+
+  const copiarDataParaDireita = (linhaId, etapa, revisao) => {
+    const linha = linhas.find(l => l.id === linhaId);
+    if (!linha) return;
+    
+    const valorOriginal = getDataValue(linha, etapa, revisao);
+    if (!valorOriginal) {
+      alert('Selecione uma data primeiro');
+      return;
+    }
+    
+    const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
+    const etapaIndex = etapasVisiveis.indexOf(etapa);
+    const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+    const revisaoIndex = revisoesEtapa.indexOf(revisao);
+    
+    if (!confirm(`Copiar a data ${format(new Date(valorOriginal), 'dd/MM/yyyy')} para todas as células à direita nesta linha?`)) return;
+    
+    setHasUnsavedChanges(true);
+    setLinhas(prev => prev.map(l => {
+      if (l.id !== linhaId) return l;
+      
+      const novasDatas = { ...l.datas };
+      
+      // Copiar para revisões seguintes da mesma etapa
+      for (let i = revisaoIndex + 1; i < revisoesEtapa.length; i++) {
+        if (!novasDatas[etapa]) novasDatas[etapa] = {};
+        novasDatas[etapa][revisoesEtapa[i]] = valorOriginal;
+      }
+      
+      // Copiar para próximas etapas
+      for (let i = etapaIndex + 1; i < etapasVisiveis.length; i++) {
+        const proxEtapa = etapasVisiveis[i];
+        const proxRevisoes = revisoesPorEtapa[proxEtapa] || DEFAULT_REVISOES;
+        
+        if (!novasDatas[proxEtapa]) novasDatas[proxEtapa] = {};
+        proxRevisoes.forEach(rev => {
+          novasDatas[proxEtapa][rev] = valorOriginal;
+        });
+      }
+      
+      return { ...l, datas: novasDatas };
     }));
   };
 
@@ -698,10 +788,23 @@ export default function CadastroTab({ empreendimento }) {
                     const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
                     return (
                       <tr key={linha.id} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 p-2 sticky left-0 bg-white z-20 font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '350px', minWidth: '350px', maxWidth: '350px' }}>
-                          <div className="truncate" title={doc?.arquivo || doc?.numero || 'Sem folha'}>
-                            {doc?.arquivo || doc?.numero || 'Sem folha'}
-                          </div>
+                        <td className="border border-gray-300 p-2 sticky left-0 bg-white z-20 font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] group" style={{ width: '350px', minWidth: '350px', maxWidth: '350px' }}>
+                         <div className="flex items-center justify-between gap-2">
+                           <div className="truncate" title={doc?.arquivo || doc?.numero || 'Sem folha'}>
+                             {doc?.arquivo || doc?.numero || 'Sem folha'}
+                           </div>
+                           {linhasPorDisciplina.findIndex(([d]) => d === disciplina) !== -1 && 
+                            linhasPorDisciplina.find(([d]) => d === disciplina)[1].indexOf(linha) < 
+                            linhasPorDisciplina.find(([d]) => d === disciplina)[1].length - 1 && (
+                             <button
+                               onClick={() => copiarLinhaParaProxima(linha.id)}
+                               className="text-purple-600 hover:text-purple-800 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                               title="Copiar linha para próxima"
+                             >
+                               <Copy className="w-3 h-3" />
+                             </button>
+                           )}
+                         </div>
                         </td>
                         {etapasVisiveis.map((etapa, etapaIdx) => {
                           const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
@@ -713,12 +816,32 @@ export default function CadastroTab({ empreendimento }) {
                                   className="border border-gray-300 p-1"
                                   style={{ width: '150px', minWidth: '150px' }}
                                 >
+                                    <div className="flex gap-1 group">
                                     <Input
-                                    type="date"
-                                    value={getDataValue(linha, etapa, revisao)}
-                                    onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
-                                    className={`h-8 text-xs w-full ${!getDataValue(linha, etapa, revisao) ? '[color-scheme:light] [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-calendar-picker-indicator]:opacity-100' : ''}`}
-                                  />
+                                      type="date"
+                                      value={getDataValue(linha, etapa, revisao)}
+                                      onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
+                                      className={`h-8 text-xs w-full ${!getDataValue(linha, etapa, revisao) ? '[color-scheme:light] [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-calendar-picker-indicator]:opacity-100' : ''}`}
+                                    />
+                                    {getDataValue(linha, etapa, revisao) && (
+                                      <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <button
+                                          onClick={() => copiarDataParaBaixo(linha.id, etapa, revisao)}
+                                          className="text-blue-600 hover:text-blue-800 p-1"
+                                          title="Copiar para baixo"
+                                        >
+                                          <ArrowDown className="w-3 h-3" />
+                                        </button>
+                                        <button
+                                          onClick={() => copiarDataParaDireita(linha.id, etapa, revisao)}
+                                          className="text-green-600 hover:text-green-800 p-1"
+                                          title="Copiar para direita"
+                                        >
+                                          <ArrowRight className="w-3 h-3" />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
                                 </td>
                               ))}
                               <td 
