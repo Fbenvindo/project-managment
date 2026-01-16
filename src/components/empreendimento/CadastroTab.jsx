@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2, Save, Loader2, Upload, Download, Copy, ArrowDown, ArrowRight } from "lucide-react";
+import { Plus, Trash2, Save, Loader2, Upload, Download, Copy, ArrowDown, ArrowRight, Wand2 } from "lucide-react";
 import { DataCadastro, Documento } from "@/entities/all";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { format } from "date-fns";
@@ -887,37 +887,21 @@ export default function CadastroTab({ empreendimento }) {
                                 >
                                     <div className="flex gap-1 group">
                                     <Input
-                                      type="date"
-                                      value={getDataValue(linha, etapa, revisao)}
-                                      onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
-                                      className={`h-8 text-xs w-full ${!getDataValue(linha, etapa, revisao) ? '[color-scheme:light] [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-calendar-picker-indicator]:opacity-100' : ''}`}
+                                     type="date"
+                                     value={getDataValue(linha, etapa, revisao)}
+                                     onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
+                                     className={`h-8 text-xs w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:hidden [&::-webkit-clear-button]:hidden ${!getDataValue(linha, etapa, revisao) ? '[color-scheme:light] [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-calendar-picker-indicator]:opacity-100' : ''}`}
                                     />
                                     {getDataValue(linha, etapa, revisao) && (
-                                      <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <button
-                                          onClick={() => copiarDataParaBaixo(linha.id, etapa, revisao)}
-                                          className="text-blue-600 hover:text-blue-800 p-1"
-                                          title="Copiar para baixo"
-                                        >
-                                          <ArrowDown className="w-3 h-3" />
-                                        </button>
-                                        <button
-                                          onClick={() => copiarDataParaProximaColuna(linha.id, etapa, revisao)}
-                                          className="text-purple-600 hover:text-purple-800 p-1"
-                                          title="Copiar para próxima coluna"
-                                        >
-                                          <ArrowRight className="w-3 h-3" />
-                                        </button>
-                                        <button
-                                          onClick={() => copiarDataParaDireita(linha.id, etapa, revisao)}
-                                          className="text-green-600 hover:text-green-800 p-1"
-                                          title="Copiar para todas à direita"
-                                        >
-                                          <ArrowRight className="w-3.5 h-3.5" strokeWidth={3} />
-                                        </button>
-                                      </div>
+                                     <button
+                                       onClick={() => copiarDataParaBaixo(linha.id, etapa, revisao)}
+                                       className="text-purple-600 hover:text-purple-800 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                       title="Preencher todas abaixo"
+                                     >
+                                       <Wand2 className="w-3.5 h-3.5" />
+                                     </button>
                                     )}
-                                  </div>
+                                    </div>
                                 </td>
                               ))}
                               <td 
