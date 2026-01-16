@@ -293,6 +293,46 @@ export default function CadastroTab({ empreendimento }) {
     }));
   };
 
+  const copiarDataParaProximaColuna = (linhaId, etapa, revisao) => {
+    const linha = linhas.find(l => l.id === linhaId);
+    if (!linha) return;
+    
+    const valorOriginal = getDataValue(linha, etapa, revisao);
+    if (!valorOriginal) {
+      alert('Selecione uma data primeiro');
+      return;
+    }
+    
+    const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
+    const etapaIndex = etapasVisiveis.indexOf(etapa);
+    const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+    const revisaoIndex = revisoesEtapa.indexOf(revisao);
+    
+    setHasUnsavedChanges(true);
+    setLinhas(prev => prev.map(l => {
+      if (l.id !== linhaId) return l;
+      
+      const novasDatas = { ...l.datas };
+      
+      // Se há próxima revisão na mesma etapa
+      if (revisaoIndex < revisoesEtapa.length - 1) {
+        if (!novasDatas[etapa]) novasDatas[etapa] = {};
+        novasDatas[etapa][revisoesEtapa[revisaoIndex + 1]] = valorOriginal;
+      } 
+      // Senão, vai para primeira revisão da próxima etapa
+      else if (etapaIndex < etapasVisiveis.length - 1) {
+        const proxEtapa = etapasVisiveis[etapaIndex + 1];
+        const proxRevisoes = revisoesPorEtapa[proxEtapa] || DEFAULT_REVISOES;
+        if (proxRevisoes.length > 0) {
+          if (!novasDatas[proxEtapa]) novasDatas[proxEtapa] = {};
+          novasDatas[proxEtapa][proxRevisoes[0]] = valorOriginal;
+        }
+      }
+      
+      return { ...l, datas: novasDatas };
+    }));
+  };
+
   const copiarDataParaDireita = (linhaId, etapa, revisao) => {
     const linha = linhas.find(l => l.id === linhaId);
     if (!linha) return;
@@ -833,11 +873,18 @@ export default function CadastroTab({ empreendimento }) {
                                           <ArrowDown className="w-3 h-3" />
                                         </button>
                                         <button
-                                          onClick={() => copiarDataParaDireita(linha.id, etapa, revisao)}
-                                          className="text-green-600 hover:text-green-800 p-1"
-                                          title="Copiar para direita"
+                                          onClick={() => copiarDataParaProximaColuna(linha.id, etapa, revisao)}
+                                          className="text-purple-600 hover:text-purple-800 p-1"
+                                          title="Copiar para próxima coluna"
                                         >
                                           <ArrowRight className="w-3 h-3" />
+                                        </button>
+                                        <button
+                                          onClick={() => copiarDataParaDireita(linha.id, etapa, revisao)}
+                                          className="text-green-600 hover:text-green-800 p-1"
+                                          title="Copiar para todas à direita"
+                                        >
+                                          <ArrowRight className="w-3.5 h-3.5" strokeWidth={3} />
                                         </button>
                                       </div>
                                     )}
