@@ -95,6 +95,7 @@ export default function CadastroTab({ empreendimento }) {
       // Criar um mapa de dados existentes por documento_id
       const dataMap = new Map();
       const revisoesMap = {};
+      const revisoesExcluidasMap = {};
       const etapasExcluidasSet = new Set();
       
       if (data && data.length > 0) {
@@ -103,18 +104,29 @@ export default function CadastroTab({ empreendimento }) {
             dataMap.set(item.documento_id, item);
           }
           
-          // Detectar revisões existentes por etapa
+          // Detectar revisões existentes e excluídas por etapa
           if (item.datas) {
             Object.entries(item.datas).forEach(([etapa, etapaData]) => {
               if (etapaData && typeof etapaData === 'object') {
                 if (!revisoesMap[etapa]) {
                   revisoesMap[etapa] = new Set(DEFAULT_REVISOES);
                 }
+                if (!revisoesExcluidasMap[etapa]) {
+                  revisoesExcluidasMap[etapa] = new Set();
+                }
+                
                 Object.keys(etapaData).forEach(rev => {
-                  if (rev !== '_excluida') {
+                  if (rev !== '_excluida' && rev !== '_revisoes_excluidas') {
                     revisoesMap[etapa].add(rev);
                   }
                 });
+                
+                // Detectar revisões excluídas
+                if (etapaData._revisoes_excluidas && Array.isArray(etapaData._revisoes_excluidas)) {
+                  etapaData._revisoes_excluidas.forEach(rev => {
+                    revisoesExcluidasMap[etapa].add(rev);
+                  });
+                }
                 
                 // Detectar etapas excluídas
                 if (etapaData._excluida) {
@@ -126,12 +138,15 @@ export default function CadastroTab({ empreendimento }) {
         });
       }
       
-      // Inicializar revisões para todas as etapas
+      // Inicializar revisões para todas as etapas, removendo as excluídas
       const revisoesCompletas = {};
       ETAPAS.forEach(etapa => {
-        revisoesCompletas[etapa] = revisoesMap[etapa] 
+        const todasRevisoes = revisoesMap[etapa] 
           ? Array.from(revisoesMap[etapa]).sort()
           : [...DEFAULT_REVISOES];
+        
+        const revisoesExcluidas = revisoesExcluidasMap[etapa] || new Set();
+        revisoesCompletas[etapa] = todasRevisoes.filter(rev => !revisoesExcluidas.has(rev));
       });
       
       setRevisoesPorEtapa(revisoesCompletas);
@@ -191,12 +206,26 @@ export default function CadastroTab({ empreendimento }) {
       [etapa]: prev[etapa].filter(r => r !== revisao)
     }));
     
-    // Limpar dados da revisão removida apenas desta etapa
+    // Limpar dados e marcar revisão como excluída
     setLinhas(prev => prev.map(linha => {
       const novasDatas = { ...linha.datas };
-      if (novasDatas[etapa] && novasDatas[etapa][revisao]) {
+      if (!novasDatas[etapa]) {
+        novasDatas[etapa] = {};
+      }
+      
+      // Remover dados da revisão
+      if (novasDatas[etapa][revisao]) {
         delete novasDatas[etapa][revisao];
       }
+      
+      // Adicionar à lista de revisões excluídas
+      if (!novasDatas[etapa]._revisoes_excluidas) {
+        novasDatas[etapa]._revisoes_excluidas = [];
+      }
+      if (!novasDatas[etapa]._revisoes_excluidas.includes(revisao)) {
+        novasDatas[etapa]._revisoes_excluidas.push(revisao);
+      }
+      
       return { ...linha, datas: novasDatas };
     }));
   };
