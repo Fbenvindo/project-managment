@@ -1564,7 +1564,7 @@ const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowP
 export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefresh, isDashboardRefreshing }) {
   const { user, userProfile, isColaborador, isGestao, hasPermission, triggerUpdate, perfilAtual, updateKey } = useContext(ActivityTimerContext);
 
-  const [currentDate, setCurrentDate] = useState(new Date());
+  const [currentDate, setCurrentDate] = useState(() => startOfWeek(new Date(), { locale: ptBR }));
   const [viewMode, setViewMode] = useState('week'); 
   
   // **MODIFICADO**: Verificar se é apoio
