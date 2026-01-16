@@ -3,7 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2, Save, Loader2, Upload, Download } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Plus, Trash2, Save, Loader2, Upload, Download, Calendar } from "lucide-react";
 import { DataCadastro, Documento } from "@/entities/all";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { format } from "date-fns";
@@ -30,6 +32,11 @@ export default function CadastroTab({ empreendimento }) {
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFile, setImportFile] = useState(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [selectedLinhas, setSelectedLinhas] = useState([]);
+  const [showBatchModal, setShowBatchModal] = useState(false);
+  const [batchEtapa, setBatchEtapa] = useState('');
+  const [batchRevisao, setBatchRevisao] = useState('');
+  const [batchData, setBatchData] = useState('');
 
   useEffect(() => {
     if (empreendimento?.id && linhas.length === 0) {
@@ -245,6 +252,65 @@ export default function CadastroTab({ empreendimento }) {
       
       return { ...linha, datas: novasDatas };
     }));
+  };
+
+  const handleToggleSelectLinha = (linhaId) => {
+    setSelectedLinhas(prev => {
+      if (prev.includes(linhaId)) {
+        return prev.filter(id => id !== linhaId);
+      } else {
+        return [...prev, linhaId];
+      }
+    });
+  };
+
+  const handleSelectAllDisciplina = (disciplina) => {
+    const linhasDaDisciplina = linhas
+      .filter(linha => {
+        const doc = documentos.find(d => d.id === linha.documento_id);
+        return (doc?.disciplina || 'Sem Disciplina') === disciplina;
+      })
+      .map(l => l.id);
+    
+    const allSelected = linhasDaDisciplina.every(id => selectedLinhas.includes(id));
+    
+    if (allSelected) {
+      setSelectedLinhas(prev => prev.filter(id => !linhasDaDisciplina.includes(id)));
+    } else {
+      setSelectedLinhas(prev => [...new Set([...prev, ...linhasDaDisciplina])]);
+    }
+  };
+
+  const handleApplyBatchData = () => {
+    if (!batchEtapa || !batchRevisao || !batchData) {
+      alert('Por favor, preencha todos os campos');
+      return;
+    }
+
+    if (selectedLinhas.length === 0) {
+      alert('Selecione pelo menos um documento');
+      return;
+    }
+
+    setHasUnsavedChanges(true);
+    setLinhas(prev => prev.map(linha => {
+      if (!selectedLinhas.includes(linha.id)) return linha;
+      
+      const novasDatas = { ...linha.datas };
+      if (!novasDatas[batchEtapa]) {
+        novasDatas[batchEtapa] = {};
+      }
+      novasDatas[batchEtapa][batchRevisao] = batchData;
+      
+      return { ...linha, datas: novasDatas };
+    }));
+
+    setShowBatchModal(false);
+    setBatchEtapa('');
+    setBatchRevisao('');
+    setBatchData('');
+    setSelectedLinhas([]);
+    alert(`Data aplicada em ${selectedLinhas.length} documento(s)`);
   };
 
 
@@ -564,6 +630,20 @@ export default function CadastroTab({ empreendimento }) {
           )}
         </div>
         <div className="flex gap-2">
+          {selectedLinhas.length > 0 && (
+            <Badge variant="secondary" className="px-3 py-2">
+              {selectedLinhas.length} selecionado(s)
+            </Badge>
+          )}
+          <Button
+            variant="outline"
+            onClick={() => setShowBatchModal(true)}
+            disabled={selectedLinhas.length === 0}
+            className="border-purple-500 text-purple-600 hover:bg-purple-50"
+          >
+            <Calendar className="w-4 h-4 mr-2" />
+            Preencher em Lote
+          </Button>
           <Button
             variant="outline"
             onClick={() => setShowImportModal(true)}
@@ -597,7 +677,12 @@ export default function CadastroTab({ empreendimento }) {
         <table className="w-full border-collapse text-sm relative">
           <thead>
             <tr>
-              <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '350px', minWidth: '350px', maxWidth: '350px' }}>Folha</th>
+              <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}>
+                <div className="flex items-center gap-2">
+                  <span className="w-8"></span>
+                  <span>Folha</span>
+                </div>
+              </th>
               {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
                 const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                 const colSpanTotal = revisoesEtapa.length + 1;
@@ -623,7 +708,7 @@ export default function CadastroTab({ empreendimento }) {
               })}
             </tr>
             <tr>
-              <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '350px', minWidth: '350px', maxWidth: '350px' }}></th>
+              <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}></th>
               {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, etapaIdx) => {
                 const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                 const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
@@ -682,7 +767,12 @@ export default function CadastroTab({ empreendimento }) {
                       colSpan={ETAPAS.filter(e => !etapasExcluidas.includes(e)).reduce((acc, etapa) => acc + (revisoesPorEtapa[etapa]?.length || 3) + 1, 1)} 
                       className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-gray-300 p-3"
                     >
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
+                        <Checkbox
+                          checked={linhasDaDisciplina.every(l => selectedLinhas.includes(l.id))}
+                          onCheckedChange={() => handleSelectAllDisciplina(disciplina)}
+                          className="ml-1"
+                        />
                         <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
                         <h3 className="font-semibold text-lg text-gray-800">{disciplina}</h3>
                         <Badge variant="secondary" className="ml-2">
@@ -697,10 +787,16 @@ export default function CadastroTab({ empreendimento }) {
                     const doc = documentos.find(d => d.id === linha.documento_id);
                     const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
                     return (
-                      <tr key={linha.id} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 p-2 sticky left-0 bg-white z-20 font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '350px', minWidth: '350px', maxWidth: '350px' }}>
-                          <div className="truncate" title={doc?.arquivo || doc?.numero || 'Sem folha'}>
-                            {doc?.arquivo || doc?.numero || 'Sem folha'}
+                      <tr key={linha.id} className={`hover:bg-gray-50 ${selectedLinhas.includes(linha.id) ? 'bg-blue-50' : ''}`}>
+                        <td className={`border border-gray-300 p-2 sticky left-0 z-20 font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] ${selectedLinhas.includes(linha.id) ? 'bg-blue-100' : 'bg-white'}`} style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}>
+                          <div className="flex items-center gap-2">
+                            <Checkbox
+                              checked={selectedLinhas.includes(linha.id)}
+                              onCheckedChange={() => handleToggleSelectLinha(linha.id)}
+                            />
+                            <div className="truncate" title={doc?.arquivo || doc?.numero || 'Sem folha'}>
+                              {doc?.arquivo || doc?.numero || 'Sem folha'}
+                            </div>
                           </div>
                         </td>
                         {etapasVisiveis.map((etapa, etapaIdx) => {
@@ -832,6 +928,90 @@ export default function CadastroTab({ empreendimento }) {
             </div>
           </div>
         </DialogContent>
+        </Dialog>
+
+        {/* Modal de Preenchimento em Lote */}
+        <Dialog open={showBatchModal} onOpenChange={setShowBatchModal}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle>Preencher Data em Lote</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="bg-purple-50 border border-purple-200 rounded-lg p-4">
+                <p className="text-sm text-purple-800">
+                  Aplicar a mesma data para <strong>{selectedLinhas.length} documento(s)</strong> selecionado(s)
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Etapa</label>
+                <Select value={batchEtapa} onValueChange={setBatchEtapa}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a etapa" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ETAPAS.filter(e => !etapasExcluidas.includes(e)).map(etapa => (
+                      <SelectItem key={etapa} value={etapa}>
+                        {etapa}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Revisão</label>
+                <Select 
+                  value={batchRevisao} 
+                  onValueChange={setBatchRevisao}
+                  disabled={!batchEtapa}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione a revisão" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {batchEtapa && (revisoesPorEtapa[batchEtapa] || DEFAULT_REVISOES).map(rev => (
+                      <SelectItem key={rev} value={rev}>
+                        {rev}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Data</label>
+                <Input
+                  type="date"
+                  value={batchData}
+                  onChange={(e) => setBatchData(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowBatchModal(false);
+                    setBatchEtapa('');
+                    setBatchRevisao('');
+                    setBatchData('');
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleApplyBatchData}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  <Calendar className="w-4 h-4 mr-2" />
+                  Aplicar Data
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
         </Dialog>
         </div>
         );
