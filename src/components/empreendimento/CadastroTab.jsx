@@ -713,12 +713,21 @@ export default function CadastroTab({ empreendimento }) {
                                   className="border border-gray-300 p-1"
                                   style={{ width: '150px', minWidth: '150px' }}
                                 >
-                                  <Input
-                                    type="date"
-                                    value={getDataValue(linha, etapa, revisao)}
-                                    onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
-                                    className="h-8 text-xs w-full"
-                                  />
+                                    {getDataValue(linha, etapa, revisao) ? (
+                                    <Input
+                                      type="date"
+                                      value={getDataValue(linha, etapa, revisao)}
+                                      onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
+                                      className="h-8 text-xs w-full"
+                                    />
+                                  ) : (
+                                    <Input
+                                      type="date"
+                                      placeholder=""
+                                      onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
+                                      className="h-8 text-xs w-full"
+                                    />
+                                  )}
                                 </td>
                               ))}
                               <td 
