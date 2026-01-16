@@ -30,6 +30,11 @@ export default function CadastroTab({ empreendimento }) {
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFile, setImportFile] = useState(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [selectedFolhas, setSelectedFolhas] = useState(new Set());
+  const [showMassEditModal, setShowMassEditModal] = useState(false);
+  const [massEditEtapa, setMassEditEtapa] = useState('');
+  const [massEditRevisao, setMassEditRevisao] = useState('');
+  const [massEditData, setMassEditData] = useState('');
 
   useEffect(() => {
     if (empreendimento?.id && linhas.length === 0) {
@@ -360,6 +365,60 @@ export default function CadastroTab({ empreendimento }) {
       
       return { ...l, datas: novasDatas };
     }));
+  };
+
+  const toggleSelectFolha = (linhaId) => {
+    setSelectedFolhas(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(linhaId)) {
+        newSet.delete(linhaId);
+      } else {
+        newSet.add(linhaId);
+      }
+      return newSet;
+    });
+  };
+
+  const selectAllFolhas = () => {
+    setSelectedFolhas(new Set(linhas.map(l => l.id)));
+  };
+
+  const clearSelection = () => {
+    setSelectedFolhas(new Set());
+  };
+
+  const handleMassEdit = () => {
+    if (selectedFolhas.size === 0) {
+      alert('Selecione ao menos uma folha');
+      return;
+    }
+    setShowMassEditModal(true);
+  };
+
+  const applyMassEdit = () => {
+    if (!massEditEtapa || !massEditRevisao || !massEditData) {
+      alert('Preencha etapa, revisão e data');
+      return;
+    }
+
+    setHasUnsavedChanges(true);
+    setLinhas(prev => prev.map(linha => {
+      if (!selectedFolhas.has(linha.id)) return linha;
+      
+      const novasDatas = { ...linha.datas };
+      if (!novasDatas[massEditEtapa]) {
+        novasDatas[massEditEtapa] = {};
+      }
+      novasDatas[massEditEtapa][massEditRevisao] = massEditData;
+      
+      return { ...linha, datas: novasDatas };
+    }));
+
+    setShowMassEditModal(false);
+    setMassEditEtapa('');
+    setMassEditRevisao('');
+    setMassEditData('');
+    clearSelection();
   };
 
   const copiarDataParaDireita = (linhaId, etapa, revisao) => {
@@ -723,6 +782,28 @@ export default function CadastroTab({ empreendimento }) {
           )}
         </div>
         <div className="flex gap-2">
+          {selectedFolhas.size > 0 && (
+            <>
+              <Badge variant="outline" className="px-3 py-1">
+                {selectedFolhas.size} folha{selectedFolhas.size > 1 ? 's' : ''} selecionada{selectedFolhas.size > 1 ? 's' : ''}
+              </Badge>
+              <Button
+                variant="outline"
+                onClick={handleMassEdit}
+                className="border-purple-500 text-purple-600 hover:bg-purple-50"
+              >
+                <Wand2 className="w-4 h-4 mr-2" />
+                Preencher em Massa
+              </Button>
+              <Button
+                variant="outline"
+                onClick={clearSelection}
+                className="border-gray-400 text-gray-600 hover:bg-gray-50"
+              >
+                Limpar Seleção
+              </Button>
+            </>
+          )}
           <Button
             variant="outline"
             onClick={() => setShowImportModal(true)}
@@ -756,7 +837,18 @@ export default function CadastroTab({ empreendimento }) {
         <table className="w-full border-collapse text-sm relative">
           <thead>
             <tr>
-              <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '350px', minWidth: '350px', maxWidth: '350px' }}>Folha</th>
+              <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}>
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={linhas.length > 0 && selectedFolhas.size === linhas.length}
+                    onChange={(e) => e.target.checked ? selectAllFolhas() : clearSelection()}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    title="Selecionar todas"
+                  />
+                  <span>Folha</span>
+                </div>
+              </th>
               {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
                 const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                 const colSpanTotal = revisoesEtapa.length + 1;
@@ -782,7 +874,7 @@ export default function CadastroTab({ empreendimento }) {
               })}
             </tr>
             <tr>
-              <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '350px', minWidth: '350px', maxWidth: '350px' }}></th>
+              <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}></th>
               {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, etapaIdx) => {
                 const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                 const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
@@ -857,10 +949,18 @@ export default function CadastroTab({ empreendimento }) {
                     const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
                     return (
                       <tr key={linha.id} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 p-2 sticky left-0 bg-white z-20 font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] group" style={{ width: '350px', minWidth: '350px', maxWidth: '350px' }}>
+                        <td className="border border-gray-300 p-2 sticky left-0 bg-white z-20 font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] group" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}>
                          <div className="flex items-center justify-between gap-2">
-                           <div className="truncate" title={doc?.arquivo || doc?.numero || 'Sem folha'}>
-                             {doc?.arquivo || doc?.numero || 'Sem folha'}
+                           <div className="flex items-center gap-2 flex-1 min-w-0">
+                             <input
+                               type="checkbox"
+                               checked={selectedFolhas.has(linha.id)}
+                               onChange={() => toggleSelectFolha(linha.id)}
+                               className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
+                             />
+                             <div className="truncate" title={doc?.arquivo || doc?.numero || 'Sem folha'}>
+                               {doc?.arquivo || doc?.numero || 'Sem folha'}
+                             </div>
                            </div>
                            {linhasPorDisciplina.findIndex(([d]) => d === disciplina) !== -1 && 
                             linhasPorDisciplina.find(([d]) => d === disciplina)[1].indexOf(linha) < 
@@ -1015,6 +1115,83 @@ export default function CadastroTab({ empreendimento }) {
             </div>
           </div>
         </DialogContent>
+        </Dialog>
+
+        {/* Modal de Preenchimento em Massa */}
+        <Dialog open={showMassEditModal} onOpenChange={setShowMassEditModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Preencher Data em Massa</DialogTitle>
+            </DialogHeader>
+
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  Preencher data para <strong>{selectedFolhas.size}</strong> folha{selectedFolhas.size > 1 ? 's' : ''} selecionada{selectedFolhas.size > 1 ? 's' : ''}
+                </p>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Etapa</label>
+                <select
+                  value={massEditEtapa}
+                  onChange={(e) => setMassEditEtapa(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                >
+                  <option value="">Selecione a etapa</option>
+                  {ETAPAS.filter(e => !etapasExcluidas.includes(e)).map(etapa => (
+                    <option key={etapa} value={etapa}>{etapa}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Revisão</label>
+                <select
+                  value={massEditRevisao}
+                  onChange={(e) => setMassEditRevisao(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                  disabled={!massEditEtapa}
+                >
+                  <option value="">Selecione a revisão</option>
+                  {massEditEtapa && (revisoesPorEtapa[massEditEtapa] || DEFAULT_REVISOES).map(rev => (
+                    <option key={rev} value={rev}>{rev}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-gray-700">Data</label>
+                <Input
+                  type="date"
+                  value={massEditData}
+                  onChange={(e) => setMassEditData(e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-4">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowMassEditModal(false);
+                    setMassEditEtapa('');
+                    setMassEditRevisao('');
+                    setMassEditData('');
+                  }}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={applyMassEdit}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  <Wand2 className="w-4 h-4 mr-2" />
+                  Aplicar a {selectedFolhas.size} Folha{selectedFolhas.size > 1 ? 's' : ''}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
         </Dialog>
         </div>
         );
