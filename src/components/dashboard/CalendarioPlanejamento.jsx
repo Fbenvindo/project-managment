@@ -77,12 +77,21 @@ const calculateActivityStatus = (plano, allPlanejamentos = []) => {
     return plano.status;
   }
 
-  // **PRIORIDADE 1**: Se está concluída, SEMPRE retorna concluída (não importa se estava atrasada)
+  // **PRIORIDADE 1**: Se tempo_executado >= tempo_planejado, considerar concluída AUTOMATICAMENTE
+  const tempoExecutado = Number(plano.tempo_executado) || 0;
+  const tempoPlanejado = Number(plano.tempo_planejado) || 0;
+  
+  if (tempoPlanejado > 0 && tempoExecutado >= tempoPlanejado) {
+    console.log(`✅ Atividade ${plano.id} considerada CONCLUÍDA: ${tempoExecutado}h executadas >= ${tempoPlanejado}h planejadas`);
+    return 'concluido';
+  }
+
+  // **PRIORIDADE 2**: Se está marcada explicitamente como concluída no banco
   if (plano.status === 'concluido') {
     return 'concluido';
   }
 
-  // **PRIORIDADE 2**: Se está marcada como atrasada manualmente OU automaticamente, retorna atrasado
+  // **PRIORIDADE 3**: Se está marcada como atrasada manualmente OU automaticamente, retorna atrasado
   if (plano.status === 'atrasado' || isActivityOverdue(plano)) {
     return 'atrasado';
   }
