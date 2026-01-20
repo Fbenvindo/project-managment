@@ -750,9 +750,15 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
             ) : (
                <div className="font-mono text-blue-600 flex flex-col items-end">
                  <span className="font-semibold text-sm" title="Horas para este dia">{horasDoDia.toFixed(1)}h</span>
-                 <span className="text-xs text-gray-500 font-normal" title="Executado / Total Planejado">
-                    ({tempoExecutado.toFixed(1)}h / {tempoPlanejado.toFixed(1)}h)
-                </span>
+                 {realStatus === 'concluido' ? (
+                   <span className="text-xs text-green-600 font-medium" title="Tempo total executado">
+                      ✓ {tempoExecutado.toFixed(1)}h executadas
+                   </span>
+                 ) : (
+                   <span className="text-xs text-gray-500 font-normal" title="Executado / Total Planejado">
+                      ({tempoExecutado.toFixed(1)}h / {tempoPlanejado.toFixed(1)}h)
+                   </span>
+                 )}
               </div>
             )}
             
