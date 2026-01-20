@@ -81,10 +81,14 @@ export default function FinalizarAtividadeButton({ plano, displayName, onSuccess
         updateData.observacao = observacao.trim();
       }
 
+      console.log(`📝 [Finalizar] Atualizando planejamento ${plano.id} com:`, updateData);
+      
       await retryWithBackoff(
         () => entityToUpdate.update(plano.id, updateData),
         3, 1000, 'finalizarAtividade.update'
       );
+
+      console.log(`✅ [Finalizar] Planejamento ${plano.id} atualizado no banco de dados`);
 
       const horasLiberadas = plano.tempo_planejado - tempoTotalExecutado;
       
