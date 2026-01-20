@@ -368,11 +368,11 @@ export default function AtaPlanejamento() {
         providencias: providencias.map(p => ({
           projeto: p.projeto,
           providencias: p.providencias,
-          resposta: p.resposta,
-          responsaveis: p.responsaveis,
-          dataReuniao: p.dataReuniao,
-          dataRetorno: p.dataRetorno,
-          status: p.status
+          resposta: p.resposta || '',
+          responsaveis: p.responsaveis || [],
+          dataReuniao: p.dataReuniao || '',
+          dataRetorno: p.dataRetorno || '',
+          status: p.status || 'pendente'
         }))
       };
 
