@@ -315,35 +315,31 @@ export default function AtaPlanejamento() {
         clearTimeout(autoSaveTimeoutRef.current);
       }
       
-      autoSaveTimeoutRef.current = setTimeout(() => {
-        const ataToSave = {
-          ...ataData,
-          providencias: providencias.map(p => ({
-            projeto: p.projeto,
-            providencias: p.providencias,
-            resposta: p.resposta || '',
-            responsaveis: p.responsaveis || [],
-            dataReuniao: p.dataReuniao || '',
-            dataRetorno: p.dataRetorno || '',
-            status: p.status || 'pendente'
-          }))
-        };
-        
-        const saveData = async () => {
-          try {
-            if (currentAtaId) {
-              await AtaReuniao.update(currentAtaId, ataToSave);
-            } else {
-              const newAta = await AtaReuniao.create(ataToSave);
-              setCurrentAtaId(newAta.id);
-            }
-            setHasUnsavedChanges(false);
-          } catch (error) {
-            console.error('Erro no auto-save:', error);
+      autoSaveTimeoutRef.current = setTimeout(async () => {
+        try {
+          const ataToSave = {
+            ...ataData,
+            providencias: providencias.map(p => ({
+              projeto: p.projeto || '',
+              providencias: p.providencias || '',
+              resposta: p.resposta || '',
+              responsaveis: p.responsaveis || [],
+              dataReuniao: p.dataReuniao || '',
+              dataRetorno: p.dataRetorno || '',
+              status: p.status || 'pendente'
+            }))
+          };
+          
+          if (currentAtaId) {
+            await AtaReuniao.update(currentAtaId, ataToSave);
+          } else {
+            const newAta = await AtaReuniao.create(ataToSave);
+            setCurrentAtaId(newAta.id);
           }
-        };
-        
-        saveData();
+          setHasUnsavedChanges(false);
+        } catch (error) {
+          console.error('Erro no auto-save:', error);
+        }
       }, 3000);
     }
     
@@ -352,7 +348,7 @@ export default function AtaPlanejamento() {
         clearTimeout(autoSaveTimeoutRef.current);
       }
     };
-  }, [hasUnsavedChanges, ataData, providencias, currentAtaId]);
+  }, [hasUnsavedChanges, ataData, providencias, currentAtaId, viewMode]);
 
   // Aviso ao sair com mudanças não salvas
   useEffect(() => {
