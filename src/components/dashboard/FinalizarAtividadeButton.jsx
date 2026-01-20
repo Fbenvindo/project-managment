@@ -89,6 +89,24 @@ export default function FinalizarAtividadeButton({ plano, displayName, onSuccess
       );
 
       console.log(`✅ [Finalizar] Planejamento ${plano.id} atualizado no banco de dados`);
+      
+      // **CRÍTICO**: Verificar se realmente foi atualizado
+      const verificacao = await retryWithBackoff(
+        () => entityToUpdate.filter({ id: plano.id }),
+        3, 1000, 'finalizarAtividade.verificar'
+      );
+      
+      console.log(`🔍 [Verificação] Status após update:`, verificacao?.[0]?.status);
+      console.log(`🔍 [Verificação] Tempo executado após update:`, verificacao?.[0]?.tempo_executado);
+      console.log(`🔍 [Verificação] Tempo planejado após update:`, verificacao?.[0]?.tempo_planejado);
+
+      setShowModal(false);
+      
+      // **CRÍTICO**: Chamar onSuccess ANTES de fazer outras operações
+      if (onSuccess) {
+        console.log('🔄 Chamando onSuccess para atualizar UI...');
+        onSuccess();
+      }
 
       const horasLiberadas = plano.tempo_planejado - tempoTotalExecutado;
       
@@ -119,12 +137,6 @@ export default function FinalizarAtividadeButton({ plano, displayName, onSuccess
       }
       
       alert(mensagem);
-      
-      setShowModal(false);
-      
-      if (onSuccess) {
-        onSuccess();
-      }
       
     } catch (error) {
       console.error('❌ Erro ao finalizar atividade:', error);
