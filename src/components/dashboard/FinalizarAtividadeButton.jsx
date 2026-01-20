@@ -71,6 +71,7 @@ export default function FinalizarAtividadeButton({ plano, displayName, onSuccess
 
       const updateData = {
         tempo_executado: tempoTotalExecutado,
+        tempo_planejado: tempoTotalExecutado, // **CRÍTICO**: Atualizar tempo_planejado para refletir o tempo real
         status: 'concluido',
         termino_real: format(new Date(), 'yyyy-MM-dd'),
         horas_por_dia: novasHorasPorDia
