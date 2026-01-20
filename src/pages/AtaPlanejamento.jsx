@@ -436,7 +436,17 @@ export default function AtaPlanejamento() {
       emissao: '/ /',
       status: 'rascunho'
     });
-    setProvidencias((ata.providencias || []).map((p, idx) => ({ ...p, id: Date.now() + idx })));
+    setProvidencias((ata.providencias || []).map((p, idx) => ({ 
+      ...p, 
+      id: Date.now() + idx,
+      resposta: p.resposta || '',
+      projeto: p.projeto || '',
+      providencias: p.providencias || '',
+      responsaveis: p.responsaveis || [],
+      dataReuniao: p.dataReuniao || '',
+      dataRetorno: p.dataRetorno || '',
+      status: p.status || 'pendente'
+    })));
     setShowSelectAtaModal(false);
     setViewMode('edit');
   };
@@ -455,7 +465,17 @@ export default function AtaPlanejamento() {
       emissao: ata.emissao || '/ /',
       status: ata.status || 'rascunho'
     });
-    setProvidencias((ata.providencias || []).map((p, idx) => ({ ...p, id: Date.now() + idx })));
+    setProvidencias((ata.providencias || []).map((p, idx) => ({ 
+      ...p, 
+      id: Date.now() + idx,
+      resposta: p.resposta || '',
+      projeto: p.projeto || '',
+      providencias: p.providencias || '',
+      responsaveis: p.responsaveis || [],
+      dataReuniao: p.dataReuniao || '',
+      dataRetorno: p.dataRetorno || '',
+      status: p.status || 'pendente'
+    })));
     setViewMode('edit');
   };
 
@@ -1104,11 +1124,11 @@ export default function AtaPlanejamento() {
                     </td>
                     <td className="w-[20%] p-2 border-r border-gray-300 align-top">
                       <AutoResizeTextarea
-                        value={prov.resposta}
+                        value={prov.resposta || ''}
                         onChange={(e) => handleUpdateProvidencia(prov.id, 'resposta', e.target.value)}
                         className="text-sm print:hidden w-full resize-none overflow-hidden"
                       />
-                      <span className="hidden print:inline text-[6px] whitespace-pre-wrap">{prov.resposta}</span>
+                      <span className="hidden print:inline text-[6px] whitespace-pre-wrap">{prov.resposta || ''}</span>
                     </td>
                     <td className="w-[15%] p-2 border-r border-gray-300 text-center align-top">
                       <Select
