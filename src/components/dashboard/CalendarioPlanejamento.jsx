@@ -283,7 +283,7 @@ const CalendarFilters = ({
 
 
 // --- Sub-componente de Itens de Atividade Individual ---
-const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlanejamentos, provided, isDragging, isReprogramando, isSelected, onToggleSelect, hasSelections }) => {
+const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlanejamentos, provided, isDragging, isReprogramando, isSelected, onToggleSelect, hasSelections, allEmpreendimentos = [] }) => {
   const { activeExecution, startExecution, user, playlist, addToPlaylist, removeFromPlaylist, triggerUpdate, hasPermission } = useContext(ActivityTimerContext);
   
   const [isStarting, setIsStarting] = useState(false);
@@ -291,6 +291,9 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   const [showTimeAdjustModal, setShowTimeAdjustModal] = useState(false);
   const [adjustedTime, setAdjustedTime] = useState('');
   const [showObservacoes, setShowObservacoes] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editedDescritivo, setEditedDescritivo] = useState('');
+  const [editedEmpreendimentoId, setEditedEmpreendimentoId] = useState('');
 
   const realStatus = calculateActivityStatus(plano, allPlanejamentos);
 
@@ -576,6 +579,33 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
     return null;
   }, [plano]);
 
+  const handleOpenEditModal = () => {
+    setEditedDescritivo(plano.descritivo || displayName);
+    setEditedEmpreendimentoId(plano.empreendimento_id || '');
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
+
+      await retryWithBackoff(
+        () => entityToUpdate.update(plano.id, {
+          descritivo: editedDescritivo,
+          empreendimento_id: editedEmpreendimentoId || null
+        }),
+        3, 1000, 'editActivity'
+      );
+      
+      setShowEditModal(false);
+      
+      if (onDelete) onDelete();
+    } catch (error) {
+      console.error("Erro ao editar:", error);
+      alert("Erro ao editar atividade.");
+    }
+  };
+
   return (
     <>
       <div
@@ -807,6 +837,17 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
               {isStarting ? "Iniciando..." : "Iniciar"}
             </Button>
           )}
+          
+          {realStatus === 'concluido' && !plano.isLegacyExecution && (
+            <Button
+              onClick={handleOpenEditModal}
+              size="sm"
+              variant="outline"
+              className="flex-1 h-6 text-xs"
+            >
+              Editar
+            </Button>
+          )}
         </div>
       </div>
 
@@ -840,6 +881,45 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowTimeAdjustModal(false)}>Cancelar</Button>
             <Button onClick={handleAdjustTime} className="bg-blue-600 hover:bg-blue-700">Ajustar e Finalizar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para editar atividade concluída */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Atividade Concluída</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="editDescritivo">Descrição</Label>
+              <Input
+                id="editDescritivo"
+                type="text"
+                value={editedDescritivo}
+                onChange={(e) => setEditedDescritivo(e.target.value)}
+                placeholder="Descrição da atividade"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editEmpreendimento">Empreendimento</Label>
+              <select
+                id="editEmpreendimento"
+                value={editedEmpreendimentoId}
+                onChange={(e) => setEditedEmpreendimentoId(e.target.value)}
+                className="w-full h-9 px-3 rounded-md border border-input bg-transparent text-sm"
+              >
+                <option value="">Sem empreendimento</option>
+                {allEmpreendimentos.map(emp => (
+                  <option key={emp.id} value={emp.id}>{emp.nome}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditModal(false)}>Cancelar</Button>
+            <Button onClick={handleSaveEdit} className="bg-blue-600 hover:bg-blue-700">Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -1081,6 +1161,7 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
                     isSelected={selectedActivities.has(atividade.id)}
                     onToggleSelect={onToggleSelect}
                     hasSelections={hasSelections}
+                    allEmpreendimentos={allEmpreendimentos}
                   />
                 )}
               </Draggable>
@@ -1093,7 +1174,7 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
 };
 
 // --- Sub-componente para Container de Atividades (reutilizável) ---
-const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => { 
+const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, allEmpreendimentos = [] }) => { 
   const [expandedGroups, setExpandedGroups] = useState(new Set());
 
   const activityGroups = useMemo(() => {
@@ -1166,6 +1247,7 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
                 isSelected={selectedActivities.has(atividade.id)}
                 onToggleSelect={onToggleSelect}
                 hasSelections={hasSelections}
+                allEmpreendimentos={allEmpreendimentos}
               />
             )}
           </Draggable>
@@ -1247,7 +1329,7 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
 };
 
 // --- Sub-componente para Container de Atividades (reutilizável) ---
-const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
+const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, allEmpreendimentos = [] }) => {
   const dayKey = format(day, 'yyyy-MM-dd');
   
   // **NOVO**: Verificar se pode arrastar o dia inteiro
@@ -1348,6 +1430,7 @@ const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDel
               onToggleSelect={onToggleSelect}
               hasSelections={hasSelections}
               viewType={viewType}
+              allEmpreendimentos={allEmpreendimentos}
             />
             {provided.placeholder}
           </div>
@@ -1358,7 +1441,7 @@ const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDel
 };
 
 // --- Sub-componente para a Visualização Mensal ---
-const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
+const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, allEmpreendimentos = [] }) => {
   const monthDays = useMemo(() => {
     const start = startOfWeek(startOfMonth(date), { locale: ptBR });
     const end = endOfWeek(endOfMonth(date), { locale: ptBR });
@@ -1395,6 +1478,7 @@ const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onSho
             onToggleSelect={onToggleSelect}
             hasSelections={hasSelections}
             viewType={viewType}
+            allEmpreendimentos={allEmpreendimentos}
           />
         );
       })}
@@ -1404,7 +1488,7 @@ const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onSho
 
 
 // --- Sub-componente para a Visualização Semanal ---
-const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
+const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, allEmpreendimentos = [] }) => {
   // NOVO: Estado para controlar o dia expandido
   const [expandedDay, setExpandedDay] = useState(null);
 
@@ -1514,6 +1598,7 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
                     onToggleSelect={onToggleSelect}
                     hasSelections={hasSelections}
                     viewType={viewType}
+                    allEmpreendimentos={allEmpreendimentos}
                   />
                   {provided.placeholder}
                 </div>
@@ -1528,7 +1613,7 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
 
 
 // --- Sub-componente para a Visualização Diária ---
-const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => { 
+const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, allEmpreendimentos = [] }) => { 
   const dayKey = format(date, 'yyyy-MM-dd');
   const activities = activitiesByDay[dayKey] || [];
   
@@ -1558,6 +1643,7 @@ const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowP
                     onToggleSelect={onToggleSelect}
                     hasSelections={hasSelections}
                     viewType={viewType}
+                    allEmpreendimentos={allEmpreendimentos}
                   />
                 ) : (
                     <div className="text-center py-12 text-gray-500">
@@ -1618,6 +1704,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   const [execucoes, setExecucoes] = useState([]);
   const [isCalendarLoading, setIsCalendarLoading] = useState(false);
   const [enrichedData, setEnrichedData] = useState([]); 
+  const [allEmpreendimentos, setAllEmpreendimentos] = useState([]);
   
   const [showPrevisaoModal, setShowPrevisaoModal] = useState(false);
   const [planejamentosParaPrevisao, setPlanejamentosParaPrevisao] = useState([]);
@@ -1634,6 +1721,20 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       setFilters(prev => ({ ...prev, user: user.email }));
     }
   }, [user?.email, filters.user]);
+
+  // Carregar todos os empreendimentos
+  useEffect(() => {
+    const loadEmpreendimentos = async () => {
+      try {
+        const emps = await Empreendimento.list();
+        setAllEmpreendimentos(emps || []);
+      } catch (error) {
+        console.error('Erro ao carregar empreendimentos:', error);
+        setAllEmpreendimentos([]);
+      }
+    };
+    loadEmpreendimentos();
+  }, []);
 
   const executorMap = useMemo(() => {
     return usuarios.reduce((acc, u) => {
@@ -2464,9 +2565,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     const hasSelections = selectedActivities.size > 0;
 
     // **MODIFICADO**: Passa 'enrichedData' (que são todos) para as views em vez de 'planejamentos'
-    if (viewMode === 'month') return <MonthView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} />;
-    if (viewMode === 'week') return <WeekView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} />;
-    if (viewMode === 'day') return <DayView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} />;
+    if (viewMode === 'month') return <MonthView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} allEmpreendimentos={allEmpreendimentos} />;
+    if (viewMode === 'week') return <WeekView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} allEmpreendimentos={allEmpreendimentos} />;
+    if (viewMode === 'day') return <DayView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} allEmpreendimentos={allEmpreendimentos} />;
     return null;
   };
 
