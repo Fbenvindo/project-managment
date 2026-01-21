@@ -2,13 +2,12 @@ import React, { useState, useEffect, useContext } from 'react';
 import { base44 } from '@/api/base44Client';
 import { AtividadeGenerica, Usuario, Execucao, Empreendimento } from '@/entities/all';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Zap, Clock, Play, Users, CheckCircle2, XCircle, History, Edit } from 'lucide-react';
+import { Loader2, Zap, Clock, Play, Users, CheckCircle2, XCircle, History } from 'lucide-react';
 import { ActivityTimerContext } from '@/components/contexts/ActivityTimerContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -31,15 +30,6 @@ export default function AtividadesRapidasPage() {
     usuario_ajudado: '',
     empreendimento_id: ''
   });
-
-  // Estados do modal de edição
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [selectedExecucao, setSelectedExecucao] = useState(null);
-  const [editData, setEditData] = useState({
-    descritivo: '',
-    empreendimento_id: ''
-  });
-  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -146,41 +136,6 @@ export default function AtividadesRapidasPage() {
       return format(new Date(dataString), "dd/MM/yyyy 'às' HH:mm", { locale: ptBR });
     } catch {
       return 'Data inválida';
-    }
-  };
-
-  const handleOpenEditModal = (execucao) => {
-    setSelectedExecucao(execucao);
-    setEditData({
-      descritivo: execucao.descritivo || '',
-      empreendimento_id: execucao.empreendimento_id || ''
-    });
-    setShowEditModal(true);
-  };
-
-  const handleSaveEdit = async () => {
-    if (!selectedExecucao) return;
-
-    setIsSaving(true);
-    try {
-      await Execucao.update(selectedExecucao.id, {
-        descritivo: editData.descritivo,
-        empreendimento_id: editData.empreendimento_id || null
-      });
-
-      alert('✅ Atividade atualizada com sucesso!');
-      
-      // Recarregar dados
-      await loadData();
-      
-      // Fechar modal
-      setShowEditModal(false);
-      setSelectedExecucao(null);
-    } catch (error) {
-      console.error('Erro ao atualizar atividade:', error);
-      alert('Erro ao atualizar atividade. Tente novamente.');
-    } finally {
-      setIsSaving(false);
     }
   };
 
@@ -293,19 +248,7 @@ export default function AtividadesRapidasPage() {
                           <h4 className="font-medium text-gray-900 flex-1 mr-2">
                             {exec.descritivo}
                           </h4>
-                          <div className="flex items-center gap-2">
-                            {getStatusBadge(exec.status)}
-                            {exec.status === 'Finalizado' && (
-                              <Button
-                                onClick={() => handleOpenEditModal(exec)}
-                                size="sm"
-                                variant="ghost"
-                                className="h-6 px-2"
-                              >
-                                <Edit className="w-3 h-3" />
-                              </Button>
-                            )}
-                          </div>
+                          {getStatusBadge(exec.status)}
                         </div>
                         
                         {exec.usuario_ajudado && (
@@ -416,69 +359,6 @@ export default function AtividadesRapidasPage() {
                 <>
                   <Play className="w-4 h-4 mr-2" />
                   Iniciar Atividade
-                </>
-              )}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal de Edição */}
-      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Edit className="w-5 h-5 text-blue-500" />
-              Editar Atividade Rápida
-            </DialogTitle>
-          </DialogHeader>
-
-          <div className="space-y-4 py-4">
-            <div>
-              <Label htmlFor="edit_descritivo">Descrição</Label>
-              <Input
-                id="edit_descritivo"
-                value={editData.descritivo}
-                onChange={(e) => setEditData(prev => ({ ...prev, descritivo: e.target.value }))}
-                placeholder="Descrição da atividade"
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="edit_empreendimento">Empreendimento</Label>
-              <Select
-                value={editData.empreendimento_id}
-                onValueChange={(value) => setEditData(prev => ({ ...prev, empreendimento_id: value }))}
-              >
-                <SelectTrigger id="edit_empreendimento">
-                  <SelectValue placeholder="Sem empreendimento" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={null}>Sem empreendimento</SelectItem>
-                  {empreendimentos.map(emp => (
-                    <SelectItem key={emp.id} value={emp.id}>
-                      {emp.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditModal(false)} disabled={isSaving}>
-              Cancelar
-            </Button>
-            <Button onClick={handleSaveEdit} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="w-4 h-4 mr-2" />
-                  Salvar
                 </>
               )}
             </Button>

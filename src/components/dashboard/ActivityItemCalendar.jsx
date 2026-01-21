@@ -4,7 +4,7 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { User, Trash2, RefreshCw, Play, ListMusic, PlusCircle, Loader2, Edit } from "lucide-react";
+import { User, Trash2, RefreshCw, Play, ListMusic, PlusCircle, Loader2 } from "lucide-react";
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 import FinalizarAtividadeButton from './FinalizarAtividadeButton';
 import { Execucao, PlanejamentoAtividade, PlanejamentoDocumento } from '@/entities/all';
@@ -43,17 +43,13 @@ export default function ActivityItemCalendar({
   isReprogramando, 
   isSelected, 
   onToggleSelect, 
-  hasSelections,
-  allEmpreendimentos = []
+  hasSelections 
 }) {
   const { activeExecution, startExecution, user, playlist, addToPlaylist, removeFromPlaylist } = useContext(ActivityTimerContext);
   const [isStarting, setIsStarting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showTimeAdjustModal, setShowTimeAdjustModal] = useState(false);
   const [adjustedTime, setAdjustedTime] = useState('');
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [editedDescritivo, setEditedDescritivo] = useState('');
-  const [editedEmpreendimentoId, setEditedEmpreendimentoId] = useState('');
 
   const realStatus = useMemo(() => {
     // Verificar primeiro se está explicitamente marcada como concluída
@@ -230,37 +226,6 @@ export default function ActivityItemCalendar({
     return realStatus !== 'concluido' && !plano.isLegacyExecution && tempoExecutado > 0;
   };
 
-  const shouldShowEditButton = () => {
-    return realStatus === 'concluido' && !plano.isLegacyExecution;
-  };
-
-  const handleOpenEditModal = () => {
-    setEditedDescritivo(plano.descritivo || displayName);
-    setEditedEmpreendimentoId(plano.empreendimento_id || '');
-    setShowEditModal(true);
-  };
-
-  const handleSaveEdit = async () => {
-    try {
-      const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
-
-      await retryWithBackoff(
-        () => entityToUpdate.update(plano.id, {
-          descritivo: editedDescritivo,
-          empreendimento_id: editedEmpreendimentoId || null
-        }),
-        3, 1000, 'editActivity'
-      );
-      
-      setShowEditModal(false);
-      
-      if (onDelete) onDelete();
-    } catch (error) {
-      console.error("Erro ao editar:", error);
-      alert("Erro ao editar atividade.");
-    }
-  };
-
   return (
     <>
       <div
@@ -431,17 +396,6 @@ export default function ActivityItemCalendar({
               onSuccess={onDelete}
             />
           )}
-
-          {shouldShowEditButton() && (
-            <Button
-              onClick={handleOpenEditModal}
-              size="sm"
-              variant="outline"
-              className="flex-1 h-6 text-xs"
-            >
-              Editar
-            </Button>
-          )}
         </div>
       </div>
 
@@ -473,44 +427,6 @@ export default function ActivityItemCalendar({
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowTimeAdjustModal(false)}>Cancelar</Button>
             <Button onClick={handleAdjustTime} className="bg-blue-600 hover:bg-blue-700">Ajustar e Finalizar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Atividade Concluída</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="editDescritivo">Descrição</Label>
-              <Input
-                id="editDescritivo"
-                type="text"
-                value={editedDescritivo}
-                onChange={(e) => setEditedDescritivo(e.target.value)}
-                placeholder="Descrição da atividade"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="editEmpreendimento">Empreendimento</Label>
-              <select
-                id="editEmpreendimento"
-                value={editedEmpreendimentoId}
-                onChange={(e) => setEditedEmpreendimentoId(e.target.value)}
-                className="w-full h-9 px-3 rounded-md border border-input bg-transparent text-sm"
-              >
-                <option value="">Sem empreendimento</option>
-                {allEmpreendimentos.map(emp => (
-                  <option key={emp.id} value={emp.id}>{emp.nome}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditModal(false)}>Cancelar</Button>
-            <Button onClick={handleSaveEdit} className="bg-blue-600 hover:bg-blue-700">Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
