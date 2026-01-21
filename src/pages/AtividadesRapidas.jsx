@@ -149,6 +149,41 @@ export default function AtividadesRapidasPage() {
     }
   };
 
+  const handleOpenEditModal = (execucao) => {
+    setSelectedExecucao(execucao);
+    setEditData({
+      descritivo: execucao.descritivo || '',
+      empreendimento_id: execucao.empreendimento_id || ''
+    });
+    setShowEditModal(true);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!selectedExecucao) return;
+
+    setIsSaving(true);
+    try {
+      await Execucao.update(selectedExecucao.id, {
+        descritivo: editData.descritivo,
+        empreendimento_id: editData.empreendimento_id || null
+      });
+
+      alert('✅ Atividade atualizada com sucesso!');
+      
+      // Recarregar dados
+      await loadData();
+      
+      // Fechar modal
+      setShowEditModal(false);
+      setSelectedExecucao(null);
+    } catch (error) {
+      console.error('Erro ao atualizar atividade:', error);
+      alert('Erro ao atualizar atividade. Tente novamente.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   // Bloquear acesso para perfil consultor
   if (userProfile?.perfil === 'consultor') {
     return (
