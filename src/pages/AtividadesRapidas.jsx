@@ -2,6 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { base44 } from '@/api/base44Client';
 import { AtividadeGenerica, Usuario, Execucao, Empreendimento } from '@/entities/all';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
