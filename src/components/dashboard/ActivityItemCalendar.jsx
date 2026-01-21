@@ -4,7 +4,8 @@ import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { User, Trash2, RefreshCw, Play, ListMusic, PlusCircle, Loader2 } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { User, Trash2, RefreshCw, Play, ListMusic, PlusCircle, Loader2, Edit2 } from "lucide-react";
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 import FinalizarAtividadeButton from './FinalizarAtividadeButton';
 import { Execucao, PlanejamentoAtividade, PlanejamentoDocumento } from '@/entities/all';
@@ -50,6 +51,8 @@ export default function ActivityItemCalendar({
   const [isDeleting, setIsDeleting] = useState(false);
   const [showTimeAdjustModal, setShowTimeAdjustModal] = useState(false);
   const [adjustedTime, setAdjustedTime] = useState('');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editedDescritivo, setEditedDescritivo] = useState('');
 
   const realStatus = useMemo(() => {
     // Verificar primeiro se está explicitamente marcada como concluída
@@ -226,6 +229,39 @@ export default function ActivityItemCalendar({
     return realStatus !== 'concluido' && !plano.isLegacyExecution && tempoExecutado > 0;
   };
 
+  const shouldShowEditButton = () => {
+    return realStatus === 'concluido' && (plano.isQuickActivity || plano.is_quick_activity);
+  };
+
+  const handleEditDescritivo = () => {
+    setEditedDescritivo(plano.descritivo || '');
+    setShowEditModal(true);
+  };
+
+  const handleSaveDescritivo = async () => {
+    if (!editedDescritivo.trim()) {
+      alert("Por favor, insira uma descrição.");
+      return;
+    }
+
+    try {
+      const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
+
+      await retryWithBackoff(
+        () => entityToUpdate.update(plano.id, {
+          descritivo: editedDescritivo.trim()
+        }),
+        3, 1000, 'editDescritivo'
+      );
+      
+      setShowEditModal(false);
+      if (onDelete) onDelete();
+    } catch (error) {
+      console.error("Erro ao editar:", error);
+      alert("Erro ao editar descrição.");
+    }
+  };
+
   return (
     <>
       <div
@@ -292,6 +328,18 @@ export default function ActivityItemCalendar({
             )}
           </p>
           <div className="flex items-center shrink-0 gap-2">
+            {shouldShowEditButton() && (
+              <Button
+                onClick={handleEditDescritivo}
+                size="sm"
+                variant="ghost"
+                className="w-5 h-5 p-0 text-gray-400 hover:text-blue-600 hover:bg-blue-100"
+                title="Editar descrição"
+              >
+                <Edit2 className="w-3 h-3" />
+              </Button>
+            )}
+            
             {plano.status !== 'concluido' && !plano.isLegacyExecution && plano.tipo_planejamento !== 'documento' && (
               <button
                 onClick={(e) => {
@@ -427,6 +475,30 @@ export default function ActivityItemCalendar({
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowTimeAdjustModal(false)}>Cancelar</Button>
             <Button onClick={handleAdjustTime} className="bg-blue-600 hover:bg-blue-700">Ajustar e Finalizar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Descrição da Atividade</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="editDescritivo">Descrição da Atividade</Label>
+              <Textarea
+                id="editDescritivo"
+                value={editedDescritivo}
+                onChange={(e) => setEditedDescritivo(e.target.value)}
+                rows={4}
+                placeholder="Digite a descrição da atividade..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditModal(false)}>Cancelar</Button>
+            <Button onClick={handleSaveDescritivo} className="bg-blue-600 hover:bg-blue-700">Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
