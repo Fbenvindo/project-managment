@@ -234,10 +234,6 @@ export default function ActivityItemCalendar({
     return realStatus === 'concluido' && !plano.isLegacyExecution;
   };
 
-  const shouldShowEditButton = () => {
-    return realStatus === 'concluido';
-  };
-
   const handleOpenEditModal = () => {
     setEditedDescritivo(plano.descritivo || displayName);
     setEditedEmpreendimentoId(plano.empreendimento_id || '');
