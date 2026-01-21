@@ -515,7 +515,7 @@ export default function ActivityItemCalendar({
                 className="w-full h-9 px-3 rounded-md border border-input bg-transparent text-sm"
               >
                 <option value="">Sem empreendimento</option>
-                {allEmpreendimentos.map(emp => (
+                {empreendimentos.map(emp => (
                   <option key={emp.id} value={emp.id}>{emp.nome}</option>
                 ))}
               </select>
