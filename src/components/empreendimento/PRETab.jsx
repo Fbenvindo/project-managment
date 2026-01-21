@@ -83,7 +83,7 @@ const printStyles = `
 }
 `;
 
-export default function PRETab({ empreendimento }) {
+export default function PRETab({ empreendimento, readOnly = false }) {
   const [isSaving, setIsSaving] = useState(false);
   const [items, setItems] = useState([]);
   const [headerData, setHeaderData] = useState({
@@ -260,19 +260,30 @@ export default function PRETab({ empreendimento }) {
     <>
       <style>{printStyles}</style>
       <div className="bg-gray-50 print:bg-white">
-        <div className="mb-4 flex justify-end gap-2 no-print">
-          <Button variant="outline" onClick={handleSave} disabled={isSaving}>
-            {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-            Salvar
-          </Button>
-          <Button variant="outline" onClick={handlePrint}>
-            <Printer className="w-4 h-4 mr-2" />
-            Imprimir
-          </Button>
-          <Button onClick={handleAddItem}>
-            <Plus className="w-4 h-4 mr-2" />
-            Adicionar Item
-          </Button>
+        <div className="mb-4 flex justify-between items-center no-print">
+          <div>
+            {readOnly && <Badge variant="outline" className="text-xs">Somente Visualização</Badge>}
+          </div>
+          <div className="flex gap-2">
+            {!readOnly && (
+              <>
+                <Button variant="outline" onClick={handleSave} disabled={isSaving}>
+                  {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                  Salvar
+                </Button>
+              </>
+            )}
+            <Button variant="outline" onClick={handlePrint}>
+              <Printer className="w-4 h-4 mr-2" />
+              Imprimir
+            </Button>
+            {!readOnly && (
+              <Button onClick={handleAddItem}>
+                <Plus className="w-4 h-4 mr-2" />
+                Adicionar Item
+              </Button>
+            )}
+          </div>
         </div>
 
         <div className="bg-white border border-gray-400 shadow-lg">
@@ -359,19 +370,27 @@ export default function PRETab({ empreendimento }) {
                   items.map((item) => (
                     <tr key={item.id} className="hover:bg-gray-50 align-top">
                       <td className="border border-gray-300 p-2 text-center align-middle">
-                        <Input
-                          value={item.item}
-                          onChange={(e) => handleUpdateItem(item.id, 'item', e.target.value)}
-                          className="h-10 text-sm text-center font-medium print:border-none print:bg-transparent"
-                        />
+                        {readOnly ? (
+                          <div className="text-sm font-medium">{item.item}</div>
+                        ) : (
+                          <Input
+                            value={item.item}
+                            onChange={(e) => handleUpdateItem(item.id, 'item', e.target.value)}
+                            className="h-10 text-sm text-center font-medium print:border-none print:bg-transparent"
+                          />
+                        )}
                       </td>
                       <td className="border border-gray-300 p-2 align-middle">
-                        <Input
-                          type="date"
-                          value={item.data}
-                          onChange={(e) => handleUpdateItem(item.id, 'data', e.target.value)}
-                          className="h-10 text-sm print:border-none print:bg-transparent"
-                        />
+                        {readOnly ? (
+                          <div className="text-sm">{item.data ? format(new Date(item.data), 'dd/MM/yyyy') : ''}</div>
+                        ) : (
+                          <Input
+                            type="date"
+                            value={item.data}
+                            onChange={(e) => handleUpdateItem(item.id, 'data', e.target.value)}
+                            className="h-10 text-sm print:border-none print:bg-transparent"
+                          />
+                        )}
                       </td>
                       <td className="border border-gray-300 p-2">
                         <Textarea
@@ -379,6 +398,7 @@ export default function PRETab({ empreendimento }) {
                           onChange={(e) => handleUpdateItem(item.id, 'de', e.target.value)}
                           className="w-full text-sm print:border-none print:bg-transparent resize-y"
                           rows={8}
+                          disabled={readOnly}
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -387,6 +407,7 @@ export default function PRETab({ empreendimento }) {
                           onChange={(e) => handleUpdateItem(item.id, 'descritiva', e.target.value)}
                           className="w-full text-sm print:border-none print:bg-transparent resize-y"
                           rows={5}
+                          disabled={readOnly}
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -395,6 +416,7 @@ export default function PRETab({ empreendimento }) {
                           onChange={(e) => handleUpdateItem(item.id, 'localizacao', e.target.value)}
                           className="w-full text-sm print:border-none print:bg-transparent resize-none"
                           rows={3}
+                          disabled={readOnly}
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -403,6 +425,7 @@ export default function PRETab({ empreendimento }) {
                           onChange={(e) => handleUpdateItem(item.id, 'assunto', e.target.value)}
                           className="w-full text-sm print:border-none print:bg-transparent resize-y"
                           rows={5}
+                          disabled={readOnly}
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
@@ -411,24 +434,29 @@ export default function PRETab({ empreendimento }) {
                           onChange={(e) => handleUpdateItem(item.id, 'comentario', e.target.value)}
                           className="w-full text-sm print:border-none print:bg-transparent resize-y"
                           rows={10}
+                          disabled={readOnly}
                         />
                       </td>
                       <td className={`border border-gray-300 p-2 align-middle ${STATUS_COLORS[item.status] || ''}`}>
-                        <Select
-                          value={item.status}
-                          onValueChange={(value) => handleUpdateItem(item.id, 'status', value)}
-                        >
-                          <SelectTrigger className="h-10 text-sm print:border-none print:bg-transparent">
-                            <SelectValue placeholder="Sem status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={null}>Sem status</SelectItem>
-                            <SelectItem value="Em andamento">Em andamento</SelectItem>
-                            <SelectItem value="Pendente">Pendente</SelectItem>
-                            <SelectItem value="Concluído">Concluído</SelectItem>
-                            <SelectItem value="Cancelado">Cancelado</SelectItem>
-                          </SelectContent>
-                        </Select>
+                        {readOnly ? (
+                          <div className="text-sm text-center">{item.status || 'Sem status'}</div>
+                        ) : (
+                          <Select
+                            value={item.status}
+                            onValueChange={(value) => handleUpdateItem(item.id, 'status', value)}
+                          >
+                            <SelectTrigger className="h-10 text-sm print:border-none print:bg-transparent">
+                              <SelectValue placeholder="Sem status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value={null}>Sem status</SelectItem>
+                              <SelectItem value="Em andamento">Em andamento</SelectItem>
+                              <SelectItem value="Pendente">Pendente</SelectItem>
+                              <SelectItem value="Concluído">Concluído</SelectItem>
+                              <SelectItem value="Cancelado">Cancelado</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        )}
                       </td>
                       <td className="border border-gray-300 p-2">
                         <Textarea
@@ -436,32 +464,35 @@ export default function PRETab({ empreendimento }) {
                           onChange={(e) => handleUpdateItem(item.id, 'resposta', e.target.value)}
                           className="w-full text-sm print:border-none print:bg-transparent resize-y"
                           rows={5}
+                          disabled={readOnly}
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
                         <div className="space-y-2">
-                          <label className="no-print">
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) handleUploadImage(item.id, file);
-                                e.target.value = '';
-                              }}
-                              className="hidden"
-                            />
-                            <Button
-                              type="button"
-                              variant="outline"
-                              size="sm"
-                              className="w-full"
-                              onClick={(e) => e.currentTarget.previousElementSibling.click()}
-                            >
-                              <Upload className="w-3 h-3 mr-1" />
-                              Anexar
-                            </Button>
-                          </label>
+                          {!readOnly && (
+                            <label className="no-print">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleUploadImage(item.id, file);
+                                  e.target.value = '';
+                                }}
+                                className="hidden"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                onClick={(e) => e.currentTarget.previousElementSibling.click()}
+                              >
+                                <Upload className="w-3 h-3 mr-1" />
+                                Anexar
+                              </Button>
+                            </label>
+                          )}
                           {(item.imagens || []).map((imgUrl, idx) => (
                             <div key={idx} className="relative group">
                               <img
@@ -469,26 +500,30 @@ export default function PRETab({ empreendimento }) {
                                 alt={`Imagem ${idx + 1}`}
                                 className="w-full h-20 object-cover rounded border"
                               />
-                              <button
-                                onClick={() => handleRemoveImage(item.id, imgUrl)}
-                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity no-print"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
+                              {!readOnly && (
+                                <button
+                                  onClick={() => handleRemoveImage(item.id, imgUrl)}
+                                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity no-print"
+                                >
+                                  <X className="w-3 h-3" />
+                                </button>
+                              )}
                             </div>
                           ))}
                         </div>
                       </td>
-                      <td className="border border-gray-300 p-2 text-center align-middle no-print">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => handleDeleteItem(item.id)}
-                          className="h-8 w-8 text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </td>
+                      {!readOnly && (
+                        <td className="border border-gray-300 p-2 text-center align-middle no-print">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleDeleteItem(item.id)}
+                            className="h-8 w-8 text-red-500 hover:text-red-700"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </td>
+                      )}
                     </tr>
                   ))
                 )}

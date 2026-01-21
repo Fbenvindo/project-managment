@@ -67,6 +67,22 @@ export default function EmpreendimentoPage() {
     user.perfil === 'direcao'
   );
 
+  const canEdit = user && (
+    user.role === 'admin' ||
+    user.perfil === 'lider' ||
+    user.perfil === 'coordenador' ||
+    user.perfil === 'gestao' ||
+    user.perfil === 'direcao'
+  );
+
+  const visibleTabsForUser = useMemo(() => {
+    if (canEdit) {
+      return ['documentos', 'cadastro', 'pavimentos', 'atividades_projeto', 'catalogo_atividades', 'documentacao', 'pre', 'controle_os', 'gestao'];
+    }
+    // Usuários comuns veem apenas: Documentos, Cadastro, PRE
+    return ['documentos', 'cadastro', 'pre'];
+  }, [canEdit]);
+
   const loadEmpreendimento = useCallback(async () => {
     if (!empreendimentoId) return;
 
@@ -333,18 +349,20 @@ export default function EmpreendimentoPage() {
         <EmpreendimentoHeader empreendimento={empreendimento} />
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className={`grid w-full ${hasAccessToGestao ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-9' : 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-8'} bg-white shadow-sm`}>
-            <TabsTrigger value="documentos">Documentos</TabsTrigger>
-            <TabsTrigger value="cadastro">Cadastro</TabsTrigger>
-            <TabsTrigger value="pavimentos">Pavimentos</TabsTrigger>
-            <TabsTrigger value="atividades_projeto">Atividades do Projeto</TabsTrigger>
-            <TabsTrigger value="catalogo_atividades">
-              <ListChecks className="w-4 h-4 mr-2" /> Catálogo
-            </TabsTrigger>
-            <TabsTrigger value="documentacao">Documentação</TabsTrigger>
-            <TabsTrigger value="pre">PRE</TabsTrigger>
-            <TabsTrigger value="controle_os">Controle OS</TabsTrigger>
-            {hasAccessToGestao && (
+          <TabsList className={`grid w-full ${canEdit ? (hasAccessToGestao ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-9' : 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-8') : 'grid-cols-3'} bg-white shadow-sm`}>
+            {visibleTabsForUser.includes('documentos') && <TabsTrigger value="documentos">Documentos</TabsTrigger>}
+            {visibleTabsForUser.includes('cadastro') && <TabsTrigger value="cadastro">Cadastro</TabsTrigger>}
+            {visibleTabsForUser.includes('pavimentos') && <TabsTrigger value="pavimentos">Pavimentos</TabsTrigger>}
+            {visibleTabsForUser.includes('atividades_projeto') && <TabsTrigger value="atividades_projeto">Atividades do Projeto</TabsTrigger>}
+            {visibleTabsForUser.includes('catalogo_atividades') && (
+              <TabsTrigger value="catalogo_atividades">
+                <ListChecks className="w-4 h-4 mr-2" /> Catálogo
+              </TabsTrigger>
+            )}
+            {visibleTabsForUser.includes('documentacao') && <TabsTrigger value="documentacao">Documentação</TabsTrigger>}
+            {visibleTabsForUser.includes('pre') && <TabsTrigger value="pre">PRE</TabsTrigger>}
+            {visibleTabsForUser.includes('controle_os') && <TabsTrigger value="controle_os">Controle OS</TabsTrigger>}
+            {hasAccessToGestao && visibleTabsForUser.includes('gestao') && (
               <TabsTrigger value="gestao">Gestão</TabsTrigger>
             )}
           </TabsList>
@@ -375,6 +393,7 @@ export default function EmpreendimentoPage() {
                 isLoading={false}
                 etapaParaPlanejamento={etapaParaPlanejamento}
                 onEtapaChange={setEtapaParaPlanejamento}
+                readOnly={!canEdit}
               />
             ) : (
               <div className="flex justify-center items-center h-64">
@@ -460,11 +479,11 @@ export default function EmpreendimentoPage() {
           </TabsContent>
 
           <TabsContent value="cadastro">
-            <CadastroTab empreendimento={empreendimento} />
+            <CadastroTab empreendimento={empreendimento} readOnly={!canEdit} />
           </TabsContent>
 
           <TabsContent value="pre">
-            <PRETab empreendimento={empreendimento} />
+            <PRETab empreendimento={empreendimento} readOnly={!canEdit} />
           </TabsContent>
 
           <TabsContent value="controle_os">

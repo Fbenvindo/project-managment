@@ -68,6 +68,7 @@ export default function DocumentosTab({
   isLoading,
   etapaParaPlanejamento,
   onEtapaChange,
+  readOnly = false,
 }) {
   const [showForm, setShowForm] = useState(false);
   const [editingDocumento, setEditingDocumento] = useState(null);
@@ -1025,7 +1026,7 @@ export default function DocumentosTab({
     });
   }, [usuarios]);
 
-  const DocumentoItem = ({ doc, planejamentos, allAtividades, handleEdit, handleDelete, handleOpenDocEtapaModal, handlePredecessoraChange, handleDataInicioChange, etapaParaPlanejamento, loadingDocs, empreendimento, onUpdate }) => {
+  const DocumentoItem = ({ doc, planejamentos, allAtividades, handleEdit, handleDelete, handleOpenDocEtapaModal, handlePredecessoraChange, handleDataInicioChange, etapaParaPlanejamento, loadingDocs, empreendimento, onUpdate, readOnly }) => {
     const [isUpdatingActivity, setIsUpdatingActivity] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
     const isDocLoading = loadingDocs[doc.id] || false;
@@ -1646,63 +1647,71 @@ export default function DocumentosTab({
             {doc.escala ? `1:${doc.escala}` : '-'}
           </TableCell>
           <TableCell className="w-[180px]">
-            <div className="space-y-1">
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id={`multi-${doc.id}`}
-                  checked={doc.multiplos_executores || false}
-                  onCheckedChange={(checked) => handleExecutorChange('multiplos_executores', checked)}
-                  disabled={isUpdating || isDocLoading}
-                />
-                <Label htmlFor={`multi-${doc.id}`} className="text-xs font-normal">Múltiplos Executores</Label>
+            {readOnly ? (
+              <div className="text-sm text-gray-600">
+                {doc.executor_principal 
+                  ? usuariosOrdenados.find(u => u.email === doc.executor_principal)?.nome || doc.executor_principal
+                  : 'Não definido'}
               </div>
-              {!doc.multiplos_executores && (
-                <div className="space-y-1">
-                  {doc.executor_principal ? (
-                    <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-xs font-medium text-green-800">
-                          {usuariosOrdenados.find(u => u.email === doc.executor_principal)?.nome || doc.executor_principal}
-                        </span>
+            ) : (
+              <div className="space-y-1">
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id={`multi-${doc.id}`}
+                    checked={doc.multiplos_executores || false}
+                    onCheckedChange={(checked) => handleExecutorChange('multiplos_executores', checked)}
+                    disabled={isUpdating || isDocLoading}
+                  />
+                  <Label htmlFor={`multi-${doc.id}`} className="text-xs font-normal">Múltiplos Executores</Label>
+                </div>
+                {!doc.multiplos_executores && (
+                  <div className="space-y-1">
+                    {doc.executor_principal ? (
+                      <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span className="text-xs font-medium text-green-800">
+                            {usuariosOrdenados.find(u => u.email === doc.executor_principal)?.nome || doc.executor_principal}
+                          </span>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleExecutorChange('executor_principal', null)}
+                          className="text-xs text-red-600 hover:text-red-700 h-6"
+                          disabled={isUpdating || isDocLoading}
+                        >
+                          Remover
+                        </Button>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleExecutorChange('executor_principal', null)}
-                        className="text-xs text-red-600 hover:text-red-700 h-6"
+                    ) : (
+                      <Select
+                        onValueChange={(value) => handleExecutorSelectChange(value)}
                         disabled={isUpdating || isDocLoading}
                       >
-                        Remover
-                      </Button>
-                    </div>
-                  ) : (
-                    <Select
-                      onValueChange={(value) => handleExecutorSelectChange(value)}
-                      disabled={isUpdating || isDocLoading}
-                    >
-                      <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
-                        <Users2 className="w-3 h-3 mr-1" />
-                        <SelectValue placeholder="Selecionar Executor" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {usuariosOrdenados.map(u => (
-                          <SelectItem key={u.id} value={u.email}>
-                            {u.nome}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                </div>
-              )}
-              {(isUpdating || isDocLoading) && (
-                <div className="flex items-center gap-1 text-xs text-blue-600">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  {isDocLoading ? "Planejando..." : "Salvando..."}
-                </div>
-              )}
-            </div>
+                        <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
+                          <Users2 className="w-3 h-3 mr-1" />
+                          <SelectValue placeholder="Selecionar Executor" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {usuariosOrdenados.map(u => (
+                            <SelectItem key={u.id} value={u.email}>
+                              {u.nome}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                  </div>
+                )}
+                {(isUpdating || isDocLoading) && (
+                  <div className="flex items-center gap-1 text-xs text-blue-600">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    {isDocLoading ? "Planejando..." : "Salvando..."}
+                  </div>
+                )}
+              </div>
+            )}
           </TableCell>
           <TableCell className="text-sm text-gray-700">
             <div className="flex flex-col">
@@ -1720,39 +1729,47 @@ export default function DocumentosTab({
           </TableCell>
           <TableCell>
             <div className="flex items-center justify-end gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => toggleSequencing(doc.id)}
-                  className="text-xs h-7 border-purple-500 text-purple-600 hover:bg-purple-50"
-                  disabled={isDocLoading}
-                >
-                  <CalendarIcon className="w-3 h-3 mr-1" />
-                  Predecessora
-                </Button>
+                {!readOnly && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => toggleSequencing(doc.id)}
+                      className="text-xs h-7 border-purple-500 text-purple-600 hover:bg-purple-50"
+                      disabled={isDocLoading}
+                    >
+                      <CalendarIcon className="w-3 h-3 mr-1" />
+                      Predecessora
+                    </Button>
+                  </>
+                )}
                 <Link to={createPageUrl(`AtividadesPlanejadas?doc_id=${doc.id}&emp_id=${empreendimento.id}`)}>
                   <Button variant="outline" size="icon" className="h-8 w-8" disabled={isDocLoading}>
                     <BarChart className="h-4 w-4" />
                   </Button>
                 </Link>
                 
-                <Button
-                  variant="outline"
-                  size="icon"
-                  className="h-8 w-8 border-blue-500 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
-                  onClick={() => handleOpenDocEtapaModal(doc)}
-                  disabled={isDocLoading}
-                  title="Planejar Documento"
-                >
-                  <CalendarDays className="h-4 w-4" />
-                </Button>
-                
-                <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleEdit(doc)} disabled={isDocLoading}>
-                  <Edit className="h-4 w-4" />
-                </Button>
-                <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleDelete(doc.id)} disabled={isDocLoading}>
-                  <Trash2 className="h-4 w-4" />
-                </Button>
+                {!readOnly && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="h-8 w-8 border-blue-500 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                      onClick={() => handleOpenDocEtapaModal(doc)}
+                      disabled={isDocLoading}
+                      title="Planejar Documento"
+                    >
+                      <CalendarDays className="h-4 w-4" />
+                    </Button>
+                    
+                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleEdit(doc)} disabled={isDocLoading}>
+                      <Edit className="h-4 w-4" />
+                    </Button>
+                    <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleDelete(doc.id)} disabled={isDocLoading}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </>
+                )}
               </div>
           </TableCell>
         </TableRow>
@@ -2023,24 +2040,27 @@ export default function DocumentosTab({
           <CardTitle className="flex items-center gap-2">
             <FileText className="w-5 h-5 text-blue-600" />
             Documentos ({filteredDocumentos.length})
+            {readOnly && <Badge variant="outline" className="ml-2 text-xs">Somente Visualização</Badge>}
           </CardTitle>
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              onClick={() => setShowImportModal(true)}
-              className="border-green-500 text-green-600 hover:bg-green-50"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Importar
-            </Button>
-            <Button
-              onClick={() => setShowForm(true)}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Novo Documento
-            </Button>
-          </div>
+          {!readOnly && (
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowImportModal(true)}
+                className="border-green-500 text-green-600 hover:bg-green-50"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Importar
+              </Button>
+              <Button
+                onClick={() => setShowForm(true)}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Novo Documento
+              </Button>
+            </div>
+          )}
         </CardHeader>
         <CardContent className="p-6">
           {etapaParaPlanejamento !== "todas" && (
@@ -2153,6 +2173,7 @@ export default function DocumentosTab({
                             loadingDocs={loadingDocs}
                             empreendimento={empreendimento}
                             onUpdate={onUpdate}
+                            readOnly={readOnly}
                           />
                         ))}
                       </TableBody>
