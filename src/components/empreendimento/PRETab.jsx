@@ -87,6 +87,7 @@ const printStyles = `
 export default function PRETab({ empreendimento, readOnly = false }) {
   const [isSaving, setIsSaving] = useState(false);
   const [items, setItems] = useState([]);
+  const [lastSaved, setLastSaved] = useState(null);
   const [headerData, setHeaderData] = useState({
     cliente: empreendimento?.cliente || '',
     obra: empreendimento?.nome || '',
@@ -95,6 +96,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     rev: '',
     arquivo: ''
   });
+  const saveTimeoutRef = React.useRef(null);
 
   useEffect(() => {
     if (empreendimento) {
@@ -106,6 +108,24 @@ export default function PRETab({ empreendimento, readOnly = false }) {
       loadItems(empreendimento.id);
     }
   }, [empreendimento]);
+
+  useEffect(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    if (items.length > 0 && empreendimento?.id) {
+      saveTimeoutRef.current = setTimeout(() => {
+        handleAutoSave();
+      }, 2000);
+    }
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [items]);
 
   const loadItems = async (empId) => {
     try {
@@ -198,7 +218,9 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     ));
   };
 
-  const handleSave = async () => {
+  const handleAutoSave = async () => {
+    if (isSaving) return;
+    
     setIsSaving(true);
     try {
       const savedItems = [];
@@ -244,13 +266,17 @@ export default function PRETab({ empreendimento, readOnly = false }) {
         return 0;
       });
       setItems(sortedSavedItems);
-      alert('Dados salvos com sucesso!');
+      setLastSaved(new Date());
     } catch (error) {
-      console.error('Erro ao salvar:', error);
-      alert('Erro ao salvar dados.');
+      console.error('Erro ao salvar automaticamente:', error);
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleSave = async () => {
+    await handleAutoSave();
+    alert('Dados salvos com sucesso!');
   };
 
   const handlePrint = () => {
@@ -262,13 +288,24 @@ export default function PRETab({ empreendimento, readOnly = false }) {
       <style>{printStyles}</style>
       <div className="bg-gray-50 print:bg-white">
         <div className="mb-4 flex justify-between items-center no-print">
-          <div>
+          <div className="flex items-center gap-2">
             {readOnly && <Badge variant="outline" className="text-xs">Visualização - Você pode editar Respostas e Anexos</Badge>}
+            {isSaving && (
+              <div className="flex items-center gap-2 text-sm text-blue-600">
+                <Loader2 className="w-4 h-4 animate-spin" />
+                <span>Salvando...</span>
+              </div>
+            )}
+            {!isSaving && lastSaved && (
+              <div className="flex items-center gap-2 text-sm text-green-600">
+                <span>✓ Salvo às {format(lastSaved, 'HH:mm:ss')}</span>
+              </div>
+            )}
           </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleSave} disabled={isSaving}>
               {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-              Salvar
+              Salvar Agora
             </Button>
             <Button variant="outline" onClick={handlePrint}>
               <Printer className="w-4 h-4 mr-2" />
