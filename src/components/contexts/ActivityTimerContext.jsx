@@ -418,6 +418,38 @@ export const ActivityTimerProvider = ({ children }) => {
                 }
             }
             
+            // Se for atividade rápida COM empreendimento, criar um planejamento fantasma para aparecer no calendário
+            if (!planejamentoId && executionData.empreendimento_id) {
+                console.log('⚡ Atividade rápida com empreendimento detectada - criando planejamento fantasma');
+                
+                try {
+                    const hoje = format(new Date(), 'yyyy-MM-dd');
+                    const planejamentoFantasma = await retryWithBackoff(
+                        () => PlanejamentoAtividade.create({
+                            descritivo: executionData.descritivo || executionData.base_descritivo || 'Atividade Rápida',
+                            base_descritivo: executionData.base_descritivo,
+                            empreendimento_id: executionData.empreendimento_id,
+                            executor_principal: user.email,
+                            tempo_planejado: 0,
+                            inicio_planejado: hoje,
+                            termino_planejado: hoje,
+                            horas_por_dia: { [hoje]: 0 },
+                            status: 'em_andamento',
+                            is_quick_activity: true
+                        }),
+                        3,
+                        1000,
+                        'createQuickActivityPlan'
+                    );
+                    
+                    planejamentoId = planejamentoFantasma.id;
+                    console.log(`✅ Planejamento fantasma criado: ${planejamentoId}`);
+                } catch (planError) {
+                    console.warn('⚠️ Não foi possível criar planejamento fantasma para atividade rápida:', planError);
+                    // Continuar mesmo sem o planejamento fantasma
+                }
+            }
+            
             const newExec = await retryWithBackoff(
                 () => Execucao.create({
                     ...executionData,
