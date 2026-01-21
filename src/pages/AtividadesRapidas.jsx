@@ -32,6 +32,15 @@ export default function AtividadesRapidasPage() {
     empreendimento_id: ''
   });
 
+  // Estados do modal de edição
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [selectedExecucao, setSelectedExecucao] = useState(null);
+  const [editData, setEditData] = useState({
+    descritivo: '',
+    empreendimento_id: ''
+  });
+  const [isSaving, setIsSaving] = useState(false);
+
   useEffect(() => {
     loadData();
   }, [user]);
