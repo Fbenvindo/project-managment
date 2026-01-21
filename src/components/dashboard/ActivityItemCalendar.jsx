@@ -242,15 +242,27 @@ export default function ActivityItemCalendar({
 
   const handleSaveEdit = async () => {
     try {
-      const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
-
-      await retryWithBackoff(
-        () => entityToUpdate.update(plano.id, {
-          descritivo: editedDescritivo,
-          empreendimento_id: editedEmpreendimentoId || null
-        }),
-        3, 1000, 'editActivity'
-      );
+      if (plano.isLegacyExecution) {
+        // Para atividades rápidas (execuções), atualizar a entidade Execucao
+        const execId = plano.id.split('-')[1];
+        await retryWithBackoff(
+          () => Execucao.update(execId, {
+            descritivo: editedDescritivo,
+            empreendimento_id: editedEmpreendimentoId || null
+          }),
+          3, 1000, 'editExecution'
+        );
+      } else {
+        // Para atividades planejadas
+        const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
+        await retryWithBackoff(
+          () => entityToUpdate.update(plano.id, {
+            descritivo: editedDescritivo,
+            empreendimento_id: editedEmpreendimentoId || null
+          }),
+          3, 1000, 'editActivity'
+        );
+      }
       
       setShowEditModal(false);
       
