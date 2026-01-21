@@ -1699,33 +1699,34 @@ export default function DocumentosTab({
                   </div>
                 )}
                 {(isUpdating || isDocLoading) && (
-                  <div className="flex items-center gap-1 text-xs text-blue-600">
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    {isDocLoading ? "Planejando..." : "Salvando..."}
-                    </div>
-                    )}
-                    </div>
-                    </TableCell>
-                    )}
-                    {!readOnly && (
-                    <TableCell className="text-sm text-gray-700">
-                    <div className="flex flex-col">
-                    <span>Início: {doc.inicio_planejado ? format(parseISO(doc.inicio_planejado), 'dd/MM/yyyy') : 'N/A'}</span>
-                    <span>Término: {doc.termino_planejado ? format(parseISO(doc.termino_planejado), 'dd/MM/yyyy') : 'N/A'}</span>
-                    </div>
-                    </TableCell>
-                    )}
-                    {!readOnly && (
-                    <TableCell className="text-sm text-gray-700">
-                    <div className="flex flex-col">
-                    <span className="font-medium">{`${tempoCalculadoPorEtapa.toFixed(1)}h`}</span>
-                    {etapaParaPlanejamento !== 'todas' && (
-                    <span className="text-xs text-gray-500">({etapaParaPlanejamento})</span>
-                    )}
-                    </div>
-                    </TableCell>
-                    )}
-                    {!readOnly && <TableCell>
+                 <div className="flex items-center gap-1 text-xs text-blue-600">
+                   <Loader2 className="w-3 h-3 animate-spin" />
+                   {isDocLoading ? "Planejando..." : "Salvando..."}
+                 </div>
+                )}
+                </div>
+                </TableCell>
+                )}
+                {!readOnly && (
+                <TableCell className="text-sm text-gray-700">
+                <div className="flex flex-col">
+                <span>Início: {doc.inicio_planejado ? format(parseISO(doc.inicio_planejado), 'dd/MM/yyyy') : 'N/A'}</span>
+                <span>Término: {doc.termino_planejado ? format(parseISO(doc.termino_planejado), 'dd/MM/yyyy') : 'N/A'}</span>
+                </div>
+                </TableCell>
+                )}
+                {!readOnly && (
+                <TableCell className="text-sm text-gray-700">
+                <div className="flex flex-col">
+                <span className="font-medium">{`${tempoCalculadoPorEtapa.toFixed(1)}h`}</span>
+                {etapaParaPlanejamento !== 'todas' && (
+                 <span className="text-xs text-gray-500">({etapaParaPlanejamento})</span>
+                )}
+                </div>
+                </TableCell>
+                )}
+                {!readOnly && (
+                <TableCell>
             <div className="flex items-center justify-end gap-2">
                 {!readOnly && (
                   <>
