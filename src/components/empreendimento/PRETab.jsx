@@ -263,17 +263,13 @@ export default function PRETab({ empreendimento, readOnly = false }) {
       <div className="bg-gray-50 print:bg-white">
         <div className="mb-4 flex justify-between items-center no-print">
           <div>
-            {readOnly && <Badge variant="outline" className="text-xs">Somente Visualização</Badge>}
+            {readOnly && <Badge variant="outline" className="text-xs">Visualização - Você pode editar Respostas e Anexos</Badge>}
           </div>
           <div className="flex gap-2">
-            {!readOnly && (
-              <>
-                <Button variant="outline" onClick={handleSave} disabled={isSaving}>
-                  {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                  Salvar
-                </Button>
-              </>
-            )}
+            <Button variant="outline" onClick={handleSave} disabled={isSaving}>
+              {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+              Salvar
+            </Button>
             <Button variant="outline" onClick={handlePrint}>
               <Printer className="w-4 h-4 mr-2" />
               Imprimir
@@ -465,35 +461,32 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                           onChange={(e) => handleUpdateItem(item.id, 'resposta', e.target.value)}
                           className="w-full text-sm print:border-none print:bg-transparent resize-y"
                           rows={5}
-                          disabled={readOnly}
                         />
                       </td>
                       <td className="border border-gray-300 p-2">
                         <div className="space-y-2">
-                          {!readOnly && (
-                            <label className="no-print">
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) handleUploadImage(item.id, file);
-                                  e.target.value = '';
-                                }}
-                                className="hidden"
-                              />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="w-full"
-                                onClick={(e) => e.currentTarget.previousElementSibling.click()}
-                              >
-                                <Upload className="w-3 h-3 mr-1" />
-                                Anexar
-                              </Button>
-                            </label>
-                          )}
+                          <label className="no-print">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleUploadImage(item.id, file);
+                                e.target.value = '';
+                              }}
+                              className="hidden"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              onClick={(e) => e.currentTarget.previousElementSibling.click()}
+                            >
+                              <Upload className="w-3 h-3 mr-1" />
+                              Anexar
+                            </Button>
+                          </label>
                           {(item.imagens || []).map((imgUrl, idx) => (
                             <div key={idx} className="relative group">
                               <img
@@ -501,14 +494,12 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                                 alt={`Imagem ${idx + 1}`}
                                 className="w-full h-20 object-cover rounded border"
                               />
-                              {!readOnly && (
-                                <button
-                                  onClick={() => handleRemoveImage(item.id, imgUrl)}
-                                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity no-print"
-                                >
-                                  <X className="w-3 h-3" />
-                                </button>
-                              )}
+                              <button
+                                onClick={() => handleRemoveImage(item.id, imgUrl)}
+                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity no-print"
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
                             </div>
                           ))}
                         </div>
