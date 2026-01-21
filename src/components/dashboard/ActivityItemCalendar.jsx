@@ -231,6 +231,10 @@ export default function ActivityItemCalendar({
   };
 
   const shouldShowEditButton = () => {
+    return realStatus === 'concluido' && !plano.isLegacyExecution;
+  };
+
+  const shouldShowEditButton = () => {
     return realStatus === 'concluido';
   };
 
