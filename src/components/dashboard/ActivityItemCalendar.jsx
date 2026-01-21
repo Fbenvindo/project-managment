@@ -44,7 +44,6 @@ export default function ActivityItemCalendar({
   isSelected, 
   onToggleSelect, 
   hasSelections,
-  allEmpreendimentos = []
 }) {
   const { activeExecution, startExecution, user, playlist, addToPlaylist, removeFromPlaylist, allEmpreendimentos } = useContext(ActivityTimerContext);
   const [isStarting, setIsStarting] = useState(false);
