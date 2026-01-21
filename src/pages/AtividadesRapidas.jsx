@@ -293,7 +293,19 @@ export default function AtividadesRapidasPage() {
                           <h4 className="font-medium text-gray-900 flex-1 mr-2">
                             {exec.descritivo}
                           </h4>
-                          {getStatusBadge(exec.status)}
+                          <div className="flex items-center gap-2">
+                            {getStatusBadge(exec.status)}
+                            {exec.status === 'Finalizado' && (
+                              <Button
+                                onClick={() => handleOpenEditModal(exec)}
+                                size="sm"
+                                variant="ghost"
+                                className="h-6 px-2"
+                              >
+                                <Edit className="w-3 h-3" />
+                              </Button>
+                            )}
+                          </div>
                         </div>
                         
                         {exec.usuario_ajudado && (
