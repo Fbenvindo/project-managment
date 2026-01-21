@@ -38,15 +38,13 @@ const LayoutComponent = ({ children, currentPageName }) => {
       }
     ];
 
-    // Empreendimentos: apoio e consultor
-    if (hasPermission('apoio') || perfilAtual === 'consultor') {
-      items.push({
-        title: "Empreendimentos",
-        url: createPageUrl("Empreendimentos"),
-        icon: Building2,
-        show: true
-      });
-    }
+    // Empreendimentos: todos os usuários podem acessar
+    items.push({
+      title: "Empreendimentos",
+      url: createPageUrl("Empreendimentos"),
+      icon: Building2,
+      show: true
+    });
 
     if (hasPermission('gestao')) {
       items.push({
