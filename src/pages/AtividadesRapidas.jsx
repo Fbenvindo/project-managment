@@ -422,6 +422,69 @@ export default function AtividadesRapidasPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Edição */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit className="w-5 h-5 text-blue-500" />
+              Editar Atividade Rápida
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="edit_descritivo">Descrição</Label>
+              <Input
+                id="edit_descritivo"
+                value={editData.descritivo}
+                onChange={(e) => setEditData(prev => ({ ...prev, descritivo: e.target.value }))}
+                placeholder="Descrição da atividade"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="edit_empreendimento">Empreendimento</Label>
+              <Select
+                value={editData.empreendimento_id}
+                onValueChange={(value) => setEditData(prev => ({ ...prev, empreendimento_id: value }))}
+              >
+                <SelectTrigger id="edit_empreendimento">
+                  <SelectValue placeholder="Sem empreendimento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={null}>Sem empreendimento</SelectItem>
+                  {empreendimentos.map(emp => (
+                    <SelectItem key={emp.id} value={emp.id}>
+                      {emp.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditModal(false)} disabled={isSaving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveEdit} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Salvar
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
