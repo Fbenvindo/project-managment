@@ -46,8 +46,7 @@ export default function ActivityItemCalendar({
   hasSelections,
   allEmpreendimentos = []
 }) {
-  const { activeExecution, startExecution, user, playlist, addToPlaylist, removeFromPlaylist, allEmpreendimentos: empreendimentosContext } = useContext(ActivityTimerContext);
-  const empreendimentos = allEmpreendimentos.length > 0 ? allEmpreendimentos : (empreendimentosContext || []);
+  const { activeExecution, startExecution, user, playlist, addToPlaylist, removeFromPlaylist } = useContext(ActivityTimerContext);
   const [isStarting, setIsStarting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showTimeAdjustModal, setShowTimeAdjustModal] = useState(false);
@@ -515,7 +514,7 @@ export default function ActivityItemCalendar({
                 className="w-full h-9 px-3 rounded-md border border-input bg-transparent text-sm"
               >
                 <option value="">Sem empreendimento</option>
-                {empreendimentos.map(emp => (
+                {allEmpreendimentos.map(emp => (
                   <option key={emp.id} value={emp.id}>{emp.nome}</option>
                 ))}
               </select>
