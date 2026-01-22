@@ -107,38 +107,41 @@ export default function PlanejamentoDocumentoEtapaModal({
     if (!documento) return [];
 
     const todasEtapasComTempo = [
-      { nome: 'Concepção', campo: 'tempo_concepcao', ordem: 1 },
-      { nome: 'Planejamento', campo: 'tempo_planejamento', ordem: 2 },
-      { nome: 'Estudo Preliminar', campo: 'tempo_estudo_preliminar', ordem: 3 },
-      { nome: 'Ante-Projeto', campo: 'tempo_ante_projeto', ordem: 4 },
-      { nome: 'Projeto Básico', campo: 'tempo_projeto_basico', ordem: 5 },
-      { nome: 'Projeto Executivo', campo: 'tempo_executivo', ordem: 6 },
-      { nome: 'Liberado para Obra', campo: 'tempo_liberado_obra', ordem: 7 }
+    { nome: 'Concepção', campo: 'tempo_concepcao', ordem: 1 },
+    { nome: 'Planejamento', campo: 'tempo_planejamento', ordem: 2 },
+    { nome: 'Estudo Preliminar', campo: 'tempo_estudo_preliminar', ordem: 3 },
+    { nome: 'Ante-Projeto', campo: 'tempo_ante_projeto', ordem: 4 },
+    { nome: 'Projeto Básico', campo: 'tempo_projeto_basico', ordem: 5 },
+    { nome: 'Projeto Executivo', campo: 'tempo_executivo', ordem: 6 },
+    { nome: 'Liberado para Obra', campo: 'tempo_liberado_obra', ordem: 7 }
     ];
 
     let etapasFiltradas = todasEtapasComTempo.filter(etapa => {
-      const atividadesDaEtapa = atividadesDisponiveisPorEtapa[etapa.nome];
-      return atividadesDaEtapa && atividadesDaEtapa.length > 0;
+    const atividadesDaEtapa = atividadesDisponiveisPorEtapa[etapa.nome];
+    return atividadesDaEtapa && atividadesDaEtapa.length > 0;
     });
 
     if (etapaParaPlanejamento !== 'todas') {
-      etapasFiltradas = etapasFiltradas.filter(etapa => etapa.nome === etapaParaPlanejamento);
+    etapasFiltradas = etapasFiltradas.filter(etapa => etapa.nome === etapaParaPlanejamento);
     }
 
     return etapasFiltradas
-      .map(etapa => {
-          const atividadesDaEtapa = atividadesDisponiveisPorEtapa[etapa.nome] || [];
-          const tempoTotalAtividades = atividadesDaEtapa.reduce((sum, ativ) =>
-              sum + ((Number(ativ.tempo) || 0) * (documento.fator_dificuldade || 1)), 0
-          );
-          return {
-              ...etapa,
-              tempoCalculado: tempoTotalAtividades,
-              atividades: atividadesDaEtapa
-          };
-      })
-      .filter(etapa => etapa.tempoCalculado > 0)
-      .sort((a, b) => a.ordem - b.ordem);
+    .map(etapa => {
+        const atividadesDaEtapa = atividadesDisponiveisPorEtapa[etapa.nome] || [];
+        const tempoTotalAtividades = atividadesDaEtapa.reduce((sum, ativ) => {
+          // "Confecção de A-" usa apenas horas x pav (sem fator de dificuldade)
+          const isConfeccaoA = ativ.atividade && ativ.atividade.trim().startsWith('Confecção de A-');
+          const multiplier = isConfeccaoA ? 1 : (documento.fator_dificuldade || 1);
+          return sum + ((Number(ativ.tempo) || 0) * multiplier);
+        }, 0);
+        return {
+            ...etapa,
+            tempoCalculado: tempoTotalAtividades,
+            atividades: atividadesDaEtapa
+        };
+    })
+    .filter(etapa => etapa.tempoCalculado > 0)
+    .sort((a, b) => a.ordem - b.ordem);
   }, [documento, etapaParaPlanejamento, atividadesDisponiveisPorEtapa]);
 
   useEffect(() => {
