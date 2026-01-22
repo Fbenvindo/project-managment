@@ -258,9 +258,7 @@ export default function ControleOSTab({ empreendimento, atividades }) {
               <TabsTrigger value="ar" className="text-xs">Ar Cond.</TabsTrigger>
               <TabsTrigger value="memorial" className="text-xs">Memorial</TabsTrigger>
             </TabsList>
-          {/* Campos Fixos */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Gestão Geral</h3>
+            {/* Gestão Geral - Sempre visível antes das abas */}
             <div className="overflow-x-auto border rounded-lg">
               <table className="w-full border-collapse bg-white">
                 <thead>
