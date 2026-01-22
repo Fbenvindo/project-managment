@@ -1049,10 +1049,10 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                    </table>}
 
-                  {/* ESP. TEC. */}
-                  <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
+                    {/* ESP. TEC. */}
+                    {visibleTables.includes('espTec') && <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
                     <thead className="bg-gray-800 text-white">
                       <tr>
                         <th colSpan={espTecColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
