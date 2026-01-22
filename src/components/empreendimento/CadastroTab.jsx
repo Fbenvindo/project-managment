@@ -323,7 +323,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     setLinhas(prev => prev.map((linha, idx) => {
       if (idx !== linhaIndex + 1) return linha;
       
-      return { ...linha, datas: { ...linhaOriginal.datas } };
+      // Deep clone do objeto datas para evitar referências compartilhadas
+      return { ...linha, datas: JSON.parse(JSON.stringify(linhaOriginal.datas)) };
     }));
   };
 
