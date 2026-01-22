@@ -246,6 +246,18 @@ export default function ControleOSTab({ empreendimento, atividades }) {
           </Button>
         </CardHeader>
         <CardContent className="space-y-6">
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsList className="grid w-full grid-cols-9 lg:grid-cols-9">
+              <TabsTrigger value="planejamento" className="text-xs">Planejamento</TabsTrigger>
+              <TabsTrigger value="art" className="text-xs">ART</TabsTrigger>
+              <TabsTrigger value="concessionarias" className="text-xs">Concessionárias</TabsTrigger>
+              <TabsTrigger value="monitoramento" className="text-xs">Monitoramento</TabsTrigger>
+              <TabsTrigger value="hidraulica" className="text-xs">Hidráulica</TabsTrigger>
+              <TabsTrigger value="incendio" className="text-xs">Incêndio</TabsTrigger>
+              <TabsTrigger value="sistemas" className="text-xs">Sistemas</TabsTrigger>
+              <TabsTrigger value="ar" className="text-xs">Ar Cond.</TabsTrigger>
+              <TabsTrigger value="memorial" className="text-xs">Memorial</TabsTrigger>
+            </TabsList>
           {/* Campos Fixos */}
           <div>
             <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Gestão Geral</h3>
