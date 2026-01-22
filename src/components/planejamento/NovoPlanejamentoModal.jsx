@@ -38,6 +38,8 @@ export default function NovoPlanejamentoModal({
     executor_principal: "",
     tempo_planejado: "",
     inicio_planejado: "",
+    horario_inicio: "",
+    horario_termino: "",
     status: "nao_iniciado",
     prioridade: 1
   });
@@ -65,6 +67,8 @@ export default function NovoPlanejamentoModal({
     executores: [],
     executor_principal: "",
     tempo_planejado: "",
+    horario_inicio: "",
+    horario_termino: "",
   });
   const [selectedDocumentoDate, setSelectedDocumentoDate] = useState(null);
 
@@ -133,7 +137,8 @@ export default function NovoPlanejamentoModal({
   const resetIndividualForm = () => {
     setFormData({
       empreendimento_id: "", descritivo: "", executores: [], executor_principal: "",
-      tempo_planejado: "", inicio_planejado: "", status: "nao_iniciado", prioridade: 1
+      tempo_planejado: "", inicio_planejado: "", horario_inicio: "", horario_termino: "",
+      status: "nao_iniciado", prioridade: 1
     });
     setSelectedDate(null);
     setSelectedActivityId("");
@@ -158,6 +163,8 @@ export default function NovoPlanejamentoModal({
       executores: [],
       executor_principal: "",
       tempo_planejado: "",
+      horario_inicio: "",
+      horario_termino: "",
     });
     setSelectedDocumentoDate(null);
   };
@@ -487,6 +494,8 @@ export default function NovoPlanejamentoModal({
       descritivo: `${descritivo}${!isPrincipal && formData.executores.length > 1 ? ` (Executor)`: ''}`,
       executores: [executor], executor_principal: executor, tempo_planejado: tempoTotal,
       inicio_planejado: inicioPlanejado, termino_planejado: terminoPlanejadoStr,
+      horario_inicio: formData.horario_inicio || null,
+      horario_termino: formData.horario_termino || null,
       prioridade: Number(formData.prioridade), horas_por_dia: distribuicao, status: "nao_iniciado"
     };
 
@@ -759,6 +768,8 @@ export default function NovoPlanejamentoModal({
           tempo_planejado: tempoTotal,
           inicio_planejado: inicioPlanejado,
           termino_planejado: terminoPlanejadoStr,
+          horario_inicio: documentoFormData.horario_inicio || null,
+          horario_termino: documentoFormData.horario_termino || null,
           prioridade: 1,
           horas_por_dia: distribuicao,
           status: "nao_iniciado"
@@ -920,6 +931,32 @@ export default function NovoPlanejamentoModal({
               )}
               
               <div className="space-y-2"><Label className="flex items-center gap-2"><Clock className="w-4 h-4" />Tempo Planejado (horas) *</Label><Input type="number" step="0.1" value={formData.tempo_planejado} onChange={(e) => setFormData(prev => ({ ...prev, tempo_planejado: e.target.value }))} placeholder="Ex: 8.5"/></div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    Horário Início (opcional)
+                  </Label>
+                  <Input
+                    type="time"
+                    value={formData.horario_inicio}
+                    onChange={(e) => setFormData(prev => ({ ...prev, horario_inicio: e.target.value }))}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Clock className="w-4 h-4" />
+                    Horário Término (opcional)
+                  </Label>
+                  <Input
+                    type="time"
+                    value={formData.horario_termino}
+                    onChange={(e) => setFormData(prev => ({ ...prev, horario_termino: e.target.value }))}
+                  />
+                </div>
+              </div>
+              
               <div className="space-y-2"><Label className="flex items-center gap-2"><CalendarIcon className="w-4 h-4" />Data de Início (opcional)</Label><Popover><PopoverTrigger asChild><Button variant="outline" className="w-full justify-start"><CalendarIcon className="mr-2 h-4 w-4" />{selectedDate ? format(selectedDate, 'PPP', { locale: ptBR }) : 'Selecionar data'}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} locale={ptBR} /></PopoverContent></Popover><p className="text-xs text-gray-500">Se não especificada, será usada a próxima data útil disponível.</p></div>
               <div className="space-y-2"><div className="flex items-center space-x-2"><input type="checkbox" id="recorrencia-toggle" checked={isRecorrente} onChange={(e) => setIsRecorrente(e.target.checked)} className="rounded" /><Label htmlFor="recorrencia-toggle" className="flex items-center gap-2 cursor-pointer"><Repeat className="w-4 h-4" />Criar Atividade Recorrente</Label></div></div>
               {isRecorrente && (<motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="p-4 border rounded-lg bg-gray-50/50 space-y-4"><div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label htmlFor="tipo-recorrencia">Frequência</Label><Select value={recorrencia.tipo} onValueChange={(value) => setRecorrencia(prev => ({...prev, tipo: value}))}><SelectTrigger id="tipo-recorrencia"><SelectValue placeholder="Selecione..." /></SelectTrigger><SelectContent><SelectItem value="mesmo_dia">Repetir no mesmo dia</SelectItem><Separator className="my-1" /><SelectItem value="diaria">Diária</SelectItem><SelectItem value="semanal">Semanal</SelectItem><SelectItem value="quinzenal">Quinzenal</SelectItem><SelectItem value="mensal">Mensal</SelectItem></SelectContent></Select></div><div className="space-y-2"><Label htmlFor="repeticoes-recorrencia">Repetições</Label><Input id="repeticoes-recorrencia" type="number" min="1" value={recorrencia.repeticoes} onChange={(e) => setRecorrencia(prev => ({...prev, repeticoes: parseInt(e.target.value, 10) || 1 }))} placeholder="Nº de vezes"/></div></div></motion.div>)}
@@ -1204,6 +1241,31 @@ export default function NovoPlanejamentoModal({
                       ⚠️ Nenhum tempo cadastrado para a etapa "{etapaDocumento}" neste documento. Por favor, insira manualmente.
                     </p>
                   )}
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      Horário Início (opcional)
+                    </Label>
+                    <Input
+                      type="time"
+                      value={documentoFormData.horario_inicio}
+                      onChange={(e) => setDocumentoFormData(prev => ({ ...prev, horario_inicio: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <Clock className="w-4 h-4" />
+                      Horário Término (opcional)
+                    </Label>
+                    <Input
+                      type="time"
+                      value={documentoFormData.horario_termino}
+                      onChange={(e) => setDocumentoFormData(prev => ({ ...prev, horario_termino: e.target.value }))}
+                    />
+                  </div>
                 </div>
 
                 <div className="space-y-2">
