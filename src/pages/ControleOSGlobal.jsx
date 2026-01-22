@@ -197,15 +197,40 @@ export default function ControleOSGlobal() {
           </CardContent>
         </Card>
       ) : (
-        <Card className="p-0">
-          <ControleOSSpreadsheet 
-            controlesOS={filteredControles} 
-            empreendimentos={empreendimentos}
-            searchTerm={searchTerm}
-            onUpdate={handleUpdateControle}
-            editable={true}
-          />
-        </Card>
+        <>
+          <div className="flex justify-end gap-2 mb-4">
+            <Button
+              variant={viewMode === 'expanded' ? 'default' : 'outline'}
+              onClick={() => setViewMode('expanded')}
+              size="sm"
+            >
+              Expandido
+            </Button>
+            <Button
+              variant={viewMode === 'spreadsheet' ? 'default' : 'outline'}
+              onClick={() => setViewMode('spreadsheet')}
+              size="sm"
+            >
+              Planilha
+            </Button>
+          </div>
+
+          {viewMode === 'expanded' ? (
+            <Card className="p-6">
+              <ControleOSTableExpanded controles={filteredControles} />
+            </Card>
+          ) : (
+            <Card className="p-0">
+              <ControleOSSpreadsheet 
+                controlesOS={filteredControles} 
+                empreendimentos={empreendimentos}
+                searchTerm={searchTerm}
+                onUpdate={handleUpdateControle}
+                editable={true}
+              />
+            </Card>
+          )}
+        </>
       )}
     </div>
   );
