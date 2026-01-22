@@ -609,7 +609,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                 <div className="flex-1 overflow-x-auto">
                   <div className="flex gap-0">
                     {/* PROJETO - tabela completa sem coluna Projeto */}
-                <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
+                    {visibleTables.includes('projeto') && <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
                   <thead className="bg-gray-800 text-white">
                     <tr>
                       <th colSpan={projetoColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
