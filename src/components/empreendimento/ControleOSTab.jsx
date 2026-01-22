@@ -365,36 +365,35 @@ export default function ControleOSTab({ empreendimento, atividades }) {
 
             {/* Atividades Vinculadas do Empreendimento */}
             {atividadesVinculadas.length > 0 && (
-            <div>
-              <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Atividades do Empreendimento</h3>
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {atividadesVinculadas.map(ativ => {
-                  const status = controleOS.atividades_vinculadas?.[ativ.key] || 'NA';
-                  return (
-                    <div key={ativ.key}>
-                      <label className="text-sm font-medium text-gray-700 mb-1 block truncate" title={ativ.nome}>
-                        {ativ.nome}
-                      </label>
-                      <Select value={status} onValueChange={(v) => handleAtividadeChange(ativ.key, v)}>
-                        <SelectTrigger className={getStatusColor(status)}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {STATUS_OPTIONS.map(opt => (
-                            <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  );
-                })}
+              <div className="mb-6">
+                <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Atividades do Empreendimento</h3>
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  {atividadesVinculadas.map(ativ => {
+                    const status = controleOS.atividades_vinculadas?.[ativ.key] || 'NA';
+                    return (
+                      <div key={ativ.key}>
+                        <label className="text-sm font-medium text-gray-700 mb-1 block truncate" title={ativ.nome}>
+                          {ativ.nome}
+                        </label>
+                        <Select value={status} onValueChange={(v) => handleAtividadeChange(ativ.key, v)}>
+                          <SelectTrigger className={getStatusColor(status)}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {STATUS_OPTIONS.map(opt => (
+                              <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
-            </div>
-          )}
+            )}
 
-          {/* ART (Manual) */}
-          <div>
-            <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">ART</h3>
+            {/* ART Tab */}
+            <TabsContent value="art" className="space-y-4">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-700 mb-1 block">ART - EE/AIS</label>
