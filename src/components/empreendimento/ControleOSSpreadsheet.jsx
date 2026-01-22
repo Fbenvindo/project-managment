@@ -556,94 +556,17 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
               Nenhum empreendimento encontrado
             </div>
           ) : (
-            <div className="bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-              <div className="flex h-full">
-                {/* Coluna Projeto Fixa */}
-                <div className="sticky left-0 z-5 bg-white border-r border-gray-300 flex-shrink-0">
-                  <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
-                    <thead className="bg-gray-800 text-white">
-                      <tr>
-                        <th colSpan={1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
-                          PROJETO
-                        </th>
-                      </tr>
-                      <tr>
-                        <th className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle" style={{ width: '200px', minWidth: '200px', height: '38px', padding: '0 8px' }}>
-                          PROJETO
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
-                          <td className="border border-gray-300 whitespace-nowrap font-medium align-middle" style={{ height: '30px', padding: '0 8px' }}>
-                            {row.projeto || 'NA'}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+            <>
+              {activePasta === 'todas' ? (
+                <div>
+                  {currentTable.tables.map((tableKey) => (
+                    <RenderTable key={tableKey} tableKey={tableKey} />
+                  ))}
                 </div>
-                
-                {/* Tabelas com scroll horizontal */}
-                <div className="flex-1 overflow-x-auto">
-                  <table className="text-xs w-full" style={{ borderCollapse: 'collapse' }}>
-                    <thead className="bg-gray-800 text-white">
-                      <tr>
-                        <th colSpan={columns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
-                          {currentTable.title}
-                        </th>
-                      </tr>
-                      <tr>
-                        {columns.slice(1).map((col) => (
-                          <th
-                            key={col.key}
-                            className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
-                            style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
-                          >
-                            {col.label}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
-                          {columns.slice(1).map((col) => {
-                            const value = row[col.key] || (col.type === 'text' ? '' : 'NA');
-                            return (
-                              <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
-                                {col.isStatus ? (
-                                  <StatusCell 
-                                    status={value} 
-                                    editable={editable}
-                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
-                                    customOptions={col.statusOptions}
-                                  />
-                                ) : col.type === 'gestao' ? (
-                                  <GestaoCell 
-                                    value={value === 'NA' ? '' : value}
-                                    editable={editable}
-                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
-                                    usuarios={usuarios}
-                                  />
-                                ) : col.type === 'formalizacao' ? (
-                                  <FormalizacaoCell 
-                                    value={value}
-                                    editable={editable}
-                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
-                                  />
-                                ) : value}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </div>
+              ) : (
+                <RenderTable tableKey={activePasta} />
+              )}
+            </>
           )}
         </>
       ) : (
