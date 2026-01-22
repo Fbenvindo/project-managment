@@ -254,7 +254,7 @@ const SpreadsheetTable = ({ title, columns, data, stickyFirst = true }) => {
   );
 };
 
-export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, searchTerm, onUpdate, editable = false }) {
+export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, searchTerm, onUpdate, editable = false, activePasta = 'projeto' }) {
   const [isGridView, setIsGridView] = useState(true);
   const [usuarios, setUsuarios] = useState([]);
 
