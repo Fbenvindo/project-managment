@@ -198,6 +198,23 @@ export default function ControleOSGlobal() {
               className="pl-10"
             />
           </div>
+
+          {/* Abas/Pastas */}
+          <div className="border-t pt-4">
+            <Tabs value={activePasta} onValueChange={setActivePasta} className="w-full">
+              <TabsList className="grid w-full gap-1 grid-cols-6 lg:grid-cols-11 h-auto p-2 bg-gray-100">
+                {pastas.map(pasta => (
+                  <TabsTrigger 
+                    key={pasta.id} 
+                    value={pasta.id} 
+                    className="text-xs px-2 py-1 whitespace-nowrap"
+                  >
+                    {pasta.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+          </div>
         </CardContent>
       </Card>
 
