@@ -235,6 +235,7 @@ export default function ControleOSGlobal() {
             searchTerm={searchTerm}
             onUpdate={handleUpdateControle}
             editable={true}
+            activePasta={activePasta}
           />
         </Card>
       )}
