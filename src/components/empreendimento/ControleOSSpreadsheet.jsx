@@ -174,7 +174,7 @@ const FormalizacaoCell = ({ value, editable, onUpdate }) => {
   );
 };
 
-export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, searchTerm, onUpdate, editable = false, activePasta = 'projeto' }) {
+export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, searchTerm, onUpdate, editable = false, activePasta = 'todas' }) {
   const [isGridView, setIsGridView] = useState(true);
   const [usuarios, setUsuarios] = useState([]);
 
