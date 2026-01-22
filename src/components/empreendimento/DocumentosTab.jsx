@@ -245,8 +245,10 @@ export default function DocumentosTab({
                 const tempoBase = tempoOverridesChild.has(ativ.id)
                     ? parseFloat(tempoOverridesChild.get(ativ.id)) || 0
                     : parseFloat(ativ.tempo) || 0;
-                // CORRIGIDO: tempo base já é total, não h/m²
-                const tempoCalculado = tempoBase * fatorDificuldadeChild;
+                // "Confecção de A-" usa apenas horas x pav (sem fator de dificuldade)
+                const isConfeccaoA = ativ.atividade && ativ.atividade.trim().startsWith('Confecção de A-');
+                const multiplier = isConfeccaoA ? 1 : fatorDificuldadeChild;
+                const tempoCalculado = tempoBase * multiplier;
                 return total + tempoCalculado;
             }, 0);
 
