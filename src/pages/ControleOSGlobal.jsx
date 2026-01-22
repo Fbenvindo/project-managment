@@ -34,6 +34,7 @@ export default function ControleOSGlobal() {
   const [activePasta, setActivePasta] = useState('projeto');
 
   const pastas = [
+    { id: 'todas', label: 'Todas' },
     { id: 'projeto', label: 'Projeto' },
     { id: 'art', label: 'ART' },
     { id: 'concessionarias', label: 'Concessionárias' },
