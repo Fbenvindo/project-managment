@@ -935,9 +935,9 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                 </div>
               </div>
             </TabsContent>
-          </Tabs>
+            </Tabs>
 
-          {/* Avanço */}
+            {/* Avanço */}
           <div>
             <div className="flex items-center justify-between mb-4 border-b pb-2">
               <h3 className="text-lg font-semibold text-gray-800">Avanço</h3>
