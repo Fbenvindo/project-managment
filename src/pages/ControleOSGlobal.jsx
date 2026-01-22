@@ -8,7 +8,6 @@ import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import ControleOSSpreadsheet from "../components/empreendimento/ControleOSSpreadsheet";
-import ControleOSTableExpanded from "../components/empreendimento/ControleOSTableExpanded";
 
 const getStatusColor = (status) => {
   const colors = {
@@ -31,7 +30,6 @@ export default function ControleOSGlobal() {
   const [empreendimentos, setEmpreendimentos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState('expanded'); // 'expanded' ou 'spreadsheet'
 
   useEffect(() => {
     loadData();
@@ -197,40 +195,15 @@ export default function ControleOSGlobal() {
           </CardContent>
         </Card>
       ) : (
-        <>
-          <div className="flex justify-end gap-2 mb-4">
-            <Button
-              variant={viewMode === 'expanded' ? 'default' : 'outline'}
-              onClick={() => setViewMode('expanded')}
-              size="sm"
-            >
-              Expandido
-            </Button>
-            <Button
-              variant={viewMode === 'spreadsheet' ? 'default' : 'outline'}
-              onClick={() => setViewMode('spreadsheet')}
-              size="sm"
-            >
-              Planilha
-            </Button>
-          </div>
-
-          {viewMode === 'expanded' ? (
-            <Card className="p-6">
-              <ControleOSTableExpanded controles={filteredControles} />
-            </Card>
-          ) : (
-            <Card className="p-0">
-              <ControleOSSpreadsheet 
-                controlesOS={filteredControles} 
-                empreendimentos={empreendimentos}
-                searchTerm={searchTerm}
-                onUpdate={handleUpdateControle}
-                editable={true}
-              />
-            </Card>
-          )}
-        </>
+        <Card className="p-0">
+          <ControleOSSpreadsheet 
+            controlesOS={filteredControles} 
+            empreendimentos={empreendimentos}
+            searchTerm={searchTerm}
+            onUpdate={handleUpdateControle}
+            editable={true}
+          />
+        </Card>
       )}
     </div>
   );
