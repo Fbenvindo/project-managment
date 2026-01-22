@@ -220,27 +220,7 @@ export const ActivityTimerProvider = ({ children }) => {
 
                     console.log(`   🏁 Finalizando atividade normal...`);
                     console.log(`      Tempo planejado original: ${planejamento.tempo_planejado}h`);
-                    
-                    const totalHorasOriginais = Number(planejamento.tempo_planejado) || 0;
-                    const horasLiberadas = totalHorasOriginais - novoTempoExecutado;
-                    
-                    console.log(`      ✅ Horas liberadas na agenda: ${horasLiberadas.toFixed(2)}h`);
                     console.log(`      📊 horas_executadas_por_dia atualizado com execução real`);
-
-                    if (horasLiberadas > 0.1 && planejamento.executor_principal) {
-                        const dataFinalizacao = format(new Date(), 'yyyy-MM-dd');
-                        console.log(`      🎯 Iniciando realocação automática a partir de ${dataFinalizacao}...`);
-                        
-                        const atividadesRealocadas = await realocarAtividadesDoDiaSeguinte(
-                            planejamento.executor_principal,
-                            dataFinalizacao,
-                            horasLiberadas
-                        );
-
-                        if (atividadesRealocadas.length > 0) {
-                            console.log(`      ✨ ${atividadesRealocadas.length} atividade(s) realocada(s)`);
-                        }
-                    }
                     
                 } else if (finalStatus === 'pausado') {
                     updateData.status = 'pausado';
