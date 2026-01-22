@@ -360,11 +360,11 @@ export default function ControleOSTab({ empreendimento, atividades }) {
                   </tr>
                 </tbody>
               </table>
+              </div>
             </div>
-          </div>
 
-          {/* Atividades Vinculadas do Empreendimento */}
-          {atividadesVinculadas.length > 0 && (
+            {/* Atividades Vinculadas do Empreendimento */}
+            {atividadesVinculadas.length > 0 && (
             <div>
               <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Atividades do Empreendimento</h3>
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
