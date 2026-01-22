@@ -133,22 +133,26 @@ export default function PDFListaDesenvolvimento({ alteracoes = [] }) {
           const atividades = alteracoesPorEtapa[etapa][disciplina];
           
           atividades.forEach((atividade, atIndex) => {
-            checkPageBreak(8);
-            
-            // Item da atividade
+            checkPageBreak(6);
+
+            // Item da atividade em formato de tabela
             pdf.setFont('helvetica', 'normal');
             pdf.setFontSize(9);
-            
+
             const itemNum = atIndex + 1;
-            const textoAtividade = `${itemNum}. ${atividade.nome_atividade}`;
-            const linhas = pdf.splitTextToSize(textoAtividade, pageWidth - margin - 20);
-            
-            // Desenhar retângulo ao redor
-            const alturaTexto = linhas.length * 5;
-            pdf.rect(margin + 10, yPos - 3, pageWidth - 2 * margin - 10, alturaTexto + 2);
-            
-            pdf.text(linhas, margin + 12, yPos);
-            yPos += alturaTexto + 5;
+            const colWidth = 10;
+            const descWidth = pageWidth - 2 * margin - colWidth - 2;
+
+            // Número da atividade
+            pdf.setFont('helvetica', 'normal');
+            pdf.text(itemNum.toString(), margin, yPos);
+
+            // Descrição da atividade
+            const linhas = pdf.splitTextToSize(atividade.nome_atividade, descWidth);
+            pdf.text(linhas, margin + colWidth + 2, yPos);
+
+            const alturaLinha = linhas.length * 4;
+            yPos += alturaLinha + 3;
           });
           
           yPos += 3; // Espaço entre disciplinas
