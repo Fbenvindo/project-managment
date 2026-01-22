@@ -748,15 +748,19 @@ export default function PlanejamentoDocumentoEtapaModal({
 
                             <div className="mt-3 space-y-1">
                               <p className="text-xs font-medium text-gray-500 mb-2">Atividades incluídas:</p>
-                              {atividadesDaEtapa.map((ativ, idx) => (
-                                <div key={idx} className="text-xs text-gray-600 flex items-center gap-2 pl-2">
-                                  <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
-                                  <span>{ativ.atividade}</span>
-                                  <span className="text-gray-400">
-                                    ({((Number(ativ.tempo) || 0) * (documento.fator_dificuldade || 1)).toFixed(1)}h)
-                                  </span>
-                                </div>
-                              ))}
+                              {atividadesDaEtapa.map((ativ, idx) => {
+                                const isConfeccaoA = ativ.atividade && ativ.atividade.trim().startsWith('Confecção de A-');
+                                const horas = (Number(ativ.tempo) || 0) * (isConfeccaoA ? 1 : (documento.fator_dificuldade || 1));
+                                return (
+                                  <div key={idx} className="text-xs text-gray-600 flex items-center gap-2 pl-2">
+                                    <div className="w-1 h-1 bg-gray-400 rounded-full"></div>
+                                    <span>{ativ.atividade}</span>
+                                    <span className="text-gray-400">
+                                      ({horas.toFixed(1)}h)
+                                    </span>
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         )}
