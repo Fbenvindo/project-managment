@@ -200,14 +200,14 @@ export default function ControleOSGlobal() {
           </div>
 
           {/* Abas/Pastas */}
-          <div className="border-t pt-4">
+          <div className="mt-6 bg-white rounded-lg border border-gray-200 p-4">
             <Tabs value={activePasta} onValueChange={setActivePasta} className="w-full">
-              <TabsList className="grid w-full gap-1 grid-cols-6 lg:grid-cols-11 h-auto p-2 bg-gray-100">
+              <TabsList className="flex flex-wrap gap-2 h-auto p-0 bg-transparent">
                 {pastas.map(pasta => (
                   <TabsTrigger 
                     key={pasta.id} 
                     value={pasta.id} 
-                    className="text-xs px-2 py-1 whitespace-nowrap"
+                    className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 data-[state=active]:bg-blue-50 data-[state=active]:border-blue-500 data-[state=active]:text-blue-700 hover:bg-gray-50"
                   >
                     {pasta.label}
                   </TabsTrigger>
