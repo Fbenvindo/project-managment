@@ -30,6 +30,21 @@ export default function ControleOSGlobal() {
   const [empreendimentos, setEmpreendimentos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [activePasta, setActivePasta] = useState('projeto');
+
+  const pastas = [
+    { id: 'projeto', label: 'Projeto' },
+    { id: 'art', label: 'ART' },
+    { id: 'concessionarias', label: 'Concessionárias' },
+    { id: 'monitoramento', label: 'Monitoramento' },
+    { id: 'hidraulica', label: 'Hidráulica' },
+    { id: 'incendio', label: 'Incêndio' },
+    { id: 'sistemas', label: 'Sistemas Eletrônicos' },
+    { id: 'ar', label: 'Ar Condicionado' },
+    { id: 'memorial', label: 'Memorial' },
+    { id: 'esptec', label: 'Esp. Tec.' },
+    { id: 'markup', label: 'Mark-Up' }
+  ];
 
   useEffect(() => {
     loadData();
