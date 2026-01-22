@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -63,11 +62,14 @@ export default function PlanejamentoDocumentoEtapaModal({
     console.log(`   - Etapa para planejamento: ${etapaParaPlanejamento}`);
 
     let atividadesCorrespondentes = allAtividades.filter(ativ => {
-      const isGeneral = !ativ.empreendimento_id;
-      const disciplinaMatch = ativ.disciplina === disciplinaDoc;
-      const subdisciplinaMatch = subdisciplinasDoc.includes(ativ.subdisciplina);
-      
-      const match = isGeneral && disciplinaMatch && subdisciplinaMatch;
+       const isGeneral = !ativ.empreendimento_id;
+       const disciplinaMatch = ativ.disciplina === disciplinaDoc;
+       const subdisciplinaMatch = subdisciplinasDoc.includes(ativ.subdisciplina);
+
+       // "Confecção de A-" usa apenas horas x pav (não multiplica por etapas)
+       const isConfeccaoA = ativ.atividade && ativ.atividade.trim().startsWith('Confecção de A-');
+
+       const match = isGeneral && disciplinaMatch && subdisciplinaMatch;
       
       if (match) {
         console.log(`   ✅ Match: ${ativ.atividade} (${ativ.etapa} - ${ativ.subdisciplina})`);
