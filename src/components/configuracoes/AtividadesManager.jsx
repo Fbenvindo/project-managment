@@ -1,16 +1,17 @@
-
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Save, X, Search, Clock, User, Settings, Check, Pencil, Building, BookCopy } from "lucide-react"; // Adicionado Building e BookCopy
-import { Atividade } from "@/entities/all";
+import { Plus, Edit, Trash2, Save, X, Search, Clock, User, Settings, Check, Pencil, Building, BookCopy, FileText, Loader2 } from "lucide-react";
+import { Atividade, AlteracaoEtapa } from "@/entities/all";
 import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ordenarAtividades, agruparAtividadesPorEtapa, ORDEM_ETAPAS } from '../utils/AtividadeOrdering';
+import { base44 } from '@/api/base44Client';
+import PDFListaDesenvolvimento from './PDFListaDesenvolvimento';
 
 export default function AtividadesManager({ atividades, disciplinas, onUpdate, isLoading }) {
   const [showForm, setShowForm] = useState(false);
@@ -27,9 +28,53 @@ export default function AtividadesManager({ atividades, disciplinas, onUpdate, i
     predecessora: "",
     tempo: 0
   });
-  // isGeneratingIds state and its usage are removed as per the request
-  const [editingIdAtividade, setEditingIdAtividade] = useState(null); // New state for inline ID editing
-  const [tempIdValue, setTempIdValue] = useState(""); // New state for inline ID input value
+  const [editingIdAtividade, setEditingIdAtividade] = useState(null);
+  const [tempIdValue, setTempIdValue] = useState("");
+  
+  // Estados para rastreamento de alterações
+  const [alteracoesEtapa, setAlteracoesEtapa] = useState([]);
+  const [isLoadingAlteracoes, setIsLoadingAlteracoes] = useState(false);
+
+  // Carregar alterações de etapa ao montar
+  useEffect(() => {
+    const loadAlteracoes = async () => {
+      setIsLoadingAlteracoes(true);
+      try {
+        const user = await base44.auth.me();
+        // Buscar alterações das últimas 24h
+        const dataLimite = new Date();
+        dataLimite.setHours(dataLimite.getHours() - 24);
+        
+        const alteracoes = await AlteracaoEtapa.filter({
+          data_alteracao: { $gte: dataLimite.toISOString() }
+        });
+        
+        setAlteracoesEtapa(alteracoes || []);
+      } catch (error) {
+        console.error("Erro ao carregar alterações:", error);
+        setAlteracoesEtapa([]);
+      } finally {
+        setIsLoadingAlteracoes(false);
+      }
+    };
+    
+    loadAlteracoes();
+  }, []);
+
+  const limparAlteracoes = async () => {
+    if (!confirm("Deseja limpar o registro de alterações? Esta ação não pode ser desfeita.")) {
+      return;
+    }
+    
+    try {
+      await Promise.all(alteracoesEtapa.map(alt => AlteracaoEtapa.delete(alt.id)));
+      setAlteracoesEtapa([]);
+      alert("✅ Registro de alterações limpo com sucesso!");
+    } catch (error) {
+      console.error("Erro ao limpar alterações:", error);
+      alert("Erro ao limpar alterações: " + error.message);
+    }
+  };
 
   // CORREÇÃO: Usar função utilitária para ordenar
   const atividadesOrdenadas = useMemo(() => {
@@ -70,17 +115,50 @@ export default function AtividadesManager({ atividades, disciplinas, onUpdate, i
   const handleSubmit = async (e) => {
     e.preventDefault();
     const dataToSave = { ...formData, tempo: Number(formData.tempo) };
-    if (editingAtividade) {
-      // Preserve existing id_atividade if editing an existing one, as it's not in the form
-      if (editingAtividade.id_atividade) {
-        dataToSave.id_atividade = editingAtividade.id_atividade;
+    
+    try {
+      if (editingAtividade) {
+        // Preserve existing id_atividade if editing an existing one
+        if (editingAtividade.id_atividade) {
+          dataToSave.id_atividade = editingAtividade.id_atividade;
+        }
+        
+        // Verificar se a etapa foi alterada
+        if (editingAtividade.etapa !== dataToSave.etapa) {
+          const user = await base44.auth.me();
+          
+          // Registrar alteração
+          await AlteracaoEtapa.create({
+            atividade_id: editingAtividade.id,
+            id_atividade: editingAtividade.id_atividade || "",
+            nome_atividade: editingAtividade.atividade,
+            disciplina: editingAtividade.disciplina,
+            subdisciplina: editingAtividade.subdisciplina || "",
+            etapa_anterior: editingAtividade.etapa,
+            etapa_nova: dataToSave.etapa,
+            empreendimento_id: editingAtividade.empreendimento_id || null,
+            empreendimento_nome: editingAtividade.empreendimento_nome || "",
+            data_alteracao: new Date().toISOString(),
+            usuario_email: user.email,
+            usuario_nome: user.full_name || user.nome || user.email
+          });
+          
+          // Recarregar alterações
+          const alteracoes = await AlteracaoEtapa.list();
+          setAlteracoesEtapa(alteracoes || []);
+        }
+        
+        await Atividade.update(editingAtividade.id, dataToSave);
+      } else {
+        await Atividade.create(dataToSave);
       }
-      await Atividade.update(editingAtividade.id, dataToSave);
-    } else {
-      await Atividade.create(dataToSave);
+      
+      resetForm();
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao salvar atividade:", error);
+      alert("Erro ao salvar atividade: " + error.message);
     }
-    resetForm();
-    onUpdate();
   };
 
   const handleEdit = (atividade) => {
@@ -154,16 +232,33 @@ export default function AtividadesManager({ atividades, disciplinas, onUpdate, i
       <Card className="bg-white border-0 shadow-lg">
         <CardHeader className="border-b border-gray-100">
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <CardTitle className="text-xl font-bold">Gerenciar Atividades</CardTitle>
-            <div className="flex gap-2">
-              {/* Removed the "Gerar IDs" button */}
+            <div className="flex-1">
+              <CardTitle className="text-xl font-bold">Gerenciar Atividades</CardTitle>
+              {alteracoesEtapa.length > 0 && (
+                <p className="text-sm text-gray-600 mt-1">
+                  {alteracoesEtapa.length} alteração(ões) de etapa registrada(s) nas últimas 24h
+                </p>
+              )}
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {alteracoesEtapa.length > 0 && (
+                <>
+                  <PDFListaDesenvolvimento alteracoes={alteracoesEtapa} />
+                  <Button
+                    variant="outline"
+                    onClick={limparAlteracoes}
+                    className="border-red-500 text-red-600 hover:bg-red-50"
+                  >
+                    Limpar Registro
+                  </Button>
+                </>
+              )}
               <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700">
                 <Plus className="w-4 h-4 mr-2" />
                 Nova Atividade
               </Button>
             </div>
           </div>
-          {/* Removed the conditional div for isGeneratingIds status message */}
         </CardHeader>
 
         <CardContent className="p-6">

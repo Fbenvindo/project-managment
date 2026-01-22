@@ -1,0 +1,293 @@
+import React, { useState, useEffect } from 'react';
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { FileText, Loader2, Download, Calendar } from "lucide-react";
+import { AlteracaoEtapa } from "@/entities/all";
+import { format } from "date-fns";
+import { ptBR } from "date-fns/locale";
+import jsPDF from 'jspdf';
+
+const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/577f93874_logo_Interativa_versao_final_sem_fundo_0002.png";
+
+export default function PDFListaDesenvolvimento({ alteracoes = [] }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [dadosCliente, setDadosCliente] = useState({
+    construtora: "",
+    empreendimento: ""
+  });
+
+  // Agrupar alterações por etapa nova
+  const alteracoesPorEtapa = React.useMemo(() => {
+    const grupos = {};
+    alteracoes.forEach(alt => {
+      if (!grupos[alt.etapa_nova]) {
+        grupos[alt.etapa_nova] = {};
+      }
+      if (!grupos[alt.etapa_nova][alt.disciplina]) {
+        grupos[alt.etapa_nova][alt.disciplina] = [];
+      }
+      grupos[alt.etapa_nova][alt.disciplina].push(alt);
+    });
+    return grupos;
+  }, [alteracoes]);
+
+  const gerarPDF = async () => {
+    if (!dadosCliente.construtora || !dadosCliente.empreendimento) {
+      alert("Por favor, preencha os dados do cliente e empreendimento.");
+      return;
+    }
+
+    setIsGenerating(true);
+    
+    try {
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      const pageWidth = pdf.internal.pageSize.width;
+      const pageHeight = pdf.internal.pageSize.height;
+      const margin = 15;
+      let yPos = 20;
+
+      // === CABEÇALHO ===
+      try {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        await new Promise((resolve, reject) => {
+          img.onload = resolve;
+          img.onerror = reject;
+          img.src = LOGO_URL;
+        });
+        const logoWidth = 35;
+        const logoHeight = (img.height / img.width) * logoWidth;
+        pdf.addImage(img, 'PNG', (pageWidth - logoWidth) / 2, yPos, logoWidth, logoHeight);
+        yPos += logoHeight + 10;
+      } catch (error) {
+        console.warn("Erro ao carregar logo, continuando sem ela:", error);
+        yPos += 10;
+      }
+
+      // Título
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(14);
+      pdf.text('LISTA DE DESENVOLVIMENTO DE ATIVIDADES', pageWidth / 2, yPos, { align: 'center' });
+      yPos += 15;
+
+      // Dados do cliente
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      pdf.text(`CONSTRUTORA ${dadosCliente.construtora.toUpperCase()}`, margin, yPos);
+      yPos += 6;
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(10);
+      pdf.text(`Empreendimento: ${dadosCliente.empreendimento}`, margin, yPos);
+      yPos += 10;
+
+      // APRESENTAÇÃO
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      pdf.text('APRESENTAÇÃO', margin, yPos);
+      yPos += 6;
+      
+      pdf.setFont('helvetica', 'normal');
+      pdf.setFontSize(9);
+      const apresentacao = `O objetivo deste documento é fornecer informações acerca da lista de atividades e documentos a serem fornecidos em cada etapa de desenvolvimento do projeto.`;
+      const linhasApresentacao = pdf.splitTextToSize(apresentacao, pageWidth - 2 * margin);
+      pdf.text(linhasApresentacao, margin, yPos);
+      yPos += (linhasApresentacao.length * 5) + 10;
+
+      // Função para verificar quebra de página
+      const checkPageBreak = (necessarySpace) => {
+        if (yPos + necessarySpace > pageHeight - margin) {
+          pdf.addPage();
+          yPos = margin;
+          return true;
+        }
+        return false;
+      };
+
+      // === ATIVIDADES POR ETAPA ===
+      const etapas = Object.keys(alteracoesPorEtapa);
+      
+      etapas.forEach((etapa, etapaIndex) => {
+        checkPageBreak(15);
+        
+        // Título da etapa
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(11);
+        pdf.text(`${etapaIndex + 1}. ${etapa.toUpperCase()}`, margin, yPos);
+        yPos += 8;
+
+        const disciplinas = Object.keys(alteracoesPorEtapa[etapa]);
+        
+        disciplinas.forEach((disciplina, discIndex) => {
+          checkPageBreak(12);
+          
+          // Subtítulo da disciplina
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(10);
+          pdf.text(`${etapaIndex + 1}.${discIndex + 1} ${disciplina}`, margin + 5, yPos);
+          yPos += 7;
+
+          const atividades = alteracoesPorEtapa[etapa][disciplina];
+          
+          atividades.forEach((atividade, atIndex) => {
+            checkPageBreak(8);
+            
+            // Item da atividade
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(9);
+            
+            const itemNum = atIndex + 1;
+            const textoAtividade = `${itemNum}. ${atividade.nome_atividade}`;
+            const linhas = pdf.splitTextToSize(textoAtividade, pageWidth - margin - 20);
+            
+            // Desenhar retângulo ao redor
+            const alturaTexto = linhas.length * 5;
+            pdf.rect(margin + 10, yPos - 3, pageWidth - 2 * margin - 10, alturaTexto + 2);
+            
+            pdf.text(linhas, margin + 12, yPos);
+            yPos += alturaTexto + 5;
+          });
+          
+          yPos += 3; // Espaço entre disciplinas
+        });
+        
+        yPos += 5; // Espaço entre etapas
+      });
+
+      // === RODAPÉ ===
+      const totalPages = pdf.internal.pages.length - 1;
+      for (let i = 1; i <= totalPages; i++) {
+        pdf.setPage(i);
+        
+        // Linha decorativa
+        pdf.setDrawColor(200);
+        pdf.line(margin, pageHeight - 20, pageWidth - margin, pageHeight - 20);
+        
+        // Texto do rodapé
+        pdf.setFont('helvetica', 'bold');
+        pdf.setFontSize(9);
+        pdf.setTextColor(100);
+        pdf.text('Interativa Engenharia', margin, pageHeight - 12);
+        
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8);
+        pdf.text('Fone (Phone): 55. 11 2533.8282', margin, pageHeight - 8);
+        pdf.text('www.interativaengenharia.com.br', margin, pageHeight - 4);
+      }
+
+      // Salvar PDF
+      const nomeArquivo = `Lista_Desenvolvimento_${dadosCliente.empreendimento.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}.pdf`;
+      pdf.save(nomeArquivo);
+      
+      alert(`✅ PDF gerado com sucesso!\n\n${alteracoes.length} alterações documentadas`);
+      setIsOpen(false);
+      setDadosCliente({ construtora: "", empreendimento: "" });
+      
+    } catch (error) {
+      console.error("Erro ao gerar PDF:", error);
+      alert("Erro ao gerar PDF: " + error.message);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  return (
+    <>
+      <Button
+        onClick={() => setIsOpen(true)}
+        disabled={alteracoes.length === 0}
+        className="bg-purple-600 hover:bg-purple-700"
+      >
+        <FileText className="w-4 h-4 mr-2" />
+        Gerar PDF de Alterações
+        {alteracoes.length > 0 && (
+          <span className="ml-2 bg-white text-purple-600 px-2 py-0.5 rounded-full text-xs font-bold">
+            {alteracoes.length}
+          </span>
+        )}
+      </Button>
+
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-purple-600" />
+              Lista de Desenvolvimento de Atividades
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                📋 <strong>{alteracoes.length} alterações</strong> de etapa serão documentadas no PDF
+              </p>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="construtora">Construtora *</Label>
+              <Input
+                id="construtora"
+                value={dadosCliente.construtora}
+                onChange={(e) => setDadosCliente(prev => ({ ...prev, construtora: e.target.value }))}
+                placeholder="Ex: ADOLPHO LINDENBERG"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="empreendimento">Empreendimento *</Label>
+              <Input
+                id="empreendimento"
+                value={dadosCliente.empreendimento}
+                onChange={(e) => setDadosCliente(prev => ({ ...prev, empreendimento: e.target.value }))}
+                placeholder="Ex: Mário Amaral"
+              />
+            </div>
+
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+              <h4 className="text-xs font-semibold text-gray-700 mb-2">Resumo das alterações:</h4>
+              <div className="space-y-1 max-h-32 overflow-y-auto">
+                {Object.entries(alteracoesPorEtapa).map(([etapa, disciplinas]) => (
+                  <div key={etapa} className="text-xs text-gray-600">
+                    <span className="font-medium">{etapa}:</span> {Object.values(disciplinas).flat().length} atividades
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setIsOpen(false);
+                setDadosCliente({ construtora: "", empreendimento: "" });
+              }}
+              disabled={isGenerating}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={gerarPDF}
+              disabled={isGenerating || !dadosCliente.construtora || !dadosCliente.empreendimento}
+              className="bg-purple-600 hover:bg-purple-700"
+            >
+              {isGenerating ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Gerando PDF...
+                </>
+              ) : (
+                <>
+                  <Download className="w-4 h-4 mr-2" />
+                  Gerar PDF
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
