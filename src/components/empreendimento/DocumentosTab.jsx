@@ -1138,9 +1138,13 @@ export default function DocumentosTab({
         const jaFoiPlanejada = isDocumentPlannedAsSingleEntity && etapaFinal === etapaParaPlanejamento;
 
         const fatorDificuldade = doc.fator_dificuldade || 1;
+        
+        // "Confecção de A-" usa apenas horas x pav (sem fator de dificuldade)
+        const isConfeccaoA = atividade.atividade && atividade.atividade.trim().startsWith('Confecção de A-');
+        const multiplier = isConfeccaoA ? 1 : fatorDificuldade;
 
         // CORRIGIDO: tempo base já é total, não h/m²
-        const tempoComFator = tempoBase * fatorDificuldade;
+        const tempoComFator = tempoBase * multiplier;
 
         // Para exibição: mostrar tempo original mesmo se concluída
         const tempoBaseParaExibicao = estaConcluida ? tempoBaseOriginal : tempoBase;
