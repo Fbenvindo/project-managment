@@ -217,12 +217,21 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
   // because PlanejamentoAtividadeModal is now responsible for its own submission logic
   // via its internal state and `onSuccess` callback.
 
-  // MODIFICADO: Filtrar apenas atividades específicas do projeto com filtros avançados
+  // Pegar IDs dos documentos que pertencem a este empreendimento
+  const documentoIdsDoEmpreendimento = useMemo(() => {
+    return (documentos || [])
+      .filter(d => d.empreendimento_id === empreendimentoId)
+      .map(d => d.id);
+  }, [documentos, empreendimentoId]);
+
+  // MODIFICADO: Filtrar atividades específicas do projeto ou vinculadas aos documentos do empreendimento
   const filteredAtividades = useMemo(() => {
     return (atividades || [])
       .filter(a => {
-        // Mostrar atividades que têm empreendimento_id definido (específicas do projeto) ou que foram criadas neste projeto
-        return a.empreendimento_id && (a.empreendimento_id === empreendimentoId);
+        // Incluir atividades específicas do projeto OR atividades vinculadas a documentos deste empreendimento
+        const ehDoEmpreendimento = a.empreendimento_id === empreendimentoId;
+        const ehDoDocumento = a.documento_id && documentoIdsDoEmpreendimento.includes(a.documento_id);
+        return ehDoEmpreendimento || ehDoDocumento;
       })
       .filter(a => a.tempo !== -999) // Excluir marcadores de exclusão
       .filter(a => {
@@ -240,7 +249,7 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
         
         return nomeMatch && etapaMatch && disciplinaMatch && subdisciplinaMatch;
       });
-  }, [atividades, empreendimentoId, searchTerm, etapaFilter, disciplinaFilter, subdisciplinaFilter]);
+  }, [atividades, empreendimentoId, documentoIdsDoEmpreendimento, searchTerm, etapaFilter, disciplinaFilter, subdisciplinaFilter]);
 
   if (!empreendimentoId) {
     return (
