@@ -1,6 +1,5 @@
-
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Atividade, Disciplina, PlanejamentoAtividade, Documento } from '@/entities/all';
+import { Atividade, Disciplina, PlanejamentoAtividade, Documento, AlteracaoEtapa, Empreendimento } from '@/entities/all';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,6 +13,8 @@ import { debounce } from 'lodash';
 import { Badge } from '@/components/ui/badge';
 import { retryWithBackoff } from '../utils/apiUtils';
 import { Checkbox } from "@/components/ui/checkbox";
+import { base44 } from '@/api/base44Client';
+import PDFListaDesenvolvimento from '../configuracoes/PDFListaDesenvolvimento';
 
 const EtapaEditModal = ({ isOpen, onClose, atividade, onSave }) => {
   const [newEtapa, setNewEtapa] = useState('');
@@ -154,6 +155,25 @@ const EditarEtapaEmFolhasModal = ({ isOpen, onClose, atividade, documentos, empr
     setIsSaving(true);
 
     try {
+      // Registrar alteração
+      const user = await base44.auth.me();
+      const empreendimento = await Empreendimento.filter({ id: empreendimentoId });
+      
+      await AlteracaoEtapa.create({
+        atividade_id: atividade.base_atividade_id || atividade.id,
+        id_atividade: atividade.id_atividade || "",
+        nome_atividade: atividade.atividade,
+        disciplina: atividade.disciplina,
+        subdisciplina: atividade.subdisciplina || "",
+        etapa_anterior: atividade.etapa,
+        etapa_nova: novaEtapa,
+        empreendimento_id: empreendimentoId,
+        empreendimento_nome: (empreendimento && empreendimento[0]?.nome) || "",
+        data_alteracao: new Date().toISOString(),
+        usuario_email: user.email,
+        usuario_nome: user.full_name || user.nome || user.email
+      });
+      
       const baseAtividadeId = atividade.base_atividade_id || atividade.id;
 
       const atividadeOriginalArr = await retryWithBackoff(
@@ -255,6 +275,8 @@ const EditarEtapaEmFolhasModal = ({ isOpen, onClose, atividade, documentos, empr
 
       alert(mensagem);
       
+      // Recarregar alterações
+      const alteracoes = await AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId });
       if (onSuccess) onSuccess();
       onClose();
 
@@ -631,6 +653,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isDeletingMultiple, setIsDeletingMultiple] = useState(false);
   const [isRestoringGlobal, setIsRestoringGlobal] = useState(false);
+  
+  // Estados para rastreamento de alterações
+  const [alteracoesEtapa, setAlteracoesEtapa] = useState([]);
+  const [empreendimentoNome, setEmpreendimentoNome] = useState("");
 
   const documentosMap = useMemo(() => {
     return new Map((documentos || []).map(doc => [doc.id, doc]));
@@ -644,16 +670,22 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         planejamentos,
         allActivities,
         documentosData,
-        disciplinasData
+        disciplinasData,
+        empreendimentoData,
+        alteracoesData
       ] = await Promise.all([
         retryWithBackoff(() => Atividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchProjectActivities'),
         retryWithBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchPlanejamentos'),
         retryWithBackoff(() => Atividade.list(), 3, 500, 'fetchAllActivities'),
         retryWithBackoff(() => Documento.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchDocumentos'),
         retryWithBackoff(() => Disciplina.list(), 3, 500, 'fetchDisciplinas'),
+        retryWithBackoff(() => Empreendimento.filter({ id: empreendimentoId }), 3, 500, 'fetchEmpreendimento'),
+        retryWithBackoff(() => AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAlteracoes')
       ]);
 
       setDocumentos(documentosData || []);
+      setEmpreendimentoNome((empreendimentoData && empreendimentoData[0]?.nome) || "");
+      setAlteracoesEtapa(alteracoesData || []);
 
       // MODIFICADO: Criar dois mapas - um global e um por documento
       const overrideActivitiesGlobalMap = new Map(); // Overrides sem documento_id específico
@@ -840,6 +872,25 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         atividade_id: selectedAtividade.base_atividade_id
       }), 3, 500, 'findPlanosForEtapaUpdate');
   
+      // Registrar alteração antes de aplicar
+      const user = await base44.auth.me();
+      const etapaAnterior = selectedAtividade.etapa;
+      
+      await AlteracaoEtapa.create({
+        atividade_id: selectedAtividade.base_atividade_id,
+        id_atividade: selectedAtividade.id_atividade || "",
+        nome_atividade: selectedAtividade.atividade,
+        disciplina: selectedAtividade.disciplina,
+        subdisciplina: selectedAtividade.subdisciplina || "",
+        etapa_anterior: etapaAnterior,
+        etapa_nova: newEtapa,
+        empreendimento_id: empreendimentoId,
+        empreendimento_nome: empreendimentoNome,
+        data_alteracao: new Date().toISOString(),
+        usuario_email: user.email,
+        usuario_nome: user.full_name || user.nome || user.email
+      });
+  
       if (allPlanejamentos.length === 0) {
         const baseAtividadeArr = await retryWithBackoff(() => Atividade.filter({ id: selectedAtividade.base_atividade_id }), 3, 500, 'findBaseAtividade');
         
@@ -852,7 +903,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         const existingOverride = await retryWithBackoff(() => Atividade.filter({
             empreendimento_id: empreendimentoId,
             id_atividade: selectedAtividade.base_atividade_id,
-            documento_id: null, // Ensure we only get the global override
+            documento_id: null,
             tempo: { operator: '!=', value: -999 } 
         }), 3, 500, 'findExistingOverride');
 
@@ -867,7 +918,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                 id_atividade: selectedAtividade.base_atividade_id,
                 etapa: newEtapa,
                 empreendimento_id: empreendimentoId,
-                documento_id: null, // This is a global override
+                documento_id: null,
             };
             delete overrideAtividade.id;
 
@@ -884,6 +935,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         
         alert(`${allPlanejamentos.length} ocorrência(s) da atividade foram atualizadas para a etapa "${newEtapa}".`);
       }
+      
+      // Recarregar alterações
+      const alteracoes = await AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId });
+      setAlteracoesEtapa(alteracoes || []);
   
       fetchData();
       if(onUpdate) onUpdate();
@@ -1301,14 +1356,46 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     );
   };
 
+  const limparAlteracoes = async () => {
+    if (!confirm("Deseja limpar o registro de alterações deste empreendimento? Esta ação não pode ser desfeita.")) {
+      return;
+    }
+    
+    try {
+      await Promise.all(alteracoesEtapa.map(alt => AlteracaoEtapa.delete(alt.id)));
+      setAlteracoesEtapa([]);
+      alert("✅ Registro de alterações limpo com sucesso!");
+    } catch (error) {
+      console.error("Erro ao limpar alterações:", error);
+      alert("Erro ao limpar alterações: " + error.message);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <h2 className="text-2xl font-bold">Catálogo de Atividades do Empreendimento</h2>
           <p className="text-gray-500">Visualize todas as atividades planejadas e gerencie as atividades específicas do projeto.</p>
+          {alteracoesEtapa.length > 0 && (
+            <p className="text-sm text-purple-600 mt-1">
+              {alteracoesEtapa.length} alteração(ões) de etapa registrada(s)
+            </p>
+          )}
         </div>
-        <div className="flex gap-2">
+        <div className="flex gap-2 flex-wrap">
+          {alteracoesEtapa.length > 0 && (
+            <>
+              <PDFListaDesenvolvimento alteracoes={alteracoesEtapa} />
+              <Button
+                variant="outline"
+                onClick={limparAlteracoes}
+                className="border-red-500 text-red-600 hover:bg-red-50"
+              >
+                Limpar Registro
+              </Button>
+            </>
+          )}
           <Button
             onClick={handleRestaurarExclusoesGlobais}
             variant="outline"
