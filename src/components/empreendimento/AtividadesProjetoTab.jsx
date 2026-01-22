@@ -1,4 +1,3 @@
-
 import React, { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Plus, Edit, Trash2, Search, Calendar } from "lucide-react";
@@ -24,6 +23,7 @@ import {
 } from "@/components/ui/table";
 import AplicarAtividadeModal from "./AplicarAtividadeModal";
 import PlanejamentoAtividadeModal from "./PlanejamentoAtividadeModal";
+import AtividadesProjetoFilters from "./AtividadesProjetoFilters";
 
 const initialState = {
   etapa: '',
@@ -166,6 +166,9 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
   const [showForm, setShowForm] = useState(false);
   const [editingAtividade, setEditingAtividade] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [etapaFilter, setEtapaFilter] = useState("");
+  const [disciplinaFilter, setDisciplinaFilter] = useState("");
+  const [subdisciplinaFilter, setSubdisciplinaFilter] = useState("");
   const [showAplicarModal, setShowAplicarModal] = useState(false);
   const [atividadeParaAplicar, setAtividadeParaAplicar] = useState(null);
   const [showPlanejamentoModal, setShowPlanejamentoModal] = useState(false);
@@ -214,16 +217,26 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
   // because PlanejamentoAtividadeModal is now responsible for its own submission logic
   // via its internal state and `onSuccess` callback.
 
-  // MODIFICADO: Filtrar atividades excluindo marcadores de exclusão (tempo === -999)
+  // MODIFICADO: Filtrar atividades com filtros avançados
   const filteredAtividades = useMemo(() => {
     return (atividades || [])
-      .filter(a => a.tempo !== -999) // NOVO: Excluir marcadores de exclusão
-      .filter(a =>
-        (a.atividade || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (a.disciplina || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (a.etapa || '').toLowerCase().includes(searchTerm.toLowerCase())
-      );
-  }, [atividades, searchTerm]);
+      .filter(a => a.tempo !== -999) // Excluir marcadores de exclusão
+      .filter(a => {
+        // Filtro por nome
+        const nomeMatch = (a.atividade || '').toLowerCase().includes(searchTerm.toLowerCase());
+        
+        // Filtro por etapa
+        const etapaMatch = !etapaFilter || (a.etapa || '').toLowerCase() === etapaFilter.toLowerCase();
+        
+        // Filtro por disciplina
+        const disciplinaMatch = !disciplinaFilter || (a.disciplina || '').toLowerCase() === disciplinaFilter.toLowerCase();
+        
+        // Filtro por subdisciplina
+        const subdisciplinaMatch = !subdisciplinaFilter || (a.subdisciplina || '').toLowerCase() === subdisciplinaFilter.toLowerCase();
+        
+        return nomeMatch && etapaMatch && disciplinaMatch && subdisciplinaMatch;
+      });
+  }, [atividades, searchTerm, etapaFilter, disciplinaFilter, subdisciplinaFilter]);
 
   if (!empreendimentoId) {
     return (
@@ -293,15 +306,24 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
         </Button>
       </div>
 
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-        <Input
-          placeholder="Buscar atividades..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
-      </div>
+      <AtividadesProjetoFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        etapaFilter={etapaFilter}
+        onEtapaChange={setEtapaFilter}
+        disciplinaFilter={disciplinaFilter}
+        onDisciplinaChange={setDisciplinaFilter}
+        subdisciplinaFilter={subdisciplinaFilter}
+        onSubdisciplinaChange={setSubdisciplinaFilter}
+        disciplinas={disciplinas}
+        atividades={atividades}
+        onClearFilters={() => {
+          setSearchTerm("");
+          setEtapaFilter("");
+          setDisciplinaFilter("");
+          setSubdisciplinaFilter("");
+        }}
+      />
 
       <div className="rounded-lg border">
         <Table>
