@@ -14,6 +14,7 @@ const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/pub
 export default function PDFListaDesenvolvimento({ alteracoes = [] }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState(null);
   const [dadosCliente, setDadosCliente] = useState({
     construtora: "",
     empreendimento: ""
@@ -34,7 +35,7 @@ export default function PDFListaDesenvolvimento({ alteracoes = [] }) {
     return grupos;
   }, [alteracoes]);
 
-  const gerarPDF = async () => {
+  const gerarPDF = async (visualizar = false) => {
     if (!dadosCliente.construtora || !dadosCliente.empreendimento) {
       alert("Por favor, preencha os dados do cliente e empreendimento.");
       return;
@@ -177,13 +178,20 @@ export default function PDFListaDesenvolvimento({ alteracoes = [] }) {
         pdf.text('www.interativaengenharia.com.br', margin, pageHeight - 4);
       }
 
-      // Salvar PDF
-      const nomeArquivo = `Lista_Desenvolvimento_${dadosCliente.empreendimento.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}.pdf`;
-      pdf.save(nomeArquivo);
-      
-      alert(`✅ PDF gerado com sucesso!\n\n${alteracoes.length} alterações documentadas`);
-      setIsOpen(false);
-      setDadosCliente({ construtora: "", empreendimento: "" });
+      // Salvar ou Visualizar PDF
+      if (visualizar) {
+        const pdfBlob = pdf.output('blob');
+        const url = URL.createObjectURL(pdfBlob);
+        setPdfUrl(url);
+      } else {
+        const nomeArquivo = `Lista_Desenvolvimento_${dadosCliente.empreendimento.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}.pdf`;
+        pdf.save(nomeArquivo);
+        
+        alert(`✅ PDF baixado com sucesso!\n\n${alteracoes.length} alterações documentadas`);
+        setIsOpen(false);
+        setPdfUrl(null);
+        setDadosCliente({ construtora: "", empreendimento: "" });
+      }
       
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
@@ -191,6 +199,15 @@ export default function PDFListaDesenvolvimento({ alteracoes = [] }) {
     } finally {
       setIsGenerating(false);
     }
+  };
+
+  const handleFechar = () => {
+    if (pdfUrl) {
+      URL.revokeObjectURL(pdfUrl);
+      setPdfUrl(null);
+    }
+    setIsOpen(false);
+    setDadosCliente({ construtora: "", empreendimento: "" });
   };
 
   return (
@@ -209,8 +226,8 @@ export default function PDFListaDesenvolvimento({ alteracoes = [] }) {
         )}
       </Button>
 
-      <Dialog open={isOpen} onOpenChange={setIsOpen}>
-        <DialogContent className="max-w-md">
+      <Dialog open={isOpen} onOpenChange={handleFechar}>
+        <DialogContent className={pdfUrl ? "max-w-4xl max-h-[90vh]" : "max-w-md"}>
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-purple-600" />
@@ -218,7 +235,39 @@ export default function PDFListaDesenvolvimento({ alteracoes = [] }) {
             </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
+          {pdfUrl ? (
+            <div className="space-y-4">
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  📄 Visualização do PDF - Role para ver todo o conteúdo
+                </p>
+              </div>
+              
+              <iframe
+                src={pdfUrl}
+                className="w-full h-[600px] border rounded-lg"
+                title="Preview do PDF"
+              />
+              
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={handleFechar}
+                >
+                  Fechar
+                </Button>
+                <Button
+                  onClick={() => gerarPDF(false)}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Baixar PDF
+                </Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-4 py-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
               <p className="text-sm text-blue-800">
                 📋 <strong>{alteracoes.length} alterações</strong> de etapa serão documentadas no PDF
@@ -257,35 +306,34 @@ export default function PDFListaDesenvolvimento({ alteracoes = [] }) {
             </div>
           </div>
 
-          <DialogFooter>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsOpen(false);
-                setDadosCliente({ construtora: "", empreendimento: "" });
-              }}
-              disabled={isGenerating}
-            >
-              Cancelar
-            </Button>
-            <Button
-              onClick={gerarPDF}
-              disabled={isGenerating || !dadosCliente.construtora || !dadosCliente.empreendimento}
-              className="bg-purple-600 hover:bg-purple-700"
-            >
-              {isGenerating ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Gerando PDF...
-                </>
-              ) : (
-                <>
-                  <Download className="w-4 h-4 mr-2" />
-                  Gerar PDF
-                </>
-              )}
-            </Button>
-          </DialogFooter>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={handleFechar}
+                  disabled={isGenerating}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={() => gerarPDF(true)}
+                  disabled={isGenerating || !dadosCliente.construtora || !dadosCliente.empreendimento}
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  {isGenerating ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Gerando...
+                    </>
+                  ) : (
+                    <>
+                      <FileText className="w-4 h-4 mr-2" />
+                      Visualizar PDF
+                    </>
+                  )}
+                </Button>
+              </DialogFooter>
+            </>
+          )}
         </DialogContent>
       </Dialog>
     </>
