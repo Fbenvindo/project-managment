@@ -337,6 +337,10 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
   ];
 
   const allTables = {
+    todas: {
+      title: 'TODAS AS ABAS',
+      tables: ['projeto', 'art', 'concessionarias', 'monitoramento', 'hidraulica', 'incendio', 'sistemas', 'ar', 'memorial', 'esptec', 'markup']
+    },
     projeto: {
       title: 'PROJETO',
       columns: [
