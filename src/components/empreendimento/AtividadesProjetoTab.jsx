@@ -219,9 +219,11 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
 
   // Pegar IDs dos documentos que pertencem a este empreendimento
   const documentoIdsDoEmpreendimento = useMemo(() => {
-    return (documentos || [])
+    const ids = (documentos || [])
       .filter(d => d.empreendimento_id === empreendimentoId)
       .map(d => d.id);
+    console.log("📄 Documentos do empreendimento:", ids.length, ids);
+    return ids;
   }, [documentos, empreendimentoId]);
 
   // MODIFICADO: Filtrar atividades específicas do projeto ou vinculadas aos documentos do empreendimento
