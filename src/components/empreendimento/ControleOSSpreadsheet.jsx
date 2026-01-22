@@ -525,6 +525,26 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
     { key: 'monitoramento_entregas_x_etapas', label: 'Entregas x Etapas', width: '130px', isStatus: true, statusOptions: planejamentoOptions }
   ];
 
+  // Mapear qual tabela mostrar baseado na pasta ativa
+  const getVisibleTables = () => {
+    const tableMap = {
+      'projeto': ['projeto'],
+      'art': ['art'],
+      'concessionarias': ['concessionarias'],
+      'monitoramento': ['monitoramento'],
+      'hidraulica': ['planejamentoHidraulica'],
+      'incendio': ['planejamentoIncendio'],
+      'sistemas': ['planejamentoSistemas'],
+      'ar': ['planejamentoArCondicionado'],
+      'memorial': ['memorial'],
+      'esptec': ['espTec'],
+      'markup': ['markup']
+    };
+    return tableMap[activePasta] || ['projeto'];
+  };
+
+  const visibleTables = getVisibleTables();
+
   return (
     <div className="space-y-6">
       {/* Toggle View */}
