@@ -259,7 +259,9 @@ export default function ControleOSTab({ empreendimento, atividades }) {
               <TabsTrigger value="memorial" className="text-xs">Memorial</TabsTrigger>
             </TabsList>
             {/* Gestão Geral - Sempre visível antes das abas */}
-            <div className="overflow-x-auto border rounded-lg">
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-4 text-gray-800 border-b pb-2">Gestão Geral</h3>
+              <div className="overflow-x-auto border rounded-lg">
               <table className="w-full border-collapse bg-white">
                 <thead>
                   <tr className="bg-gray-800">
