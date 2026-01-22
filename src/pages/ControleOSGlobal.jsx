@@ -8,6 +8,7 @@ import { base44 } from "@/api/base44Client";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import ControleOSSpreadsheet from "../components/empreendimento/ControleOSSpreadsheet";
+import ControleOSTableExpanded from "../components/empreendimento/ControleOSTableExpanded";
 
 const getStatusColor = (status) => {
   const colors = {
