@@ -43,6 +43,7 @@ export default function ControleOSTab({ empreendimento, atividades }) {
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [usuarios, setUsuarios] = useState([]);
+  const [activeTab, setActiveTab] = useState('planejamento');
 
   // Identificar atividades do empreendimento que devem aparecer como colunas
   const atividadesVinculadas = useMemo(() => {
