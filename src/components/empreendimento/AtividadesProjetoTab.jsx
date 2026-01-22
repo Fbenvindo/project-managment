@@ -255,6 +255,8 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
         
         return nomeMatch && etapaMatch && disciplinaMatch && subdisciplinaMatch;
       });
+    console.log("🔍 Total de atividades filtradas:", todasAtividades.length);
+    return todasAtividades;
   }, [atividades, empreendimentoId, documentoIdsDoEmpreendimento, searchTerm, etapaFilter, disciplinaFilter, subdisciplinaFilter]);
 
   if (!empreendimentoId) {
