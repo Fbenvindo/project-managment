@@ -1006,10 +1006,10 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                         </tr>
                       ))}
                     </tbody>
-                  </table>
+                    </table>}
 
-                  {/* MEMORIAL */}
-                  <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
+                    {/* MEMORIAL */}
+                    {visibleTables.includes('memorial') && <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
                     <thead className="bg-gray-800 text-white">
                       <tr>
                         <th colSpan={memorialColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
