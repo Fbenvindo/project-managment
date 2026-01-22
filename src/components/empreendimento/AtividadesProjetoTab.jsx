@@ -217,10 +217,16 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
   // because PlanejamentoAtividadeModal is now responsible for its own submission logic
   // via its internal state and `onSuccess` callback.
 
-  // MODIFICADO: Filtrar atividades com filtros avançados
+  // MODIFICADO: Filtrar atividades incluindo genéricas e específicas do projeto
   const filteredAtividades = useMemo(() => {
     return (atividades || [])
-      .filter(a => a.tempo !== -999) // Excluir marcadores de exclusão
+      .filter(a => {
+        // Incluir atividades genéricas (sem empreendimento_id) ou específicas do projeto
+        const isGenericaOuDoEmpresa = !a.empreendimento_id || a.empreendimento_id === empreendimentoId;
+        // Excluir marcadores de exclusão
+        const naoEhMarcadorExclusao = a.tempo !== -999;
+        return isGenericaOuDoEmpresa && naoEhMarcadorExclusao;
+      })
       .filter(a => {
         // Filtro por nome
         const nomeMatch = (a.atividade || '').toLowerCase().includes(searchTerm.toLowerCase());
@@ -236,7 +242,7 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
         
         return nomeMatch && etapaMatch && disciplinaMatch && subdisciplinaMatch;
       });
-  }, [atividades, searchTerm, etapaFilter, disciplinaFilter, subdisciplinaFilter]);
+  }, [atividades, empreendimentoId, searchTerm, etapaFilter, disciplinaFilter, subdisciplinaFilter]);
 
   if (!empreendimentoId) {
     return (
