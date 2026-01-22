@@ -220,7 +220,10 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
   // MODIFICADO: Filtrar apenas atividades específicas do projeto com filtros avançados
   const filteredAtividades = useMemo(() => {
     return (atividades || [])
-      .filter(a => a.empreendimento_id === empreendimentoId) // Apenas específicas do projeto
+      .filter(a => {
+        // Mostrar atividades que têm empreendimento_id definido (específicas do projeto) ou que foram criadas neste projeto
+        return a.empreendimento_id && (a.empreendimento_id === empreendimentoId);
+      })
       .filter(a => a.tempo !== -999) // Excluir marcadores de exclusão
       .filter(a => {
         // Filtro por nome
