@@ -17,6 +17,7 @@ import Propostas from './pages/Propostas';
 import Relatorios from './pages/Relatorios';
 import SeletorPlanejamento from './pages/SeletorPlanejamento';
 import Usuarios from './pages/Usuarios';
+import AtividadesDoProjeto from './pages/AtividadesDoProjeto';
 import __Layout from './Layout.jsx';
 
 
@@ -40,6 +41,7 @@ export const PAGES = {
     "Relatorios": Relatorios,
     "SeletorPlanejamento": SeletorPlanejamento,
     "Usuarios": Usuarios,
+    "AtividadesDoProjeto": AtividadesDoProjeto,
 }
 
 export const pagesConfig = {
