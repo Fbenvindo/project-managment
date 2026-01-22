@@ -16,7 +16,6 @@ const getStatusBgColor = (status) => {
     "Concluído - R05": "#dcfce7",
     "Concluído - R06": "#dcfce7",
     "Concluído - R07": "#dcfce7",
-    "Concluído - LO": "#dcfce7",
     "Concluído - PR": "#dcfce7",
     "Pendente": "#fee2e2",
     "Em andamento": "#fef3c7",
@@ -175,85 +174,6 @@ const FormalizacaoCell = ({ value, editable, onUpdate }) => {
   );
 };
 
-const SpreadsheetTable = ({ title, columns, data, stickyFirst = true }) => {
-  const projectoColumn = columns[0];
-  const otherColumns = columns.slice(1);
-  
-  return (
-    <div className="flex bg-white rounded-lg shadow border border-gray-200 overflow-hidden">
-      {/* Coluna Projeto Fixa */}
-      <div className="flex-shrink-0">
-        <table className="border-collapse text-xs">
-          <thead className="bg-gray-800 text-white">
-            <tr>
-              <th colSpan={1} className="border border-gray-300 px-4 py-2 text-left font-bold">
-                {title}
-              </th>
-            </tr>
-            <tr>
-              <th className="border border-gray-300 px-2 py-2 text-left font-semibold whitespace-nowrap" style={{ width: projectoColumn.width, minWidth: projectoColumn.width }}>
-                {projectoColumn.label}
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((row, idx) => (
-              <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                <td className="border border-gray-300 px-2 py-1.5 whitespace-nowrap font-medium">
-                  {row[projectoColumn.key] || 'NA'}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      
-      {/* Outras Colunas com Scroll */}
-      <div className="flex-1 overflow-x-auto">
-        <table className="border-collapse text-xs w-full">
-          <thead className="bg-gray-800 text-white">
-            <tr>
-              <th colSpan={otherColumns.length} className="border border-gray-300 px-4 py-2 text-left font-bold">
-                {title}
-              </th>
-            </tr>
-            <tr>
-              {otherColumns.map((col) => (
-                <th
-                  key={col.key}
-                  className="border border-gray-300 px-2 py-2 text-left font-semibold whitespace-nowrap"
-                  style={{ width: col.width, minWidth: col.width }}
-                >
-                  {col.label}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {data.map((row, idx) => (
-              <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                {otherColumns.map((col) => {
-                  const value = row[col.key] || 'NA';
-                  const isStatusCell = col.isStatus;
-                  
-                  return (
-                    <td 
-                      key={col.key} 
-                      className="border border-gray-300 px-2 py-1.5 whitespace-nowrap"
-                    >
-                      {isStatusCell ? <StatusCell status={value} /> : value}
-                    </td>
-                  );
-                })}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  );
-};
-
 export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, searchTerm, onUpdate, editable = false, activePasta = 'projeto' }) {
   const [isGridView, setIsGridView] = useState(true);
   const [usuarios, setUsuarios] = useState([]);
@@ -278,13 +198,11 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
   }, [empreendimentos]);
 
   const filteredControles = useMemo(() => {
-    // Criar um mapa de controles por empreendimento_id
     const controlesMap = controlesOS.reduce((acc, controle) => {
       acc[controle.empreendimento_id] = controle;
       return acc;
     }, {});
 
-    // Criar lista com TODOS os empreendimentos
     const allControles = empreendimentos.map(emp => {
       const controle = controlesMap[emp.id];
       if (controle) {
@@ -308,14 +226,13 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
           planejamento_ar_condicionado_diagrama: controle.planejamento?.ar_condicionado?.diagrama || 'NA',
           planejamento_memorial_esp_tec: controle.planejamento?.memorial?.esp_tec || 'NA',
           planejamento_memorial_matlib: controle.planejamento?.memorial?.matlib || 'NA',
-          markup_status: controle.markup_status || 'NA',
+          markup_status: controle.markup || 'NA',
           monitoramento_briefing: controle.monitoramento?.briefing || 'NA',
           monitoramento_cronograma: controle.monitoramento?.cronograma || 'NA',
           monitoramento_lmd: controle.monitoramento?.lmd || 'NA',
           monitoramento_entregas_x_etapas: controle.monitoramento?.entregas_x_etapas || 'NA'
         };
       } else {
-        // Empreendimento sem controle OS - criar registro vazio
         return {
           id: emp.id,
           empreendimento_id: emp.id,
@@ -364,7 +281,6 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
       }
     });
 
-    // Filtrar por searchTerm
     const filtered = allControles.filter(controle => {
       const searchLower = searchTerm?.toLowerCase() || '';
       const emp = empreendimentosMap[controle.empreendimento_id];
@@ -375,21 +291,18 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
       );
     });
 
-    // Ordenar por nome do projeto em ordem crescente
     return filtered.sort((a, b) => {
       const projectoA = a.projeto?.toLowerCase() || '';
       const projectoB = b.projeto?.toLowerCase() || '';
       return projectoA.localeCompare(projectoB);
     });
-    }, [controlesOS, empreendimentos, searchTerm, empreendimentosMap]);
+  }, [controlesOS, empreendimentos, searchTerm, empreendimentosMap]);
 
-  // Opções padrão para colunas de planejamento
   const planejamentoOptions = [
     "NA", "Concluído", "Pendente", "Em andamento", "Hold", 
     "Paralisado", "Técnico", "Ag. Liberação", "Finalizado"
   ];
 
-  // Opções específicas para Cronograma
   const cronogramaOptions = [
     "NA",
     "Concluído - EX",
@@ -407,7 +320,6 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
     "(Vazias)"
   ];
 
-  // Opções específicas para Markup
   const markupOptions = [
     "NA",
     "Concluído",
@@ -419,156 +331,122 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
     "Pendente"
   ];
 
-  // Opções para concessionárias
   const concessionariaOptions = [
     "NA", "Concluído", "Pendente", "Em andamento", "Hold", 
     "Paralisado", "Técnico", "Ag. Liberação", "Finalizado", "Em aprovação"
   ];
 
-  // Seção PROJETO
-  const projetoColumns = [
-    { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'os', label: 'OS', width: '60px', type: 'text' },
-    { key: 'gestao', label: 'Gestão', width: '120px', type: 'gestao' },
-    { key: 'formalizacao', label: 'Formalização', width: '150px', type: 'formalizacao' },
-    { key: 'abertura_os_servidor', label: 'Abertura OS', width: '80px', isStatus: true, statusOptions: planejamentoOptions },
-    { key: 'atividades_planejamento', label: 'Ativ. Planejamento', width: '90px', isStatus: true, statusOptions: planejamentoOptions },
-    { key: 'kickoff_cliente', label: 'Kickoff', width: '80px', isStatus: true, statusOptions: planejamentoOptions },
-    { key: 'cronograma', label: 'Cronograma', width: '80px', isStatus: true, statusOptions: cronogramaOptions },
-    { key: 'markup', label: 'Markup', width: '80px', isStatus: true, statusOptions: markupOptions }
-  ];
-
-  // Seção ART
-  const artColumns = [
-    { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'art_ee_ais', label: 'ART - ELÉTRICA', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
-    { key: 'art_hid_in', label: 'ART - HIDRÁULICA', width: '110px', isStatus: true, statusOptions: planejamentoOptions },
-    { key: 'art_hvac', label: 'ART - HVAC', width: '90px', isStatus: true, statusOptions: planejamentoOptions },
-    { key: 'art_bomb', label: 'ART - BOMB', width: '90px', isStatus: true, statusOptions: planejamentoOptions }
-  ];
-
-  // Seção CONCESSIONÁRIAS
-  const concessionariaColumns = [
-    { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'conc_telefonia', label: 'TELEFONIA', width: '90px', isStatus: true, statusOptions: concessionariaOptions },
-    { key: 'conc_gas', label: 'GÁS', width: '80px', isStatus: true, statusOptions: concessionariaOptions },
-    { key: 'conc_eletrica', label: 'ELÉTRICA', width: '90px', isStatus: true, statusOptions: concessionariaOptions },
-    { key: 'conc_hidraulica', label: 'HIDRÁULICA', width: '100px', isStatus: true, statusOptions: concessionariaOptions },
-    { key: 'conc_agua_pluvial', label: 'ÁGUA PLUVIAL', width: '110px', isStatus: true, statusOptions: concessionariaOptions },
-    { key: 'conc_incendio', label: 'INCÊNDIO', width: '90px', isStatus: true, statusOptions: concessionariaOptions }
-  ];
-
-  // Seção PLANEJAMENTO - Hidráulica
-  const planejamentoHidraulicaColumns = [
-    { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'planejamento_hidraulica_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
-    { key: 'planejamento_hidraulica_calculo', label: 'CÁLCULO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
-    { key: 'planejamento_hidraulica_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
-  ];
-
-  // Seção PLANEJAMENTO - Incêndio
-  const planejamentoIncendioColumns = [
-    { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'planejamento_incendio_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
-    { key: 'planejamento_incendio_calculo', label: 'CÁLCULO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
-    { key: 'planejamento_incendio_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
-  ];
-
-  // Seção PLANEJAMENTO - Elétrica
-  const planejamentoEletricaColumns = [
-    { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'planejamento_eletrica_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
-    { key: 'planejamento_eletrica_calculo', label: 'CÁLCULO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
-    { key: 'planejamento_eletrica_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
-  ];
-
-  // Seção PLANEJAMENTO - Sistemas Eletrônicos
-  const planejamentoSistemasColumns = [
-    { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'planejamento_sistemas_eletronicos_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
-    { key: 'planejamento_sistemas_eletronicos_calculo', label: 'CÁLCULO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
-    { key: 'planejamento_sistemas_eletronicos_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
-  ];
-
-  // Seção PLANEJAMENTO - Ar Condicionado
-  const planejamentoArCondicionadoColumns = [
-    { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'planejamento_ar_condicionado_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
-    { key: 'planejamento_ar_condicionado_calculo', label: 'CÁLCULO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
-    { key: 'planejamento_ar_condicionado_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
-  ];
-
-  // Seção MEMORIAL
-  const memorialColumns = [
-    { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'planejamento_memorial_esp_tec', label: 'MEMORIAL', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
-  ];
-
-  // Seção ESP. TEC.
-  const espTecColumns = [
-    { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'planejamento_memorial_matlib', label: 'ESP. TEC.', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
-  ];
-
-  // Seção MARK-UP
-  const markupColumns = [
-    { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'markup_status', label: 'MARK-UP', width: '100px', isStatus: true, statusOptions: markupOptions }
-  ];
-
-  // Seção MONITORAMENTO
-  const monitoramentoColumns = [
-    { key: 'projeto', label: 'PROJETO', width: '200px' },
-    { key: 'monitoramento_briefing', label: 'Briefing', width: '90px', isStatus: true, statusOptions: planejamentoOptions },
-    { key: 'monitoramento_cronograma', label: 'Cronograma', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
-    { key: 'monitoramento_lmd', label: 'LMD', width: '80px', isStatus: true, statusOptions: planejamentoOptions },
-    { key: 'monitoramento_entregas_x_etapas', label: 'Entregas x Etapas', width: '130px', isStatus: true, statusOptions: planejamentoOptions }
-  ];
-
-  // Mapear qual tabela mostrar baseado na pasta ativa
-  const getVisibleTables = () => {
-    const tableMap = {
-      'projeto': ['projeto'],
-      'art': ['art'],
-      'concessionarias': ['concessionarias'],
-      'monitoramento': ['monitoramento'],
-      'hidraulica': ['planejamentoHidraulica'],
-      'incendio': ['planejamentoIncendio'],
-      'sistemas': ['planejamentoSistemas'],
-      'ar': ['planejamentoArCondicionado'],
-      'memorial': ['memorial'],
-      'esptec': ['espTec'],
-      'markup': ['markup']
-    };
-    return tableMap[activePasta] || ['projeto'];
+  const allTables = {
+    projeto: {
+      title: 'PROJETO',
+      columns: [
+        { key: 'projeto', label: 'PROJETO', width: '200px' },
+        { key: 'os', label: 'OS', width: '60px', type: 'text' },
+        { key: 'gestao', label: 'Gestão', width: '120px', type: 'gestao' },
+        { key: 'formalizacao', label: 'Formalização', width: '150px', type: 'formalizacao' },
+        { key: 'abertura_os_servidor', label: 'Abertura OS', width: '80px', isStatus: true, statusOptions: planejamentoOptions },
+        { key: 'atividades_planejamento', label: 'Ativ. Planejamento', width: '90px', isStatus: true, statusOptions: planejamentoOptions },
+        { key: 'kickoff_cliente', label: 'Kickoff', width: '80px', isStatus: true, statusOptions: planejamentoOptions },
+        { key: 'cronograma', label: 'Cronograma', width: '80px', isStatus: true, statusOptions: cronogramaOptions },
+        { key: 'markup', label: 'Markup', width: '80px', isStatus: true, statusOptions: markupOptions }
+      ]
+    },
+    art: {
+      title: 'ART',
+      columns: [
+        { key: 'projeto', label: 'PROJETO', width: '200px' },
+        { key: 'art_ee_ais', label: 'ART - ELÉTRICA', width: '120px', isStatus: true, statusOptions: planejamentoOptions },
+        { key: 'art_hid_in', label: 'ART - HIDRÁULICA', width: '120px', isStatus: true, statusOptions: planejamentoOptions },
+        { key: 'art_hvac', label: 'ART - HVAC', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+        { key: 'art_bomb', label: 'ART - BOMB', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
+      ]
+    },
+    concessionarias: {
+      title: 'CONCESSIONÁRIAS',
+      columns: [
+        { key: 'projeto', label: 'PROJETO', width: '200px' },
+        { key: 'conc_telefonia', label: 'TELEFONIA', width: '90px', isStatus: true, statusOptions: concessionariaOptions },
+        { key: 'conc_gas', label: 'GÁS', width: '80px', isStatus: true, statusOptions: concessionariaOptions },
+        { key: 'conc_eletrica', label: 'ELÉTRICA', width: '90px', isStatus: true, statusOptions: concessionariaOptions },
+        { key: 'conc_hidraulica', label: 'HIDRÁULICA', width: '100px', isStatus: true, statusOptions: concessionariaOptions },
+        { key: 'conc_agua_pluvial', label: 'ÁGUA PLUVIAL', width: '110px', isStatus: true, statusOptions: concessionariaOptions },
+        { key: 'conc_incendio', label: 'INCÊNDIO', width: '90px', isStatus: true, statusOptions: concessionariaOptions }
+      ]
+    },
+    monitoramento: {
+      title: 'MONITORAMENTO',
+      columns: [
+        { key: 'projeto', label: 'PROJETO', width: '200px' },
+        { key: 'monitoramento_briefing', label: 'Briefing', width: '90px', isStatus: true, statusOptions: planejamentoOptions },
+        { key: 'monitoramento_cronograma', label: 'Cronograma', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+        { key: 'monitoramento_lmd', label: 'LMD', width: '80px', isStatus: true, statusOptions: planejamentoOptions },
+        { key: 'monitoramento_entregas_x_etapas', label: 'Entregas x Etapas', width: '130px', isStatus: true, statusOptions: planejamentoOptions }
+      ]
+    },
+    hidraulica: {
+      title: 'HIDRÁULICA',
+      columns: [
+        { key: 'projeto', label: 'PROJETO', width: '200px' },
+        { key: 'planejamento_hidraulica_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+        { key: 'planejamento_hidraulica_calculo', label: 'CÁLCULO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+        { key: 'planejamento_hidraulica_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
+      ]
+    },
+    incendio: {
+      title: 'INCÊNDIO',
+      columns: [
+        { key: 'projeto', label: 'PROJETO', width: '200px' },
+        { key: 'planejamento_incendio_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+        { key: 'planejamento_incendio_calculo', label: 'CÁLCULO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+        { key: 'planejamento_incendio_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
+      ]
+    },
+    sistemas: {
+      title: 'SISTEMAS ELETRÔNICOS',
+      columns: [
+        { key: 'projeto', label: 'PROJETO', width: '200px' },
+        { key: 'planejamento_sistemas_eletronicos_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+        { key: 'planejamento_sistemas_eletronicos_calculo', label: 'CÁLCULO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+        { key: 'planejamento_sistemas_eletronicos_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
+      ]
+    },
+    ar: {
+      title: 'AR CONDICIONADO',
+      columns: [
+        { key: 'projeto', label: 'PROJETO', width: '200px' },
+        { key: 'planejamento_ar_condicionado_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+        { key: 'planejamento_ar_condicionado_calculo', label: 'CÁLCULO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+        { key: 'planejamento_ar_condicionado_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
+      ]
+    },
+    memorial: {
+      title: 'MEMORIAL',
+      columns: [
+        { key: 'projeto', label: 'PROJETO', width: '200px' },
+        { key: 'planejamento_memorial_matlib', label: 'MEMORIAL', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
+      ]
+    },
+    esptec: {
+      title: 'ESP. TEC.',
+      columns: [
+        { key: 'projeto', label: 'PROJETO', width: '200px' },
+        { key: 'planejamento_memorial_esp_tec', label: 'ESP. TEC.', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
+      ]
+    },
+    markup: {
+      title: 'MARK-UP',
+      columns: [
+        { key: 'projeto', label: 'PROJETO', width: '200px' },
+        { key: 'markup_status', label: 'MARK-UP', width: '100px', isStatus: true, statusOptions: markupOptions }
+      ]
+    }
   };
 
-  const visibleTables = getVisibleTables();
+  const currentTable = allTables[activePasta] || allTables.projeto;
+  const columns = currentTable.columns;
 
   return (
     <div className="space-y-6">
-      {/* Toggle View */}
-      <div className="flex gap-2 justify-end mb-4">
-        <Button
-          variant={isGridView ? "default" : "outline"}
-          size="sm"
-          onClick={() => setIsGridView(true)}
-          className="flex items-center gap-2"
-        >
-          <Grid3x3 className="w-4 h-4" />
-          Planilha
-        </Button>
-        <Button
-          variant={!isGridView ? "default" : "outline"}
-          size="sm"
-          onClick={() => setIsGridView(false)}
-          className="flex items-center gap-2"
-        >
-          <List className="w-4 h-4" />
-          Cartões
-        </Button>
-      </div>
-
       {isGridView ? (
         <>
           {filteredControles.length === 0 ? (
@@ -607,73 +485,15 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                 
                 {/* Tabelas com scroll horizontal */}
                 <div className="flex-1 overflow-x-auto">
-                  <div className="flex gap-0">
-                    {/* PROJETO - tabela completa sem coluna Projeto */}
-                    {visibleTables.includes('projeto') && <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
-                  <thead className="bg-gray-800 text-white">
-                    <tr>
-                      <th colSpan={projetoColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
-                        PROJETO
-                      </th>
-                    </tr>
-                    <tr>
-                      {projetoColumns.slice(1).map((col) => (
-                        <th
-                          key={col.key}
-                          className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
-                          style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
-                        >
-                          {col.label}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredControles.map((row, idx) => (
-                      <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
-                        {projetoColumns.slice(1).map((col) => {
-                          const value = row[col.key] || (col.type === 'text' ? '' : 'NA');
-                          return (
-                            <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
-                              {col.isStatus ? (
-                                <StatusCell 
-                                  status={value} 
-                                  editable={editable}
-                                  onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
-                                  customOptions={col.statusOptions}
-                                />
-                              ) : col.type === 'gestao' ? (
-                                <GestaoCell 
-                                  value={value === 'NA' ? '' : value}
-                                  editable={editable}
-                                  onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
-                                  usuarios={usuarios}
-                                />
-                              ) : col.type === 'formalizacao' ? (
-                                <FormalizacaoCell 
-                                  value={value}
-                                  editable={editable}
-                                  onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
-                                />
-                              ) : value}
-                            </td>
-                          );
-                        })}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>}
-
-                    {/* ART sem coluna Projeto */}
-                    {visibleTables.includes('art') && <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
+                  <table className="text-xs w-full" style={{ borderCollapse: 'collapse' }}>
                     <thead className="bg-gray-800 text-white">
                       <tr>
-                        <th colSpan={artColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
-                          ART
+                        <th colSpan={columns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
+                          {currentTable.title}
                         </th>
                       </tr>
                       <tr>
-                        {artColumns.slice(1).map((col) => (
+                        {columns.slice(1).map((col) => (
                           <th
                             key={col.key}
                             className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
@@ -687,8 +507,8 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                     <tbody>
                       {filteredControles.map((row, idx) => (
                         <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
-                          {artColumns.slice(1).map((col) => {
-                            const value = row[col.key] || 'NA';
+                          {columns.slice(1).map((col) => {
+                            const value = row[col.key] || (col.type === 'text' ? '' : 'NA');
                             return (
                               <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
                                 {col.isStatus ? (
@@ -698,48 +518,18 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                                     onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
                                     customOptions={col.statusOptions}
                                   />
-                                ) : value}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                    </table>}
-
-                    {/* CONCESSIONÁRIAS sem coluna Projeto */}
-                    {visibleTables.includes('concessionarias') && <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
-                    <thead className="bg-gray-800 text-white">
-                      <tr>
-                        <th colSpan={concessionariaColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
-                          CONCESSIONÁRIAS
-                        </th>
-                      </tr>
-                      <tr>
-                        {concessionariaColumns.slice(1).map((col) => (
-                          <th
-                            key={col.key}
-                            className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
-                            style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
-                          >
-                            {col.label}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
-                          {concessionariaColumns.slice(1).map((col) => {
-                            const value = row[col.key] || 'NA';
-                            return (
-                              <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
-                                {col.isStatus ? (
-                                  <StatusCell 
-                                    status={value} 
+                                ) : col.type === 'gestao' ? (
+                                  <GestaoCell 
+                                    value={value === 'NA' ? '' : value}
                                     editable={editable}
                                     onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
-                                    customOptions={col.statusOptions}
+                                    usuarios={usuarios}
+                                  />
+                                ) : col.type === 'formalizacao' ? (
+                                  <FormalizacaoCell 
+                                    value={value}
+                                    editable={editable}
+                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
                                   />
                                 ) : value}
                               </td>
@@ -748,405 +538,17 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
                         </tr>
                       ))}
                     </tbody>
-                    </table>}
-
-                    {/* MONITORAMENTO sem coluna Projeto */}
-                    {visibleTables.includes('monitoramento') && <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
-                    <thead className="bg-gray-800 text-white">
-                      <tr>
-                        <th colSpan={monitoramentoColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
-                          MONITORAMENTO
-                        </th>
-                      </tr>
-                      <tr>
-                        {monitoramentoColumns.slice(1).map((col) => (
-                          <th
-                            key={col.key}
-                            className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
-                            style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
-                          >
-                            {col.label}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
-                          {monitoramentoColumns.slice(1).map((col) => {
-                            const value = row[col.key] || 'NA';
-                            return (
-                              <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
-                                {col.isStatus ? (
-                                  <StatusCell 
-                                    status={value} 
-                                    editable={editable}
-                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
-                                    customOptions={col.statusOptions}
-                                  />
-                                ) : value}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                    </table>}
-
-                    {/* PLANEJAMENTO - HIDRÁULICA */}
-                    {visibleTables.includes('planejamentoHidraulica') && <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
-                    <thead className="bg-gray-800 text-white">
-                      <tr>
-                        <th colSpan={planejamentoHidraulicaColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
-                          HIDRÁULICA
-                        </th>
-                      </tr>
-                      <tr>
-                        {planejamentoHidraulicaColumns.slice(1).map((col) => (
-                          <th
-                            key={col.key}
-                            className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
-                            style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
-                          >
-                            {col.label}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
-                          {planejamentoHidraulicaColumns.slice(1).map((col) => {
-                            const value = row[col.key] || 'NA';
-                            return (
-                              <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
-                                {col.isStatus ? (
-                                  <StatusCell 
-                                    status={value} 
-                                    editable={editable}
-                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
-                                    customOptions={col.statusOptions}
-                                  />
-                                ) : value}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                    </table>}
-
-                    {/* PLANEJAMENTO - INCÊNDIO */}
-                    {visibleTables.includes('planejamentoIncendio') && <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
-                    <thead className="bg-gray-800 text-white">
-                      <tr>
-                        <th colSpan={planejamentoIncendioColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
-                          INCÊNDIO
-                        </th>
-                      </tr>
-                      <tr>
-                        {planejamentoIncendioColumns.slice(1).map((col) => (
-                          <th
-                            key={col.key}
-                            className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
-                            style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
-                          >
-                            {col.label}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
-                          {planejamentoIncendioColumns.slice(1).map((col) => {
-                            const value = row[col.key] || 'NA';
-                            return (
-                              <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
-                                {col.isStatus ? (
-                                  <StatusCell 
-                                    status={value} 
-                                    editable={editable}
-                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
-                                    customOptions={col.statusOptions}
-                                  />
-                                ) : value}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                    </table>}
-
-                    {/* PLANEJAMENTO - ELÉTRICA */}
-                    {visibleTables.includes('planejamentoEletrica') && <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
-                    <thead className="bg-gray-800 text-white">
-                      <tr>
-                        <th colSpan={planejamentoEletricaColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
-                          ELÉTRICA
-                        </th>
-                      </tr>
-                      <tr>
-                        {planejamentoEletricaColumns.slice(1).map((col) => (
-                          <th
-                            key={col.key}
-                            className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
-                            style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
-                          >
-                            {col.label}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
-                          {planejamentoEletricaColumns.slice(1).map((col) => {
-                            const value = row[col.key] || 'NA';
-                            return (
-                              <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
-                                {col.isStatus ? (
-                                  <StatusCell 
-                                    status={value} 
-                                    editable={editable}
-                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
-                                    customOptions={col.statusOptions}
-                                  />
-                                ) : value}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                    </table>}
-
-                    {/* PLANEJAMENTO - SISTEMAS ELETRÔNICOS */}
-                    {visibleTables.includes('planejamentoSistemas') && <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
-                    <thead className="bg-gray-800 text-white">
-                      <tr>
-                        <th colSpan={planejamentoSistemasColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
-                          SISTEMAS ELETRÔNICOS
-                        </th>
-                      </tr>
-                      <tr>
-                        {planejamentoSistemasColumns.slice(1).map((col) => (
-                          <th
-                            key={col.key}
-                            className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
-                            style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
-                          >
-                            {col.label}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
-                          {planejamentoSistemasColumns.slice(1).map((col) => {
-                            const value = row[col.key] || 'NA';
-                            return (
-                              <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
-                                {col.isStatus ? (
-                                  <StatusCell 
-                                    status={value} 
-                                    editable={editable}
-                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
-                                    customOptions={col.statusOptions}
-                                  />
-                                ) : value}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                    </table>}
-
-                    {/* PLANEJAMENTO - AR CONDICIONADO */}
-                    {visibleTables.includes('planejamentoArCondicionado') && <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
-                    <thead className="bg-gray-800 text-white">
-                      <tr>
-                        <th colSpan={planejamentoArCondicionadoColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
-                          AR CONDICIONADO
-                        </th>
-                      </tr>
-                      <tr>
-                        {planejamentoArCondicionadoColumns.slice(1).map((col) => (
-                          <th
-                            key={col.key}
-                            className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
-                            style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
-                          >
-                            {col.label}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
-                          {planejamentoArCondicionadoColumns.slice(1).map((col) => {
-                            const value = row[col.key] || 'NA';
-                            return (
-                              <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
-                                {col.isStatus ? (
-                                  <StatusCell 
-                                    status={value} 
-                                    editable={editable}
-                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
-                                    customOptions={col.statusOptions}
-                                  />
-                                ) : value}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                    </table>}
-
-                    {/* MEMORIAL */}
-                    {visibleTables.includes('memorial') && <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
-                    <thead className="bg-gray-800 text-white">
-                      <tr>
-                        <th colSpan={memorialColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
-                          MEMORIAL
-                        </th>
-                      </tr>
-                      <tr>
-                        {memorialColumns.slice(1).map((col) => (
-                          <th
-                            key={col.key}
-                            className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
-                            style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
-                          >
-                            {col.label}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
-                          {memorialColumns.slice(1).map((col) => {
-                            const value = row[col.key] || 'NA';
-                            return (
-                              <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
-                                {col.isStatus ? (
-                                  <StatusCell 
-                                    status={value} 
-                                    editable={editable}
-                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
-                                    customOptions={col.statusOptions}
-                                  />
-                                ) : value}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                    </table>}
-
-                    {/* ESP. TEC. */}
-                    {visibleTables.includes('espTec') && <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
-                    <thead className="bg-gray-800 text-white">
-                      <tr>
-                        <th colSpan={espTecColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
-                          ESP. TEC.
-                        </th>
-                      </tr>
-                      <tr>
-                        {espTecColumns.slice(1).map((col) => (
-                          <th
-                            key={col.key}
-                            className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
-                            style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
-                          >
-                            {col.label}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
-                          {espTecColumns.slice(1).map((col) => {
-                            const value = row[col.key] || 'NA';
-                            return (
-                              <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
-                                {col.isStatus ? (
-                                  <StatusCell 
-                                    status={value} 
-                                    editable={editable}
-                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
-                                    customOptions={col.statusOptions}
-                                  />
-                                ) : value}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                    </table>}
-
-                    {/* MARK-UP */}
-                    {visibleTables.includes('markup') && <table className="text-xs" style={{ borderCollapse: 'collapse' }}>
-                    <thead className="bg-gray-800 text-white">
-                      <tr>
-                        <th colSpan={markupColumns.length - 1} className="border border-gray-300 text-left font-bold align-middle" style={{ height: '38px', padding: '0 16px' }}>
-                          MARK-UP
-                        </th>
-                      </tr>
-                      <tr>
-                        {markupColumns.slice(1).map((col) => (
-                          <th
-                            key={col.key}
-                            className="border border-gray-300 text-left font-semibold whitespace-nowrap align-middle"
-                            style={{ width: col.width, minWidth: col.width, height: '38px', padding: '0 8px' }}
-                          >
-                            {col.label}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredControles.map((row, idx) => (
-                        <tr key={row.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} style={{ height: '30px' }}>
-                          {markupColumns.slice(1).map((col) => {
-                            const value = row[col.key] || 'NA';
-                            return (
-                              <td key={col.key} className="border border-gray-300 whitespace-nowrap align-middle" style={{ height: '30px', padding: '0 8px' }}>
-                                {col.isStatus ? (
-                                  <StatusCell 
-                                    status={value} 
-                                    editable={editable}
-                                    onUpdate={(newValue) => onUpdate && onUpdate(row.id, col.key, newValue)}
-                                    customOptions={col.statusOptions}
-                                  />
-                                ) : value}
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>}
-                   </div>
-                  </div>
-                  </div>
-                  </div>
-                  )}
-                  </>
-                  ) : (
-                  <div className="text-center py-8 text-gray-600">
-                  Modo de cartões - volte para a visualização de planilha
-                  </div>
-                  )}
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+        </>
+      ) : (
+        <div className="text-center py-8 text-gray-600">
+          Modo de cartões - volte para a visualização de planilha
+        </div>
+      )}
     </div>
   );
 }
