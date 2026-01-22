@@ -31,6 +31,7 @@ export default function ControleOSGlobal() {
   const [empreendimentos, setEmpreendimentos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [viewMode, setViewMode] = useState('expanded'); // 'expanded' ou 'spreadsheet'
 
   useEffect(() => {
     loadData();
