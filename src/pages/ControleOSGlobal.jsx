@@ -31,7 +31,7 @@ export default function ControleOSGlobal() {
   const [empreendimentos, setEmpreendimentos] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [activePasta, setActivePasta] = useState('projeto');
+  const [activePasta, setActivePasta] = useState('todas');
 
   const pastas = [
     { id: 'todas', label: 'Todas' },
