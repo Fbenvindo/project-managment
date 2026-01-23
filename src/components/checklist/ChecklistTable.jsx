@@ -193,7 +193,7 @@ export default function ChecklistTable({ secao, items, checklist, onUpdate }) {
                       {item.descricao}
                     </TableCell>
                     {periodos.map((periodo, idx) => {
-                      const status = item.status_por_periodo?.[periodo] || '';
+                      const status = item.status_por_periodo?.[periodo] || '-';
                       return (
                         <TableCell 
                           key={idx} 
@@ -201,7 +201,7 @@ export default function ChecklistTable({ secao, items, checklist, onUpdate }) {
                         >
                           <Select
                             value={status}
-                            onValueChange={(value) => handleStatusChange(item, periodo, value)}
+                            onValueChange={(value) => handleStatusChange(item, periodo, value === '-' ? '' : value)}
                           >
                             <SelectTrigger className="h-8 text-xs border-0 bg-transparent">
                               <SelectValue />
@@ -209,7 +209,7 @@ export default function ChecklistTable({ secao, items, checklist, onUpdate }) {
                             <SelectContent>
                               {STATUS_OPTIONS.map((opt) => (
                                 <SelectItem key={opt} value={opt}>
-                                  {opt || '-'}
+                                  {opt}
                                 </SelectItem>
                               ))}
                             </SelectContent>
