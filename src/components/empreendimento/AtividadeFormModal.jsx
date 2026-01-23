@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Atividade } from '@/entities/all';
 import { Loader2 } from 'lucide-react';
 
@@ -20,6 +21,23 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
     empreendimento_id: empreendimentoId,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [allAtividades, setAllAtividades] = useState([]);
+  const [selectedSubdisciplinas, setSelectedSubdisciplinas] = useState([]);
+
+  useEffect(() => {
+    const loadAtividades = async () => {
+      try {
+        const ativs = await Atividade.list();
+        setAllAtividades(ativs || []);
+      } catch (error) {
+        console.error("Erro ao carregar atividades:", error);
+      }
+    };
+    
+    if (isOpen) {
+      loadAtividades();
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (atividade) {
@@ -34,6 +52,10 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
         funcao: atividade.funcao || '',
         empreendimento_id: empreendimentoId,
       });
+      // Se for edição, inicializar subdisciplinas selecionadas
+      if (atividade.subdisciplina) {
+        setSelectedSubdisciplinas([atividade.subdisciplina]);
+      }
     } else {
       // Reset form for new entry
       setFormData({
@@ -47,6 +69,7 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
         funcao: '',
         empreendimento_id: empreendimentoId,
       });
+      setSelectedSubdisciplinas([]);
     }
   }, [atividade, empreendimentoId, isOpen]);
 
@@ -57,22 +80,72 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
 
   const handleSelectChange = (name, value) => {
     setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Limpar subdisciplinas quando mudar a disciplina
+    if (name === 'disciplina') {
+      setSelectedSubdisciplinas([]);
+    }
+  };
+
+  const subdisciplinasDisponiveis = useMemo(() => {
+    if (!formData.disciplina) return [];
+    
+    const subdisciplinasSet = new Set();
+    allAtividades.forEach(ativ => {
+      if (ativ.disciplina === formData.disciplina && ativ.subdisciplina) {
+        subdisciplinasSet.add(ativ.subdisciplina);
+      }
+    });
+    
+    return Array.from(subdisciplinasSet).sort();
+  }, [formData.disciplina, allAtividades]);
+
+  const handleToggleSubdisciplina = (subdisciplina) => {
+    setSelectedSubdisciplinas(prev => {
+      if (prev.includes(subdisciplina)) {
+        return prev.filter(s => s !== subdisciplina);
+      } else {
+        return [...prev, subdisciplina];
+      }
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!formData.disciplina) {
+      alert("Por favor, selecione uma disciplina.");
+      return;
+    }
+    
+    if (selectedSubdisciplinas.length === 0) {
+      alert("Por favor, selecione pelo menos uma subdisciplina.");
+      return;
+    }
+    
     setIsSubmitting(true);
     
-    const dataToSave = {
-      ...formData,
-      tempo: formData.tempo ? Number(formData.tempo) : null,
-    };
-
     try {
       if (atividade && atividade.id) {
+        // Edição - atualiza apenas uma atividade
+        const dataToSave = {
+          ...formData,
+          subdisciplina: selectedSubdisciplinas[0], // Na edição, usar apenas a primeira
+          tempo: formData.tempo ? Number(formData.tempo) : null,
+        };
         await Atividade.update(atividade.id, dataToSave);
       } else {
-        await Atividade.create(dataToSave);
+        // Criação - criar uma atividade para cada subdisciplina selecionada
+        const createPromises = selectedSubdisciplinas.map(subdisciplina => {
+          const dataToSave = {
+            ...formData,
+            subdisciplina: subdisciplina,
+            tempo: formData.tempo ? Number(formData.tempo) : null,
+          };
+          return Atividade.create(dataToSave);
+        });
+        
+        await Promise.all(createPromises);
       }
       onSuccess();
     } catch (error) {
@@ -101,7 +174,7 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
             <Label htmlFor="etapa">Etapa</Label>
             <Input id="etapa" name="etapa" value={formData.etapa} onChange={handleChange} required />
           </div>
-          <div className="space-y-2">
+          <div className="space-y-2 md:col-span-2">
             <Label htmlFor="disciplina">Disciplina</Label>
             <Select name="disciplina" value={formData.disciplina} onValueChange={(v) => handleSelectChange('disciplina', v)} required>
               <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
@@ -110,10 +183,35 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
               </SelectContent>
             </Select>
           </div>
-          <div className="space-y-2">
-            <Label htmlFor="subdisciplina">Subdisciplina</Label>
-            <Input id="subdisciplina" name="subdisciplina" value={formData.subdisciplina} onChange={handleChange} required />
-          </div>
+          
+          {formData.disciplina && subdisciplinasDisponiveis.length > 0 && (
+            <div className="space-y-2 md:col-span-2">
+              <Label>Subdisciplina</Label>
+              <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-4 border rounded-md max-h-48 overflow-y-auto">
+                {subdisciplinasDisponiveis.map(subdisciplina => (
+                  <div key={subdisciplina} className="flex items-center space-x-2">
+                    <Checkbox
+                      id={`subdisciplina-${subdisciplina}`}
+                      checked={selectedSubdisciplinas.includes(subdisciplina)}
+                      onCheckedChange={() => handleToggleSubdisciplina(subdisciplina)}
+                    />
+                    <label
+                      htmlFor={`subdisciplina-${subdisciplina}`}
+                      className="text-sm cursor-pointer"
+                    >
+                      {subdisciplina}
+                    </label>
+                  </div>
+                ))}
+              </div>
+              {selectedSubdisciplinas.length > 0 && (
+                <p className="text-xs text-gray-500 mt-2">
+                  {selectedSubdisciplinas.length} subdisciplina(s) selecionada(s)
+                  {!atividade && selectedSubdisciplinas.length > 1 && ": será criada uma atividade para cada subdisciplina"}
+                </p>
+              )}
+            </div>
+          )}
            <div className="space-y-2">
             <Label htmlFor="funcao">Função Responsável</Label>
             <Input id="funcao" name="funcao" value={formData.funcao} onChange={handleChange} />
