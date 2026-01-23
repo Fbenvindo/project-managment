@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Plus, FileText, Loader2, Search } from 'lucide-react';
+import { Plus, FileText, Loader2, Search, Trash2 } from 'lucide-react';
 import ChecklistHeader from '@/components/checklist/ChecklistHeader';
 import ChecklistTable from '@/components/checklist/ChecklistTable';
 import NovoChecklistModal from '@/components/checklist/NovoChecklistModal';
@@ -62,6 +62,27 @@ export default function ChecklistPlanejamentoPage() {
     setShowNovaSecaoModal(false);
   };
 
+  const handleDeleteChecklist = async () => {
+    if (!selectedChecklist) return;
+    
+    if (!window.confirm(`Tem certeza que deseja excluir o checklist "${selectedChecklist.tipo}" e todos os seus itens?`)) return;
+    
+    try {
+      // Excluir todos os itens primeiro
+      for (const item of items) {
+        await base44.entities.ChecklistItem.delete(item.id);
+      }
+      // Excluir o checklist
+      await base44.entities.ChecklistPlanejamento.delete(selectedChecklist.id);
+      
+      setSelectedChecklist(null);
+      await queryClient.invalidateQueries(['checklists']);
+    } catch (error) {
+      console.error('Erro ao excluir checklist:', error);
+      alert('Erro ao excluir checklist');
+    }
+  };
+
   const filteredChecklists = checklists.filter(c =>
     c.cliente?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.tipo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -88,13 +109,24 @@ export default function ChecklistPlanejamentoPage() {
             <h1 className="text-3xl font-bold text-gray-900">Checklist de Planejamento</h1>
             <p className="text-gray-600 mt-1">Gerencie checklists de planejamento por projeto</p>
           </div>
-          <Button
-            onClick={() => setShowNovoModal(true)}
-            className="bg-blue-600 hover:bg-blue-700"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Novo Checklist
-          </Button>
+          <div className="flex gap-2">
+            {selectedChecklist && (
+              <Button
+                onClick={handleDeleteChecklist}
+                variant="destructive"
+              >
+                <Trash2 className="w-4 h-4 mr-2" />
+                Excluir Checklist
+              </Button>
+            )}
+            <Button
+              onClick={() => setShowNovoModal(true)}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Novo Checklist
+            </Button>
+          </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">

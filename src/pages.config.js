@@ -2,6 +2,7 @@ import AnaliseConcepcaoPlanejamento from './pages/AnaliseConcepcaoPlanejamento';
 import Analitico from './pages/Analitico';
 import AtaPlanejamento from './pages/AtaPlanejamento';
 import AtividadesRapidas from './pages/AtividadesRapidas';
+import ChecklistPlanejamento from './pages/ChecklistPlanejamento';
 import Comercial from './pages/Comercial';
 import ComercialDetalhes from './pages/ComercialDetalhes';
 import Configuracoes from './pages/Configuracoes';
@@ -17,7 +18,6 @@ import Propostas from './pages/Propostas';
 import Relatorios from './pages/Relatorios';
 import SeletorPlanejamento from './pages/SeletorPlanejamento';
 import Usuarios from './pages/Usuarios';
-import ChecklistPlanejamento from './pages/ChecklistPlanejamento';
 import __Layout from './Layout.jsx';
 
 
@@ -26,6 +26,7 @@ export const PAGES = {
     "Analitico": Analitico,
     "AtaPlanejamento": AtaPlanejamento,
     "AtividadesRapidas": AtividadesRapidas,
+    "ChecklistPlanejamento": ChecklistPlanejamento,
     "Comercial": Comercial,
     "ComercialDetalhes": ComercialDetalhes,
     "Configuracoes": Configuracoes,
@@ -41,7 +42,6 @@ export const PAGES = {
     "Relatorios": Relatorios,
     "SeletorPlanejamento": SeletorPlanejamento,
     "Usuarios": Usuarios,
-    "ChecklistPlanejamento": ChecklistPlanejamento,
 }
 
 export const pagesConfig = {
