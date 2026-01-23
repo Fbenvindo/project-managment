@@ -253,16 +253,27 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
     
     const todasAtividades = (atividades || [])
       .filter(a => {
-        // Incluir atividades específicas do projeto OR atividades vinculadas a documentos deste empreendimento
-        const ehDoEmpreendimento = a.empreendimento_id === empreendimentoId;
-        const ehDoDocumento = a.documento_id && documentoIdsDoEmpreendimento.includes(a.documento_id);
-        
-        // Incluir apenas atividades das disciplinas específicas
         const ehDisciplinaEspecifica = a.disciplina && disciplinasEspecificas.includes(a.disciplina);
         
-        const incluir = (ehDoEmpreendimento || ehDoDocumento) && ehDisciplinaEspecifica;
+        if (ehDisciplinaEspecifica) {
+          // Para disciplinas específicas: incluir genéricas (sem empreendimento_id) ou do projeto ou vinculadas a documento
+          const ehGenerica = !a.empreendimento_id;
+          const ehDoEmpreendimento = a.empreendimento_id === empreendimentoId;
+          const ehDoDocumento = a.documento_id && documentoIdsDoEmpreendimento.includes(a.documento_id);
+          
+          const incluir = ehGenerica || ehDoEmpreendimento || ehDoDocumento;
+          if (incluir) {
+            console.log("✅ Atividade incluída:", a.atividade, { ehGenerica, ehDoEmpreendimento, ehDoDocumento, disciplina: a.disciplina });
+          }
+          return incluir;
+        }
+        
+        // Para outras disciplinas: só incluir atividades específicas do projeto ou vinculadas a documentos
+        const ehDoEmpreendimento = a.empreendimento_id === empreendimentoId;
+        const ehDoDocumento = a.documento_id && documentoIdsDoEmpreendimento.includes(a.documento_id);
+        const incluir = ehDoEmpreendimento || ehDoDocumento;
         if (incluir) {
-          console.log("✅ Atividade incluída:", a.atividade, { ehDoEmpreendimento, ehDoDocumento, disciplina: a.disciplina, documento_id: a.documento_id });
+          console.log("✅ Atividade incluída (outra disciplina):", a.atividade, { ehDoEmpreendimento, ehDoDocumento, disciplina: a.disciplina });
         }
         return incluir;
       })
