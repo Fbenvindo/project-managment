@@ -38,8 +38,6 @@ export default function EmpreendimentoPage() {
     documentos: { data: [], loaded: false, loading: false },
     pavimentos: { data: [], loaded: false, loading: false },
     atividades_projeto: { data: [], loaded: false, loading: false },
-    catalogo_atividades: { data: [], loaded: false, loading: false },
-    documentacao: { data: [], loaded: false, loading: false },
     gestao: { data: [], loaded: false, loading: false },
     controle_os: { data: [], loaded: false, loading: false }
   });
@@ -77,7 +75,7 @@ export default function EmpreendimentoPage() {
 
   const visibleTabsForUser = useMemo(() => {
     if (canEdit) {
-      return ['documentos', 'cadastro', 'pavimentos', 'atividades_projeto', 'catalogo_atividades', 'documentacao', 'pre', 'controle_os', 'gestao'];
+      return ['documentos', 'cadastro', 'pavimentos', 'atividades_projeto', 'pre', 'controle_os', 'gestao'];
     }
     // Usuários comuns veem apenas: Documentos, Cadastro, PRE
     return ['documentos', 'cadastro', 'pre'];
@@ -181,26 +179,6 @@ export default function EmpreendimentoPage() {
           data = await retryWithExtendedBackoff(() => Atividade.filter({ empreendimento_id: empreendimentoId }), 'loadAtividadesProjeto');
           break;
 
-        case 'catalogo_atividades':
-            data = {};
-            break;
-
-        case 'documentacao':
-          const [planejamentosAtiv, planejamentosDoc] = await Promise.all([
-            retryWithExtendedBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }), `load${tabName}Atividade`),
-            (async () => {
-              try {
-                const { PlanejamentoDocumento } = await import('@/entities/all');
-                return await retryWithExtendedBackoff(() => PlanejamentoDocumento.filter({ empreendimento_id: empreendimentoId }), `load${tabName}Documento`);
-              } catch {
-                return [];
-              }
-            })()
-          ]);
-
-          data = [...(planejamentosAtiv || []), ...(planejamentosDoc || [])];
-          break;
-
         case 'gestao':
             data = {};
             break;
@@ -259,15 +237,6 @@ export default function EmpreendimentoPage() {
       loadTabData('pavimentos');
     }
 
-    if (newTab === 'documentacao') {
-      if (!tabData.documentos.loaded && !tabData.documentos.loading) {
-        loadTabData('documentos');
-      }
-      if (!tabData.pavimentos.loaded && !tabData.pavimentos.loading) {
-        loadTabData('pavimentos');
-      }
-    }
-
     if (newTab === 'gestao') {
       if (!tabData.documentos.loaded && !tabData.documentos.loading) {
         loadTabData('documentos');
@@ -292,8 +261,6 @@ export default function EmpreendimentoPage() {
       documentos: { data: [], loaded: false, loading: false },
       pavimentos: { data: [], loaded: false, loading: false },
       atividades_projeto: { data: [], loaded: false, loading: false },
-      catalogo_atividades: { data: [], loaded: false, loading: false },
-      documentacao: { data: [], loaded: false, loading: false },
       gestao: { data: [], loaded: false, loading: false },
       controle_os: { data: [], loaded: false, loading: false }
     });
@@ -349,30 +316,17 @@ export default function EmpreendimentoPage() {
         <EmpreendimentoHeader empreendimento={empreendimento} />
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className={`grid w-full ${canEdit ? (hasAccessToGestao ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-9' : 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-8') : 'grid-cols-3'} bg-white shadow-sm`}>
+          <TabsList className={`grid w-full ${canEdit ? (hasAccessToGestao ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-7' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6') : 'grid-cols-3'} bg-white shadow-sm`}>
             {visibleTabsForUser.includes('documentos') && <TabsTrigger value="documentos">Documentos</TabsTrigger>}
             {visibleTabsForUser.includes('cadastro') && <TabsTrigger value="cadastro">Cadastro</TabsTrigger>}
             {visibleTabsForUser.includes('pavimentos') && <TabsTrigger value="pavimentos">Pavimentos</TabsTrigger>}
             {visibleTabsForUser.includes('atividades_projeto') && <TabsTrigger value="atividades_projeto">Atividades do Projeto</TabsTrigger>}
-            {visibleTabsForUser.includes('catalogo_atividades') && (
-              <TabsTrigger value="catalogo_atividades">
-                <ListChecks className="w-4 h-4 mr-2" /> Catálogo
-              </TabsTrigger>
-            )}
-            {visibleTabsForUser.includes('documentacao') && <TabsTrigger value="documentacao">Documentação</TabsTrigger>}
             {visibleTabsForUser.includes('pre') && <TabsTrigger value="pre">PRE</TabsTrigger>}
             {visibleTabsForUser.includes('controle_os') && <TabsTrigger value="controle_os">Controle OS</TabsTrigger>}
             {hasAccessToGestao && visibleTabsForUser.includes('gestao') && (
               <TabsTrigger value="gestao">Gestão</TabsTrigger>
             )}
           </TabsList>
-
-          <TabsContent value="catalogo_atividades">
-             <AnaliticoGlobalTab
-                empreendimentoId={empreendimento?.id}
-                onUpdate={forceFullReload}
-              />
-          </TabsContent>
 
           <TabsContent value="documentos">
             {tabData.documentos.loading || sharedData.loading || tabData.pavimentos.loading ? (
@@ -424,57 +378,55 @@ export default function EmpreendimentoPage() {
           </TabsContent>
 
           <TabsContent value="atividades_projeto">
-            {tabData.atividades_projeto.loading || sharedData.loading || tabData.documentos.loading ? (
+            {tabData.atividades_projeto.loading || sharedData.loading || tabData.documentos.loading || tabData.pavimentos.loading ? (
               <div className="flex flex-col items-center justify-center h-96">
                 <RefreshCw className="w-8 h-8 animate-spin text-blue-500 mb-4" />
                 <p className="text-gray-600">Carregando atividades...</p>
               </div>
-            ) : tabData.atividades_projeto.loaded && sharedData.loaded && tabData.documentos.loaded ? (
-              <AtividadesProjetoTab
-                empreendimentoId={empreendimento?.id}
-                atividades={tabData.atividades_projeto.data}
-                disciplinas={sharedData.disciplinas}
-                documentos={tabData.documentos.data.documentos || []}
-                usuarios={sharedData.usuarios}
-                planejamentos={tabData.documentos.data.planejamentos || []}
-                onUpdate={() => {
-                  setTabData(prev => ({
-                    ...prev,
-                    atividades_projeto: { ...prev.atividades_projeto, loaded: false },
-                    documentos: { ...prev.documentos, loaded: false }
-                  }));
-                  loadTabData('atividades_projeto');
-                  loadTabData('documentos');
-                }}
-                isLoading={false}
-              />
-            ) : null}
-          </TabsContent>
-
-          <TabsContent value="documentacao">
-            {tabData.documentacao.loading || sharedData.loading || tabData.documentos.loading || tabData.pavimentos.loading ? (
-              <div className="flex flex-col items-center justify-center h-96">
-                <RefreshCw className="w-8 h-8 animate-spin text-blue-500 mb-4" />
-                <p className="text-gray-600">Carregando documentação...</p>
+            ) : tabData.atividades_projeto.loaded && sharedData.loaded && tabData.documentos.loaded && tabData.pavimentos.loaded ? (
+              <div className="space-y-6">
+                <AnaliticoGlobalTab
+                  empreendimentoId={empreendimento?.id}
+                  onUpdate={forceFullReload}
+                />
+                
+                <AnaliseConcepcaoPlanejamentoTab
+                  empreendimentoId={empreendimento?.id}
+                  planejamentos={tabData.documentos.data.planejamentos || []}
+                  atividades={sharedData.atividades || []}
+                  usuarios={sharedData.usuarios}
+                  documentos={tabData.documentos.data.documentos || []}
+                  pavimentos={tabData.pavimentos.data || []}
+                  onUpdate={() => {
+                    setTabData(prev => ({
+                      ...prev,
+                      documentos: { ...prev.documentos, loaded: false }
+                    }));
+                    setSharedData(prev => ({ ...prev, loaded: false }));
+                    loadTabData('documentos');
+                    loadSharedData();
+                  }}
+                />
+                
+                <AtividadesProjetoTab
+                  empreendimentoId={empreendimento?.id}
+                  atividades={tabData.atividades_projeto.data}
+                  disciplinas={sharedData.disciplinas}
+                  documentos={tabData.documentos.data.documentos || []}
+                  usuarios={sharedData.usuarios}
+                  planejamentos={tabData.documentos.data.planejamentos || []}
+                  onUpdate={() => {
+                    setTabData(prev => ({
+                      ...prev,
+                      atividades_projeto: { ...prev.atividades_projeto, loaded: false },
+                      documentos: { ...prev.documentos, loaded: false }
+                    }));
+                    loadTabData('atividades_projeto');
+                    loadTabData('documentos');
+                  }}
+                  isLoading={false}
+                />
               </div>
-            ) : tabData.documentacao.loaded && sharedData.loaded && tabData.documentos.loaded && tabData.pavimentos.loaded ? (
-              <AnaliseConcepcaoPlanejamentoTab
-                empreendimentoId={empreendimento?.id}
-                planejamentos={tabData.documentacao.data}
-                atividades={sharedData.atividades || []}
-                usuarios={sharedData.usuarios}
-                documentos={tabData.documentos.data.documentos || []}
-                pavimentos={tabData.pavimentos.data || []}
-                onUpdate={() => {
-                  setTabData(prev => ({
-                    ...prev,
-                    documentacao: { ...prev.documentacao, loaded: false }
-                  }));
-                  setSharedData(prev => ({ ...prev, loaded: false }));
-                  loadTabData('documentacao');
-                  loadSharedData();
-                }}
-              />
             ) : null}
           </TabsContent>
 
