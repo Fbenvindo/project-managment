@@ -5,71 +5,67 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Atividade } from '@/entities/all';
+import { Atividade, Documento } from '@/entities/all';
 import { Loader2 } from 'lucide-react';
 
 export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, disciplinas, atividade, onSuccess }) {
   const [formData, setFormData] = useState({
-    id_atividade: '',
     etapa: '',
     disciplina: '',
-    subdisciplina: '',
     atividade: '',
-    predecessora: '',
     tempo: '',
-    funcao: '',
     empreendimento_id: empreendimentoId,
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [allAtividades, setAllAtividades] = useState([]);
   const [selectedSubdisciplinas, setSelectedSubdisciplinas] = useState([]);
+  const [documentos, setDocumentos] = useState([]);
+  const [selectedDocumentoId, setSelectedDocumentoId] = useState(null);
 
   useEffect(() => {
-    const loadAtividades = async () => {
+    const loadData = async () => {
       try {
-        const ativs = await Atividade.list();
+        const [ativs, docs] = await Promise.all([
+          Atividade.list(),
+          Documento.filter({ empreendimento_id: empreendimentoId })
+        ]);
         setAllAtividades(ativs || []);
+        setDocumentos(docs || []);
       } catch (error) {
-        console.error("Erro ao carregar atividades:", error);
+        console.error("Erro ao carregar dados:", error);
       }
     };
     
     if (isOpen) {
-      loadAtividades();
+      loadData();
     }
-  }, [isOpen]);
+  }, [isOpen, empreendimentoId]);
 
   useEffect(() => {
     if (atividade) {
       setFormData({
-        id_atividade: atividade.id_atividade || '',
         etapa: atividade.etapa || '',
         disciplina: atividade.disciplina || '',
-        subdisciplina: atividade.subdisciplina || '',
         atividade: atividade.atividade || '',
-        predecessora: atividade.predecessora || '',
         tempo: atividade.tempo?.toString() || '',
-        funcao: atividade.funcao || '',
         empreendimento_id: empreendimentoId,
       });
       // Se for edição, inicializar subdisciplinas selecionadas
       if (atividade.subdisciplina) {
         setSelectedSubdisciplinas([atividade.subdisciplina]);
       }
+      setSelectedDocumentoId(atividade.documento_id || null);
     } else {
       // Reset form for new entry
       setFormData({
-        id_atividade: '',
         etapa: '',
         disciplina: '',
-        subdisciplina: '',
         atividade: '',
-        predecessora: '',
         tempo: '',
-        funcao: '',
         empreendimento_id: empreendimentoId,
       });
       setSelectedSubdisciplinas([]);
+      setSelectedDocumentoId(null);
     }
   }, [atividade, empreendimentoId, isOpen]);
 
@@ -130,8 +126,9 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
         // Edição - atualiza apenas uma atividade
         const dataToSave = {
           ...formData,
-          subdisciplina: selectedSubdisciplinas[0], // Na edição, usar apenas a primeira
+          subdisciplina: selectedSubdisciplinas[0],
           tempo: formData.tempo ? Number(formData.tempo) : null,
+          documento_id: selectedDocumentoId || null,
         };
         await Atividade.update(atividade.id, dataToSave);
       } else {
@@ -141,6 +138,7 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
             ...formData,
             subdisciplina: subdisciplina,
             tempo: formData.tempo ? Number(formData.tempo) : null,
+            documento_id: selectedDocumentoId || null,
           };
           return Atividade.create(dataToSave);
         });
@@ -212,21 +210,30 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
               )}
             </div>
           )}
-           <div className="space-y-2">
-            <Label htmlFor="funcao">Função Responsável</Label>
-            <Input id="funcao" name="funcao" value={formData.funcao} onChange={handleChange} />
-          </div>
+
           <div className="space-y-2">
-            <Label htmlFor="tempo">Tempo Padrão (horas)</Label>
-            <Input id="tempo" name="tempo" type="number" step="0.1" value={formData.tempo} onChange={handleChange} />
+           <Label htmlFor="tempo">Tempo Padrão (horas)</Label>
+           <Input id="tempo" name="tempo" type="number" step="0.1" value={formData.tempo} onChange={handleChange} />
           </div>
+
           <div className="space-y-2">
-            <Label htmlFor="id_atividade">ID da Atividade (Opcional)</Label>
-            <Input id="id_atividade" name="id_atividade" value={formData.id_atividade} onChange={handleChange} />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="predecessora">ID Predecessora (Opcional)</Label>
-            <Input id="predecessora" name="predecessora" value={formData.predecessora} onChange={handleChange} />
+           <Label htmlFor="folha">Folha (Opcional)</Label>
+           <Select value={selectedDocumentoId || 'sem_folha'} onValueChange={(value) => setSelectedDocumentoId(value === 'sem_folha' ? null : value)}>
+             <SelectTrigger>
+               <SelectValue placeholder="Selecione a folha" />
+             </SelectTrigger>
+             <SelectContent>
+               <SelectItem value="sem_folha">Sem folha específica</SelectItem>
+               {documentos.map(doc => (
+                 <SelectItem key={doc.id} value={doc.id}>
+                   {doc.numero} - {doc.arquivo}
+                 </SelectItem>
+               ))}
+             </SelectContent>
+           </Select>
+           <p className="text-xs text-gray-500">
+             Se selecionada, a atividade ficará vinculada apenas a esta folha.
+           </p>
           </div>
         </form>
         <DialogFooter>
