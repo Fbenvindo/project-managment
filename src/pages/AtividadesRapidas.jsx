@@ -28,8 +28,7 @@ export default function AtividadesRapidasPage() {
   const [selectedAtividade, setSelectedAtividade] = useState(null);
   const [modalData, setModalData] = useState({
     usuario_ajudado: '',
-    empreendimento_id: '',
-    os: ''
+    empreendimento_id: ''
   });
 
   useEffect(() => {
@@ -64,8 +63,7 @@ export default function AtividadesRapidasPage() {
     setSelectedAtividade(atividade);
     setModalData({
       usuario_ajudado: '',
-      empreendimento_id: '',
-      os: ''
+      empreendimento_id: ''
     });
     setShowModal(true);
   };
@@ -75,8 +73,7 @@ export default function AtividadesRapidasPage() {
     setSelectedAtividade(null);
     setModalData({
       usuario_ajudado: '',
-      empreendimento_id: '',
-      os: ''
+      empreendimento_id: ''
     });
   };
 
@@ -98,8 +95,7 @@ export default function AtividadesRapidasPage() {
         descritivo: descritivo,
         base_descritivo: selectedAtividade.nome,
         empreendimento_id: modalData.empreendimento_id || null,
-        usuario_ajudado: modalData.usuario_ajudado || null,
-        os: modalData.os || null
+        usuario_ajudado: modalData.usuario_ajudado || null
       });
 
       alert('✅ Atividade iniciada com sucesso!');
@@ -261,12 +257,6 @@ export default function AtividadesRapidasPage() {
                             Ajudando {usuarios.find(u => u.email === exec.usuario_ajudado)?.nome || exec.usuario_ajudado}
                           </p>
                         )}
-
-                        {exec.os && (
-                          <p className="text-sm text-blue-600 mb-2 font-medium">
-                            OS: {exec.os}
-                          </p>
-                        )}
                         
                         <div className="flex items-center justify-between text-xs text-gray-500 mt-2 pt-2 border-t border-gray-100">
                           <span className="flex items-center gap-1">
@@ -351,18 +341,6 @@ export default function AtividadesRapidasPage() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="os">Número da OS (Opcional)</Label>
-              <input
-                id="os"
-                type="text"
-                value={modalData.os}
-                onChange={(e) => setModalData(prev => ({ ...prev, os: e.target.value }))}
-                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                placeholder="Ex: 2024-001"
-              />
             </div>
 
           </div>
