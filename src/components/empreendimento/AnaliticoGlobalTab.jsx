@@ -741,6 +741,52 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         const disciplinaDoc = doc.disciplina;
         const fatorDificuldade = doc.fator_dificuldade || 1;
 
+        // Adicionar atividades específicas vinculadas a este documento
+        const atividadesVinculadasDoc = (projectActivities || []).filter(pa => 
+          pa.documento_id === doc.id && 
+          !pa.id_atividade && 
+          pa.tempo !== -999
+        );
+        
+        atividadesVinculadasDoc.forEach(atividadeVinculada => {
+          const planKey = `${doc.id}-${atividadeVinculada.id}`;
+          const existingPlan = planejamentosMap.get(planKey);
+          const sourceDisplay = `Folha: ${doc.numero} - ${doc.arquivo || 'Sem Nome'}`;
+          
+          if (existingPlan) {
+            documentActivities.push({
+              ...atividadeVinculada,
+              id: existingPlan.id,
+              uniqueId: `plano-${existingPlan.id}`,
+              atividade: existingPlan.descritivo || atividadeVinculada.atividade,
+              tempo: existingPlan.tempo_planejado,
+              source: sourceDisplay,
+              source_documento_id: doc.id,
+              source_documento_numero: doc.numero,
+              source_documento_arquivo: doc.arquivo,
+              status: 'Planejada',
+              isEditable: false,
+              etapa: existingPlan.etapa || atividadeVinculada.etapa,
+              base_atividade_id: atividadeVinculada.id,
+            });
+          } else {
+            documentActivities.push({
+              ...atividadeVinculada,
+              uniqueId: `avail-${doc.id}-${atividadeVinculada.id}`,
+              id: atividadeVinculada.id,
+              tempo: atividadeVinculada.tempo || 0,
+              source: sourceDisplay,
+              source_documento_id: doc.id,
+              source_documento_numero: doc.numero,
+              source_documento_arquivo: doc.arquivo,
+              status: 'Disponível',
+              isEditable: false,
+              etapa: atividadeVinculada.etapa,
+              base_atividade_id: atividadeVinculada.id,
+            });
+          }
+        });
+        
         allGenericActivitiesMap.forEach(baseAtividade => {
           const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
           const isExcludedFromThisDoc = excludedFromDocumentMap.has(baseAtividade.id) && 
