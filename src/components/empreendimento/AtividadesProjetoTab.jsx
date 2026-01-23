@@ -335,9 +335,9 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
 
       <div className="flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-semibold">Atividades Específicas do Projeto</h3>
+          <h3 className="text-lg font-semibold">Atividades do Projeto</h3>
           <p className="text-sm text-gray-500">
-            Estas atividades estarão disponíveis apenas para este empreendimento.
+            Gerencie as atividades deste empreendimento.
           </p>
         </div>
         <Button onClick={() => { 
