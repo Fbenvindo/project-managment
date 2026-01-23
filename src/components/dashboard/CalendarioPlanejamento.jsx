@@ -776,6 +776,13 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
           </p>
         )}
         
+        {/* OS Row */}
+        {plano.os && (
+          <p className="text-blue-600 font-semibold text-xs mb-1.5">
+            OS: {plano.os}
+          </p>
+        )}
+        
         {/* Executor Row */}
         {planoExecutor && (
           <div className="flex items-center gap-1.5 text-gray-700">
