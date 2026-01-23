@@ -64,7 +64,8 @@ export default function AtividadesRapidasPage() {
     setSelectedAtividade(atividade);
     setModalData({
       usuario_ajudado: '',
-      empreendimento_id: ''
+      empreendimento_id: '',
+      os: ''
     });
     setShowModal(true);
   };
@@ -74,7 +75,8 @@ export default function AtividadesRapidasPage() {
     setSelectedAtividade(null);
     setModalData({
       usuario_ajudado: '',
-      empreendimento_id: ''
+      empreendimento_id: '',
+      os: ''
     });
   };
 
