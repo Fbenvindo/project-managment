@@ -229,8 +229,13 @@ export default function EmpreendimentoPage() {
       loadTabData(newTab);
     }
 
-    if (newTab === 'atividades_projeto' && !tabData.documentos.loaded && !tabData.documentos.loading) {
-      loadTabData('documentos');
+    if (newTab === 'atividades_projeto') {
+      if (!tabData.documentos.loaded && !tabData.documentos.loading) {
+        loadTabData('documentos');
+      }
+      if (!tabData.pavimentos.loaded && !tabData.pavimentos.loading) {
+        loadTabData('pavimentos');
+      }
     }
 
     if (newTab === 'documentos' && !tabData.pavimentos.loaded && !tabData.pavimentos.loading) {
