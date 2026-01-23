@@ -1055,14 +1055,21 @@ export default function DocumentosTab({
         }
       });
 
+      // Incluir tanto atividades gerais quanto atividades específicas vinculadas a esta folha
       let atividadesGerais = allAtividades.filter(ativ => {
-        if (ativ.empreendimento_id) {
-          return false;
+        // Atividades gerais (sem empreendimento_id)
+        if (!ativ.empreendimento_id) {
+          const disciplinaMatch = ativ.disciplina === disciplinaDoc;
+          const subdisciplinaMatch = subdisciplinasDoc.includes(ativ.subdisciplina);
+          return disciplinaMatch && subdisciplinaMatch;
         }
-
-        const disciplinaMatch = ativ.disciplina === disciplinaDoc;
-        const subdisciplinaMatch = subdisciplinasDoc.includes(ativ.subdisciplina);
-        return disciplinaMatch && subdisciplinaMatch;
+        
+        // Atividades específicas DESTA folha (com documento_id igual ao documento atual)
+        if (ativ.empreendimento_id === empreendimento.id && ativ.documento_id === doc.id && ativ.tempo !== -999) {
+          return true;
+        }
+        
+        return false;
       });
 
       console.log(`\n🔍 [Doc ${doc.numero}] Filtrando exclusões:`);
