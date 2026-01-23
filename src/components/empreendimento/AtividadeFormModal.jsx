@@ -187,15 +187,16 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
               <Label>Subdisciplina</Label>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-4 border rounded-md max-h-48 overflow-y-auto">
                 {subdisciplinasDisponiveis.map(subdisciplina => (
-                  <div key={subdisciplina} className="flex items-center space-x-2">
+                  <div key={subdisciplina} className="flex items-center space-x-2 min-w-0">
                     <Checkbox
                       id={`subdisciplina-${subdisciplina}`}
                       checked={selectedSubdisciplinas.includes(subdisciplina)}
                       onCheckedChange={() => handleToggleSubdisciplina(subdisciplina)}
+                      className="flex-shrink-0"
                     />
                     <label
                       htmlFor={`subdisciplina-${subdisciplina}`}
-                      className="text-sm cursor-pointer"
+                      className="text-sm cursor-pointer truncate"
                     >
                       {subdisciplina}
                     </label>
