@@ -416,6 +416,12 @@ export default function ActivityItemCalendar({
         {documentoDisplay && (
           <p className="text-gray-600 font-mono mb-1.5 break-words">{documentoDisplay}</p>
         )}
+
+        {plano.os && (
+          <p className="text-blue-600 font-semibold text-xs mb-1.5">
+            OS: {plano.os}
+          </p>
+        )}
         
         {planoExecutor && (
           <div className="flex items-center gap-1.5 text-gray-700">
