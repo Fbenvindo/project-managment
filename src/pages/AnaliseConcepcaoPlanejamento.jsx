@@ -188,8 +188,13 @@ export default function AnaliseConcepcaoPlanejamento() {
 
     const groupedByDocumento = useMemo(() => {
         const grouped = {};
+        const semDocumento = [];
+        
         filteredPlanejamentos.forEach(plan => {
-            if (!plan.documento_id) return;
+            if (!plan.documento_id) {
+                semDocumento.push(plan);
+                return;
+            }
             if (!grouped[plan.documento_id]) {
                 const doc = documentos.find(d => d.id === plan.documento_id);
                 if (doc) {
@@ -200,13 +205,21 @@ export default function AnaliseConcepcaoPlanejamento() {
                 grouped[plan.documento_id].planejamentos.push(plan);
             }
         });
-        return Object.values(grouped).sort((a,b) => {
+        
+        const result = Object.values(grouped).sort((a,b) => {
             const disciplinaA = a.doc.disciplina || '';
             const disciplinaB = b.doc.disciplina || '';
             const numeroA = a.doc.numero || '';
             const numeroB = b.doc.numero || '';
             return disciplinaA.localeCompare(disciplinaB) || numeroA.localeCompare(numeroB);
         });
+        
+        // Adicionar atividades sem documento no início
+        if (semDocumento.length > 0) {
+            result.unshift({ doc: null, planejamentos: semDocumento });
+        }
+        
+        return result;
     }, [filteredPlanejamentos, documentos]);
     
     const disciplinasDisponiveis = [...new Set(Object.values(atividadesMap).map(a => a.disciplina))];
@@ -300,12 +313,19 @@ export default function AnaliseConcepcaoPlanejamento() {
                                         ) : (
                                             groupedByDocumento.map(({ doc, planejamentos: docPlanejamentos }) => (
                                                 <React.Fragment key={doc.id}>
-                                                    <TableRow className="bg-gray-50 hover:bg-gray-100">
+                                                           <TableRow className="bg-gray-50 hover:bg-gray-100">
                                                         <TableCell colSpan={5} className="font-semibold p-3">
-                                                            <div className="flex flex-col">
-                                                                <span>{doc.numero}</span>
-                                                                <span className="text-xs text-gray-500 font-normal">{empreendimentos.find(e => e.id === doc.empreendimento_id)?.nome}</span>
-                                                            </div>
+                                                            {doc ? (
+                                                                <div className="flex flex-col">
+                                                                    <span>{doc.numero}</span>
+                                                                    <span className="text-xs text-gray-500 font-normal">{empreendimentos.find(e => e.id === doc.empreendimento_id)?.nome}</span>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex flex-col">
+                                                                    <span>Atividades de Documentação</span>
+                                                                    <span className="text-xs text-gray-500 font-normal">Atividades não vinculadas a uma folha específica</span>
+                                                                </div>
+                                                            )}
                                                         </TableCell>
                                                     </TableRow>
                                                     {docPlanejamentos.map((planejamento, idx) => {
@@ -319,13 +339,13 @@ export default function AnaliseConcepcaoPlanejamento() {
                                                         const tempoExibir = planejamento.tempo_executado || tempoExecutadoTotal;
 
                                                         return (
-                                                            <TableRow key={planejamento.id}>
-                                                                <TableCell>{idx === 0 ? `${doc.disciplina || '-'}` : ""}</TableCell>
-                                                                <TableCell>{planejamento.descritivo || atividade?.atividade || 'Atividade não encontrada'}</TableCell>
-                                                                <TableCell className="text-center">{(planejamento.tempo_planejado || 0).toFixed(1)}h</TableCell>
-                                                                <TableCell className="text-center">{tempoExibir.toFixed(1)}h</TableCell>
-                                                                <TableCell className="text-center">{getStatusBadge(planejamento)}</TableCell>
-                                                            </TableRow>
+                                                           <TableRow key={planejamento.id}>
+                                                               <TableCell>{idx === 0 && doc ? `${doc.disciplina || '-'}` : ""}</TableCell>
+                                                               <TableCell>{planejamento.descritivo || atividade?.atividade || 'Atividade não encontrada'}</TableCell>
+                                                               <TableCell className="text-center">{(planejamento.tempo_planejado || 0).toFixed(1)}h</TableCell>
+                                                               <TableCell className="text-center">{tempoExibir.toFixed(1)}h</TableCell>
+                                                               <TableCell className="text-center">{getStatusBadge(planejamento)}</TableCell>
+                                                           </TableRow>
                                                         );
                                                     })}
                                                 </React.Fragment>
