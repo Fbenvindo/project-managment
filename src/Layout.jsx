@@ -102,6 +102,16 @@ const LayoutComponent = ({ children, currentPageName }) => {
       });
     }
 
+    // Checklist de Planejamento: coordenador e consultor
+    if (hasPermission('coordenador') || perfilAtual === 'consultor') {
+      items.push({
+        title: "Checklist de Planejamento",
+        url: createPageUrl("ChecklistPlanejamento"),
+        icon: FileText,
+        show: true
+      });
+    }
+
     // Atividades Rápidas: todos EXCETO consultor
     if (perfilAtual !== 'consultor') {
       items.push({
