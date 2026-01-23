@@ -8,12 +8,12 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Plus, Trash2, Edit2, Save, X } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
-const STATUS_OPTIONS = ['', 'E', 'C', 'NA'];
+const STATUS_OPTIONS = ['-', 'E', 'C', 'NA'];
 const STATUS_COLORS = {
   'E': 'bg-yellow-100',
   'C': 'bg-green-100',
   'NA': 'bg-gray-100',
-  '': 'bg-white'
+  '-': 'bg-white'
 };
 
 export default function ChecklistTable({ secao, items, checklist, onUpdate }) {
