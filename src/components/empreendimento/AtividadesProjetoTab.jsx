@@ -249,14 +249,20 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
 
   // MODIFICADO: Filtrar atividades específicas do projeto ou vinculadas aos documentos do empreendimento
   const filteredAtividades = useMemo(() => {
+    const disciplinasEspecificas = ['Planejamento', 'Gestão', 'BIM', 'Apoio'];
+    
     const todasAtividades = (atividades || [])
       .filter(a => {
         // Incluir atividades específicas do projeto OR atividades vinculadas a documentos deste empreendimento
         const ehDoEmpreendimento = a.empreendimento_id === empreendimentoId;
         const ehDoDocumento = a.documento_id && documentoIdsDoEmpreendimento.includes(a.documento_id);
-        const incluir = ehDoEmpreendimento || ehDoDocumento;
+        
+        // Incluir apenas atividades das disciplinas específicas
+        const ehDisciplinaEspecifica = a.disciplina && disciplinasEspecificas.includes(a.disciplina);
+        
+        const incluir = (ehDoEmpreendimento || ehDoDocumento) && ehDisciplinaEspecifica;
         if (incluir) {
-          console.log("✅ Atividade incluída:", a.atividade, { ehDoEmpreendimento, ehDoDocumento, documento_id: a.documento_id });
+          console.log("✅ Atividade incluída:", a.atividade, { ehDoEmpreendimento, ehDoDocumento, disciplina: a.disciplina, documento_id: a.documento_id });
         }
         return incluir;
       })
