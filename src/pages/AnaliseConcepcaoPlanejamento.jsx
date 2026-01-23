@@ -21,7 +21,7 @@ export default function AnaliseConcepcaoPlanejamento() {
     // Filters
     const [filterEmpreendimento, setFilterEmpreendimento] = useState("todos");
     const [filterDisciplina, setFilterDisciplina] = useState("todas");
-    const [selectedEtapas, setSelectedEtapas] = useState(["Concepção", "Planejamento"]);
+    const [selectedEtapas, setSelectedEtapas] = useState([]);
     
     const [isStopModalOpen, setIsStopModalOpen] = useState(false);
     const [selectedExecucao, setSelectedExecucao] = useState(null);
@@ -175,11 +175,12 @@ export default function AnaliseConcepcaoPlanejamento() {
     const filteredPlanejamentos = useMemo(() => {
         return planejamentos.filter(plan => {
             const atividade = atividadesMap[plan.atividade_id];
-            if (!atividade) return false;
+            if (!atividade && !plan.descritivo) return false;
             
-            const etapaMatch = selectedEtapas.includes(plan.etapa || atividade.etapa);
+            const etapaPlan = plan.etapa || atividade?.etapa;
+            const etapaMatch = selectedEtapas.length === 0 || selectedEtapas.includes(etapaPlan);
             const empreendimentoMatch = filterEmpreendimento === "todos" || plan.empreendimento_id === filterEmpreendimento;
-            const disciplinaMatch = filterDisciplina === "todos" || atividade.disciplina === filterDisciplina;
+            const disciplinaMatch = filterDisciplina === "todos" || atividade?.disciplina === filterDisciplina;
             
             return etapaMatch && empreendimentoMatch && disciplinaMatch;
         });
@@ -209,7 +210,17 @@ export default function AnaliseConcepcaoPlanejamento() {
     }, [filteredPlanejamentos, documentos]);
     
     const disciplinasDisponiveis = [...new Set(Object.values(atividadesMap).map(a => a.disciplina))];
-    const etapasDisponiveis = ["Concepção", "Planejamento"];
+    
+    // Coletar todas as etapas existentes nos planejamentos
+    const etapasDisponiveis = useMemo(() => {
+        const etapasSet = new Set();
+        planejamentos.forEach(plan => {
+            const atividade = atividadesMap[plan.atividade_id];
+            const etapa = plan.etapa || atividade?.etapa;
+            if (etapa) etapasSet.add(etapa);
+        });
+        return Array.from(etapasSet).sort();
+    }, [planejamentos, atividadesMap]);
 
     const toggleEtapa = (etapa) => {
         setSelectedEtapas(prev => 
