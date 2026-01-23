@@ -653,6 +653,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isDeletingMultiple, setIsDeletingMultiple] = useState(false);
   const [isRestoringGlobal, setIsRestoringGlobal] = useState(false);
+  const [expandedAtividades, setExpandedAtividades] = useState({});
   
   // Estados para rastreamento de alterações
   const [alteracoesEtapa, setAlteracoesEtapa] = useState([]);
@@ -825,8 +826,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     setFilters(prev => ({ ...prev, search: value }));
   }, 300), []);
 
-  const filteredAtividades = useMemo(() => {
-    return combinedActivities.filter(ativ => {
+  const atividadesAgrupadas = useMemo(() => {
+    const filtered = combinedActivities.filter(ativ => {
       const searchLower = filters.search.toLowerCase();
       const searchMatch = !filters.search ||
         ativ.atividade?.toLowerCase().includes(searchLower) ||
@@ -841,6 +842,26 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
       return searchMatch && disciplinaMatch && etapaMatch;
     });
+
+    // Agrupar por atividade base
+    const grupos = new Map();
+    
+    filtered.forEach(ativ => {
+      const key = `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.disciplina}-${ativ.subdisciplina}`;
+      
+      if (!grupos.has(key)) {
+        grupos.set(key, {
+          baseAtividade: ativ,
+          folhas: []
+        });
+      }
+      
+      if (ativ.source_documento_id) {
+        grupos.get(key).folhas.push(ativ);
+      }
+    });
+
+    return Array.from(grupos.values());
   }, [combinedActivities, filters]);
   
   const etapasUnicas = useMemo(() => [...new Set(combinedActivities.map(a => a.etapa).filter(Boolean))], [combinedActivities]);
@@ -1048,13 +1069,17 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
   const handleSelectAll = (isChecked) => {
     if (isChecked) {
-      const projectActivityIds = filteredAtividades
-        .filter(ativ => ativ.isEditable)
-        .map(ativ => ativ.uniqueId);
+      const projectActivityIds = atividadesAgrupadas
+        .filter(grupo => grupo.baseAtividade.isEditable)
+        .map(grupo => grupo.baseAtividade.uniqueId);
       setSelectedIds(new Set(projectActivityIds));
     } else {
       setSelectedIds(new Set());
     }
+  };
+
+  const toggleAtividadeExpansion = (key) => {
+    setExpandedAtividades(prev => ({ ...prev, [key]: !prev[key] }));
   };
 
   const handleDeleteSelected = async () => {
@@ -1077,13 +1102,13 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
       for (const uniqueId of idsArray) {
         try {
-          const atividade = filteredAtividades.find(a => a.uniqueId === uniqueId);
-          if (!atividade || !atividade.isEditable) {
+          const grupo = atividadesAgrupadas.find(g => g.baseAtividade.uniqueId === uniqueId);
+          if (!grupo || !grupo.baseAtividade.isEditable) {
             console.warn('Atividade não editável ou não encontrada:', uniqueId);
             continue;
           }
 
-          await retryWithBackoff(() => Atividade.delete(atividade.id), 3, 500, `deleteAtividade-${atividade.id}`);
+          await retryWithBackoff(() => Atividade.delete(grupo.baseAtividade.id), 3, 500, `deleteAtividade-${grupo.baseAtividade.id}`);
           results.deleted++;
           
           await new Promise(resolve => setTimeout(resolve, 100));
@@ -1197,7 +1222,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       );
     }
 
-    if (filteredAtividades.length === 0 && !isLoading) {
+    if (atividadesAgrupadas.length === 0 && !isLoading) {
       return (
         <div className="text-center py-16 px-6 bg-gray-50 rounded-lg">
           <PackageOpen className="w-16 h-16 mx-auto text-gray-300 mb-4" />
@@ -1211,7 +1236,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       );
     }
 
-    const editableActivities = filteredAtividades.filter(ativ => ativ.isEditable);
+    const editableActivities = atividadesAgrupadas.filter(grupo => grupo.baseAtividade.isEditable);
 
     return (
       <div className="border rounded-lg overflow-hidden bg-white">
@@ -1255,8 +1280,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           <TableHeader className="bg-gray-50">
             <TableRow>
               {editableActivities.length > 0 && <TableHead className="w-[50px]"></TableHead>}
+              <TableHead className="w-[50px]"></TableHead>
               <TableHead>Atividade</TableHead>
-              <TableHead>Origem</TableHead>
+              <TableHead>Folhas</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Etapa</TableHead>
               <TableHead>Disciplina</TableHead>
@@ -1267,87 +1293,135 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             </TableRow>
           </TableHeader>
           <TableBody>
-            {filteredAtividades.map(ativ => {
+            {atividadesAgrupadas.map(grupo => {
+              const ativ = grupo.baseAtividade;
+              const key = `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.disciplina}-${ativ.subdisciplina}`;
+              const isExpanded = expandedAtividades[key];
               const genericAtividadeIdToExclude = ativ.base_atividade_id || ativ.id;
               const uniqueKey = ativ.source_documento_id ? `${genericAtividadeIdToExclude}-${ativ.source_documento_id}` : genericAtividadeIdToExclude;
               const isDeleting = isDeletingActivity[uniqueKey] || isDeletingActivity[genericAtividadeIdToExclude];
 
               return (
-                <TableRow key={ativ.uniqueId}>
-                  {editableActivities.length > 0 && (
+                <>
+                  <TableRow key={key} className="hover:bg-gray-50">
+                    {editableActivities.length > 0 && (
+                      <TableCell>
+                        {ativ.isEditable && (
+                          <Checkbox
+                            checked={selectedIds.has(ativ.uniqueId)}
+                            onCheckedChange={() => handleSelectItem(ativ.uniqueId)}
+                            disabled={isDeletingMultiple}
+                          />
+                        )}
+                      </TableCell>
+                    )}
                     <TableCell>
-                      {ativ.isEditable && (
-                        <Checkbox
-                          checked={selectedIds.has(ativ.uniqueId)}
-                          onCheckedChange={() => handleSelectItem(ativ.uniqueId)}
-                          disabled={isDeletingMultiple}
-                        />
+                      {grupo.folhas.length > 0 && (
+                        <Button 
+                          variant="ghost" 
+                          size="icon" 
+                          onClick={() => toggleAtividadeExpansion(key)}
+                          className="h-8 w-8"
+                        >
+                          {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                        </Button>
                       )}
                     </TableCell>
-                  )}
-                  <TableCell className="font-medium">{ativ.atividade}</TableCell>
-                  <TableCell>
-                    <Badge variant={ativ.source === 'Projeto' ? 'default' : 'secondary'}>
-                      {ativ.source}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant={
-                      ativ.status === 'Planejada' ? 'success' :
-                      ativ.status === 'Disponível' ? 'outline' :
-                      'secondary'
-                    }>
-                      {ativ.status}
-                    </Badge>
-                  </TableCell>
-                  <TableCell>{ativ.etapa}</TableCell>
-                  <TableCell>{ativ.disciplina}</TableCell>
-                  <TableCell>{ativ.subdisciplina}</TableCell>
-                  <TableCell>{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
-                  <TableCell>{ativ.funcao}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="icon" disabled={isDeleting || isDeletingMultiple}>
-                          {isDeleting || isDeletingMultiple ? <Loader2 className="w-4 h-4 animate-spin" /> : <MoreHorizontal className="w-4 h-4" />}
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent>
-                        {ativ.isEditable ? (
-                          <>
-                            <DropdownMenuItem onClick={() => handleOpenModal(ativ)}>
-                              <Edit className="w-4 h-4 mr-2" /> Editar Atividade
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleDelete(ativ.id)} className="text-red-600">
-                              <Trash2 className="w-4 h-4 mr-2" /> Excluir Atividade de Projeto
-                            </DropdownMenuItem>
-                          </>
-                        ) : (
-                          <>
-                            <DropdownMenuItem onClick={() => handleOpenEtapaModal(ativ)}>
-                              <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)} className="text-blue-600">
-                              <Edit2 className="w-4 h-4 mr-2" /> Editar Etapa em Folhas Específicas
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleOpenExcluirDeFolhasModal(ativ)} 
-                              className="text-orange-600"
-                            >
-                              <FileX className="w-4 h-4 mr-2" /> Excluir de Folhas Específicas
-                            </DropdownMenuItem>
-                            <DropdownMenuItem 
-                              onClick={() => handleExcluirAtividade(ativ)} 
-                              className="text-red-600"
-                            >
-                              <XCircle className="w-4 h-4 mr-2" /> Excluir de Todas as Folhas (Empreendimento)
-                            </DropdownMenuItem>
-                          </>
-                        )}
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
+                    <TableCell className="font-medium">{ativ.atividade}</TableCell>
+                    <TableCell>
+                      <Badge variant="outline">
+                        {grupo.folhas.length} {grupo.folhas.length === 1 ? 'folha' : 'folhas'}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {grupo.folhas.length === 0 ? (
+                        <Badge variant={ativ.source === 'Projeto' ? 'default' : 'secondary'}>
+                          {ativ.source === 'Projeto' ? 'Projeto' : 'Disponível'}
+                        </Badge>
+                      ) : (
+                        <div className="flex gap-1">
+                          {grupo.folhas.some(f => f.status === 'Planejada') && (
+                            <Badge variant="success">Planejada</Badge>
+                          )}
+                          {grupo.folhas.some(f => f.status === 'Disponível') && (
+                            <Badge variant="outline">Disponível</Badge>
+                          )}
+                        </div>
+                      )}
+                    </TableCell>
+                    <TableCell>{ativ.etapa}</TableCell>
+                    <TableCell>{ativ.disciplina}</TableCell>
+                    <TableCell>{ativ.subdisciplina}</TableCell>
+                    <TableCell>{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
+                    <TableCell>{ativ.funcao}</TableCell>
+                    <TableCell>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="icon" disabled={isDeleting || isDeletingMultiple}>
+                            {isDeleting || isDeletingMultiple ? <Loader2 className="w-4 h-4 animate-spin" /> : <MoreHorizontal className="w-4 h-4" />}
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent>
+                          {ativ.isEditable ? (
+                            <>
+                              <DropdownMenuItem onClick={() => handleOpenModal(ativ)}>
+                                <Edit className="w-4 h-4 mr-2" /> Editar Atividade
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleDelete(ativ.id)} className="text-red-600">
+                                <Trash2 className="w-4 h-4 mr-2" /> Excluir Atividade de Projeto
+                              </DropdownMenuItem>
+                            </>
+                          ) : (
+                            <>
+                              <DropdownMenuItem onClick={() => handleOpenEtapaModal(ativ)}>
+                                <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)} className="text-blue-600">
+                                <Edit2 className="w-4 h-4 mr-2" /> Editar Etapa em Folhas Específicas
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleOpenExcluirDeFolhasModal(ativ)} 
+                                className="text-orange-600"
+                              >
+                                <FileX className="w-4 h-4 mr-2" /> Excluir de Folhas Específicas
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => handleExcluirAtividade(ativ)} 
+                                className="text-red-600"
+                              >
+                                <XCircle className="w-4 h-4 mr-2" /> Excluir de Todas as Folhas (Empreendimento)
+                              </DropdownMenuItem>
+                            </>
+                          )}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+
+                  {isExpanded && grupo.folhas.map(folha => (
+                    <TableRow key={folha.uniqueId} className="bg-blue-50/50">
+                      {editableActivities.length > 0 && <TableCell></TableCell>}
+                      <TableCell className="pl-12">
+                        <ChevronRight className="w-3 h-3 text-gray-400 inline mr-1" />
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-600">
+                        {folha.source_documento_numero} - {folha.source_documento_arquivo}
+                      </TableCell>
+                      <TableCell></TableCell>
+                      <TableCell>
+                        <Badge variant={folha.status === 'Planejada' ? 'success' : 'outline'} className="text-xs">
+                          {folha.status}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
+                      <TableCell className="text-sm text-gray-500">{folha.disciplina}</TableCell>
+                      <TableCell className="text-sm text-gray-500">{folha.subdisciplina}</TableCell>
+                      <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
+                      <TableCell className="text-sm text-gray-500">{folha.funcao}</TableCell>
+                      <TableCell></TableCell>
+                    </TableRow>
+                  ))}
+                </>
               );
             })}
           </TableBody>
