@@ -9,11 +9,13 @@ import { Plus, FileText, Loader2, Search } from 'lucide-react';
 import ChecklistHeader from '@/components/checklist/ChecklistHeader';
 import ChecklistTable from '@/components/checklist/ChecklistTable';
 import NovoChecklistModal from '@/components/checklist/NovoChecklistModal';
+import NovaSecaoModal from '@/components/checklist/NovaSecaoModal';
 
 export default function ChecklistPlanejamentoPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedChecklist, setSelectedChecklist] = useState(null);
   const [showNovoModal, setShowNovoModal] = useState(false);
+  const [showNovaSecaoModal, setShowNovaSecaoModal] = useState(false);
   const [empreendimentos, setEmpreendimentos] = useState([]);
   
   const queryClient = useQueryClient();
@@ -53,6 +55,11 @@ export default function ChecklistPlanejamentoPage() {
 
   const handleItemsUpdated = async () => {
     await queryClient.invalidateQueries(['checklist-items', selectedChecklist?.id]);
+  };
+
+  const handleSecaoCreated = async () => {
+    await queryClient.invalidateQueries(['checklist-items', selectedChecklist?.id]);
+    setShowNovaSecaoModal(false);
   };
 
   const filteredChecklists = checklists.filter(c =>
@@ -141,11 +148,23 @@ export default function ChecklistPlanejamentoPage() {
           <div className="lg:col-span-3">
             {selectedChecklist ? (
               <div className="space-y-6">
-                <ChecklistHeader
-                  checklist={selectedChecklist}
-                  onUpdate={handleItemsUpdated}
-                  empreendimentos={empreendimentos}
-                />
+                <div className="flex justify-between items-center">
+                  <div className="flex-1">
+                    <ChecklistHeader
+                      checklist={selectedChecklist}
+                      onUpdate={handleItemsUpdated}
+                      empreendimentos={empreendimentos}
+                    />
+                  </div>
+                  <Button
+                    onClick={() => setShowNovaSecaoModal(true)}
+                    variant="outline"
+                    className="ml-4"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Nova Seção/Tabela
+                  </Button>
+                </div>
 
                 {Object.keys(itemsPorSecao).length > 0 ? (
                   Object.entries(itemsPorSecao).map(([secao, secaoItems]) => (
@@ -188,6 +207,15 @@ export default function ChecklistPlanejamentoPage() {
           onClose={() => setShowNovoModal(false)}
           onSuccess={handleChecklistCreated}
           empreendimentos={empreendimentos}
+        />
+      )}
+
+      {showNovaSecaoModal && selectedChecklist && (
+        <NovaSecaoModal
+          isOpen={showNovaSecaoModal}
+          onClose={() => setShowNovaSecaoModal(false)}
+          onSuccess={handleSecaoCreated}
+          checklistId={selectedChecklist.id}
         />
       )}
     </div>
