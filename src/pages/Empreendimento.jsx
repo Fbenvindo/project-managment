@@ -389,31 +389,10 @@ export default function EmpreendimentoPage() {
                 <p className="text-gray-600">Carregando atividades...</p>
               </div>
             ) : tabData.atividades_projeto.loaded && sharedData.loaded && tabData.documentos.loaded && tabData.pavimentos.loaded ? (
-              <div className="space-y-6">
-                <AnaliticoGlobalTab
-                  empreendimentoId={empreendimento?.id}
-                  onUpdate={forceFullReload}
-                />
-                
-                <AtividadesProjetoTab
-                  empreendimentoId={empreendimento?.id}
-                  atividades={tabData.atividades_projeto.data}
-                  disciplinas={sharedData.disciplinas}
-                  documentos={tabData.documentos.data.documentos || []}
-                  usuarios={sharedData.usuarios}
-                  planejamentos={tabData.documentos.data.planejamentos || []}
-                  onUpdate={() => {
-                    setTabData(prev => ({
-                      ...prev,
-                      atividades_projeto: { ...prev.atividades_projeto, loaded: false },
-                      documentos: { ...prev.documentos, loaded: false }
-                    }));
-                    loadTabData('atividades_projeto');
-                    loadTabData('documentos');
-                  }}
-                  isLoading={false}
-                />
-              </div>
+              <AnaliticoGlobalTab
+                empreendimentoId={empreendimento?.id}
+                onUpdate={forceFullReload}
+              />
             ) : null}
           </TabsContent>
 
