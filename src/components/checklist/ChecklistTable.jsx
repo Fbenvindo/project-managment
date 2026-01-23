@@ -39,9 +39,18 @@ export default function ChecklistTable({ secao, items, checklist, onUpdate }) {
         numero_item: formData.numero_item,
         descricao: formData.descricao,
         observacoes: formData.observacoes || '',
-        ordem: editingItem ? editingItem.ordem : (items.length + 1),
+        ordem: editingItem ? editingItem.ordem : 1,
         status_por_periodo: editingItem?.status_por_periodo || {}
       };
+
+      if (!editingItem) {
+        // Incrementar ordem dos itens existentes
+        for (const item of items) {
+          await base44.entities.ChecklistItem.update(item.id, {
+            ordem: (item.ordem || 0) + 1
+          });
+        }
+      }
 
       if (editingItem) {
         await base44.entities.ChecklistItem.update(editingItem.id, data);
