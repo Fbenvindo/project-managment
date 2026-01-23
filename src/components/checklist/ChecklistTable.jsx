@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, Edit2, Save, X } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, FolderX, Pencil, Check } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const STATUS_OPTIONS = ['-', 'E', 'C', 'NA'];
@@ -19,6 +19,9 @@ const STATUS_COLORS = {
 export default function ChecklistTable({ secao, items, checklist, onUpdate }) {
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [editingSecao, setEditingSecao] = useState(false);
+  const [novoNomeSecao, setNovoNomeSecao] = useState(secao);
   const [formData, setFormData] = useState({
     numero_item: '',
     descricao: '',
@@ -94,23 +97,102 @@ export default function ChecklistTable({ secao, items, checklist, onUpdate }) {
     }
   };
 
+  const handleDeleteSecao = async () => {
+    if (!window.confirm(`Tem certeza que deseja excluir toda a seção "${secao}" com ${items.length} item(ns)?`)) return;
+    
+    setIsDeleting(true);
+    try {
+      for (const item of items) {
+        await base44.entities.ChecklistItem.delete(item.id);
+      }
+      onUpdate();
+    } catch (error) {
+      console.error('Erro ao excluir seção:', error);
+      alert('Erro ao excluir seção');
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleRenameSecao = async () => {
+    if (!novoNomeSecao.trim()) {
+      alert('O nome da seção não pode estar vazio');
+      return;
+    }
+    
+    try {
+      for (const item of items) {
+        await base44.entities.ChecklistItem.update(item.id, {
+          secao: novoNomeSecao
+        });
+      }
+      setEditingSecao(false);
+      onUpdate();
+    } catch (error) {
+      console.error('Erro ao renomear seção:', error);
+      alert('Erro ao renomear seção');
+    }
+  };
+
   return (
     <Card>
       <CardHeader className="bg-gray-800 text-white">
-        <div className="flex justify-between items-center">
-          <CardTitle className="text-lg font-bold">{secao}</CardTitle>
-          <Button
-            size="sm"
-            variant="secondary"
-            onClick={() => {
-              setShowForm(!showForm);
-              setEditingItem(null);
-              setFormData({ numero_item: '', descricao: '', observacoes: '' });
-            }}
-          >
-            {showForm ? <X className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
-            {showForm ? 'Cancelar' : 'Adicionar Item'}
-          </Button>
+        <div className="flex justify-between items-center gap-4">
+          {editingSecao ? (
+            <div className="flex items-center gap-2 flex-1">
+              <Input
+                value={novoNomeSecao}
+                onChange={(e) => setNovoNomeSecao(e.target.value)}
+                className="bg-white text-gray-900 max-w-md"
+                autoFocus
+              />
+              <Button size="sm" variant="secondary" onClick={handleRenameSecao}>
+                <Check className="w-4 h-4 mr-1" />
+                Salvar
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => {
+                setEditingSecao(false);
+                setNovoNomeSecao(secao);
+              }}>
+                <X className="w-4 h-4" />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <CardTitle className="text-lg font-bold">{secao}</CardTitle>
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setEditingSecao(true)}
+                className="text-white hover:bg-gray-700"
+              >
+                <Pencil className="w-3 h-3" />
+              </Button>
+            </div>
+          )}
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={handleDeleteSecao}
+              disabled={isDeleting}
+            >
+              <FolderX className="w-4 h-4 mr-2" />
+              {isDeleting ? 'Excluindo...' : 'Excluir Seção'}
+            </Button>
+            <Button
+              size="sm"
+              variant="secondary"
+              onClick={() => {
+                setShowForm(!showForm);
+                setEditingItem(null);
+                setFormData({ numero_item: '', descricao: '', observacoes: '' });
+              }}
+            >
+              {showForm ? <X className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
+              {showForm ? 'Cancelar' : 'Adicionar Item'}
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="p-0">
