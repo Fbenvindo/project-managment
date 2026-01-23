@@ -34,13 +34,13 @@ const initialState = {
   tempo: 0,
 };
 
-const AtividadeFormDialog = ({ open, setOpen, empreendimentoId, disciplinas, onUpdate, atividadeToEdit }) => {
+const AtividadeFormDialog = ({ open, setOpen, empreendimentoId, disciplinas, onUpdate, atividadeToEdit, documentos }) => {
   const [atividade, setAtividade] = useState(atividadeToEdit || initialState);
+  const [selectedDocumentoId, setSelectedDocumentoId] = useState(null);
   
-  // Recurrence states moved to PlanejamentoAtividadeModal
-
   React.useEffect(() => {
     setAtividade(atividadeToEdit || initialState);
+    setSelectedDocumentoId(atividadeToEdit?.documento_id || null);
   }, [atividadeToEdit, open]);
 
   const handleSubmit = async () => {
@@ -55,17 +55,19 @@ const AtividadeFormDialog = ({ open, setOpen, empreendimentoId, disciplinas, onU
         const payload = { 
           ...atividade, 
           tempo: Number(atividade.tempo) || 0, 
-          empreendimento_id: empreendimentoId 
+          empreendimento_id: empreendimentoId,
+          documento_id: selectedDocumentoId || atividade.documento_id
         };
         await Atividade.update(atividade.id, payload);
         onUpdate();
         setOpen(false);
       } else {
-        // CRIAÇÃO: Apenas cria uma única atividade
+        // CRIAÇÃO: Cria atividade vinculada à folha selecionada
         const payload = { 
           ...atividade, 
           tempo: Number(atividade.tempo) || 0, 
-          empreendimento_id: empreendimentoId 
+          empreendimento_id: empreendimentoId,
+          documento_id: selectedDocumentoId || null
         };
         await Atividade.create(payload);
         onUpdate();
@@ -129,6 +131,25 @@ const AtividadeFormDialog = ({ open, setOpen, empreendimentoId, disciplinas, onU
               value={atividade.subdisciplina || ''} 
               onChange={(e) => setAtividade({ ...atividade, subdisciplina: e.target.value })} 
             />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="folha">Folha (Opcional)</Label>
+            <Select value={selectedDocumentoId || 'sem_folha'} onValueChange={(value) => setSelectedDocumentoId(value === 'sem_folha' ? null : value)}>
+              <SelectTrigger>
+                <SelectValue placeholder="Selecione a folha" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="sem_folha">Sem folha específica</SelectItem>
+                {(documentos || []).map(doc => (
+                  <SelectItem key={doc.id} value={doc.id}>
+                    {doc.numero} - {doc.arquivo}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-gray-500">
+              Se selecionada, a atividade ficará vinculada apenas a esta folha.
+            </p>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
@@ -276,6 +297,7 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
         disciplinas={disciplinas}
         onUpdate={onUpdate}
         atividadeToEdit={editingAtividade}
+        documentos={documentos}
       />
 
       <AplicarAtividadeModal

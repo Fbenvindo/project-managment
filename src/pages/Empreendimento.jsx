@@ -395,24 +395,6 @@ export default function EmpreendimentoPage() {
                   onUpdate={forceFullReload}
                 />
                 
-                <AnaliseConcepcaoPlanejamentoTab
-                  empreendimentoId={empreendimento?.id}
-                  planejamentos={tabData.documentos.data.planejamentos || []}
-                  atividades={sharedData.atividades || []}
-                  usuarios={sharedData.usuarios}
-                  documentos={tabData.documentos.data.documentos || []}
-                  pavimentos={tabData.pavimentos.data || []}
-                  onUpdate={() => {
-                    setTabData(prev => ({
-                      ...prev,
-                      documentos: { ...prev.documentos, loaded: false }
-                    }));
-                    setSharedData(prev => ({ ...prev, loaded: false }));
-                    loadTabData('documentos');
-                    loadSharedData();
-                  }}
-                />
-                
                 <AtividadesProjetoTab
                   empreendimentoId={empreendimento?.id}
                   atividades={tabData.atividades_projeto.data}
