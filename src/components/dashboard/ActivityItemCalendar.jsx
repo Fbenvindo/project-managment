@@ -318,15 +318,22 @@ export default function ActivityItemCalendar({
         </div>
 
         <div className="flex items-start justify-between mb-1.5">
-          <p className={`font-medium text-gray-800 flex-1 mr-2 break-words ${hasSelections || isSelected ? 'ml-12' : 'ml-6'}`} title={displayName}>
-            {displayName}
-            {plano.isQuickActivity && (
-              <Badge variant="outline" className="ml-2 px-1 py-0.5 text-xs bg-gray-100 text-gray-600">Execução Rápida</Badge>
+          <div className={`flex-1 mr-2 ${hasSelections || isSelected ? 'ml-12' : 'ml-6'}`}>
+            <p className="font-medium text-gray-800 break-words" title={displayName}>
+              {displayName}
+              {plano.isQuickActivity && (
+                <Badge variant="outline" className="ml-2 px-1 py-0.5 text-xs bg-gray-100 text-gray-600">Execução Rápida</Badge>
+              )}
+              {plano.tipo_planejamento === 'documento' && (
+                <Badge variant="outline" className="ml-2 px-1 py-0.5 text-xs bg-blue-100 text-blue-600">Planejamento Doc.</Badge>
+              )}
+            </p>
+            {plano.empreendimento?.nome && (
+              <p className="text-xs text-gray-500 mt-0.5 font-medium">
+                📋 {plano.empreendimento.nome}
+              </p>
             )}
-            {plano.tipo_planejamento === 'documento' && (
-              <Badge variant="outline" className="ml-2 px-1 py-0.5 text-xs bg-blue-100 text-blue-600">Planejamento Doc.</Badge>
-            )}
-          </p>
+          </div>
           <div className="flex items-center shrink-0 gap-2">
             {shouldShowEditButton() && (
               <Button
