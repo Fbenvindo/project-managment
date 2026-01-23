@@ -649,6 +649,11 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
             <p className="font-medium text-gray-800 break-words" title={displayName}>
               {displayName}
             </p>
+            {plano.empreendimento?.nome && (
+              <p className="text-xs text-gray-500 mt-0.5 font-medium">
+                📋 {plano.empreendimento.nome}
+              </p>
+            )}
             <div className="flex flex-wrap gap-1 mt-1">
               {plano.isQuickActivity && (
                 <Badge variant="outline" className="px-1 py-0.5 text-xs bg-gray-100 text-gray-600 border-gray-300">Execução Rápida</Badge>
