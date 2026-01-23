@@ -173,9 +173,16 @@ export default function AnaliseConcepcaoPlanejamento() {
     };
 
     const filteredPlanejamentos = useMemo(() => {
+        const disciplinasExcluidas = ['Planejamento', 'Gestão', 'BIM', 'Apoio'];
+        
         return planejamentos.filter(plan => {
             const atividade = atividadesMap[plan.atividade_id];
             if (!atividade && !plan.descritivo) return false;
+            
+            // Excluir disciplinas específicas
+            if (atividade?.disciplina && disciplinasExcluidas.includes(atividade.disciplina)) {
+                return false;
+            }
             
             const etapaPlan = plan.etapa || atividade?.etapa;
             const etapaMatch = selectedEtapas.length === 0 || selectedEtapas.includes(etapaPlan);
