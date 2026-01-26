@@ -997,7 +997,10 @@ export default function DocumentosTab({
       handleLocalUpdate(updatedDocFromAPI);
       setCargaDiariaCache({});
       
-      console.log(`✅ Data de início para ${documento.numero} salva.`);
+      console.log(`✅ Data de início para ${documento.numero} salva. Iniciando cascata automática...`);
+      
+      // Executar cascata automática para atualizar sucessoras
+      await handleCascadingUpdate(updatedDocFromAPI);
 
     } catch (error) {
       console.error('Erro ao atualizar data de início:', error);
@@ -1013,7 +1016,7 @@ export default function DocumentosTab({
     } finally {
       setLoadingDocs(prev => ({ ...prev, [documentoId]: false }));
     }
-  }, [localDocumentos, handleLocalUpdate, setCargaDiariaCache]);
+  }, [localDocumentos, handleLocalUpdate, setCargaDiariaCache, handleCascadingUpdate]);
 
   const filteredDocumentos = useMemo(() => {
     const filtered = localDocumentos.filter(doc =>
