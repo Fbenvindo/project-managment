@@ -9,7 +9,7 @@ import { format, eachDayOfInterval, startOfMonth, endOfMonth, parseISO, differen
 import { ptBR } from "date-fns/locale";
 import { motion, AnimatePresence } from "framer-motion";
 import { distribuirHorasSimples } from '../utils/DateCalculator';
-import { PlanejamentoAtividade, PlanejamentoDocumento, Execucao } from '@/entities/all'; // **MODIFICADO**: Adicionar PlanejamentoDocumento
+import { PlanejamentoAtividade, PlanejamentoDocumento, Execucao, Empreendimento } from '@/entities/all'; // **MODIFICADO**: Adicionar Empreendimento
 import { retryWithBackoff } from '../utils/apiUtils';
 
 export default function CurvaSPlanejamento({ isLoading: isDashboardLoading, onRefresh: onDashboardRefresh, isRefreshing: isDashboardRefreshing, usuarios = [] }) {
