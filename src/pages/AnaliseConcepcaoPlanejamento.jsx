@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Documento, PlanejamentoAtividade, PlanejamentoDocumento, Atividade, Execucao, Empreendimento } from '@/entities/all';
+import { Documento, PlanejamentoAtividade, PlanejamentoDocumento, Atividade, Execucao, Empreendimento, Usuario } from '@/entities/all';
 import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -33,6 +33,7 @@ export default function AnaliseConcepcaoPlanejamento() {
     const [selectedDocAtividades, setSelectedDocAtividades] = useState([]);
     const [planejamentoModalOpen, setPlanejamentoModalOpen] = useState(false);
     const [currentAtividade, setCurrentAtividade] = useState(null);
+    const [usuarios, setUsuarios] = useState([]);
 
     useEffect(() => {
         loadData();
@@ -41,14 +42,15 @@ export default function AnaliseConcepcaoPlanejamento() {
     const loadData = async () => {
         setIsLoading(true);
         try {
-            const [docsData, planejamentosAtivData, planejamentosDocData, ativsData, execsData, currentUser, empData] = await Promise.all([
+            const [docsData, planejamentosAtivData, planejamentosDocData, ativsData, execsData, currentUser, empData, usuariosData] = await Promise.all([
                 Documento.list(),
                 PlanejamentoAtividade.list(),
                 PlanejamentoDocumento.list(),
                 Atividade.list(),
                 Execucao.list(),
                 base44.auth.me(),
-                Empreendimento.list()
+                Empreendimento.list(),
+                Usuario.list()
             ]);
 
             // Combinar planejamentos de atividade e documento
@@ -69,6 +71,7 @@ export default function AnaliseConcepcaoPlanejamento() {
             setPlanejamentos(todosPlanejamentos);
             setEmpreendimentos(empData);
             setUser(currentUser);
+            setUsuarios(usuariosData);
         } catch (error) {
             console.error("Erro ao carregar dados:", error);
         }
@@ -524,6 +527,7 @@ export default function AnaliseConcepcaoPlanejamento() {
                     atividade={currentAtividade}
                     empreendimentos={empreendimentos}
                     documentos={documentos}
+                    usuarios={usuarios}
                     onComplete={handlePlanejamentoAtividadeComplete}
                 />
             )}
