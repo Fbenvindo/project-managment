@@ -477,16 +477,14 @@ export default function AnaliseConcepcaoPlanejamento() {
                                                             <TableCell className="text-center">{(planejamento.tempo_planejado || 0).toFixed(1)}h</TableCell>
                                                             <TableCell className="text-center">{tempoExibir.toFixed(1)}h</TableCell>
                                                             <TableCell className="text-center">
-                                                                <div className="flex items-center justify-center gap-2">
-                                                                    {getStatusBadge(planejamento)}
-                                                                    <Button 
-                                                                        size="sm" 
-                                                                        variant="outline"
-                                                                        onClick={() => handlePlanejarAtividade(atividade)}
-                                                                    >
-                                                                        <Calendar className="w-4 h-4" />
-                                                                    </Button>
-                                                                </div>
+                                                                <Button 
+                                                                    size="sm" 
+                                                                    onClick={() => handlePlanejarAtividade(atividade)}
+                                                                    className="bg-purple-600 hover:bg-purple-700 text-white"
+                                                                >
+                                                                    <Calendar className="w-4 h-4 mr-1" />
+                                                                    Planejar
+                                                                </Button>
                                                             </TableCell>
                                                         </TableRow>
                                                     );
