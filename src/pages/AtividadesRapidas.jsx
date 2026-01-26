@@ -345,18 +345,41 @@ export default function AtividadesRapidasPage() {
                             {exec.descritivo}
                           </h4>
                           <div className="flex items-center gap-2">
-                            {exec.status === 'Finalizado' && (
-                              <Button
-                                onClick={() => handleOpenEditModal(exec)}
-                                variant="ghost"
-                                size="sm"
-                                disabled={isLoading}
-                              >
-                                <Edit2 className="w-4 h-4 text-blue-600" />
-                              </Button>
-                            )}
-                            {getStatusBadge(exec.status)}
-                          </div>
+                               {exec.status === 'Finalizado' && (
+                                 <Button
+                                   onClick={() => handleOpenEditModal(exec)}
+                                   variant="ghost"
+                                   size="sm"
+                                   disabled={isLoading}
+                                   title="Editar descrição"
+                                 >
+                                   <Edit2 className="w-4 h-4 text-blue-600" />
+                                 </Button>
+                               )}
+                               {exec.status === 'Paralisado' && (
+                                 <>
+                                   <Button
+                                     onClick={() => handleResumeExecution(exec)}
+                                     variant="ghost"
+                                     size="sm"
+                                     disabled={isLoading}
+                                     title="Retomar atividade"
+                                   >
+                                     <RotateCcw className="w-4 h-4 text-blue-600" />
+                                   </Button>
+                                   <Button
+                                     onClick={() => handleFinalizeExecution(exec)}
+                                     variant="ghost"
+                                     size="sm"
+                                     disabled={isLoading}
+                                     title="Finalizar atividade"
+                                   >
+                                     <Flag className="w-4 h-4 text-green-600" />
+                                   </Button>
+                                 </>
+                               )}
+                               {getStatusBadge(exec.status)}
+                             </div>
                         </div>
                         
                         {exec.usuario_ajudado && (
