@@ -569,8 +569,8 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   };
 
   const shouldShowEditDescricaoButton = () => {
-    // Coordenador ou superior - apenas para atividades finalizadas
-    return hasPermission('coordenador') && plano.status === 'concluido';
+    // Coordenador ou superior - para atividades finalizadas ou não iniciadas
+    return hasPermission('coordenador') && (plano.status === 'concluido' || plano.status === 'nao_iniciado');
   };
 
   const handleOpenEditDescricao = () => {
