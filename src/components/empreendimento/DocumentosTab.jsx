@@ -298,6 +298,7 @@ export default function DocumentosTab({
       if (totalDocsUpdatedInCascade > 0) {
         console.log(`✅ Cascata concluída. ${totalDocsUpdatedInCascade} documentos atualizados.`);
         setCargaDiariaCache({});
+        onUpdate();
       }
     } catch (error) {
       console.error("Erro durante cascata:", error);
@@ -305,7 +306,7 @@ export default function DocumentosTab({
     } finally {
       setLoadingDocs({});
     }
-  }, [handleLocalUpdate, allAtividades, localDocumentos, etapaParaPlanejamento, pavimentos, empreendimento.id, setCargaDiariaCache]);
+  }, [handleLocalUpdate, allAtividades, localDocumentos, etapaParaPlanejamento, pavimentos, empreendimento.id, setCargaDiariaCache, onUpdate]);
 
 
   const autoPlanejarAtividades = useCallback(async (documento, etapa, executorEmail, metodoData, dataManualInicio) => {
