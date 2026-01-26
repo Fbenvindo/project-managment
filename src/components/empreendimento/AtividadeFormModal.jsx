@@ -265,24 +265,24 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
 
           <div className="space-y-2 md:col-span-2">
            <Label htmlFor="folha">Folhas (Opcional)</Label>
-           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-4 border rounded-md max-h-48 overflow-y-auto bg-gray-50">
+           <div className="grid grid-cols-1 gap-2 p-4 border rounded-md max-h-64 overflow-y-auto bg-gray-50">
              {documentos.length > 0 ? documentos.map(doc => (
-               <div key={doc.id} className="flex items-center space-x-2 min-w-0">
+               <div key={doc.id} className="flex items-start space-x-2">
                  <Checkbox
                    id={`documento-${doc.id}`}
                    checked={selectedDocumentoIds.includes(doc.id)}
                    onCheckedChange={() => handleToggleDocumento(doc.id)}
-                   className="flex-shrink-0"
+                   className="flex-shrink-0 mt-1"
                  />
                  <label
                    htmlFor={`documento-${doc.id}`}
-                   className="text-sm cursor-pointer truncate"
+                   className="text-sm cursor-pointer break-words flex-1"
                  >
                    {doc.numero} - {doc.arquivo}
                  </label>
                </div>
              )) : (
-               <p className="text-sm text-gray-500 col-span-full text-center py-2">
+               <p className="text-sm text-gray-500 text-center py-2">
                  Nenhuma folha cadastrada
                </p>
              )}
