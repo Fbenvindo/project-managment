@@ -834,8 +834,8 @@ export default function PlanejamentoAtividadeModal({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="none">Sem documento vinculado</SelectItem>
-                          {documentosDisponiveis.length > 0 ? (
-                            documentosDisponiveis.map(doc => (
+                          {(documentosDisponiveis.length > 0 || atividade.disciplina === 'Documentação') ? (
+                            (documentosDisponiveis.length > 0 ? documentosDisponiveis : documentos).map(doc => (
                               <SelectItem key={doc.id} value={doc.id}>
                                 {doc.numero} - {doc.arquivo}
                               </SelectItem>
