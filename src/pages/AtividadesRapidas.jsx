@@ -98,6 +98,26 @@ export default function AtividadesRapidasPage() {
     setEditDescricao('');
   };
 
+  const handleRetryExecution = async (execucao) => {
+    setIsLoading(true);
+    try {
+      await startExecution({
+        descritivo: execucao.descritivo,
+        base_descritivo: execucao.descritivo.split(' - ')[1] || execucao.descritivo,
+        empreendimento_id: execucao.empreendimento_id || null,
+        usuario_ajudado: execucao.usuario_ajudado || null
+      });
+
+      alert('✅ Atividade retomada com sucesso!');
+      await loadData();
+    } catch (error) {
+      console.error('Erro ao retomar atividade:', error);
+      alert('Erro ao retomar atividade: ' + (error.message || 'Tente novamente.'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleSaveDescricao = async () => {
     if (!selectedExecucao || !editDescricao.trim()) {
       alert('Descrição não pode estar vazia');
