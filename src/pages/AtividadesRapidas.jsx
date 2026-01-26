@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Zap, Clock, Play, Users, CheckCircle2, XCircle, History, Edit2 } from 'lucide-react';
+import { Loader2, Zap, Clock, Play, Users, CheckCircle2, XCircle, History, Edit2, RotateCcw, Flag } from 'lucide-react';
 import { ActivityTimerContext } from '@/components/contexts/ActivityTimerContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
