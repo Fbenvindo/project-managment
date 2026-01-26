@@ -103,6 +103,16 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
     }
   };
 
+  const etapasDisponiveis = useMemo(() => {
+    const etapasSet = new Set();
+    allAtividades.forEach(ativ => {
+      if (ativ.etapa) {
+        etapasSet.add(ativ.etapa);
+      }
+    });
+    return Array.from(etapasSet).sort();
+  }, [allAtividades]);
+
   const subdisciplinasDisponiveis = useMemo(() => {
     if (!formData.disciplina) return [];
     
