@@ -986,9 +986,21 @@ export default function DocumentosTab({
         return;
       }
 
+      let novaDataTermino = null;
+      
+      // Se o documento tem tempo total planejado, recalcular a data de término
+      if (documento.tempo_total && documento.tempo_total > 0) {
+        novaDataTermino = calculateEndDate(novaDataInicio, documento.tempo_total, 8);
+      }
+
       const updateData = {
         inicio_planejado: novaDataStr
       };
+
+      // Adicionar termino_planejado se foi calculado
+      if (isValid(novaDataTermino)) {
+        updateData.termino_planejado = format(novaDataTermino, 'yyyy-MM-dd');
+      }
 
       console.log(`🔧 [handleDataInicioChange] Atualizando documento ${documentoId} com:`, updateData);
 
