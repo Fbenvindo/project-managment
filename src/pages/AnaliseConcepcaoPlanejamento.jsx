@@ -193,38 +193,41 @@ export default function AnaliseConcepcaoPlanejamento() {
         });
     }, [planejamentos, atividadesMap, selectedEtapas, filterEmpreendimento, filterDisciplina]);
 
-    const groupedByDisciplina = useMemo(() => {
+    const groupedByDocumento = useMemo(() => {
         const grouped = {};
+        const semDocumento = [];
         
         filteredPlanejamentos.forEach(plan => {
-            const atividade = atividadesMap[plan.atividade_id];
-            const disciplina = atividade?.disciplina || 'Documentação';
-            
-            if (!grouped[disciplina]) {
-                grouped[disciplina] = [];
+            if (!plan.documento_id) {
+                semDocumento.push(plan);
+                return;
             }
-            grouped[disciplina].push({ plan, atividade });
+            if (!grouped[plan.documento_id]) {
+                const doc = documentos.find(d => d.id === plan.documento_id);
+                if (doc) {
+                    grouped[plan.documento_id] = { doc, planejamentos: [] };
+                }
+            }
+            if (grouped[plan.documento_id]) {
+                grouped[plan.documento_id].planejamentos.push(plan);
+            }
         });
         
-        // Ordenar as disciplinas e os planejamentos dentro de cada disciplina
-        return Object.entries(grouped)
-            .sort((a, b) => a[0].localeCompare(b[0]))
-            .map(([disciplina, items]) => {
-                const sortedItems = items.sort((a, b) => {
-                    const empA = empreendimentos.find(e => e.id === a.plan.empreendimento_id);
-                    const empB = empreendimentos.find(e => e.id === b.plan.empreendimento_id);
-                    const docA = documentos.find(d => d.id === a.plan.documento_id);
-                    const docB = documentos.find(d => d.id === b.plan.documento_id);
-                    
-                    // Primeiro por empreendimento, depois por documento
-                    const empCompare = (empA?.nome || '').localeCompare(empB?.nome || '');
-                    if (empCompare !== 0) return empCompare;
-                    
-                    return (docA?.numero || '').localeCompare(docB?.numero || '');
-                });
-                return { disciplina, items: sortedItems };
-            });
-    }, [filteredPlanejamentos, documentos, atividadesMap, empreendimentos]);
+        const result = Object.values(grouped).sort((a,b) => {
+            const disciplinaA = a.doc.disciplina || '';
+            const disciplinaB = b.doc.disciplina || '';
+            const numeroA = a.doc.numero || '';
+            const numeroB = b.doc.numero || '';
+            return disciplinaA.localeCompare(disciplinaB) || numeroA.localeCompare(numeroB);
+        });
+        
+        // Adicionar atividades sem documento no início
+        if (semDocumento.length > 0) {
+            result.unshift({ doc: null, planejamentos: semDocumento });
+        }
+        
+        return result;
+    }, [filteredPlanejamentos, documentos]);
     
     const disciplinasDisponiveis = [...new Set(Object.values(atividadesMap).map(a => a.disciplina))];
     
@@ -294,65 +297,72 @@ export default function AnaliseConcepcaoPlanejamento() {
                 </Card>
 
                 {isLoading ? <Skeleton className="h-96 w-full" /> : (
-                    <div className="space-y-6">
-                        {groupedByDisciplina.length === 0 ? (
-                            <Card className="bg-white border-0 shadow-lg">
-                                <CardContent className="p-8 text-center text-gray-500">
-                                    Nenhuma atividade de Concepção ou Planejamento encontrada com os filtros selecionados.
-                                </CardContent>
-                            </Card>
-                        ) : (
-                            groupedByDisciplina.map(({ disciplina, items }) => (
-                                <div key={disciplina} className="border rounded-lg overflow-hidden">
-                                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border-b">
-                                        <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
-                                            <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
-                                            {disciplina}
-                                            <Badge variant="secondary" className="ml-2">
-                                                {items.length} {items.length === 1 ? 'atividade' : 'atividades'}
-                                            </Badge>
-                                        </h3>
-                                    </div>
-                                    <div className="overflow-x-auto">
-                                        <Table>
-                                            <TableHeader>
-                                                <TableRow>
-                                                    <TableHead>Documento</TableHead>
-                                                    <TableHead>Empreendimento</TableHead>
-                                                    <TableHead>Atividade</TableHead>
-                                                    <TableHead className="text-center">Tempo Real</TableHead>
-                                                    <TableHead className="text-center">Tempo Executado</TableHead>
-                                                    <TableHead className="text-center">Ações</TableHead>
-                                                </TableRow>
-                                            </TableHeader>
-                                            <TableBody>
-                                                {items.map(({ plan: planejamento, atividade }) => {
-                                                    const doc = documentos.find(d => d.id === planejamento.documento_id);
-                                                    const empreendimento = empreendimentos.find(e => e.id === planejamento.empreendimento_id);
-                                                    const execucoes = execucoesMap[planejamento.id] || [];
-                                                    const tempoExecutadoTotal = execucoes
-                                                        .filter(e => e.status === "Finalizado")
-                                                        .reduce((sum, e) => sum + (e.tempo_total || 0), 0);
-                                                    const tempoExibir = planejamento.tempo_executado || tempoExecutadoTotal;
+                    <Card className="bg-white border-0 shadow-lg">
+                        <CardContent className="p-0">
+                            <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
+                                <Table className="min-w-max">
+                                    <TableHeader className="sticky top-0 bg-white z-10">
+                                        <TableRow>
+                                            <TableHead>Documento</TableHead>
+                                            <TableHead>Atividade</TableHead>
+                                            <TableHead className="text-center">Tempo Real</TableHead>
+                                            <TableHead className="text-center">Tempo Executado</TableHead>
+                                            <TableHead className="text-center">Ações</TableHead>
+                                        </TableRow>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {groupedByDocumento.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                                                    Nenhuma atividade de Concepção ou Planejamento encontrada com os filtros selecionados.
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            groupedByDocumento.map(({ doc, planejamentos: docPlanejamentos }) => (
+                                                <React.Fragment key={doc?.id || 'sem-doc'}>
+                                                    <TableRow className="bg-gray-50 hover:bg-gray-100">
+                                                        <TableCell colSpan={5} className="font-semibold p-3">
+                                                            {doc ? (
+                                                                <div className="flex flex-col">
+                                                                    <span>{doc.numero}</span>
+                                                                    <span className="text-xs text-gray-500 font-normal">{empreendimentos.find(e => e.id === doc.empreendimento_id)?.nome}</span>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex flex-col">
+                                                                    <span>Atividades de Documentação</span>
+                                                                    <span className="text-xs text-gray-500 font-normal">Atividades não vinculadas a uma folha específica</span>
+                                                                </div>
+                                                            )}
+                                                        </TableCell>
+                                                    </TableRow>
+                                                    {docPlanejamentos.map((planejamento, idx) => {
+                                                        const atividade = atividadesMap[planejamento.atividade_id];
+                                                        const execucoes = execucoesMap[planejamento.id] || [];
+                                                        const tempoExecutadoTotal = execucoes
+                                                            .filter(e => e.status === "Finalizado")
+                                                            .reduce((sum, e) => sum + (e.tempo_total || 0), 0);
 
-                                                    return (
-                                                        <TableRow key={planejamento.id}>
-                                                            <TableCell>{doc ? doc.numero : '-'}</TableCell>
-                                                            <TableCell className="text-sm text-gray-600">{empreendimento?.nome || '-'}</TableCell>
-                                                            <TableCell>{planejamento.descritivo || atividade?.atividade || 'Atividade não encontrada'}</TableCell>
-                                                            <TableCell className="text-center">{(planejamento.tempo_planejado || 0).toFixed(1)}h</TableCell>
-                                                            <TableCell className="text-center">{tempoExibir.toFixed(1)}h</TableCell>
-                                                            <TableCell className="text-center">{getStatusBadge(planejamento)}</TableCell>
-                                                        </TableRow>
-                                                    );
-                                                })}
-                                            </TableBody>
-                                        </Table>
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
+                                                        // Usar tempo_executado do planejamento se disponível
+                                                        const tempoExibir = planejamento.tempo_executado || tempoExecutadoTotal;
+
+                                                        return (
+                                                            <TableRow key={planejamento.id}>
+                                                                <TableCell>{idx === 0 && doc ? `${doc.disciplina || '-'}` : ""}</TableCell>
+                                                                <TableCell>{planejamento.descritivo || atividade?.atividade || 'Atividade não encontrada'}</TableCell>
+                                                                <TableCell className="text-center">{(planejamento.tempo_planejado || 0).toFixed(1)}h</TableCell>
+                                                                <TableCell className="text-center">{tempoExibir.toFixed(1)}h</TableCell>
+                                                                <TableCell className="text-center">{getStatusBadge(planejamento)}</TableCell>
+                                                            </TableRow>
+                                                        );
+                                                    })}
+                                                </React.Fragment>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </div>
+                        </CardContent>
+                    </Card>
                 )}
             </div>
 
