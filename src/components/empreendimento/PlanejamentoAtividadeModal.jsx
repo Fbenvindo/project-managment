@@ -60,13 +60,13 @@ export default function PlanejamentoAtividadeModal({
     console.log(`📄 [PlanejamentoAtividadeModal] Total de documentos recebidos:`, docs.length);
     console.log(`📄 [PlanejamentoAtividadeModal] Atividade:`, atividade.disciplina, '-', atividade.subdisciplina);
 
-    // Para Documentação, sempre mostrar todos os documentos do empreendimento
+    // Para Documentação, sempre mostrar todos os documentos
     if (atividade.disciplina === 'Documentação') {
       console.log(`📄 [PlanejamentoAtividadeModal] Documentação detectada - mostrando todos (${docs.length})`);
       return docs;
     }
 
-    // Para outras disciplinas, filtrar por disciplina + subdisciplina
+    // Para outras disciplinas, tentar filtrar por disciplina + subdisciplina
     let result = docs.filter(doc => {
       if (!atividade.subdisciplina || atividade.subdisciplina === null || atividade.subdisciplina === '') {
         return doc.disciplina === atividade.disciplina;
@@ -76,6 +76,12 @@ export default function PlanejamentoAtividadeModal({
       return doc.disciplina === atividade.disciplina &&
              docSubdisciplinas.includes(atividade.subdisciplina);
     });
+
+    // Se não encontrou documentos com filtro específico, mostrar todos do empreendimento
+    if (result.length === 0) {
+      console.log(`📄 [PlanejamentoAtividadeModal] Nenhum documento encontrado com filtro específico - mostrando todos (${docs.length})`);
+      return docs;
+    }
 
     console.log(`📄 [PlanejamentoAtividadeModal] Documentos filtrados:`, result.length);
     return result;
