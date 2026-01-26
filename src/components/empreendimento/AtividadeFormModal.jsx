@@ -187,10 +187,17 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
             atividade: dataToSave.atividade,
             subdisciplina: dataToSave.subdisciplina,
             documento_ids: dataToSave.documento_ids,
-            total_folhas: dataToSave.documento_ids?.length || 0
+            total_folhas: dataToSave.documento_ids?.length || 0,
+            tipo: typeof dataToSave.documento_ids,
+            isArray: Array.isArray(dataToSave.documento_ids)
           });
           const result = await Atividade.create(dataToSave);
-          console.log("✅ Atividade criada:", result);
+          console.log("✅ Atividade criada - RETORNO:", {
+            id: result.id,
+            documento_ids: result.documento_ids,
+            tipo_retorno: typeof result.documento_ids,
+            isArray_retorno: Array.isArray(result.documento_ids)
+          });
           return result;
         });
         
