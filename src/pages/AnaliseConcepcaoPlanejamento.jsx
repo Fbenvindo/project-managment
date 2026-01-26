@@ -243,40 +243,43 @@ export default function AnaliseConcepcaoPlanejamento() {
     }, [planejamentos, atividadesMap, selectedEtapas, filterEmpreendimento, filterDisciplina]);
 
     const groupedByDocumento = useMemo(() => {
-        const grouped = {};
-        const semDocumento = [];
-        
-        filteredPlanejamentos.forEach(plan => {
-            if (!plan.documento_id) {
-                semDocumento.push(plan);
-                return;
-            }
-            if (!grouped[plan.documento_id]) {
-                const doc = documentos.find(d => d.id === plan.documento_id);
-                if (doc) {
-                    grouped[plan.documento_id] = { doc, planejamentos: [] };
-                }
-            }
-            if (grouped[plan.documento_id]) {
-                grouped[plan.documento_id].planejamentos.push(plan);
-            }
-        });
-        
-        const result = Object.values(grouped).sort((a,b) => {
-            const disciplinaA = a.doc.disciplina || '';
-            const disciplinaB = b.doc.disciplina || '';
-            const numeroA = a.doc.numero || '';
-            const numeroB = b.doc.numero || '';
-            return disciplinaA.localeCompare(disciplinaB) || numeroA.localeCompare(numeroB);
-        });
-        
-        // Adicionar atividades sem documento no início
-        if (semDocumento.length > 0) {
-            result.unshift({ doc: null, planejamentos: semDocumento });
-        }
-        
-        return result;
-    }, [filteredPlanejamentos, documentos]);
+         const grouped = {};
+         const semDocumento = [];
+
+         filteredPlanejamentos.forEach(plan => {
+             // Excluir atividades finalizadas do agrupamento
+             if (plan.status === 'concluido') return;
+
+             if (!plan.documento_id) {
+                 semDocumento.push(plan);
+                 return;
+             }
+             if (!grouped[plan.documento_id]) {
+                 const doc = documentos.find(d => d.id === plan.documento_id);
+                 if (doc) {
+                     grouped[plan.documento_id] = { doc, planejamentos: [] };
+                 }
+             }
+             if (grouped[plan.documento_id]) {
+                 grouped[plan.documento_id].planejamentos.push(plan);
+             }
+         });
+
+         const result = Object.values(grouped).sort((a,b) => {
+             const disciplinaA = a.doc.disciplina || '';
+             const disciplinaB = b.doc.disciplina || '';
+             const numeroA = a.doc.numero || '';
+             const numeroB = b.doc.numero || '';
+             return disciplinaA.localeCompare(disciplinaB) || numeroA.localeCompare(numeroB);
+         });
+
+         // Adicionar atividades sem documento no início
+         if (semDocumento.length > 0) {
+             result.unshift({ doc: null, planejamentos: semDocumento });
+         }
+
+         return result;
+     }, [filteredPlanejamentos, documentos]);
     
     const disciplinasDisponiveis = [...new Set(Object.values(atividadesMap).map(a => a.disciplina))];
     
