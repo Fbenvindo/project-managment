@@ -1733,7 +1733,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           }}
           atividade={atividadeParaPlanejar}
           empreendimentoId={empreendimentoId}
-          documentos={documentos.filter(doc => doc.empreendimento_id === empreendimentoId)}
+          documentos={documentos}
           usuarios={usuarios}
           onSuccess={handlePlanejarComplete}
         />
