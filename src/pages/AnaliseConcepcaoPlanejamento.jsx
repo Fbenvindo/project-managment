@@ -7,7 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Play, Square, Filter, ClipboardList, CheckSquare } from "lucide-react";
+import { Play, Square, Filter, ClipboardList, CheckSquare, FileText, Calendar } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import PlanejamentoAtividadeModal from "@/components/empreendimento/PlanejamentoAtividadeModal";
 
 export default function AnaliseConcepcaoPlanejamento() {
     const [documentos, setDocumentos] = useState([]);
@@ -26,6 +29,10 @@ export default function AnaliseConcepcaoPlanejamento() {
     const [isStopModalOpen, setIsStopModalOpen] = useState(false);
     const [selectedExecucao, setSelectedExecucao] = useState(null);
     const [finalStatus, setFinalStatus] = useState("Finalizado");
+    
+    const [selectedDocAtividades, setSelectedDocAtividades] = useState([]);
+    const [planejamentoModalOpen, setPlanejamentoModalOpen] = useState(false);
+    const [currentAtividade, setCurrentAtividade] = useState(null);
 
     useEffect(() => {
         loadData();
@@ -173,7 +180,7 @@ export default function AnaliseConcepcaoPlanejamento() {
     };
 
     const filteredPlanejamentos = useMemo(() => {
-        const disciplinasExcluidas = ['Planejamento', 'Gestão', 'BIM', 'Apoio'];
+        const disciplinasExcluidas = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
         
         return planejamentos.filter(plan => {
             const atividade = atividadesMap[plan.atividade_id];
@@ -181,6 +188,26 @@ export default function AnaliseConcepcaoPlanejamento() {
             
             // Excluir disciplinas específicas
             if (atividade?.disciplina && disciplinasExcluidas.includes(atividade.disciplina)) {
+                return false;
+            }
+            
+            const etapaPlan = plan.etapa || atividade?.etapa;
+            const etapaMatch = selectedEtapas.length === 0 || selectedEtapas.includes(etapaPlan);
+            const empreendimentoMatch = filterEmpreendimento === "todos" || plan.empreendimento_id === filterEmpreendimento;
+            const disciplinaMatch = filterDisciplina === "todos" || atividade?.disciplina === filterDisciplina;
+            
+            return etapaMatch && empreendimentoMatch && disciplinaMatch;
+        });
+    }, [planejamentos, atividadesMap, selectedEtapas, filterEmpreendimento, filterDisciplina]);
+
+    const planejamentosDocumentacao = useMemo(() => {
+        const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
+        
+        return planejamentos.filter(plan => {
+            const atividade = atividadesMap[plan.atividade_id];
+            if (!atividade && !plan.descritivo) return false;
+            
+            if (!atividade?.disciplina || !disciplinasDocumentacao.includes(atividade.disciplina)) {
                 return false;
             }
             
@@ -248,6 +275,29 @@ export default function AnaliseConcepcaoPlanejamento() {
         );
     };
 
+    const handlePlanejamentoAtividadeComplete = () => {
+        loadData();
+        setPlanejamentoModalOpen(false);
+        setCurrentAtividade(null);
+    };
+
+    const handlePlanejarAtividade = (atividade) => {
+        setCurrentAtividade(atividade);
+        setPlanejamentoModalOpen(true);
+    };
+
+    const toggleDocAtividadeSelection = (atividadeId) => {
+        setSelectedDocAtividades(prev => 
+            prev.includes(atividadeId) ? prev.filter(id => id !== atividadeId) : [...prev, atividadeId]
+        );
+    };
+
+    const handlePlanejarSelecionadas = () => {
+        if (selectedDocAtividades.length === 0) return;
+        // Aqui você pode abrir um modal para planejamento em massa
+        alert(`Planejar ${selectedDocAtividades.length} atividades selecionadas`);
+    };
+
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6 md:p-8">
             <div className="max-w-7xl mx-auto">
@@ -297,70 +347,157 @@ export default function AnaliseConcepcaoPlanejamento() {
                 </Card>
 
                 {isLoading ? <Skeleton className="h-96 w-full" /> : (
-                    <Card className="bg-white border-0 shadow-lg">
-                        <CardContent className="p-0">
-                            <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
-                                <Table className="min-w-max">
-                                    <TableHeader className="sticky top-0 bg-white z-10">
-                                        <TableRow>
-                                            <TableHead>Documento</TableHead>
-                                            <TableHead>Atividade</TableHead>
-                                            <TableHead className="text-center">Tempo Real</TableHead>
-                                            <TableHead className="text-center">Tempo Executado</TableHead>
-                                            <TableHead className="text-center">Ações</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {groupedByDocumento.length === 0 ? (
+                    <div className="space-y-6">
+                        <Card className="bg-white border-0 shadow-lg">
+                            <CardHeader className="border-b border-gray-100">
+                                <CardTitle className="flex items-center gap-2">
+                                    <FileText className="w-5 h-5 text-blue-600" />
+                                    Atividades de Projeto
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="p-0">
+                                <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
+                                    <Table className="min-w-max">
+                                        <TableHeader className="sticky top-0 bg-white z-10">
                                             <TableRow>
-                                                <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                                                    Nenhuma atividade de Concepção ou Planejamento encontrada com os filtros selecionados.
-                                                </TableCell>
+                                                <TableHead>Documento</TableHead>
+                                                <TableHead>Atividade</TableHead>
+                                                <TableHead className="text-center">Tempo Real</TableHead>
+                                                <TableHead className="text-center">Tempo Executado</TableHead>
+                                                <TableHead className="text-center">Ações</TableHead>
                                             </TableRow>
-                                        ) : (
-                                            groupedByDocumento.map(({ doc, planejamentos: docPlanejamentos }) => (
-                                                <React.Fragment key={doc?.id || 'sem-doc'}>
-                                                    <TableRow className="bg-gray-50 hover:bg-gray-100">
-                                                        <TableCell colSpan={5} className="font-semibold p-3">
-                                                            {doc ? (
-                                                                <div className="flex flex-col">
-                                                                    <span>{doc.numero}</span>
-                                                                    <span className="text-xs text-gray-500 font-normal">{empreendimentos.find(e => e.id === doc.empreendimento_id)?.nome}</span>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="flex flex-col">
-                                                                    <span>Atividades de Documentação</span>
-                                                                    <span className="text-xs text-gray-500 font-normal">Atividades não vinculadas a uma folha específica</span>
-                                                                </div>
-                                                            )}
-                                                        </TableCell>
-                                                    </TableRow>
-                                                    {docPlanejamentos.map((planejamento, idx) => {
-                                                        const atividade = atividadesMap[planejamento.atividade_id];
-                                                        const execucoes = execucoesMap[planejamento.id] || [];
-                                                        const tempoExecutadoTotal = execucoes
-                                                            .filter(e => e.status === "Finalizado")
-                                                            .reduce((sum, e) => sum + (e.tempo_total || 0), 0);
-                                                        const tempoExibir = planejamento.tempo_executado || tempoExecutadoTotal;
+                                        </TableHeader>
+                                        <TableBody>
+                                            {groupedByDocumento.length === 0 ? (
+                                                <TableRow>
+                                                    <TableCell colSpan={5} className="text-center py-8 text-gray-500">
+                                                        Nenhuma atividade encontrada com os filtros selecionados.
+                                                    </TableCell>
+                                                </TableRow>
+                                            ) : (
+                                                groupedByDocumento.map(({ doc, planejamentos: docPlanejamentos }) => (
+                                                    <React.Fragment key={doc?.id || 'sem-doc'}>
+                                                        <TableRow className="bg-gray-50 hover:bg-gray-100">
+                                                            <TableCell colSpan={5} className="font-semibold p-3">
+                                                                {doc ? (
+                                                                    <div className="flex flex-col">
+                                                                        <span>{doc.numero}</span>
+                                                                        <span className="text-xs text-gray-500 font-normal">{empreendimentos.find(e => e.id === doc.empreendimento_id)?.nome}</span>
+                                                                    </div>
+                                                                ) : (
+                                                                    <div className="flex flex-col">
+                                                                        <span>Atividades de Projeto</span>
+                                                                        <span className="text-xs text-gray-500 font-normal">Atividades não vinculadas a uma folha específica</span>
+                                                                    </div>
+                                                                )}
+                                                            </TableCell>
+                                                        </TableRow>
+                                                        {docPlanejamentos.map((planejamento, idx) => {
+                                                            const atividade = atividadesMap[planejamento.atividade_id];
+                                                            const execucoes = execucoesMap[planejamento.id] || [];
+                                                            const tempoExecutadoTotal = execucoes
+                                                                .filter(e => e.status === "Finalizado")
+                                                                .reduce((sum, e) => sum + (e.tempo_total || 0), 0);
+                                                            const tempoExibir = planejamento.tempo_executado || tempoExecutadoTotal;
 
-                                                        return (
-                                                            <TableRow key={planejamento.id}>
-                                                                <TableCell>{idx === 0 && doc ? `${doc.disciplina || '-'}` : ""}</TableCell>
-                                                                <TableCell>{planejamento.descritivo || atividade?.atividade || 'Atividade não encontrada'}</TableCell>
-                                                                <TableCell className="text-center">{(planejamento.tempo_planejado || 0).toFixed(1)}h</TableCell>
-                                                                <TableCell className="text-center">{tempoExibir.toFixed(1)}h</TableCell>
-                                                                <TableCell className="text-center">{getStatusBadge(planejamento)}</TableCell>
-                                                            </TableRow>
-                                                        );
-                                                    })}
-                                                </React.Fragment>
-                                            ))
+                                                            return (
+                                                                <TableRow key={planejamento.id}>
+                                                                    <TableCell>{idx === 0 && doc ? `${doc.disciplina || '-'}` : ""}</TableCell>
+                                                                    <TableCell>{planejamento.descritivo || atividade?.atividade || 'Atividade não encontrada'}</TableCell>
+                                                                    <TableCell className="text-center">{(planejamento.tempo_planejado || 0).toFixed(1)}h</TableCell>
+                                                                    <TableCell className="text-center">{tempoExibir.toFixed(1)}h</TableCell>
+                                                                    <TableCell className="text-center">{getStatusBadge(planejamento)}</TableCell>
+                                                                </TableRow>
+                                                            );
+                                                        })}
+                                                    </React.Fragment>
+                                                ))
+                                            )}
+                                        </TableBody>
+                                    </Table>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {planejamentosDocumentacao.length > 0 && (
+                            <Card className="bg-white border-0 shadow-lg">
+                                <CardHeader className="border-b border-gray-100">
+                                    <div className="flex items-center justify-between">
+                                        <CardTitle className="flex items-center gap-2">
+                                            <FileText className="w-5 h-5 text-purple-600" />
+                                            Documentação
+                                        </CardTitle>
+                                        {selectedDocAtividades.length > 0 && (
+                                            <Button onClick={handlePlanejarSelecionadas} size="sm">
+                                                <Calendar className="w-4 h-4 mr-2" />
+                                                Planejar {selectedDocAtividades.length} Selecionadas
+                                            </Button>
                                         )}
-                                    </TableBody>
-                                </Table>
-                            </div>
-                        </CardContent>
-                    </Card>
+                                    </div>
+                                </CardHeader>
+                                <CardContent className="p-0">
+                                    <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
+                                        <Table className="min-w-max">
+                                            <TableHeader className="sticky top-0 bg-white z-10">
+                                                <TableRow>
+                                                    <TableHead className="w-12"></TableHead>
+                                                    <TableHead>Empreendimento</TableHead>
+                                                    <TableHead>Disciplina</TableHead>
+                                                    <TableHead>Atividade</TableHead>
+                                                    <TableHead className="text-center">Tempo Real</TableHead>
+                                                    <TableHead className="text-center">Tempo Executado</TableHead>
+                                                    <TableHead className="text-center">Ações</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {planejamentosDocumentacao.map((planejamento) => {
+                                                    const atividade = atividadesMap[planejamento.atividade_id];
+                                                    const empreendimento = empreendimentos.find(e => e.id === planejamento.empreendimento_id);
+                                                    const execucoes = execucoesMap[planejamento.id] || [];
+                                                    const tempoExecutadoTotal = execucoes
+                                                        .filter(e => e.status === "Finalizado")
+                                                        .reduce((sum, e) => sum + (e.tempo_total || 0), 0);
+                                                    const tempoExibir = planejamento.tempo_executado || tempoExecutadoTotal;
+
+                                                    return (
+                                                        <TableRow key={planejamento.id}>
+                                                            <TableCell>
+                                                                <Checkbox 
+                                                                    checked={selectedDocAtividades.includes(planejamento.id)}
+                                                                    onCheckedChange={() => toggleDocAtividadeSelection(planejamento.id)}
+                                                                />
+                                                            </TableCell>
+                                                            <TableCell className="text-sm text-gray-600">{empreendimento?.nome || '-'}</TableCell>
+                                                            <TableCell>
+                                                                <Badge variant="secondary" className="text-xs">
+                                                                    {atividade?.disciplina || '-'}
+                                                                </Badge>
+                                                            </TableCell>
+                                                            <TableCell>{planejamento.descritivo || atividade?.atividade || 'Atividade não encontrada'}</TableCell>
+                                                            <TableCell className="text-center">{(planejamento.tempo_planejado || 0).toFixed(1)}h</TableCell>
+                                                            <TableCell className="text-center">{tempoExibir.toFixed(1)}h</TableCell>
+                                                            <TableCell className="text-center">
+                                                                <div className="flex items-center justify-center gap-2">
+                                                                    {getStatusBadge(planejamento)}
+                                                                    <Button 
+                                                                        size="sm" 
+                                                                        variant="outline"
+                                                                        onClick={() => handlePlanejarAtividade(atividade)}
+                                                                    >
+                                                                        <Calendar className="w-4 h-4" />
+                                                                    </Button>
+                                                                </div>
+                                                            </TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        )}
+                    </div>
                 )}
             </div>
 
@@ -381,6 +518,17 @@ export default function AnaliseConcepcaoPlanejamento() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+
+            {planejamentoModalOpen && currentAtividade && (
+                <PlanejamentoAtividadeModal
+                    isOpen={planejamentoModalOpen}
+                    onClose={() => setPlanejamentoModalOpen(false)}
+                    atividade={currentAtividade}
+                    empreendimentos={empreendimentos}
+                    documentos={documentos}
+                    onComplete={handlePlanejamentoAtividadeComplete}
+                />
+            )}
         </div>
     );
 }
