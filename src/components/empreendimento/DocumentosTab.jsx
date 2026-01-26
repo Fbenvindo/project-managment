@@ -1933,7 +1933,6 @@ export default function DocumentosTab({
                   <h4 className="font-semibold">Atividades da Folha: {doc.numero}</h4>
                   <Button
                     size="sm"
-                    variant="outline"
                     onClick={() => {
                       // Abrir modal para criar nova atividade vinculada a esta folha
                       const novaAtividade = {
@@ -1944,9 +1943,9 @@ export default function DocumentosTab({
                       };
                       handleEdit(novaAtividade);
                     }}
-                    className="text-xs border-green-500 text-green-600 hover:bg-green-50"
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
-                    <Plus className="w-3 h-3 mr-1" />
+                    <Plus className="w-4 h-4 mr-2" />
                     Nova Atividade
                   </Button>
                 </div>
