@@ -211,15 +211,20 @@ export default function AnaliseConcepcaoPlanejamento() {
             .sort((a, b) => a[0].localeCompare(b[0]))
             .map(([disciplina, items]) => {
                 const sortedItems = items.sort((a, b) => {
+                    const empA = empreendimentos.find(e => e.id === a.plan.empreendimento_id);
+                    const empB = empreendimentos.find(e => e.id === b.plan.empreendimento_id);
                     const docA = documentos.find(d => d.id === a.plan.documento_id);
                     const docB = documentos.find(d => d.id === b.plan.documento_id);
-                    const numeroA = docA?.numero || '';
-                    const numeroB = docB?.numero || '';
-                    return numeroA.localeCompare(numeroB);
+                    
+                    // Primeiro por empreendimento, depois por documento
+                    const empCompare = (empA?.nome || '').localeCompare(empB?.nome || '');
+                    if (empCompare !== 0) return empCompare;
+                    
+                    return (docA?.numero || '').localeCompare(docB?.numero || '');
                 });
                 return { disciplina, items: sortedItems };
             });
-    }, [filteredPlanejamentos, documentos, atividadesMap]);
+    }, [filteredPlanejamentos, documentos, atividadesMap, empreendimentos]);
     
     const disciplinasDisponiveis = [...new Set(Object.values(atividadesMap).map(a => a.disciplina))];
     
@@ -298,55 +303,53 @@ export default function AnaliseConcepcaoPlanejamento() {
                             </Card>
                         ) : (
                             groupedByDisciplina.map(({ disciplina, items }) => (
-                                <Card key={disciplina} className="bg-white border-0 shadow-lg overflow-hidden">
-                                    <div className="bg-blue-50 px-4 py-3 border-b border-blue-200">
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-1 h-5 bg-blue-600 rounded"></div>
-                                            <h3 className="font-semibold text-lg text-gray-900">{disciplina}</h3>
-                                            <span className="text-sm text-gray-600">
+                                <div key={disciplina} className="border rounded-lg overflow-hidden">
+                                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border-b">
+                                        <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
+                                            <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
+                                            {disciplina}
+                                            <Badge variant="secondary" className="ml-2">
                                                 {items.length} {items.length === 1 ? 'atividade' : 'atividades'}
-                                            </span>
-                                        </div>
+                                            </Badge>
+                                        </h3>
                                     </div>
-                                    <CardContent className="p-0">
-                                        <div className="overflow-x-auto">
-                                            <Table className="min-w-max">
-                                                <TableHeader>
-                                                    <TableRow>
-                                                        <TableHead>Documento</TableHead>
-                                                        <TableHead>Empreendimento</TableHead>
-                                                        <TableHead>Atividade</TableHead>
-                                                        <TableHead className="text-center">Tempo Real</TableHead>
-                                                        <TableHead className="text-center">Tempo Executado</TableHead>
-                                                        <TableHead className="text-center">Ações</TableHead>
-                                                    </TableRow>
-                                                </TableHeader>
-                                                <TableBody>
-                                                    {items.map(({ plan: planejamento, atividade }) => {
-                                                        const doc = documentos.find(d => d.id === planejamento.documento_id);
-                                                        const empreendimento = empreendimentos.find(e => e.id === planejamento.empreendimento_id);
-                                                        const execucoes = execucoesMap[planejamento.id] || [];
-                                                        const tempoExecutadoTotal = execucoes
-                                                            .filter(e => e.status === "Finalizado")
-                                                            .reduce((sum, e) => sum + (e.tempo_total || 0), 0);
-                                                        const tempoExibir = planejamento.tempo_executado || tempoExecutadoTotal;
+                                    <div className="overflow-x-auto">
+                                        <Table>
+                                            <TableHeader>
+                                                <TableRow>
+                                                    <TableHead>Documento</TableHead>
+                                                    <TableHead>Empreendimento</TableHead>
+                                                    <TableHead>Atividade</TableHead>
+                                                    <TableHead className="text-center">Tempo Real</TableHead>
+                                                    <TableHead className="text-center">Tempo Executado</TableHead>
+                                                    <TableHead className="text-center">Ações</TableHead>
+                                                </TableRow>
+                                            </TableHeader>
+                                            <TableBody>
+                                                {items.map(({ plan: planejamento, atividade }) => {
+                                                    const doc = documentos.find(d => d.id === planejamento.documento_id);
+                                                    const empreendimento = empreendimentos.find(e => e.id === planejamento.empreendimento_id);
+                                                    const execucoes = execucoesMap[planejamento.id] || [];
+                                                    const tempoExecutadoTotal = execucoes
+                                                        .filter(e => e.status === "Finalizado")
+                                                        .reduce((sum, e) => sum + (e.tempo_total || 0), 0);
+                                                    const tempoExibir = planejamento.tempo_executado || tempoExecutadoTotal;
 
-                                                        return (
-                                                            <TableRow key={planejamento.id}>
-                                                                <TableCell>{doc ? doc.numero : '-'}</TableCell>
-                                                                <TableCell className="text-sm text-gray-600">{empreendimento?.nome || '-'}</TableCell>
-                                                                <TableCell>{planejamento.descritivo || atividade?.atividade || 'Atividade não encontrada'}</TableCell>
-                                                                <TableCell className="text-center">{(planejamento.tempo_planejado || 0).toFixed(1)}h</TableCell>
-                                                                <TableCell className="text-center">{tempoExibir.toFixed(1)}h</TableCell>
-                                                                <TableCell className="text-center">{getStatusBadge(planejamento)}</TableCell>
-                                                            </TableRow>
-                                                        );
-                                                    })}
-                                                </TableBody>
-                                            </Table>
-                                        </div>
-                                    </CardContent>
-                                </Card>
+                                                    return (
+                                                        <TableRow key={planejamento.id}>
+                                                            <TableCell>{doc ? doc.numero : '-'}</TableCell>
+                                                            <TableCell className="text-sm text-gray-600">{empreendimento?.nome || '-'}</TableCell>
+                                                            <TableCell>{planejamento.descritivo || atividade?.atividade || 'Atividade não encontrada'}</TableCell>
+                                                            <TableCell className="text-center">{(planejamento.tempo_planejado || 0).toFixed(1)}h</TableCell>
+                                                            <TableCell className="text-center">{tempoExibir.toFixed(1)}h</TableCell>
+                                                            <TableCell className="text-center">{getStatusBadge(planejamento)}</TableCell>
+                                                        </TableRow>
+                                                    );
+                                                })}
+                                            </TableBody>
+                                        </Table>
+                                    </div>
+                                </div>
                             ))
                         )}
                     </div>
