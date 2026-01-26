@@ -55,7 +55,8 @@ export default function PlanejamentoAtividadeModal({
   const documentosDisponiveis = useMemo(() => {
     if (!documentos || !atividade) return [];
 
-    const result = documentos.filter(doc => {
+    // Primeiro, tentar filtrar por disciplina e subdisciplina
+    let result = documentos.filter(doc => {
       if (!atividade.subdisciplina || atividade.subdisciplina === null || atividade.subdisciplina === '') {
         return doc.disciplina === atividade.disciplina;
       }
@@ -67,7 +68,14 @@ export default function PlanejamentoAtividadeModal({
              docSubdisciplinas.includes(atividadeSubdisciplina);
     });
 
-    console.log(`📄 [PlanejamentoAtividadeModal] Documentos disponíveis para disciplina '${atividade.disciplina}' e subdisciplina '${atividade.subdisciplina}':`, result.length);
+    // Se não encontrar documentos e a disciplina for 'Documentação', mostrar todos os documentos do empreendimento
+    if (result.length === 0 && atividade.disciplina === 'Documentação') {
+      result = documentos;
+      console.log(`📄 [PlanejamentoAtividadeModal] Nenhum documento com subdisciplina exata. Mostrando todos os documentos do empreendimento (${result.length})`);
+    } else {
+      console.log(`📄 [PlanejamentoAtividadeModal] Documentos disponíveis para disciplina '${atividade.disciplina}' e subdisciplina '${atividade.subdisciplina}':`, result.length);
+    }
+    
     return result;
   }, [documentos, atividade.disciplina, atividade.subdisciplina]);
 
