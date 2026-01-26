@@ -50,11 +50,20 @@ export default function CurvaSPlanejamento({ isLoading: isDashboardLoading, onRe
             retryWithBackoff(() => Execucao.list(), 3, 2000, 'curvaS.loadExecs'),
         ]);
         
-        // **MODIFICADO**: Combinar ambos os tipos de planejamento
+        // **MODIFICADO**: Combinar ambos os tipos de planejamento e enriquecer com empreendimento_id
         const finalPlanData = [
-            ...(planAtividadeData || []).map(p => ({ ...p, tipo_planejamento: 'atividade' })),
-            ...(planDocumentoData || []).map(p => ({ ...p, tipo_planejamento: 'documento' }))
-        ];
+            ...(planAtividadeData || []).map(p => ({ 
+              ...p, 
+              tipo_planejamento: 'atividade',
+              empreendimento_id: p.empreendimento_id || p.empreendimento?.id
+            })),
+            ...(planDocumentoData || []).map(p => ({ 
+              ...p, 
+              tipo_planejamento: 'documento',
+              empreendimento_id: p.empreendimento_id || p.empreendimento?.id
+            }))
+        ].filter(p => p.empreendimento_id);
+        
         const finalExecData = execData || [];
         
         setPlanejamentos(finalPlanData);
