@@ -1146,7 +1146,14 @@ export default function DocumentosTab({
           tempoBase = tempoBaseOriginal;
         }
 
-        const jaFoiPlanejada = isDocumentPlannedAsSingleEntity && etapaFinal === etapaParaPlanejamento;
+        // Verificar se a atividade está no planejamento do documento para esta etapa
+        const planejamentoDocDaEtapa = planejamentosDoDocumento.find(p => 
+          p.etapa === etapaFinal && 
+          p.tipo_plano === 'documento'
+        );
+        const jaFoiPlanejada = planejamentoDocDaEtapa && 
+          planejamentoDocDaEtapa.atividades_ids && 
+          planejamentoDocDaEtapa.atividades_ids.includes(atividade.id);
 
         const fatorDificuldade = doc.fator_dificuldade || 1;
         
