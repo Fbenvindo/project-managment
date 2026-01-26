@@ -66,8 +66,10 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
           setSelectedSubdisciplinas([]);
         }
         
-        // Pré-selecionar documento/folha se fornecido
-        if (atividade.documento_id) {
+        // Pré-selecionar documentos/folhas se fornecidas
+        if (atividade.documento_ids && Array.isArray(atividade.documento_ids)) {
+          setSelectedDocumentoIds(atividade.documento_ids);
+        } else if (atividade.documento_id) {
           setSelectedDocumentoIds([atividade.documento_id]);
         } else {
           setSelectedDocumentoIds([]);
