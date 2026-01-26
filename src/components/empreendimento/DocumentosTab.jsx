@@ -1929,7 +1929,27 @@ export default function DocumentosTab({
           <TableRow>
             <TableCell colSpan={8} className="bg-gray-50">
               <div className="p-4">
-                <h4 className="font-semibold mb-3">Atividades da Folha: {doc.numero}</h4>
+                <div className="flex justify-between items-center mb-3">
+                  <h4 className="font-semibold">Atividades da Folha: {doc.numero}</h4>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      // Abrir modal para criar nova atividade vinculada a esta folha
+                      const novaAtividade = {
+                        empreendimento_id: empreendimento.id,
+                        documento_id: doc.id,
+                        disciplina: doc.disciplina,
+                        subdisciplinas: doc.subdisciplinas || []
+                      };
+                      handleEdit(novaAtividade);
+                    }}
+                    className="text-xs border-green-500 text-green-600 hover:bg-green-50"
+                  >
+                    <Plus className="w-3 h-3 mr-1" />
+                    Nova Atividade
+                  </Button>
+                </div>
                 <div className="space-y-2">
                   {atividadesDisponiveis.length > 0 ? atividadesDisponiveis.map(atividade => {
                     const subdisciplina = atividade.subdisciplina || 'N/A';
