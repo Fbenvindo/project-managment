@@ -37,6 +37,10 @@ export default function AnaliseConcepcaoPlanejamento() {
     const [planejamentoModalOpen, setPlanejamentoModalOpen] = useState(false);
     const [currentAtividade, setCurrentAtividade] = useState(null);
     const [usuarios, setUsuarios] = useState([]);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedExecucaoEdit, setSelectedExecucaoEdit] = useState(null);
+    const [editDescricao, setEditDescricao] = useState('');
+    const [isEditLoading, setIsEditLoading] = useState(false);
 
     useEffect(() => {
         loadData();
