@@ -257,14 +257,15 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
         const ehDisciplinaEspecifica = a.disciplina && disciplinasEspecificas.includes(a.disciplina);
         
         if (ehDisciplinaEspecifica) {
-          // Para disciplinas específicas: incluir genéricas (sem empreendimento_id) ou do projeto ou vinculadas a documento
-          const ehGenerica = !a.empreendimento_id;
+          // Para disciplinas específicas: incluir TODAS (genéricas, do projeto ou vinculadas a documento)
+          const ehGenerica = !a.empreendimento_id && !a.documento_id;
           const ehDoEmpreendimento = a.empreendimento_id === empreendimentoId;
           const ehDoDocumento = a.documento_id && documentoIdsDoEmpreendimento.includes(a.documento_id);
           
-          const incluir = ehGenerica || ehDoEmpreendimento || ehDoDocumento;
+          // Incluir também atividades de outros empreendimentos dessas disciplinas específicas
+          const incluir = ehGenerica || ehDoEmpreendimento || ehDoDocumento || a.empreendimento_id;
           if (incluir) {
-            console.log("✅ Atividade incluída:", a.atividade, { ehGenerica, ehDoEmpreendimento, ehDoDocumento, disciplina: a.disciplina });
+            console.log("✅ Atividade incluída:", a.atividade, { ehGenerica, ehDoEmpreendimento, ehDoDocumento, disciplina: a.disciplina, empreendimento: a.empreendimento_id });
           }
           return incluir;
         }
