@@ -911,17 +911,31 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   }, [combinedActivities, filters]);
 
   const atividadesPorDisciplina = useMemo(() => {
+    const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
     const grupos = {};
+    const documentacao = [];
     
     atividadesAgrupadas.forEach(grupo => {
       const disciplina = grupo.baseAtividade.disciplina || 'Sem Disciplina';
-      if (!grupos[disciplina]) {
-        grupos[disciplina] = [];
+      
+      if (disciplinasDocumentacao.includes(disciplina)) {
+        documentacao.push(grupo);
+      } else {
+        if (!grupos[disciplina]) {
+          grupos[disciplina] = [];
+        }
+        grupos[disciplina].push(grupo);
       }
-      grupos[disciplina].push(grupo);
     });
 
-    return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
+    const result = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
+    
+    // Adicionar grupo de Documentação no final se houver atividades
+    if (documentacao.length > 0) {
+      result.push(['Documentação', documentacao]);
+    }
+    
+    return result;
   }, [atividadesAgrupadas]);
   
   const etapasUnicas = useMemo(() => [...new Set(combinedActivities.map(a => a.etapa).filter(Boolean))], [combinedActivities]);
