@@ -165,7 +165,7 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
         await Atividade.update(atividade.id, dataToSave);
       } else {
         // Criação - criar UMA atividade por subdisciplina com múltiplas folhas vinculadas
-        const createPromises = selectedSubdisciplinas.map(subdisciplina => {
+        const createPromises = selectedSubdisciplinas.map(async subdisciplina => {
           const dataToSave = {
             ...formData,
             subdisciplina: subdisciplina,
@@ -173,8 +173,15 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
             documento_ids: selectedDocumentoIds.length > 0 ? selectedDocumentoIds : [],
             documento_id: selectedDocumentoIds[0] || null, // Manter por compatibilidade
           };
-          console.log("📝 Criando atividade com documento_ids:", dataToSave.documento_ids, "subdisciplina:", subdisciplina);
-          return Atividade.create(dataToSave);
+          console.log("📝 Criando atividade:", {
+            atividade: dataToSave.atividade,
+            subdisciplina: dataToSave.subdisciplina,
+            documento_ids: dataToSave.documento_ids,
+            total_folhas: dataToSave.documento_ids.length
+          });
+          const result = await Atividade.create(dataToSave);
+          console.log("✅ Atividade criada:", result);
+          return result;
         });
         
         await Promise.all(createPromises);
