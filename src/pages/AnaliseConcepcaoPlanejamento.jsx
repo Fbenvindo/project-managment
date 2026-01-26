@@ -284,8 +284,8 @@ export default function AnaliseConcepcaoPlanejamento() {
         setCurrentAtividade(null);
     };
 
-    const handlePlanejarAtividade = (atividade) => {
-        setCurrentAtividade(atividade);
+    const handlePlanejarAtividade = (atividade, empreendimentoId) => {
+        setCurrentAtividade({ ...atividade, empreendimentoId });
         setPlanejamentoModalOpen(true);
     };
 
@@ -482,7 +482,7 @@ export default function AnaliseConcepcaoPlanejamento() {
                                                             <TableCell className="text-center">
                                                                 <Button 
                                                                     size="sm" 
-                                                                    onClick={() => handlePlanejarAtividade(atividade)}
+                                                                    onClick={() => handlePlanejarAtividade(atividade, planejamento.empreendimento_id)}
                                                                     className="bg-purple-600 hover:bg-purple-700 text-white"
                                                                 >
                                                                     <Calendar className="w-4 h-4 mr-1" />
@@ -525,10 +525,10 @@ export default function AnaliseConcepcaoPlanejamento() {
                     isOpen={planejamentoModalOpen}
                     onClose={() => setPlanejamentoModalOpen(false)}
                     atividade={currentAtividade}
-                    empreendimentos={empreendimentos}
+                    empreendimentoId={currentAtividade.empreendimentoId}
                     documentos={documentos}
                     usuarios={usuarios}
-                    onComplete={handlePlanejamentoAtividadeComplete}
+                    onSuccess={handlePlanejamentoAtividadeComplete}
                 />
             )}
         </div>
