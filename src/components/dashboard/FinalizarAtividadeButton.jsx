@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Loader2, Calendar } from "lucide-react";
-import { Execucao, PlanejamentoAtividade, PlanejamentoDocumento } from '@/entities/all';
+import { Execucao, PlanejamentoAtividade, PlanejamentoDocumento, Documento } from '@/entities/all';
 import { retryWithBackoff } from '../utils/apiUtils';
 import { realocarAtividadesDoDiaSeguinte } from '../utils/ReagendamentoAutomatico';
 import { format } from 'date-fns';
