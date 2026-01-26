@@ -44,7 +44,8 @@ export default function PlanejamentoAtividadeModal({
 
   // **NOVO**: Ordenar usuários alfabeticamente
   const usuariosOrdenados = useMemo(() => {
-    return [...usuarios].sort((a, b) => {
+    const usuariosValidos = usuarios && Array.isArray(usuarios) ? usuarios : [];
+    return [...usuariosValidos].sort((a, b) => {
       const nomeA = a.nome || a.full_name || a.email || '';
       const nomeB = b.nome || b.full_name || b.email || '';
       return nomeA.localeCompare(nomeB, 'pt-BR', { sensitivity: 'base' });
