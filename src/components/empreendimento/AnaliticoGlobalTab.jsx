@@ -1722,7 +1722,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           atividade={atividadeParaPlanejar}
           empreendimentos={[]}
           documentos={documentos}
-          empreendimentoId={empreendimentoId}
+          usuarios={[]}
           onComplete={handlePlanejarComplete}
         />
       )}
