@@ -148,7 +148,13 @@ export default function CurvaSPlanejamento({ isLoading: isDashboardLoading, onRe
   }, [planejamentos, selectedEmpreendimento, selectedUser]);
 
   const execucoesFiltradas = useMemo(() => {
-    let filtered = execucoes;
+    let filtered = planejamentosFiltrados.length > 0 
+      ? execucoes.filter(exec => {
+          // Apenas execuções de planejamentos que passaram no filtro
+          return planejamentosFiltrados.some(plan => plan.id === exec.planejamento_id);
+        })
+      : execucoes;
+    
     if (selectedEmpreendimento !== 'all') {
       filtered = filtered.filter(exec => exec.empreendimento_id === selectedEmpreendimento);
     }
@@ -156,7 +162,7 @@ export default function CurvaSPlanejamento({ isLoading: isDashboardLoading, onRe
       filtered = filtered.filter(exec => exec.usuario === selectedUser);
     }
     return filtered;
-  }, [execucoes, selectedEmpreendimento, selectedUser]);
+  }, [execucoes, planejamentosFiltrados, selectedEmpreendimento, selectedUser]);
 
   const dadosCurvaS = useMemo(() => {
     if (!planejamentosFiltrados || planejamentosFiltrados.length === 0) {
