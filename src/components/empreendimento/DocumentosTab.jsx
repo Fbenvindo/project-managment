@@ -1283,17 +1283,27 @@ export default function DocumentosTab({
 
         setSelectedAtividades([]);
         
-        // Recarregar apenas as atividades
-        await onUpdate();
+        // Forçar re-render do componente sem perder estado
+        setIsUpdatingActivity(false);
+        setIsUpdatingActivity(true);
+        
+        // Recarregar dados
+        setTimeout(() => {
+          onUpdate();
+        }, 100);
         
         if (atividadesMarcadas > 0) {
-          alert(`✅ ${atividadesMarcadas} atividade(s) marcada(s) como concluída(s)!`);
+          setTimeout(() => {
+            alert(`✅ ${atividadesMarcadas} atividade(s) marcada(s) como concluída(s)!`);
+          }, 200);
         }
       } catch (error) {
         console.error("❌ Erro ao marcar atividades como concluídas:", error);
         alert("Erro ao atualizar o status das atividades: " + error.message);
       } finally {
-        setIsUpdatingActivity(false);
+        setTimeout(() => {
+          setIsUpdatingActivity(false);
+        }, 500);
       }
     };
 
@@ -1346,13 +1356,21 @@ export default function DocumentosTab({
           );
         }
 
-        // Recarregar apenas as atividades, sem chamar onUpdate completo
-        await onUpdate();
+        // Forçar re-render do componente sem chamar onUpdate
+        setIsUpdatingActivity(false);
+        setIsUpdatingActivity(true);
+        
+        // Recarregar dados
+        setTimeout(() => {
+          onUpdate();
+        }, 100);
       } catch (error) {
         console.error("❌ Erro ao marcar atividade como concluída:", error);
         alert("Erro ao atualizar o status da atividade: " + error.message);
       } finally {
-        setIsUpdatingActivity(false);
+        setTimeout(() => {
+          setIsUpdatingActivity(false);
+        }, 500);
       }
     };
 
