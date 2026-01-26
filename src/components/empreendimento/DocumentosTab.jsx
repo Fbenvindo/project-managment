@@ -86,6 +86,9 @@ export default function DocumentosTab({
   const [isDocEtapaModalOpen, setIsDocEtapaModal] = useState(false);
   const [documentForDocEtapaModal, setDocumentForDocEtapaModal] = useState(null);
 
+  const [isDocDataModalOpen, setIsDocDataModalOpen] = useState(false);
+  const [documentForDocDataModal, setDocumentForDocDataModal] = useState(null);
+
   const [expandedSequencing, setExpandedSequencing] = useState({});
 
   const [loadingDocs, setLoadingDocs] = useState({});
