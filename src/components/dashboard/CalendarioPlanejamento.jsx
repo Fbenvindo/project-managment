@@ -957,7 +957,31 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
               Editar
             </Button>
           )}
-        </div>
+          {realStatus === 'pausado' && (
+            <>
+              <Button
+                onClick={handleResumeActivity}
+                size="sm"
+                variant="outline"
+                className="h-6 text-xs"
+                title="Retomar atividade"
+              >
+                <RotateCcw className="w-3 h-3 mr-1" />
+                Retomar
+              </Button>
+              <Button
+                onClick={handleFinalizeActivity}
+                size="sm"
+                variant="outline"
+                className="h-6 text-xs"
+                title="Finalizar atividade"
+              >
+                <Flag className="w-3 h-3 mr-1" />
+                Finalizar
+              </Button>
+            </>
+          )}
+          </div>
       </div>
 
       {/* Modal para ajustar tempo */}
