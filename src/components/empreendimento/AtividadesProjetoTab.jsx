@@ -418,14 +418,16 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
         <div className="space-y-6">
           {atividadesPorDisciplina.map(([disciplina, atividadesDisciplina]) => (
             <div key={disciplina} className="border rounded-lg overflow-hidden">
-              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border-b">
-                <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
-                  <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
-                  {disciplina}
-                  <span className="ml-2 text-sm font-normal text-gray-600">
-                    ({atividadesDisciplina.length} {atividadesDisciplina.length === 1 ? 'atividade' : 'atividades'})
+              <div className="bg-blue-50 px-4 py-2 border-b border-blue-200">
+                <div className="flex items-center gap-2">
+                  <div className="w-1 h-5 bg-blue-600 rounded"></div>
+                  <h3 className="font-semibold text-base text-gray-900">
+                    {disciplina}
+                  </h3>
+                  <span className="text-sm text-gray-600">
+                    {atividadesDisciplina.length} {atividadesDisciplina.length === 1 ? 'atividade' : 'atividades'}
                   </span>
-                </h3>
+                </div>
               </div>
               <div className="overflow-x-auto">
                 <Table>
