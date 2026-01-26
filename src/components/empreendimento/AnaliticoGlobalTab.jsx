@@ -1408,17 +1408,15 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
               <Table>
                 <TableHeader className="bg-gray-50">
                   <TableRow>
-                    {editableActivities.length > 0 && <TableHead className="w-[50px]"></TableHead>}
-                    <TableHead className="w-[50px]"></TableHead>
-                    <TableHead>Atividade</TableHead>
-                    <TableHead>Folhas</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Etapa</TableHead>
-                    <TableHead>Subdisciplina</TableHead>
-                    <TableHead>Tempo Padrão</TableHead>
-                    <TableHead>Função</TableHead>
-                    <TableHead className="w-[50px]"></TableHead>
-                  </TableRow>
+                     {editableActivities.length > 0 && <TableHead className="w-[50px]"></TableHead>}
+                     <TableHead className="w-[50px]"></TableHead>
+                     <TableHead>Atividade</TableHead>
+                     <TableHead>Folhas</TableHead>
+                     <TableHead>Status</TableHead>
+                     <TableHead>Etapa</TableHead>
+                     <TableHead>Tempo Padrão</TableHead>
+                     <TableHead className="w-[50px]"></TableHead>
+                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {grupos.map(grupo => {
@@ -1478,9 +1476,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             )}
                           </TableCell>
                           <TableCell>{ativ.etapa}</TableCell>
-                          <TableCell>{ativ.subdisciplina}</TableCell>
                           <TableCell>{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
-                          <TableCell>{ativ.funcao}</TableCell>
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -1544,9 +1540,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
-                            <TableCell className="text-sm text-gray-500">{folha.subdisciplina}</TableCell>
                             <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
-                            <TableCell className="text-sm text-gray-500">{folha.funcao}</TableCell>
                             <TableCell></TableCell>
                           </TableRow>
                         ))}
