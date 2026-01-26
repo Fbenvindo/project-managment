@@ -82,6 +82,45 @@ export default function AtividadesRapidasPage() {
     });
   };
 
+  const handleOpenEditModal = (execucao) => {
+    if (execucao.status !== 'Finalizado') {
+      alert('Apenas atividades finalizadas podem ser editadas');
+      return;
+    }
+    setSelectedExecucao(execucao);
+    setEditDescricao(execucao.descritivo);
+    setShowEditModal(true);
+  };
+
+  const handleCloseEditModal = () => {
+    setShowEditModal(false);
+    setSelectedExecucao(null);
+    setEditDescricao('');
+  };
+
+  const handleSaveDescricao = async () => {
+    if (!selectedExecucao || !editDescricao.trim()) {
+      alert('Descrição não pode estar vazia');
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await Execucao.update(selectedExecucao.id, {
+        descritivo: editDescricao.trim()
+      });
+      
+      alert('✅ Descrição atualizada com sucesso!');
+      await loadData();
+      handleCloseEditModal();
+    } catch (error) {
+      console.error('Erro ao salvar descrição:', error);
+      alert('Erro ao atualizar descrição: ' + (error.message || 'Tente novamente.'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleConfirmStart = async () => {
     if (!selectedAtividade) return;
 
