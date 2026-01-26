@@ -496,6 +496,9 @@ export default function PlanejamentoDocumentoEtapaModal({
         
         const horasPorDia = plano.horas_por_dia || {};
 
+        const atividadesDaEtapa = atividadesDisponiveisPorEtapa[plano.etapa] || [];
+        const atividades_ids = atividadesDaEtapa.map(ativ => ativ.id);
+
         const planejamentoData = {
           documento_id: documento.id,
           empreendimento_id: empreendimentoId,
@@ -508,7 +511,8 @@ export default function PlanejamentoDocumentoEtapaModal({
           termino_planejado: plano.fim,
           horas_por_dia: horasPorDia,
           status: 'nao_iniciado',
-          prioridade: 1
+          prioridade: 1,
+          atividades_ids: atividades_ids
         };
 
         const novoPlan = await retryWithExtendedBackoff(
