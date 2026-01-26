@@ -298,19 +298,29 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
     return todasAtividades;
   }, [atividades, empreendimentoId, documentoIdsDoEmpreendimento, searchTerm, etapaFilter, disciplinaFilter, subdisciplinaFilter]);
 
-  // Agrupar atividades por disciplina
+  // Agrupar atividades por disciplina (exceto Apoio, Coordenação, BIM que ficam soltas)
   const atividadesPorDisciplina = useMemo(() => {
+    const disciplinasSoltas = ['Apoio', 'Coordenação', 'BIM', 'Planejamento', 'Gestão'];
     const grupos = {};
+    const atividadesSoltas = [];
     
     filteredAtividades.forEach(atividade => {
       const disciplina = atividade.disciplina || 'Sem Disciplina';
-      if (!grupos[disciplina]) {
-        grupos[disciplina] = [];
+      
+      if (disciplinasSoltas.includes(disciplina)) {
+        // Atividades de disciplinas específicas ficam soltas (uma por grupo)
+        atividadesSoltas.push([atividade.id, [atividade]]);
+      } else {
+        // Outras disciplinas são agrupadas normalmente
+        if (!grupos[disciplina]) {
+          grupos[disciplina] = [];
+        }
+        grupos[disciplina].push(atividade);
       }
-      grupos[disciplina].push(atividade);
     });
 
-    return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
+    const gruposOrdenados = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
+    return [...atividadesSoltas, ...gruposOrdenados];
   }, [filteredAtividades]);
 
   if (!empreendimentoId) {
@@ -416,19 +426,25 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
         </div>
       ) : (
         <div className="space-y-6">
-          {atividadesPorDisciplina.map(([disciplina, atividadesDisciplina]) => (
-            <div key={disciplina} className="border rounded-lg overflow-hidden">
-              <div className="bg-blue-50 px-4 py-2 border-b border-blue-200">
-                <div className="flex items-center gap-2">
-                  <div className="w-1 h-5 bg-blue-600 rounded"></div>
-                  <h3 className="font-semibold text-base text-gray-900">
-                    {disciplina}
-                  </h3>
-                  <span className="text-sm text-gray-600">
-                    {atividadesDisciplina.length} {atividadesDisciplina.length === 1 ? 'atividade' : 'atividades'}
-                  </span>
-                </div>
-              </div>
+          {atividadesPorDisciplina.map(([disciplina, atividadesDisciplina]) => {
+            const disciplinasSoltas = ['Apoio', 'Coordenação', 'BIM', 'Planejamento', 'Gestão'];
+            const ehAtividadeSolta = atividadesDisciplina.length === 1 && disciplinasSoltas.includes(atividadesDisciplina[0].disciplina);
+            
+            return (
+              <div key={disciplina} className="border rounded-lg overflow-hidden">
+                {!ehAtividadeSolta && (
+                  <div className="bg-blue-50 px-4 py-2 border-b border-blue-200">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1 h-5 bg-blue-600 rounded"></div>
+                      <h3 className="font-semibold text-base text-gray-900">
+                        {disciplina}
+                      </h3>
+                      <span className="text-sm text-gray-600">
+                        {atividadesDisciplina.length} {atividadesDisciplina.length === 1 ? 'atividade' : 'atividades'}
+                      </span>
+                    </div>
+                  </div>
+                )}
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -488,7 +504,8 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
                 </Table>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
