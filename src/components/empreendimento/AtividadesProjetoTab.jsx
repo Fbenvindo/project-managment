@@ -1,7 +1,8 @@
 import React, { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Edit, Trash2, Search, Calendar } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Plus, Edit, Trash2, Search, Calendar, Check } from "lucide-react";
 import { Atividade } from "@/entities/all";
 import {
   Dialog,
@@ -195,6 +196,7 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
   const [atividadeParaAplicar, setAtividadeParaAplicar] = useState(null);
   const [showPlanejamentoModal, setShowPlanejamentoModal] = useState(false);
   const [atividadeParaPlanejar, setAtividadeParaPlanejar] = useState(null);
+  const [selectedAtividades, setSelectedAtividades] = useState([]);
 
   const handleEdit = (atividade) => {
     setEditingAtividade(atividade);
@@ -232,6 +234,52 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
     } catch (error) {
       console.error("Erro ao preparar atividade para planejamento:", error);
       alert("Erro ao preparar atividade para planejamento");
+    }
+  };
+
+  const handleToggleAtividade = (atividadeId) => {
+    setSelectedAtividades(prev => 
+      prev.includes(atividadeId) 
+        ? prev.filter(id => id !== atividadeId)
+        : [...prev, atividadeId]
+    );
+  };
+
+  const handleMarcarComoConcluidas = async () => {
+    if (selectedAtividades.length === 0) {
+      alert("Selecione pelo menos uma atividade");
+      return;
+    }
+
+    if (!window.confirm(`Tem certeza que deseja marcar ${selectedAtividades.length} atividade(s) como concluída(s)?`)) {
+      return;
+    }
+
+    try {
+      // Buscar os planejamentos das atividades selecionadas
+      const PlanejamentoAtividade = await import('@/entities/all').then(m => m.PlanejamentoAtividade);
+      
+      for (const atividadeId of selectedAtividades) {
+        // Buscar planejamentos dessa atividade que não estão concluídos
+        const planejamentosAtividade = planejamentos.filter(p => 
+          p.atividade_id === atividadeId && p.status !== 'concluido'
+        );
+
+        // Marcar todos como concluídos
+        for (const plan of planejamentosAtividade) {
+          await PlanejamentoAtividade.update(plan.id, { 
+            status: 'concluido',
+            termino_real: new Date().toISOString()
+          });
+        }
+      }
+
+      setSelectedAtividades([]);
+      onUpdate();
+      alert("Atividades marcadas como concluídas com sucesso!");
+    } catch (error) {
+      console.error("Erro ao marcar atividades como concluídas:", error);
+      alert("Erro ao marcar atividades como concluídas");
     }
   };
 
@@ -384,13 +432,24 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
             Gerencie as atividades deste empreendimento.
           </p>
         </div>
-        <Button onClick={() => { 
-          setEditingAtividade(null); 
-          setShowForm(true); 
-        }}>
-          <Plus className="w-4 h-4 mr-2" />
-          Nova Atividade
-        </Button>
+        <div className="flex gap-2">
+          {selectedAtividades.length > 0 && (
+            <Button 
+              onClick={handleMarcarComoConcluidas}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              <Check className="w-4 h-4 mr-2" />
+              Marcar {selectedAtividades.length} como Concluída(s)
+            </Button>
+          )}
+          <Button onClick={() => { 
+            setEditingAtividade(null); 
+            setShowForm(true); 
+          }}>
+            <Plus className="w-4 h-4 mr-2" />
+            Nova Atividade
+          </Button>
+        </div>
       </div>
 
       <AtividadesProjetoFilters
@@ -450,6 +509,7 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="w-12"></TableHead>
                       <TableHead>Atividade</TableHead>
                       <TableHead>Etapa</TableHead>
                       <TableHead>Subdisciplina</TableHead>
@@ -460,6 +520,12 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
                   <TableBody>
                     {atividadesDisciplina.map(atividade => (
                       <TableRow key={atividade.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedAtividades.includes(atividade.id)}
+                            onCheckedChange={() => handleToggleAtividade(atividade.id)}
+                          />
+                        </TableCell>
                         <TableCell className="font-medium">{atividade.atividade}</TableCell>
                         <TableCell>{atividade.etapa}</TableCell>
                         <TableCell>{atividade.subdisciplina}</TableCell>
