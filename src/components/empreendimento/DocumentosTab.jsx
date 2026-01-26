@@ -18,6 +18,7 @@ import AtividadeFormModal from "./AtividadeFormModal";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import PlanejamentoDocumentoEtapaModal from './PlanejamentoDocumentoEtapaModal';
+import PlanejamentoDocumentoDataModal from './PlanejamentoDocumentoDataModal';
 import { ETAPAS_ORDER } from '../utils/PredecessoraValidator';
 import { getNextWorkingDay, distribuirHorasPorDias, isWorkingDay, calculateEndDate, ensureWorkingDay } from '../utils/DateCalculator';
 import { format, isValid, parseISO, addDays, subDays } from 'date-fns';
