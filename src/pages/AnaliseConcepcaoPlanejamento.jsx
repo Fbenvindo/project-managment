@@ -7,12 +7,9 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Play, Square, Filter, ClipboardList, CheckSquare, FileText, Calendar, Edit2 } from "lucide-react";
+import { Play, Square, Filter, ClipboardList, CheckSquare, FileText, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Textarea } from "@/components/ui/textarea";
-import { Label } from "@/components/ui/label";
-import { Loader2 } from "lucide-react";
 import PlanejamentoAtividadeModal from "@/components/empreendimento/PlanejamentoAtividadeModal";
 
 export default function AnaliseConcepcaoPlanejamento() {
@@ -37,10 +34,6 @@ export default function AnaliseConcepcaoPlanejamento() {
     const [planejamentoModalOpen, setPlanejamentoModalOpen] = useState(false);
     const [currentAtividade, setCurrentAtividade] = useState(null);
     const [usuarios, setUsuarios] = useState([]);
-    const [showEditModal, setShowEditModal] = useState(false);
-    const [selectedExecucaoEdit, setSelectedExecucaoEdit] = useState(null);
-    const [editDescricao, setEditDescricao] = useState('');
-    const [isEditLoading, setIsEditLoading] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -319,45 +312,6 @@ export default function AnaliseConcepcaoPlanejamento() {
         setSelectedDocAtividades(prev => 
             prev.includes(atividadeId) ? prev.filter(id => id !== atividadeId) : [...prev, atividadeId]
         );
-    };
-
-    const handleOpenEditModal = (execucao) => {
-        if (execucao.status !== 'Finalizado') {
-            alert('Apenas atividades finalizadas podem ser editadas');
-            return;
-        }
-        setSelectedExecucaoEdit(execucao);
-        setEditDescricao(execucao.descritivo);
-        setShowEditModal(true);
-    };
-
-    const handleCloseEditModal = () => {
-        setShowEditModal(false);
-        setSelectedExecucaoEdit(null);
-        setEditDescricao('');
-    };
-
-    const handleSaveDescricao = async () => {
-        if (!selectedExecucaoEdit || !editDescricao.trim()) {
-            alert('Descrição não pode estar vazia');
-            return;
-        }
-
-        setIsEditLoading(true);
-        try {
-            await Execucao.update(selectedExecucaoEdit.id, {
-                descritivo: editDescricao.trim()
-            });
-            
-            alert('✅ Descrição atualizada com sucesso!');
-            await loadData();
-            handleCloseEditModal();
-        } catch (error) {
-            console.error('Erro ao salvar descrição:', error);
-            alert('Erro ao atualizar descrição: ' + (error.message || 'Tente novamente.'));
-        } finally {
-            setIsEditLoading(false);
-        }
     };
 
     const handlePlanejarSelecionadas = () => {
