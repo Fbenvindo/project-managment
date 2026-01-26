@@ -908,13 +908,32 @@ export default function DocumentosTab({
         return;
       }
 
-      let updateData = { predecessora_id: predecessoraId };
+      // Se o documento já possui planejamento e a predecessora está sendo alterada, 
+      // remover os planejamentos antigos para forçar replaneamento com as novas datas
+      const planejamentosExistentes = localPlanejamentos.filter(p => p.documento_id === documentoId);
+      if (planejamentosExistentes.length > 0) {
+        console.log(`🧹 Removendo ${planejamentosExistentes.length} planejamentos antigos devido à mudança de predecessora...`);
+        
+        await Promise.all(planejamentosExistentes.map(p => {
+          if (p.tipo_plano === 'atividade') {
+            return retryWithExtendedBackoff(() => PlanejamentoAtividade.delete(p.id), `deleteOldPlanOnPredChange-${p.id}`);
+          } else if (p.tipo_plano === 'documento') {
+            return retryWithExtendedBackoff(() => PlanejamentoDocumento.delete(p.id), `deleteOldPlanDocOnPredChange-${p.id}`);
+          }
+          return Promise.resolve();
+        }));
+        
+        setLocalPlanejamentos(prev => prev.filter(p => p.documento_id !== documentoId));
+      }
+
+      let updateData = { 
+        predecessora_id: predecessoraId,
+        inicio_planejado: null,
+        termino_planejado: null,
+        tempo_total: 0
+      };
 
       if (!predecessoraId) {
-        updateData.inicio_planejado = null;
-        updateData.termino_planejado = null;
-        updateData.tempo_total = 0;
-        
         if (!documento.multiplos_executores) {
           updateData.executor_principal = null;
         }
@@ -928,7 +947,8 @@ export default function DocumentosTab({
       setCargaDiariaCache({});
       
       if (predecessoraId) {
-        console.log(`✅ Predecessor definido para ${documento.numero}. Datas serão calculadas ao atribuir executor.`);
+        console.log(`✅ Predecessor definido para ${documento.numero}. Planejamentos antigos removidos. Datas serão calculadas ao atribuir executor.`);
+        alert(`✅ Predecessora alterada! Os planejamentos antigos foram removidos.\n\nDefina o executor novamente para replanejar com as novas datas.`);
       } else {
         console.log(`✅ Predecessor removido de ${documento.numero}. Datas limpas.`);
       }
@@ -947,7 +967,7 @@ export default function DocumentosTab({
     } finally {
       setLoadingDocs(prev => ({ ...prev, [documentoId]: false }));
     }
-  }, [localDocumentos, handleLocalUpdate, setCargaDiariaCache]);
+  }, [localDocumentos, localPlanejamentos, handleLocalUpdate, setCargaDiariaCache]);
 
   const handleDataInicioChange = useCallback(async (documentoId, novaDataStr) => {
     setLoadingDocs(prev => ({ ...prev, [documentoId]: true }));
