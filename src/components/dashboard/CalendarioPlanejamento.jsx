@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Calendar, Clock, User, Building2, Filter, Trash2, CalendarDays, View, Play, RefreshCw, LineChart, Users, PlusCircle, ListMusic, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Clock, User, Building2, Filter, Trash2, CalendarDays, View, Play, RefreshCw, LineChart, Users, PlusCircle, ListMusic, Loader2, Edit2 } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import {
   format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval,
@@ -19,6 +19,7 @@ import PrevisaoEntregaModal from './PrevisaoEntregaModal';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 import { PlanejamentoAtividade, Atividade, Documento, Empreendimento, Execucao, PlanejamentoDocumento } from '@/entities/all';
 import { ChevronsUpDown } from 'lucide-react';
@@ -291,6 +292,9 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   const [showTimeAdjustModal, setShowTimeAdjustModal] = useState(false);
   const [adjustedTime, setAdjustedTime] = useState('');
   const [showObservacoes, setShowObservacoes] = useState(false);
+  const [showEditDescricaoModal, setShowEditDescricaoModal] = useState(false);
+  const [editDescricao, setEditDescricao] = useState('');
+  const [isEditLoading, setIsEditLoading] = useState(false);
 
   const realStatus = calculateActivityStatus(plano, allPlanejamentos);
 
@@ -564,6 +568,42 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
     return hasPermission('coordenador') && !plano.isLegacyExecution && plano.status !== 'concluido';
   };
 
+  const shouldShowEditDescricaoButton = () => {
+    // Coordenador ou superior - apenas para atividades finalizadas
+    return hasPermission('coordenador') && plano.status === 'concluido';
+  };
+
+  const handleOpenEditDescricao = () => {
+    setEditDescricao(plano.descritivo || '');
+    setShowEditDescricaoModal(true);
+  };
+
+  const handleSaveDescricao = async () => {
+    if (!editDescricao.trim()) {
+      alert('Descrição não pode estar vazia');
+      return;
+    }
+
+    setIsEditLoading(true);
+    try {
+      const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
+      await entityToUpdate.update(plano.id, {
+        descritivo: editDescricao.trim()
+      });
+      
+      alert('✅ Descrição atualizada com sucesso!');
+      setShowEditDescricaoModal(false);
+      if (onDelete) {
+        onDelete();
+      }
+    } catch (error) {
+      console.error('Erro ao salvar descrição:', error);
+      alert('Erro ao atualizar descrição: ' + (error.message || 'Tente novamente.'));
+    } finally {
+      setIsEditLoading(false);
+    }
+  };
+
   // **NOVO**: Buscar observação do planejamento ou das execuções
   const observacao = useMemo(() => {
     // Se tem observação no planejamento, mostrar ela
@@ -819,6 +859,18 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
               {isStarting ? "Iniciando..." : "Iniciar"}
             </Button>
           )}
+          {shouldShowEditDescricaoButton() && (
+            <Button
+              onClick={handleOpenEditDescricao}
+              size="sm"
+              variant="outline"
+              className="h-6 text-xs"
+              title="Editar descrição da atividade finalizada"
+            >
+              <Edit2 className="w-3 h-3 mr-1" />
+              Editar
+            </Button>
+          )}
         </div>
       </div>
 
@@ -852,6 +904,40 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowTimeAdjustModal(false)}>Cancelar</Button>
             <Button onClick={handleAdjustTime} className="bg-blue-600 hover:bg-blue-700">Ajustar e Finalizar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para editar descrição */}
+      <Dialog open={showEditDescricaoModal} onOpenChange={setShowEditDescricaoModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Descrição da Atividade</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <p className="text-sm text-gray-600 mb-2"><strong>Atividade:</strong> {displayName}</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editDescricao">Descrição</Label>
+              <Textarea
+                id="editDescricao"
+                value={editDescricao}
+                onChange={(e) => setEditDescricao(e.target.value)}
+                placeholder="Digite a descrição da atividade"
+                className="min-h-24"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDescricaoModal(false)}>Cancelar</Button>
+            <Button 
+              onClick={handleSaveDescricao} 
+              disabled={isEditLoading}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isEditLoading ? 'Salvando...' : 'Salvar'}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
