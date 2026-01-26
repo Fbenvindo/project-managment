@@ -1015,6 +1015,30 @@ export default function DocumentosTab({
       // Executar cascata automática para atualizar sucessoras
       await handleCascadingUpdate(updatedDocFromAPI);
 
+      // Se o documento tem um executor principal, replanejar as atividades com a nova data
+      if (updatedDocFromAPI.executor_principal && !updatedDocFromAPI.multiplos_executores) {
+        console.log(`\n🔄 Replanejando atividades com a nova data de início...`);
+        
+        // Tentar replanejar para cada etapa que tem planejamento existente
+        const etapasComPlanejamento = localPlanejamentos
+          .filter(p => p.documento_id === documentoId && p.tipo_plano === 'documento')
+          .map(p => p.etapa);
+
+        if (etapasComPlanejamento.length > 0) {
+          for (const etapa of etapasComPlanejamento) {
+            await autoPlanejarAtividades(
+              updatedDocFromAPI,
+              etapa,
+              updatedDocFromAPI.executor_principal,
+              'manual',
+              novaDataStr
+            );
+          }
+        } else {
+          console.log(`⚠️ Nenhuma etapa com planejamento encontrada para replanejamento automático`);
+        }
+      }
+
     } catch (error) {
       console.error('Erro ao atualizar data de início:', error);
 
