@@ -7,7 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Search, Filter, MoreHorizontal, Edit, Trash2, Loader2, PackageOpen, Layers, XCircle, FileX, RefreshCw, Edit2, ChevronRight, ChevronDown } from 'lucide-react';
+import { PlusCircle, Search, Filter, MoreHorizontal, Edit, Trash2, Loader2, PackageOpen, Layers, XCircle, FileX, RefreshCw, Edit2, ChevronRight, ChevronDown, Calendar } from 'lucide-react';
+import PlanejamentoAtividadeModal from './PlanejamentoAtividadeModal';
 import AtividadeFormModal from './AtividadeFormModal';
 import { debounce } from 'lodash';
 import { Badge } from '@/components/ui/badge';
@@ -648,6 +649,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const [isEtapaModalOpen, setIsEtapaModalOpen] = useState(false);
   const [isExcluirDeFolhasModalOpen, setIsExcluirDeFolhasModalOpen] = useState(false);
   const [isEditarEtapaEmFolhasModalOpen, setIsEditarEtapaEmFolhasModalOpen] = useState(false);
+  const [isPlanejamentoModalOpen, setIsPlanejamentoModalOpen] = useState(false);
+  const [atividadeParaPlanejar, setAtividadeParaPlanejar] = useState(null);
   
   const [isDeletingActivity, setIsDeletingActivity] = useState({});
   const [selectedIds, setSelectedIds] = useState(new Set());
@@ -1157,6 +1160,18 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     setIsExcluirDeFolhasModalOpen(true);
   };
 
+  const handlePlanejarAtividade = (atividade) => {
+    setAtividadeParaPlanejar(atividade);
+    setIsPlanejamentoModalOpen(true);
+  };
+
+  const handlePlanejarComplete = () => {
+    setIsPlanejamentoModalOpen(false);
+    setAtividadeParaPlanejar(null);
+    fetchData();
+    if (onUpdate) onUpdate();
+  };
+
   const handleSelectItem = (uniqueId) => {
     setSelectedIds(prev => {
       const newSet = new Set(prev);
@@ -1485,6 +1500,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                   </>
                                 ) : (
                                   <>
+                                    <DropdownMenuItem onClick={() => handlePlanejarAtividade(ativ)} className="text-purple-600">
+                                      <Calendar className="w-4 h-4 mr-2" /> Planejar Atividade
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => handleOpenEtapaModal(ativ)}>
                                       <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
                                     </DropdownMenuItem>
@@ -1504,7 +1522,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                       <XCircle className="w-4 h-4 mr-2" /> Excluir de Todas as Folhas (Empreendimento)
                                     </DropdownMenuItem>
                                   </>
-                                )}
+                                  )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
@@ -1693,6 +1711,21 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           if (onUpdate) onUpdate();
         }}
       />
+
+      {isPlanejamentoModalOpen && atividadeParaPlanejar && (
+        <PlanejamentoAtividadeModal
+          isOpen={isPlanejamentoModalOpen}
+          onClose={() => {
+            setIsPlanejamentoModalOpen(false);
+            setAtividadeParaPlanejar(null);
+          }}
+          atividade={atividadeParaPlanejar}
+          empreendimentos={[]}
+          documentos={documentos}
+          empreendimentoId={empreendimentoId}
+          onComplete={handlePlanejarComplete}
+        />
+      )}
     </div>
   );
 }
