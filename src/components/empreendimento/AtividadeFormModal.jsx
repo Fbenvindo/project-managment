@@ -232,7 +232,12 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
           </div>
           <div className="space-y-2">
             <Label htmlFor="etapa">Etapa</Label>
-            <Input id="etapa" name="etapa" value={formData.etapa} onChange={handleChange} required />
+            <Select name="etapa" value={formData.etapa} onValueChange={(v) => handleSelectChange('etapa', v)} required>
+              <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+              <SelectContent>
+                {etapasDisponiveis.map(etapa => <SelectItem key={etapa} value={etapa}>{etapa}</SelectItem>)}
+              </SelectContent>
+            </Select>
           </div>
           <div className="space-y-2 md:col-span-2">
             <Label htmlFor="disciplina">Disciplina</Label>
