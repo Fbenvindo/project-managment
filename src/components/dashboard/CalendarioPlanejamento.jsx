@@ -586,10 +586,19 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
 
     setIsEditLoading(true);
     try {
-      const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
-      await entityToUpdate.update(plano.id, {
-        descritivo: editDescricao.trim()
-      });
+      // Se for execução legada, extrair o ID real e atualizar Execucao
+      if (plano.isLegacyExecution) {
+        const execId = plano.id.split('-')[1]; // Extrair ID original do ID virtual "exec-{id}"
+        await Execucao.update(execId, {
+          descritivo: editDescricao.trim()
+        });
+      } else {
+        // Para atividades normais, usar a entidade correta
+        const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
+        await entityToUpdate.update(plano.id, {
+          descritivo: editDescricao.trim()
+        });
+      }
       
       alert('✅ Descrição atualizada com sucesso!');
       setShowEditDescricaoModal(false);
