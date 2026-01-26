@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Plus, Edit, Trash2, Search, Calendar } from "lucide-react";
 import { Atividade } from "@/entities/all";
 import {
@@ -297,6 +298,21 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
     return todasAtividades;
   }, [atividades, empreendimentoId, documentoIdsDoEmpreendimento, searchTerm, etapaFilter, disciplinaFilter, subdisciplinaFilter]);
 
+  // Agrupar atividades por disciplina
+  const atividadesPorDisciplina = useMemo(() => {
+    const grupos = {};
+    
+    filteredAtividades.forEach(atividade => {
+      const disciplina = atividade.disciplina || 'Sem Disciplina';
+      if (!grupos[disciplina]) {
+        grupos[disciplina] = [];
+      }
+      grupos[disciplina].push(atividade);
+    });
+
+    return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [filteredAtividades]);
+
   if (!empreendimentoId) {
     return (
       <div className="text-center p-8">
@@ -385,83 +401,94 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
         }}
       />
 
-      <div className="rounded-lg border">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Atividade</TableHead>
-              <TableHead>Etapa</TableHead>
-              <TableHead>Disciplina</TableHead>
-              <TableHead>Subdisciplina</TableHead>
-              <TableHead>Tempo (h)</TableHead>
-              <TableHead className="text-right">Ações</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center">Carregando...</TableCell>
-              </TableRow>
-            ) : filteredAtividades.length > 0 ? (
-              filteredAtividades.map(atividade => (
-                <TableRow key={atividade.id}>
-                  <TableCell className="font-medium">{atividade.atividade}</TableCell>
-                  <TableCell>{atividade.etapa}</TableCell>
-                  <TableCell>{atividade.disciplina}</TableCell>
-                  <TableCell>{atividade.subdisciplina}</TableCell>
-                  <TableCell>{atividade.tempo}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex gap-1 justify-end">
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => {
-                          console.log("🎯 Clicou no botão Planejar para:", atividade);
-                          handlePlanejarDiretamente(atividade);
-                        }}
-                        className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
-                      >
-                        <Calendar className="w-3 h-3 mr-1" />
-                        Planejar
-                      </Button>
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        onClick={() => handleAplicarADocumentos(atividade)}
-                        className="text-xs"
-                      >
-                        Aplicar
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => handleEdit(atividade)}>
-                        <Edit className="w-4 h-4" />
-                      </Button>
-                      <Button 
-                        variant="ghost" 
-                        size="icon" 
-                        onClick={() => handleDelete(atividade.id)} 
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell colSpan={6} className="text-center py-8">
-                  <div className="text-gray-500">
-                    {searchTerm ? 
-                      "Nenhuma atividade encontrada com os filtros aplicados." :
-                      "Nenhuma atividade específica cadastrada para este projeto."
-                    }
-                  </div>
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </div>
+      {isLoading ? (
+        <div className="rounded-lg border p-8 text-center">
+          <p className="text-gray-500">Carregando...</p>
+        </div>
+      ) : filteredAtividades.length === 0 ? (
+        <div className="rounded-lg border p-8 text-center">
+          <p className="text-gray-500">
+            {searchTerm ? 
+              "Nenhuma atividade encontrada com os filtros aplicados." :
+              "Nenhuma atividade específica cadastrada para este projeto."
+            }
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {atividadesPorDisciplina.map(([disciplina, atividadesDisciplina]) => (
+            <div key={disciplina} className="border rounded-lg overflow-hidden">
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border-b">
+                <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
+                  <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
+                  {disciplina}
+                  <span className="ml-2 text-sm font-normal text-gray-600">
+                    ({atividadesDisciplina.length} {atividadesDisciplina.length === 1 ? 'atividade' : 'atividades'})
+                  </span>
+                </h3>
+              </div>
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Atividade</TableHead>
+                      <TableHead>Etapa</TableHead>
+                      <TableHead>Subdisciplina</TableHead>
+                      <TableHead>Tempo (h)</TableHead>
+                      <TableHead className="text-right">Ações</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {atividadesDisciplina.map(atividade => (
+                      <TableRow key={atividade.id}>
+                        <TableCell className="font-medium">{atividade.atividade}</TableCell>
+                        <TableCell>{atividade.etapa}</TableCell>
+                        <TableCell>{atividade.subdisciplina}</TableCell>
+                        <TableCell>{atividade.tempo}</TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex gap-1 justify-end">
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => {
+                                console.log("🎯 Clicou no botão Planejar para:", atividade);
+                                handlePlanejarDiretamente(atividade);
+                              }}
+                              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
+                            >
+                              <Calendar className="w-3 h-3 mr-1" />
+                              Planejar
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm" 
+                              onClick={() => handleAplicarADocumentos(atividade)}
+                              className="text-xs"
+                            >
+                              Aplicar
+                            </Button>
+                            <Button variant="ghost" size="icon" onClick={() => handleEdit(atividade)}>
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              onClick={() => handleDelete(atividade.id)} 
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
