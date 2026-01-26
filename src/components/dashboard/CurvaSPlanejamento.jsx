@@ -97,17 +97,21 @@ export default function CurvaSPlanejamento({ isLoading: isDashboardLoading, onRe
   }, [dataLoaded, loadCurvaSData]);
 
   const empreendimentosDisponiveis = useMemo(() => {
-    const empreendimentosSet = new Set();
+    const empreendimentosMap = new Map();
     planejamentos.forEach(plano => {
-      if (plano.empreendimento?.nome && plano.empreendimento_id) {
-        empreendimentosSet.add(JSON.stringify({
-          id: plano.empreendimento_id,
-          nome: plano.empreendimento.nome
-        }));
+      if (plano.empreendimento_id) {
+        // Priorizar nome do empreendimento aninhado, senão usar empreendimentoNome
+        const nome = plano.empreendimento?.nome || plano.empreendimentoNome || 'Sem nome';
+        if (!empreendimentosMap.has(plano.empreendimento_id)) {
+          empreendimentosMap.set(plano.empreendimento_id, {
+            id: plano.empreendimento_id,
+            nome: nome
+          });
+        }
       }
     });
     
-    return Array.from(empreendimentosSet).map(item => JSON.parse(item));
+    return Array.from(empreendimentosMap.values()).sort((a, b) => a.nome.localeCompare(b.nome));
   }, [planejamentos]);
 
   const usuariosDisponiveis = useMemo(() => {
