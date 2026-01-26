@@ -85,12 +85,13 @@ export default function CurvaSPlanejamento({ isLoading: isDashboardLoading, onRe
         cacheRef.current = {
           data: {
             planejamentos: finalPlanData,
-            execucoes: finalExecData
+            execucoes: finalExecData,
+            empreendimentos: empData || []
           },
           timestamp: now
         };
         
-        console.log(`✅ [CurvaS] Dados carregados: ${finalPlanData.length} planejamentos, ${finalExecData.length} execuções`);
+        console.log(`✅ [CurvaS] Dados carregados: ${finalPlanData.length} planejamentos, ${finalExecData.length} execuções, ${(empData || []).length} empreendimentos`);
         
     } catch (error) {
         console.error("❌ Erro ao carregar dados para a Curva S:", error);
