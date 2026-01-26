@@ -158,10 +158,15 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
           ...formData,
           subdisciplina: selectedSubdisciplinas[0],
           tempo: formData.tempo ? Number(formData.tempo) : null,
-          documento_ids: selectedDocumentoIds.length > 0 ? selectedDocumentoIds : [],
-          documento_id: selectedDocumentoIds[0] || null, // Manter por compatibilidade
         };
-        console.log("📝 Atualizando atividade com documento_ids:", dataToSave.documento_ids);
+        
+        // Apenas adicionar documento_ids se houver documentos selecionados
+        if (selectedDocumentoIds.length > 0) {
+          dataToSave.documento_ids = selectedDocumentoIds;
+          dataToSave.documento_id = selectedDocumentoIds[0]; // Manter por compatibilidade
+        }
+        
+        console.log("📝 Atualizando atividade:", dataToSave);
         await Atividade.update(atividade.id, dataToSave);
       } else {
         // Criação - criar UMA atividade por subdisciplina com múltiplas folhas vinculadas
@@ -170,14 +175,19 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
             ...formData,
             subdisciplina: subdisciplina,
             tempo: formData.tempo ? Number(formData.tempo) : null,
-            documento_ids: selectedDocumentoIds.length > 0 ? selectedDocumentoIds : [],
-            documento_id: selectedDocumentoIds[0] || null, // Manter por compatibilidade
           };
+          
+          // Apenas adicionar documento_ids se houver documentos selecionados
+          if (selectedDocumentoIds.length > 0) {
+            dataToSave.documento_ids = selectedDocumentoIds;
+            dataToSave.documento_id = selectedDocumentoIds[0]; // Manter por compatibilidade
+          }
+          
           console.log("📝 Criando atividade:", {
             atividade: dataToSave.atividade,
             subdisciplina: dataToSave.subdisciplina,
             documento_ids: dataToSave.documento_ids,
-            total_folhas: dataToSave.documento_ids.length
+            total_folhas: dataToSave.documento_ids?.length || 0
           });
           const result = await Atividade.create(dataToSave);
           console.log("✅ Atividade criada:", result);
