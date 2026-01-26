@@ -2110,22 +2110,23 @@ export default function DocumentosTab({
                       </Button>
                     )}
                     <Button
-                      size="sm"
-                      onClick={() => {
-                        // Abrir modal para criar nova atividade vinculada a esta folha
-                        const novaAtividade = {
-                          empreendimento_id: empreendimento.id,
-                          documento_id: doc.id,
-                          disciplina: doc.disciplina,
-                          subdisciplinas: doc.subdisciplinas || []
-                        };
-                        handleEditAtividade(novaAtividade);
-                      }}
-                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                    >
-                      <Plus className="w-4 h-4 mr-2" />
-                      Nova Atividade
-                    </Button>
+                       size="sm"
+                       onClick={() => {
+                         // Abrir modal para criar nova atividade vinculada a esta folha
+                         const novaAtividade = {
+                           empreendimento_id: empreendimento.id,
+                           documento_id: doc.id,
+                           documento_ids: [doc.id],
+                           disciplina: doc.disciplina,
+                           subdisciplinas: doc.subdisciplinas || []
+                         };
+                         handleEditAtividade(novaAtividade);
+                       }}
+                       className="bg-blue-600 hover:bg-blue-700 text-white"
+                     >
+                       <Plus className="w-4 h-4 mr-2" />
+                       Nova Atividade
+                     </Button>
                   </div>
                 </div>
                 <div className="space-y-2">
