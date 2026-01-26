@@ -887,9 +887,9 @@ export default function DocumentosTab({
     setExecutorPreSelecionado(null);
   }, [onUpdate, handleCloseDocEtapaModal]);
 
-  const toggleRow = (id) => {
+  const toggleRow = useCallback((id) => {
     setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
-  };
+  }, []);
 
   const toggleSequencing = (id) => {
     setExpandedSequencing(prev => ({ ...prev, [id]: !prev[id] }));
@@ -1238,8 +1238,7 @@ export default function DocumentosTab({
 
       setIsUpdatingActivity(true);
       try {
-        // Salvar estado de expansão
-        const wasExpanded = expandedRows[doc.id];
+        let atividadesMarcadas = 0;
         
         for (const atividadeId of selectedAtividades) {
           const atividade = atividadesDisponiveis.find(a => a.id === atividadeId);
@@ -1278,17 +1277,18 @@ export default function DocumentosTab({
             () => Atividade.create(novoMarcador),
             3, 1000, `createConclusionMarker-${atividade.id}-${doc.id}`
           );
+          
+          atividadesMarcadas++;
         }
 
         setSelectedAtividades([]);
+        
+        // Recarregar apenas as atividades
         await onUpdate();
         
-        // Restaurar estado de expansão
-        if (wasExpanded) {
-          setExpandedRows(prev => ({ ...prev, [doc.id]: true }));
+        if (atividadesMarcadas > 0) {
+          alert(`✅ ${atividadesMarcadas} atividade(s) marcada(s) como concluída(s)!`);
         }
-        
-        alert(`✅ ${selectedAtividades.length} atividade(s) marcada(s) como concluída(s)!`);
       } catch (error) {
         console.error("❌ Erro ao marcar atividades como concluídas:", error);
         alert("Erro ao atualizar o status das atividades: " + error.message);
@@ -1307,9 +1307,6 @@ export default function DocumentosTab({
 
       setIsUpdatingActivity(true);
       try {
-        // Salvar estado de expansão
-        const wasExpanded = expandedRows[doc.id];
-        
         // Verificar se já existe marcador de conclusão
         const existingMarkers = await retryWithBackoff(
           () => Atividade.filter({
@@ -1328,7 +1325,6 @@ export default function DocumentosTab({
             () => Atividade.delete(existingMarkers[0].id),
             3, 1000, `removeConclusionMarker-${existingMarkers[0].id}`
           );
-          alert(`Atividade "${activityObj.atividade}" desmarcada como concluída.`);
         } else {
           // Criar marcador de conclusão (usando tempo 0 em vez de -888)
           const novoMarcador = {
@@ -1348,15 +1344,10 @@ export default function DocumentosTab({
             () => Atividade.create(novoMarcador),
             3, 1000, `createConclusionMarker-${activityObj.id}-${doc.id}`
           );
-          alert(`✅ Atividade "${activityObj.atividade}" marcada como concluída!`);
         }
 
+        // Recarregar apenas as atividades, sem chamar onUpdate completo
         await onUpdate();
-        
-        // Restaurar estado de expansão
-        if (wasExpanded) {
-          setExpandedRows(prev => ({ ...prev, [doc.id]: true }));
-        }
       } catch (error) {
         console.error("❌ Erro ao marcar atividade como concluída:", error);
         alert("Erro ao atualizar o status da atividade: " + error.message);
