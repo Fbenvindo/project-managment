@@ -446,7 +446,7 @@ export default function AnaliseConcepcaoPlanejamento() {
                                                     <TableHead>Atividade</TableHead>
                                                     <TableHead className="text-center">Tempo Real</TableHead>
                                                     <TableHead className="text-center">Tempo Executado</TableHead>
-                                                    <TableHead className="text-center">Ações</TableHead>
+                                                    <TableHead className="text-center">Planejar</TableHead>
                                                 </TableRow>
                                             </TableHeader>
                                             <TableBody>
