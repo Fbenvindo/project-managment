@@ -53,31 +53,33 @@ export default function PlanejamentoAtividadeModal({
   }, [usuarios]);
 
   const documentosDisponiveis = useMemo(() => {
-    if (!documentos || !atividade) return [];
+    if (!atividade) return [];
+    
+    const docs = documentos && Array.isArray(documentos) ? documentos : [];
+    
+    console.log(`📄 [PlanejamentoAtividadeModal] Total de documentos recebidos:`, docs.length);
+    console.log(`📄 [PlanejamentoAtividadeModal] Atividade:`, atividade.disciplina, '-', atividade.subdisciplina);
 
-    // Primeiro, tentar filtrar por disciplina e subdisciplina
-    let result = documentos.filter(doc => {
+    // Para Documentação, sempre mostrar todos os documentos do empreendimento
+    if (atividade.disciplina === 'Documentação') {
+      console.log(`📄 [PlanejamentoAtividadeModal] Documentação detectada - mostrando todos (${docs.length})`);
+      return docs;
+    }
+
+    // Para outras disciplinas, filtrar por disciplina + subdisciplina
+    let result = docs.filter(doc => {
       if (!atividade.subdisciplina || atividade.subdisciplina === null || atividade.subdisciplina === '') {
         return doc.disciplina === atividade.disciplina;
       }
 
       const docSubdisciplinas = doc.subdisciplinas || [];
-      const atividadeSubdisciplina = atividade.subdisciplina;
-
       return doc.disciplina === atividade.disciplina &&
-             docSubdisciplinas.includes(atividadeSubdisciplina);
+             docSubdisciplinas.includes(atividade.subdisciplina);
     });
 
-    // Se não encontrar documentos e a disciplina for 'Documentação', mostrar todos os documentos do empreendimento
-    if (result.length === 0 && atividade.disciplina === 'Documentação') {
-      result = documentos;
-      console.log(`📄 [PlanejamentoAtividadeModal] Nenhum documento com subdisciplina exata. Mostrando todos os documentos do empreendimento (${result.length})`);
-    } else {
-      console.log(`📄 [PlanejamentoAtividadeModal] Documentos disponíveis para disciplina '${atividade.disciplina}' e subdisciplina '${atividade.subdisciplina}':`, result.length);
-    }
-    
+    console.log(`📄 [PlanejamentoAtividadeModal] Documentos filtrados:`, result.length);
     return result;
-  }, [documentos, atividade.disciplina, atividade.subdisciplina]);
+  }, [documentos, atividade]);
 
   useEffect(() => {
     if (isOpen && atividade) {
