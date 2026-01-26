@@ -347,29 +347,20 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
     return todasAtividades;
   }, [atividades, empreendimentoId, documentoIdsDoEmpreendimento, searchTerm, etapaFilter, disciplinaFilter, subdisciplinaFilter]);
 
-  // Agrupar atividades por disciplina (exceto Apoio, Coordenação, BIM que ficam soltas)
+  // Agrupar atividades por disciplina
   const atividadesPorDisciplina = useMemo(() => {
-    const disciplinasSoltas = ['Apoio', 'Coordenação', 'BIM', 'Planejamento', 'Gestão'];
     const grupos = {};
-    const atividadesSoltas = [];
     
     filteredAtividades.forEach(atividade => {
       const disciplina = atividade.disciplina || 'Sem Disciplina';
       
-      if (disciplinasSoltas.includes(disciplina)) {
-        // Atividades de disciplinas específicas ficam soltas (uma por grupo)
-        atividadesSoltas.push([atividade.id, [atividade]]);
-      } else {
-        // Outras disciplinas são agrupadas normalmente
-        if (!grupos[disciplina]) {
-          grupos[disciplina] = [];
-        }
-        grupos[disciplina].push(atividade);
+      if (!grupos[disciplina]) {
+        grupos[disciplina] = [];
       }
+      grupos[disciplina].push(atividade);
     });
 
-    const gruposOrdenados = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
-    return [...atividadesSoltas, ...gruposOrdenados];
+    return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
   }, [filteredAtividades]);
 
   if (!empreendimentoId) {
@@ -487,24 +478,19 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
       ) : (
         <div className="space-y-6">
           {atividadesPorDisciplina.map(([disciplina, atividadesDisciplina]) => {
-            const disciplinasSoltas = ['Apoio', 'Coordenação', 'BIM', 'Planejamento', 'Gestão'];
-            const ehAtividadeSolta = atividadesDisciplina.length === 1 && disciplinasSoltas.includes(atividadesDisciplina[0].disciplina);
-            
             return (
               <div key={disciplina} className="border rounded-lg overflow-hidden">
-                {!ehAtividadeSolta && (
-                  <div className="bg-blue-50 px-4 py-2 border-b border-blue-200">
-                    <div className="flex items-center gap-2">
-                      <div className="w-1 h-5 bg-blue-600 rounded"></div>
-                      <h3 className="font-semibold text-base text-gray-900">
-                        {disciplina}
-                      </h3>
-                      <span className="text-sm text-gray-600">
-                        {atividadesDisciplina.length} {atividadesDisciplina.length === 1 ? 'atividade' : 'atividades'}
-                      </span>
-                    </div>
+                <div className="bg-blue-50 px-4 py-3 border-b border-blue-200">
+                  <div className="flex items-center gap-2">
+                    <div className="w-1 h-5 bg-blue-600 rounded"></div>
+                    <h3 className="font-semibold text-lg text-gray-900">
+                      {disciplina}
+                    </h3>
+                    <span className="text-sm text-gray-600">
+                      {atividadesDisciplina.length} {atividadesDisciplina.length === 1 ? 'atividade' : 'atividades'}
+                    </span>
                   </div>
-                )}
+                </div>
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
