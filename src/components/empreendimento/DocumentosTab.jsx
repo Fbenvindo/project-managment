@@ -1019,24 +1019,33 @@ export default function DocumentosTab({
       if (updatedDocFromAPI.executor_principal && !updatedDocFromAPI.multiplos_executores) {
         console.log(`\n🔄 Replanejando atividades com a nova data de início...`);
         
-        // Tentar replanejar para cada etapa que tem planejamento existente
-        const etapasComPlanejamento = localPlanejamentos
-          .filter(p => p.documento_id === documentoId && p.tipo_plano === 'documento')
-          .map(p => p.etapa);
+        // Tentar replanejar para cada etapa que tem planejamento existente (ambos os tipos)
+        const planejamentosDoDoc = localPlanejamentos.filter(p => p.documento_id === documentoId);
+        const etapasComPlanejamento = [...new Set(planejamentosDoDoc.map(p => p.etapa))];
+
+        console.log(`📊 Etapas com planejamento encontradas: ${etapasComPlanejamento.join(', ') || 'nenhuma'}`);
 
         if (etapasComPlanejamento.length > 0) {
-          for (const etapa of etapasComPlanejamento) {
-            await autoPlanejarAtividades(
-              updatedDocFromAPI,
-              etapa,
-              updatedDocFromAPI.executor_principal,
-              'manual',
-              novaDataStr
-            );
+          try {
+            for (const etapa of etapasComPlanejamento) {
+              console.log(`⏳ Replanejando etapa: ${etapa}...`);
+              await autoPlanejarAtividades(
+                updatedDocFromAPI,
+                etapa,
+                updatedDocFromAPI.executor_principal,
+                'manual',
+                novaDataStr
+              );
+            }
+            console.log(`✅ Replanejamento concluído com sucesso!`);
+          } catch (replanError) {
+            console.error(`⚠️ Erro durante replanejamento:`, replanError);
           }
         } else {
-          console.log(`⚠️ Nenhuma etapa com planejamento encontrada para replanejamento automático`);
+          console.log(`ℹ️ Nenhuma etapa com planejamento encontrada para replanejamento automático`);
         }
+      } else {
+        console.log(`ℹ️ Replanejamento automático não aplicável (executor: ${updatedDocFromAPI.executor_principal}, multiplos: ${updatedDocFromAPI.multiplos_executores})`);
       }
 
     } catch (error) {
