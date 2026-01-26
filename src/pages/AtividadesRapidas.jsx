@@ -421,6 +421,50 @@ export default function AtividadesRapidasPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal para Editar Descrição */}
+      <Dialog open={showEditModal} onOpenChange={handleCloseEditModal}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Edit2 className="w-5 h-5 text-blue-600" />
+              Editar Descrição
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-4">
+            <div>
+              <Label htmlFor="descricao">Descrição da Atividade</Label>
+              <Textarea
+                id="descricao"
+                value={editDescricao}
+                onChange={(e) => setEditDescricao(e.target.value)}
+                placeholder="Digite a descrição da atividade"
+                className="min-h-[120px]"
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={handleCloseEditModal} disabled={isLoading}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSaveDescricao} disabled={isLoading} className="bg-blue-600 hover:bg-blue-700">
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Salvar
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
