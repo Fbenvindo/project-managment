@@ -99,27 +99,79 @@ export default function AtividadesRapidasPage() {
   };
 
   const handleSaveDescricao = async () => {
-    if (!selectedExecucao || !editDescricao.trim()) {
-      alert('Descrição não pode estar vazia');
-      return;
-    }
+     if (!selectedExecucao || !editDescricao.trim()) {
+       alert('Descrição não pode estar vazia');
+       return;
+     }
 
-    setIsLoading(true);
-    try {
-      await Execucao.update(selectedExecucao.id, {
-        descritivo: editDescricao.trim()
-      });
-      
-      alert('✅ Descrição atualizada com sucesso!');
-      await loadData();
-      handleCloseEditModal();
-    } catch (error) {
-      console.error('Erro ao salvar descrição:', error);
-      alert('Erro ao atualizar descrição: ' + (error.message || 'Tente novamente.'));
-    } finally {
-      setIsLoading(false);
-    }
-  };
+     setIsLoading(true);
+     try {
+       await Execucao.update(selectedExecucao.id, {
+         descritivo: editDescricao.trim()
+       });
+
+       alert('✅ Descrição atualizada com sucesso!');
+       await loadData();
+       handleCloseEditModal();
+     } catch (error) {
+       console.error('Erro ao salvar descrição:', error);
+       alert('Erro ao atualizar descrição: ' + (error.message || 'Tente novamente.'));
+     } finally {
+       setIsLoading(false);
+     }
+   };
+
+   const handleResumeExecution = async (execucao) => {
+     setIsLoading(true);
+     try {
+       const agora = new Date();
+       const tempoDecorrido = (agora - new Date(execucao.inicio)) / (1000 * 60 * 60);
+
+       // Criar nova execução para continuar
+       await Execucao.create({
+         descritivo: execucao.descritivo,
+         usuario: user.email,
+         empreendimento_id: execucao.empreendimento_id,
+         usuario_ajudado: execucao.usuario_ajudado,
+         inicio: agora.toISOString(),
+         status: 'Em andamento'
+       });
+
+       alert('✅ Atividade retomada com sucesso!');
+       await loadData();
+     } catch (error) {
+       console.error('Erro ao retomar atividade:', error);
+       alert('Erro ao retomar atividade: ' + (error.message || 'Tente novamente.'));
+     } finally {
+       setIsLoading(false);
+     }
+   };
+
+   const handleFinalizeExecution = async (execucao) => {
+     if (!confirm('Tem certeza que deseja finalizar esta atividade?')) {
+       return;
+     }
+
+     setIsLoading(true);
+     try {
+       const agora = new Date();
+       const tempoDecorrido = (agora - new Date(execucao.inicio)) / (1000 * 60 * 60);
+
+       await Execucao.update(execucao.id, {
+         status: 'Finalizado',
+         termino: agora.toISOString(),
+         tempo_total: tempoDecorrido
+       });
+
+       alert('✅ Atividade finalizada com sucesso!');
+       await loadData();
+     } catch (error) {
+       console.error('Erro ao finalizar atividade:', error);
+       alert('Erro ao finalizar atividade: ' + (error.message || 'Tente novamente.'));
+     } finally {
+       setIsLoading(false);
+     }
+   };
 
   const handleConfirmStart = async () => {
     if (!selectedAtividade) return;
