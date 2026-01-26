@@ -1209,13 +1209,12 @@ export default function DocumentosTab({
         );
         
         // Verificar se está no planejamento de documento (grupo)
-        const planejamentoDocDaEtapa = planejamentosDoDocumento.find(p => 
-          p.etapa === etapaFinal && 
-          p.tipo_plano === 'documento'
-        );
-        const jaFoiPlanejada = planejamentoDocDaEtapa && 
-          planejamentoDocDaEtapa.atividades_ids && 
-          planejamentoDocDaEtapa.atividades_ids.includes(atividade.id);
+         const planejamentoDocDaEtapa = planejamentosDoDocumento.find(p => 
+           p.etapa === etapaFinal && 
+           p.tipo_plano === 'documento'
+         );
+         // Se existe um planejamento de documento para a etapa, todas as atividades dessa etapa foram planejadas
+         const jaFoiPlanejada = !!planejamentoDocDaEtapa || !!planejamentoAtividade;
         
         // Status do planejamento
         const statusPlanejamento = planejamentoAtividade?.status || 
