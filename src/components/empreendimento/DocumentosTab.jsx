@@ -1050,6 +1050,7 @@ export default function DocumentosTab({
     const isDocLoading = loadingDocs[doc.id] || false;
     
     const [searchPredecessor, setSearchPredecessor] = useState('');
+    const [selectedAtividades, setSelectedAtividades] = useState([]);
 
     const planejamentosDoDocumento = useMemo(() => {
         return planejamentos.filter(p => p.documento_id === doc.id);
@@ -1216,6 +1217,76 @@ export default function DocumentosTab({
         return total + (ativ.tempoComFator || 0);
       }, 0);
     }, [atividadesDisponiveis, etapaParaPlanejamento]);
+
+    const handleToggleAtividade = (atividadeId) => {
+      setSelectedAtividades(prev => 
+        prev.includes(atividadeId) 
+          ? prev.filter(id => id !== atividadeId)
+          : [...prev, atividadeId]
+      );
+    };
+
+    const handleMarcarMultiplasComoConcluidas = async () => {
+      if (selectedAtividades.length === 0) {
+        alert("Selecione pelo menos uma atividade");
+        return;
+      }
+
+      if (!window.confirm(`Tem certeza que deseja marcar ${selectedAtividades.length} atividade(s) como concluída(s)?`)) {
+        return;
+      }
+
+      setIsUpdatingActivity(true);
+      try {
+        for (const atividadeId of selectedAtividades) {
+          const atividade = atividadesDisponiveis.find(a => a.id === atividadeId);
+          if (!atividade) continue;
+
+          // Verificar se já existe marcador de conclusão
+          const existingMarkers = await retryWithBackoff(
+            () => Atividade.filter({
+              empreendimento_id: empreendimento.id,
+              id_atividade: atividade.id,
+              documento_id: doc.id,
+              tempo: 0
+            }),
+            3, 1000, `checkConclusionMarker-${atividade.id}-${doc.id}`
+          );
+
+          if (existingMarkers && existingMarkers.length > 0) {
+            // Já marcada, pular
+            continue;
+          }
+
+          // Criar marcador de conclusão
+          const novoMarcador = {
+            etapa: atividade.etapa,
+            disciplina: atividade.disciplina,
+            subdisciplina: atividade.subdisciplina,
+            atividade: `(Concluída na folha ${doc.numero}) ${atividade.atividade}`,
+            funcao: atividade.funcao,
+            empreendimento_id: empreendimento.id,
+            id_atividade: atividade.id,
+            documento_id: doc.id,
+            tempo: 0
+          };
+
+          await retryWithBackoff(
+            () => Atividade.create(novoMarcador),
+            3, 1000, `createConclusionMarker-${atividade.id}-${doc.id}`
+          );
+        }
+
+        setSelectedAtividades([]);
+        await onUpdate();
+        alert(`✅ ${selectedAtividades.length} atividade(s) marcada(s) como concluída(s)!`);
+      } catch (error) {
+        console.error("❌ Erro ao marcar atividades como concluídas:", error);
+        alert("Erro ao atualizar o status das atividades: " + error.message);
+      } finally {
+        setIsUpdatingActivity(false);
+      }
+    };
 
     const handleMarcarComoConcluida = async (activityObj) => {
       console.log(`\n✅ ========================================`);
@@ -1958,23 +2029,36 @@ export default function DocumentosTab({
               <div className="p-4">
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="font-semibold">Atividades da Folha: {doc.numero}</h4>
-                  <Button
-                    size="sm"
-                    onClick={() => {
-                      // Abrir modal para criar nova atividade vinculada a esta folha
-                      const novaAtividade = {
-                        empreendimento_id: empreendimento.id,
-                        documento_id: doc.id,
-                        disciplina: doc.disciplina,
-                        subdisciplinas: doc.subdisciplinas || []
-                      };
-                      handleEditAtividade(novaAtividade);
-                    }}
-                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                  >
-                    <Plus className="w-4 h-4 mr-2" />
-                    Nova Atividade
-                  </Button>
+                  <div className="flex gap-2">
+                    {selectedAtividades.length > 0 && (
+                      <Button
+                        size="sm"
+                        onClick={handleMarcarMultiplasComoConcluidas}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                        disabled={isUpdatingActivity}
+                      >
+                        <Check className="w-4 h-4 mr-2" />
+                        Concluir {selectedAtividades.length} Selecionada(s)
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      onClick={() => {
+                        // Abrir modal para criar nova atividade vinculada a esta folha
+                        const novaAtividade = {
+                          empreendimento_id: empreendimento.id,
+                          documento_id: doc.id,
+                          disciplina: doc.disciplina,
+                          subdisciplinas: doc.subdisciplinas || []
+                        };
+                        handleEditAtividade(novaAtividade);
+                      }}
+                      className="bg-blue-600 hover:bg-blue-700 text-white"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Nova Atividade
+                    </Button>
+                  </div>
                 </div>
                 <div className="space-y-2">
                   {atividadesDisponiveis.length > 0 ? atividadesDisponiveis.map(atividade => {
@@ -1991,7 +2075,13 @@ export default function DocumentosTab({
                             : 'bg-white border-gray-200'
                         }`}
                       >
-                        <div className="flex-1 pr-2">
+                        <div className="flex items-center gap-3 flex-1 pr-2">
+                          <Checkbox
+                            checked={selectedAtividades.includes(atividade.id)}
+                            onCheckedChange={() => handleToggleAtividade(atividade.id)}
+                            disabled={isUpdatingActivity}
+                          />
+                          <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <span className={`font-medium ${atividade.estaConcluida || atividade.statusPlanejamento === 'concluido' ? 'line-through text-gray-500' : ''}`}>
                               {atividade.atividade}
@@ -2029,9 +2119,10 @@ export default function DocumentosTab({
                                   • {atividade.tempoBaseParaExibicao.toFixed(2)}h/m² × {atividade.area}m²
                                 </span>
                               )}
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-3">
+                              </div>
+                              </div>
+                              </div>
+                              <div className="flex items-center gap-3">
                           <div className="text-right">
                             <div className={`text-sm font-medium ${atividade.estaConcluida || atividade.statusPlanejamento === 'concluido' ? 'line-through text-gray-400' : ''}`}>
                               {atividade.estaConcluida || atividade.statusPlanejamento === 'concluido'
