@@ -213,21 +213,36 @@ export default function DocumentoForm({
     };
 
     atividadesRelacionadas.forEach(ativ => {
-      // PRIMEIRO: Verificar se a atividade está concluída NESTE documento específico
-      if (doc?.id) {
-        const conclusaoEspecifica = allAtividades.find(s_ativ =>
-          s_ativ.empreendimento_id === empreendimentoId && 
-          s_ativ.id_atividade === ativ.id && 
-          s_ativ.documento_id === doc.id &&
-          s_ativ.tempo === 0 &&
-          s_ativ.atividade?.includes('Concluída na folha')
-        );
-        
-        if (conclusaoEspecifica) {
-          console.log(`   ⭕ Atividade "${ativ.atividade}" (ID: ${ativ.id}) concluída neste documento - PULANDO do cálculo de tempo`);
-          return; // Pular para próxima iteração - não calcular tempo
-        }
-      }
+       // PRIMEIRO: Verificar se a atividade está concluída NESTE documento específico
+       if (doc?.id) {
+         // Verificar conclusão (tempo 0 com texto "Concluída na folha")
+         const conclusaoEspecifica = allAtividades.find(s_ativ =>
+           s_ativ.empreendimento_id === empreendimentoId && 
+           s_ativ.id_atividade === ativ.id && 
+           s_ativ.documento_id === doc.id &&
+           s_ativ.tempo === 0 &&
+           s_ativ.atividade?.includes('Concluída na folha')
+         );
+
+         if (conclusaoEspecifica) {
+           console.log(`   ⭕ Atividade "${ativ.atividade}" (ID: ${ativ.id}) concluída neste documento - PULANDO do cálculo de tempo`);
+           return; // Pular para próxima iteração - não calcular tempo
+         }
+
+         // Verificar exclusão (tempo -999 com texto "Excluída da folha")
+         const exclusaoEspecifica = allAtividades.find(s_ativ =>
+           s_ativ.empreendimento_id === empreendimentoId && 
+           s_ativ.id_atividade === ativ.id && 
+           s_ativ.documento_id === doc.id &&
+           s_ativ.tempo === -999 &&
+           s_ativ.atividade?.includes('Excluída da folha')
+         );
+
+         if (exclusaoEspecifica) {
+           console.log(`   ❌ Atividade "${ativ.atividade}" (ID: ${ativ.id}) excluída deste documento - PULANDO do cálculo de tempo`);
+           return; // Pular para próxima iteração - não calcular tempo
+         }
+       }
 
       // SEGUNDO: Pegar tempo base
       let tempoBase = parseFloat(ativ.tempo) || 0;
