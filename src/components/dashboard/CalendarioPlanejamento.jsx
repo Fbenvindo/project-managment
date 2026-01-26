@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Calendar, Clock, User, Building2, Filter, Trash2, CalendarDays, View, Play, RefreshCw, LineChart, Users, PlusCircle, ListMusic, Loader2, Edit2, RotateCcw, Flag } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Clock, User, Building2, Filter, Trash2, CalendarDays, View, Play, RefreshCw, LineChart, Users, PlusCircle, ListMusic, Loader2, Edit2 } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import {
   format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval,
@@ -284,7 +284,7 @@ const CalendarFilters = ({
 
 
 // --- Sub-componente de Itens de Atividade Individual ---
-const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlanejamentos, provided, isDragging, isReprogramando, isSelected, onToggleSelect, hasSelections, execucoesGlobais = [] }) => {
+const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlanejamentos, provided, isDragging, isReprogramando, isSelected, onToggleSelect, hasSelections }) => {
   const { activeExecution, startExecution, user, playlist, addToPlaylist, removeFromPlaylist, triggerUpdate, hasPermission } = useContext(ActivityTimerContext);
   
   const [isStarting, setIsStarting] = useState(false);
@@ -579,116 +579,39 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   };
 
   const handleSaveDescricao = async () => {
-     if (!editDescricao.trim()) {
-       alert('Descrição não pode estar vazia');
-       return;
-     }
+    if (!editDescricao.trim()) {
+      alert('Descrição não pode estar vazia');
+      return;
+    }
 
-     setIsEditLoading(true);
-     try {
-       // Se for execução legada, extrair o ID real e atualizar Execucao
-       if (plano.isLegacyExecution) {
-         const execId = plano.id.split('-')[1]; // Extrair ID original do ID virtual "exec-{id}"
-         await Execucao.update(execId, {
-           descritivo: editDescricao.trim()
-         });
-       } else {
-         // Para atividades normais, usar a entidade correta
-         const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
-         await entityToUpdate.update(plano.id, {
-           descritivo: editDescricao.trim()
-         });
-       }
-
-       alert('✅ Descrição atualizada com sucesso!');
-       setShowEditDescricaoModal(false);
-       if (onDelete) {
-         onDelete();
-       }
-     } catch (error) {
-       console.error('Erro ao salvar descrição:', error);
-       alert('Erro ao atualizar descrição: ' + (error.message || 'Tente novamente.'));
-     } finally {
-       setIsEditLoading(false);
-     }
-   };
-
-   const handleResumeActivity = async () => {
-     try {
-       // Se for execução legada, criar nova execução para continuar
-       if (plano.isLegacyExecution) {
-         const execId = plano.id.split('-')[1];
-         const originalExec = (execucoesGlobais || []).find(e => e.id === execId);
-         if (!originalExec) {
-           alert('Execução original não encontrada');
-           return;
-         }
-
-         await Execucao.create({
-           descritivo: originalExec.descritivo,
-           usuario: originalExec.usuario,
-           empreendimento_id: originalExec.empreendimento_id,
-           usuario_ajudado: originalExec.usuario_ajudado,
-           inicio: new Date().toISOString(),
-           status: 'Em andamento'
-         });
-       } else {
-         // Para atividades normais, usar startExecution
-         await startExecution({
-           planejamento_id: plano.id,
-           descritivo: displayName,
-           empreendimento_id: plano.empreendimento_id
-         });
-       }
-
-       alert('✅ Atividade retomada com sucesso!');
-       if (onDelete) {
-         onDelete();
-       }
-     } catch (error) {
-       console.error('Erro ao retomar atividade:', error);
-       alert('Erro ao retomar atividade: ' + (error.message || 'Tente novamente.'));
-     }
-   };
-
-   const handleFinalizeActivity = async () => {
-     try {
-       const agora = new Date();
-
-       // Se for execução legada, finalizar a execução original
-       if (plano.isLegacyExecution) {
-         const execId = plano.id.split('-')[1];
-         const originalExec = (execucoesGlobais || []).find(e => e.id === execId);
-         if (!originalExec) {
-           alert('Execução original não encontrada');
-           return;
-         }
-
-         const tempoDecorrido = (agora - new Date(originalExec.inicio)) / (1000 * 60 * 60);
-
-         await Execucao.update(execId, {
-           status: 'Finalizado',
-           termino: agora.toISOString(),
-           tempo_total: Math.max(tempoDecorrido, 0)
-         });
-       } else {
-         // Para atividades normais, atualizar status para concluído
-         const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
-         await entityToUpdate.update(plano.id, {
-           status: 'concluido',
-           termino_real: format(agora, 'yyyy-MM-dd')
-         });
-       }
-
-       alert('✅ Atividade finalizada com sucesso!');
-       if (onDelete) {
-         onDelete();
-       }
-     } catch (error) {
-       console.error('Erro ao finalizar atividade:', error);
-       alert('Erro ao finalizar atividade: ' + (error.message || 'Tente novamente.'));
-     }
-   };
+    setIsEditLoading(true);
+    try {
+      // Se for execução legada, extrair o ID real e atualizar Execucao
+      if (plano.isLegacyExecution) {
+        const execId = plano.id.split('-')[1]; // Extrair ID original do ID virtual "exec-{id}"
+        await Execucao.update(execId, {
+          descritivo: editDescricao.trim()
+        });
+      } else {
+        // Para atividades normais, usar a entidade correta
+        const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
+        await entityToUpdate.update(plano.id, {
+          descritivo: editDescricao.trim()
+        });
+      }
+      
+      alert('✅ Descrição atualizada com sucesso!');
+      setShowEditDescricaoModal(false);
+      if (onDelete) {
+        onDelete();
+      }
+    } catch (error) {
+      console.error('Erro ao salvar descrição:', error);
+      alert('Erro ao atualizar descrição: ' + (error.message || 'Tente novamente.'));
+    } finally {
+      setIsEditLoading(false);
+    }
+  };
 
   // **NOVO**: Buscar observação do planejamento ou das execuções
   const observacao = useMemo(() => {
@@ -957,31 +880,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
               Editar
             </Button>
           )}
-          {realStatus === 'pausado' && (
-            <>
-              <Button
-                onClick={handleResumeActivity}
-                size="sm"
-                variant="outline"
-                className="h-6 text-xs"
-                title="Retomar atividade"
-              >
-                <RotateCcw className="w-3 h-3 mr-1" />
-                Retomar
-              </Button>
-              <Button
-                onClick={handleFinalizeActivity}
-                size="sm"
-                variant="outline"
-                className="h-6 text-xs"
-                title="Finalizar atividade"
-              >
-                <Flag className="w-3 h-3 mr-1" />
-                Finalizar
-              </Button>
-            </>
-          )}
-          </div>
+        </div>
       </div>
 
       {/* Modal para ajustar tempo */}

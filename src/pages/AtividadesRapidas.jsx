@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2, Zap, Clock, Play, Users, CheckCircle2, XCircle, History, Edit2, RotateCcw, Flag } from 'lucide-react';
+import { Loader2, Zap, Clock, Play, Users, CheckCircle2, XCircle, History, Edit2 } from 'lucide-react';
 import { ActivityTimerContext } from '@/components/contexts/ActivityTimerContext';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -99,79 +99,27 @@ export default function AtividadesRapidasPage() {
   };
 
   const handleSaveDescricao = async () => {
-     if (!selectedExecucao || !editDescricao.trim()) {
-       alert('Descrição não pode estar vazia');
-       return;
-     }
+    if (!selectedExecucao || !editDescricao.trim()) {
+      alert('Descrição não pode estar vazia');
+      return;
+    }
 
-     setIsLoading(true);
-     try {
-       await Execucao.update(selectedExecucao.id, {
-         descritivo: editDescricao.trim()
-       });
-
-       alert('✅ Descrição atualizada com sucesso!');
-       await loadData();
-       handleCloseEditModal();
-     } catch (error) {
-       console.error('Erro ao salvar descrição:', error);
-       alert('Erro ao atualizar descrição: ' + (error.message || 'Tente novamente.'));
-     } finally {
-       setIsLoading(false);
-     }
-   };
-
-   const handleResumeExecution = async (execucao) => {
-     setIsLoading(true);
-     try {
-       const agora = new Date();
-       const tempoDecorrido = (agora - new Date(execucao.inicio)) / (1000 * 60 * 60);
-
-       // Criar nova execução para continuar
-       await Execucao.create({
-         descritivo: execucao.descritivo,
-         usuario: user.email,
-         empreendimento_id: execucao.empreendimento_id,
-         usuario_ajudado: execucao.usuario_ajudado,
-         inicio: agora.toISOString(),
-         status: 'Em andamento'
-       });
-
-       alert('✅ Atividade retomada com sucesso!');
-       await loadData();
-     } catch (error) {
-       console.error('Erro ao retomar atividade:', error);
-       alert('Erro ao retomar atividade: ' + (error.message || 'Tente novamente.'));
-     } finally {
-       setIsLoading(false);
-     }
-   };
-
-   const handleFinalizeExecution = async (execucao) => {
-     if (!confirm('Tem certeza que deseja finalizar esta atividade?')) {
-       return;
-     }
-
-     setIsLoading(true);
-     try {
-       const agora = new Date();
-       const tempoDecorrido = (agora - new Date(execucao.inicio)) / (1000 * 60 * 60);
-
-       await Execucao.update(execucao.id, {
-         status: 'Finalizado',
-         termino: agora.toISOString(),
-         tempo_total: tempoDecorrido
-       });
-
-       alert('✅ Atividade finalizada com sucesso!');
-       await loadData();
-     } catch (error) {
-       console.error('Erro ao finalizar atividade:', error);
-       alert('Erro ao finalizar atividade: ' + (error.message || 'Tente novamente.'));
-     } finally {
-       setIsLoading(false);
-     }
-   };
+    setIsLoading(true);
+    try {
+      await Execucao.update(selectedExecucao.id, {
+        descritivo: editDescricao.trim()
+      });
+      
+      alert('✅ Descrição atualizada com sucesso!');
+      await loadData();
+      handleCloseEditModal();
+    } catch (error) {
+      console.error('Erro ao salvar descrição:', error);
+      alert('Erro ao atualizar descrição: ' + (error.message || 'Tente novamente.'));
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleConfirmStart = async () => {
     if (!selectedAtividade) return;
@@ -345,41 +293,18 @@ export default function AtividadesRapidasPage() {
                             {exec.descritivo}
                           </h4>
                           <div className="flex items-center gap-2">
-                               {exec.status === 'Finalizado' && (
-                                 <Button
-                                   onClick={() => handleOpenEditModal(exec)}
-                                   variant="ghost"
-                                   size="sm"
-                                   disabled={isLoading}
-                                   title="Editar descrição"
-                                 >
-                                   <Edit2 className="w-4 h-4 text-blue-600" />
-                                 </Button>
-                               )}
-                               {exec.status === 'Paralisado' && (
-                                 <>
-                                   <Button
-                                     onClick={() => handleResumeExecution(exec)}
-                                     variant="ghost"
-                                     size="sm"
-                                     disabled={isLoading}
-                                     title="Retomar atividade"
-                                   >
-                                     <RotateCcw className="w-4 h-4 text-blue-600" />
-                                   </Button>
-                                   <Button
-                                     onClick={() => handleFinalizeExecution(exec)}
-                                     variant="ghost"
-                                     size="sm"
-                                     disabled={isLoading}
-                                     title="Finalizar atividade"
-                                   >
-                                     <Flag className="w-4 h-4 text-green-600" />
-                                   </Button>
-                                 </>
-                               )}
-                               {getStatusBadge(exec.status)}
-                             </div>
+                            {exec.status === 'Finalizado' && (
+                              <Button
+                                onClick={() => handleOpenEditModal(exec)}
+                                variant="ghost"
+                                size="sm"
+                                disabled={isLoading}
+                              >
+                                <Edit2 className="w-4 h-4 text-blue-600" />
+                              </Button>
+                            )}
+                            {getStatusBadge(exec.status)}
+                          </div>
                         </div>
                         
                         {exec.usuario_ajudado && (
