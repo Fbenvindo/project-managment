@@ -193,41 +193,33 @@ export default function AnaliseConcepcaoPlanejamento() {
         });
     }, [planejamentos, atividadesMap, selectedEtapas, filterEmpreendimento, filterDisciplina]);
 
-    const groupedByDocumento = useMemo(() => {
+    const groupedByDisciplina = useMemo(() => {
         const grouped = {};
-        const semDocumento = [];
         
         filteredPlanejamentos.forEach(plan => {
-            if (!plan.documento_id) {
-                semDocumento.push(plan);
-                return;
+            const atividade = atividadesMap[plan.atividade_id];
+            const disciplina = atividade?.disciplina || 'Documentação';
+            
+            if (!grouped[disciplina]) {
+                grouped[disciplina] = [];
             }
-            if (!grouped[plan.documento_id]) {
-                const doc = documentos.find(d => d.id === plan.documento_id);
-                if (doc) {
-                    grouped[plan.documento_id] = { doc, planejamentos: [] };
-                }
-            }
-            if (grouped[plan.documento_id]) {
-                grouped[plan.documento_id].planejamentos.push(plan);
-            }
+            grouped[disciplina].push({ plan, atividade });
         });
         
-        const result = Object.values(grouped).sort((a,b) => {
-            const disciplinaA = a.doc.disciplina || '';
-            const disciplinaB = b.doc.disciplina || '';
-            const numeroA = a.doc.numero || '';
-            const numeroB = b.doc.numero || '';
-            return disciplinaA.localeCompare(disciplinaB) || numeroA.localeCompare(numeroB);
-        });
-        
-        // Adicionar atividades sem documento no início
-        if (semDocumento.length > 0) {
-            result.unshift({ doc: null, planejamentos: semDocumento });
-        }
-        
-        return result;
-    }, [filteredPlanejamentos, documentos]);
+        // Ordenar as disciplinas e os planejamentos dentro de cada disciplina
+        return Object.entries(grouped)
+            .sort((a, b) => a[0].localeCompare(b[0]))
+            .map(([disciplina, items]) => {
+                const sortedItems = items.sort((a, b) => {
+                    const docA = documentos.find(d => d.id === a.plan.documento_id);
+                    const docB = documentos.find(d => d.id === b.plan.documento_id);
+                    const numeroA = docA?.numero || '';
+                    const numeroB = docB?.numero || '';
+                    return numeroA.localeCompare(numeroB);
+                });
+                return { disciplina, items: sortedItems };
+            });
+    }, [filteredPlanejamentos, documentos, atividadesMap]);
     
     const disciplinasDisponiveis = [...new Set(Object.values(atividadesMap).map(a => a.disciplina))];
     
@@ -297,72 +289,67 @@ export default function AnaliseConcepcaoPlanejamento() {
                 </Card>
 
                 {isLoading ? <Skeleton className="h-96 w-full" /> : (
-                    <Card className="bg-white border-0 shadow-lg">
-                        <CardContent className="p-0">
-                            <div className="overflow-x-auto overflow-y-auto max-h-[600px]">
-                                <Table className="min-w-max">
-                                    <TableHeader className="sticky top-0 bg-white z-10">
-                                        <TableRow>
-                                            <TableHead>Documento</TableHead>
-                                            <TableHead>Atividade</TableHead>
-                                            <TableHead className="text-center">Tempo Real</TableHead>
-                                            <TableHead className="text-center">Tempo Executado</TableHead>
-                                            <TableHead className="text-center">Ações</TableHead>
-                                        </TableRow>
-                                    </TableHeader>
-                                    <TableBody>
-                                        {groupedByDocumento.length === 0 ? (
-                                            <TableRow>
-                                                <TableCell colSpan={5} className="text-center py-8 text-gray-500">
-                                                    Nenhuma atividade de Concepção ou Planejamento encontrada com os filtros selecionados.
-                                                </TableCell>
-                                            </TableRow>
-                                        ) : (
-                                            groupedByDocumento.map(({ doc, planejamentos: docPlanejamentos }) => (
-                                                <React.Fragment key={doc.id}>
-                                                           <TableRow className="bg-gray-50 hover:bg-gray-100">
-                                                        <TableCell colSpan={5} className="font-semibold p-3">
-                                                            {doc ? (
-                                                                <div className="flex flex-col">
-                                                                    <span>{doc.numero}</span>
-                                                                    <span className="text-xs text-gray-500 font-normal">{empreendimentos.find(e => e.id === doc.empreendimento_id)?.nome}</span>
-                                                                </div>
-                                                            ) : (
-                                                                <div className="flex flex-col">
-                                                                    <span>Atividades de Documentação</span>
-                                                                    <span className="text-xs text-gray-500 font-normal">Atividades não vinculadas a uma folha específica</span>
-                                                                </div>
-                                                            )}
-                                                        </TableCell>
+                    <div className="space-y-6">
+                        {groupedByDisciplina.length === 0 ? (
+                            <Card className="bg-white border-0 shadow-lg">
+                                <CardContent className="p-8 text-center text-gray-500">
+                                    Nenhuma atividade de Concepção ou Planejamento encontrada com os filtros selecionados.
+                                </CardContent>
+                            </Card>
+                        ) : (
+                            groupedByDisciplina.map(({ disciplina, items }) => (
+                                <Card key={disciplina} className="bg-white border-0 shadow-lg overflow-hidden">
+                                    <div className="bg-blue-50 px-4 py-3 border-b border-blue-200">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-1 h-5 bg-blue-600 rounded"></div>
+                                            <h3 className="font-semibold text-lg text-gray-900">{disciplina}</h3>
+                                            <span className="text-sm text-gray-600">
+                                                {items.length} {items.length === 1 ? 'atividade' : 'atividades'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <CardContent className="p-0">
+                                        <div className="overflow-x-auto">
+                                            <Table className="min-w-max">
+                                                <TableHeader>
+                                                    <TableRow>
+                                                        <TableHead>Documento</TableHead>
+                                                        <TableHead>Empreendimento</TableHead>
+                                                        <TableHead>Atividade</TableHead>
+                                                        <TableHead className="text-center">Tempo Real</TableHead>
+                                                        <TableHead className="text-center">Tempo Executado</TableHead>
+                                                        <TableHead className="text-center">Ações</TableHead>
                                                     </TableRow>
-                                                    {docPlanejamentos.map((planejamento, idx) => {
-                                                        const atividade = atividadesMap[planejamento.atividade_id];
+                                                </TableHeader>
+                                                <TableBody>
+                                                    {items.map(({ plan: planejamento, atividade }) => {
+                                                        const doc = documentos.find(d => d.id === planejamento.documento_id);
+                                                        const empreendimento = empreendimentos.find(e => e.id === planejamento.empreendimento_id);
                                                         const execucoes = execucoesMap[planejamento.id] || [];
                                                         const tempoExecutadoTotal = execucoes
                                                             .filter(e => e.status === "Finalizado")
                                                             .reduce((sum, e) => sum + (e.tempo_total || 0), 0);
-
-                                                        // Usar tempo_executado do planejamento se disponível
                                                         const tempoExibir = planejamento.tempo_executado || tempoExecutadoTotal;
 
                                                         return (
-                                                           <TableRow key={planejamento.id}>
-                                                               <TableCell>{idx === 0 && doc ? `${doc.disciplina || '-'}` : ""}</TableCell>
-                                                               <TableCell>{planejamento.descritivo || atividade?.atividade || 'Atividade não encontrada'}</TableCell>
-                                                               <TableCell className="text-center">{(planejamento.tempo_planejado || 0).toFixed(1)}h</TableCell>
-                                                               <TableCell className="text-center">{tempoExibir.toFixed(1)}h</TableCell>
-                                                               <TableCell className="text-center">{getStatusBadge(planejamento)}</TableCell>
-                                                           </TableRow>
+                                                            <TableRow key={planejamento.id}>
+                                                                <TableCell>{doc ? doc.numero : '-'}</TableCell>
+                                                                <TableCell className="text-sm text-gray-600">{empreendimento?.nome || '-'}</TableCell>
+                                                                <TableCell>{planejamento.descritivo || atividade?.atividade || 'Atividade não encontrada'}</TableCell>
+                                                                <TableCell className="text-center">{(planejamento.tempo_planejado || 0).toFixed(1)}h</TableCell>
+                                                                <TableCell className="text-center">{tempoExibir.toFixed(1)}h</TableCell>
+                                                                <TableCell className="text-center">{getStatusBadge(planejamento)}</TableCell>
+                                                            </TableRow>
                                                         );
                                                     })}
-                                                </React.Fragment>
-                                            ))
-                                        )}
-                                    </TableBody>
-                                </Table>
-                            </div>
-                        </CardContent>
-                    </Card>
+                                                </TableBody>
+                                            </Table>
+                                        </div>
+                                    </CardContent>
+                                </Card>
+                            ))
+                        )}
+                    </div>
                 )}
             </div>
 
