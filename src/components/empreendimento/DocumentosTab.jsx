@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Plus, Search, Edit, Trash2, ChevronDown, ChevronRight, BarChart, CalendarDays, FileText, Loader2, Users2, CalendarIcon, Check, Upload, Download } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import DocumentoForm from "./DocumentoForm";
+import AtividadeFormModal from "./AtividadeFormModal";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
 import PlanejamentoDocumentoEtapaModal from './PlanejamentoDocumentoEtapaModal';
@@ -72,6 +73,8 @@ export default function DocumentosTab({
 }) {
   const [showForm, setShowForm] = useState(false);
   const [editingDocumento, setEditingDocumento] = useState(null);
+  const [showAtividadeForm, setShowAtividadeForm] = useState(false);
+  const [editingAtividade, setEditingAtividade] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [expandedRows, setExpandedRows] = useState({});
@@ -829,6 +832,17 @@ export default function DocumentosTab({
   const handleEdit = (doc) => {
     setEditingDocumento(doc);
     setShowForm(true);
+  };
+
+  const handleEditAtividade = (atividade = null) => {
+    setEditingAtividade(atividade);
+    setShowAtividadeForm(true);
+  };
+
+  const handleAtividadeSuccess = () => {
+    setShowAtividadeForm(false);
+    setEditingAtividade(null);
+    onUpdate();
   };
 
   const handleDelete = async (id) => {
@@ -1941,7 +1955,7 @@ export default function DocumentosTab({
                         disciplina: doc.disciplina,
                         subdisciplinas: doc.subdisciplinas || []
                       };
-                      handleEdit(novaAtividade);
+                      handleEditAtividade(novaAtividade);
                     }}
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
@@ -2257,6 +2271,20 @@ export default function DocumentosTab({
           isOpen={isDocEtapaModalOpen}
           onClose={handleCloseDocEtapaModal}
           onSuccess={handleSaveDocEtapaPlanning}
+        />
+      )}
+
+      {showAtividadeForm && (
+        <AtividadeFormModal
+          isOpen={showAtividadeForm}
+          onClose={() => {
+            setShowAtividadeForm(false);
+            setEditingAtividade(null);
+          }}
+          empreendimentoId={empreendimento.id}
+          disciplinas={disciplinas}
+          atividade={editingAtividade}
+          onSuccess={handleAtividadeSuccess}
         />
       )}
 
