@@ -2441,6 +2441,24 @@ export default function DocumentosTab({
         />
       )}
 
+      {isDocDataModalOpen && documentForDocDataModal && (
+        <PlanejamentoDocumentoDataModal
+          documento={documentForDocDataModal}
+          documentos={localDocumentos}
+          planejamentosDoc={localPlanejamentos}
+          isOpen={isDocDataModalOpen}
+          onClose={() => {
+            setIsDocDataModalOpen(false);
+            setDocumentForDocDataModal(null);
+          }}
+          onSuccess={() => {
+            onUpdate();
+            setIsDocDataModalOpen(false);
+            setDocumentForDocDataModal(null);
+          }}
+        />
+      )}
+
       {showAtividadeForm && (
         <AtividadeFormModal
           isOpen={showAtividadeForm}
