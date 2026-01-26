@@ -4,7 +4,6 @@ import { useIdleDetection } from '../hooks/useIdleDetection';
 import IdleWarningModal from '../layout/IdleWarningModal';
 import { retryWithBackoff, retryWithExtendedBackoff } from '../utils/apiUtils';
 import { distribuirHorasSimples } from '../utils/DateCalculator';
-import { realocarAtividadesDoDiaSeguinte } from '../utils/ReagendamentoAutomatico';
 import { format, parseISO, isValid } from 'date-fns';
 
 export const ActivityTimerContext = createContext();
