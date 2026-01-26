@@ -20,6 +20,7 @@ export default function CurvaSPlanejamento({ isLoading: isDashboardLoading, onRe
 
   const [planejamentos, setPlanejamentos] = useState([]);
   const [execucoes, setExecucoes] = useState([]);
+  const [empreendimentos, setEmpreendimentos] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
 
