@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Atividade, Disciplina, PlanejamentoAtividade, Documento, AlteracaoEtapa, Empreendimento } from '@/entities/all';
+import { Atividade, Disciplina, PlanejamentoAtividade, Documento, AlteracaoEtapa, Empreendimento, Usuario } from '@/entities/all';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -641,6 +641,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const [combinedActivities, setCombinedActivities] = useState([]);
   const [disciplinas, setDisciplinas] = useState([]);
   const [documentos, setDocumentos] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filters, setFilters] = useState({ search: '', disciplina: 'all', etapa: 'all' });
   
@@ -676,7 +677,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         documentosData,
         disciplinasData,
         empreendimentoData,
-        alteracoesData
+        alteracoesData,
+        usuariosData
       ] = await Promise.all([
         retryWithBackoff(() => Atividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchProjectActivities'),
         retryWithBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchPlanejamentos'),
@@ -684,12 +686,14 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         retryWithBackoff(() => Documento.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchDocumentos'),
         retryWithBackoff(() => Disciplina.list(), 3, 500, 'fetchDisciplinas'),
         retryWithBackoff(() => Empreendimento.filter({ id: empreendimentoId }), 3, 500, 'fetchEmpreendimento'),
-        retryWithBackoff(() => AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAlteracoes')
+        retryWithBackoff(() => AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAlteracoes'),
+        retryWithBackoff(() => Usuario.list(), 3, 500, 'fetchUsuarios')
       ]);
 
       setDocumentos(documentosData || []);
       setEmpreendimentoNome((empreendimentoData && empreendimentoData[0]?.nome) || "");
       setAlteracoesEtapa(alteracoesData || []);
+      setUsuarios(usuariosData || []);
 
       // MODIFICADO: Criar dois mapas - um global e um por documento
       const overrideActivitiesGlobalMap = new Map(); // Overrides sem documento_id específico
@@ -1728,10 +1732,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             setAtividadeParaPlanejar(null);
           }}
           atividade={atividadeParaPlanejar}
-          empreendimentos={[]}
+          empreendimentoId={empreendimentoId}
           documentos={documentos}
-          usuarios={[]}
-          onComplete={handlePlanejarComplete}
+          usuarios={usuarios}
+          onSuccess={handlePlanejarComplete}
         />
       )}
     </div>
