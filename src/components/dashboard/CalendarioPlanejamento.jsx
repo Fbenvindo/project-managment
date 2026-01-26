@@ -284,7 +284,7 @@ const CalendarFilters = ({
 
 
 // --- Sub-componente de Itens de Atividade Individual ---
-const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlanejamentos, provided, isDragging, isReprogramando, isSelected, onToggleSelect, hasSelections }) => {
+const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlanejamentos, provided, isDragging, isReprogramando, isSelected, onToggleSelect, hasSelections, execucoesGlobais = [] }) => {
   const { activeExecution, startExecution, user, playlist, addToPlaylist, removeFromPlaylist, triggerUpdate, hasPermission } = useContext(ActivityTimerContext);
   
   const [isStarting, setIsStarting] = useState(false);
