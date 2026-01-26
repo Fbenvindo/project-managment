@@ -36,6 +36,7 @@ export default function CurvaSPlanejamento({ isLoading: isDashboardLoading, onRe
       console.log('📦 [CurvaS] Usando dados do cache');
       setPlanejamentos(cacheRef.current.data.planejamentos);
       setExecucoes(cacheRef.current.data.execucoes);
+      setEmpreendimentos(cacheRef.current.data.empreendimentos);
       setDataLoaded(true);
       return;
     }
@@ -44,24 +45,33 @@ export default function CurvaSPlanejamento({ isLoading: isDashboardLoading, onRe
     try {
         console.log('🔄 [CurvaS] Carregando dados...');
         
-        // **MODIFICADO**: Carregar ambos PlanejamentoAtividade e PlanejamentoDocumento
-        const [planAtividadeData, planDocumentoData, execData] = await Promise.all([
+        // **MODIFICADO**: Carregar ambos PlanejamentoAtividade, PlanejamentoDocumento e Empreendimentos
+        const [planAtividadeData, planDocumentoData, execData, empData] = await Promise.all([
             retryWithBackoff(() => PlanejamentoAtividade.list(), 3, 2000, 'curvaS.loadPlansAtividade'),
             retryWithBackoff(() => PlanejamentoDocumento.list(), 3, 2000, 'curvaS.loadPlansDocumento'),
             retryWithBackoff(() => Execucao.list(), 3, 2000, 'curvaS.loadExecs'),
+            retryWithBackoff(() => Empreendimento.list(), 3, 2000, 'curvaS.loadEmps'),
         ]);
         
-        // **MODIFICADO**: Combinar ambos os tipos de planejamento e enriquecer com empreendimento_id
+        // Criar mapa de ID -> Nome do empreendimento
+        const empMap = {};
+        (empData || []).forEach(emp => {
+          empMap[emp.id] = emp.nome;
+        });
+        
+        // **MODIFICADO**: Combinar ambos os tipos de planejamento e enriquecer com empreendimento_id e nome
         const finalPlanData = [
             ...(planAtividadeData || []).map(p => ({ 
               ...p, 
               tipo_planejamento: 'atividade',
-              empreendimento_id: p.empreendimento_id || p.empreendimento?.id
+              empreendimento_id: p.empreendimento_id || p.empreendimento?.id,
+              empreendimento: p.empreendimento || { nome: empMap[p.empreendimento_id] || 'Empreendimento' }
             })),
             ...(planDocumentoData || []).map(p => ({ 
               ...p, 
               tipo_planejamento: 'documento',
-              empreendimento_id: p.empreendimento_id || p.empreendimento?.id
+              empreendimento_id: p.empreendimento_id || p.empreendimento?.id,
+              empreendimento: p.empreendimento || { nome: empMap[p.empreendimento_id] || 'Empreendimento' }
             }))
         ].filter(p => p.empreendimento_id);
         
@@ -69,6 +79,7 @@ export default function CurvaSPlanejamento({ isLoading: isDashboardLoading, onRe
         
         setPlanejamentos(finalPlanData);
         setExecucoes(finalExecData);
+        setEmpreendimentos(empData || []);
         setDataLoaded(true);
         
         cacheRef.current = {
