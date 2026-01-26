@@ -309,23 +309,33 @@ export default function AtividadesRapidasPage() {
                         className="p-4 bg-white rounded-lg border border-gray-200 hover:shadow-md transition-all"
                       >
                         <div className="flex items-start justify-between mb-2">
-                          <h4 className="font-medium text-gray-900 flex-1 mr-2">
-                            {exec.descritivo}
-                          </h4>
-                          <div className="flex items-center gap-2">
-                            {exec.status === 'Finalizado' && (
-                              <Button
-                                onClick={() => handleOpenEditModal(exec)}
-                                variant="ghost"
-                                size="sm"
-                                disabled={isLoading}
-                              >
-                                <Edit2 className="w-4 h-4 text-blue-600" />
-                              </Button>
-                            )}
-                            {getStatusBadge(exec.status)}
-                          </div>
-                        </div>
+                           <h4 className="font-medium text-gray-900 flex-1 mr-2">
+                             {exec.descritivo}
+                           </h4>
+                           <div className="flex items-center gap-2">
+                             {exec.status === 'Finalizado' && (
+                               <Button
+                                 onClick={() => handleOpenEditModal(exec)}
+                                 variant="ghost"
+                                 size="sm"
+                                 disabled={isLoading}
+                               >
+                                 <Edit2 className="w-4 h-4 text-blue-600" />
+                               </Button>
+                             )}
+                             {exec.status === 'Paralisado' && (
+                               <Button
+                                 onClick={() => handleRetryExecution(exec)}
+                                 variant="ghost"
+                                 size="sm"
+                                 disabled={isLoading}
+                               >
+                                 <RotateCcw className="w-4 h-4 text-orange-600" />
+                               </Button>
+                             )}
+                             {getStatusBadge(exec.status)}
+                           </div>
+                         </div>
                         
                         {exec.usuario_ajudado && (
                           <p className="text-sm text-purple-600 mb-2">
