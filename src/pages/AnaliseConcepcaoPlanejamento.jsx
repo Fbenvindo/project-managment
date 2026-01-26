@@ -139,17 +139,36 @@ export default function AnaliseConcepcaoPlanejamento() {
                 horas_executadas_por_dia: horasExecutadasPorDia,
                 tempo_executado: totalTempoExecutado,
                 tempo_planejado: totalTempoExecutado,
-                is_quick_activity: true
+                is_quick_activity: true,
+                status: finalStatus === "Finalizado" ? "concluido" : "pausado"
             });
+
+            // Se a atividade foi finalizada, verificar se todas as atividades da folha estão concluídas
+            if (finalStatus === "Finalizado" && planejamento.documento_id) {
+                const planejamentosDoDocumento = planejamentos.filter(p => p.documento_id === planejamento.documento_id);
+                const todasConcluidas = planejamentosDoDocumento.every(p => {
+                    if (p.id === planejamento.id) return true; // A atual que acabou de ser concluída
+                    const outraExec = execucoesMap[p.id] || [];
+                    return outraExec.some(e => e.status === "Finalizado");
+                });
+
+                // Atualizar status do documento se todas estão concluídas
+                if (todasConcluidas && planejamentos.find(p => p.id === planejamento.id)?.tipo_planejamento === 'documento') {
+                    const doc = documentos.find(d => d.id === planejamento.documento_id);
+                    if (doc) {
+                        await Documento.update(doc.id, { status: 'concluido' });
+                    }
+                }
+            }
 
             // Atualizar estado local
             setPlanejamentos(prev => prev.map(p => 
                 p.id === planejamento.id 
-                    ? { ...p, horas_por_dia: horasPorDia, horas_executadas_por_dia: horasExecutadasPorDia, tempo_executado: totalTempoExecutado }
+                    ? { ...p, horas_por_dia: horasPorDia, horas_executadas_por_dia: horasExecutadasPorDia, tempo_executado: totalTempoExecutado, status: finalStatus === "Finalizado" ? "concluido" : "pausado" }
                     : p
             ));
         }
-        
+
         setExecucoesMap(prev => ({
             ...prev,
             [selectedExecucao.planejamento_id]: prev[selectedExecucao.planejamento_id].map(e => 
@@ -158,7 +177,7 @@ export default function AnaliseConcepcaoPlanejamento() {
                     : e
             )
         }));
-        
+
         setIsStopModalOpen(false);
         setSelectedExecucao(null);
         setFinalStatus("Finalizado");
