@@ -909,6 +909,20 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
     return Array.from(grupos.values());
   }, [combinedActivities, filters]);
+
+  const atividadesPorDisciplina = useMemo(() => {
+    const grupos = {};
+    
+    atividadesAgrupadas.forEach(grupo => {
+      const disciplina = grupo.baseAtividade.disciplina || 'Sem Disciplina';
+      if (!grupos[disciplina]) {
+        grupos[disciplina] = [];
+      }
+      grupos[disciplina].push(grupo);
+    });
+
+    return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
+  }, [atividadesAgrupadas]);
   
   const etapasUnicas = useMemo(() => [...new Set(combinedActivities.map(a => a.etapa).filter(Boolean))], [combinedActivities]);
 
@@ -1285,9 +1299,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     const editableActivities = atividadesAgrupadas.filter(grupo => grupo.baseAtividade.isEditable);
 
     return (
-      <div className="border rounded-lg overflow-hidden bg-white">
+      <div className="space-y-6">
         {editableActivities.length > 0 && (
-          <div className="flex items-center justify-between p-4 border-b border-gray-100 bg-gray-50/50">
+          <div className="flex items-center justify-between p-4 border rounded-lg bg-white shadow-sm">
             <div className="flex items-center gap-3">
               <Checkbox
                 id="selectAll"
@@ -1321,157 +1335,169 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             )}
           </div>
         )}
-        
-        <Table>
-          <TableHeader className="bg-gray-50">
-            <TableRow>
-              {editableActivities.length > 0 && <TableHead className="w-[50px]"></TableHead>}
-              <TableHead className="w-[50px]"></TableHead>
-              <TableHead>Atividade</TableHead>
-              <TableHead>Folhas</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Etapa</TableHead>
-              <TableHead>Disciplina</TableHead>
-              <TableHead>Subdisciplina</TableHead>
-              <TableHead>Tempo Padrão</TableHead>
-              <TableHead>Função</TableHead>
-              <TableHead className="w-[50px]"></TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {atividadesAgrupadas.map(grupo => {
-              const ativ = grupo.baseAtividade;
-              const key = `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.disciplina}-${ativ.subdisciplina}`;
-              const isExpanded = expandedAtividades[key];
-              const genericAtividadeIdToExclude = ativ.base_atividade_id || ativ.id;
-              const uniqueKey = ativ.source_documento_id ? `${genericAtividadeIdToExclude}-${ativ.source_documento_id}` : genericAtividadeIdToExclude;
-              const isDeleting = isDeletingActivity[uniqueKey] || isDeletingActivity[genericAtividadeIdToExclude];
 
-              return (
-                <>
-                  <TableRow key={key} className="hover:bg-gray-50">
-                    {editableActivities.length > 0 && (
-                      <TableCell>
-                        {ativ.isEditable && (
-                          <Checkbox
-                            checked={selectedIds.has(ativ.uniqueId)}
-                            onCheckedChange={() => handleSelectItem(ativ.uniqueId)}
-                            disabled={isDeletingMultiple}
-                          />
-                        )}
-                      </TableCell>
-                    )}
-                    <TableCell>
-                      {grupo.folhas.length > 0 && (
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          onClick={() => toggleAtividadeExpansion(key)}
-                          className="h-8 w-8"
-                        >
-                          {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                        </Button>
-                      )}
-                    </TableCell>
-                    <TableCell className="font-medium">{ativ.atividade}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">
-                        {grupo.folhas.length} {grupo.folhas.length === 1 ? 'folha' : 'folhas'}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      {grupo.folhas.length === 0 ? (
-                        <Badge variant={ativ.source === 'Projeto' ? 'default' : 'secondary'}>
-                          {ativ.source === 'Projeto' ? 'Projeto' : 'Disponível'}
-                        </Badge>
-                      ) : (
-                        <div className="flex gap-1">
-                          {grupo.folhas.some(f => f.status === 'Planejada') && (
-                            <Badge variant="success">Planejada</Badge>
-                          )}
-                          {grupo.folhas.some(f => f.status === 'Disponível') && (
-                            <Badge variant="outline">Disponível</Badge>
-                          )}
-                        </div>
-                      )}
-                    </TableCell>
-                    <TableCell>{ativ.etapa}</TableCell>
-                    <TableCell>{ativ.disciplina}</TableCell>
-                    <TableCell>{ativ.subdisciplina}</TableCell>
-                    <TableCell>{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
-                    <TableCell>{ativ.funcao}</TableCell>
-                    <TableCell>
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" disabled={isDeleting || isDeletingMultiple}>
-                            {isDeleting || isDeletingMultiple ? <Loader2 className="w-4 h-4 animate-spin" /> : <MoreHorizontal className="w-4 h-4" />}
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent>
-                          {ativ.isEditable ? (
-                            <>
-                              <DropdownMenuItem onClick={() => handleOpenModal(ativ)}>
-                                <Edit className="w-4 h-4 mr-2" /> Editar Atividade
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleDelete(ativ.id)} className="text-red-600">
-                                <Trash2 className="w-4 h-4 mr-2" /> Excluir Atividade de Projeto
-                              </DropdownMenuItem>
-                            </>
-                          ) : (
-                            <>
-                              <DropdownMenuItem onClick={() => handleOpenEtapaModal(ativ)}>
-                                <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)} className="text-blue-600">
-                                <Edit2 className="w-4 h-4 mr-2" /> Editar Etapa em Folhas Específicas
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleOpenExcluirDeFolhasModal(ativ)} 
-                                className="text-orange-600"
-                              >
-                                <FileX className="w-4 h-4 mr-2" /> Excluir de Folhas Específicas
-                              </DropdownMenuItem>
-                              <DropdownMenuItem 
-                                onClick={() => handleExcluirAtividade(ativ)} 
-                                className="text-red-600"
-                              >
-                                <XCircle className="w-4 h-4 mr-2" /> Excluir de Todas as Folhas (Empreendimento)
-                              </DropdownMenuItem>
-                            </>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </TableCell>
+        {atividadesPorDisciplina.map(([disciplina, grupos]) => (
+          <div key={disciplina} className="border rounded-lg overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border-b">
+              <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
+                <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
+                {disciplina}
+                <Badge variant="secondary" className="ml-2">
+                  {grupos.length} {grupos.length === 1 ? 'atividade' : 'atividades'}
+                </Badge>
+              </h3>
+            </div>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader className="bg-gray-50">
+                  <TableRow>
+                    {editableActivities.length > 0 && <TableHead className="w-[50px]"></TableHead>}
+                    <TableHead className="w-[50px]"></TableHead>
+                    <TableHead>Atividade</TableHead>
+                    <TableHead>Folhas</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Etapa</TableHead>
+                    <TableHead>Subdisciplina</TableHead>
+                    <TableHead>Tempo Padrão</TableHead>
+                    <TableHead>Função</TableHead>
+                    <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {grupos.map(grupo => {
+                    const ativ = grupo.baseAtividade;
+                    const key = `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.disciplina}-${ativ.subdisciplina}`;
+                    const isExpanded = expandedAtividades[key];
+                    const genericAtividadeIdToExclude = ativ.base_atividade_id || ativ.id;
+                    const uniqueKey = ativ.source_documento_id ? `${genericAtividadeIdToExclude}-${ativ.source_documento_id}` : genericAtividadeIdToExclude;
+                    const isDeleting = isDeletingActivity[uniqueKey] || isDeletingActivity[genericAtividadeIdToExclude];
 
-                  {isExpanded && grupo.folhas.map(folha => (
-                    <TableRow key={folha.uniqueId} className="bg-blue-50/50">
-                      {editableActivities.length > 0 && <TableCell></TableCell>}
-                      <TableCell className="pl-12">
-                        <ChevronRight className="w-3 h-3 text-gray-400 inline mr-1" />
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-600">
-                        {folha.source_documento_numero} - {folha.source_documento_arquivo}
-                      </TableCell>
-                      <TableCell></TableCell>
-                      <TableCell>
-                        <Badge variant={folha.status === 'Planejada' ? 'success' : 'outline'} className="text-xs">
-                          {folha.status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
-                      <TableCell className="text-sm text-gray-500">{folha.disciplina}</TableCell>
-                      <TableCell className="text-sm text-gray-500">{folha.subdisciplina}</TableCell>
-                      <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
-                      <TableCell className="text-sm text-gray-500">{folha.funcao}</TableCell>
-                      <TableCell></TableCell>
-                    </TableRow>
-                  ))}
-                </>
-              );
-            })}
-          </TableBody>
-        </Table>
+                    return (
+                      <>
+                        <TableRow key={key} className="hover:bg-gray-50">
+                          {editableActivities.length > 0 && (
+                            <TableCell>
+                              {ativ.isEditable && (
+                                <Checkbox
+                                  checked={selectedIds.has(ativ.uniqueId)}
+                                  onCheckedChange={() => handleSelectItem(ativ.uniqueId)}
+                                  disabled={isDeletingMultiple}
+                                />
+                              )}
+                            </TableCell>
+                          )}
+                          <TableCell>
+                            {grupo.folhas.length > 0 && (
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                onClick={() => toggleAtividadeExpansion(key)}
+                                className="h-8 w-8"
+                              >
+                                {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                              </Button>
+                            )}
+                          </TableCell>
+                          <TableCell className="font-medium">{ativ.atividade}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline">
+                              {grupo.folhas.length} {grupo.folhas.length === 1 ? 'folha' : 'folhas'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            {grupo.folhas.length === 0 ? (
+                              <Badge variant={ativ.source === 'Projeto' ? 'default' : 'secondary'}>
+                                {ativ.source === 'Projeto' ? 'Projeto' : 'Disponível'}
+                              </Badge>
+                            ) : (
+                              <div className="flex gap-1">
+                                {grupo.folhas.some(f => f.status === 'Planejada') && (
+                                  <Badge variant="success">Planejada</Badge>
+                                )}
+                                {grupo.folhas.some(f => f.status === 'Disponível') && (
+                                  <Badge variant="outline">Disponível</Badge>
+                                )}
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell>{ativ.etapa}</TableCell>
+                          <TableCell>{ativ.subdisciplina}</TableCell>
+                          <TableCell>{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
+                          <TableCell>{ativ.funcao}</TableCell>
+                          <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" disabled={isDeleting || isDeletingMultiple}>
+                                  {isDeleting || isDeletingMultiple ? <Loader2 className="w-4 h-4 animate-spin" /> : <MoreHorizontal className="w-4 h-4" />}
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                {ativ.isEditable ? (
+                                  <>
+                                    <DropdownMenuItem onClick={() => handleOpenModal(ativ)}>
+                                      <Edit className="w-4 h-4 mr-2" /> Editar Atividade
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleDelete(ativ.id)} className="text-red-600">
+                                      <Trash2 className="w-4 h-4 mr-2" /> Excluir Atividade de Projeto
+                                    </DropdownMenuItem>
+                                  </>
+                                ) : (
+                                  <>
+                                    <DropdownMenuItem onClick={() => handleOpenEtapaModal(ativ)}>
+                                      <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)} className="text-blue-600">
+                                      <Edit2 className="w-4 h-4 mr-2" /> Editar Etapa em Folhas Específicas
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => handleOpenExcluirDeFolhasModal(ativ)} 
+                                      className="text-orange-600"
+                                    >
+                                      <FileX className="w-4 h-4 mr-2" /> Excluir de Folhas Específicas
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => handleExcluirAtividade(ativ)} 
+                                      className="text-red-600"
+                                    >
+                                      <XCircle className="w-4 h-4 mr-2" /> Excluir de Todas as Folhas (Empreendimento)
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+
+                        {isExpanded && grupo.folhas.map(folha => (
+                          <TableRow key={folha.uniqueId} className="bg-blue-50/50">
+                            {editableActivities.length > 0 && <TableCell></TableCell>}
+                            <TableCell className="pl-12">
+                              <ChevronRight className="w-3 h-3 text-gray-400 inline mr-1" />
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-600">
+                              {folha.source_documento_numero} - {folha.source_documento_arquivo}
+                            </TableCell>
+                            <TableCell></TableCell>
+                            <TableCell>
+                              <Badge variant={folha.status === 'Planejada' ? 'success' : 'outline'} className="text-xs">
+                                {folha.status}
+                              </Badge>
+                            </TableCell>
+                            <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
+                            <TableCell className="text-sm text-gray-500">{folha.subdisciplina}</TableCell>
+                            <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
+                            <TableCell className="text-sm text-gray-500">{folha.funcao}</TableCell>
+                            <TableCell></TableCell>
+                          </TableRow>
+                        ))}
+                      </>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        ))}
       </div>
     );
   };
