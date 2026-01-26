@@ -521,12 +521,19 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
                   </TableHeader>
                   <TableBody>
                     {atividadesDisciplina.map(atividade => {
+                      console.log("🔍 Atividade:", atividade.atividade, {
+                        documento_ids: atividade.documento_ids,
+                        documento_id: atividade.documento_id,
+                        tipo_documento_ids: typeof atividade.documento_ids,
+                        eh_array: Array.isArray(atividade.documento_ids)
+                      });
                       const numFolhas = atividade.documento_ids?.length || (atividade.documento_id ? 1 : 0);
                       const documentosVinculados = atividade.documento_ids 
                         ? documentos.filter(d => atividade.documento_ids.includes(d.id))
                         : atividade.documento_id 
                         ? documentos.filter(d => d.id === atividade.documento_id)
                         : [];
+                      console.log("📊 Resultados:", { numFolhas, documentosVinculados: documentosVinculados.length });
                       
                       return (
                         <TableRow key={atividade.id}>
