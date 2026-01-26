@@ -321,6 +321,45 @@ export default function AnaliseConcepcaoPlanejamento() {
         );
     };
 
+    const handleOpenEditModal = (execucao) => {
+        if (execucao.status !== 'Finalizado') {
+            alert('Apenas atividades finalizadas podem ser editadas');
+            return;
+        }
+        setSelectedExecucaoEdit(execucao);
+        setEditDescricao(execucao.descritivo);
+        setShowEditModal(true);
+    };
+
+    const handleCloseEditModal = () => {
+        setShowEditModal(false);
+        setSelectedExecucaoEdit(null);
+        setEditDescricao('');
+    };
+
+    const handleSaveDescricao = async () => {
+        if (!selectedExecucaoEdit || !editDescricao.trim()) {
+            alert('Descrição não pode estar vazia');
+            return;
+        }
+
+        setIsEditLoading(true);
+        try {
+            await Execucao.update(selectedExecucaoEdit.id, {
+                descritivo: editDescricao.trim()
+            });
+            
+            alert('✅ Descrição atualizada com sucesso!');
+            await loadData();
+            handleCloseEditModal();
+        } catch (error) {
+            console.error('Erro ao salvar descrição:', error);
+            alert('Erro ao atualizar descrição: ' + (error.message || 'Tente novamente.'));
+        } finally {
+            setIsEditLoading(false);
+        }
+    };
+
     const handlePlanejarSelecionadas = () => {
         if (selectedDocAtividades.length === 0) return;
         // Aqui você pode abrir um modal para planejamento em massa
