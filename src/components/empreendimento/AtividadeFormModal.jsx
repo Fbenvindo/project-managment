@@ -57,10 +57,8 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
         
         // Inicializar subdisciplinas selecionadas
         if (atividade.subdisciplinas && Array.isArray(atividade.subdisciplinas)) {
-          // Vindo de uma folha específica com múltiplas subdisciplinas
           setSelectedSubdisciplinas(atividade.subdisciplinas);
         } else if (atividade.subdisciplina) {
-          // Editando atividade existente com subdisciplina singular
           setSelectedSubdisciplinas([atividade.subdisciplina]);
         } else {
           setSelectedSubdisciplinas([]);
@@ -88,6 +86,13 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
       }
     }
   }, [atividade, empreendimentoId, isOpen]);
+
+  // Garantir que as folhas pré-selecionadas fiquem marcadas após documentos carregarem
+  useEffect(() => {
+    if (atividade?.documento_ids && documentos.length > 0) {
+      setSelectedDocumentoIds(atividade.documento_ids);
+    }
+  }, [documentos, atividade?.documento_ids]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
