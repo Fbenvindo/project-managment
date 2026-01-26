@@ -422,17 +422,15 @@ export default function AnaliseConcepcaoPlanejamento() {
                                                                 .reduce((sum, e) => sum + (e.tempo_total || 0), 0);
                                                             const tempoExibir = planejamento.tempo_executado || tempoExecutadoTotal;
 
-                                                            return (
-                                                                {planejamento.status !== 'concluido' && (
-                                                                    <TableRow key={planejamento.id}>
-                                                                        <TableCell>{idx === 0 && doc ? `${doc.disciplina || '-'}` : ""}</TableCell>
-                                                                        <TableCell>{planejamento.descritivo || atividade?.atividade || 'Atividade não encontrada'}</TableCell>
-                                                                        <TableCell className="text-center">{(planejamento.tempo_planejado || 0).toFixed(1)}h</TableCell>
-                                                                        <TableCell className="text-center">{tempoExibir.toFixed(1)}h</TableCell>
-                                                                        <TableCell className="text-center">{getStatusBadge(planejamento)}</TableCell>
-                                                                    </TableRow>
-                                                                )}
-                                                            );
+                                                            return planejamento.status !== 'concluido' ? (
+                                                                <TableRow key={planejamento.id}>
+                                                                    <TableCell>{idx === 0 && doc ? `${doc.disciplina || '-'}` : ""}</TableCell>
+                                                                    <TableCell>{planejamento.descritivo || atividade?.atividade || 'Atividade não encontrada'}</TableCell>
+                                                                    <TableCell className="text-center">{(planejamento.tempo_planejado || 0).toFixed(1)}h</TableCell>
+                                                                    <TableCell className="text-center">{tempoExibir.toFixed(1)}h</TableCell>
+                                                                    <TableCell className="text-center">{getStatusBadge(planejamento)}</TableCell>
+                                                                </TableRow>
+                                                            ) : null;
                                                         })}
                                                     </React.Fragment>
                                                 ))
