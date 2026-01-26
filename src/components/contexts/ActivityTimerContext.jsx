@@ -314,7 +314,8 @@ export const ActivityTimerProvider = ({ children }) => {
                     );
                     
                     if (exec.planejamento_id) {
-                        const diaExec = exec.inicio ? format(parseISO(exec.inicio), 'yyyy-MM-dd') : format(agora, 'yyyy-MM-dd');
+                        // SEMPRE usar a data de hoje para registrar horas
+                        const diaExec = format(new Date(), 'yyyy-MM-dd');
                         await updatePlanejamento(exec.planejamento_id, tempoDecorrido, 'pausado', 'Pausado automaticamente - execução duplicada detectada', diaExec);
                     }
                 }
@@ -525,8 +526,9 @@ export const ActivityTimerProvider = ({ children }) => {
 
             if (execution.planejamento_id) {
                 console.log(`🔄 [pauseExecution] Atualizando planejamento ${execution.planejamento_id}...`);
-                // Usar a data de início da execução para registrar as horas no dia correto
-                const diaExecucao = execution.inicio ? format(parseISO(execution.inicio), 'yyyy-MM-dd') : format(agora, 'yyyy-MM-dd');
+                // SEMPRE usar a data de hoje (data local) para registrar as horas
+                const diaExecucao = format(new Date(), 'yyyy-MM-dd');
+                console.log(`   📅 Registrando horas no dia: ${diaExecucao}`);
                 await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'pausado', observacao, diaExecucao);
                 console.log('✅ [pauseExecution] Planejamento atualizado');
             }
@@ -640,8 +642,9 @@ export const ActivityTimerProvider = ({ children }) => {
 
             if (execution.planejamento_id) {
                 console.log(`\n🔄 [finishExecution] ATUALIZANDO PLANEJAMENTO ${execution.planejamento_id}...`);
-                // Usar a data de início da execução para registrar as horas no dia correto
-                const diaExecucao = execution.inicio ? format(parseISO(execution.inicio), 'yyyy-MM-dd') : format(agora, 'yyyy-MM-dd');
+                // SEMPRE usar a data de hoje (data local) para registrar as horas
+                const diaExecucao = format(new Date(), 'yyyy-MM-dd');
+                console.log(`   📅 Registrando horas no dia: ${diaExecucao}`);
                 await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'concluido', observacao, diaExecucao);
                 console.log('✅ [finishExecution] Planejamento atualizado\n');
 
