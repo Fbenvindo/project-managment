@@ -120,20 +120,31 @@ export default function CurvaSPlanejamento({ isLoading: isDashboardLoading, onRe
 
   const empreendimentosDisponiveis = useMemo(() => {
     const empreendimentosMap = new Map();
-    planejamentos.forEach(plano => {
-      if (plano.empreendimento_id) {
-        if (!empreendimentosMap.has(plano.empreendimento_id)) {
-          empreendimentosMap.set(plano.empreendimento_id, {
-            id: plano.empreendimento_id,
-            nome: plano.empreendimento?.nome || 'Empreendimento'
-          });
-        }
+    
+    // Primeiro, adicionar todos os empreendimentos do banco de dados
+    empreendimentos.forEach(emp => {
+      if (emp.id && emp.nome) {
+        empreendimentosMap.set(emp.id, {
+          id: emp.id,
+          nome: emp.nome
+        });
       }
     });
     
-    console.log('📍 Empreendimentos disponíveis:', Array.from(empreendimentosMap.values()));
-    return Array.from(empreendimentosMap.values()).sort((a, b) => a.nome.localeCompare(b.nome));
-  }, [planejamentos]);
+    // Depois, complementar com os que estão nos planejamentos (caso algum tenha sido adicionado)
+    planejamentos.forEach(plano => {
+      if (plano.empreendimento_id && !empreendimentosMap.has(plano.empreendimento_id)) {
+        empreendimentosMap.set(plano.empreendimento_id, {
+          id: plano.empreendimento_id,
+          nome: plano.empreendimento?.nome || 'Empreendimento'
+        });
+      }
+    });
+    
+    const resultado = Array.from(empreendimentosMap.values()).sort((a, b) => a.nome.localeCompare(b.nome));
+    console.log('📍 Empreendimentos disponíveis:', resultado);
+    return resultado;
+  }, [empreendimentos, planejamentos]);
 
   const usuariosDisponiveis = useMemo(() => {
     return [...usuarios].sort((a, b) => (a.nome || a.email).localeCompare(b.nome || b.email));
