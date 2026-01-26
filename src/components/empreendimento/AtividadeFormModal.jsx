@@ -20,7 +20,7 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
   const [allAtividades, setAllAtividades] = useState([]);
   const [selectedSubdisciplinas, setSelectedSubdisciplinas] = useState([]);
   const [documentos, setDocumentos] = useState([]);
-  const [selectedDocumentoId, setSelectedDocumentoId] = useState(null);
+  const [selectedDocumentoIds, setSelectedDocumentoIds] = useState([]);
 
   useEffect(() => {
     const loadData = async () => {
@@ -68,9 +68,9 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
         
         // Pré-selecionar documento/folha se fornecido
         if (atividade.documento_id) {
-          setSelectedDocumentoId(atividade.documento_id);
+          setSelectedDocumentoIds([atividade.documento_id]);
         } else {
-          setSelectedDocumentoId(null);
+          setSelectedDocumentoIds([]);
         }
       } else {
         // Reset form for new entry
@@ -82,7 +82,7 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
           empreendimento_id: empreendimentoId,
         });
         setSelectedSubdisciplinas([]);
-        setSelectedDocumentoId(null);
+        setSelectedDocumentoIds([]);
       }
     }
   }, [atividade, empreendimentoId, isOpen]);
@@ -124,6 +124,16 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
     });
   };
 
+  const handleToggleDocumento = (documentoId) => {
+    setSelectedDocumentoIds(prev => {
+      if (prev.includes(documentoId)) {
+        return prev.filter(id => id !== documentoId);
+      } else {
+        return [...prev, documentoId];
+      }
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     
@@ -146,20 +156,38 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
           ...formData,
           subdisciplina: selectedSubdisciplinas[0],
           tempo: formData.tempo ? Number(formData.tempo) : null,
-          documento_id: selectedDocumentoId || null,
+          documento_id: selectedDocumentoIds[0] || null,
         };
         await Atividade.update(atividade.id, dataToSave);
       } else {
-        // Criação - criar uma atividade para cada subdisciplina selecionada
-        const createPromises = selectedSubdisciplinas.map(subdisciplina => {
-          const dataToSave = {
-            ...formData,
-            subdisciplina: subdisciplina,
-            tempo: formData.tempo ? Number(formData.tempo) : null,
-            documento_id: selectedDocumentoId || null,
-          };
-          return Atividade.create(dataToSave);
-        });
+        // Criação - criar atividade para cada combinação de subdisciplina x folha
+        const createPromises = [];
+        
+        if (selectedDocumentoIds.length === 0) {
+          // Sem folhas selecionadas - criar uma atividade por subdisciplina (geral)
+          selectedSubdisciplinas.forEach(subdisciplina => {
+            const dataToSave = {
+              ...formData,
+              subdisciplina: subdisciplina,
+              tempo: formData.tempo ? Number(formData.tempo) : null,
+              documento_id: null,
+            };
+            createPromises.push(Atividade.create(dataToSave));
+          });
+        } else {
+          // Com folhas selecionadas - criar atividade para cada combinação subdisciplina x folha
+          selectedSubdisciplinas.forEach(subdisciplina => {
+            selectedDocumentoIds.forEach(documentoId => {
+              const dataToSave = {
+                ...formData,
+                subdisciplina: subdisciplina,
+                tempo: formData.tempo ? Number(formData.tempo) : null,
+                documento_id: documentoId,
+              };
+              createPromises.push(Atividade.create(dataToSave));
+            });
+          });
+        }
         
         await Promise.all(createPromises);
       }
@@ -235,23 +263,35 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
            <Input id="tempo" name="tempo" type="number" step="0.1" value={formData.tempo} onChange={handleChange} />
           </div>
 
-          <div className="space-y-2">
-           <Label htmlFor="folha">Folha (Opcional)</Label>
-           <Select value={selectedDocumentoId || 'sem_folha'} onValueChange={(value) => setSelectedDocumentoId(value === 'sem_folha' ? null : value)}>
-             <SelectTrigger>
-               <SelectValue placeholder="Selecione a folha" />
-             </SelectTrigger>
-             <SelectContent>
-               <SelectItem value="sem_folha">Sem folha específica</SelectItem>
-               {documentos.map(doc => (
-                 <SelectItem key={doc.id} value={doc.id}>
+          <div className="space-y-2 md:col-span-2">
+           <Label htmlFor="folha">Folhas (Opcional)</Label>
+           <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-4 border rounded-md max-h-48 overflow-y-auto bg-gray-50">
+             {documentos.length > 0 ? documentos.map(doc => (
+               <div key={doc.id} className="flex items-center space-x-2 min-w-0">
+                 <Checkbox
+                   id={`documento-${doc.id}`}
+                   checked={selectedDocumentoIds.includes(doc.id)}
+                   onCheckedChange={() => handleToggleDocumento(doc.id)}
+                   className="flex-shrink-0"
+                 />
+                 <label
+                   htmlFor={`documento-${doc.id}`}
+                   className="text-sm cursor-pointer truncate"
+                 >
                    {doc.numero} - {doc.arquivo}
-                 </SelectItem>
-               ))}
-             </SelectContent>
-           </Select>
+                 </label>
+               </div>
+             )) : (
+               <p className="text-sm text-gray-500 col-span-full text-center py-2">
+                 Nenhuma folha cadastrada
+               </p>
+             )}
+           </div>
            <p className="text-xs text-gray-500">
-             Se selecionada, a atividade ficará vinculada apenas a esta folha.
+             {selectedDocumentoIds.length === 0 
+               ? 'Se nenhuma folha for selecionada, a atividade ficará vinculada apenas ao empreendimento.'
+               : `${selectedDocumentoIds.length} folha(s) selecionada(s). A atividade será criada para cada folha selecionada.`
+             }
            </p>
           </div>
         </form>
