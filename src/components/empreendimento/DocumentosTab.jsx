@@ -2041,6 +2041,19 @@ export default function DocumentosTab({
                           initialFocus
                         />
                       </PopoverContent>
+                      {doc.inicio_planejado && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            setDocumentForDocDataModal(doc);
+                            setIsDocDataModalOpen(true);
+                          }}
+                          className="mt-2 text-xs text-blue-600 hover:bg-blue-50"
+                        >
+                          Ajustar Sucessoras
+                        </Button>
+                      )}
                     </Popover>
                     <p className="text-xs text-gray-500 mt-1">
                       {doc.multiplos_executores ? "Defina no modal de planejamento" : 
