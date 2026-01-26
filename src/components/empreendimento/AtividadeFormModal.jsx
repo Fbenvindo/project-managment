@@ -158,7 +158,7 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
           ...formData,
           subdisciplina: selectedSubdisciplinas[0],
           tempo: formData.tempo ? Number(formData.tempo) : null,
-          documento_ids: selectedDocumentoIds.length > 0 ? selectedDocumentoIds : null,
+          documento_ids: selectedDocumentoIds.length > 0 ? selectedDocumentoIds : [],
           documento_id: selectedDocumentoIds[0] || null, // Manter por compatibilidade
         };
         await Atividade.update(atividade.id, dataToSave);
@@ -169,9 +169,10 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
             ...formData,
             subdisciplina: subdisciplina,
             tempo: formData.tempo ? Number(formData.tempo) : null,
-            documento_ids: selectedDocumentoIds.length > 0 ? selectedDocumentoIds : null,
+            documento_ids: selectedDocumentoIds.length > 0 ? selectedDocumentoIds : [],
             documento_id: selectedDocumentoIds[0] || null, // Manter por compatibilidade
           };
+          console.log("📝 Criando atividade com dados:", dataToSave);
           return Atividade.create(dataToSave);
         });
         
