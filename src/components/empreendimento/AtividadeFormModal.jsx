@@ -198,6 +198,17 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
             tipo_retorno: typeof result.documento_ids,
             isArray_retorno: Array.isArray(result.documento_ids)
           });
+          
+          // Leitura IMEDIATA do banco para ver como foi salvo
+          const leituraDoBanco = await Atividade.filter({ id: result.id });
+          console.log("🔍 LEITURA IMEDIATA DO BANCO:", {
+            id: leituraDoBanco[0]?.id,
+            documento_ids_banco: leituraDoBanco[0]?.documento_ids,
+            tipo_banco: typeof leituraDoBanco[0]?.documento_ids,
+            isArray_banco: Array.isArray(leituraDoBanco[0]?.documento_ids),
+            stringified: JSON.stringify(leituraDoBanco[0]?.documento_ids)
+          });
+          
           return result;
         });
         
