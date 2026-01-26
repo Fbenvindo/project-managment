@@ -66,10 +66,8 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
           setSelectedSubdisciplinas([]);
         }
         
-        // Pré-selecionar documentos/folhas se fornecidas
-        if (atividade.documento_ids && Array.isArray(atividade.documento_ids)) {
-          setSelectedDocumentoIds(atividade.documento_ids);
-        } else if (atividade.documento_id) {
+        // Pré-selecionar documento/folha se fornecido
+        if (atividade.documento_id) {
           setSelectedDocumentoIds([atividade.documento_id]);
         } else {
           setSelectedDocumentoIds([]);
@@ -158,58 +156,21 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
           ...formData,
           subdisciplina: selectedSubdisciplinas[0],
           tempo: formData.tempo ? Number(formData.tempo) : null,
+          documento_ids: selectedDocumentoIds.length > 0 ? selectedDocumentoIds : null,
+          documento_id: selectedDocumentoIds[0] || null, // Manter por compatibilidade
         };
-        
-        // Apenas adicionar documento_ids se houver documentos selecionados
-        if (selectedDocumentoIds.length > 0) {
-          dataToSave.documento_ids = selectedDocumentoIds;
-          dataToSave.documento_id = selectedDocumentoIds[0]; // Manter por compatibilidade
-        }
-        
-        console.log("📝 Atualizando atividade:", dataToSave);
         await Atividade.update(atividade.id, dataToSave);
       } else {
         // Criação - criar UMA atividade por subdisciplina com múltiplas folhas vinculadas
-        const createPromises = selectedSubdisciplinas.map(async subdisciplina => {
+        const createPromises = selectedSubdisciplinas.map(subdisciplina => {
           const dataToSave = {
             ...formData,
             subdisciplina: subdisciplina,
             tempo: formData.tempo ? Number(formData.tempo) : null,
+            documento_ids: selectedDocumentoIds.length > 0 ? selectedDocumentoIds : null,
+            documento_id: selectedDocumentoIds[0] || null, // Manter por compatibilidade
           };
-          
-          // Apenas adicionar documento_ids se houver documentos selecionados
-          if (selectedDocumentoIds.length > 0) {
-            dataToSave.documento_ids = selectedDocumentoIds;
-            dataToSave.documento_id = selectedDocumentoIds[0]; // Manter por compatibilidade
-          }
-          
-          console.log("📝 Criando atividade:", {
-            atividade: dataToSave.atividade,
-            subdisciplina: dataToSave.subdisciplina,
-            documento_ids: dataToSave.documento_ids,
-            total_folhas: dataToSave.documento_ids?.length || 0,
-            tipo: typeof dataToSave.documento_ids,
-            isArray: Array.isArray(dataToSave.documento_ids)
-          });
-          const result = await Atividade.create(dataToSave);
-          console.log("✅ Atividade criada - RETORNO:", {
-            id: result.id,
-            documento_ids: result.documento_ids,
-            tipo_retorno: typeof result.documento_ids,
-            isArray_retorno: Array.isArray(result.documento_ids)
-          });
-          
-          // Leitura IMEDIATA do banco para ver como foi salvo
-          const leituraDoBanco = await Atividade.filter({ id: result.id });
-          console.log("🔍 LEITURA IMEDIATA DO BANCO:", {
-            id: leituraDoBanco[0]?.id,
-            documento_ids_banco: leituraDoBanco[0]?.documento_ids,
-            tipo_banco: typeof leituraDoBanco[0]?.documento_ids,
-            isArray_banco: Array.isArray(leituraDoBanco[0]?.documento_ids),
-            stringified: JSON.stringify(leituraDoBanco[0]?.documento_ids)
-          });
-          
-          return result;
+          return Atividade.create(dataToSave);
         });
         
         await Promise.all(createPromises);

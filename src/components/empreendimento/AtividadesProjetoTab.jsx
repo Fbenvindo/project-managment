@@ -298,13 +298,6 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
 
   // MODIFICADO: Filtrar atividades específicas do projeto ou vinculadas aos documentos do empreendimento
   const filteredAtividades = useMemo(() => {
-    console.log("🔍 ATIVIDADES RECEBIDAS DO BANCO:", atividades.map(a => ({
-      nome: a.atividade,
-      documento_ids: a.documento_ids,
-      tipo: typeof a.documento_ids,
-      isArray: Array.isArray(a.documento_ids)
-    })));
-    
     const disciplinasEspecificas = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
     
     const todasAtividades = (atividades || [])
@@ -518,73 +511,26 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
                     <TableRow>
                       <TableHead className="w-12"></TableHead>
                       <TableHead>Atividade</TableHead>
-                      <TableHead>Folhas</TableHead>
                       <TableHead>Etapa</TableHead>
-                      <TableHead>Disciplina</TableHead>
                       <TableHead>Subdisciplina</TableHead>
                       <TableHead>Tempo (h)</TableHead>
                       <TableHead className="text-right">Ações</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {atividadesDisciplina.map(atividade => {
-                      console.log("🔍 DEBUG ATIVIDADE COMPLETA:", {
-                        nome: atividade.atividade,
-                        documento_ids_raw: atividade.documento_ids,
-                        documento_id_raw: atividade.documento_id,
-                        tipo_documento_ids: typeof atividade.documento_ids,
-                        isArray: Array.isArray(atividade.documento_ids),
-                        length: atividade.documento_ids?.length,
-                        atividade_completa: atividade
-                      });
-                      
-                      // Calcular número de folhas baseado em documento_ids (prioritário) ou documento_id (legacy)
-                      const numFolhas = (atividade.documento_ids && Array.isArray(atividade.documento_ids)) 
-                        ? atividade.documento_ids.length 
-                        : (atividade.documento_id ? 1 : 0);
-                      
-                      const documentosVinculados = (atividade.documento_ids && Array.isArray(atividade.documento_ids))
-                        ? documentos.filter(d => atividade.documento_ids.includes(d.id))
-                        : atividade.documento_id 
-                        ? documentos.filter(d => d.id === atividade.documento_id)
-                        : [];
-                      
-                      console.log("📊 RESULTADO:", {
-                        nome: atividade.atividade,
-                        numFolhas,
-                        documentosVinculados: documentosVinculados.length
-                      });
-                      
-                      return (
-                        <TableRow key={atividade.id}>
-                          <TableCell>
-                            <Checkbox
-                              checked={selectedAtividades.includes(atividade.id)}
-                              onCheckedChange={() => handleToggleAtividade(atividade.id)}
-                            />
-                          </TableCell>
-                          <TableCell className="font-medium">{atividade.atividade}</TableCell>
-                          <TableCell>
-                            {numFolhas > 0 ? (
-                              <div className="flex flex-col gap-1">
-                                <Badge variant="outline" className="w-fit">
-                                  {numFolhas} {numFolhas === 1 ? 'folha' : 'folhas'}
-                                </Badge>
-                                {documentosVinculados.length > 0 && (
-                                  <div className="text-xs text-gray-500 max-w-[200px] truncate" title={documentosVinculados.map(d => d.arquivo).join(', ')}>
-                                    {documentosVinculados.map(d => d.numero).join(', ')}
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <Badge variant="secondary">Disponível</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>{atividade.etapa}</TableCell>
-                          <TableCell>{atividade.disciplina}</TableCell>
-                          <TableCell>{atividade.subdisciplina}</TableCell>
-                          <TableCell>{atividade.tempo}</TableCell>
-                          <TableCell className="text-right">
+                    {atividadesDisciplina.map(atividade => (
+                      <TableRow key={atividade.id}>
+                        <TableCell>
+                          <Checkbox
+                            checked={selectedAtividades.includes(atividade.id)}
+                            onCheckedChange={() => handleToggleAtividade(atividade.id)}
+                          />
+                        </TableCell>
+                        <TableCell className="font-medium">{atividade.atividade}</TableCell>
+                        <TableCell>{atividade.etapa}</TableCell>
+                        <TableCell>{atividade.subdisciplina}</TableCell>
+                        <TableCell>{atividade.tempo}</TableCell>
+                        <TableCell className="text-right">
                           <div className="flex gap-1 justify-end">
                             <Button 
                               variant="outline" 
@@ -620,8 +566,7 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
                           </div>
                         </TableCell>
                       </TableRow>
-                    );
-                    })}
+                    ))}
                   </TableBody>
                 </Table>
               </div>
