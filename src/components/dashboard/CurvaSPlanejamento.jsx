@@ -121,22 +121,33 @@ export default function CurvaSPlanejamento({ isLoading: isDashboardLoading, onRe
   const empreendimentosDisponiveis = useMemo(() => {
     const empreendimentosMap = new Map();
     
-    // Primeiro, adicionar todos os empreendimentos do banco de dados
-    empreendimentos.forEach(emp => {
-      if (emp.id && emp.nome) {
-        empreendimentosMap.set(emp.id, {
-          id: emp.id,
-          nome: emp.nome
-        });
+    // Usar dados dos planejamentos que já vêm com nomes corretos do servidor
+    planejamentos.forEach(plano => {
+      if (plano.empreendimento_id) {
+        // Preferir o nome que vem do planejamento (que é mais confiável)
+        const nomeCorreto = plano.empreendimento?.nome || 'Empreendimento';
+        
+        if (!empreendimentosMap.has(plano.empreendimento_id)) {
+          empreendimentosMap.set(plano.empreendimento_id, {
+            id: plano.empreendimento_id,
+            nome: nomeCorreto
+          });
+        } else {
+          // Atualizar se o nome anterior era genérico
+          const existing = empreendimentosMap.get(plano.empreendimento_id);
+          if (existing.nome === 'Empreendimento' && nomeCorreto !== 'Empreendimento') {
+            existing.nome = nomeCorreto;
+          }
+        }
       }
     });
     
-    // Depois, complementar com os que estão nos planejamentos (caso algum tenha sido adicionado)
-    planejamentos.forEach(plano => {
-      if (plano.empreendimento_id && !empreendimentosMap.has(plano.empreendimento_id)) {
-        empreendimentosMap.set(plano.empreendimento_id, {
-          id: plano.empreendimento_id,
-          nome: plano.empreendimento?.nome || 'Empreendimento'
+    // Complementar com empreendimentos do banco que não têm planejamentos
+    empreendimentos.forEach(emp => {
+      if (emp.id && !empreendimentosMap.has(emp.id)) {
+        empreendimentosMap.set(emp.id, {
+          id: emp.id,
+          nome: emp.nome
         });
       }
     });
