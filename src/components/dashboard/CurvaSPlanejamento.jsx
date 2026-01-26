@@ -109,17 +109,16 @@ export default function CurvaSPlanejamento({ isLoading: isDashboardLoading, onRe
     const empreendimentosMap = new Map();
     planejamentos.forEach(plano => {
       if (plano.empreendimento_id) {
-        // Priorizar nome do empreendimento aninhado, senão usar empreendimentoNome
-        const nome = plano.empreendimento?.nome || plano.empreendimentoNome || 'Sem nome';
         if (!empreendimentosMap.has(plano.empreendimento_id)) {
           empreendimentosMap.set(plano.empreendimento_id, {
             id: plano.empreendimento_id,
-            nome: nome
+            nome: plano.empreendimento?.nome || 'Empreendimento'
           });
         }
       }
     });
     
+    console.log('📍 Empreendimentos disponíveis:', Array.from(empreendimentosMap.values()));
     return Array.from(empreendimentosMap.values()).sort((a, b) => a.nome.localeCompare(b.nome));
   }, [planejamentos]);
 
