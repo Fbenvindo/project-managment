@@ -50,9 +50,15 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
         tempo: atividade.tempo?.toString() || '',
         empreendimento_id: empreendimentoId,
       });
-      // Se for edição, inicializar subdisciplinas selecionadas
-      if (atividade.subdisciplina) {
+      // Inicializar subdisciplinas selecionadas
+      if (atividade.subdisciplinas && Array.isArray(atividade.subdisciplinas)) {
+        // Vindo de uma folha específica com múltiplas subdisciplinas
+        setSelectedSubdisciplinas(atividade.subdisciplinas);
+      } else if (atividade.subdisciplina) {
+        // Editando atividade existente com subdisciplina singular
         setSelectedSubdisciplinas([atividade.subdisciplina]);
+      } else {
+        setSelectedSubdisciplinas([]);
       }
       setSelectedDocumentoId(atividade.documento_id || null);
     } else {
