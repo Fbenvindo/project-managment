@@ -158,9 +158,10 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
           ...formData,
           subdisciplina: selectedSubdisciplinas[0],
           tempo: formData.tempo ? Number(formData.tempo) : null,
-          documento_ids: selectedDocumentoIds.length > 0 ? selectedDocumentoIds : null,
+          documento_ids: selectedDocumentoIds.length > 0 ? selectedDocumentoIds : [],
           documento_id: selectedDocumentoIds[0] || null, // Manter por compatibilidade
         };
+        console.log("📝 Atualizando atividade com documento_ids:", dataToSave.documento_ids);
         await Atividade.update(atividade.id, dataToSave);
       } else {
         // Criação - criar UMA atividade por subdisciplina com múltiplas folhas vinculadas
@@ -169,9 +170,10 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
             ...formData,
             subdisciplina: subdisciplina,
             tempo: formData.tempo ? Number(formData.tempo) : null,
-            documento_ids: selectedDocumentoIds.length > 0 ? selectedDocumentoIds : null,
+            documento_ids: selectedDocumentoIds.length > 0 ? selectedDocumentoIds : [],
             documento_id: selectedDocumentoIds[0] || null, // Manter por compatibilidade
           };
+          console.log("📝 Criando atividade com documento_ids:", dataToSave.documento_ids, "subdisciplina:", subdisciplina);
           return Atividade.create(dataToSave);
         });
         

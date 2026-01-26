@@ -521,12 +521,18 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
                   </TableHeader>
                   <TableBody>
                     {atividadesDisciplina.map(atividade => {
-                      const numFolhas = atividade.documento_ids?.length || (atividade.documento_id ? 1 : 0);
-                      const documentosVinculados = atividade.documento_ids 
+                      // Calcular número de folhas baseado em documento_ids (prioritário) ou documento_id (legacy)
+                      const numFolhas = (atividade.documento_ids && Array.isArray(atividade.documento_ids)) 
+                        ? atividade.documento_ids.length 
+                        : (atividade.documento_id ? 1 : 0);
+                      
+                      const documentosVinculados = (atividade.documento_ids && Array.isArray(atividade.documento_ids))
                         ? documentos.filter(d => atividade.documento_ids.includes(d.id))
                         : atividade.documento_id 
                         ? documentos.filter(d => d.id === atividade.documento_id)
                         : [];
+                      
+                      console.log("🔍 Atividade:", atividade.atividade, "documento_ids:", atividade.documento_ids, "numFolhas:", numFolhas);
                       
                       return (
                         <TableRow key={atividade.id}>
