@@ -156,38 +156,22 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
           ...formData,
           subdisciplina: selectedSubdisciplinas[0],
           tempo: formData.tempo ? Number(formData.tempo) : null,
-          documento_id: selectedDocumentoIds[0] || null,
+          documento_ids: selectedDocumentoIds.length > 0 ? selectedDocumentoIds : null,
+          documento_id: selectedDocumentoIds[0] || null, // Manter por compatibilidade
         };
         await Atividade.update(atividade.id, dataToSave);
       } else {
-        // Criação - criar atividade para cada combinação de subdisciplina x folha
-        const createPromises = [];
-        
-        if (selectedDocumentoIds.length === 0) {
-          // Sem folhas selecionadas - criar uma atividade por subdisciplina (geral)
-          selectedSubdisciplinas.forEach(subdisciplina => {
-            const dataToSave = {
-              ...formData,
-              subdisciplina: subdisciplina,
-              tempo: formData.tempo ? Number(formData.tempo) : null,
-              documento_id: null,
-            };
-            createPromises.push(Atividade.create(dataToSave));
-          });
-        } else {
-          // Com folhas selecionadas - criar atividade para cada combinação subdisciplina x folha
-          selectedSubdisciplinas.forEach(subdisciplina => {
-            selectedDocumentoIds.forEach(documentoId => {
-              const dataToSave = {
-                ...formData,
-                subdisciplina: subdisciplina,
-                tempo: formData.tempo ? Number(formData.tempo) : null,
-                documento_id: documentoId,
-              };
-              createPromises.push(Atividade.create(dataToSave));
-            });
-          });
-        }
+        // Criação - criar UMA atividade por subdisciplina com múltiplas folhas vinculadas
+        const createPromises = selectedSubdisciplinas.map(subdisciplina => {
+          const dataToSave = {
+            ...formData,
+            subdisciplina: subdisciplina,
+            tempo: formData.tempo ? Number(formData.tempo) : null,
+            documento_ids: selectedDocumentoIds.length > 0 ? selectedDocumentoIds : null,
+            documento_id: selectedDocumentoIds[0] || null, // Manter por compatibilidade
+          };
+          return Atividade.create(dataToSave);
+        });
         
         await Promise.all(createPromises);
       }
