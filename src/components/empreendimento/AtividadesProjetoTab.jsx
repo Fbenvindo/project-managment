@@ -298,6 +298,13 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
 
   // MODIFICADO: Filtrar atividades específicas do projeto ou vinculadas aos documentos do empreendimento
   const filteredAtividades = useMemo(() => {
+    console.log("🔍 ATIVIDADES RECEBIDAS DO BANCO:", atividades.map(a => ({
+      nome: a.atividade,
+      documento_ids: a.documento_ids,
+      tipo: typeof a.documento_ids,
+      isArray: Array.isArray(a.documento_ids)
+    })));
+    
     const disciplinasEspecificas = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
     
     const todasAtividades = (atividades || [])
