@@ -42,36 +42,48 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
   }, [isOpen, empreendimentoId]);
 
   useEffect(() => {
-    if (atividade) {
-      setFormData({
-        etapa: atividade.etapa || '',
-        disciplina: atividade.disciplina || '',
-        atividade: atividade.atividade || '',
-        tempo: atividade.tempo?.toString() || '',
-        empreendimento_id: empreendimentoId,
-      });
-      // Inicializar subdisciplinas selecionadas
-      if (atividade.subdisciplinas && Array.isArray(atividade.subdisciplinas)) {
-        // Vindo de uma folha específica com múltiplas subdisciplinas
-        setSelectedSubdisciplinas(atividade.subdisciplinas);
-      } else if (atividade.subdisciplina) {
-        // Editando atividade existente com subdisciplina singular
-        setSelectedSubdisciplinas([atividade.subdisciplina]);
+    if (isOpen) {
+      if (atividade) {
+        // Definir disciplina primeiro
+        const disciplinaInicial = atividade.disciplina || '';
+        
+        setFormData({
+          etapa: atividade.etapa || '',
+          disciplina: disciplinaInicial,
+          atividade: atividade.atividade || '',
+          tempo: atividade.tempo?.toString() || '',
+          empreendimento_id: empreendimentoId,
+        });
+        
+        // Inicializar subdisciplinas selecionadas
+        if (atividade.subdisciplinas && Array.isArray(atividade.subdisciplinas)) {
+          // Vindo de uma folha específica com múltiplas subdisciplinas
+          setSelectedSubdisciplinas(atividade.subdisciplinas);
+        } else if (atividade.subdisciplina) {
+          // Editando atividade existente com subdisciplina singular
+          setSelectedSubdisciplinas([atividade.subdisciplina]);
+        } else {
+          setSelectedSubdisciplinas([]);
+        }
+        
+        // Pré-selecionar documento/folha se fornecido
+        if (atividade.documento_id) {
+          setSelectedDocumentoId(atividade.documento_id);
+        } else {
+          setSelectedDocumentoId(null);
+        }
       } else {
+        // Reset form for new entry
+        setFormData({
+          etapa: '',
+          disciplina: '',
+          atividade: '',
+          tempo: '',
+          empreendimento_id: empreendimentoId,
+        });
         setSelectedSubdisciplinas([]);
+        setSelectedDocumentoId(null);
       }
-      setSelectedDocumentoId(atividade.documento_id || null);
-    } else {
-      // Reset form for new entry
-      setFormData({
-        etapa: '',
-        disciplina: '',
-        atividade: '',
-        tempo: '',
-        empreendimento_id: empreendimentoId,
-      });
-      setSelectedSubdisciplinas([]);
-      setSelectedDocumentoId(null);
     }
   }, [atividade, empreendimentoId, isOpen]);
 
