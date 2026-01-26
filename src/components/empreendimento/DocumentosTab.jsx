@@ -1160,7 +1160,14 @@ export default function DocumentosTab({
           tempoBase = tempoBaseOriginal;
         }
 
-        // Verificar se a atividade está no planejamento do documento para esta etapa
+        // Buscar planejamento de atividade específico desta atividade neste documento/etapa
+        const planejamentoAtividade = planejamentosDoDocumento.find(p =>
+          p.atividade_id === atividade.id &&
+          p.etapa === etapaFinal &&
+          p.tipo_plano === 'atividade'
+        );
+        
+        // Verificar se está no planejamento de documento (grupo)
         const planejamentoDocDaEtapa = planejamentosDoDocumento.find(p => 
           p.etapa === etapaFinal && 
           p.tipo_plano === 'documento'
@@ -1168,6 +1175,10 @@ export default function DocumentosTab({
         const jaFoiPlanejada = planejamentoDocDaEtapa && 
           planejamentoDocDaEtapa.atividades_ids && 
           planejamentoDocDaEtapa.atividades_ids.includes(atividade.id);
+        
+        // Status do planejamento
+        const statusPlanejamento = planejamentoAtividade?.status || 
+                                   (jaFoiPlanejada ? planejamentoDocDaEtapa?.status : null);
 
         const fatorDificuldade = doc.fator_dificuldade || 1;
         
@@ -1189,7 +1200,9 @@ export default function DocumentosTab({
           tempoBaseParaExibicao: tempoBaseParaExibicao, // Tempo original para mostrar riscado
           area: areaPavimento,
           jaFoiPlanejada: jaFoiPlanejada,
-          estaConcluida: estaConcluida
+          estaConcluida: estaConcluida,
+          statusPlanejamento: statusPlanejamento,
+          planejamentoId: planejamentoAtividade?.id || planejamentoDocDaEtapa?.id
         };
       });
     }, [allAtividades, doc.disciplina, doc.fator_dificuldade, doc.pavimento_id, planejamentosDoDocumento, doc.subdisciplinas, doc.multiplos_executores, etapaParaPlanejamento, empreendimento.id, pavimentos, doc.id, doc.numero]);
@@ -1980,17 +1993,32 @@ export default function DocumentosTab({
                       >
                         <div className="flex-1 pr-2">
                           <div className="flex items-center gap-2">
-                            <span className={`font-medium ${atividade.estaConcluida ? 'line-through text-gray-500' : ''}`}>
+                            <span className={`font-medium ${atividade.estaConcluida || atividade.statusPlanejamento === 'concluido' ? 'line-through text-gray-500' : ''}`}>
                               {atividade.atividade}
                             </span>
-                            {atividade.estaConcluida && (
-                              <Badge className="bg-blue-100 text-blue-800 text-xs">
-                                Concluída
+                            {atividade.statusPlanejamento === 'concluido' && (
+                              <Badge className="bg-green-600 text-white text-xs">
+                                Finalizado
                               </Badge>
                             )}
-                            {atividade.jaFoiPlanejada && !atividade.estaConcluida && (
-                              <Badge className="bg-green-100 text-green-800 text-xs">
-                                Planejada
+                            {atividade.estaConcluida && atividade.statusPlanejamento !== 'concluido' && (
+                              <Badge className="bg-blue-100 text-blue-800 text-xs">
+                                Concluída Manualmente
+                              </Badge>
+                            )}
+                            {atividade.statusPlanejamento === 'em_andamento' && (
+                              <Badge className="bg-yellow-100 text-yellow-800 text-xs">
+                                Em Andamento
+                              </Badge>
+                            )}
+                            {atividade.statusPlanejamento === 'nao_iniciado' && (
+                              <Badge className="bg-blue-100 text-blue-800 text-xs">
+                                Planejado
+                              </Badge>
+                            )}
+                            {!atividade.statusPlanejamento && !atividade.estaConcluida && (
+                              <Badge className="bg-gray-100 text-gray-600 text-xs">
+                                Disponível para planejamento
                               </Badge>
                             )}
                           </div>
@@ -2005,24 +2033,29 @@ export default function DocumentosTab({
                         </div>
                         <div className="flex items-center gap-3">
                           <div className="text-right">
-                            <div className={`text-sm font-medium ${atividade.estaConcluida ? 'line-through text-gray-400' : ''}`}>
-                              {atividade.estaConcluida 
+                            <div className={`text-sm font-medium ${atividade.estaConcluida || atividade.statusPlanejamento === 'concluido' ? 'line-through text-gray-400' : ''}`}>
+                              {atividade.estaConcluida || atividade.statusPlanejamento === 'concluido'
                                 ? `${((atividade.area || 1) * atividade.tempoBaseParaExibicao * (doc.fator_dificuldade || 1)).toFixed(1)}h`
                                 : `${atividade.tempoComFator.toFixed(1)}h`
                               }
                             </div>
-                            {atividade.estaConcluida && (
-                              <div className="text-xs text-gray-500">
-                                Tempo zerado (concluída)
+                            {atividade.statusPlanejamento === 'concluido' && (
+                              <div className="text-xs text-green-600">
+                                Finalizado no planejamento
                               </div>
                             )}
-                            {!atividade.estaConcluida && atividade.jaFoiPlanejada && (
+                            {atividade.estaConcluida && atividade.statusPlanejamento !== 'concluido' && (
                               <div className="text-xs text-gray-500">
-                                Tempo contabilizado no plano do documento.
+                                Tempo zerado (concluída manualmente)
                               </div>
                             )}
-                            {!atividade.estaConcluida && !atividade.jaFoiPlanejada && (
+                            {atividade.statusPlanejamento && atividade.statusPlanejamento !== 'concluido' && !atividade.estaConcluida && (
                               <div className="text-xs text-blue-600">
+                                {atividade.statusPlanejamento === 'em_andamento' ? 'Em execução' : 'Planejado'}
+                              </div>
+                            )}
+                            {!atividade.estaConcluida && !atividade.statusPlanejamento && (
+                              <div className="text-xs text-gray-500">
                                 Disponível para planejamento
                               </div>
                             )}
