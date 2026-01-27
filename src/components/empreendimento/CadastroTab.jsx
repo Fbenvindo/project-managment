@@ -487,36 +487,11 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           if (etapaData._excluida) return true;
           // Verificar se tem alguma data preenchida
           return Object.entries(etapaData).some(([key, data]) => 
-            key !== '_excluida' && key !== '_revisoes_excluidas' && data && typeof data === 'string' && data.trim()
+            key !== '_excluida' && data && typeof data === 'string' && data.trim()
           );
         });
         
         return temDados;
-      }).map(linha => {
-        // Limpar valores vazios do objeto datas antes de salvar
-        const datasLimpas = {};
-        Object.entries(linha.datas || {}).forEach(([etapa, etapaData]) => {
-          if (!etapaData) return;
-          
-          const etapaLimpa = {};
-          Object.entries(etapaData).forEach(([key, value]) => {
-            // Manter marcadores especiais
-            if (key === '_excluida' || key === '_revisoes_excluidas') {
-              etapaLimpa[key] = value;
-            }
-            // Manter apenas datas válidas
-            else if (value && typeof value === 'string' && value.trim()) {
-              etapaLimpa[key] = value.trim();
-            }
-          });
-          
-          // Só adicionar etapa se tiver conteúdo
-          if (Object.keys(etapaLimpa).length > 0) {
-            datasLimpas[etapa] = etapaLimpa;
-          }
-        });
-        
-        return { ...linha, datas: datasLimpas };
       });
 
       // Processar em lotes de 10 para evitar sobrecarga
