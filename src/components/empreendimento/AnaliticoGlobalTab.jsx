@@ -1677,12 +1677,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             )}
                           </TableCell>
                           <TableCell>{ativ.etapa}</TableCell>
-                          <TableCell>
-                            {ativ.isEditable && grupo.folhas.length > 0 
-                              ? `${Number(ativ.tempo * grupo.folhas.length).toFixed(1)}h (${Number(ativ.tempo).toFixed(1)}h × ${grupo.folhas.length})`
-                              : ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'
-                            }
-                          </TableCell>
+                          <TableCell>{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
                           <TableCell className="text-center">
                             <Button 
                               size="sm" 
