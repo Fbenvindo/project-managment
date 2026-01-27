@@ -955,33 +955,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       gruposDocumentacao[disc] = [];
     });
     
-    // Função para mapear atividades de Gestão para subgrupos
-    const mapearGestaoSubgrupo = (atividade) => {
-      const nomeAtividade = (atividade.atividade || '').toLowerCase();
-      const subdisciplina = (atividade.subdisciplina || '').toLowerCase();
-      
-      // Se tem subdisciplina, usar ela
-      if (atividade.subdisciplina && atividade.subdisciplina.trim()) {
-        return atividade.subdisciplina;
-      }
-      
-      // Senão, mapear por padrões no nome
-      if (nomeAtividade.includes('planejamento') || nomeAtividade.includes('reunião') || nomeAtividade.includes('leitura')) {
-        return 'Planejamento';
-      }
-      if (nomeAtividade.includes('bim') || nomeAtividade.includes('modelo')) {
-        return 'BIM';
-      }
-      if (nomeAtividade.includes('compatibiliz') || nomeAtividade.includes('coordenação') || nomeAtividade.includes('coord')) {
-        return 'Coordenação';
-      }
-      if (nomeAtividade.includes('confecção') || nomeAtividade.includes('cad') || nomeAtividade.includes('desenho')) {
-        return 'Apoio';
-      }
-      
-      return 'Outros';
-    };
-    
     atividadesAgrupadas.forEach(grupo => {
       const disciplina = grupo.baseAtividade.disciplina || 'Sem Disciplina';
       
@@ -998,30 +971,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
     const result = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
     
-    // Para Gestão, agrupar por subdisciplina com prefixo "Documentação - "
-    if (gruposDocumentacao['Gestão'] && gruposDocumentacao['Gestão'].length > 0) {
-      const gestaoSubgrupos = {};
-      
-      gruposDocumentacao['Gestão'].forEach(grupo => {
-        const subgrupoNome = mapearGestaoSubgrupo(grupo.baseAtividade);
-        const chave = `Documentação - ${subgrupoNome}`;
-        
-        if (!gestaoSubgrupos[chave]) {
-          gestaoSubgrupos[chave] = [];
-        }
-        gestaoSubgrupos[chave].push(grupo);
-      });
-      
-      Object.entries(gestaoSubgrupos)
-        .sort((a, b) => a[0].localeCompare(b[0]))
-        .forEach(([subgrupo, atividades]) => {
-          result.push([subgrupo, atividades]);
-        });
-    }
-    
-    // Adicionar outras disciplinas de Documentação (mesmo vazias)
+    // Adicionar TODAS as disciplinas de Documentação (mesmo vazias)
     Object.entries(gruposDocumentacao)
-      .filter(([disc]) => disc !== 'Gestão') // Gestão já foi processada acima
       .sort((a, b) => a[0].localeCompare(b[0]))
       .forEach(([disciplina, grupos]) => {
         result.push([disciplina, grupos]);
