@@ -236,11 +236,10 @@ export const ActivityTimerProvider = ({ children }) => {
                     if (!planejamento.inicio_real) {
                         updateData.inicio_real = diaParaRegistrar;
                     }
-                    // CRÍTICO: Para atividades concluídas, horas_por_dia deve conter apenas os dias executados
-                    updateData.horas_por_dia = { ...horasExecutadasPorDia };
+                    // NÃO alterar horas_por_dia - manter distribuição original planejada
                     console.log(`   🏁 Finalizando atividade normal...`);
                     console.log(`      Tempo planejado original: ${planejamento.tempo_planejado}h`);
-                    console.log(`      📊 horas_por_dia = horas_executadas_por_dia (apenas dias realmente trabalhados)`);
+                    console.log(`      📊 Mantendo horas_por_dia original para não quebrar a atividade no calendário`);
                     
                 } else if (finalStatus === 'pausado') {
                     updateData.status = 'pausado';
@@ -252,10 +251,9 @@ export const ActivityTimerProvider = ({ children }) => {
                         if (!planejamento.inicio_real) {
                             updateData.inicio_real = diaParaRegistrar;
                         }
-                        // CRÍTICO: Para atividades concluídas, horas_por_dia deve conter apenas os dias executados
-                        updateData.horas_por_dia = { ...horasExecutadasPorDia };
+                        // NÃO alterar horas_por_dia - manter distribuição original planejada
                         console.log(`   🎯 Tempo planejado atingido - marcando como concluída`);
-                        console.log(`      📊 horas_por_dia = horas_executadas_por_dia (apenas dias realmente trabalhados)`);
+                        console.log(`      📊 Mantendo horas_por_dia original para não quebrar a atividade no calendário`);
                     } else {
                         updateData.status = 'em_andamento';
                         if (!planejamento.inicio_real) {
