@@ -236,10 +236,11 @@ export const ActivityTimerProvider = ({ children }) => {
                     if (!planejamento.inicio_real) {
                         updateData.inicio_real = diaParaRegistrar;
                     }
-
+                    // CRÍTICO: Para atividades concluídas, horas_por_dia deve conter apenas os dias executados
+                    updateData.horas_por_dia = { ...horasExecutadasPorDia };
                     console.log(`   🏁 Finalizando atividade normal...`);
                     console.log(`      Tempo planejado original: ${planejamento.tempo_planejado}h`);
-                    console.log(`      📊 horas_executadas_por_dia atualizado com execução real`);
+                    console.log(`      📊 horas_por_dia = horas_executadas_por_dia (apenas dias realmente trabalhados)`);
                     
                 } else if (finalStatus === 'pausado') {
                     updateData.status = 'pausado';
@@ -251,7 +252,10 @@ export const ActivityTimerProvider = ({ children }) => {
                         if (!planejamento.inicio_real) {
                             updateData.inicio_real = diaParaRegistrar;
                         }
+                        // CRÍTICO: Para atividades concluídas, horas_por_dia deve conter apenas os dias executados
+                        updateData.horas_por_dia = { ...horasExecutadasPorDia };
                         console.log(`   🎯 Tempo planejado atingido - marcando como concluída`);
+                        console.log(`      📊 horas_por_dia = horas_executadas_por_dia (apenas dias realmente trabalhados)`);
                     } else {
                         updateData.status = 'em_andamento';
                         if (!planejamento.inicio_real) {
