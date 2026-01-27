@@ -955,6 +955,33 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       gruposDocumentacao[disc] = [];
     });
     
+    // Função para mapear atividades de Gestão para subgrupos
+    const mapearGestaoSubgrupo = (atividade) => {
+      const nomeAtividade = (atividade.atividade || '').toLowerCase();
+      const subdisciplina = (atividade.subdisciplina || '').toLowerCase();
+      
+      // Se tem subdisciplina, usar ela
+      if (atividade.subdisciplina && atividade.subdisciplina.trim()) {
+        return atividade.subdisciplina;
+      }
+      
+      // Senão, mapear por padrões no nome
+      if (nomeAtividade.includes('planejamento') || nomeAtividade.includes('reunião') || nomeAtividade.includes('leitura')) {
+        return 'Planejamento';
+      }
+      if (nomeAtividade.includes('bim') || nomeAtividade.includes('modelo')) {
+        return 'BIM';
+      }
+      if (nomeAtividade.includes('compatibiliz') || nomeAtividade.includes('coordenação') || nomeAtividade.includes('coord')) {
+        return 'Coordenação';
+      }
+      if (nomeAtividade.includes('confecção') || nomeAtividade.includes('cad') || nomeAtividade.includes('desenho')) {
+        return 'Apoio';
+      }
+      
+      return 'Outros';
+    };
+    
     atividadesAgrupadas.forEach(grupo => {
       const disciplina = grupo.baseAtividade.disciplina || 'Sem Disciplina';
       
@@ -976,8 +1003,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       const gestaoSubgrupos = {};
       
       gruposDocumentacao['Gestão'].forEach(grupo => {
-        const subdisciplina = grupo.baseAtividade.subdisciplina || 'Outros';
-        const chave = `Documentação - ${subdisciplina}`;
+        const subgrupoNome = mapearGestaoSubgrupo(grupo.baseAtividade);
+        const chave = `Documentação - ${subgrupoNome}`;
         
         if (!gestaoSubgrupos[chave]) {
           gestaoSubgrupos[chave] = [];
