@@ -742,7 +742,33 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           base_atividade_id: ativ.id,
       }));
 
-      // NÃO adicionar atividades de Documentação separadamente - elas serão incluídas junto com as atividades de documentos
+      // Adicionar atividades de Documentação (sempre visíveis)
+      const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
+      const atividadesDocumentacao = [];
+      
+      allGenericActivitiesMap.forEach(baseAtividade => {
+        if (disciplinasDocumentacao.includes(baseAtividade.disciplina)) {
+          const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
+          
+          if (!isExcludedFromProject) {
+            const override = overrideActivitiesGlobalMap.get(baseAtividade.id);
+            const etapaCorreta = override ? override.etapa : baseAtividade.etapa;
+            
+            atividadesDocumentacao.push({
+              ...baseAtividade,
+              uniqueId: `doc-${baseAtividade.id}`,
+              id: baseAtividade.id,
+              tempo: baseAtividade.tempo || 0,
+              source: 'Catálogo',
+              source_documento_id: null,
+              status: 'Disponível',
+              isEditable: false,
+              etapa: etapaCorreta,
+              base_atividade_id: baseAtividade.id,
+            });
+          }
+        }
+      });
 
       let documentActivities = [];
       (documentosData || []).forEach(doc => {
@@ -858,7 +884,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         });
       });
 
-      setCombinedActivities([...normalizedProjectActivities, ...documentActivities]);
+      setCombinedActivities([...normalizedProjectActivities, ...documentActivities, ...atividadesDocumentacao]);
       setDisciplinas(disciplinasData || []);
 
     } catch (error) {
@@ -920,27 +946,39 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   }, [combinedActivities, filters]);
 
   const atividadesPorDisciplina = useMemo(() => {
+    const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
     const grupos = {};
+    const gruposDocumentacao = {};
+    
+    // Inicializar todas as disciplinas de Documentação com arrays vazios
+    disciplinasDocumentacao.forEach(disc => {
+      gruposDocumentacao[disc] = [];
+    });
     
     atividadesAgrupadas.forEach(grupo => {
       const disciplina = grupo.baseAtividade.disciplina || 'Sem Disciplina';
-      const subdisciplina = grupo.baseAtividade.subdisciplina;
       
-      // Criar chave específica para cada combinação
-      let key = disciplina;
-      
-      // Se tiver subdisciplina, adicionar à chave
-      if (subdisciplina) {
-        key = `${disciplina} - ${subdisciplina}`;
+      if (disciplinasDocumentacao.includes(disciplina)) {
+        // Agrupar Documentação por suas disciplinas
+        gruposDocumentacao[disciplina].push(grupo);
+      } else {
+        if (!grupos[disciplina]) {
+          grupos[disciplina] = [];
+        }
+        grupos[disciplina].push(grupo);
       }
-      
-      if (!grupos[key]) {
-        grupos[key] = [];
-      }
-      grupos[key].push(grupo);
     });
 
-    return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
+    const result = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
+    
+    // Adicionar TODAS as disciplinas de Documentação (mesmo vazias)
+    Object.entries(gruposDocumentacao)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .forEach(([disciplina, grupos]) => {
+        result.push([disciplina, grupos]);
+      });
+    
+    return result;
   }, [atividadesAgrupadas]);
   
   const etapasUnicas = useMemo(() => [...new Set(combinedActivities.map(a => a.etapa).filter(Boolean))], [combinedActivities]);
@@ -1389,7 +1427,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                      <TableHead>Status</TableHead>
                      <TableHead>Etapa</TableHead>
                      <TableHead>Tempo Padrão</TableHead>
-                     <TableHead className="text-center">Planejar</TableHead>
+                     {['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina) && <TableHead className="text-center">Planejar</TableHead>}
                      <TableHead className="w-[50px]"></TableHead>
                    </TableRow>
                 </TableHeader>
@@ -1451,24 +1489,19 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             )}
                           </TableCell>
                           <TableCell>{ativ.etapa}</TableCell>
-                          <TableCell>
-                            {(() => {
-                              const numFolhas = grupo.folhas.length || 1;
-                              const tempoBase = Number(ativ.tempo) || 0;
-                              const tempoTotal = tempoBase * numFolhas;
-                              return tempoTotal > 0 ? `${tempoTotal.toFixed(1)}h` : '-';
-                            })()}
-                          </TableCell>
-                          <TableCell className="text-center">
-                            <Button 
-                              size="sm" 
-                              onClick={() => handlePlanejarAtividade(ativ)}
-                              className="bg-purple-600 hover:bg-purple-700 text-white"
-                            >
-                              <Calendar className="w-4 h-4 mr-1" />
-                              Planejar
-                            </Button>
-                          </TableCell>
+                          <TableCell>{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
+                          {['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina) && (
+                            <TableCell className="text-center">
+                              <Button 
+                                size="sm" 
+                                onClick={() => handlePlanejarAtividade(ativ)}
+                                className="bg-purple-600 hover:bg-purple-700 text-white"
+                              >
+                                <Calendar className="w-4 h-4 mr-1" />
+                                Planejar
+                              </Button>
+                            </TableCell>
+                          )}
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -1533,7 +1566,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             </TableCell>
                             <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
                             <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
-                            <TableCell></TableCell>
+                            {['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina) && <TableCell></TableCell>}
                             <TableCell></TableCell>
                           </TableRow>
                         ))}
