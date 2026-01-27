@@ -742,33 +742,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           base_atividade_id: ativ.id,
       }));
 
-      // Adicionar atividades de Documentação (sempre visíveis)
-      const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
-      const atividadesDocumentacao = [];
-      
-      allGenericActivitiesMap.forEach(baseAtividade => {
-        if (disciplinasDocumentacao.includes(baseAtividade.disciplina)) {
-          const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
-          
-          if (!isExcludedFromProject) {
-            const override = overrideActivitiesGlobalMap.get(baseAtividade.id);
-            const etapaCorreta = override ? override.etapa : baseAtividade.etapa;
-            
-            atividadesDocumentacao.push({
-              ...baseAtividade,
-              uniqueId: `doc-${baseAtividade.id}`,
-              id: baseAtividade.id,
-              tempo: baseAtividade.tempo || 0,
-              source: 'Catálogo',
-              source_documento_id: null,
-              status: 'Disponível',
-              isEditable: false,
-              etapa: etapaCorreta,
-              base_atividade_id: baseAtividade.id,
-            });
-          }
-        }
-      });
+      // NÃO adicionar atividades de Documentação separadamente - elas serão incluídas junto com as atividades de documentos
 
       let documentActivities = [];
       (documentosData || []).forEach(doc => {
@@ -884,7 +858,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         });
       });
 
-      setCombinedActivities([...normalizedProjectActivities, ...documentActivities, ...atividadesDocumentacao]);
+      setCombinedActivities([...normalizedProjectActivities, ...documentActivities]);
       setDisciplinas(disciplinasData || []);
 
     } catch (error) {
@@ -946,21 +920,20 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   }, [combinedActivities, filters]);
 
   const atividadesPorDisciplina = useMemo(() => {
-    const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
     const grupos = {};
-    const gruposDocumentacao = {};
-    
-    // Inicializar todas as disciplinas de Documentação com arrays vazios
-    disciplinasDocumentacao.forEach(disc => {
-      gruposDocumentacao[disc] = [];
-    });
     
     atividadesAgrupadas.forEach(grupo => {
       const disciplina = grupo.baseAtividade.disciplina || 'Sem Disciplina';
       
-      if (disciplinasDocumentacao.includes(disciplina)) {
-        // Agrupar Documentação por suas disciplinas
-        gruposDocumentacao[disciplina].push(grupo);
+      // Se for Gestão, criar subdisciplinas separadas
+      if (disciplina === 'Gestão') {
+        const subdisciplina = grupo.baseAtividade.subdisciplina || 'Geral';
+        const key = `Gestão - ${subdisciplina}`;
+        
+        if (!grupos[key]) {
+          grupos[key] = [];
+        }
+        grupos[key].push(grupo);
       } else {
         if (!grupos[disciplina]) {
           grupos[disciplina] = [];
@@ -969,16 +942,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       }
     });
 
-    const result = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
-    
-    // Adicionar TODAS as disciplinas de Documentação (mesmo vazias)
-    Object.entries(gruposDocumentacao)
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .forEach(([disciplina, grupos]) => {
-        result.push([disciplina, grupos]);
-      });
-    
-    return result;
+    return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
   }, [atividadesAgrupadas]);
   
   const etapasUnicas = useMemo(() => [...new Set(combinedActivities.map(a => a.etapa).filter(Boolean))], [combinedActivities]);
