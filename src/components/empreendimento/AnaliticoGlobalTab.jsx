@@ -1759,8 +1759,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                 </TableBody>
               </Table>
             </div>
+              )}
           </div>
-        ))}
+        );
+        })}
       </div>
     );
   };
