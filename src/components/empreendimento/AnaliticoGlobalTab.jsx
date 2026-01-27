@@ -1489,7 +1489,14 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             )}
                           </TableCell>
                           <TableCell>{ativ.etapa}</TableCell>
-                          <TableCell>{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
+                          <TableCell>
+                            {(() => {
+                              const numFolhas = grupo.folhas.length || 1;
+                              const tempoBase = Number(ativ.tempo) || 0;
+                              const tempoTotal = tempoBase * numFolhas;
+                              return tempoTotal > 0 ? `${tempoTotal.toFixed(1)}h` : '-';
+                            })()}
+                          </TableCell>
                           {['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina) && (
                             <TableCell className="text-center">
                               <Button 
