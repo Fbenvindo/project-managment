@@ -2321,20 +2321,18 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
                 // NÃO usar horas_por_dia para atividades rápidas - esse campo pode conter dados incorretos
             } else {
                 // Para atividades normais (não rápidas)
-                
-                // CRÍTICO: Se está CONCLUÍDA, usar APENAS horas_executadas_por_dia (dias reais de trabalho)
-                if (plano.status === 'concluido') {
-                    if (plano.horas_executadas_por_dia && typeof plano.horas_executadas_por_dia === 'object') {
-                        Object.keys(plano.horas_executadas_por_dia).forEach(dayKey => {
-                            const horasExec = Number(plano.horas_executadas_por_dia[dayKey]) || 0;
-                            if (horasExec > 0) {
-                                diasParaExibir.add(dayKey);
-                            }
-                        });
-                    }
-                    // NÃO usar horas_por_dia para atividades concluídas - apenas os dias realmente executados
-                } else {
-                    // Para atividades NÃO concluídas, usar dias planejados (horas_por_dia)
+                // Se a atividade foi executada, adicionar os dias com execução real
+                if (plano.horas_executadas_por_dia && typeof plano.horas_executadas_por_dia === 'object') {
+                    Object.keys(plano.horas_executadas_por_dia).forEach(dayKey => {
+                        const horasExec = Number(plano.horas_executadas_por_dia[dayKey]) || 0;
+                        if (horasExec > 0) {
+                            diasParaExibir.add(dayKey);
+                        }
+                    });
+                }
+
+                // Se não foi concluída OU não tem execuções, usar dias planejados
+                if (plano.status !== 'concluido' || diasParaExibir.size === 0) {
                     if (plano.horas_por_dia && typeof plano.horas_por_dia === 'object') {
                         Object.keys(plano.horas_por_dia).forEach(dayKey => {
                             const horas = Number(plano.horas_por_dia[dayKey]) || 0;
