@@ -467,6 +467,24 @@ export const ActivityTimerProvider = ({ children }) => {
 
             console.log('✅ Nova execução iniciada:', newExec.id);
             setActiveExecution(newExec);
+            
+            // Atualizar status do planejamento para 'em_andamento' imediatamente
+            if (planejamentoId) {
+                try {
+                    const tipoPlanejamento = executionData.tipo_planejamento;
+                    const entityToUpdate = tipoPlanejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
+                    await retryWithBackoff(
+                        () => entityToUpdate.update(planejamentoId, { status: 'em_andamento' }),
+                        3,
+                        1000,
+                        'startExecution.updateStatus'
+                    );
+                    console.log(`✅ Status do planejamento ${planejamentoId} atualizado para em_andamento`);
+                } catch (statusError) {
+                    console.warn('⚠️ Erro ao atualizar status do planejamento:', statusError);
+                }
+            }
+            
             triggerUpdate();
 
         } catch (error) {
