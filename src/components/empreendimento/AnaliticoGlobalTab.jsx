@@ -971,8 +971,30 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
     const result = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
     
-    // Adicionar TODAS as disciplinas de Documentação (mesmo vazias)
+    // Para Gestão, agrupar por subdisciplina com prefixo "Documentação - "
+    if (gruposDocumentacao['Gestão'] && gruposDocumentacao['Gestão'].length > 0) {
+      const gestaoSubgrupos = {};
+      
+      gruposDocumentacao['Gestão'].forEach(grupo => {
+        const subdisciplina = grupo.baseAtividade.subdisciplina || 'Outros';
+        const chave = `Documentação - ${subdisciplina}`;
+        
+        if (!gestaoSubgrupos[chave]) {
+          gestaoSubgrupos[chave] = [];
+        }
+        gestaoSubgrupos[chave].push(grupo);
+      });
+      
+      Object.entries(gestaoSubgrupos)
+        .sort((a, b) => a[0].localeCompare(b[0]))
+        .forEach(([subgrupo, atividades]) => {
+          result.push([subgrupo, atividades]);
+        });
+    }
+    
+    // Adicionar outras disciplinas de Documentação (mesmo vazias)
     Object.entries(gruposDocumentacao)
+      .filter(([disc]) => disc !== 'Gestão') // Gestão já foi processada acima
       .sort((a, b) => a[0].localeCompare(b[0]))
       .forEach(([disciplina, grupos]) => {
         result.push([disciplina, grupos]);
