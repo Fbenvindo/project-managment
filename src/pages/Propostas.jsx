@@ -187,113 +187,143 @@ export default function PropostasPage() {
             <CardHeader>
               <CardTitle>Lista de Propostas</CardTitle>
             </CardHeader>
-            <CardContent className="p-0">
+            <CardContent className="p-4">
               {propostas.length === 0 ? (
                 <div className="text-center py-12">
                   <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <p className="text-gray-500">Nenhuma proposta cadastrada</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
-                  <Table>
-                    <TableHeader className="sticky top-0 bg-white z-10">
-                      <TableRow>
-                        <TableHead className="w-[80px] sticky left-0 bg-white z-20">Ações</TableHead>
-                        <TableHead className="w-[100px]">Número</TableHead>
-                        <TableHead className="w-[110px]">Data Solicitação</TableHead>
-                        <TableHead className="w-[110px]">Data Aprovação</TableHead>
-                        <TableHead className="w-[140px]">Status</TableHead>
-                        <TableHead className="w-[120px]">Tipo</TableHead>
-                        <TableHead className="min-w-[150px]">Cliente</TableHead>
-                        <TableHead className="min-w-[180px]">Empreendimento</TableHead>
-                        <TableHead className="min-w-[120px]">Solicitante</TableHead>
-                        <TableHead className="min-w-[200px]">Escopo</TableHead>
-                        <TableHead className="text-right w-[100px]">Área (m²)</TableHead>
-                        <TableHead className="text-center w-[60px]">UF</TableHead>
-                        <TableHead className="text-right w-[120px]">Valor BIM</TableHead>
-                        <TableHead className="text-right w-[120px]">Valor CAD</TableHead>
-                        <TableHead className="text-right w-[120px]">Valor Total</TableHead>
-                        <TableHead className="min-w-[150px]">Email</TableHead>
-                        <TableHead className="min-w-[120px]">Telefone</TableHead>
-                        <TableHead className="min-w-[180px]">Observações</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {propostas.map((proposta) => (
-                        <TableRow key={proposta.id} className="hover:bg-gray-50">
-                          <TableCell className="sticky left-0 bg-white z-10">
-                            <Button 
-                              size="sm" 
-                              variant="ghost"
-                              onClick={() => handleEditProposta(proposta)}
-                              className="h-8 w-8 p-0"
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                          </TableCell>
-                          <TableCell className="font-medium whitespace-nowrap">{proposta.numero || '-'}</TableCell>
-                          <TableCell className="whitespace-nowrap text-center">
-                            {proposta.data_solicitacao ? 
-                              format(new Date(proposta.data_solicitacao), 'dd/MM/yyyy') 
-                              : '-'}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap text-center">
-                            {proposta.data_aprovacao ? 
-                              format(new Date(proposta.data_aprovacao), 'dd/MM/yyyy') 
-                              : '-'}
-                          </TableCell>
-                          <TableCell>
+                <div className="max-h-[calc(100vh-300px)] overflow-y-auto space-y-4">
+                  {propostas.map((proposta) => (
+                    <Card key={proposta.id} className="border-l-4" style={{ borderLeftColor: proposta.status === 'aprovado' ? '#10b981' : proposta.status === 'reprovado' ? '#ef4444' : '#6b7280' }}>
+                      <CardContent className="p-4">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <h3 className="font-bold text-lg text-gray-900">{proposta.numero || '-'}</h3>
                             <Badge className={statusColors[proposta.status]}>
                               {statusLabels[proposta.status]}
                             </Badge>
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">
-                            {proposta.tipo_empreendimento ? (
+                            {proposta.tipo_empreendimento && (
                               <Badge variant="outline" className="text-xs">
                                 {proposta.tipo_empreendimento}
                               </Badge>
-                            ) : '-'}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">{proposta.cliente || '-'}</TableCell>
-                          <TableCell className="max-w-[200px] truncate" title={proposta.empreendimento}>
-                            {proposta.empreendimento || '-'}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">{proposta.solicitante || '-'}</TableCell>
-                          <TableCell className="max-w-[250px] truncate" title={proposta.escopo}>
-                            {proposta.escopo || '-'}
-                          </TableCell>
-                          <TableCell className="text-right whitespace-nowrap">
-                            {proposta.area ? 
-                              Number(proposta.area).toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) 
-                              : '-'}
-                          </TableCell>
-                          <TableCell className="text-center">{proposta.estado || '-'}</TableCell>
-                          <TableCell className="text-right whitespace-nowrap">
-                            {proposta.valor_bim ? 
-                              `R$ ${Number(proposta.valor_bim).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 
-                              : '-'}
-                          </TableCell>
-                          <TableCell className="text-right whitespace-nowrap">
-                            {proposta.valor_cad ? 
-                              `R$ ${Number(proposta.valor_cad).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 
-                              : '-'}
-                          </TableCell>
-                          <TableCell className="text-right whitespace-nowrap font-semibold text-green-600">
-                            {(proposta.valor_bim || proposta.valor_cad) ? 
-                              `R$ ${(Number(proposta.valor_bim || 0) + Number(proposta.valor_cad || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 
-                              : '-'}
-                          </TableCell>
-                          <TableCell className="max-w-[180px] truncate" title={proposta.email}>
-                            {proposta.email || '-'}
-                          </TableCell>
-                          <TableCell className="whitespace-nowrap">{proposta.telefone || '-'}</TableCell>
-                          <TableCell className="max-w-[200px] truncate" title={proposta.observacao}>
-                            {proposta.observacao || '-'}
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
+                            )}
+                          </div>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            onClick={() => handleEditProposta(proposta)}
+                          >
+                            <Pencil className="h-4 w-4 mr-2" />
+                            Editar
+                          </Button>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 text-sm">
+                          <div>
+                            <span className="font-semibold text-gray-600">Cliente:</span>
+                            <p className="text-gray-900">{proposta.cliente || '-'}</p>
+                          </div>
+                          
+                          <div>
+                            <span className="font-semibold text-gray-600">Empreendimento:</span>
+                            <p className="text-gray-900">{proposta.empreendimento || '-'}</p>
+                          </div>
+
+                          <div>
+                            <span className="font-semibold text-gray-600">Solicitante:</span>
+                            <p className="text-gray-900">{proposta.solicitante || '-'}</p>
+                          </div>
+
+                          <div>
+                            <span className="font-semibold text-gray-600">Data Solicitação:</span>
+                            <p className="text-gray-900">
+                              {proposta.data_solicitacao ? 
+                                format(new Date(proposta.data_solicitacao), 'dd/MM/yyyy') 
+                                : '-'}
+                            </p>
+                          </div>
+
+                          <div>
+                            <span className="font-semibold text-gray-600">Data Aprovação:</span>
+                            <p className="text-gray-900">
+                              {proposta.data_aprovacao ? 
+                                format(new Date(proposta.data_aprovacao), 'dd/MM/yyyy') 
+                                : '-'}
+                            </p>
+                          </div>
+
+                          <div>
+                            <span className="font-semibold text-gray-600">Área:</span>
+                            <p className="text-gray-900">
+                              {proposta.area ? 
+                                `${Number(proposta.area).toLocaleString('pt-BR', { minimumFractionDigits: 2 })} m²` 
+                                : '-'}
+                            </p>
+                          </div>
+
+                          <div>
+                            <span className="font-semibold text-gray-600">Estado:</span>
+                            <p className="text-gray-900">{proposta.estado || '-'}</p>
+                          </div>
+
+                          <div>
+                            <span className="font-semibold text-gray-600">Email:</span>
+                            <p className="text-gray-900 truncate" title={proposta.email}>{proposta.email || '-'}</p>
+                          </div>
+
+                          <div>
+                            <span className="font-semibold text-gray-600">Telefone:</span>
+                            <p className="text-gray-900">{proposta.telefone || '-'}</p>
+                          </div>
+                        </div>
+
+                        {proposta.escopo && (
+                          <div className="mt-3 pt-3 border-t">
+                            <span className="font-semibold text-gray-600 text-sm">Escopo:</span>
+                            <p className="text-gray-900 text-sm mt-1">{proposta.escopo}</p>
+                          </div>
+                        )}
+
+                        <div className="mt-3 pt-3 border-t flex items-center justify-between">
+                          <div className="flex gap-4 text-sm">
+                            <div>
+                              <span className="text-gray-600">Valor BIM:</span>
+                              <span className="ml-2 font-semibold text-blue-600">
+                                {proposta.valor_bim ? 
+                                  `R$ ${Number(proposta.valor_bim).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 
+                                  : '-'}
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-gray-600">Valor CAD:</span>
+                              <span className="ml-2 font-semibold text-blue-600">
+                                {proposta.valor_cad ? 
+                                  `R$ ${Number(proposta.valor_cad).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 
+                                  : '-'}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <span className="text-gray-600 text-sm">Valor Total:</span>
+                            <p className="font-bold text-lg text-green-600">
+                              {(proposta.valor_bim || proposta.valor_cad) ? 
+                                `R$ ${(Number(proposta.valor_bim || 0) + Number(proposta.valor_cad || 0)).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}` 
+                                : '-'}
+                            </p>
+                          </div>
+                        </div>
+
+                        {proposta.observacao && (
+                          <div className="mt-3 pt-3 border-t">
+                            <span className="font-semibold text-gray-600 text-sm">Observações:</span>
+                            <p className="text-gray-900 text-sm mt-1">{proposta.observacao}</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               )}
             </CardContent>
