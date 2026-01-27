@@ -231,34 +231,40 @@ export const ActivityTimerProvider = ({ children }) => {
                 }
                 console.log(`   🏁 Finalizando atividade explicitamente`);
                 
-                // Para atividades rápidas, atualizar tempo_planejado e horas_por_dia
+                // Para atividades rápidas, atualizar tempo_planejado, horas_por_dia E termino_planejado
                 if (isAtividadeRapida) {
                     updateData.tempo_planejado = novoTempoExecutado;
-                    const diaDaAtividade = planejamento.inicio_planejado || diaParaRegistrar;
-                    updateData.horas_por_dia = { [diaDaAtividade]: novoTempoExecutado };
-                    console.log(`   ⚡ Atividade rápida - atualizando tempo_planejado=${novoTempoExecutado.toFixed(4)}h`);
+                    const diaInicio = planejamento.inicio_planejado || diaParaRegistrar;
+                    updateData.inicio_planejado = diaInicio;
+                    updateData.termino_planejado = diaInicio;
+                    updateData.horas_por_dia = { [diaInicio]: novoTempoExecutado };
+                    console.log(`   ⚡ Atividade rápida concluída - mantendo TODAS as horas no dia ${diaInicio}`);
                 }
                 
             } else if (finalStatus === 'pausado') {
                 updateData.status = 'pausado';
                 console.log(`   ⏸️ Pausando atividade explicitamente - NUNCA marcar como concluído`);
                 
-                // Para atividades rápidas, atualizar tempo_planejado e horas_por_dia
+                // Para atividades rápidas, atualizar tempo_planejado, horas_por_dia E manter no mesmo dia
                 if (isAtividadeRapida) {
                     updateData.tempo_planejado = novoTempoExecutado;
-                    const diaDaAtividade = planejamento.inicio_planejado || diaParaRegistrar;
-                    updateData.horas_por_dia = { [diaDaAtividade]: novoTempoExecutado };
-                    console.log(`   ⚡ Atividade rápida pausada - tempo_planejado=${novoTempoExecutado.toFixed(4)}h`);
+                    const diaInicio = planejamento.inicio_planejado || diaParaRegistrar;
+                    updateData.inicio_planejado = diaInicio;
+                    updateData.termino_planejado = diaInicio;
+                    updateData.horas_por_dia = { [diaInicio]: novoTempoExecutado };
+                    console.log(`   ⚡ Atividade rápida pausada - mantendo TODAS as horas no dia ${diaInicio}`);
                 }
                 
             } else {
                 // Calcular status automaticamente apenas quando finalStatus não foi especificado
                 if (isAtividadeRapida) {
                     updateData.tempo_planejado = novoTempoExecutado;
-                    const diaDaAtividade = planejamento.inicio_planejado || diaParaRegistrar;
-                    updateData.horas_por_dia = { [diaDaAtividade]: novoTempoExecutado };
+                    const diaInicio = planejamento.inicio_planejado || diaParaRegistrar;
+                    updateData.inicio_planejado = diaInicio;
+                    updateData.termino_planejado = diaInicio;
+                    updateData.horas_por_dia = { [diaInicio]: novoTempoExecutado };
                     updateData.status = 'em_andamento';
-                    console.log(`   ⚡ Atividade rápida - atualizando tempo_planejado=${novoTempoExecutado.toFixed(4)}h e status para em_andamento`);
+                    console.log(`   ⚡ Atividade rápida em andamento - mantendo TODAS as horas no dia ${diaInicio}`);
                 } else {
                     if (novoTempoExecutado >= (Number(planejamento.tempo_planejado) || 0)) {
                         updateData.status = 'concluido';
@@ -445,10 +451,12 @@ export const ActivityTimerProvider = ({ children }) => {
                             base_descritivo: executionData.base_descritivo,
                             empreendimento_id: executionData.empreendimento_id,
                             executor_principal: user.email,
+                            executores: [user.email],
                             tempo_planejado: 0,
                             inicio_planejado: hoje,
                             termino_planejado: hoje,
                             horas_por_dia: { [hoje]: 0 },
+                            horas_executadas_por_dia: {},
                             status: 'em_andamento',
                             is_quick_activity: true
                         }),
