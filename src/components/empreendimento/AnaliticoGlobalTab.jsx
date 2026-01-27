@@ -975,11 +975,14 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
     const result = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
     
-    // Adicionar TODAS as disciplinas de Documentação (com subdisciplinas)
+    // Adicionar apenas disciplinas de Documentação que têm atividades
     Object.entries(gruposDocumentacao)
       .sort((a, b) => a[0].localeCompare(b[0]))
       .forEach(([disciplina, subdisciplinas]) => {
-        result.push([disciplina, subdisciplinas]);
+        const temAtividades = Object.values(subdisciplinas).flat().length > 0;
+        if (temAtividades) {
+          result.push([disciplina, subdisciplinas]);
+        }
       });
     
     return result;
