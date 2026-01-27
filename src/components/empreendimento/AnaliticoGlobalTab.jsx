@@ -948,13 +948,17 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const atividadesPorDisciplina = useMemo(() => {
     const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
     const grupos = {};
-    const documentacao = [];
+    const gruposDocumentacao = {};
     
     atividadesAgrupadas.forEach(grupo => {
       const disciplina = grupo.baseAtividade.disciplina || 'Sem Disciplina';
       
       if (disciplinasDocumentacao.includes(disciplina)) {
-        documentacao.push(grupo);
+        // Agrupar Documentação por suas disciplinas
+        if (!gruposDocumentacao[disciplina]) {
+          gruposDocumentacao[disciplina] = [];
+        }
+        gruposDocumentacao[disciplina].push(grupo);
       } else {
         if (!grupos[disciplina]) {
           grupos[disciplina] = [];
@@ -965,10 +969,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
     const result = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
     
-    // Adicionar grupo de Documentação no final se houver atividades
-    if (documentacao.length > 0) {
-      result.push(['Documentação', documentacao]);
-    }
+    // Adicionar cada disciplina de Documentação separadamente
+    Object.entries(gruposDocumentacao)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .forEach(([disciplina, grupos]) => {
+        result.push([`Documentação - ${disciplina}`, grupos]);
+      });
     
     return result;
   }, [atividadesAgrupadas]);
@@ -1419,7 +1425,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                      <TableHead>Status</TableHead>
                      <TableHead>Etapa</TableHead>
                      <TableHead>Tempo Padrão</TableHead>
-                     {disciplina === 'Documentação' && <TableHead className="text-center">Planejar</TableHead>}
+                     {disciplina.startsWith('Documentação') && <TableHead className="text-center">Planejar</TableHead>}
                      <TableHead className="w-[50px]"></TableHead>
                    </TableRow>
                 </TableHeader>
@@ -1482,7 +1488,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                           </TableCell>
                           <TableCell>{ativ.etapa}</TableCell>
                           <TableCell>{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
-                          {disciplina === 'Documentação' && (
+                          {disciplina.startsWith('Documentação') && (
                             <TableCell className="text-center">
                               <Button 
                                 size="sm" 
@@ -1558,7 +1564,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             </TableCell>
                             <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
                             <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
-                            {disciplina === 'Documentação' && <TableCell></TableCell>}
+                            {disciplina.startsWith('Documentação') && <TableCell></TableCell>}
                             <TableCell></TableCell>
                           </TableRow>
                         ))}
