@@ -16,7 +16,6 @@ import { retryWithBackoff } from '../utils/apiUtils';
 import { Checkbox } from "@/components/ui/checkbox";
 import { base44 } from '@/api/base44Client';
 import PDFListaDesenvolvimento from '../configuracoes/PDFListaDesenvolvimento';
-import PlanejarRapidoModal from './PlanejarRapidoModal';
 
 const EtapaEditModal = ({ isOpen, onClose, atividade, onSave }) => {
   const [newEtapa, setNewEtapa] = useState('');
@@ -743,11 +742,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           base_atividade_id: ativ.id,
       }));
 
-      // Adicionar apenas atividades de Gestão (sempre visíveis)
+      // Adicionar atividades de Documentação (sempre visíveis)
+      const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
       const atividadesDocumentacao = [];
       
       allGenericActivitiesMap.forEach(baseAtividade => {
-        if (baseAtividade.disciplina === 'Gestão') {
+        if (disciplinasDocumentacao.includes(baseAtividade.disciplina)) {
           const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
           
           if (!isExcludedFromProject) {
@@ -946,23 +946,22 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   }, [combinedActivities, filters]);
 
   const atividadesPorDisciplina = useMemo(() => {
+    const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
     const grupos = {};
-    const gruposGestao = {};
+    const gruposDocumentacao = {};
+    
+    // Inicializar todas as disciplinas de Documentação com arrays vazios
+    disciplinasDocumentacao.forEach(disc => {
+      gruposDocumentacao[disc] = [];
+    });
     
     atividadesAgrupadas.forEach(grupo => {
       const disciplina = grupo.baseAtividade.disciplina || 'Sem Disciplina';
       
-      if (disciplina === 'Gestão') {
-        // Agrupar Gestão por subdisciplina
-        const subdisciplina = grupo.baseAtividade.subdisciplina || 'Sem Subdisciplina';
-        const chave = `Gestão - ${subdisciplina}`;
-        
-        if (!gruposGestao[chave]) {
-          gruposGestao[chave] = [];
-        }
-        gruposGestao[chave].push(grupo);
+      if (disciplinasDocumentacao.includes(disciplina)) {
+        // Agrupar Documentação por suas disciplinas
+        gruposDocumentacao[disciplina].push(grupo);
       } else {
-        // Outras disciplinas normalmente
         if (!grupos[disciplina]) {
           grupos[disciplina] = [];
         }
@@ -972,11 +971,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
     const result = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
     
-    // Adicionar grupos de Gestão por subdisciplina
-    Object.entries(gruposGestao)
+    // Adicionar TODAS as disciplinas de Documentação (mesmo vazias)
+    Object.entries(gruposDocumentacao)
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .forEach(([subdisciplina, grupos]) => {
-        result.push([subdisciplina, grupos]);
+      .forEach(([disciplina, grupos]) => {
+        result.push([disciplina, grupos]);
       });
     
     return result;
@@ -1173,11 +1172,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     setIsExcluirDeFolhasModalOpen(true);
   };
 
-  const [isPlanejarRapidoModalOpen, setIsPlanejarRapidoModalOpen] = useState(false);
-
   const handlePlanejarAtividade = (atividade) => {
     setAtividadeParaPlanejar(atividade);
-    setIsPlanejarRapidoModalOpen(true);
+    setIsPlanejamentoModalOpen(true);
   };
 
   const handlePlanejarComplete = () => {
@@ -1430,7 +1427,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                      <TableHead>Status</TableHead>
                      <TableHead>Etapa</TableHead>
                      <TableHead>Tempo Padrão</TableHead>
-                     {disciplina.startsWith('Gestão') && <TableHead className="text-center">Planejar</TableHead>}
+                     {['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina) && <TableHead className="text-center">Planejar</TableHead>}
                      <TableHead className="w-[50px]"></TableHead>
                    </TableRow>
                 </TableHeader>
@@ -1500,7 +1497,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                               return tempoTotal > 0 ? `${tempoTotal.toFixed(1)}h` : '-';
                             })()}
                           </TableCell>
-                          {disciplina.startsWith('Gestão') && (
+                          {['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina) && (
                             <TableCell className="text-center">
                               <Button 
                                 size="sm" 
@@ -1576,7 +1573,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             </TableCell>
                             <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
                             <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
-                            {disciplina.startsWith('Gestão') && <TableCell></TableCell>}
+                            {['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina) && <TableCell></TableCell>}
                             <TableCell></TableCell>
                           </TableRow>
                         ))}
@@ -1747,21 +1744,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           isOpen={isPlanejamentoModalOpen}
           onClose={() => {
             setIsPlanejamentoModalOpen(false);
-            setAtividadeParaPlanejar(null);
-          }}
-          atividade={atividadeParaPlanejar}
-          empreendimentoId={empreendimentoId}
-          documentos={documentos}
-          usuarios={usuarios}
-          onSuccess={handlePlanejarComplete}
-        />
-      )}
-
-      {isPlanejarRapidoModalOpen && atividadeParaPlanejar && (
-        <PlanejarRapidoModal
-          isOpen={isPlanejarRapidoModalOpen}
-          onClose={() => {
-            setIsPlanejarRapidoModalOpen(false);
             setAtividadeParaPlanejar(null);
           }}
           atividade={atividadeParaPlanejar}
