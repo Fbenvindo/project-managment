@@ -55,9 +55,20 @@ export default function ActivityItemCalendar({
   const [editedDescritivo, setEditedDescritivo] = useState('');
 
   const realStatus = useMemo(() => {
-    // Retornar o status real do banco, sem sobrescrever
+    // Verificar primeiro se está explicitamente marcada como concluída
+    if (plano.status === 'concluido') {
+      return 'concluido';
+    }
+    
+    // Se tempo executado >= tempo planejado, considerar concluída
+    const tempoExec = Number(plano.tempo_executado) || 0;
+    const tempoPlanj = Number(plano.tempo_planejado) || 0;
+    if (tempoPlanj > 0 && tempoExec >= tempoPlanj) {
+      return 'concluido';
+    }
+    
     return plano.status || 'nao_iniciado';
-  }, [plano.status]);
+  }, [plano.status, plano.tempo_executado, plano.tempo_planejado]);
 
   const getStatusColor = (status) => {
     switch (status) {
