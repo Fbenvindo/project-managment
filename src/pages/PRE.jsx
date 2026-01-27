@@ -90,6 +90,7 @@ export default function PRE() {
   const [empreendimentos, setEmpreendimentos] = useState([]);
   const [selectedEmp, setSelectedEmp] = useState(null);
   const [items, setItems] = useState([]);
+  const [expandedImage, setExpandedImage] = useState(null);
   const [headerData, setHeaderData] = useState({
     cliente: '',
     obra: '',
@@ -533,7 +534,8 @@ export default function PRE() {
                                 <img
                                   src={imgUrl}
                                   alt={`Imagem ${idx + 1}`}
-                                  className="w-full h-20 object-cover rounded border"
+                                  className="w-full h-20 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
+                                  onClick={() => setExpandedImage(imgUrl)}
                                 />
                                 <button
                                   onClick={() => handleRemoveImage(item.id, imgUrl)}
@@ -560,6 +562,28 @@ export default function PRE() {
                   )}
                 </tbody>
               </table>
+            </div>
+          </div>
+        )}
+
+        {/* Modal de Imagem Expandida */}
+        {expandedImage && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4 no-print"
+            onClick={() => setExpandedImage(null)}
+          >
+            <div className="relative max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center">
+              <img
+                src={expandedImage}
+                alt="Imagem expandida"
+                className="max-w-full max-h-full object-contain"
+              />
+              <button
+                onClick={() => setExpandedImage(null)}
+                className="absolute top-4 right-4 bg-white text-gray-800 rounded-full p-2 hover:bg-gray-200 transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
             </div>
           </div>
         )}
