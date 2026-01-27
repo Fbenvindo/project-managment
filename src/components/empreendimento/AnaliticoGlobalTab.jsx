@@ -924,22 +924,20 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     
     atividadesAgrupadas.forEach(grupo => {
       const disciplina = grupo.baseAtividade.disciplina || 'Sem Disciplina';
+      const subdisciplina = grupo.baseAtividade.subdisciplina;
       
-      // Se for Gestão, criar subdisciplinas separadas
-      if (disciplina === 'Gestão') {
-        const subdisciplina = grupo.baseAtividade.subdisciplina || 'Geral';
-        const key = `Gestão - ${subdisciplina}`;
-        
-        if (!grupos[key]) {
-          grupos[key] = [];
-        }
-        grupos[key].push(grupo);
-      } else {
-        if (!grupos[disciplina]) {
-          grupos[disciplina] = [];
-        }
-        grupos[disciplina].push(grupo);
+      // Criar chave específica para cada combinação
+      let key = disciplina;
+      
+      // Se tiver subdisciplina, adicionar à chave
+      if (subdisciplina) {
+        key = `${disciplina} - ${subdisciplina}`;
       }
+      
+      if (!grupos[key]) {
+        grupos[key] = [];
+      }
+      grupos[key].push(grupo);
     });
 
     return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
