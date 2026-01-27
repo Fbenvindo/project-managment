@@ -109,7 +109,7 @@ export const ActivityTimerProvider = ({ children }) => {
         try {
             const results = await retryWithBackoff(
                 async () => {
-                    const filtered = await PlanejamentoAtividade.filter({ id: id }, null, 1);
+                    const filtered = await PlanejamentoAtividade.filter({ id: id });
                     return filtered;
                 },
                 3,
@@ -120,6 +120,26 @@ export const ActivityTimerProvider = ({ children }) => {
             if (results && results.length > 0) {
                 return results[0];
             }
+            
+            // Tentar buscar em PlanejamentoDocumento se não encontrar
+            try {
+                const resultsDoc = await retryWithBackoff(
+                    async () => {
+                        const filtered = await PlanejamentoDocumento.filter({ id: id });
+                        return filtered;
+                    },
+                    2,
+                    500,
+                    'getPlanejamentoDoc'
+                );
+                
+                if (resultsDoc && resultsDoc.length > 0) {
+                    return resultsDoc[0];
+                }
+            } catch (e) {
+                console.log('Não encontrado em PlanejamentoDocumento');
+            }
+            
             console.warn(`[getPlanejamento] Planejamento com ID ${id} não encontrado.`);
             return null;
 
@@ -150,7 +170,7 @@ export const ActivityTimerProvider = ({ children }) => {
             let isDocumento = false;
             
             try {
-                const resultAtiv = await retryWithBackoff(() => PlanejamentoAtividade.filter({ id: planejamentoId }, null, 1), 2, 500, 'updatePlanejamento.findAtiv');
+                const resultAtiv = await retryWithBackoff(() => PlanejamentoAtividade.filter({ id: planejamentoId }), 2, 500, 'updatePlanejamento.findAtiv');
                 if (resultAtiv && resultAtiv.length > 0) {
                     planejamento = resultAtiv[0];
                     console.log(`   ✅ Encontrado em PlanejamentoAtividade`);
@@ -161,7 +181,7 @@ export const ActivityTimerProvider = ({ children }) => {
             
             if (!planejamento) {
                 try {
-                    const resultDoc = await retryWithBackoff(() => PlanejamentoDocumento.filter({ id: planejamentoId }, null, 1), 2, 500, 'updatePlanejamento.findDoc');
+                    const resultDoc = await retryWithBackoff(() => PlanejamentoDocumento.filter({ id: planejamentoId }), 2, 500, 'updatePlanejamento.findDoc');
                     if (resultDoc && resultDoc.length > 0) {
                         planejamento = resultDoc[0];
                         isDocumento = true;
