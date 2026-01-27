@@ -406,9 +406,9 @@ export default function ActivityItemCalendar({
           
           <div className="flex items-center gap-2">
             <div className="font-mono text-blue-600 flex flex-col items-end">
-              <span className="font-semibold text-sm">{horasDoDia.toFixed(1)}h</span>
+              <span className="font-semibold text-sm">{tempoPlanejado.toFixed(1)}h</span>
               <span className="text-xs text-gray-500">
-                ({tempoExecutado.toFixed(1)}h / {tempoPlanejado.toFixed(1)}h)
+                {tempoExecutado.toFixed(1)}h executadas
               </span>
             </div>
             
