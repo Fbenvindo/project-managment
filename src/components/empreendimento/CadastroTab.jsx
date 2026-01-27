@@ -936,34 +936,33 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
             <thead>
               <tr>
                 <th className="border-l-0"></th>
-              {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
-                const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
-                const colSpanTotal = revisoesEtapa.length + 1;
-                return (
-                  <th
-                    key={etapa}
-                    colSpan={colSpanTotal}
-                    className="border border-gray-300 bg-blue-200 p-2 text-center font-semibold relative group"
-                    style={{ width: `${colSpanTotal * 150}px` }}
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <span>Datas de cadastro:<br />{etapa}</span>
-                      {!readOnly && (
-                        <button
-                          onClick={() => handleExcluirEtapa(etapa)}
-                          className="absolute top-1 right-1 text-red-500 hover:text-red-700 p-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded"
-                          title="Excluir etapa"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      )}
-                    </div>
-                  </th>
-                );
-              })}
-            </tr>
-            <tr>
-              <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}></th>
+                {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
+                  const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+                  const colSpanTotal = revisoesEtapa.length + 1;
+                  return (
+                    <th
+                      key={etapa}
+                      colSpan={colSpanTotal}
+                      className="border border-gray-300 border-l-0 bg-blue-200 p-2 text-center font-semibold relative group"
+                      style={{ width: `${colSpanTotal * 150}px` }}
+                    >
+                      <div className="flex items-center justify-center gap-2">
+                        <span>Datas de cadastro:<br />{etapa}</span>
+                        {!readOnly && (
+                          <button
+                            onClick={() => handleExcluirEtapa(etapa)}
+                            className="absolute top-1 right-1 text-red-500 hover:text-red-700 p-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded"
+                            title="Excluir etapa"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    </th>
+                  );
+                })}
+              </tr>
+              <tr>
               {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, etapaIdx) => {
                 const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                 const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
