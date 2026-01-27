@@ -950,14 +950,16 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     const grupos = {};
     const gruposDocumentacao = {};
     
+    // Inicializar todas as disciplinas de Documentação com arrays vazios
+    disciplinasDocumentacao.forEach(disc => {
+      gruposDocumentacao[disc] = [];
+    });
+    
     atividadesAgrupadas.forEach(grupo => {
       const disciplina = grupo.baseAtividade.disciplina || 'Sem Disciplina';
       
       if (disciplinasDocumentacao.includes(disciplina)) {
         // Agrupar Documentação por suas disciplinas
-        if (!gruposDocumentacao[disciplina]) {
-          gruposDocumentacao[disciplina] = [];
-        }
         gruposDocumentacao[disciplina].push(grupo);
       } else {
         if (!grupos[disciplina]) {
@@ -969,7 +971,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
     const result = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
     
-    // Adicionar cada disciplina de Documentação separadamente
+    // Adicionar TODAS as disciplinas de Documentação (mesmo vazias)
     Object.entries(gruposDocumentacao)
       .sort((a, b) => a[0].localeCompare(b[0]))
       .forEach(([disciplina, grupos]) => {
