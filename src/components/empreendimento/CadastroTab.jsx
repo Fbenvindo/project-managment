@@ -44,7 +44,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
   // Auto-save com debounce
   useEffect(() => {
-    if (hasUnsavedChanges && !isLoading) {
+    if (hasUnsavedChanges && !isLoading && !isSaving) {
       console.log('Auto-save agendado - mudanças detectadas');
       if (autoSaveTimeoutRef.current) {
         clearTimeout(autoSaveTimeoutRef.current);
@@ -53,7 +53,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       autoSaveTimeoutRef.current = setTimeout(() => {
         console.log('Executando auto-save');
         handleSave(true); // true = silent save
-      }, 3000); // salva após 3 segundos de inatividade
+      }, 5000); // salva após 5 segundos de inatividade
     }
     
     return () => {
@@ -61,7 +61,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         clearTimeout(autoSaveTimeoutRef.current);
       }
     };
-  }, [hasUnsavedChanges, linhas]);
+  }, [hasUnsavedChanges, linhas, isSaving]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -485,6 +485,10 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
 
   const handleSave = async (silent = false) => {
+    if (isSaving) {
+      console.log('Já está salvando, ignorando chamada duplicada');
+      return;
+    }
     setIsSaving(true);
     try {
       // Filtrar apenas linhas que têm dados para salvar
@@ -539,7 +543,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
           // Delay entre cada requisição para evitar rate limit
           if (i < linhasParaSalvar.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 1500));
+            await new Promise(resolve => setTimeout(resolve, 2500));
           }
         } catch (error) {
           errorCount++;
