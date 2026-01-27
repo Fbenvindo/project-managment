@@ -1598,11 +1598,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                           })}
                         </TableBody>
                       </Table>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-              <Table>
+                      </div>
+                      ))}
+                      </div>
+                      ) : (
+                      <Table>
                 <TableHeader className="bg-gray-50">
                   <TableRow>
                      {editableActivities.length > 0 && <TableHead className="w-[50px]"></TableHead>}
