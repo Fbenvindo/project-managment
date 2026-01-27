@@ -1427,7 +1427,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                      <TableHead>Status</TableHead>
                      <TableHead>Etapa</TableHead>
                      <TableHead>Tempo Padrão</TableHead>
-                     {['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina) && <TableHead className="text-center">Planejar</TableHead>}
+                     <TableHead className="text-center">Planejar</TableHead>
                      <TableHead className="w-[50px]"></TableHead>
                    </TableRow>
                 </TableHeader>
