@@ -526,25 +526,37 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           };
 
           let result;
-          if (linha.isNew || linha.id.toString().startsWith('temp-')) {
-            result = await retryWithBackoff(
-              () => DataCadastro.create(linhaData),
-              3, 2000, `createCadastro-${linha.id}`
-            );
-          } else {
-            result = await retryWithBackoff(
-              () => DataCadastro.update(linha.id, linhaData),
-              3, 2000, `updateCadastro-${linha.id}`
-            );
+          let attempts = 0;
+          const maxAttempts = 5;
+          
+          while (attempts < maxAttempts) {
+            try {
+              if (linha.isNew || linha.id.toString().startsWith('temp-')) {
+                result = await DataCadastro.create(linhaData);
+              } else {
+                result = await DataCadastro.update(linha.id, linhaData);
+              }
+              break; // Sucesso, sair do loop
+            } catch (err) {
+              attempts++;
+              console.error(`Tentativa ${attempts} falhou para linha ${linha.id}:`, err);
+              
+              if (attempts >= maxAttempts) {
+                throw err; // Excedeu tentativas, lançar erro
+              }
+              
+              // Aguardar antes de tentar novamente (backoff exponencial)
+              const waitTime = 3000 * Math.pow(2, attempts - 1);
+              console.log(`Aguardando ${waitTime}ms antes de tentar novamente...`);
+              await new Promise(resolve => setTimeout(resolve, waitTime));
+            }
           }
 
           successCount++;
           updatedLinhas.set(linha.id, result);
 
           // Delay entre cada requisição para evitar rate limit
-          if (i < linhasParaSalvar.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 3000));
-          }
+          await new Promise(resolve => setTimeout(resolve, 4000));
         } catch (error) {
           errorCount++;
           console.error(`Erro na linha ${linha.id}:`, error);
