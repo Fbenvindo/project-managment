@@ -946,22 +946,22 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   }, [combinedActivities, filters]);
 
   const atividadesPorDisciplina = useMemo(() => {
-    const disciplinasDocumentacao = ['Gestão'];
     const grupos = {};
-    const gruposDocumentacao = {};
-    
-    // Inicializar todas as disciplinas de Documentação com arrays vazios
-    disciplinasDocumentacao.forEach(disc => {
-      gruposDocumentacao[disc] = [];
-    });
     
     atividadesAgrupadas.forEach(grupo => {
-      const disciplina = grupo.baseAtividade.disciplina || 'Sem Disciplina';
+      const baseAtiv = grupo.baseAtividade;
+      const disciplina = baseAtiv.disciplina || 'Sem Disciplina';
       
-      if (disciplinasDocumentacao.includes(disciplina)) {
-        // Agrupar Documentação por suas disciplinas
-        gruposDocumentacao[disciplina].push(grupo);
+      // Para Gestão, separar por subdisciplina
+      if (disciplina === 'Gestão') {
+        const subdisciplina = baseAtiv.subdisciplina || 'Geral';
+        const chaveGestao = `Gestão - ${subdisciplina}`;
+        if (!grupos[chaveGestao]) {
+          grupos[chaveGestao] = [];
+        }
+        grupos[chaveGestao].push(grupo);
       } else {
+        // Outras disciplinas agrupadas normalmente
         if (!grupos[disciplina]) {
           grupos[disciplina] = [];
         }
@@ -969,16 +969,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       }
     });
 
-    const result = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
-    
-    // Adicionar TODAS as disciplinas de Documentação (mesmo vazias)
-    Object.entries(gruposDocumentacao)
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .forEach(([disciplina, grupos]) => {
-        result.push([disciplina, grupos]);
-      });
-    
-    return result;
+    return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
   }, [atividadesAgrupadas]);
   
   const etapasUnicas = useMemo(() => [...new Set(combinedActivities.map(a => a.etapa).filter(Boolean))], [combinedActivities]);
