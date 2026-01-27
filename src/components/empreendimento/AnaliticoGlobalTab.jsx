@@ -884,7 +884,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         });
       });
 
-      setCombinedActivities([...normalizedProjectActivities, ...documentActivities, ...atividadesDocumentacao]);
+      setCombinedActivities([...normalizedProjectActivities, ...documentActivities]);
       setDisciplinas(disciplinasData || []);
 
     } catch (error) {
