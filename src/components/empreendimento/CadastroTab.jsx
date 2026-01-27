@@ -275,7 +275,12 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       if (!novasDatas[etapa]) {
         novasDatas[etapa] = {};
       }
-      novasDatas[etapa][revisao] = valor;
+      // Se o valor estiver vazio, deletar a chave ao invés de setar como vazio
+      if (!valor || valor.trim() === '') {
+        delete novasDatas[etapa][revisao];
+      } else {
+        novasDatas[etapa][revisao] = valor;
+      }
       
       return { ...linha, datas: novasDatas };
     }));
