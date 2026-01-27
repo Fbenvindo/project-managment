@@ -948,37 +948,18 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const atividadesPorDisciplina = useMemo(() => {
     const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
     const grupos = {};
-    const gruposDocumentacao = {};
-    
-    // Inicializar todas as disciplinas de Documentação com arrays vazios
-    disciplinasDocumentacao.forEach(disc => {
-      gruposDocumentacao[disc] = [];
-    });
     
     atividadesAgrupadas.forEach(grupo => {
       const disciplina = grupo.baseAtividade.disciplina || 'Sem Disciplina';
       
-      if (disciplinasDocumentacao.includes(disciplina)) {
-        // Agrupar Documentação por suas disciplinas
-        gruposDocumentacao[disciplina].push(grupo);
-      } else {
-        if (!grupos[disciplina]) {
-          grupos[disciplina] = [];
-        }
-        grupos[disciplina].push(grupo);
+      // Agrupar TUDO por disciplina - sem separar documentação
+      if (!grupos[disciplina]) {
+        grupos[disciplina] = [];
       }
+      grupos[disciplina].push(grupo);
     });
 
-    const result = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
-    
-    // Adicionar TODAS as disciplinas de Documentação (mesmo vazias)
-    Object.entries(gruposDocumentacao)
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .forEach(([disciplina, grupos]) => {
-        result.push([disciplina, grupos]);
-      });
-    
-    return result;
+    return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
   }, [atividadesAgrupadas]);
   
   const etapasUnicas = useMemo(() => [...new Set(combinedActivities.map(a => a.etapa).filter(Boolean))], [combinedActivities]);
