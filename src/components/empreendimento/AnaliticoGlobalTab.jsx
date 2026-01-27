@@ -975,7 +975,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     Object.entries(gruposDocumentacao)
       .sort((a, b) => a[0].localeCompare(b[0]))
       .forEach(([disciplina, grupos]) => {
-        result.push([`Documentação - ${disciplina}`, grupos]);
+        result.push([disciplina, grupos]);
       });
     
     return result;
@@ -1427,7 +1427,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                      <TableHead>Status</TableHead>
                      <TableHead>Etapa</TableHead>
                      <TableHead>Tempo Padrão</TableHead>
-                     {disciplina.startsWith('Documentação') && <TableHead className="text-center">Planejar</TableHead>}
+                     {['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina) && <TableHead className="text-center">Planejar</TableHead>}
                      <TableHead className="w-[50px]"></TableHead>
                    </TableRow>
                 </TableHeader>
@@ -1490,7 +1490,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                           </TableCell>
                           <TableCell>{ativ.etapa}</TableCell>
                           <TableCell>{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
-                          {disciplina.startsWith('Documentação') && (
+                          {['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina) && (
                             <TableCell className="text-center">
                               <Button 
                                 size="sm" 
@@ -1566,7 +1566,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             </TableCell>
                             <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
                             <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
-                            {disciplina.startsWith('Documentação') && <TableCell></TableCell>}
+                            {['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina) && <TableCell></TableCell>}
                             <TableCell></TableCell>
                           </TableRow>
                         ))}
