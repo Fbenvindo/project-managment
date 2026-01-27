@@ -1215,7 +1215,14 @@ export default function DocumentosTab({
         console.log(`   🎯 Filtrado por etapa "${etapaParaPlanejamento}": ${atividadesGerais.length} atividades\n`);
       }
 
-      return ordenarAtividades(atividadesGerais).map(atividade => {
+      return ordenarAtividades(atividadesGerais).filter(atividade => {
+        // Filtrar atividades concluídas no planejamento
+        const planejamentoDaAtividade = planejamentosDoDocumento.find(p =>
+          p.atividade_id === atividade.id &&
+          p.tipo_plano === 'atividade'
+        );
+        return planejamentoDaAtividade?.status !== 'concluido';
+      }).map(atividade => {
         const etapaFinal = etapaOverrides.has(atividade.id) 
           ? etapaOverrides.get(atividade.id) 
           : atividade.etapa;
