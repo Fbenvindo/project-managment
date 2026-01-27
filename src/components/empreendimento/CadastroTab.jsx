@@ -42,26 +42,26 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     }
   }, [empreendimento?.id]);
 
-  // Auto-save com debounce
-  useEffect(() => {
-    if (hasUnsavedChanges && !isLoading && !isSaving) {
-      console.log('Auto-save agendado - mudanças detectadas');
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-      
-      autoSaveTimeoutRef.current = setTimeout(() => {
-        console.log('Executando auto-save');
-        handleSave(true); // true = silent save
-      }, 5000); // salva após 5 segundos de inatividade
-    }
-    
-    return () => {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-    };
-  }, [hasUnsavedChanges, linhas, isSaving]);
+  // Auto-save desabilitado - causava conflitos de rate limit
+  // useEffect(() => {
+  //   if (hasUnsavedChanges && !isLoading && !isSaving) {
+  //     console.log('Auto-save agendado - mudanças detectadas');
+  //     if (autoSaveTimeoutRef.current) {
+  //       clearTimeout(autoSaveTimeoutRef.current);
+  //     }
+  //     
+  //     autoSaveTimeoutRef.current = setTimeout(() => {
+  //       console.log('Executando auto-save');
+  //       handleSave(true); // true = silent save
+  //     }, 5000); // salva após 5 segundos de inatividade
+  //   }
+  //   
+  //   return () => {
+  //     if (autoSaveTimeoutRef.current) {
+  //       clearTimeout(autoSaveTimeoutRef.current);
+  //     }
+  //   };
+  // }, [hasUnsavedChanges, linhas, isSaving]);
 
   const loadData = async () => {
     setIsLoading(true);
@@ -543,7 +543,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
           // Delay entre cada requisição para evitar rate limit
           if (i < linhasParaSalvar.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 2500));
+            await new Promise(resolve => setTimeout(resolve, 3000));
           }
         } catch (error) {
           errorCount++;
@@ -799,7 +799,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           {readOnly && <Badge variant="outline" className="text-xs">Somente Visualização</Badge>}
           {!readOnly && hasUnsavedChanges && (
             <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">
-              Salvando automaticamente...
+              Alterações não salvas
             </Badge>
           )}
         </div>
