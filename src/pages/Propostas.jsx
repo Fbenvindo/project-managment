@@ -1,9 +1,15 @@
 import React, { useState, useEffect } from "react";
-import { FileText, Loader2 } from "lucide-react";
+import { FileText, Loader2, Plus } from "lucide-react";
 import { Comercial } from "@/entities/all";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { format } from "date-fns";
 
@@ -24,6 +30,26 @@ const statusLabels = {
 export default function PropostasPage() {
   const [propostas, setPropostas] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    numero: '',
+    data_solicitacao: '',
+    solicitante: '',
+    cliente: '',
+    empreendimento: '',
+    tipo_empreendimento: '',
+    escopo: '',
+    area: '',
+    estado: '',
+    valor_bim: '',
+    valor_cad: '',
+    data_aprovacao: '',
+    status: 'solicitado',
+    email: '',
+    telefone: '',
+    observacao: ''
+  });
 
   useEffect(() => {
     loadPropostas();
@@ -44,6 +70,58 @@ export default function PropostasPage() {
     }
   };
 
+  const handleOpenModal = () => {
+    setFormData({
+      numero: '',
+      data_solicitacao: format(new Date(), 'yyyy-MM-dd'),
+      solicitante: '',
+      cliente: '',
+      empreendimento: '',
+      tipo_empreendimento: '',
+      escopo: '',
+      area: '',
+      estado: '',
+      valor_bim: '',
+      valor_cad: '',
+      data_aprovacao: '',
+      status: 'solicitado',
+      email: '',
+      telefone: '',
+      observacao: ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (!formData.numero || !formData.cliente || !formData.empreendimento) {
+      alert('Preencha os campos obrigatórios: Número, Cliente e Empreendimento');
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      const dataToSave = {
+        ...formData,
+        area: formData.area ? Number(formData.area) : undefined,
+        valor_bim: formData.valor_bim ? Number(formData.valor_bim) : undefined,
+        valor_cad: formData.valor_cad ? Number(formData.valor_cad) : undefined
+      };
+
+      await retryWithBackoff(
+        () => Comercial.create(dataToSave),
+        3, 2000, 'createProposta'
+      );
+
+      setIsModalOpen(false);
+      loadPropostas();
+    } catch (error) {
+      console.error('Erro ao salvar proposta:', error);
+      alert('Erro ao salvar proposta: ' + error.message);
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
@@ -56,14 +134,20 @@ export default function PropostasPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="p-6 md:p-8">
         <div className="max-w-7xl mx-auto space-y-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
-              <FileText className="w-5 h-5 text-blue-600" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
+                <FileText className="w-5 h-5 text-blue-600" />
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-gray-900">Propostas</h1>
+                <p className="text-gray-600">Apresentação de propostas comerciais ({propostas.length})</p>
+              </div>
             </div>
-            <div>
-              <h1 className="text-3xl font-bold text-gray-900">Propostas</h1>
-              <p className="text-gray-600">Apresentação de propostas comerciais ({propostas.length})</p>
-            </div>
+            <Button onClick={handleOpenModal} className="bg-blue-600 hover:bg-blue-700">
+              <Plus className="w-4 h-4 mr-2" />
+              Nova Proposta
+            </Button>
           </div>
 
           <Card>
@@ -172,6 +256,218 @@ export default function PropostasPage() {
           </Card>
         </div>
       </div>
+
+      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Nova Proposta</DialogTitle>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <div>
+              <Label htmlFor="numero">Número *</Label>
+              <Input
+                id="numero"
+                value={formData.numero}
+                onChange={(e) => setFormData({...formData, numero: e.target.value})}
+                placeholder="Ex: 2024-001"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="data_solicitacao">Data Solicitação *</Label>
+              <Input
+                id="data_solicitacao"
+                type="date"
+                value={formData.data_solicitacao}
+                onChange={(e) => setFormData({...formData, data_solicitacao: e.target.value})}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="cliente">Cliente *</Label>
+              <Input
+                id="cliente"
+                value={formData.cliente}
+                onChange={(e) => setFormData({...formData, cliente: e.target.value})}
+                placeholder="Nome do cliente"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="empreendimento">Empreendimento *</Label>
+              <Input
+                id="empreendimento"
+                value={formData.empreendimento}
+                onChange={(e) => setFormData({...formData, empreendimento: e.target.value})}
+                placeholder="Nome do empreendimento"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="solicitante">Solicitante</Label>
+              <Input
+                id="solicitante"
+                value={formData.solicitante}
+                onChange={(e) => setFormData({...formData, solicitante: e.target.value})}
+                placeholder="Nome do solicitante"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="tipo_empreendimento">Tipo de Empreendimento</Label>
+              <Select value={formData.tipo_empreendimento} onValueChange={(value) => setFormData({...formData, tipo_empreendimento: value})}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o tipo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Residencial">Residencial</SelectItem>
+                  <SelectItem value="Comercial">Comercial</SelectItem>
+                  <SelectItem value="Corporativo">Corporativo</SelectItem>
+                  <SelectItem value="Shopping">Shopping</SelectItem>
+                  <SelectItem value="Logística">Logística</SelectItem>
+                  <SelectItem value="Hotelaria">Hotelaria</SelectItem>
+                  <SelectItem value="Hospitalar">Hospitalar</SelectItem>
+                  <SelectItem value="Industrial">Industrial</SelectItem>
+                  <SelectItem value="Laboratório">Laboratório</SelectItem>
+                  <SelectItem value="Data Center">Data Center</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="col-span-2">
+              <Label htmlFor="escopo">Escopo</Label>
+              <Textarea
+                id="escopo"
+                value={formData.escopo}
+                onChange={(e) => setFormData({...formData, escopo: e.target.value})}
+                placeholder="Descrição do escopo do projeto"
+                rows={3}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="area">Área (m²)</Label>
+              <Input
+                id="area"
+                type="number"
+                step="0.01"
+                value={formData.area}
+                onChange={(e) => setFormData({...formData, area: e.target.value})}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="estado">Estado (UF)</Label>
+              <Input
+                id="estado"
+                value={formData.estado}
+                onChange={(e) => setFormData({...formData, estado: e.target.value})}
+                placeholder="Ex: SP"
+                maxLength={2}
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="valor_bim">Valor BIM (R$)</Label>
+              <Input
+                id="valor_bim"
+                type="number"
+                step="0.01"
+                value={formData.valor_bim}
+                onChange={(e) => setFormData({...formData, valor_bim: e.target.value})}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="valor_cad">Valor CAD (R$)</Label>
+              <Input
+                id="valor_cad"
+                type="number"
+                step="0.01"
+                value={formData.valor_cad}
+                onChange={(e) => setFormData({...formData, valor_cad: e.target.value})}
+                placeholder="0.00"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email}
+                onChange={(e) => setFormData({...formData, email: e.target.value})}
+                placeholder="contato@exemplo.com"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="telefone">Telefone</Label>
+              <Input
+                id="telefone"
+                value={formData.telefone}
+                onChange={(e) => setFormData({...formData, telefone: e.target.value})}
+                placeholder="(11) 99999-9999"
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="status">Status</Label>
+              <Select value={formData.status} onValueChange={(value) => setFormData({...formData, status: value})}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="solicitado">Solicitado</SelectItem>
+                  <SelectItem value="em_analise">Aguardando Aprovação</SelectItem>
+                  <SelectItem value="aprovado">Aprovado</SelectItem>
+                  <SelectItem value="reprovado">Não Aprovado</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div>
+              <Label htmlFor="data_aprovacao">Data Aprovação</Label>
+              <Input
+                id="data_aprovacao"
+                type="date"
+                value={formData.data_aprovacao}
+                onChange={(e) => setFormData({...formData, data_aprovacao: e.target.value})}
+              />
+            </div>
+
+            <div className="col-span-2">
+              <Label htmlFor="observacao">Observações</Label>
+              <Textarea
+                id="observacao"
+                value={formData.observacao}
+                onChange={(e) => setFormData({...formData, observacao: e.target.value})}
+                placeholder="Observações adicionais"
+                rows={3}
+              />
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsModalOpen(false)} disabled={isSaving}>
+              Cancelar
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
+              {isSaving ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Salvando...
+                </>
+              ) : (
+                'Salvar Proposta'
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
