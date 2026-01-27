@@ -295,7 +295,7 @@ export default function AtaPlanejamento() {
   const [showAddModal, setShowAddModal] = useState(false);
   const [novaProvidencia, setNovaProvidencia] = useState({
     projeto: '',
-    linhas: [{ providencias: '', resposta: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
+    linhas: [{ providencias: '', respostas: [], responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
   });
   const [showSelectAtaModal, setShowSelectAtaModal] = useState(false);
   const [searchAta, setSearchAta] = useState('');
@@ -322,7 +322,7 @@ export default function AtaPlanejamento() {
             providencias: providencias.map(p => ({
               projeto: p.projeto || '',
               providencias: p.providencias || '',
-              resposta: p.resposta || '',
+              respostas: p.respostas || [],
               responsaveis: p.responsaveis || [],
               dataReuniao: p.dataReuniao || '',
               dataRetorno: p.dataRetorno || '',
@@ -391,7 +391,7 @@ export default function AtaPlanejamento() {
         providencias: providencias.map(p => ({
           projeto: p.projeto,
           providencias: p.providencias,
-          resposta: p.resposta || '',
+          respostas: p.respostas || [],
           responsaveis: p.responsaveis || [],
           dataReuniao: p.dataReuniao || '',
           dataRetorno: p.dataRetorno || '',
@@ -491,7 +491,7 @@ export default function AtaPlanejamento() {
     setProvidencias((ata.providencias || []).map((p, idx) => ({ 
       ...p, 
       id: Date.now() + idx,
-      resposta: p.resposta || '',
+      respostas: p.respostas || [],
       projeto: p.projeto || '',
       providencias: p.providencias || '',
       responsaveis: p.responsaveis || [],
@@ -542,7 +542,7 @@ export default function AtaPlanejamento() {
       id: Date.now() + idx,
       projeto: novaProvidencia.projeto,
       providencias: linha.providencias,
-      resposta: linha.resposta,
+      respostas: linha.respostas || [],
       responsaveis: linha.responsaveis,
       dataReuniao: linha.dataReuniao,
       dataRetorno: linha.dataRetorno,
@@ -553,7 +553,7 @@ export default function AtaPlanejamento() {
     setProvidencias(prev => [...prev, ...novasProvidencias]);
     setNovaProvidencia({
       projeto: '',
-      linhas: [{ providencias: '', resposta: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
+      linhas: [{ providencias: '', respostas: [], responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
     });
     setShowAddModal(false);
   };
@@ -567,7 +567,7 @@ export default function AtaPlanejamento() {
       id: Date.now(),
       projeto: provAnterior.projeto,
       providencias: '',
-      resposta: '',
+      respostas: [],
       responsaveis: [],
       dataReuniao: '',
       dataRetorno: '',
@@ -587,7 +587,7 @@ export default function AtaPlanejamento() {
   const handleAddLinha = () => {
     setNovaProvidencia(prev => ({
       ...prev,
-      linhas: [...prev.linhas, { providencias: '', resposta: '', responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
+      linhas: [...prev.linhas, { providencias: '', respostas: [], responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
     }));
   };
 
@@ -1341,16 +1341,7 @@ export default function AtaPlanejamento() {
                   />
                 </div>
                 
-                <div className="grid grid-cols-5 gap-3">
-                  <div>
-                    <label className="text-xs text-gray-500">Resposta</label>
-                    <Textarea
-                      value={linha.resposta}
-                      onChange={(e) => handleUpdateLinha(idx, 'resposta', e.target.value)}
-                      className="text-sm resize-y"
-                      rows={2}
-                    />
-                  </div>
+                <div className="grid grid-cols-4 gap-3">
                   <div>
                     <label className="text-xs text-gray-500">Responsável</label>
                     <Select
