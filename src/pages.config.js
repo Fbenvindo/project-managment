@@ -1,4 +1,3 @@
-import AnaliseConcepcaoPlanejamento from './pages/AnaliseConcepcaoPlanejamento';
 import Analitico from './pages/Analitico';
 import AtaPlanejamento from './pages/AtaPlanejamento';
 import AtividadesRapidas from './pages/AtividadesRapidas';
@@ -18,11 +17,11 @@ import Propostas from './pages/Propostas';
 import Relatorios from './pages/Relatorios';
 import SeletorPlanejamento from './pages/SeletorPlanejamento';
 import Usuarios from './pages/Usuarios';
+import AnaliseConcepcaoPlanejamento from './pages/AnaliseConcepcaoPlanejamento';
 import __Layout from './Layout.jsx';
 
 
 export const PAGES = {
-    "AnaliseConcepcaoPlanejamento": AnaliseConcepcaoPlanejamento,
     "Analitico": Analitico,
     "AtaPlanejamento": AtaPlanejamento,
     "AtividadesRapidas": AtividadesRapidas,
@@ -42,6 +41,7 @@ export const PAGES = {
     "Relatorios": Relatorios,
     "SeletorPlanejamento": SeletorPlanejamento,
     "Usuarios": Usuarios,
+    "AnaliseConcepcaoPlanejamento": AnaliseConcepcaoPlanejamento,
 }
 
 export const pagesConfig = {

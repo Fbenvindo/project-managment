@@ -229,6 +229,9 @@ export default function AnaliseConcepcaoPlanejamento() {
             const atividade = atividadesMap[plan.atividade_id];
             if (!atividade && !plan.descritivo) return false;
             
+            // Excluir atividades finalizadas
+            if (plan.status === 'concluido') return false;
+            
             if (!atividade?.disciplina || !disciplinasDocumentacao.includes(atividade.disciplina)) {
                 return false;
             }
