@@ -45,11 +45,13 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   // Auto-save com debounce
   useEffect(() => {
     if (hasUnsavedChanges && !isLoading) {
+      console.log('Auto-save agendado - mudanças detectadas');
       if (autoSaveTimeoutRef.current) {
         clearTimeout(autoSaveTimeoutRef.current);
       }
       
       autoSaveTimeoutRef.current = setTimeout(() => {
+        console.log('Executando auto-save');
         handleSave(true); // true = silent save
       }, 3000); // salva após 3 segundos de inatividade
     }
@@ -267,23 +269,32 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   };
 
   const handleUpdateData = (linhaId, etapa, revisao, valor) => {
-    setHasUnsavedChanges(true);
-    setLinhas(prev => prev.map(linha => {
-      if (linha.id !== linhaId) return linha;
-      
-      const novasDatas = { ...linha.datas };
-      if (!novasDatas[etapa]) {
-        novasDatas[etapa] = {};
-      }
-      // Se o valor estiver vazio, deletar a chave ao invés de setar como vazio
-      if (!valor || valor.trim() === '') {
-        delete novasDatas[etapa][revisao];
-      } else {
-        novasDatas[etapa][revisao] = valor;
-      }
-      
-      return { ...linha, datas: novasDatas };
-    }));
+    console.log('Atualizando data:', { linhaId, etapa, revisao, valor });
+    setLinhas(prev => {
+      const updated = prev.map(linha => {
+        if (linha.id !== linhaId) return linha;
+        
+        const novasDatas = { ...linha.datas };
+        if (!novasDatas[etapa]) {
+          novasDatas[etapa] = {};
+        }
+        // Se o valor estiver vazio, deletar a chave ao invés de setar como vazio
+        if (!valor || valor.trim() === '') {
+          delete novasDatas[etapa][revisao];
+        } else {
+          novasDatas[etapa][revisao] = valor;
+        }
+        
+        return { ...linha, datas: novasDatas };
+      });
+      console.log('Estado atualizado');
+      return updated;
+    });
+    // Garantir que o flag de mudanças não salvas é setado DEPOIS da atualização das linhas
+    setTimeout(() => {
+      console.log('Marcando mudanças não salvas');
+      setHasUnsavedChanges(true);
+    }, 0);
   };
 
   const copiarDataParaBaixo = (linhaId, etapa, revisao) => {
