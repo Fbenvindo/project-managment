@@ -742,12 +742,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           base_atividade_id: ativ.id,
       }));
 
-      // Adicionar atividades de Documentação (sempre visíveis)
-      const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
+      // Adicionar apenas atividades de Gestão (sempre visíveis)
       const atividadesDocumentacao = [];
       
       allGenericActivitiesMap.forEach(baseAtividade => {
-        if (disciplinasDocumentacao.includes(baseAtividade.disciplina)) {
+        if (baseAtividade.disciplina === 'Gestão') {
           const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
           
           if (!isExcludedFromProject) {
@@ -946,22 +945,23 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   }, [combinedActivities, filters]);
 
   const atividadesPorDisciplina = useMemo(() => {
-    const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
     const grupos = {};
-    const gruposDocumentacao = {};
-    
-    // Inicializar todas as disciplinas de Documentação com arrays vazios
-    disciplinasDocumentacao.forEach(disc => {
-      gruposDocumentacao[disc] = [];
-    });
+    const gruposGestao = {};
     
     atividadesAgrupadas.forEach(grupo => {
       const disciplina = grupo.baseAtividade.disciplina || 'Sem Disciplina';
       
-      if (disciplinasDocumentacao.includes(disciplina)) {
-        // Agrupar Documentação por suas disciplinas
-        gruposDocumentacao[disciplina].push(grupo);
+      if (disciplina === 'Gestão') {
+        // Agrupar Gestão por subdisciplina
+        const subdisciplina = grupo.baseAtividade.subdisciplina || 'Sem Subdisciplina';
+        const chave = `Gestão - ${subdisciplina}`;
+        
+        if (!gruposGestao[chave]) {
+          gruposGestao[chave] = [];
+        }
+        gruposGestao[chave].push(grupo);
       } else {
+        // Outras disciplinas normalmente
         if (!grupos[disciplina]) {
           grupos[disciplina] = [];
         }
@@ -971,11 +971,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
     const result = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
     
-    // Adicionar TODAS as disciplinas de Documentação (mesmo vazias)
-    Object.entries(gruposDocumentacao)
+    // Adicionar grupos de Gestão por subdisciplina
+    Object.entries(gruposGestao)
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .forEach(([disciplina, grupos]) => {
-        result.push([disciplina, grupos]);
+      .forEach(([subdisciplina, grupos]) => {
+        result.push([subdisciplina, grupos]);
       });
     
     return result;
@@ -1427,7 +1427,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                      <TableHead>Status</TableHead>
                      <TableHead>Etapa</TableHead>
                      <TableHead>Tempo Padrão</TableHead>
-                     {['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina) && <TableHead className="text-center">Planejar</TableHead>}
+                     {disciplina.startsWith('Gestão') && <TableHead className="text-center">Planejar</TableHead>}
                      <TableHead className="w-[50px]"></TableHead>
                    </TableRow>
                 </TableHeader>
@@ -1497,7 +1497,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                               return tempoTotal > 0 ? `${tempoTotal.toFixed(1)}h` : '-';
                             })()}
                           </TableCell>
-                          {['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina) && (
+                          {disciplina.startsWith('Gestão') && (
                             <TableCell className="text-center">
                               <Button 
                                 size="sm" 
@@ -1573,7 +1573,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             </TableCell>
                             <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
                             <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
-                            {['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina) && <TableCell></TableCell>}
+                            {disciplina.startsWith('Gestão') && <TableCell></TableCell>}
                             <TableCell></TableCell>
                           </TableRow>
                         ))}
