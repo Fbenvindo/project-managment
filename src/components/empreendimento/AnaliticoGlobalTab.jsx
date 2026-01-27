@@ -1490,18 +1490,16 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                           </TableCell>
                           <TableCell>{ativ.etapa}</TableCell>
                           <TableCell>{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
-                          {['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina) && (
-                            <TableCell className="text-center">
-                              <Button 
-                                size="sm" 
-                                onClick={() => handlePlanejarAtividade(ativ)}
-                                className="bg-purple-600 hover:bg-purple-700 text-white"
-                              >
-                                <Calendar className="w-4 h-4 mr-1" />
-                                Planejar
-                              </Button>
-                            </TableCell>
-                          )}
+                          <TableCell className="text-center">
+                            <Button 
+                              size="sm" 
+                              onClick={() => handlePlanejarAtividade(ativ)}
+                              className="bg-purple-600 hover:bg-purple-700 text-white"
+                            >
+                              <Calendar className="w-4 h-4 mr-1" />
+                              Planejar
+                            </Button>
+                          </TableCell>
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
