@@ -950,17 +950,21 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     const grupos = {};
     const gruposDocumentacao = {};
     
-    // Inicializar todas as disciplinas de Documentação com arrays vazios
+    // Inicializar todas as disciplinas de Documentação com objetos de subdisciplinas
     disciplinasDocumentacao.forEach(disc => {
-      gruposDocumentacao[disc] = [];
+      gruposDocumentacao[disc] = {};
     });
     
     atividadesAgrupadas.forEach(grupo => {
       const disciplina = grupo.baseAtividade.disciplina || 'Sem Disciplina';
       
       if (disciplinasDocumentacao.includes(disciplina)) {
-        // Agrupar Documentação por suas disciplinas
-        gruposDocumentacao[disciplina].push(grupo);
+        // Agrupar Documentação por subdisciplina dentro da disciplina
+        const subdisciplina = grupo.baseAtividade.subdisciplina || 'Sem Subdisciplina';
+        if (!gruposDocumentacao[disciplina][subdisciplina]) {
+          gruposDocumentacao[disciplina][subdisciplina] = [];
+        }
+        gruposDocumentacao[disciplina][subdisciplina].push(grupo);
       } else {
         if (!grupos[disciplina]) {
           grupos[disciplina] = [];
@@ -971,11 +975,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
     const result = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
     
-    // Adicionar TODAS as disciplinas de Documentação (mesmo vazias)
+    // Adicionar TODAS as disciplinas de Documentação (com subdisciplinas)
     Object.entries(gruposDocumentacao)
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .forEach(([disciplina, grupos]) => {
-        result.push([disciplina, grupos]);
+      .forEach(([disciplina, subdisciplinas]) => {
+        result.push([disciplina, subdisciplinas]);
       });
     
     return result;
