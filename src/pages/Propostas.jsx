@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FileText, Loader2, Plus } from "lucide-react";
+import { FileText, Loader2, Plus, Pencil } from "lucide-react";
 import { Comercial } from "@/entities/all";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +32,7 @@ export default function PropostasPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const [formData, setFormData] = useState({
     numero: '',
     data_solicitacao: '',
@@ -71,6 +72,7 @@ export default function PropostasPage() {
   };
 
   const handleOpenModal = () => {
+    setEditingId(null);
     setFormData({
       numero: '',
       data_solicitacao: format(new Date(), 'yyyy-MM-dd'),
@@ -92,6 +94,29 @@ export default function PropostasPage() {
     setIsModalOpen(true);
   };
 
+  const handleEditProposta = (proposta) => {
+    setEditingId(proposta.id);
+    setFormData({
+      numero: proposta.numero || '',
+      data_solicitacao: proposta.data_solicitacao || '',
+      solicitante: proposta.solicitante || '',
+      cliente: proposta.cliente || '',
+      empreendimento: proposta.empreendimento || '',
+      tipo_empreendimento: proposta.tipo_empreendimento || '',
+      escopo: proposta.escopo || '',
+      area: proposta.area?.toString() || '',
+      estado: proposta.estado || '',
+      valor_bim: proposta.valor_bim?.toString() || '',
+      valor_cad: proposta.valor_cad?.toString() || '',
+      data_aprovacao: proposta.data_aprovacao || '',
+      status: proposta.status || 'solicitado',
+      email: proposta.email || '',
+      telefone: proposta.telefone || '',
+      observacao: proposta.observacao || ''
+    });
+    setIsModalOpen(true);
+  };
+
   const handleSave = async () => {
     if (!formData.numero || !formData.cliente || !formData.empreendimento) {
       alert('Preencha os campos obrigatórios: Número, Cliente e Empreendimento');
@@ -107,12 +132,20 @@ export default function PropostasPage() {
         valor_cad: formData.valor_cad ? Number(formData.valor_cad) : undefined
       };
 
-      await retryWithBackoff(
-        () => Comercial.create(dataToSave),
-        3, 2000, 'createProposta'
-      );
+      if (editingId) {
+        await retryWithBackoff(
+          () => Comercial.update(editingId, dataToSave),
+          3, 2000, 'updateProposta'
+        );
+      } else {
+        await retryWithBackoff(
+          () => Comercial.create(dataToSave),
+          3, 2000, 'createProposta'
+        );
+      }
 
       setIsModalOpen(false);
+      setEditingId(null);
       loadPropostas();
     } catch (error) {
       console.error('Erro ao salvar proposta:', error);
@@ -154,39 +187,50 @@ export default function PropostasPage() {
             <CardHeader>
               <CardTitle>Lista de Propostas</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               {propostas.length === 0 ? (
                 <div className="text-center py-12">
                   <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <p className="text-gray-500">Nenhuma proposta cadastrada</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
                   <Table>
-                    <TableHeader>
+                    <TableHeader className="sticky top-0 bg-white z-10">
                       <TableRow>
+                        <TableHead className="w-[80px] sticky left-0 bg-white z-20">Ações</TableHead>
                         <TableHead className="w-[100px]">Número</TableHead>
                         <TableHead className="w-[110px]">Data Solicitação</TableHead>
                         <TableHead className="w-[110px]">Data Aprovação</TableHead>
                         <TableHead className="w-[140px]">Status</TableHead>
                         <TableHead className="w-[120px]">Tipo</TableHead>
-                        <TableHead>Cliente</TableHead>
-                        <TableHead>Empreendimento</TableHead>
-                        <TableHead>Solicitante</TableHead>
-                        <TableHead>Escopo</TableHead>
-                        <TableHead className="text-right">Área (m²)</TableHead>
+                        <TableHead className="min-w-[150px]">Cliente</TableHead>
+                        <TableHead className="min-w-[180px]">Empreendimento</TableHead>
+                        <TableHead className="min-w-[120px]">Solicitante</TableHead>
+                        <TableHead className="min-w-[200px]">Escopo</TableHead>
+                        <TableHead className="text-right w-[100px]">Área (m²)</TableHead>
                         <TableHead className="text-center w-[60px]">UF</TableHead>
-                        <TableHead className="text-right">Valor BIM</TableHead>
-                        <TableHead className="text-right">Valor CAD</TableHead>
-                        <TableHead className="text-right">Valor Total</TableHead>
-                        <TableHead>Email</TableHead>
-                        <TableHead>Telefone</TableHead>
-                        <TableHead>Observações</TableHead>
+                        <TableHead className="text-right w-[120px]">Valor BIM</TableHead>
+                        <TableHead className="text-right w-[120px]">Valor CAD</TableHead>
+                        <TableHead className="text-right w-[120px]">Valor Total</TableHead>
+                        <TableHead className="min-w-[150px]">Email</TableHead>
+                        <TableHead className="min-w-[120px]">Telefone</TableHead>
+                        <TableHead className="min-w-[180px]">Observações</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {propostas.map((proposta) => (
                         <TableRow key={proposta.id} className="hover:bg-gray-50">
+                          <TableCell className="sticky left-0 bg-white z-10">
+                            <Button 
+                              size="sm" 
+                              variant="ghost"
+                              onClick={() => handleEditProposta(proposta)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
                           <TableCell className="font-medium whitespace-nowrap">{proposta.numero || '-'}</TableCell>
                           <TableCell className="whitespace-nowrap text-center">
                             {proposta.data_solicitacao ? 
@@ -260,7 +304,7 @@ export default function PropostasPage() {
       <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Nova Proposta</DialogTitle>
+            <DialogTitle>{editingId ? 'Editar Proposta' : 'Nova Proposta'}</DialogTitle>
           </DialogHeader>
           
           <div className="grid grid-cols-2 gap-4 py-4">
@@ -462,7 +506,7 @@ export default function PropostasPage() {
                   Salvando...
                 </>
               ) : (
-                'Salvar Proposta'
+                editingId ? 'Atualizar Proposta' : 'Salvar Proposta'
               )}
             </Button>
           </DialogFooter>
