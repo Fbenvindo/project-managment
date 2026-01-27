@@ -512,9 +512,15 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
           let result;
           if (linha.isNew || linha.id.toString().startsWith('temp-')) {
-            result = await DataCadastro.create(linhaData);
+            result = await retryWithBackoff(
+              () => DataCadastro.create(linhaData),
+              3, 2000, `createCadastro-${linha.id}`
+            );
           } else {
-            result = await DataCadastro.update(linha.id, linhaData);
+            result = await retryWithBackoff(
+              () => DataCadastro.update(linha.id, linhaData),
+              3, 2000, `updateCadastro-${linha.id}`
+            );
           }
 
           successCount++;
@@ -522,7 +528,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
           // Delay entre cada requisição para evitar rate limit
           if (i < linhasParaSalvar.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 1000));
+            await new Promise(resolve => setTimeout(resolve, 1500));
           }
         } catch (error) {
           errorCount++;
