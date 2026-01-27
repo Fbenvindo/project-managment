@@ -522,7 +522,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
           // Delay entre cada requisição para evitar rate limit
           if (i < linhasParaSalvar.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 1000));
           }
         } catch (error) {
           errorCount++;
