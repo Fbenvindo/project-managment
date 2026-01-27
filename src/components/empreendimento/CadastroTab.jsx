@@ -494,16 +494,15 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         return temDados;
       });
 
-      // Processar em lotes de 10 para evitar sobrecarga
-      const BATCH_SIZE = 10;
+      // Processar sequencialmente para evitar rate limit
       let successCount = 0;
       let errorCount = 0;
       const updatedLinhas = new Map();
 
-      for (let i = 0; i < linhasParaSalvar.length; i += BATCH_SIZE) {
-        const batch = linhasParaSalvar.slice(i, i + BATCH_SIZE);
+      for (let i = 0; i < linhasParaSalvar.length; i++) {
+        const linha = linhasParaSalvar[i];
         
-        const batchPromises = batch.map(async (linha) => {
+        try {
           const linhaData = {
             empreendimento_id: empreendimento.id,
             ordem: linha.ordem,
@@ -511,28 +510,23 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
             datas: linha.datas || {}
           };
 
+          let result;
           if (linha.isNew || linha.id.toString().startsWith('temp-')) {
-            return { linha, result: await DataCadastro.create(linhaData) };
+            result = await DataCadastro.create(linhaData);
           } else {
-            return { linha, result: await DataCadastro.update(linha.id, linhaData) };
+            result = await DataCadastro.update(linha.id, linhaData);
           }
-        });
 
-        const results = await Promise.allSettled(batchPromises);
-        
-        results.forEach((result, idx) => {
-          if (result.status === 'fulfilled') {
-            successCount++;
-            updatedLinhas.set(batch[idx].id, result.value.result);
-          } else {
-            errorCount++;
-            console.error(`Erro na linha ${batch[idx].id}:`, result.reason);
+          successCount++;
+          updatedLinhas.set(linha.id, result);
+
+          // Delay entre cada requisição para evitar rate limit
+          if (i < linhasParaSalvar.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 100));
           }
-        });
-
-        // Pequeno delay entre lotes
-        if (i + BATCH_SIZE < linhasParaSalvar.length) {
-          await new Promise(resolve => setTimeout(resolve, 500));
+        } catch (error) {
+          errorCount++;
+          console.error(`Erro na linha ${linha.id}:`, error);
         }
       }
 
