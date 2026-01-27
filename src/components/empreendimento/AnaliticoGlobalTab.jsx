@@ -1753,16 +1753,16 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             <TableCell></TableCell>
                           </TableRow>
                         ))}
-                      </>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-            </div>
-              )}
-          </div>
-        );
-        })}
+                        </>
+                        );
+                        })}
+                        </TableBody>
+                        </Table>
+                        )}
+                        </div>
+                        </div>
+                        );
+                        })}
       </div>
     );
   };
