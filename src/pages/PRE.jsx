@@ -407,11 +407,11 @@ export default function PRE() {
                     <th className="border border-gray-400 p-3 w-[8%]">De</th>
                     <th className="border border-gray-400 p-3 w-[12%]">Descritiva</th>
                     <th className="border border-gray-400 p-3 w-[8%]">Localização</th>
-                    <th className="border border-gray-400 p-3 w-[16%]">Assunto</th>
-                    <th className="border border-gray-400 p-3 w-[13%]">Comentário</th>
+                    <th className="border border-gray-400 p-3 w-[14%]">Assunto</th>
+                    <th className="border border-gray-400 p-3 w-[11%]">Comentário</th>
                     <th className="border border-gray-400 p-3 w-[8%]">Status</th>
-                    <th className="border border-gray-400 p-3 w-[12%]">Resposta</th>
-                    <th className="border border-gray-400 p-3 w-[6%]">Imagens</th>
+                    <th className="border border-gray-400 p-3 w-[10%]">Resposta</th>
+                    <th className="border border-gray-400 p-3 w-[12%]">Imagens</th>
                     <th className="border border-gray-400 p-3 w-[6%] no-print">Ações</th>
                   </tr>
                 </thead>
