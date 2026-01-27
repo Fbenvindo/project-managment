@@ -222,28 +222,43 @@ export const ActivityTimerProvider = ({ children }) => {
             updateData.horas_executadas_por_dia = horasExecutadasPorDia;
             console.log(`   📅 Atualizando horas_executadas_por_dia[${diaParaRegistrar}]: ${(horasExecutadasPorDia[diaParaRegistrar]).toFixed(4)}h`);
 
-            if (isAtividadeRapida) {
-                updateData.tempo_planejado = novoTempoExecutado;
-                updateData.status = finalStatus;
-                // Para atividades rápidas, o dia é sempre o inicio_planejado
-                const diaDaAtividade = planejamento.inicio_planejado || diaParaRegistrar;
-                updateData.horas_por_dia = { [diaDaAtividade]: novoTempoExecutado };
-                console.log(`   ⚡ Atividade rápida - atualizando tempo_planejado=${novoTempoExecutado.toFixed(4)}h e horas_por_dia`);
+            // RESPEITAR O finalStatus PASSADO EXPLICITAMENTE
+            if (finalStatus === 'concluido') {
+                updateData.status = 'concluido';
+                updateData.termino_real = format(new Date(), 'yyyy-MM-dd');
+                if (!planejamento.inicio_real) {
+                    updateData.inicio_real = diaParaRegistrar;
+                }
+                console.log(`   🏁 Finalizando atividade explicitamente`);
+                
+                // Para atividades rápidas, atualizar tempo_planejado e horas_por_dia
+                if (isAtividadeRapida) {
+                    updateData.tempo_planejado = novoTempoExecutado;
+                    const diaDaAtividade = planejamento.inicio_planejado || diaParaRegistrar;
+                    updateData.horas_por_dia = { [diaDaAtividade]: novoTempoExecutado };
+                    console.log(`   ⚡ Atividade rápida - atualizando tempo_planejado=${novoTempoExecutado.toFixed(4)}h`);
+                }
+                
+            } else if (finalStatus === 'pausado') {
+                updateData.status = 'pausado';
+                console.log(`   ⏸️ Pausando atividade explicitamente - NUNCA marcar como concluído`);
+                
+                // Para atividades rápidas, atualizar tempo_planejado e horas_por_dia
+                if (isAtividadeRapida) {
+                    updateData.tempo_planejado = novoTempoExecutado;
+                    const diaDaAtividade = planejamento.inicio_planejado || diaParaRegistrar;
+                    updateData.horas_por_dia = { [diaDaAtividade]: novoTempoExecutado };
+                    console.log(`   ⚡ Atividade rápida pausada - tempo_planejado=${novoTempoExecutado.toFixed(4)}h`);
+                }
+                
             } else {
-                if (finalStatus === 'concluido') {
-                    updateData.status = 'concluido';
-                    updateData.termino_real = format(new Date(), 'yyyy-MM-dd');
-                    if (!planejamento.inicio_real) {
-                        updateData.inicio_real = diaParaRegistrar;
-                    }
-                    // NÃO alterar horas_por_dia - manter distribuição original planejada
-                    console.log(`   🏁 Finalizando atividade normal...`);
-                    console.log(`      Tempo planejado original: ${planejamento.tempo_planejado}h`);
-                    console.log(`      📊 Mantendo horas_por_dia original para não quebrar a atividade no calendário`);
-                    
-                } else if (finalStatus === 'pausado') {
-                    updateData.status = 'pausado';
-                    console.log(`   ⏸️ Pausando atividade`);
+                // Calcular status automaticamente apenas quando finalStatus não foi especificado
+                if (isAtividadeRapida) {
+                    updateData.tempo_planejado = novoTempoExecutado;
+                    const diaDaAtividade = planejamento.inicio_planejado || diaParaRegistrar;
+                    updateData.horas_por_dia = { [diaDaAtividade]: novoTempoExecutado };
+                    updateData.status = 'em_andamento';
+                    console.log(`   ⚡ Atividade rápida - atualizando tempo_planejado=${novoTempoExecutado.toFixed(4)}h e status para em_andamento`);
                 } else {
                     if (novoTempoExecutado >= (Number(planejamento.tempo_planejado) || 0)) {
                         updateData.status = 'concluido';
@@ -251,9 +266,7 @@ export const ActivityTimerProvider = ({ children }) => {
                         if (!planejamento.inicio_real) {
                             updateData.inicio_real = diaParaRegistrar;
                         }
-                        // NÃO alterar horas_por_dia - manter distribuição original planejada
-                        console.log(`   🎯 Tempo planejado atingido - marcando como concluída`);
-                        console.log(`      📊 Mantendo horas_por_dia original para não quebrar a atividade no calendário`);
+                        console.log(`   🎯 Tempo planejado atingido - marcando como concluída automaticamente`);
                     } else {
                         updateData.status = 'em_andamento';
                         if (!planejamento.inicio_real) {
