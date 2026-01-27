@@ -462,7 +462,7 @@ export default function AtaPlanejamento() {
     setProvidencias((ata.providencias || []).map((p, idx) => ({ 
       ...p, 
       id: Date.now() + idx,
-      resposta: p.resposta || '',
+      respostas: p.respostas || [],
       projeto: p.projeto || '',
       providencias: p.providencias || '',
       responsaveis: p.responsaveis || [],
