@@ -530,17 +530,22 @@ export default function PRE() {
                               </Button>
                             </label>
                             {(item.imagens || []).map((imgUrl, idx) => (
-                              <div key={idx} className="relative group">
-                                <img
-                                  src={imgUrl}
-                                  alt={`Imagem ${idx + 1}`}
-                                  className="w-full h-20 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
+                              <div key={idx} className="relative group mb-2">
+                                <div 
+                                  className="w-full h-20 cursor-pointer rounded border overflow-hidden hover:border-blue-500 transition-colors"
+                                  onClick={() => {
+                                    console.log('Clicou na imagem:', imgUrl);
                                     setExpandedImage(imgUrl);
                                   }}
-                                />
+                                >
+                                  <img
+                                    src={imgUrl}
+                                    alt={`Imagem ${idx + 1}`}
+                                    className="w-full h-full object-cover hover:opacity-80 transition-opacity"
+                                  />
+                                </div>
                                 <button
+                                  type="button"
                                   onClick={(e) => {
                                     e.stopPropagation();
                                     handleRemoveImage(item.id, imgUrl);
