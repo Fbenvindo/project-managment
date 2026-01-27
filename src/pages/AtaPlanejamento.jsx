@@ -1102,7 +1102,7 @@ export default function AtaPlanejamento() {
           </div>
         )}
 
-        {/* Lista de Providências em Containers */}
+        {/* Lista de Providências em Containers Agrupadas por Projeto */}
         {providenciasAgrupadas.length === 0 ? (
           <div className="p-4 text-center text-gray-500 text-sm">
             {providencias.length === 0 
@@ -1110,139 +1110,173 @@ export default function AtaPlanejamento() {
               : 'Nenhuma providência encontrada para o projeto selecionado.'}
           </div>
         ) : (
-          <div className="space-y-2 p-2">
+          <div className="space-y-6 p-2">
             {providenciasAgrupadas.map((grupo, gIdx) => (
-              grupo.items.map((prov, pIdx) => (
-                <div 
-                  key={prov.id} 
-                  className={`flex gap-2 border border-gray-300 rounded-lg overflow-hidden ${gIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
-                >
-                  {/* Container Principal - 80% */}
-                  <div className="w-[80%] p-3 space-y-2">
-                    {/* Linha 1: Projeto */}
-                    <div className="flex items-center gap-2">
-                      <label className="text-xs font-medium text-gray-600 min-w-[80px]">Projeto:</label>
-                      <AutoResizeTextarea
-                        value={prov.projeto}
-                        onChange={(e) => handleUpdateProvidencia(prov.id, 'projeto', e.target.value)}
-                        className="text-sm print:hidden flex-1 resize-none overflow-hidden"
-                      />
-                      <span className="hidden print:inline text-[6px] flex-1">{prov.projeto}</span>
-                    </div>
-
-                    {/* Linha 2: Providências */}
-                    <div className="flex gap-2">
-                      <label className="text-xs font-medium text-gray-600 min-w-[80px] pt-1">Providências:</label>
-                      <AutoResizeTextarea
-                        value={prov.providencias}
-                        onChange={(e) => handleUpdateProvidencia(prov.id, 'providencias', e.target.value)}
-                        className="text-sm print:hidden flex-1 resize-none overflow-hidden min-h-[60px]"
-                      />
-                      <span className="hidden print:inline text-[6px] flex-1 whitespace-pre-wrap">{prov.providencias}</span>
-                    </div>
-
-                    {/* Linha 3: Resposta */}
-                    <div className="flex gap-2">
-                      <label className="text-xs font-medium text-gray-600 min-w-[80px] pt-1">Resposta:</label>
-                      <AutoResizeTextarea
-                        value={prov.resposta || ''}
-                        onChange={(e) => handleUpdateProvidencia(prov.id, 'resposta', e.target.value)}
-                        className="text-sm print:hidden flex-1 resize-none overflow-hidden min-h-[60px]"
-                      />
-                      <span className="hidden print:inline text-[6px] flex-1 whitespace-pre-wrap">{prov.resposta || ''}</span>
-                    </div>
-                  </div>
-
-                  {/* Container Secundário - 20% */}
-                  <div className="w-[20%] border-l border-gray-300 p-3 space-y-3 bg-gray-50">
-                    {/* Linha 1: Responsável */}
-                    <div>
-                      <label className="text-xs font-medium text-gray-600 block mb-1">Responsável:</label>
-                      <Select
-                        value={prov.responsaveis?.[0] || ''}
-                        onValueChange={(value) => handleUpdateProvidencia(prov.id, 'responsaveis', [value])}
-                      >
-                        <SelectTrigger className="h-8 text-xs print:hidden">
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {usuarios.map(user => (
-                            <SelectItem key={user.id} value={user.nome || user.full_name}>
-                              {user.nome || user.full_name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <span className="hidden print:inline text-[6px]">
-                        {Array.isArray(prov.responsaveis) ? prov.responsaveis.join(', ') : ''}
-                      </span>
-                    </div>
-
-                    {/* Linha 2: Data de Reunião */}
-                    <div>
-                      <label className="text-xs font-medium text-gray-600 block mb-1">Data Reunião:</label>
-                      <Input
-                        type="date"
-                        value={prov.dataReuniao}
-                        onChange={(e) => handleUpdateProvidencia(prov.id, 'dataReuniao', e.target.value)}
-                        className="h-8 text-xs print:hidden"
-                      />
-                      <span className="hidden print:inline text-[6px]">
-                        {prov.dataReuniao ? format(new Date(prov.dataReuniao), 'dd/MM/yyyy') : ''}
-                      </span>
-                    </div>
-
-                    {/* Linha 3: Data de Retorno */}
-                    <div>
-                      <label className="text-xs font-medium text-gray-600 block mb-1">Data Retorno:</label>
-                      <Input
-                        type="date"
-                        value={prov.dataRetorno}
-                        onChange={(e) => handleUpdateProvidencia(prov.id, 'dataRetorno', e.target.value)}
-                        className="h-8 text-xs print:hidden"
-                      />
-                      <span className="hidden print:inline text-[6px]">
-                        {prov.dataRetorno ? format(new Date(prov.dataRetorno), 'dd/MM/yyyy') : ''}
-                      </span>
-                    </div>
-
-                    {/* Linha 4: Status */}
-                    <div>
-                      <label className="text-xs font-medium text-gray-600 block mb-1">Status:</label>
-                      <select
-                        value={prov.status}
-                        onChange={(e) => handleUpdateProvidencia(prov.id, 'status', e.target.value)}
-                        className={`w-full text-xs px-2 py-1 rounded ${getStatusColor(prov.status)} print:hidden`}
-                      >
-                        {STATUS_OPTIONS.map(s => (
-                          <option key={s.value} value={s.value}>{s.label}</option>
-                        ))}
-                      </select>
-                      <span className={`hidden print:inline text-[6px] px-1 py-0.5 rounded ${getStatusColor(prov.status)}`}>
-                        {getStatusLabel(prov.status)}
-                      </span>
-                    </div>
-
-                    {/* Ações */}
-                    <div className="flex gap-1 pt-2 border-t border-gray-300 no-print">
-                      <button 
-                        onClick={() => handleInsertProvidenciaAfter(prov.id)}
-                        className="flex-1 text-green-600 hover:text-green-800 hover:bg-green-50 p-1 rounded"
-                        title="Inserir providência após esta"
-                      >
-                        <Plus className="w-3 h-3 mx-auto" />
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteProvidencia(prov.id)}
-                        className="flex-1 text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded"
-                        title="Excluir"
-                      >
-                        <Trash2 className="w-3 h-3 mx-auto" />
-                      </button>
-                    </div>
-                  </div>
+              <div key={gIdx} className="border border-gray-400 rounded-lg overflow-hidden">
+                {/* Título do Projeto */}
+                <div className="bg-yellow-100 border-b border-gray-400 p-3">
+                  <h3 className="text-base font-bold text-gray-800">{grupo.projeto}</h3>
                 </div>
-              ))
+
+                {/* Itens do Projeto */}
+                <div className="space-y-2 p-2">
+                  {grupo.items.map((prov, pIdx) => (
+                    <div 
+                      key={prov.id} 
+                      className="flex gap-2 border border-gray-300 rounded-lg overflow-hidden bg-white"
+                    >
+                      {/* Container Principal - 80% */}
+                      <div className="w-[80%] p-3 space-y-2">
+                        {/* Linha 1: Providências */}
+                        <div className="flex gap-2">
+                          <label className="text-xs font-medium text-gray-600 min-w-[80px] pt-1">Providências:</label>
+                          <AutoResizeTextarea
+                            value={prov.providencias}
+                            onChange={(e) => handleUpdateProvidencia(prov.id, 'providencias', e.target.value)}
+                            className="text-sm print:hidden flex-1 resize-none overflow-hidden min-h-[60px]"
+                          />
+                          <span className="hidden print:inline text-[6px] flex-1 whitespace-pre-wrap">{prov.providencias}</span>
+                        </div>
+
+                        {/* Linha 2: Respostas (Lista) */}
+                        <div className="flex gap-2">
+                          <label className="text-xs font-medium text-gray-600 min-w-[80px] pt-1">Respostas:</label>
+                          <div className="flex-1 space-y-2">
+                            {(prov.respostas || []).map((resp, rIdx) => (
+                              <div key={rIdx} className="flex gap-1 items-start print:hidden">
+                                <AutoResizeTextarea
+                                  value={resp}
+                                  onChange={(e) => {
+                                    const novasRespostas = [...(prov.respostas || [])];
+                                    novasRespostas[rIdx] = e.target.value;
+                                    handleUpdateProvidencia(prov.id, 'respostas', novasRespostas);
+                                  }}
+                                  className="text-sm flex-1 resize-none overflow-hidden min-h-[40px]"
+                                  placeholder="Digite a resposta..."
+                                />
+                                <button
+                                  onClick={() => {
+                                    const novasRespostas = (prov.respostas || []).filter((_, i) => i !== rIdx);
+                                    handleUpdateProvidencia(prov.id, 'respostas', novasRespostas);
+                                  }}
+                                  className="text-red-500 hover:text-red-700 p-1"
+                                  title="Remover resposta"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              </div>
+                            ))}
+                            <div className="hidden print:block text-[6px] whitespace-pre-wrap">
+                              {(prov.respostas || []).map((resp, rIdx) => (
+                                <div key={rIdx} className="mb-1">• {resp}</div>
+                              ))}
+                            </div>
+                            <button
+                              onClick={() => {
+                                const novasRespostas = [...(prov.respostas || []), ''];
+                                handleUpdateProvidencia(prov.id, 'respostas', novasRespostas);
+                              }}
+                              className="text-blue-600 hover:text-blue-800 text-xs flex items-center gap-1 print:hidden"
+                            >
+                              <Plus className="w-3 h-3" />
+                              Adicionar Resposta
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Container Secundário - 20% */}
+                      <div className="w-[20%] border-l border-gray-300 p-3 space-y-3 bg-gray-50">
+                        {/* Linha 1: Responsável */}
+                        <div>
+                          <label className="text-xs font-medium text-gray-600 block mb-1">Responsável:</label>
+                          <Select
+                            value={prov.responsaveis?.[0] || ''}
+                            onValueChange={(value) => handleUpdateProvidencia(prov.id, 'responsaveis', [value])}
+                          >
+                            <SelectTrigger className="h-8 text-xs print:hidden">
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {usuarios.map(user => (
+                                <SelectItem key={user.id} value={user.nome || user.full_name}>
+                                  {user.nome || user.full_name}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <span className="hidden print:inline text-[6px]">
+                            {Array.isArray(prov.responsaveis) ? prov.responsaveis.join(', ') : ''}
+                          </span>
+                        </div>
+
+                        {/* Linha 2: Data de Reunião */}
+                        <div>
+                          <label className="text-xs font-medium text-gray-600 block mb-1">Data Reunião:</label>
+                          <Input
+                            type="date"
+                            value={prov.dataReuniao}
+                            onChange={(e) => handleUpdateProvidencia(prov.id, 'dataReuniao', e.target.value)}
+                            className="h-8 text-xs print:hidden"
+                          />
+                          <span className="hidden print:inline text-[6px]">
+                            {prov.dataReuniao ? format(new Date(prov.dataReuniao), 'dd/MM/yyyy') : ''}
+                          </span>
+                        </div>
+
+                        {/* Linha 3: Data de Retorno */}
+                        <div>
+                          <label className="text-xs font-medium text-gray-600 block mb-1">Data Retorno:</label>
+                          <Input
+                            type="date"
+                            value={prov.dataRetorno}
+                            onChange={(e) => handleUpdateProvidencia(prov.id, 'dataRetorno', e.target.value)}
+                            className="h-8 text-xs print:hidden"
+                          />
+                          <span className="hidden print:inline text-[6px]">
+                            {prov.dataRetorno ? format(new Date(prov.dataRetorno), 'dd/MM/yyyy') : ''}
+                          </span>
+                        </div>
+
+                        {/* Linha 4: Status */}
+                        <div>
+                          <label className="text-xs font-medium text-gray-600 block mb-1">Status:</label>
+                          <select
+                            value={prov.status}
+                            onChange={(e) => handleUpdateProvidencia(prov.id, 'status', e.target.value)}
+                            className={`w-full text-xs px-2 py-1 rounded ${getStatusColor(prov.status)} print:hidden`}
+                          >
+                            {STATUS_OPTIONS.map(s => (
+                              <option key={s.value} value={s.value}>{s.label}</option>
+                            ))}
+                          </select>
+                          <span className={`hidden print:inline text-[6px] px-1 py-0.5 rounded ${getStatusColor(prov.status)}`}>
+                            {getStatusLabel(prov.status)}
+                          </span>
+                        </div>
+
+                        {/* Ações */}
+                        <div className="flex gap-1 pt-2 border-t border-gray-300 no-print">
+                          <button 
+                            onClick={() => handleInsertProvidenciaAfter(prov.id)}
+                            className="flex-1 text-green-600 hover:text-green-800 hover:bg-green-50 p-1 rounded"
+                            title="Inserir providência após esta"
+                          >
+                            <Plus className="w-3 h-3 mx-auto" />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteProvidencia(prov.id)}
+                            className="flex-1 text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded"
+                            title="Excluir"
+                          >
+                            <Trash2 className="w-3 h-3 mx-auto" />
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         )}
