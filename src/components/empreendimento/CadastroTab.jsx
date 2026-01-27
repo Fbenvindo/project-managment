@@ -1034,53 +1034,54 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                       const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
                       return (
                         <tr key={`scroll-${linha.id}`} className="hover:bg-gray-50">
-                        {etapasVisiveis.map((etapa, etapaIdx) => {
-                          const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
-                          return (
-                            <React.Fragment key={`${linha.id}-${etapa}`}>
-                              {revisoesEtapa.map((revisao, revIdx) => (
+                          {etapasVisiveis.map((etapa, etapaIdx) => {
+                            const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+                            return (
+                              <React.Fragment key={`${linha.id}-${etapa}`}>
+                                {revisoesEtapa.map((revisao, revIdx) => (
+                                  <td 
+                                    key={`${linha.id}-${etapa}-${revisao}`} 
+                                    className="border border-gray-300 border-l-0 p-1"
+                                    style={{ width: '150px', minWidth: '150px' }}
+                                  >
+                                      <div className="flex gap-1 group">
+                                      <Input
+                                       type="date"
+                                       value={getDataValue(linha, etapa, revisao)}
+                                       onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
+                                       className={`h-8 text-xs w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:hidden [&::-webkit-clear-button]:hidden ${!getDataValue(linha, etapa, revisao) ? '[color-scheme:light] [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-calendar-picker-indicator]:opacity-100' : ''}`}
+                                       disabled={readOnly}
+                                      />
+                                      {!readOnly && getDataValue(linha, etapa, revisao) && (
+                                       <button
+                                         onClick={() => copiarDataParaBaixo(linha.id, etapa, revisao)}
+                                         className="text-purple-600 hover:text-purple-800 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                         title="Preencher todas abaixo"
+                                       >
+                                         <Wand2 className="w-3.5 h-3.5" />
+                                       </button>
+                                      )}
+                                      </div>
+                                  </td>
+                                ))}
                                 <td 
-                                  key={`${linha.id}-${etapa}-${revisao}`} 
-                                  className="border border-gray-300 p-1"
-                                  style={{ width: '150px', minWidth: '150px' }}
-                                >
-                                    <div className="flex gap-1 group">
-                                    <Input
-                                     type="date"
-                                     value={getDataValue(linha, etapa, revisao)}
-                                     onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
-                                     className={`h-8 text-xs w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:hidden [&::-webkit-clear-button]:hidden ${!getDataValue(linha, etapa, revisao) ? '[color-scheme:light] [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-calendar-picker-indicator]:opacity-100' : ''}`}
-                                     disabled={readOnly}
-                                    />
-                                    {!readOnly && getDataValue(linha, etapa, revisao) && (
-                                     <button
-                                       onClick={() => copiarDataParaBaixo(linha.id, etapa, revisao)}
-                                       className="text-purple-600 hover:text-purple-800 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                       title="Preencher todas abaixo"
-                                     >
-                                       <Wand2 className="w-3.5 h-3.5" />
-                                     </button>
-                                    )}
-                                    </div>
-                                </td>
-                              ))}
-                              <td 
-                                className={`border p-1 ${
-                                  etapaIdx < etapasVisiveis.length - 1 ? 'border-r-4 border-r-gray-800 border-gray-300' : 'border-gray-300'
-                                }`}
-                                style={{ width: '50px', minWidth: '50px' }}
-                              ></td>
-                            </React.Fragment>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })}
-                </React.Fragment>
-              ))
-            )}
-          </tbody>
-        </table>
+                                  className={`border p-1 ${
+                                    etapaIdx < etapasVisiveis.length - 1 ? 'border-r-4 border-r-gray-800 border-gray-300' : 'border-gray-300'
+                                  }`}
+                                  style={{ width: '50px', minWidth: '50px' }}
+                                ></td>
+                              </React.Fragment>
+                            );
+                          })}
+                        </tr>
+                      );
+                    })}
+                  </React.Fragment>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {etapasExcluidas.length > 0 && (
