@@ -16,6 +16,7 @@ import { retryWithBackoff } from '../utils/apiUtils';
 import { Checkbox } from "@/components/ui/checkbox";
 import { base44 } from '@/api/base44Client';
 import PDFListaDesenvolvimento from '../configuracoes/PDFListaDesenvolvimento';
+import PlanejarRapidoModal from './PlanejarRapidoModal';
 
 const EtapaEditModal = ({ isOpen, onClose, atividade, onSave }) => {
   const [newEtapa, setNewEtapa] = useState('');
@@ -1172,9 +1173,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     setIsExcluirDeFolhasModalOpen(true);
   };
 
+  const [isPlanejarRapidoModalOpen, setIsPlanejarRapidoModalOpen] = useState(false);
+
   const handlePlanejarAtividade = (atividade) => {
     setAtividadeParaPlanejar(atividade);
-    setIsPlanejamentoModalOpen(true);
+    setIsPlanejarRapidoModalOpen(true);
   };
 
   const handlePlanejarComplete = () => {
@@ -1744,6 +1747,21 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           isOpen={isPlanejamentoModalOpen}
           onClose={() => {
             setIsPlanejamentoModalOpen(false);
+            setAtividadeParaPlanejar(null);
+          }}
+          atividade={atividadeParaPlanejar}
+          empreendimentoId={empreendimentoId}
+          documentos={documentos}
+          usuarios={usuarios}
+          onSuccess={handlePlanejarComplete}
+        />
+      )}
+
+      {isPlanejarRapidoModalOpen && atividadeParaPlanejar && (
+        <PlanejarRapidoModal
+          isOpen={isPlanejarRapidoModalOpen}
+          onClose={() => {
+            setIsPlanejarRapidoModalOpen(false);
             setAtividadeParaPlanejar(null);
           }}
           atividade={atividadeParaPlanejar}
