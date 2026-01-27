@@ -535,11 +535,17 @@ export default function PRE() {
                                   src={imgUrl}
                                   alt={`Imagem ${idx + 1}`}
                                   className="w-full h-20 object-cover rounded border cursor-pointer hover:opacity-80 transition-opacity"
-                                  onClick={() => setExpandedImage(imgUrl)}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExpandedImage(imgUrl);
+                                  }}
                                 />
                                 <button
-                                  onClick={() => handleRemoveImage(item.id, imgUrl)}
-                                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity no-print"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleRemoveImage(item.id, imgUrl);
+                                  }}
+                                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity no-print z-10"
                                 >
                                   <X className="w-3 h-3" />
                                 </button>
