@@ -1402,15 +1402,14 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                 <TableHeader className="bg-gray-50">
                   <TableRow>
                      {editableActivities.length > 0 && <TableHead className="w-[50px]"></TableHead>}
-                     <TableHead className="w-[50px]"></TableHead>
-                     <TableHead>Atividade</TableHead>
-                     <TableHead>Folhas</TableHead>
-                     <TableHead>Status</TableHead>
-                     <TableHead>Etapa</TableHead>
-                     <TableHead>Tempo Padrão</TableHead>
-                     {['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina) && <TableHead className="text-center">Planejar</TableHead>}
-                     <TableHead className="w-[50px]"></TableHead>
-                   </TableRow>
+                      <TableHead className="w-[50px]"></TableHead>
+                      <TableHead>Atividade</TableHead>
+                      <TableHead>Folhas</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Etapa</TableHead>
+                      <TableHead>Tempo Padrão</TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
+                    </TableRow>
                 </TableHeader>
                 <TableBody>
                   {grupos.map(grupo => {
