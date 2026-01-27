@@ -1534,7 +1534,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             </TableCell>
                             <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
                             <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
-                            {['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina) && <TableCell></TableCell>}
                             <TableCell></TableCell>
                           </TableRow>
                         ))}
