@@ -948,18 +948,37 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const atividadesPorDisciplina = useMemo(() => {
     const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
     const grupos = {};
+    const gruposDocumentacao = {};
+    
+    // Inicializar todas as disciplinas de Documentação com arrays vazios
+    disciplinasDocumentacao.forEach(disc => {
+      gruposDocumentacao[disc] = [];
+    });
     
     atividadesAgrupadas.forEach(grupo => {
       const disciplina = grupo.baseAtividade.disciplina || 'Sem Disciplina';
       
-      // Agrupar TUDO por disciplina - sem separar documentação
-      if (!grupos[disciplina]) {
-        grupos[disciplina] = [];
+      if (disciplinasDocumentacao.includes(disciplina)) {
+        // Agrupar Documentação por suas disciplinas
+        gruposDocumentacao[disciplina].push(grupo);
+      } else {
+        if (!grupos[disciplina]) {
+          grupos[disciplina] = [];
+        }
+        grupos[disciplina].push(grupo);
       }
-      grupos[disciplina].push(grupo);
     });
 
-    return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
+    const result = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
+    
+    // Adicionar TODAS as disciplinas de Documentação (mesmo vazias)
+    Object.entries(gruposDocumentacao)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .forEach(([disciplina, grupos]) => {
+        result.push([disciplina, grupos]);
+      });
+    
+    return result;
   }, [atividadesAgrupadas]);
   
   const etapasUnicas = useMemo(() => [...new Set(combinedActivities.map(a => a.etapa).filter(Boolean))], [combinedActivities]);
@@ -1402,14 +1421,15 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                 <TableHeader className="bg-gray-50">
                   <TableRow>
                      {editableActivities.length > 0 && <TableHead className="w-[50px]"></TableHead>}
-                      <TableHead className="w-[50px]"></TableHead>
-                      <TableHead>Atividade</TableHead>
-                      <TableHead>Folhas</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Etapa</TableHead>
-                      <TableHead>Tempo Padrão</TableHead>
-                      <TableHead className="w-[50px]"></TableHead>
-                    </TableRow>
+                     <TableHead className="w-[50px]"></TableHead>
+                     <TableHead>Atividade</TableHead>
+                     <TableHead>Folhas</TableHead>
+                     <TableHead>Status</TableHead>
+                     <TableHead>Etapa</TableHead>
+                     <TableHead>Tempo Padrão</TableHead>
+                     {['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina) && <TableHead className="text-center">Planejar</TableHead>}
+                     <TableHead className="w-[50px]"></TableHead>
+                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {grupos.map(grupo => {
@@ -1470,6 +1490,18 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                           </TableCell>
                           <TableCell>{ativ.etapa}</TableCell>
                           <TableCell>{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
+                          {['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina) && (
+                            <TableCell className="text-center">
+                              <Button 
+                                size="sm" 
+                                onClick={() => handlePlanejarAtividade(ativ)}
+                                className="bg-purple-600 hover:bg-purple-700 text-white"
+                              >
+                                <Calendar className="w-4 h-4 mr-1" />
+                                Planejar
+                              </Button>
+                            </TableCell>
+                          )}
                           <TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
@@ -1534,6 +1566,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             </TableCell>
                             <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
                             <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
+                            {['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina) && <TableCell></TableCell>}
                             <TableCell></TableCell>
                           </TableRow>
                         ))}
