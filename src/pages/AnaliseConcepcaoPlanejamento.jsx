@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Play, Square, Filter, ClipboardList, CheckSquare, FileText, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
 import PlanejamentoAtividadeModal from "@/components/empreendimento/PlanejamentoAtividadeModal";
 
 export default function AnaliseConcepcaoPlanejamento() {
@@ -30,7 +29,6 @@ export default function AnaliseConcepcaoPlanejamento() {
     const [isStopModalOpen, setIsStopModalOpen] = useState(false);
     const [selectedExecucao, setSelectedExecucao] = useState(null);
     const [finalStatus, setFinalStatus] = useState("Finalizado");
-    const [aplicarTodasFolhas, setAplicarTodasFolhas] = useState(false);
     
     const [selectedDocAtividades, setSelectedDocAtividades] = useState([]);
     const [planejamentoModalOpen, setPlanejamentoModalOpen] = useState(false);
@@ -145,45 +143,6 @@ export default function AnaliseConcepcaoPlanejamento() {
                 status: finalStatus === "Finalizado" ? "concluido" : "pausado"
             });
 
-            // Se aplicarTodasFolhas está ativado e a atividade foi finalizada
-            if (aplicarTodasFolhas && finalStatus === "Finalizado" && planejamento.atividade_id) {
-                // Encontrar todas as atividades com o mesmo base_descritivo
-                const atividadeBase = atividadesMap[planejamento.atividade_id];
-                const base = planejamento.base_descritivo || atividadeBase?.atividade || planejamento.descritivo;
-                
-                // Concluir todas as atividades com o mesmo descritivo em outros documentos
-                const planejamentosComMesmaAtividade = planejamentos.filter(p => 
-                    p.id !== planejamento.id &&
-                    p.empreendimento_id === planejamento.empreendimento_id &&
-                    (p.base_descritivo === base || p.descritivo === base || atividadesMap[p.atividade_id]?.atividade === base)
-                );
-
-                for (const planejamentoRelacionado of planejamentosComMesmaAtividade) {
-                    const EntityToUpdateRelated = planejamentoRelacionado.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
-                    await EntityToUpdateRelated.update(planejamentoRelacionado.id, {
-                        horas_por_dia: horasPorDia,
-                        horas_executadas_por_dia: horasExecutadasPorDia,
-                        tempo_executado: totalTempoExecutado,
-                        tempo_planejado: totalTempoExecutado,
-                        status: "concluido"
-                    });
-                }
-
-                // Atualizar estado local para todos os planejamentos
-                setPlanejamentos(prev => prev.map(p => 
-                    p.id === planejamento.id || planejamentosComMesmaAtividade.some(pma => pma.id === p.id)
-                        ? { ...p, horas_por_dia: horasPorDia, horas_executadas_por_dia: horasExecutadasPorDia, tempo_executado: totalTempoExecutado, status: "concluido" }
-                        : p
-                ));
-            } else {
-                // Atualizar estado local apenas para o planejamento atual
-                setPlanejamentos(prev => prev.map(p => 
-                    p.id === planejamento.id 
-                        ? { ...p, horas_por_dia: horasPorDia, horas_executadas_por_dia: horasExecutadasPorDia, tempo_executado: totalTempoExecutado, status: finalStatus === "Finalizado" ? "concluido" : "pausado" }
-                        : p
-                ));
-            }
-
             // Se a atividade foi finalizada, verificar se todas as atividades da folha estão concluídas
             if (finalStatus === "Finalizado" && planejamento.documento_id) {
                 const planejamentosDoDocumento = planejamentos.filter(p => p.documento_id === planejamento.documento_id);
@@ -201,6 +160,13 @@ export default function AnaliseConcepcaoPlanejamento() {
                     }
                 }
             }
+
+            // Atualizar estado local
+            setPlanejamentos(prev => prev.map(p => 
+                p.id === planejamento.id 
+                    ? { ...p, horas_por_dia: horasPorDia, horas_executadas_por_dia: horasExecutadasPorDia, tempo_executado: totalTempoExecutado, status: finalStatus === "Finalizado" ? "concluido" : "pausado" }
+                    : p
+            ));
         }
 
         setExecucoesMap(prev => ({
@@ -215,7 +181,6 @@ export default function AnaliseConcepcaoPlanejamento() {
         setIsStopModalOpen(false);
         setSelectedExecucao(null);
         setFinalStatus("Finalizado");
-        setAplicarTodasFolhas(false);
     };
     
     const getStatusBadge = (planejamento) => {
@@ -573,18 +538,6 @@ export default function AnaliseConcepcaoPlanejamento() {
                             <SelectItem value="Paralisado">Paralisado</SelectItem>
                         </SelectContent>
                     </Select>
-                    {finalStatus === "Finalizado" && (
-                        <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
-                            <Checkbox 
-                                checked={aplicarTodasFolhas}
-                                onCheckedChange={setAplicarTodasFolhas}
-                                id="aplicar-todas-folhas"
-                            />
-                            <Label htmlFor="aplicar-todas-folhas" className="cursor-pointer text-sm">
-                                Concluir esta atividade em <strong>todas as folhas</strong> do empreendimento
-                            </Label>
-                        </div>
-                    )}
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsStopModalOpen(false)}>Cancelar</Button>
                         <Button onClick={handleConfirmStop}>Confirmar</Button>
