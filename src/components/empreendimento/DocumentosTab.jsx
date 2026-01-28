@@ -1766,48 +1766,70 @@ export default function DocumentosTab({
             return;
         }
 
-        console.log(`📋 [DocumentosTab] Executor selecionado para doc ${doc.numero}: ${executorEmail}`);
+        // Verificar se existem predecessoras ou sucessoras
+        const predecessoras = localDocumentos.filter(d => d.predecessora_id === doc.id);
+        const sucessoras = localDocumentos.filter(d => d.id === doc.predecessora_id);
+        
+        if (predecessoras.length > 0 || sucessoras.length > 0) {
+            // Mostrar diálogo para perguntar se quer aplicar às outras folhas
+            setPendingExecutor(executorEmail);
+            setShowExecutorDialog(true);
+            return;
+        }
+
+        // Se não há predecessoras/sucessoras, aplicar diretamente
+        await applyExecutor(executorEmail, [doc.id]);
+    };
+
+    const applyExecutor = async (executorEmail, documentIds) => {
+        console.log(`📋 [DocumentosTab] Aplicando executor ${executorEmail} a ${documentIds.length} documento(s)`);
         console.log(`🎯 Etapa selecionada para planejamento: ${etapaParaPlanejamento}`);
         
         setIsUpdating(true);
         
         try {
-            console.log(`💾 Atualizando executor_principal no documento...`);
-            const docAtualizado = await retryWithBackoff(
-                () => Documento.update(doc.id, { 
-                    executor_principal: executorEmail,
-                    multiplos_executores: false 
-                }),
-                3, 1000, `setExecutor-${doc.id}`
-            );
-            
-            handleLocalUpdate(docAtualizado);
-            console.log(`✅ Documento atualizado com executor: ${executorEmail}`);
+            for (const docId of documentIds) {
+                const docToUpdate = localDocumentos.find(d => d.id === docId);
+                if (!docToUpdate) continue;
 
-            const temDataManual = docAtualizado.inicio_planejado && 
-                                  isValid(parseDate(docAtualizado.inicio_planejado));
-            
-            const metodoData = temDataManual ? 'manual' : 'agenda';
-            const dataManualInicio = temDataManual ? docAtualizado.inicio_planejado : null;
+                console.log(`💾 Atualizando executor_principal no documento ${docToUpdate.numero}...`);
+                const docAtualizado = await retryWithBackoff(
+                    () => Documento.update(docId, { 
+                        executor_principal: executorEmail,
+                        multiplos_executores: false 
+                    }),
+                    3, 1000, `setExecutor-${docId}`
+                );
+                
+                handleLocalUpdate(docAtualizado);
+                console.log(`✅ Documento ${docToUpdate.numero} atualizado com executor: ${executorEmail}`);
 
-            if (temDataManual) {
-                console.log(`📅 Documento possui data de início manual: ${format(parseDate(docAtualizado.inicio_planejado), 'dd/MM/yyyy')}`);
-            } else {
-                console.log(`🔍 Buscando disponibilidade na agenda do executor...`);
+                const temDataManual = docAtualizado.inicio_planejado && 
+                                      isValid(parseDate(docAtualizado.inicio_planejado));
+                
+                const metodoData = temDataManual ? 'manual' : 'agenda';
+                const dataManualInicio = temDataManual ? docAtualizado.inicio_planejado : null;
+
+                if (temDataManual) {
+                    console.log(`📅 Documento possui data de início manual: ${format(parseDate(docAtualizado.inicio_planejado), 'dd/MM/yyyy')}`);
+                } else {
+                    console.log(`🔍 Buscando disponibilidade na agenda do executor...`);
+                }
+
+                console.log(`\n🚀 Iniciando planejamento automático para ${docToUpdate.numero}...`);
+                
+                await autoPlanejarAtividades(
+                    docAtualizado,
+                    etapaParaPlanejamento,
+                    executorEmail,
+                    metodoData,
+                    dataManualInicio
+                );
             }
-
-            console.log(`\n🚀 Iniciando planejamento automático...`);
             
-            await autoPlanejarAtividades(
-                docAtualizado,
-                etapaParaPlanejamento,
-                executorEmail,
-                metodoData,
-                dataManualInicio
-            );
             setCargaDiariaCache({});
             
-            console.log(`✅ Planejamento concluído!`);
+            console.log(`✅ Planejamento concluído para todos os documentos!`);
             
         } catch (error) {
             console.error("❌ Erro ao definir executor e planejar:", error);
@@ -1824,7 +1846,27 @@ export default function DocumentosTab({
             alert(errorMessage);
         } finally {
             setIsUpdating(false);
+            setShowExecutorDialog(false);
+            setPendingExecutor(null);
         }
+    };
+
+    const handleApplyToRelated = async (applyToRelated) => {
+        if (!pendingExecutor) return;
+
+        const documentIds = [doc.id];
+        
+        if (applyToRelated) {
+            // Adicionar predecessoras (folhas que dependem desta)
+            const predecessoras = localDocumentos.filter(d => d.predecessora_id === doc.id);
+            documentIds.push(...predecessoras.map(d => d.id));
+            
+            // Adicionar sucessoras (folhas das quais esta depende)
+            const sucessoras = localDocumentos.filter(d => d.id === doc.predecessora_id);
+            documentIds.push(...sucessoras.map(d => d.id));
+        }
+
+        await applyExecutor(pendingExecutor, documentIds);
     };
 
     const documentosFiltradosParaPredecessor = useMemo(() => {
