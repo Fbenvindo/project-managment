@@ -90,14 +90,13 @@ export default function ChecklistPlanejamentoPage() {
   );
 
   const itemsPorSecao = items
-    .filter(item => item.status_por_periodo && !Object.values(item.status_por_periodo).every(s => s === 'C'))
     .reduce((acc, item) => {
-      if (!acc[item.secao]) {
-        acc[item.secao] = [];
-      }
-      acc[item.secao].push(item);
-      return acc;
-    }, {});
+       if (!acc[item.secao]) {
+         acc[item.secao] = [];
+       }
+       acc[item.secao].push(item);
+       return acc;
+     }, {});
 
   Object.keys(itemsPorSecao).forEach(secao => {
     itemsPorSecao[secao].sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
