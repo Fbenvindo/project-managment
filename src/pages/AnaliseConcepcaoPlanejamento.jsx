@@ -286,7 +286,18 @@ export default function AnaliseConcepcaoPlanejamento() {
      }, [filteredPlanejamentos, documentos]);
     
     const disciplinasDisponiveis = [...new Set(Object.values(atividadesMap).map(a => a.disciplina))];
-    
+
+    // Coletar todas as subdisciplinas existentes nos documentos
+    const subdisciplinasDisponiveis = useMemo(() => {
+        const subSet = new Set();
+        documentos.forEach(doc => {
+            if (doc.subdisciplinas && Array.isArray(doc.subdisciplinas)) {
+                doc.subdisciplinas.forEach(sub => subSet.add(sub));
+            }
+        });
+        return Array.from(subSet).sort();
+    }, [documentos]);
+
     // Coletar todas as etapas existentes nos planejamentos
     const etapasDisponiveis = useMemo(() => {
         const etapasSet = new Set();
