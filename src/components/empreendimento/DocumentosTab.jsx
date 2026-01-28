@@ -1953,46 +1953,58 @@ export default function DocumentosTab({
                 {!readOnly && (
                 <TableCell>
             <div className="flex items-center justify-end gap-2">
-                {!readOnly && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => toggleSequencing(doc.id)}
-                      className="text-xs h-7 border-purple-500 text-purple-600 hover:bg-purple-50"
-                      disabled={isDocLoading}
-                    >
-                      <CalendarIcon className="w-3 h-3 mr-1" />
-                      Predecessora
-                    </Button>
-                  </>
+                {!readOnly && !expandedSequencing[doc.id] && (
+                 <>
+                   <Button
+                     variant="outline"
+                     size="sm"
+                     onClick={() => toggleSequencing(doc.id)}
+                     className="text-xs h-7 border-purple-500 text-purple-600 hover:bg-purple-50"
+                     disabled={isDocLoading}
+                   >
+                     <CalendarIcon className="w-3 h-3 mr-1" />
+                     Predecessora
+                   </Button>
+                 </>
+                )}
+                {expandedSequencing[doc.id] && (
+                 <Button
+                   variant="outline"
+                   size="sm"
+                   onClick={() => toggleSequencing(doc.id)}
+                   className="text-xs h-7 border-purple-500 bg-purple-50 text-purple-600"
+                   disabled={isDocLoading}
+                 >
+                   <CalendarIcon className="w-3 h-3 mr-1" />
+                   Fechar
+                 </Button>
                 )}
                 <Link to={createPageUrl(`AtividadesPlanejadas?doc_id=${doc.id}&emp_id=${empreendimento.id}`)}>
-                  <Button variant="outline" size="icon" className="h-8 w-8" disabled={isDocLoading}>
-                    <BarChart className="h-4 w-4" />
-                  </Button>
+                 <Button variant="outline" size="icon" className="h-8 w-8" disabled={isDocLoading}>
+                   <BarChart className="h-4 w-4" />
+                 </Button>
                 </Link>
-                
-                {!readOnly && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8 border-blue-500 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
-                      onClick={() => handleOpenDocEtapaModal(doc)}
-                      disabled={isDocLoading}
-                      title="Planejar Documento"
-                    >
-                      <CalendarDays className="h-4 w-4" />
-                    </Button>
-                    
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleEdit(doc)} disabled={isDocLoading}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleDelete(doc.id)} disabled={isDocLoading}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </>
+
+                {!readOnly && !expandedSequencing[doc.id] && (
+                 <>
+                   <Button
+                     variant="outline"
+                     size="icon"
+                     className="h-8 w-8 border-blue-500 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
+                     onClick={() => handleOpenDocEtapaModal(doc)}
+                     disabled={isDocLoading}
+                     title="Planejar Documento"
+                   >
+                     <CalendarDays className="h-4 w-4" />
+                   </Button>
+
+                   <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleEdit(doc)} disabled={isDocLoading}>
+                     <Edit className="h-4 w-4" />
+                   </Button>
+                   <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleDelete(doc.id)} disabled={isDocLoading}>
+                     <Trash2 className="h-4 w-4" />
+                   </Button>
+                 </>
                 )}
               </div>
             </TableCell>
