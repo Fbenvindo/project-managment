@@ -15,11 +15,11 @@ export default function OrcamentosPage() {
   }, []);
 
   useEffect(() => {
-    const handlePropostaAprovada = () => {
+    const handlePropostaAtualizada = () => {
       loadOrcamentos();
     };
 
-    window.addEventListener('propostaAprovada', handlePropostaAprovada);
+    window.addEventListener('propostaAtualizada', handlePropostaAtualizada);
     
     // Recarrega a cada 10 segundos para sincronizar dados
     const interval = setInterval(() => {
@@ -27,7 +27,7 @@ export default function OrcamentosPage() {
     }, 10000);
 
     return () => {
-      window.removeEventListener('propostaAprovada', handlePropostaAprovada);
+      window.removeEventListener('propostaAtualizada', handlePropostaAtualizada);
       clearInterval(interval);
     };
   }, []);
