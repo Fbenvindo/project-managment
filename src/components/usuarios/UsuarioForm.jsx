@@ -91,13 +91,13 @@ export default function UsuarioForm({ usuario, onSubmit, onCancel, allUsers, equ
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 overflow-hidden"
     >
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="w-full max-w-2xl max-h-[90vh] flex flex-col"
+        className="w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
       >
         <Card className="bg-white shadow-2xl flex flex-col h-full">
           <CardHeader className="border-b border-gray-100 flex-shrink-0">
