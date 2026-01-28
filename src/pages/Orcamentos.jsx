@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 
 export default function OrcamentosPage() {
   const { data = [], isLoading, refetch } = useQuery({
-    queryKey: ['orcamentos'],
+    queryKey: ['orcamentos', Date.now()],
     queryFn: async () => {
       const data = await retryWithBackoff(
         () => Comercial.list(),
@@ -17,8 +17,9 @@ export default function OrcamentosPage() {
       );
       return data || [];
     },
-    refetchInterval: 5000,
+    refetchInterval: 2000,
     staleTime: 0,
+    refetchOnWindowFocus: true,
   });
 
   const orcamentosPorMes = React.useMemo(() => {
