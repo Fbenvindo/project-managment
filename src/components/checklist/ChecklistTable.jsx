@@ -25,6 +25,8 @@ export default function ChecklistTable({ secao, items, checklist, onUpdate }) {
   const [formData, setFormData] = useState({
     numero_item: '',
     descricao: '',
+    contribuicao: '',
+    tempo: '',
     observacoes: ''
   });
 
