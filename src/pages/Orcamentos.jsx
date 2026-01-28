@@ -8,82 +8,65 @@ import { format, parseISO } from "date-fns";
 import { useQuery } from "@tanstack/react-query";
 
 export default function OrcamentosPage() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [orcamentosPorMes, setOrcamentosPorMes] = useState([]);
+  const { data = [], isLoading, refetch } = useQuery({
+    queryKey: ['orcamentos'],
+    queryFn: async () => {
+      const data = await retryWithBackoff(
+        () => Comercial.list(),
+        3, 2000, 'loadOrcamentos'
+      );
+      return data || [];
+    },
+    refetchInterval: 5000,
+    staleTime: 0,
+  });
 
-  useEffect(() => {
-    loadOrcamentos();
-  }, []);
+  const orcamentosPorMes = React.useMemo(() => {
+    const grouped = {};
+
+    data.forEach(proposta => {
+      if (proposta.data_solicitacao) {
+        const date = parseISO(proposta.data_solicitacao);
+        const mesAno = format(date, 'yyyy-MM');
+        const mesAnoDisplay = format(date, 'MM/yyyy');
+
+        if (!grouped[mesAno]) {
+          grouped[mesAno] = {
+            mesAno,
+            mesAnoDisplay,
+            quantidade: 0,
+            valorBimTotal: 0,
+            valorCadTotal: 0,
+            valorBimAprovado: 0,
+            valorCadAprovado: 0,
+            quantidadeAprovada: 0
+          };
+        }
+
+        grouped[mesAno].quantidade++;
+        grouped[mesAno].valorBimTotal += Number(proposta.valor_bim || 0);
+        grouped[mesAno].valorCadTotal += Number(proposta.valor_cad || 0);
+
+        // Verifica se foi aprovado (conta pela data de solicitação)
+        if (proposta.status === 'aprovado') {
+          grouped[mesAno].valorBimAprovado += Number(proposta.valor_bim || 0);
+          grouped[mesAno].valorCadAprovado += Number(proposta.valor_cad || 0);
+          grouped[mesAno].quantidadeAprovada++;
+        }
+      }
+    });
+
+    return Object.values(grouped).sort((a, b) => b.mesAno.localeCompare(a.mesAno));
+  }, [data]);
 
   useEffect(() => {
     const handlePropostaAtualizada = () => {
-      loadOrcamentos();
+      refetch();
     };
 
     window.addEventListener('propostaAtualizada', handlePropostaAtualizada);
-    
-    // Recarrega a cada 10 segundos para sincronizar dados
-    const interval = setInterval(() => {
-      loadOrcamentos();
-    }, 10000);
-
-    return () => {
-      window.removeEventListener('propostaAtualizada', handlePropostaAtualizada);
-      clearInterval(interval);
-    };
-  }, []);
-
-  const loadOrcamentos = async () => {
-     setIsLoading(true);
-     try {
-       // Adiciona timestamp para evitar cache
-       const data = await retryWithBackoff(
-         () => Comercial.list(),
-         3, 2000, `loadOrcamentos-${Date.now()}`
-       );
-
-       const grouped = {};
-      
-      data.forEach(proposta => {
-        if (proposta.data_solicitacao) {
-          const date = parseISO(proposta.data_solicitacao);
-          const mesAno = format(date, 'yyyy-MM');
-          const mesAnoDisplay = format(date, 'MM/yyyy');
-          
-          if (!grouped[mesAno]) {
-            grouped[mesAno] = {
-              mesAno,
-              mesAnoDisplay,
-              quantidade: 0,
-              valorBimTotal: 0,
-              valorCadTotal: 0,
-              valorBimAprovado: 0,
-              valorCadAprovado: 0,
-              quantidadeAprovada: 0
-            };
-          }
-          
-          grouped[mesAno].quantidade++;
-          grouped[mesAno].valorBimTotal += Number(proposta.valor_bim || 0);
-          grouped[mesAno].valorCadTotal += Number(proposta.valor_cad || 0);
-          
-          // Verifica se foi aprovado (conta pela data de solicitação)
-          if (proposta.status === 'aprovado') {
-            grouped[mesAno].valorBimAprovado += Number(proposta.valor_bim || 0);
-            grouped[mesAno].valorCadAprovado += Number(proposta.valor_cad || 0);
-            grouped[mesAno].quantidadeAprovada++;
-          }
-        }
-      });
-
-      const sorted = Object.values(grouped).sort((a, b) => b.mesAno.localeCompare(a.mesAno));
-      setOrcamentosPorMes(sorted);
-    } catch (error) {
-      console.error('Erro ao carregar orçamentos:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    return () => window.removeEventListener('propostaAtualizada', handlePropostaAtualizada);
+  }, [refetch]);
 
   const totalGeral = orcamentosPorMes.reduce((acc, mes) => ({
     quantidade: acc.quantidade + mes.quantidade,
