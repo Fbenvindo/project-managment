@@ -63,8 +63,8 @@ export default function PropostasPage() {
         () => Comercial.list('-updated_date'),
         3, 2000, 'loadPropostas'
       );
-      const sorted = (data || []).sort((a, b) => 
-        (a.numero || '').localeCompare(b.numero || '', 'pt-BR')
+      const sorted = (data || []).reverse().sort((a, b) => 
+        (b.numero || '').localeCompare(a.numero || '', 'pt-BR')
       );
       setPropostas(sorted);
     } catch (error) {
