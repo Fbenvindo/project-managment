@@ -360,27 +360,20 @@ export default function AnaliseConcepcaoPlanejamentoTab({
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredData.length > 0 ? filteredData.map(atividade => {
-                                    // CORRIGIDO: Lógica para múltiplos planejamentos
-                                    const planejamentosDaAtividade = planejamentosPorAtividadeMap[atividade.id] || [];
-                                    const tempoPlanejadoTotal = planejamentosDaAtividade.reduce((sum, p) => sum + (Number(p.tempo_planejado) || 0), 0);
-                                    const tempoExecutadoTotal = planejamentosDaAtividade.reduce((sum, p) => sum + (Number(p.tempo_executado) || 0), 0);
-                                    const percentual = tempoPlanejadoTotal > 0 ? calcularPercentual(tempoExecutadoTotal, tempoPlanejadoTotal) : 0;
+                                {filteredData.length > 0 ? filteredData.map(({ atividade, planejamento }) => {
+                                    const tempoExecutado = Number(planejamento.tempo_executado) || 0;
+                                    const tempoPlanejado = Number(planejamento.tempo_planejado) || 1;
+                                    const percentual = calcularPercentual(tempoExecutado, tempoPlanejado);
                                     
                                     return (
-                                        <TableRow key={atividade.id}>
+                                        <TableRow key={`${atividade.id}-${planejamento.id}`}>
                                             <TableCell><Badge variant="outline">{atividade.etapa}</Badge></TableCell>
                                             <TableCell><Badge className="bg-purple-100 text-purple-800">{atividade.subdisciplina}</Badge></TableCell>
                                             <TableCell className="max-w-xs truncate" title={atividade.atividade}>{atividade.atividade}</TableCell>
                                             <TableCell>
-                                                {formatarTempo(calcularTempoPadrao(atividade))}
-                                                {getMultiplicadorTexto(atividade) && (
-                                                    <span className="text-xs text-gray-500 block">
-                                                        {getMultiplicadorTexto(atividade)}
-                                                    </span>
-                                                )}
+                                                {formatarTempo(tempoPlanejado)}
                                             </TableCell>
-                                            <TableCell>{formatarTempo(tempoExecutadoTotal)}</TableCell>
+                                            <TableCell>{formatarTempo(tempoExecutado)}</TableCell>
                                             <TableCell>
                                                 <Progress value={percentual} className="w-full" />
                                                 <span className="text-xs text-gray-500">{percentual}%</span>
@@ -388,18 +381,8 @@ export default function AnaliseConcepcaoPlanejamentoTab({
                                             <TableCell><Badge className={getStatusColor(percentual)}>{getStatusText(percentual)}</Badge></TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex gap-2 justify-end">
-                                                    {/* CORRIGIDO: Botão de planejar sempre visível */}
-                                                    <Button 
-                                                        size="sm" 
-                                                        onClick={() => handlePlanejarAtividade(atividade)}
-                                                        className="bg-blue-600 hover:bg-blue-700"
-                                                    >
-                                                        <Calendar className="w-3 h-3 mr-1" /> Planejar
-                                                    </Button>
-                                                    
-                                                    {/* Lógica de "Iniciar" pode ser revista no futuro, se necessário */}
-                                                    {planejamentosDaAtividade.length > 0 && !activeExecution && (
-                                                        <Button size="sm" onClick={() => handleIniciarAtividade(planejamentosDaAtividade[0])} title="Iniciar a primeira ocorrência planejada">
+                                                    {!activeExecution && planejamento.status !== 'concluido' && (
+                                                        <Button size="sm" onClick={() => handleIniciarAtividade(planejamento)}>
                                                             <Play className="w-3 h-3 mr-1" /> Iniciar
                                                         </Button>
                                                     )}
