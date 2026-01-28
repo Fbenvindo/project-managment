@@ -1,10 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Printer, Save, FileText, Loader2, Upload, Image as ImageIcon, X } from "lucide-react";
+import { Plus, Trash2, Printer, Save, FileText, Loader2, Upload, Image as ImageIcon, X, CheckCircle } from "lucide-react";
 import { Empreendimento, ItemPRE } from "@/entities/all";
 import { format } from "date-fns";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
@@ -91,6 +91,9 @@ export default function PRE() {
   const [selectedEmp, setSelectedEmp] = useState(null);
   const [items, setItems] = useState([]);
   const [expandedImage, setExpandedImage] = useState(null);
+  const [lastSavedTime, setLastSavedTime] = useState(null);
+  const [autoSaveInProgress, setAutoSaveInProgress] = useState(false);
+  const autoSaveTimerRef = useRef(null);
   const [headerData, setHeaderData] = useState({
     cliente: '',
     obra: '',
@@ -185,6 +188,8 @@ export default function PRE() {
     setItems(prev => prev.map(item => 
       item.id === id ? { ...item, [field]: value } : item
     ));
+    // Ativar auto-save ao modificar item
+    triggerAutoSave();
   };
 
   const handleDeleteItem = async (id) => {
@@ -221,6 +226,70 @@ export default function PRE() {
         ? { ...item, imagens: (item.imagens || []).filter(url => url !== imageUrl) } 
         : item
     ));
+  };
+
+  // Salvamento automático com debounce
+  const triggerAutoSave = () => {
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    
+    autoSaveTimerRef.current = setTimeout(() => {
+      handleAutoSave();
+    }, 2000); // Aguarda 2 segundos de inatividade antes de salvar
+  };
+
+  const handleAutoSave = async () => {
+    if (!selectedEmp || autoSaveInProgress) return;
+
+    setAutoSaveInProgress(true);
+    try {
+      for (const item of items) {
+        // Apenas salvar itens que foram modificados ou são novos
+        if (item.id.toString().startsWith('temp-') || item.isNew) {
+          const itemData = {
+            empreendimento_id: selectedEmp,
+            item: item.item,
+            data: item.data,
+            de: item.de,
+            descritiva: item.descritiva,
+            localizacao: item.localizacao,
+            assunto: item.assunto,
+            comentario: item.comentario,
+            status: item.status || '',
+            resposta: item.resposta,
+            imagens: item.imagens || []
+          };
+
+          if (item.isNew || item.id.toString().startsWith('temp-')) {
+            const created = await retryWithBackoff(() => ItemPRE.create(itemData), 3, 2000, 'PRE-AutoCreate');
+            // Atualizar item na lista com ID real
+            setItems(prev => prev.map(i => i.id === item.id ? { ...created, isNew: false } : i));
+          }
+        } else {
+          // Para itens existentes, atualizar com os dados mais recentes
+          const itemData = {
+            empreendimento_id: selectedEmp,
+            item: item.item,
+            data: item.data,
+            de: item.de,
+            descritiva: item.descritiva,
+            localizacao: item.localizacao,
+            assunto: item.assunto,
+            comentario: item.comentario,
+            status: item.status || '',
+            resposta: item.resposta,
+            imagens: item.imagens || []
+          };
+
+          await retryWithBackoff(() => ItemPRE.update(item.id, itemData), 3, 2000, `PRE-AutoUpdate-${item.id}`);
+        }
+      }
+      setLastSavedTime(new Date());
+      console.log('✅ Auto-save concluído com sucesso');
+    } catch (error) {
+      console.error('Erro no auto-save:', error);
+    } finally {
+      setAutoSaveInProgress(false);
+    }
   };
 
   const handleSave = async () => {
@@ -274,6 +343,7 @@ export default function PRE() {
         return 0;
       });
       setItems(sortedSavedItems);
+      setLastSavedTime(new Date());
       alert('Dados salvos com sucesso!');
     } catch (error) {
       console.error('Erro ao salvar:', error);
@@ -339,6 +409,21 @@ export default function PRE() {
             </CardContent>
           </Card>
         ) : (
+          <>
+            {/* Indicador de Auto-Save */}
+            {autoSaveInProgress && (
+              <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center gap-2 no-print">
+                <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                <span className="text-sm text-blue-700">Salvando automaticamente...</span>
+              </div>
+            )}
+            {lastSavedTime && !autoSaveInProgress && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 no-print">
+                <CheckCircle className="w-4 h-4 text-green-600" />
+                <span className="text-sm text-green-700">Salvo automaticamente em {format(lastSavedTime, 'HH:mm:ss')}</span>
+              </div>
+            )}
+        (
           <div className="bg-white border border-gray-400 shadow-lg">
             {/* Cabeçalho */}
             <div className="border-b-2 border-gray-800 p-4 flex items-center justify-between">
@@ -569,6 +654,7 @@ export default function PRE() {
               </table>
             </div>
           </div>
+          </>
         )}
 
         {/* Modal de Imagem Expandida */}
