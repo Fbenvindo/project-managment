@@ -159,6 +159,17 @@ export default function PropostasPage() {
     }
   };
 
+  const filteredPropostas = propostas.filter((proposta) => {
+    const searchLower = searchTerm.toLowerCase();
+    return (
+      proposta.numero?.toLowerCase().includes(searchLower) ||
+      proposta.cliente?.toLowerCase().includes(searchLower) ||
+      proposta.empreendimento?.toLowerCase().includes(searchLower) ||
+      proposta.solicitante?.toLowerCase().includes(searchLower) ||
+      proposta.email?.toLowerCase().includes(searchLower)
+    );
+  });
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
