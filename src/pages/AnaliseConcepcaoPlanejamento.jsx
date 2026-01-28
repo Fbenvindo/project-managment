@@ -315,6 +315,12 @@ export default function AnaliseConcepcaoPlanejamento() {
         );
     };
 
+    const toggleSubdisciplina = (subdisciplina) => {
+        setSelectedSubdisciplinas(prev => 
+            prev.includes(subdisciplina) ? prev.filter(s => s !== subdisciplina) : [...prev, subdisciplina]
+        );
+    };
+
     const handlePlanejamentoAtividadeComplete = () => {
         loadData();
         setPlanejamentoModalOpen(false);
