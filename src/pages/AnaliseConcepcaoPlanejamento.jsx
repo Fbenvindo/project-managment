@@ -131,16 +131,13 @@ export default function AnaliseConcepcaoPlanejamento() {
                     horasPorDia = { ...horasExecutadasPorDia };
                 }
 
-                // Marcar como concluído APENAS quando finalizado
-                const novoStatus = finalStatus === "Finalizado" ? "concluido" : planejamento.status;
-
-                // Atualizar APENAS este planejamento específico - SEM CRIAR NOVO
+                // NÃO alterar o status - apenas registrar tempo executado
+                // Atualizar APENAS este planejamento específico
                 const EntityToUpdate = planejamento.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
                 await EntityToUpdate.update(planejamento.id, {
                     horas_por_dia: horasPorDia,
                     horas_executadas_por_dia: horasExecutadasPorDia,
-                    tempo_executado: totalTempoExecutado,
-                    status: novoStatus
+                    tempo_executado: totalTempoExecutado
                 });
 
                 // Atualizar estado local
@@ -150,8 +147,7 @@ export default function AnaliseConcepcaoPlanejamento() {
                             ...p, 
                             horas_por_dia: horasPorDia,
                             horas_executadas_por_dia: horasExecutadasPorDia,
-                            tempo_executado: totalTempoExecutado,
-                            status: novoStatus
+                            tempo_executado: totalTempoExecutado
                         }
                         : p
                 ));
