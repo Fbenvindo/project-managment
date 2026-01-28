@@ -281,7 +281,7 @@ export default function UsuarioForm({ usuario, onSubmit, onCancel, allUsers, equ
                 )}
               </div>
 
-              <div className="flex justify-end gap-3 pt-4">
+              <div className="flex justify-end gap-3 pt-4 border-t border-gray-100 mt-4 flex-shrink-0">
                 <Button type="button" variant="outline" onClick={onCancel}>
                   Cancelar
                 </Button>
@@ -294,7 +294,7 @@ export default function UsuarioForm({ usuario, onSubmit, onCancel, allUsers, equ
                   {isSubmitting ? "Salvando..." : "Salvar"}
                 </Button>
               </div>
-            </form>
+              </form>
           </CardContent>
         </Card>
       </motion.div>
