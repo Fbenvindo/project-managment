@@ -143,23 +143,8 @@ export default function AnaliseConcepcaoPlanejamento() {
                 status: finalStatus === "Finalizado" ? "concluido" : "pausado"
             });
 
-            // Se a atividade foi finalizada, verificar se todas as atividades da folha estão concluídas
-            if (finalStatus === "Finalizado" && planejamento.documento_id) {
-                const planejamentosDoDocumento = planejamentos.filter(p => p.documento_id === planejamento.documento_id);
-                const todasConcluidas = planejamentosDoDocumento.every(p => {
-                    if (p.id === planejamento.id) return true; // A atual que acabou de ser concluída
-                    const outraExec = execucoesMap[p.id] || [];
-                    return outraExec.some(e => e.status === "Finalizado");
-                });
-
-                // Atualizar status do documento se todas estão concluídas
-                if (todasConcluidas && planejamentos.find(p => p.id === planejamento.id)?.tipo_planejamento === 'documento') {
-                    const doc = documentos.find(d => d.id === planejamento.documento_id);
-                    if (doc) {
-                        await Documento.update(doc.id, { status: 'concluido' });
-                    }
-                }
-            }
+            // Não fazer nada relacionado ao documento ao finalizar manualmente
+            // A folha continuará visível, apenas a atividade terá seu status alterado
 
             // Atualizar estado local
             setPlanejamentos(prev => prev.map(p => 
