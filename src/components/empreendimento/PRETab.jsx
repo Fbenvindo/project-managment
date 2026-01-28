@@ -107,7 +107,14 @@ export default function PRETab({ empreendimento, readOnly = false }) {
       }));
       loadItems(empreendimento.id);
     }
-  }, [empreendimento]);
+  }, [empreendimento?.id]);
+
+  // Recarrega dados ao montar o componente
+  useEffect(() => {
+    if (empreendimento?.id) {
+      loadItems(empreendimento.id);
+    }
+  }, []);
 
   useEffect(() => {
     if (saveTimeoutRef.current) {
