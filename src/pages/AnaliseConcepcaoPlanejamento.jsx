@@ -143,22 +143,6 @@ export default function AnaliseConcepcaoPlanejamento() {
                 status: finalStatus === "Finalizado" ? "concluido" : "pausado"
             });
 
-            // Se a atividade foi finalizada e possui documento_id e atividade_id, criar marcador
-            if (finalStatus === "Finalizado" && planejamento.documento_id && planejamento.atividade_id) {
-                const atividade = atividadesMap[planejamento.atividade_id];
-                
-                // Criar marcador de conclusão para evitar que apareça novamente
-                await Atividade.create({
-                    atividade: `(Concluída na folha ${documentos.find(d => d.id === planejamento.documento_id)?.numero || ''})`,
-                    etapa: planejamento.etapa || atividade?.etapa,
-                    disciplina: atividade?.disciplina,
-                    subdisciplina: atividade?.subdisciplina,
-                    tempo: 0,
-                    empreendimento_id: planejamento.empreendimento_id,
-                    documento_id: planejamento.documento_id
-                });
-            }
-
             // Se a atividade foi finalizada, verificar se todas as atividades da folha estão concluídas
             if (finalStatus === "Finalizado" && planejamento.documento_id) {
                 const planejamentosDoDocumento = planejamentos.filter(p => p.documento_id === planejamento.documento_id);
