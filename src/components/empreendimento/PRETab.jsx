@@ -235,7 +235,9 @@ export default function PRETab({ empreendimento, readOnly = false }) {
       // Salva no banco
       if (updatedItem.isNew || updatedItem.id.toString().startsWith('temp-')) {
         const created = await retryWithBackoff(() => ItemPRE.create(itemData), 3, 2000, 'PRE-Create');
-        setItems(prev => prev.map(item => item.id === itemId ? created : item));
+        // Remove isNew do item criado para não duplicar em futuros saves
+        const savedItem = { ...created, isNew: false };
+        setItems(prev => prev.map(item => item.id === itemId ? savedItem : item));
       } else {
         await retryWithBackoff(() => ItemPRE.update(updatedItem.id, itemData), 3, 2000, `PRE-Update-${updatedItem.id}`);
         setItems(prev => prev.map(item => item.id === itemId ? updatedItem : item));
