@@ -83,6 +83,24 @@ export default function ChecklistPlanejamentoPage() {
     }
   };
 
+  const handleLimparItens = async () => {
+    if (!selectedChecklist) return;
+    
+    if (!window.confirm(`Tem certeza que deseja excluir todos os itens deste checklist?`)) return;
+    
+    try {
+      // Excluir todos os itens
+      for (const item of items) {
+        await base44.entities.ChecklistItem.delete(item.id);
+      }
+      
+      await queryClient.invalidateQueries(['checklist-items', selectedChecklist?.id]);
+    } catch (error) {
+      console.error('Erro ao excluir itens:', error);
+      alert('Erro ao excluir itens');
+    }
+  };
+
   const filteredChecklists = checklists.filter(c =>
     c.cliente?.toLowerCase().includes(searchTerm.toLowerCase()) ||
     c.tipo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
