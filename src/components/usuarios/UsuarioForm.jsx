@@ -111,8 +111,8 @@ export default function UsuarioForm({ usuario, onSubmit, onCancel, allUsers, equ
             </div>
           </CardHeader>
           
-          <CardContent className="p-6 overflow-y-auto flex-1">
-            <form onSubmit={handleSubmit} className="space-y-6">
+          <CardContent className="p-6 overflow-y-auto flex-1 flex flex-col">
+            <form onSubmit={handleSubmit} className="space-y-6 flex-1 flex flex-col">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="nome">Nome Completo *</Label>
