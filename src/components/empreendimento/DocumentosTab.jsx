@@ -1158,8 +1158,8 @@ export default function DocumentosTab({
         // Atividades específicas DESTA folha (com documento_id igual ao documento atual)
         // IMPORTANTE: Excluir marcadores de conclusão (tempo: 0 com texto "Concluída na folha")
         if (ativ.empreendimento_id === empreendimento.id && ativ.documento_id === doc.id && ativ.tempo !== -999) {
-          // Não incluir marcadores de conclusão na lista
-          if (ativ.tempo === 0 && ativ.atividade?.includes('Concluída na folha')) {
+          // Não incluir marcadores de conclusão na lista (identificados por tempo 0 e texto começando com "(Concluída")
+          if (ativ.tempo === 0 && (ativ.atividade?.startsWith('(Concluída') || ativ.atividade?.includes('Concluída na folha'))) {
             return false;
           }
           return true;
