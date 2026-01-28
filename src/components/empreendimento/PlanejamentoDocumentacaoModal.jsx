@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { PlanejamentoAtividade } from '@/entities/all';
 import {
@@ -152,8 +151,11 @@ export default function PlanejamentoDocumentacaoModal({
           return indexA - indexB;
         });
 
+      // CRÍTICO: Buscar APENAS planejamentos não concluídos para cálculo de carga
       const agendaExecutor = await retryWithExtendedBackoff(() => 
-        PlanejamentoAtividade.filter({ executor_principal: executorPrincipal }), `getAgenda-${executorPrincipal}`
+        PlanejamentoAtividade.filter({ executor_principal: executorPrincipal }).then(planos =>
+          planos.filter(p => p.status !== 'concluido')
+        ), `getAgenda-${executorPrincipal}`
       );
       
       // Initialize `cargaDiariaAtual` (formerly `cargaDiaria`) for explicit accumulation
