@@ -131,6 +131,7 @@ export default function AnaliseConcepcaoPlanejamento() {
                     horasPorDia = { ...horasExecutadasPorDia };
                 }
 
+                // Quando finalizado, marcar como concluído e não criar nova
                 const novoStatus = finalStatus === "Finalizado" ? "concluido" : "pausado";
 
                 // Atualizar APENAS este planejamento específico
