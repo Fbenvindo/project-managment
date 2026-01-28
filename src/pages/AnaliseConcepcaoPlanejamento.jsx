@@ -245,9 +245,14 @@ export default function AnaliseConcepcaoPlanejamento() {
 
         if (execucaoAtiva) {
             return (
-                <Button size="sm" variant="destructive" onClick={() => openStopModal(execucaoAtiva)}>
-                    <Square className="w-4 h-4 mr-2" /> Parar
-                </Button>
+                <div className="flex gap-2">
+                    <Button size="sm" variant="destructive" onClick={() => {
+                        setSelectedExecucao(execucaoAtiva);
+                        openCompleteAllModal(planejamento);
+                    }}>
+                        <Square className="w-4 h-4 mr-2" /> Parar
+                    </Button>
+                </div>
             );
         }
         return (
