@@ -105,46 +105,54 @@ export const isActivityOverdue = (plano, hoje = new Date()) => {
 };
 
 export const distribuirHorasPorDias = (dataInicio, horasTotais, limiteDiario = 8, cargaDiariaExistente = {}, isStrictStartDate = false) => {
-   const distribuicao = {};
-   const novaCargaDiaria = { ...cargaDiariaExistente };
+  const distribuicao = {};
+  const novaCargaDiaria = { ...cargaDiariaExistente };
+  
+  let dataAtual = ensureWorkingDay(dataInicio);
+  let horasRestantes = horasTotais;
+  let tentativas = 0;
+  const maxTentativas = 365;
 
-   let dataAtual = ensureWorkingDay(dataInicio);
-   let horasRestantes = horasTotais;
-   let tentativas = 0;
-   const maxTentativas = 365;
+  console.log(`\n🔄 [distribuirHorasPorDias] Iniciando distribuição:`);
+  console.log(`   Total de horas: ${horasTotais.toFixed(1)}h`);
+  console.log(`   Data de início: ${format(dataAtual, 'yyyy-MM-dd')}`);
+  console.log(`   Limite diário: ${limiteDiario}h`);
+  console.log(`   Modo estrito (manual): ${isStrictStartDate ? 'SIM' : 'NÃO'}`);
 
-   console.log(`\n🔄 [distribuirHorasPorDias] Iniciando distribuição:`);
-   console.log(`   Total de horas: ${horasTotais.toFixed(1)}h`);
-   console.log(`   Data de início: ${format(dataAtual, 'yyyy-MM-dd')}`);
-   console.log(`   Limite diário: ${limiteDiario}h`);
-   console.log(`   Modo estrito (manual): ${isStrictStartDate ? 'SIM' : 'NÃO'}`);
+  while (horasRestantes > 0.01 && tentativas < maxTentativas) {
+    tentativas++;
+    const diaKey = format(dataAtual, 'yyyy-MM-dd');
+    
+    if (isWorkingDay(dataAtual)) {
+      const cargaAtual = novaCargaDiaria[diaKey] || 0;
+      const espacoDisponivel = Math.max(0, limiteDiario - cargaAtual);
 
-   while (horasRestantes > 0.01 && tentativas < maxTentativas) {
-     tentativas++;
-     const diaKey = format(dataAtual, 'yyyy-MM-dd');
+      console.log(`   📅 ${diaKey}: Carga atual ${cargaAtual.toFixed(1)}h, Espaço ${espacoDisponivel.toFixed(1)}h`);
 
-     if (isWorkingDay(dataAtual)) {
-       const cargaAtual = novaCargaDiaria[diaKey] || 0;
-       const espacoDisponivel = Math.max(0, limiteDiario - cargaAtual);
-
-       console.log(`   📅 ${diaKey}: Carga atual ${cargaAtual.toFixed(1)}h, Espaço ${espacoDisponivel.toFixed(1)}h`);
-
-       // Sempre alocar tudo que for possível no dia, respeitando o limite
-       const horasParaAlocar = Math.min(limiteDiario - cargaAtual, horasRestantes);
-
-       if (horasParaAlocar > 0.01) {
-         const novaCarga = cargaAtual + horasParaAlocar;
-
-         distribuicao[diaKey] = horasParaAlocar;
-         novaCargaDiaria[diaKey] = novaCarga;
-         horasRestantes -= horasParaAlocar;
-
-         console.log(`   ✅ Alocado: ${horasParaAlocar.toFixed(1)}h → Nova carga: ${novaCarga.toFixed(1)}h → Restante: ${horasRestantes.toFixed(1)}h`);
-       }
-     }
-
-     dataAtual = addDays(dataAtual, 1);
-   }
+      // Alocar o que couber no dia
+      if (espacoDisponivel > 0.01) {
+        const horasParaAlocar = Math.min(espacoDisponivel, horasRestantes);
+        
+        // **CRÍTICO**: Validar antes de alocar
+        const novaCarga = cargaAtual + horasParaAlocar;
+        
+        if (novaCarga > limiteDiario + 0.01 && !isStrictStartDate) {
+          console.error(`   ❌ ERRO: Tentativa de alocar ${horasParaAlocar.toFixed(1)}h resultaria em ${novaCarga.toFixed(1)}h (limite: ${limiteDiario}h)`);
+          // Pula para o próximo dia sem alocar
+          dataAtual = addDays(dataAtual, 1);
+          continue;
+        }
+        
+        distribuicao[diaKey] = horasParaAlocar;
+        novaCargaDiaria[diaKey] = novaCarga;
+        horasRestantes -= horasParaAlocar;
+        
+        console.log(`   ✅ Alocado: ${horasParaAlocar.toFixed(1)}h → Nova carga: ${novaCarga.toFixed(1)}h → Restante: ${horasRestantes.toFixed(1)}h`);
+      }
+    }
+    
+    dataAtual = addDays(dataAtual, 1);
+  }
 
   if (horasRestantes > 0.01) {
     throw new Error(
