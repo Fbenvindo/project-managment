@@ -198,56 +198,46 @@ export default function PRETab({ empreendimento, readOnly = false }) {
 
   const handleUploadImage = async (itemId, file) => {
     try {
+      setIsSaving(true);
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       
-      // Atualiza o item com a imagem
-      setItems(prev => {
-        const updated = prev.map(item => 
-          item.id === itemId 
-            ? { ...item, imagens: [...(item.imagens || []), file_url] } 
-            : item
-        );
-        
-        // Salva imediatamente após adicionar a imagem
-        handleAutoSaveDirectly(updated);
-        
-        return updated;
-      });
+      // Encontra o item e atualiza com a nova imagem
+      const itemToUpdate = items.find(item => item.id === itemId);
+      if (!itemToUpdate) return;
+      
+      const updatedItem = {
+        ...itemToUpdate,
+        imagens: [...(itemToUpdate.imagens || []), file_url]
+      };
+      
+      // Prepara dados para salvar
+      const itemData = {
+        empreendimento_id: empreendimento.id,
+        item: updatedItem.item,
+        data: updatedItem.data,
+        de: updatedItem.de,
+        descritiva: updatedItem.descritiva,
+        localizacao: updatedItem.localizacao,
+        assunto: updatedItem.assunto,
+        comentario: updatedItem.comentario,
+        status: updatedItem.status || '',
+        resposta: updatedItem.resposta,
+        imagens: updatedItem.imagens
+      };
+
+      // Salva no banco
+      if (updatedItem.isNew || updatedItem.id.toString().startsWith('temp-')) {
+        const created = await retryWithBackoff(() => ItemPRE.create(itemData), 3, 2000, 'PRE-Create');
+        setItems(prev => prev.map(item => item.id === itemId ? created : item));
+      } else {
+        await retryWithBackoff(() => ItemPRE.update(updatedItem.id, itemData), 3, 2000, `PRE-Update-${updatedItem.id}`);
+        setItems(prev => prev.map(item => item.id === itemId ? updatedItem : item));
+      }
+      
+      setLastSaved(new Date());
     } catch (error) {
       console.error('Erro ao fazer upload da imagem:', error);
       alert('Erro ao fazer upload da imagem.');
-    }
-  };
-
-  const handleAutoSaveDirectly = async (itemsToSave) => {
-    if (isSaving || !empreendimento?.id) return;
-    
-    setIsSaving(true);
-    try {
-      for (const item of itemsToSave) {
-        const itemData = {
-          empreendimento_id: empreendimento.id,
-          item: item.item,
-          data: item.data,
-          de: item.de,
-          descritiva: item.descritiva,
-          localizacao: item.localizacao,
-          assunto: item.assunto,
-          comentario: item.comentario,
-          status: item.status || '',
-          resposta: item.resposta,
-          imagens: item.imagens || []
-        };
-
-        if (item.isNew || item.id.toString().startsWith('temp-')) {
-          await retryWithBackoff(() => ItemPRE.create(itemData), 3, 2000, 'PRE-Create');
-        } else {
-          await retryWithBackoff(() => ItemPRE.update(item.id, itemData), 3, 2000, `PRE-Update-${item.id}`);
-        }
-      }
-      setLastSaved(new Date());
-    } catch (error) {
-      console.error('Erro ao salvar:', error);
     } finally {
       setIsSaving(false);
     }
