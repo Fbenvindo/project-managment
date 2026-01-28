@@ -14,6 +14,15 @@ export default function OrcamentosPage() {
     loadOrcamentos();
   }, []);
 
+  useEffect(() => {
+    const handlePropostaAprovada = () => {
+      loadOrcamentos();
+    };
+
+    window.addEventListener('propostaAprovada', handlePropostaAprovada);
+    return () => window.removeEventListener('propostaAprovada', handlePropostaAprovada);
+  }, []);
+
   const loadOrcamentos = async () => {
     setIsLoading(true);
     try {
