@@ -1911,13 +1911,47 @@ export default function DocumentosTab({
         const documentIds = [doc.id];
         
         if (applyToRelated) {
-            // Adicionar predecessoras (folhas que dependem desta)
-            const predecessoras = localDocumentos.filter(d => d.predecessora_id === doc.id);
-            documentIds.push(...predecessoras.map(d => d.id));
+            // Buscar toda a cadeia de predecessoras (folhas que dependem desta)
+            const findAllSuccessorsRecursive = (docId, visited = new Set()) => {
+                if (visited.has(docId)) return [];
+                visited.add(docId);
+                
+                const directSuccessors = localDocumentos.filter(d => d.predecessora_id === docId);
+                const allSuccessors = [...directSuccessors];
+                
+                directSuccessors.forEach(successor => {
+                    const nestedSuccessors = findAllSuccessorsRecursive(successor.id, visited);
+                    allSuccessors.push(...nestedSuccessors);
+                });
+                
+                return allSuccessors;
+            };
             
-            // Adicionar sucessoras (folhas das quais esta depende)
-            const sucessoras = localDocumentos.filter(d => d.id === doc.predecessora_id);
-            documentIds.push(...sucessoras.map(d => d.id));
+            // Buscar toda a cadeia de sucessoras (folhas das quais esta depende)
+            const findAllPredecessorsRecursive = (docId, visited = new Set()) => {
+                if (visited.has(docId)) return [];
+                visited.add(docId);
+                
+                const currentDoc = localDocumentos.find(d => d.id === docId);
+                if (!currentDoc || !currentDoc.predecessora_id) return [];
+                
+                const predecessor = localDocumentos.find(d => d.id === currentDoc.predecessora_id);
+                if (!predecessor) return [];
+                
+                const allPredecessors = [predecessor];
+                const nestedPredecessors = findAllPredecessorsRecursive(predecessor.id, visited);
+                allPredecessors.push(...nestedPredecessors);
+                
+                return allPredecessors;
+            };
+            
+            // Adicionar toda a cadeia de sucessores
+            const allSuccessors = findAllSuccessorsRecursive(doc.id);
+            documentIds.push(...allSuccessors.map(d => d.id));
+            
+            // Adicionar toda a cadeia de predecessores
+            const allPredecessors = findAllPredecessorsRecursive(doc.id);
+            documentIds.push(...allPredecessors.map(d => d.id));
         }
 
         await applyExecutor(pendingExecutor, documentIds);
