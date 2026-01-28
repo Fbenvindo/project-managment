@@ -204,7 +204,7 @@ export default function ChecklistTable({ secao, items, checklist, onUpdate }) {
       <CardContent className="p-0">
         {showForm && (
           <form onSubmit={handleSubmit} className="p-4 bg-blue-50 border-b">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <div className="grid grid-cols-1 md:grid-cols-6 gap-4 mb-4">
               <div>
                 <label className="text-sm font-medium">Número</label>
                 <Input
@@ -219,9 +219,25 @@ export default function ChecklistTable({ secao, items, checklist, onUpdate }) {
                 <Textarea
                   value={formData.descricao}
                   onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
-                  placeholder="Descrição do item"
+                  placeholder="Descrição"
                   required
                   className="min-h-[60px]"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Contribuição</label>
+                <Input
+                  value={formData.contribuicao}
+                  onChange={(e) => setFormData({ ...formData, contribuicao: e.target.value })}
+                  placeholder="Ex: %"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Tempo</label>
+                <Input
+                  value={formData.tempo}
+                  onChange={(e) => setFormData({ ...formData, tempo: e.target.value })}
+                  placeholder="Ex: dias"
                 />
               </div>
             </div>
