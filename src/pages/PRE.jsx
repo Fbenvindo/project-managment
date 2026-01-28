@@ -482,144 +482,112 @@ export default function PRE() {
               </div>
             </div>
 
-            {/* Tabela */}
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
-                <thead>
-                  <tr className="bg-blue-900 text-white">
-                    <th className="border border-gray-400 p-3 w-[4%]">Item</th>
-                    <th className="border border-gray-400 p-3 w-[7%]">Data</th>
-                    <th className="border border-gray-400 p-3 w-[8%]">De</th>
-                    <th className="border border-gray-400 p-3 w-[12%]">Descritiva</th>
-                    <th className="border border-gray-400 p-3 w-[8%]">Localização</th>
-                    <th className="border border-gray-400 p-3 w-[14%]">Assunto</th>
-                    <th className="border border-gray-400 p-3 w-[11%]">Comentário</th>
-                    <th className="border border-gray-400 p-3 w-[8%]">Status</th>
-                    <th className="border border-gray-400 p-3 w-[10%]">Resposta</th>
-                    <th className="border border-gray-400 p-3 w-[12%]">Imagens</th>
-                    <th className="border border-gray-400 p-3 w-[6%] no-print">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {items.length === 0 ? (
-                    <tr>
-                      <td colSpan="11" className="text-center p-8 text-gray-500">
-                        Nenhum item cadastrado. Clique em "Adicionar Item" para começar.
-                      </td>
-                    </tr>
-                  ) : (
-                    items.map((item) => (
-                      <tr key={item.id} className="hover:bg-gray-50 align-top">
-                        <td className="border border-gray-300 p-2 text-center align-middle">
-                          <Input
-                            value={item.item}
-                            onChange={(e) => handleUpdateItem(item.id, 'item', e.target.value)}
-                            className="h-10 text-sm text-center font-medium print:border-none print:bg-transparent"
-                          />
-                        </td>
-                        <td className="border border-gray-300 p-2 align-middle">
-                          <Input
-                            type="date"
-                            value={item.data}
-                            onChange={(e) => handleUpdateItem(item.id, 'data', e.target.value)}
-                            className="h-10 text-sm print:border-none print:bg-transparent"
-                          />
-                        </td>
-                        <td className="border border-gray-300 p-2">
-                          <Textarea
-                            value={item.de}
-                            onChange={(e) => handleUpdateItem(item.id, 'de', e.target.value)}
-                            className="w-full text-sm print:border-none print:bg-transparent resize-y"
-                            rows={8}
-                          />
-                        </td>
-                        <td className="border border-gray-300 p-2">
-                          <Textarea
-                            value={item.descritiva}
-                            onChange={(e) => handleUpdateItem(item.id, 'descritiva', e.target.value)}
-                            className="w-full text-sm print:border-none print:bg-transparent resize-y"
-                            rows={5}
-                          />
-                        </td>
-                        <td className="border border-gray-300 p-2">
-                          <Textarea
-                            value={item.localizacao}
-                            onChange={(e) => handleUpdateItem(item.id, 'localizacao', e.target.value)}
-                            className="w-full text-sm print:border-none print:bg-transparent resize-none"
-                            rows={3}
-                          />
-                        </td>
-                        <td className="border border-gray-300 p-2">
-                          <Textarea
-                            value={item.assunto}
-                            onChange={(e) => handleUpdateItem(item.id, 'assunto', e.target.value)}
-                            className="w-full text-sm print:border-none print:bg-transparent resize-y"
-                            rows={5}
-                          />
-                        </td>
-                        <td className="border border-gray-300 p-2">
-                          <Textarea
-                            value={item.comentario}
-                            onChange={(e) => handleUpdateItem(item.id, 'comentario', e.target.value)}
-                            className="w-full text-sm print:border-none print:bg-transparent resize-y"
-                            rows={10}
-                          />
-                        </td>
-                        <td className={`border border-gray-300 p-2 align-middle ${STATUS_COLORS[item.status] || ''}`}>
-                          <Select
-                            value={item.status}
-                            onValueChange={(value) => handleUpdateItem(item.id, 'status', value)}
-                          >
-                            <SelectTrigger className="h-10 text-sm print:border-none print:bg-transparent">
-                              <SelectValue placeholder="Sem status" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value={null}>Sem status</SelectItem>
-                              <SelectItem value="Em andamento">Em andamento</SelectItem>
-                              <SelectItem value="Pendente">Pendente</SelectItem>
-                              <SelectItem value="Concluído">Concluído</SelectItem>
-                              <SelectItem value="Cancelado">Cancelado</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </td>
-                        <td className="border border-gray-300 p-2">
-                          <Textarea
-                            value={item.resposta}
-                            onChange={(e) => handleUpdateItem(item.id, 'resposta', e.target.value)}
-                            className="w-full text-sm print:border-none print:bg-transparent resize-y"
-                            rows={5}
-                          />
-                        </td>
-                        <td className="border border-gray-300 p-2">
-                          <div className="space-y-2">
-                            <label className="no-print">
-                              <input
-                                type="file"
-                                accept="image/*"
-                                onChange={(e) => {
-                                  const file = e.target.files?.[0];
-                                  if (file) handleUploadImage(item.id, file);
-                                  e.target.value = '';
-                                }}
-                                className="hidden"
-                              />
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                className="w-full"
-                                onClick={(e) => e.currentTarget.previousElementSibling.click()}
-                              >
-                                <Upload className="w-3 h-3 mr-1" />
-                                Anexar
-                              </Button>
-                            </label>
+            {/* Container de Itens */}
+            <div className="space-y-4">
+              {items.length === 0 ? (
+                <Card>
+                  <CardContent className="p-8 text-center">
+                    <FileText className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+                    <p className="text-gray-500">Nenhum item cadastrado. Clique em "Adicionar Item" para começar.</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                items.map((item) => (
+                  <div key={item.id} className="flex gap-4 border border-gray-300 rounded-lg overflow-hidden bg-white">
+                    {/* Container Principal (80%) */}
+                    <div className="w-4/5 p-4 space-y-4 border-r border-gray-300">
+                      {/* De */}
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">De</label>
+                        <Textarea
+                          value={item.de}
+                          onChange={(e) => handleUpdateItem(item.id, 'de', e.target.value)}
+                          className="w-full text-sm print:border-none print:bg-transparent resize-none"
+                          rows={3}
+                          placeholder="De quem..."
+                        />
+                      </div>
+
+                      {/* Descritiva */}
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Descritiva</label>
+                        <Textarea
+                          value={item.descritiva}
+                          onChange={(e) => handleUpdateItem(item.id, 'descritiva', e.target.value)}
+                          className="w-full text-sm print:border-none print:bg-transparent resize-y"
+                          placeholder="Descrição detalhada..."
+                        />
+                      </div>
+
+                      {/* Assunto */}
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Assunto</label>
+                        <Textarea
+                          value={item.assunto}
+                          onChange={(e) => handleUpdateItem(item.id, 'assunto', e.target.value)}
+                          className="w-full text-sm print:border-none print:bg-transparent resize-y"
+                          rows={3}
+                          placeholder="Assunto..."
+                        />
+                      </div>
+
+                      {/* Comentário */}
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Comentário</label>
+                        <Textarea
+                          value={item.comentario}
+                          onChange={(e) => handleUpdateItem(item.id, 'comentario', e.target.value)}
+                          className="w-full text-sm print:border-none print:bg-transparent resize-y"
+                          rows={4}
+                          placeholder="Comentários adicionais..."
+                        />
+                      </div>
+
+                      {/* Resposta */}
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Resposta</label>
+                        <Textarea
+                          value={item.resposta}
+                          onChange={(e) => handleUpdateItem(item.id, 'resposta', e.target.value)}
+                          className="w-full text-sm print:border-none print:bg-transparent resize-y"
+                          rows={3}
+                          placeholder="Resposta/Resolução..."
+                        />
+                      </div>
+
+                      {/* Imagens */}
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-2">Imagens</label>
+                        <div className="space-y-2">
+                          <label className="no-print">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                if (file) handleUploadImage(item.id, file);
+                                e.target.value = '';
+                              }}
+                              className="hidden"
+                            />
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="w-full"
+                              onClick={(e) => e.currentTarget.previousElementSibling.click()}
+                            >
+                              <Upload className="w-3 h-3 mr-2" />
+                              Anexar Imagem
+                            </Button>
+                          </label>
+                          <div className="grid grid-cols-3 gap-2">
                             {(item.imagens || []).map((imgUrl, idx) => (
-                              <div key={idx} className="relative group mb-2">
+                              <div key={idx} className="relative group">
                                 <img
                                   src={imgUrl}
                                   alt={`Imagem ${idx + 1}`}
-                                  className="w-full h-20 object-cover rounded border cursor-pointer hover:opacity-80 hover:border-blue-500 transition-all"
+                                  className="w-full h-24 object-cover rounded border cursor-pointer hover:opacity-80 transition-all"
                                   onClick={() => setExpandedImage(imgUrl)}
                                 />
                                 <button
@@ -636,22 +604,80 @@ export default function PRE() {
                               </div>
                             ))}
                           </div>
-                        </td>
-                        <td className="border border-gray-300 p-2 text-center align-middle no-print">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => handleDeleteItem(item.id)}
-                            className="h-8 w-8 text-red-500 hover:text-red-700"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Container Secundário (20%) */}
+                    <div className="w-1/5 p-4 space-y-4 flex flex-col">
+                      {/* Item */}
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Item</label>
+                        <Input
+                          value={item.item}
+                          onChange={(e) => handleUpdateItem(item.id, 'item', e.target.value)}
+                          className="h-9 text-sm text-center font-medium print:border-none print:bg-transparent"
+                        />
+                      </div>
+
+                      {/* Data */}
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Data</label>
+                        <Input
+                          type="date"
+                          value={item.data}
+                          onChange={(e) => handleUpdateItem(item.id, 'data', e.target.value)}
+                          className="h-9 text-sm print:border-none print:bg-transparent"
+                        />
+                      </div>
+
+                      {/* Localização */}
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Localização</label>
+                        <Textarea
+                          value={item.localizacao}
+                          onChange={(e) => handleUpdateItem(item.id, 'localizacao', e.target.value)}
+                          className="w-full text-sm print:border-none print:bg-transparent resize-none"
+                          rows={3}
+                          placeholder="Localização..."
+                        />
+                      </div>
+
+                      {/* Status */}
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Status</label>
+                        <Select
+                          value={item.status}
+                          onValueChange={(value) => handleUpdateItem(item.id, 'status', value)}
+                        >
+                          <SelectTrigger className={`h-9 text-sm print:border-none print:bg-transparent ${STATUS_COLORS[item.status] || ''}`}>
+                            <SelectValue placeholder="Sem status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={null}>Sem status</SelectItem>
+                            <SelectItem value="Em andamento">Em andamento</SelectItem>
+                            <SelectItem value="Pendente">Pendente</SelectItem>
+                            <SelectItem value="Concluído">Concluído</SelectItem>
+                            <SelectItem value="Cancelado">Cancelado</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {/* Ações */}
+                      <div className="mt-auto pt-4 no-print">
+                        <Button
+                          variant="ghost"
+                          className="w-full text-red-500 hover:text-red-700 hover:bg-red-50"
+                          onClick={() => handleDeleteItem(item.id)}
+                        >
+                          <Trash2 className="w-4 h-4 mr-2" />
+                          Excluir
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              )}
             </div>
           </div>
           </>
