@@ -40,6 +40,8 @@ export default function ChecklistTable({ secao, items, checklist, onUpdate }) {
         secao: secao,
         numero_item: formData.numero_item,
         descricao: formData.descricao,
+        contribuicao: formData.contribuicao || '',
+        tempo: formData.tempo || '',
         observacoes: formData.observacoes || '',
         ordem: editingItem ? editingItem.ordem : (items.length + 1),
         status_por_periodo: editingItem?.status_por_periodo || {}
