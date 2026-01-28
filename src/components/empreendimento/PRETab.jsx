@@ -116,23 +116,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     }
   }, []);
 
-  useEffect(() => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
 
-    if (items.length > 0 && empreendimento?.id) {
-      saveTimeoutRef.current = setTimeout(() => {
-        handleAutoSave();
-      }, 2000);
-    }
-
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [items]);
 
   const loadItems = async (empId) => {
     try {
