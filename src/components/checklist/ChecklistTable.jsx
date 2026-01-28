@@ -68,6 +68,8 @@ export default function ChecklistTable({ secao, items, checklist, onUpdate }) {
     setFormData({
       numero_item: item.numero_item,
       descricao: item.descricao,
+      contribuicao: item.contribuicao || '',
+      tempo: item.tempo || '',
       observacoes: item.observacoes || ''
     });
     setShowForm(true);
