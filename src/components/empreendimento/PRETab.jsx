@@ -478,13 +478,13 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                             Anexar Imagem
                           </Button>
                         </label>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className="grid grid-cols-2 gap-3">
                           {(item.imagens || []).map((imgUrl, idx) => (
                             <div key={idx} className="relative group">
                               <img
                                 src={imgUrl}
                                 alt={`Imagem ${idx + 1}`}
-                                className="w-full h-24 object-cover rounded border cursor-pointer hover:opacity-80 transition-all"
+                                className="w-full h-48 object-cover rounded border cursor-pointer hover:opacity-80 transition-all"
                               />
                               <button
                                 type="button"
