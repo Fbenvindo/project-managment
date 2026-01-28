@@ -1124,6 +1124,9 @@ export default function DocumentosTab({
     
     const [searchPredecessor, setSearchPredecessor] = useState('');
     const [selectedAtividades, setSelectedAtividades] = useState([]);
+    
+    const [showExecutorDialog, setShowExecutorDialog] = useState(false);
+    const [pendingExecutor, setPendingExecutor] = useState(null);
 
     const planejamentosDoDocumento = useMemo(() => {
         return planejamentos.filter(p => p.documento_id === doc.id);
