@@ -30,6 +30,7 @@ export default function AnaliseConcepcaoPlanejamento() {
     const [isStopModalOpen, setIsStopModalOpen] = useState(false);
     const [selectedExecucao, setSelectedExecucao] = useState(null);
     const [finalStatus, setFinalStatus] = useState("Finalizado");
+    const [aplicarTodasFolhas, setAplicarTodasFolhas] = useState(false);
     
     const [selectedDocAtividades, setSelectedDocAtividades] = useState([]);
     const [planejamentoModalOpen, setPlanejamentoModalOpen] = useState(false);
