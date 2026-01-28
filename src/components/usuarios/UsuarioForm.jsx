@@ -99,8 +99,8 @@ export default function UsuarioForm({ usuario, onSubmit, onCancel, allUsers, equ
         exit={{ scale: 0.95, opacity: 0 }}
         className="w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden"
       >
-        <Card className="bg-white shadow-2xl flex flex-col h-full">
-          <CardHeader className="border-b border-gray-100 flex-shrink-0">
+        <Card className="bg-white shadow-2xl flex flex-col flex-1 overflow-hidden">
+          <CardHeader className="border-b border-gray-100 flex-shrink-0 overflow-hidden">
             <div className="flex items-center justify-between">
               <CardTitle className="text-xl font-bold">
                 {usuario ? "Editar Usuário" : "Novo Usuário"}
