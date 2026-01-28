@@ -8,13 +8,7 @@ import { DataCadastro, Documento } from "@/entities/all";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { format } from "date-fns";
 
-const ETAPAS = [
-  "ESTUDO PRELIMINAR",
-  "ANTE-PROJETO",
-  "PROJETO BÁSICO",
-  "PROJETO EXECUTIVO",
-  "LIBERADO PARA OBRA"
-];
+// As etapas serão carregadas do empreendimento
 
 const DEFAULT_REVISOES = ["R00", "R01", "R02"];
 
