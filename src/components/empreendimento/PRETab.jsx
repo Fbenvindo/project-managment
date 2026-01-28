@@ -458,9 +458,10 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                     <div>
                       <label className="text-xs font-semibold text-gray-600 block mb-2">Imagens</label>
                       <div className="space-y-2">
-                        <label className="no-print">
+                        <div className="no-print">
                           <input
                             type="file"
+                            id={`file-input-${item.id}`}
                             accept="image/*"
                             onChange={(e) => {
                               const file = e.target.files?.[0];
@@ -474,12 +475,12 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                             variant="outline"
                             size="sm"
                             className="w-full"
-                            onClick={(e) => e.currentTarget.previousElementSibling.click()}
+                            onClick={() => document.getElementById(`file-input-${item.id}`).click()}
                           >
                             <Upload className="w-3 h-3 mr-2" />
                             Anexar Imagem
                           </Button>
-                        </label>
+                        </div>
                         <div className="grid grid-cols-2 gap-3">
                           {(item.imagens || []).map((imgUrl, idx) => (
                             <div key={idx} className="relative group">
