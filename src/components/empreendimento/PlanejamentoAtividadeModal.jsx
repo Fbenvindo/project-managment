@@ -323,6 +323,28 @@ export default function PlanejamentoAtividadeModal({
       }
     }
 
+    // Validação para evitar duplicatas
+    if (!formData.permite_multiplas_execucoes && !formData.recorrencia_ativada) {
+      try {
+        const planejamentosExistentes = await PlanejamentoAtividade.filter({
+          atividade_id: atividade.id,
+          empreendimento_id: empreendimentoId,
+          etapa: atividade.etapa,
+          documento_id: formData.documento_id || null
+        });
+
+        if (planejamentosExistentes && planejamentosExistentes.length > 0) {
+          const existe = planejamentosExistentes.some(p => p.status !== 'concluido');
+          if (existe) {
+            alert('⚠️ Já existe um planejamento ativo para esta atividade nesta etapa e documento. Não é possível criar duplicatas.');
+            return;
+          }
+        }
+      } catch (error) {
+        console.warn('Erro ao validar duplicatas:', error);
+      }
+    }
+
 
     if (!formData.multiplos_executores && !formData.executor_principal) {
       alert('Por favor, selecione um executor.');
