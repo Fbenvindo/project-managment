@@ -1248,7 +1248,8 @@ export default function DocumentosTab({
         const planejamentoAtividade = planejamentosDoDocumento.find(p =>
           p.atividade_id === atividade.id &&
           p.etapa === etapaFinal &&
-          p.tipo_plano === 'atividade'
+          p.tipo_plano === 'atividade' &&
+          p.tempo_planejado > 0 // Ignorar planejamentos com tempo 0
         );
         
         // Verificar se está no planejamento de documento (grupo)
