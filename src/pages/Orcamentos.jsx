@@ -20,7 +20,16 @@ export default function OrcamentosPage() {
     };
 
     window.addEventListener('propostaAprovada', handlePropostaAprovada);
-    return () => window.removeEventListener('propostaAprovada', handlePropostaAprovada);
+    
+    // Recarrega a cada 10 segundos para sincronizar dados
+    const interval = setInterval(() => {
+      loadOrcamentos();
+    }, 10000);
+
+    return () => {
+      window.removeEventListener('propostaAprovada', handlePropostaAprovada);
+      clearInterval(interval);
+    };
   }, []);
 
   const loadOrcamentos = async () => {
