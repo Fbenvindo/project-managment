@@ -370,33 +370,46 @@ export default function AnaliseConcepcaoPlanejamento() {
                             <Filter className="w-5 h-5 text-blue-600"/> Filtros
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div>
-                            <label className="text-sm font-medium text-gray-700 mb-2 block">Etapas</label>
-                            <div className="flex flex-wrap gap-2">
-                                {etapasDisponiveis.map(etapa => (
-                                    <Button key={etapa} variant={selectedEtapas.includes(etapa) ? "default" : "outline"} onClick={() => toggleEtapa(etapa)}>
-                                        {selectedEtapas.includes(etapa) && <CheckSquare className="w-4 h-4 mr-2" />}
-                                        {etapa}
-                                    </Button>
-                                ))}
-                            </div>
-                        </div>
-                        <Select value={filterEmpreendimento} onValueChange={setFilterEmpreendimento}>
-                            <SelectTrigger><SelectValue placeholder="Filtrar por Empreendimento" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="todos">Todos os Empreendimentos</SelectItem>
-                                {empreendimentos.map(e => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                        <Select value={filterDisciplina} onValueChange={setFilterDisciplina}>
-                            <SelectTrigger><SelectValue placeholder="Filtrar por Disciplina" /></SelectTrigger>
-                            <SelectContent>
-                                <SelectItem value="todos">Todas as Disciplinas</SelectItem>
-                                {disciplinasDisponiveis.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                            </SelectContent>
-                        </Select>
-                    </CardContent>
+                    <CardContent className="p-6 space-y-4">
+                         <div>
+                             <label className="text-sm font-medium text-gray-700 mb-2 block">Etapas</label>
+                             <div className="flex flex-wrap gap-2">
+                                 {etapasDisponiveis.map(etapa => (
+                                     <Button key={etapa} variant={selectedEtapas.includes(etapa) ? "default" : "outline"} onClick={() => toggleEtapa(etapa)}>
+                                         {selectedEtapas.includes(etapa) && <CheckSquare className="w-4 h-4 mr-2" />}
+                                         {etapa}
+                                     </Button>
+                                 ))}
+                             </div>
+                         </div>
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                             <Select value={filterEmpreendimento} onValueChange={setFilterEmpreendimento}>
+                                 <SelectTrigger><SelectValue placeholder="Filtrar por Empreendimento" /></SelectTrigger>
+                                 <SelectContent>
+                                     <SelectItem value="todos">Todos os Empreendimentos</SelectItem>
+                                     {empreendimentos.map(e => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}
+                                 </SelectContent>
+                             </Select>
+                             <Select value={filterDisciplina} onValueChange={setFilterDisciplina}>
+                                 <SelectTrigger><SelectValue placeholder="Filtrar por Disciplina" /></SelectTrigger>
+                                 <SelectContent>
+                                     <SelectItem value="todos">Todas as Disciplinas</SelectItem>
+                                     {disciplinasDisponiveis.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                                 </SelectContent>
+                             </Select>
+                         </div>
+                         <div>
+                             <label className="text-sm font-medium text-gray-700 mb-2 block">Subdisciplinas</label>
+                             <div className="flex flex-wrap gap-2">
+                                 {subdisciplinasDisponiveis.map(sub => (
+                                     <Button key={sub} variant={selectedSubdisciplinas.includes(sub) ? "default" : "outline"} onClick={() => toggleSubdisciplina(sub)} size="sm">
+                                         {selectedSubdisciplinas.includes(sub) && <CheckSquare className="w-4 h-4 mr-2" />}
+                                         {sub}
+                                     </Button>
+                                 ))}
+                             </div>
+                         </div>
+                     </CardContent>
                 </Card>
 
                 {isLoading ? <Skeleton className="h-96 w-full" /> : (
