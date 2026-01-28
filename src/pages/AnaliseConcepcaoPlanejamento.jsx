@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Play, Square, Filter, ClipboardList, CheckSquare, FileText, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import PlanejamentoAtividadeModal from "@/components/empreendimento/PlanejamentoAtividadeModal";
 
 export default function AnaliseConcepcaoPlanejamento() {
