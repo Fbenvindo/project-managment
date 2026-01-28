@@ -13,6 +13,20 @@ import { format } from "date-fns";
 const DEFAULT_REVISOES = ["R00", "R01", "R02"];
 
 export default function CadastroTab({ empreendimento, readOnly = false }) {
+  // Etapas do empreendimento convertidas para uppercase
+  const ETAPAS = useMemo(() => {
+    if (!empreendimento?.etapas || empreendimento.etapas.length === 0) {
+      return [
+        "ESTUDO PRELIMINAR",
+        "ANTE-PROJETO",
+        "PROJETO BÁSICO",
+        "PROJETO EXECUTIVO",
+        "LIBERADO PARA OBRA"
+      ];
+    }
+    return empreendimento.etapas.map(e => e.toUpperCase());
+  }, [empreendimento?.etapas]);
+
   const [revisoesPorEtapa, setRevisoesPorEtapa] = useState({});
   const [etapasExcluidas, setEtapasExcluidas] = useState([]);
   const [linhas, setLinhas] = useState([]);
