@@ -291,11 +291,8 @@ export default function PRETab({ empreendimento, readOnly = false }) {
       });
       setItems(sortedSavedItems);
       setLastSaved(new Date());
-      
-      // Recarrega os dados do banco para confirmar persistência
-      await loadItems(empreendimento.id);
     } catch (error) {
-      console.error('Erro ao salvar automaticamente:', error);
+      console.error('Erro ao salvar:', error);
     } finally {
       setIsSaving(false);
     }
