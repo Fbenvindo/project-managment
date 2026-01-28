@@ -217,14 +217,20 @@ export default function AnaliseConcepcaoPlanejamento() {
     }, [planejamentos, atividadesMap, selectedEtapas, filterEmpreendimento, filterDisciplina]);
 
     const planejamentosDocumentacao = useMemo(() => {
+        console.log('\n🔍 [AnaliseConcepcaoPlanejamento] Filtrando planejamentos de documentação...');
+        console.log(`📊 Total de planejamentos recebidos: ${planejamentos.length}`);
+        
         const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
         
-        return planejamentos.filter(plan => {
+        const filtered = planejamentos.filter(plan => {
+            // CRÍTICO: Excluir atividades finalizadas
+            if (plan.status === 'concluido') {
+                console.log(`❌ Excluindo CONCLUÍDO: ${plan.descritivo || plan.id} (status: ${plan.status})`);
+                return false;
+            }
+            
             const atividade = atividadesMap[plan.atividade_id];
             if (!atividade && !plan.descritivo) return false;
-            
-            // Excluir atividades finalizadas
-            if (plan.status === 'concluido') return false;
             
             if (!atividade?.disciplina || !disciplinasDocumentacao.includes(atividade.disciplina)) {
                 return false;
@@ -235,8 +241,17 @@ export default function AnaliseConcepcaoPlanejamento() {
             const empreendimentoMatch = filterEmpreendimento === "todos" || plan.empreendimento_id === filterEmpreendimento;
             const disciplinaMatch = filterDisciplina === "todos" || atividade?.disciplina === filterDisciplina;
             
-            return etapaMatch && empreendimentoMatch && disciplinaMatch;
+            if (etapaMatch && empreendimentoMatch && disciplinaMatch) {
+                console.log(`✅ Incluindo: ${plan.descritivo || atividade?.atividade} (status: ${plan.status})`);
+                return true;
+            }
+            return false;
         });
+        
+        console.log(`\n✅ Total de planejamentos de documentação após filtros: ${filtered.length}`);
+        console.log(`🔍 ========================================\n`);
+        
+        return filtered;
     }, [planejamentos, atividadesMap, selectedEtapas, filterEmpreendimento, filterDisciplina]);
 
     const groupedByDocumento = useMemo(() => {
