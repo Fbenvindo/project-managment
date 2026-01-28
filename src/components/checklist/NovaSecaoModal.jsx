@@ -52,42 +52,67 @@ export default function NovaSecaoModal({ isOpen, onClose, onSuccess, checklistId
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Nova Seção/Tabela</DialogTitle>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label>Nome da Seção *</Label>
-            <Input
-              value={nomeSecao}
-              onChange={(e) => setNomeSecao(e.target.value)}
-              placeholder="Ex: SISTEMAS DE ILUMINAÇÃO"
-              required
-              autoFocus
-            />
-            <p className="text-xs text-gray-500 mt-1">
-              O nome será convertido para maiúsculas
-            </p>
-          </div>
-
-          <div className="flex justify-end gap-2">
-            <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
+        {secoesDisponiveis.length > 0 ? (
+          <div className="space-y-3">
+            <p className="text-sm text-gray-600">Selecione uma seção predefinida:</p>
+            <div className="grid gap-2 max-h-[400px] overflow-y-auto">
+              {secoesDisponiveis.map((secao) => (
+                <Button
+                  key={secao}
+                  onClick={() => handleSubmit(secao)}
+                  disabled={isSaving}
+                  variant="outline"
+                  className="justify-start text-left h-auto py-2 px-3"
+                >
+                  {isSaving ? (
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin flex-shrink-0" />
+                  ) : null}
+                  <span className="text-sm">{secao}</span>
+                </Button>
+              ))}
+            </div>
+            <Button type="button" variant="ghost" onClick={onClose} disabled={isSaving} className="w-full">
               Cancelar
             </Button>
-            <Button type="submit" disabled={isSaving}>
-              {isSaving ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Criando...
-                </>
-              ) : (
-                'Criar Seção'
-              )}
-            </Button>
           </div>
-        </form>
+        ) : (
+          <form onSubmit={(e) => { e.preventDefault(); handleSubmit(nomeSecao); }} className="space-y-4">
+            <div>
+              <Label>Nome da Seção *</Label>
+              <Input
+                value={nomeSecao}
+                onChange={(e) => setNomeSecao(e.target.value)}
+                placeholder="Ex: SISTEMAS DE ILUMINAÇÃO"
+                required
+                autoFocus
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                O nome será convertido para maiúsculas
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
+                Cancelar
+              </Button>
+              <Button type="submit" disabled={isSaving || !nomeSecao.trim()}>
+                {isSaving ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Criando...
+                  </>
+                ) : (
+                  'Criar Seção'
+                )}
+              </Button>
+            </div>
+          </form>
+        )}
       </DialogContent>
     </Dialog>
   );
