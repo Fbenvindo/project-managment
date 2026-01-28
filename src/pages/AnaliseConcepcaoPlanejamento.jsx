@@ -208,9 +208,6 @@ export default function AnaliseConcepcaoPlanejamento() {
             const atividade = atividadesMap[plan.atividade_id];
             if (!atividade && !plan.descritivo) return false;
             
-            // Excluir atividades com tempo zerado (duplicatas inválidas)
-            if (!plan.tempo_planejado || plan.tempo_planejado <= 0) return false;
-            
             // Excluir disciplinas específicas
             if (atividade?.disciplina && disciplinasExcluidas.includes(atividade.disciplina)) {
                 return false;
@@ -231,9 +228,6 @@ export default function AnaliseConcepcaoPlanejamento() {
         return planejamentos.filter(plan => {
             const atividade = atividadesMap[plan.atividade_id];
             if (!atividade && !plan.descritivo) return false;
-            
-            // Excluir atividades com tempo zerado (duplicatas inválidas)
-            if (!plan.tempo_planejado || plan.tempo_planejado <= 0) return false;
             
             // Excluir atividades finalizadas
             if (plan.status === 'concluido') return false;
