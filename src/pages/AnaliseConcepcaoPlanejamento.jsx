@@ -286,34 +286,16 @@ export default function AnaliseConcepcaoPlanejamento() {
     
     const disciplinasDisponiveis = [...new Set(Object.values(atividadesMap).map(a => a.disciplina))];
     
-    // Coletar todas as etapas existentes nos planejamentos + etapas do empreendimento selecionado
+    // Coletar todas as etapas existentes nos planejamentos
     const etapasDisponiveis = useMemo(() => {
-        let etapasSet = new Set();
-        
-        // Adicionar etapas dos planejamentos
+        const etapasSet = new Set();
         planejamentos.forEach(plan => {
             const atividade = atividadesMap[plan.atividade_id];
             const etapa = plan.etapa || atividade?.etapa;
             if (etapa) etapasSet.add(etapa);
         });
-
-        // Se um empreendimento específico está selecionado, incluir suas etapas
-        if (filterEmpreendimento !== "todos") {
-            const emp = empreendimentos.find(e => e.id === filterEmpreendimento);
-            if (emp?.etapas) {
-                emp.etapas.forEach(etapa => etapasSet.add(etapa));
-            }
-        } else {
-            // Se nenhum empreendimento está selecionado, incluir etapas de TODOS os empreendimentos
-            empreendimentos.forEach(emp => {
-                if (emp.etapas) {
-                    emp.etapas.forEach(etapa => etapasSet.add(etapa));
-                }
-            });
-        }
-        
         return Array.from(etapasSet).sort();
-    }, [planejamentos, atividadesMap, empreendimentos, filterEmpreendimento]);
+    }, [planejamentos, atividadesMap]);
 
     const toggleEtapa = (etapa) => {
         setSelectedEtapas(prev => 

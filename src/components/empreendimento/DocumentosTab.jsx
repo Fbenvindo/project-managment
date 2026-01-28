@@ -1098,13 +1098,6 @@ export default function DocumentosTab({
 
   const etapasDisponiveis = useMemo(() => {
     const etapas = new Set();
-    
-    // Adicionar etapas do empreendimento
-    if (empreendimento?.etapas && Array.isArray(empreendimento.etapas)) {
-      empreendimento.etapas.forEach(etapa => etapas.add(etapa));
-    }
-    
-    // Adicionar etapas das atividades
     allAtividades.forEach(atividade => {
       if (atividade && atividade.etapa && !atividade.empreendimento_id) {
         etapas.add(atividade.etapa);
@@ -1114,7 +1107,7 @@ export default function DocumentosTab({
     return Array.from(etapas).filter(etapa =>
       etapa !== 'Concepção' && etapa !== 'Planejamento'
     ).sort();
-  }, [allAtividades, empreendimento?.etapas]);
+  }, [allAtividades]);
 
   const usuariosOrdenados = useMemo(() => {
     return [...usuarios].sort((a, b) => {
