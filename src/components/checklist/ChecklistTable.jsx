@@ -55,7 +55,7 @@ export default function ChecklistTable({ secao, items, checklist, onUpdate }) {
 
       setShowForm(false);
       setEditingItem(null);
-      setFormData({ numero_item: '', descricao: '', observacoes: '' });
+      setFormData({ numero_item: '', descricao: '', contribuicao: '', tempo: '', observacoes: '' });
       onUpdate();
     } catch (error) {
       console.error('Erro ao salvar item:', error);
