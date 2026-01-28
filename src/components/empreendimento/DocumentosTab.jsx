@@ -1966,17 +1966,54 @@ export default function DocumentosTab({
                         </SelectContent>
                       </Select>
                     )}
-                  </div>
-                )}
-                {(isUpdating || isDocLoading) && (
-                 <div className="flex items-center gap-1 text-xs text-blue-600">
-                   <Loader2 className="w-3 h-3 animate-spin" />
-                   {isDocLoading ? "Planejando..." : "Salvando..."}
-                 </div>
-                )}
-                </div>
-                </TableCell>
-                )}
+                    </div>
+                    )}
+                    {(isUpdating || isDocLoading) && (
+                    <div className="flex items-center gap-1 text-xs text-blue-600">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    {isDocLoading ? "Planejando..." : "Salvando..."}
+                    </div>
+                    )}
+                    </div>
+
+                    {/* Diálogo de aplicação a folhas relacionadas */}
+                    <Dialog open={showExecutorDialog} onOpenChange={setShowExecutorDialog}>
+                    <DialogContent className="max-w-md">
+                    <DialogHeader>
+                      <DialogTitle>Aplicar executor a folhas relacionadas?</DialogTitle>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                      <p className="text-sm text-gray-600">
+                        Esta folha possui folhas predecessoras ou sucessoras. Deseja aplicar o executor <strong>{pendingExecutor}</strong> também a elas?
+                      </p>
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          variant="outline"
+                          onClick={() => handleApplyToRelated(false)}
+                          disabled={isUpdating}
+                        >
+                          Apenas esta folha
+                        </Button>
+                        <Button
+                          onClick={() => handleApplyToRelated(true)}
+                          disabled={isUpdating}
+                          className="bg-blue-600 hover:bg-blue-700"
+                        >
+                          {isUpdating ? (
+                            <>
+                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              Aplicando...
+                            </>
+                          ) : (
+                            'Aplicar a todas'
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                    </DialogContent>
+                    </Dialog>
+                    </TableCell>
+                    )}
                 {!readOnly && (
                 <TableCell className="text-sm text-gray-700">
                 <div className="flex flex-col">
