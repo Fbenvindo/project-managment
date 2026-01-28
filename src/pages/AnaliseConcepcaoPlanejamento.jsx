@@ -106,6 +106,11 @@ export default function AnaliseConcepcaoPlanejamento() {
         setIsStopModalOpen(true);
     };
 
+    const openCompleteAllModal = (planejamento) => {
+        setSelectedPlanejamento(planejamento);
+        setIsCompleteAllModalOpen(true);
+    };
+
     const handleConfirmStop = async () => {
         if (!selectedExecucao) return;
         const inicio = new Date(selectedExecucao.inicio);
