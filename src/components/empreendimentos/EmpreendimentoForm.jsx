@@ -42,6 +42,19 @@ export default function EmpreendimentoForm({ empreendimento, onSubmit, onClose, 
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
+  const handleEtapaToggle = (etapa) => {
+    setFormData(prev => {
+      const currentEtapas = prev.etapas || [];
+      const isSelected = currentEtapas.includes(etapa);
+      
+      if (isSelected) {
+        return { ...prev, etapas: currentEtapas.filter(e => e !== etapa) };
+      } else {
+        return { ...prev, etapas: [...currentEtapas, etapa] };
+      }
+    });
+  };
+
   const handleFileUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
