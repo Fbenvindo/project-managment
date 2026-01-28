@@ -22,10 +22,9 @@ export default function AnaliseConcepcaoPlanejamento() {
     const [user, setUser] = useState(null);
     
     // Filters
-     const [filterEmpreendimento, setFilterEmpreendimento] = useState("todos");
-     const [filterDisciplina, setFilterDisciplina] = useState("todas");
-     const [selectedEtapas, setSelectedEtapas] = useState([]);
-     const [selectedSubdisciplinas, setSelectedSubdisciplinas] = useState([]);
+    const [filterEmpreendimento, setFilterEmpreendimento] = useState("todos");
+    const [filterDisciplina, setFilterDisciplina] = useState("todas");
+    const [selectedEtapas, setSelectedEtapas] = useState([]);
     
     const [isStopModalOpen, setIsStopModalOpen] = useState(false);
     const [selectedExecucao, setSelectedExecucao] = useState(null);
@@ -269,20 +268,13 @@ export default function AnaliseConcepcaoPlanejamento() {
              }
          });
 
-         const result = Object.values(grouped)
-             .filter(group => {
-                 // Filtrar por subdisciplinas selecionadas
-                 if (selectedSubdisciplinas.length === 0) return true;
-                 const docSubs = group.doc?.subdisciplinas || [];
-                 return selectedSubdisciplinas.some(sub => docSubs.includes(sub));
-             })
-             .sort((a,b) => {
-                 const disciplinaA = a.doc.disciplina || '';
-                 const disciplinaB = b.doc.disciplina || '';
-                 const numeroA = a.doc.numero || '';
-                 const numeroB = b.doc.numero || '';
-                 return disciplinaA.localeCompare(disciplinaB) || numeroA.localeCompare(numeroB);
-             });
+         const result = Object.values(grouped).sort((a,b) => {
+             const disciplinaA = a.doc.disciplina || '';
+             const disciplinaB = b.doc.disciplina || '';
+             const numeroA = a.doc.numero || '';
+             const numeroB = b.doc.numero || '';
+             return disciplinaA.localeCompare(disciplinaB) || numeroA.localeCompare(numeroB);
+         });
 
          // Adicionar atividades sem documento no início
          if (semDocumento.length > 0) {
@@ -290,21 +282,10 @@ export default function AnaliseConcepcaoPlanejamento() {
          }
 
          return result;
-     }, [filteredPlanejamentos, documentos, selectedSubdisciplinas]);
+     }, [filteredPlanejamentos, documentos]);
     
     const disciplinasDisponiveis = [...new Set(Object.values(atividadesMap).map(a => a.disciplina))];
-
-    // Coletar todas as subdisciplinas existentes nos documentos
-    const subdisciplinasDisponiveis = useMemo(() => {
-        const subSet = new Set();
-        documentos.forEach(doc => {
-            if (doc.subdisciplinas && Array.isArray(doc.subdisciplinas)) {
-                doc.subdisciplinas.forEach(sub => subSet.add(sub));
-            }
-        });
-        return Array.from(subSet).sort();
-    }, [documentos]);
-
+    
     // Coletar todas as etapas existentes nos planejamentos
     const etapasDisponiveis = useMemo(() => {
         const etapasSet = new Set();
@@ -319,12 +300,6 @@ export default function AnaliseConcepcaoPlanejamento() {
     const toggleEtapa = (etapa) => {
         setSelectedEtapas(prev => 
             prev.includes(etapa) ? prev.filter(e => e !== etapa) : [...prev, etapa]
-        );
-    };
-
-    const toggleSubdisciplina = (subdisciplina) => {
-        setSelectedSubdisciplinas(prev => 
-            prev.includes(subdisciplina) ? prev.filter(s => s !== subdisciplina) : [...prev, subdisciplina]
         );
     };
 
@@ -370,46 +345,33 @@ export default function AnaliseConcepcaoPlanejamento() {
                             <Filter className="w-5 h-5 text-blue-600"/> Filtros
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="p-6 space-y-4">
-                         <div>
-                             <label className="text-sm font-medium text-gray-700 mb-2 block">Etapas</label>
-                             <div className="flex flex-wrap gap-2">
-                                 {etapasDisponiveis.map(etapa => (
-                                     <Button key={etapa} variant={selectedEtapas.includes(etapa) ? "default" : "outline"} onClick={() => toggleEtapa(etapa)}>
-                                         {selectedEtapas.includes(etapa) && <CheckSquare className="w-4 h-4 mr-2" />}
-                                         {etapa}
-                                     </Button>
-                                 ))}
-                             </div>
-                         </div>
-                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                             <Select value={filterEmpreendimento} onValueChange={setFilterEmpreendimento}>
-                                 <SelectTrigger><SelectValue placeholder="Filtrar por Empreendimento" /></SelectTrigger>
-                                 <SelectContent>
-                                     <SelectItem value="todos">Todos os Empreendimentos</SelectItem>
-                                     {empreendimentos.map(e => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}
-                                 </SelectContent>
-                             </Select>
-                             <Select value={filterDisciplina} onValueChange={setFilterDisciplina}>
-                                 <SelectTrigger><SelectValue placeholder="Filtrar por Disciplina" /></SelectTrigger>
-                                 <SelectContent>
-                                     <SelectItem value="todos">Todas as Disciplinas</SelectItem>
-                                     {disciplinasDisponiveis.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
-                                 </SelectContent>
-                             </Select>
-                         </div>
-                         <div>
-                             <label className="text-sm font-medium text-gray-700 mb-2 block">Subdisciplinas</label>
-                             <div className="flex flex-wrap gap-2">
-                                 {subdisciplinasDisponiveis.map(sub => (
-                                     <Button key={sub} variant={selectedSubdisciplinas.includes(sub) ? "default" : "outline"} onClick={() => toggleSubdisciplina(sub)} size="sm">
-                                         {selectedSubdisciplinas.includes(sub) && <CheckSquare className="w-4 h-4 mr-2" />}
-                                         {sub}
-                                     </Button>
-                                 ))}
-                             </div>
-                         </div>
-                     </CardContent>
+                    <CardContent className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div>
+                            <label className="text-sm font-medium text-gray-700 mb-2 block">Etapas</label>
+                            <div className="flex flex-wrap gap-2">
+                                {etapasDisponiveis.map(etapa => (
+                                    <Button key={etapa} variant={selectedEtapas.includes(etapa) ? "default" : "outline"} onClick={() => toggleEtapa(etapa)}>
+                                        {selectedEtapas.includes(etapa) && <CheckSquare className="w-4 h-4 mr-2" />}
+                                        {etapa}
+                                    </Button>
+                                ))}
+                            </div>
+                        </div>
+                        <Select value={filterEmpreendimento} onValueChange={setFilterEmpreendimento}>
+                            <SelectTrigger><SelectValue placeholder="Filtrar por Empreendimento" /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="todos">Todos os Empreendimentos</SelectItem>
+                                {empreendimentos.map(e => <SelectItem key={e.id} value={e.id}>{e.nome}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                        <Select value={filterDisciplina} onValueChange={setFilterDisciplina}>
+                            <SelectTrigger><SelectValue placeholder="Filtrar por Disciplina" /></SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="todos">Todas as Disciplinas</SelectItem>
+                                {disciplinasDisponiveis.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
+                            </SelectContent>
+                        </Select>
+                    </CardContent>
                 </Card>
 
                 {isLoading ? <Skeleton className="h-96 w-full" /> : (
