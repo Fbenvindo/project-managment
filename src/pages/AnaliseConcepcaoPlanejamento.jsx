@@ -168,6 +168,9 @@ export default function AnaliseConcepcaoPlanejamento() {
             )
         }));
 
+        // Recarregar dados após finalização para evitar duplicatas
+        await loadData();
+        
         setIsStopModalOpen(false);
         setSelectedExecucao(null);
         setFinalStatus("Finalizado");
