@@ -208,9 +208,6 @@ export default function AnaliseConcepcaoPlanejamento() {
             const atividade = atividadesMap[plan.atividade_id];
             if (!atividade && !plan.descritivo) return false;
             
-            // Excluir planejamentos com tempo zerado (provavelmente criados por erro)
-            if (plan.tempo_planejado === 0 || plan.tempo_planejado === null) return false;
-            
             // Excluir disciplinas específicas
             if (atividade?.disciplina && disciplinasExcluidas.includes(atividade.disciplina)) {
                 return false;
