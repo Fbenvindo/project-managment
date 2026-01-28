@@ -89,7 +89,8 @@ export default function AnaliseConcepcaoPlanejamentoTab({
             // Ensure activity exists and belongs to a documentation subdiscipline
             if (plan.atividade_id && atividadesMap[plan.atividade_id] && SUBDISCIPLINAS_DOCUMENTACAO.includes(atividadesMap[plan.atividade_id].subdisciplina)) {
                 // Filtrar planejamentos com tempo 0 e sem documento (planejamentos inválidos/duplicados)
-                if ((plan.tempo_planejado === 0 || !plan.tempo_planejado) && !plan.documento_id && plan.status !== 'concluido') {
+                // IMPORTANTE: NÃO filtrar planejamentos concluídos manualmente (tempo 0 com documento)
+                if ((plan.tempo_planejado === 0 || !plan.tempo_planejado) && !plan.documento_id) {
                     return; // Pular planejamentos zerados sem documento
                 }
                 
