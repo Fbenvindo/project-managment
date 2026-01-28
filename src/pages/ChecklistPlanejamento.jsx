@@ -249,6 +249,7 @@ export default function ChecklistPlanejamentoPage() {
           onClose={() => setShowNovaSecaoModal(false)}
           onSuccess={handleSecaoCreated}
           checklistId={selectedChecklist.id}
+          tipoChecklist={selectedChecklist.tipo}
         />
       )}
     </div>
