@@ -136,6 +136,11 @@ export default function PropostasPage() {
         valor_cad: formData.valor_cad ? Number(formData.valor_cad) : undefined
       };
 
+      // Se mudar para aprovado e não tem data de aprovação, preenche com hoje
+      if (formData.status === 'aprovado' && !dataToSave.data_aprovacao) {
+        dataToSave.data_aprovacao = format(new Date(), 'yyyy-MM-dd');
+      }
+
       if (editingId) {
         await retryWithBackoff(
           () => Comercial.update(editingId, dataToSave),
