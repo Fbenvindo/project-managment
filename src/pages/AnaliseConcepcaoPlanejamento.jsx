@@ -606,6 +606,43 @@ export default function AnaliseConcepcaoPlanejamento() {
                 </DialogContent>
             </Dialog>
 
+            <Dialog open={isCompleteAllModalOpen} onOpenChange={setIsCompleteAllModalOpen}>
+                <DialogContent>
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <AlertCircle className="w-5 h-5 text-blue-600" />
+                            Concluir Atividade
+                        </DialogTitle>
+                    </DialogHeader>
+                    <p className="text-gray-700">
+                        Deseja concluir esta atividade apenas <strong>nesta folha</strong> ou em <strong>todas as folhas</strong> onde ela aparece?
+                    </p>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => {
+                            setIsCompleteAllModalOpen(false);
+                            setSelectedPlanejamento(null);
+                            setTimeout(() => setIsStopModalOpen(true), 100);
+                        }}>
+                            Cancelar
+                        </Button>
+                        <Button onClick={() => {
+                            handleCompleteActivityInAllSheets(selectedPlanejamento, false);
+                            setIsStopModalOpen(false);
+                            setIsCompleteAllModalOpen(false);
+                        }} variant="outline">
+                            Apenas Nesta Folha
+                        </Button>
+                        <Button onClick={() => {
+                            handleCompleteActivityInAllSheets(selectedPlanejamento, true);
+                            setIsStopModalOpen(false);
+                            setIsCompleteAllModalOpen(false);
+                        }} className="bg-blue-600 hover:bg-blue-700">
+                            Em Todas as Folhas
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
             {planejamentoModalOpen && currentAtividade && (
                 <PlanejamentoAtividadeModal
                     isOpen={planejamentoModalOpen}
