@@ -63,7 +63,10 @@ export default function PropostasPage() {
         () => Comercial.list('-updated_date'),
         3, 2000, 'loadPropostas'
       );
-      setPropostas(data || []);
+      const sorted = (data || []).sort((a, b) => 
+        (a.numero || '').localeCompare(b.numero || '', 'pt-BR')
+      );
+      setPropostas(sorted);
     } catch (error) {
       console.error('Erro ao carregar propostas:', error);
     } finally {
