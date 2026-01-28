@@ -22,9 +22,10 @@ export default function AnaliseConcepcaoPlanejamento() {
     const [user, setUser] = useState(null);
     
     // Filters
-    const [filterEmpreendimento, setFilterEmpreendimento] = useState("todos");
-    const [filterDisciplina, setFilterDisciplina] = useState("todas");
-    const [selectedEtapas, setSelectedEtapas] = useState([]);
+     const [filterEmpreendimento, setFilterEmpreendimento] = useState("todos");
+     const [filterDisciplina, setFilterDisciplina] = useState("todas");
+     const [selectedEtapas, setSelectedEtapas] = useState([]);
+     const [selectedSubdisciplinas, setSelectedSubdisciplinas] = useState([]);
     
     const [isStopModalOpen, setIsStopModalOpen] = useState(false);
     const [selectedExecucao, setSelectedExecucao] = useState(null);
