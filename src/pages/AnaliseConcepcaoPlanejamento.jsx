@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Play, Square, Filter, ClipboardList, CheckSquare, FileText, Calendar, AlertCircle } from "lucide-react";
+import { Play, Square, Filter, ClipboardList, CheckSquare, FileText, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import PlanejamentoAtividadeModal from "@/components/empreendimento/PlanejamentoAtividadeModal";
@@ -34,9 +34,6 @@ export default function AnaliseConcepcaoPlanejamento() {
     const [planejamentoModalOpen, setPlanejamentoModalOpen] = useState(false);
     const [currentAtividade, setCurrentAtividade] = useState(null);
     const [usuarios, setUsuarios] = useState([]);
-    
-    const [isCompleteAllModalOpen, setIsCompleteAllModalOpen] = useState(false);
-    const [selectedPlanejamento, setSelectedPlanejamento] = useState(null);
 
     useEffect(() => {
         loadData();
@@ -104,11 +101,6 @@ export default function AnaliseConcepcaoPlanejamento() {
     const openStopModal = (execucao) => {
         setSelectedExecucao(execucao);
         setIsStopModalOpen(true);
-    };
-
-    const openCompleteAllModal = (planejamento) => {
-        setSelectedPlanejamento(planejamento);
-        setIsCompleteAllModalOpen(true);
     };
 
     const handleConfirmStop = async () => {
@@ -190,54 +182,6 @@ export default function AnaliseConcepcaoPlanejamento() {
         setSelectedExecucao(null);
         setFinalStatus("Finalizado");
     };
-
-    const handleCompleteActivityInAllSheets = async (planejamento, completeAll) => {
-        const inicio = new Date(selectedExecucao.inicio);
-        const termino = new Date();
-        const tempoTotal = (termino - inicio) / (1000 * 60 * 60);
-        
-        if (completeAll && planejamento.atividade_id) {
-            // Encontrar todas as atividades com o mesmo atividade_id
-            const mesmaAtividade = planejamentos.filter(p => 
-                p.atividade_id === planejamento.atividade_id && 
-                p.status !== 'concluido'
-            );
-            
-            // Atualizar todas as atividades similares
-            for (const plan of mesmaAtividade) {
-                const diaKey = new Date().toISOString().split('T')[0];
-                const horasExecutadasPorDia = plan.horas_executadas_por_dia || {};
-                horasExecutadasPorDia[diaKey] = (horasExecutadasPorDia[diaKey] || 0) + tempoTotal;
-                
-                const totalTempoExecutado = Object.values(horasExecutadasPorDia).reduce((sum, h) => sum + (Number(h) || 0), 0);
-                
-                let horasPorDia = plan.horas_por_dia;
-                if (!horasPorDia || Object.keys(horasPorDia).length === 0) {
-                    horasPorDia = horasExecutadasPorDia;
-                }
-                
-                const EntityToUpdate = plan.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
-                await EntityToUpdate.update(plan.id, {
-                    horas_por_dia: horasPorDia,
-                    horas_executadas_por_dia: horasExecutadasPorDia,
-                    tempo_executado: totalTempoExecutado,
-                    tempo_planejado: totalTempoExecutado,
-                    is_quick_activity: true,
-                    status: "concluido"
-                });
-            }
-            
-            setPlanejamentos(prev => prev.map(p => 
-                mesmaAtividade.some(ma => ma.id === p.id)
-                    ? { ...p, status: "concluido" }
-                    : p
-            ));
-        }
-        
-        setIsCompleteAllModalOpen(false);
-        setSelectedPlanejamento(null);
-        loadData();
-    };
     
     const getStatusBadge = (planejamento) => {
         const execucoes = execucoesMap[planejamento.id] || [];
@@ -245,14 +189,9 @@ export default function AnaliseConcepcaoPlanejamento() {
 
         if (execucaoAtiva) {
             return (
-                <div className="flex gap-2">
-                    <Button size="sm" variant="destructive" onClick={() => {
-                        setSelectedExecucao(execucaoAtiva);
-                        openCompleteAllModal(planejamento);
-                    }}>
-                        <Square className="w-4 h-4 mr-2" /> Parar
-                    </Button>
-                </div>
+                <Button size="sm" variant="destructive" onClick={() => openStopModal(execucaoAtiva)}>
+                    <Square className="w-4 h-4 mr-2" /> Parar
+                </Button>
             );
         }
         return (
@@ -602,43 +541,6 @@ export default function AnaliseConcepcaoPlanejamento() {
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsStopModalOpen(false)}>Cancelar</Button>
                         <Button onClick={handleConfirmStop}>Confirmar</Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
-
-            <Dialog open={isCompleteAllModalOpen} onOpenChange={setIsCompleteAllModalOpen}>
-                <DialogContent>
-                    <DialogHeader>
-                        <DialogTitle className="flex items-center gap-2">
-                            <AlertCircle className="w-5 h-5 text-blue-600" />
-                            Concluir Atividade
-                        </DialogTitle>
-                    </DialogHeader>
-                    <p className="text-gray-700">
-                        Deseja concluir esta atividade apenas <strong>nesta folha</strong> ou em <strong>todas as folhas</strong> onde ela aparece?
-                    </p>
-                    <DialogFooter>
-                        <Button variant="outline" onClick={() => {
-                            setIsCompleteAllModalOpen(false);
-                            setSelectedPlanejamento(null);
-                            setTimeout(() => setIsStopModalOpen(true), 100);
-                        }}>
-                            Cancelar
-                        </Button>
-                        <Button onClick={() => {
-                            handleCompleteActivityInAllSheets(selectedPlanejamento, false);
-                            setIsStopModalOpen(false);
-                            setIsCompleteAllModalOpen(false);
-                        }} variant="outline">
-                            Apenas Nesta Folha
-                        </Button>
-                        <Button onClick={() => {
-                            handleCompleteActivityInAllSheets(selectedPlanejamento, true);
-                            setIsStopModalOpen(false);
-                            setIsCompleteAllModalOpen(false);
-                        }} className="bg-blue-600 hover:bg-blue-700">
-                            Em Todas as Folhas
-                        </Button>
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
