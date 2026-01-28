@@ -4,9 +4,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
 import { X, Upload, Save } from "lucide-react";
 import { motion } from "framer-motion";
 import { UploadFile } from "@/integrations/Core";
+
+const ETAPAS_DISPONIVEIS = [
+  "Concepção",
+  "Planejamento",
+  "Estudo Preliminar",
+  "Ante-Projeto",
+  "Projeto Básico",
+  "Projeto Executivo",
+  "Liberado para Obra"
+];
 
 export default function EmpreendimentoForm({ empreendimento, onSubmit, onClose, onSuccess }) {
   const [formData, setFormData] = useState({
