@@ -182,6 +182,30 @@ export default function EmpreendimentoForm({ empreendimento, onSubmit, onClose, 
                 </Select>
               </div>
 
+              <div className="space-y-3">
+                <Label>Etapas do Empreendimento</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  {ETAPAS_DISPONIVEIS.map((etapa) => (
+                    <div key={etapa} className="flex items-center space-x-2">
+                      <Checkbox
+                        id={`etapa-${etapa}`}
+                        checked={formData.etapas?.includes(etapa) || false}
+                        onCheckedChange={() => handleEtapaToggle(etapa)}
+                      />
+                      <Label 
+                        htmlFor={`etapa-${etapa}`}
+                        className="text-sm font-normal cursor-pointer"
+                      >
+                        {etapa}
+                      </Label>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-xs text-gray-500">
+                  Selecione as etapas que farão parte deste empreendimento
+                </p>
+              </div>
+
               <div className="space-y-2">
                 <Label>Foto do Empreendimento</Label>
                 <div className="flex items-center gap-4">
