@@ -1419,11 +1419,15 @@ export default function DocumentosTab({
 
         if (existingMarkers && existingMarkers.length > 0) {
           // Já está marcada como concluída, então vamos desmarcar
-          console.log(`   Desmarcando como concluída...`);
-          await retryWithBackoff(
-            () => Atividade.delete(existingMarkers[0].id),
-            3, 1000, `removeConclusionMarker-${existingMarkers[0].id}`
-          );
+          console.log(`   Desmarcando como concluída (removendo ${existingMarkers.length} marcador(es))...`);
+          
+          // Remover TODOS os marcadores de conclusão (caso haja duplicatas)
+          for (const marker of existingMarkers) {
+            await retryWithBackoff(
+              () => Atividade.delete(marker.id),
+              3, 1000, `removeConclusionMarker-${marker.id}`
+            );
+          }
         } else {
           // Criar marcador de conclusão (usando tempo 0 em vez de -888)
           const novoMarcador = {
