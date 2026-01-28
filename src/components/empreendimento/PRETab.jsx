@@ -199,16 +199,57 @@ export default function PRETab({ empreendimento, readOnly = false }) {
   const handleUploadImage = async (itemId, file) => {
     try {
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      setItems(prev => prev.map(item => 
-        item.id === itemId 
-          ? { ...item, imagens: [...(item.imagens || []), file_url] } 
-          : item
-      ));
-      // Salva imediatamente após upload
-      setTimeout(() => handleAutoSave(), 500);
+      
+      // Atualiza o item com a imagem
+      setItems(prev => {
+        const updated = prev.map(item => 
+          item.id === itemId 
+            ? { ...item, imagens: [...(item.imagens || []), file_url] } 
+            : item
+        );
+        
+        // Salva imediatamente após adicionar a imagem
+        handleAutoSaveDirectly(updated);
+        
+        return updated;
+      });
     } catch (error) {
       console.error('Erro ao fazer upload da imagem:', error);
       alert('Erro ao fazer upload da imagem.');
+    }
+  };
+
+  const handleAutoSaveDirectly = async (itemsToSave) => {
+    if (isSaving || !empreendimento?.id) return;
+    
+    setIsSaving(true);
+    try {
+      for (const item of itemsToSave) {
+        const itemData = {
+          empreendimento_id: empreendimento.id,
+          item: item.item,
+          data: item.data,
+          de: item.de,
+          descritiva: item.descritiva,
+          localizacao: item.localizacao,
+          assunto: item.assunto,
+          comentario: item.comentario,
+          status: item.status || '',
+          resposta: item.resposta,
+          imagens: item.imagens || []
+        };
+
+        if (item.isNew || item.id.toString().startsWith('temp-')) {
+          await retryWithBackoff(() => ItemPRE.create(itemData), 3, 2000, 'PRE-Create');
+        } else {
+          await retryWithBackoff(() => ItemPRE.update(item.id, itemData), 3, 2000, `PRE-Update-${item.id}`);
+        }
+      }
+      setLastSaved(new Date());
+    } catch (error) {
+      console.error('Erro ao salvar:', error);
+    } finally {
+      setIsSaving(false);
     }
   };
 
