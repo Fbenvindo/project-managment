@@ -573,6 +573,18 @@ export default function AnaliseConcepcaoPlanejamento() {
                             <SelectItem value="Paralisado">Paralisado</SelectItem>
                         </SelectContent>
                     </Select>
+                    {finalStatus === "Finalizado" && (
+                        <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg border border-blue-200">
+                            <Checkbox 
+                                checked={aplicarTodasFolhas}
+                                onCheckedChange={setAplicarTodasFolhas}
+                                id="aplicar-todas-folhas"
+                            />
+                            <Label htmlFor="aplicar-todas-folhas" className="cursor-pointer text-sm">
+                                Concluir esta atividade em <strong>todas as folhas</strong> do empreendimento
+                            </Label>
+                        </div>
+                    )}
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setIsStopModalOpen(false)}>Cancelar</Button>
                         <Button onClick={handleConfirmStop}>Confirmar</Button>
