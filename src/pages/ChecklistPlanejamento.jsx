@@ -130,13 +130,21 @@ export default function ChecklistPlanejamentoPage() {
           </div>
           <div className="flex gap-2">
             {selectedChecklist && (
-              <Button
-                onClick={handleDeleteChecklist}
-                variant="destructive"
-              >
-                <Trash2 className="w-4 h-4 mr-2" />
-                Excluir Checklist
-              </Button>
+              <>
+                <Button
+                  onClick={handleLimparItens}
+                  variant="outline"
+                >
+                  Limpar Itens
+                </Button>
+                <Button
+                  onClick={handleDeleteChecklist}
+                  variant="destructive"
+                >
+                  <Trash2 className="w-4 h-4 mr-2" />
+                  Excluir Checklist
+                </Button>
+              </>
             )}
             <Button
               onClick={() => setShowNovoModal(true)}
