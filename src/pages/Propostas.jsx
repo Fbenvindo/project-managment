@@ -136,19 +136,11 @@ export default function PropostasPage() {
         valor_cad: formData.valor_cad ? Number(formData.valor_cad) : undefined
       };
 
-      // Se mudar para aprovado e não tem data de aprovação, preenche com hoje
-      if (formData.status === 'aprovado' && !dataToSave.data_aprovacao) {
-        dataToSave.data_aprovacao = format(new Date(), 'yyyy-MM-dd');
-      }
-
       if (editingId) {
         await retryWithBackoff(
           () => Comercial.update(editingId, dataToSave),
           3, 2000, 'updateProposta'
         );
-        
-        // Notifica Orçamentos para recarregar
-        window.dispatchEvent(new CustomEvent('propostaAtualizada'));
       } else {
         await retryWithBackoff(
           () => Comercial.create(dataToSave),
@@ -158,13 +150,8 @@ export default function PropostasPage() {
 
       setIsModalOpen(false);
       setEditingId(null);
-      await loadPropostas();
-
-      // Aguarda um pouco e dispara evento para sincronizar Orçamentos
-      setTimeout(() => {
-        window.dispatchEvent(new CustomEvent('propostaAtualizada'));
-      }, 500);
-      } catch (error) {
+      loadPropostas();
+    } catch (error) {
       console.error('Erro ao salvar proposta:', error);
       alert('Erro ao salvar proposta: ' + error.message);
     } finally {

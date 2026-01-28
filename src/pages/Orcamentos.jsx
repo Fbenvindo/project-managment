@@ -5,68 +5,70 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { format, parseISO } from "date-fns";
-import { useQuery } from "@tanstack/react-query";
 
 export default function OrcamentosPage() {
-  const { data = [], isLoading, refetch } = useQuery({
-    queryKey: ['orcamentos'],
-    queryFn: async () => {
+  const [isLoading, setIsLoading] = useState(true);
+  const [orcamentosPorMes, setOrcamentosPorMes] = useState([]);
+
+  useEffect(() => {
+    loadOrcamentos();
+  }, []);
+
+  const loadOrcamentos = async () => {
+    setIsLoading(true);
+    try {
       const data = await retryWithBackoff(
         () => Comercial.list(),
         3, 2000, 'loadOrcamentos'
       );
-      return data || [];
-    },
-    refetchInterval: 30000,
-    staleTime: 5000,
-  });
 
-  const orcamentosPorMes = React.useMemo(() => {
-    const grouped = {};
-
-    data.forEach(proposta => {
-      if (proposta.data_solicitacao) {
-        const date = parseISO(proposta.data_solicitacao);
-        const mesAno = format(date, 'yyyy-MM');
-        const mesAnoDisplay = format(date, 'MM/yyyy');
-
-        if (!grouped[mesAno]) {
-          grouped[mesAno] = {
-            mesAno,
-            mesAnoDisplay,
-            quantidade: 0,
-            valorBimTotal: 0,
-            valorCadTotal: 0,
-            valorBimAprovado: 0,
-            valorCadAprovado: 0,
-            quantidadeAprovada: 0
-          };
+      const grouped = {};
+      
+      data.forEach(proposta => {
+        if (proposta.data_solicitacao) {
+          const date = parseISO(proposta.data_solicitacao);
+          const mesAno = format(date, 'yyyy-MM');
+          const mesAnoDisplay = format(date, 'MM/yyyy');
+          
+          if (!grouped[mesAno]) {
+            grouped[mesAno] = {
+              mesAno,
+              mesAnoDisplay,
+              quantidade: 0,
+              valorBimTotal: 0,
+              valorCadTotal: 0,
+              valorBimAprovado: 0,
+              valorCadAprovado: 0,
+              quantidadeAprovada: 0
+            };
+          }
+          
+          grouped[mesAno].quantidade++;
+          grouped[mesAno].valorBimTotal += Number(proposta.valor_bim || 0);
+          grouped[mesAno].valorCadTotal += Number(proposta.valor_cad || 0);
+          
+          // Verifica se foi aprovado no mesmo mês
+          if (proposta.data_aprovacao && proposta.status === 'aprovado') {
+            const dateAprovacao = parseISO(proposta.data_aprovacao);
+            const mesAnoAprovacao = format(dateAprovacao, 'yyyy-MM');
+            
+            if (mesAnoAprovacao === mesAno) {
+              grouped[mesAno].valorBimAprovado += Number(proposta.valor_bim || 0);
+              grouped[mesAno].valorCadAprovado += Number(proposta.valor_cad || 0);
+              grouped[mesAno].quantidadeAprovada++;
+            }
+          }
         }
+      });
 
-        grouped[mesAno].quantidade++;
-        grouped[mesAno].valorBimTotal += Number(proposta.valor_bim || 0);
-        grouped[mesAno].valorCadTotal += Number(proposta.valor_cad || 0);
-
-        // Verifica se foi aprovado (conta pela data de solicitação)
-        if (proposta.status === 'aprovado') {
-          grouped[mesAno].valorBimAprovado += Number(proposta.valor_bim || 0);
-          grouped[mesAno].valorCadAprovado += Number(proposta.valor_cad || 0);
-          grouped[mesAno].quantidadeAprovada++;
-        }
-      }
-    });
-
-    return Object.values(grouped).sort((a, b) => b.mesAno.localeCompare(a.mesAno));
-  }, [data]);
-
-  useEffect(() => {
-    const handlePropostaAtualizada = () => {
-      refetch();
-    };
-
-    window.addEventListener('propostaAtualizada', handlePropostaAtualizada);
-    return () => window.removeEventListener('propostaAtualizada', handlePropostaAtualizada);
-  }, [refetch]);
+      const sorted = Object.values(grouped).sort((a, b) => b.mesAno.localeCompare(a.mesAno));
+      setOrcamentosPorMes(sorted);
+    } catch (error) {
+      console.error('Erro ao carregar orçamentos:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const totalGeral = orcamentosPorMes.reduce((acc, mes) => ({
     quantidade: acc.quantidade + mes.quantidade,
