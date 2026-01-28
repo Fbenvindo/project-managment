@@ -200,7 +200,19 @@ export default function PropostasPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Lista de Propostas</CardTitle>
+              <div className="flex items-center justify-between gap-4">
+                <CardTitle>Lista de Propostas</CardTitle>
+                <div className="relative w-80">
+                  <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+                  <Input
+                    type="text"
+                    placeholder="Pesquisar por número, cliente, empreendimento..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 bg-gray-50"
+                  />
+                </div>
+              </div>
             </CardHeader>
             <CardContent className="p-4">
               {propostas.length === 0 ? (
