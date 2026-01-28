@@ -131,8 +131,8 @@ export default function AnaliseConcepcaoPlanejamento() {
                     horasPorDia = { ...horasExecutadasPorDia };
                 }
 
-                // Quando finalizado, marcar como concluído e não criar nova
-                const novoStatus = finalStatus === "Finalizado" ? "concluido" : "pausado";
+                // Marcar como concluído APENAS quando finalizado
+                const novoStatus = finalStatus === "Finalizado" ? "concluido" : planejamento.status;
 
                 // Atualizar APENAS este planejamento específico
                 const EntityToUpdate = planejamento.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
