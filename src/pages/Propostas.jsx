@@ -141,6 +141,12 @@ export default function PropostasPage() {
           () => Comercial.update(editingId, dataToSave),
           3, 2000, 'updateProposta'
         );
+        
+        // Se status foi alterado para aprovado, notifica Orçamentos
+        const proposaAnterior = propostas.find(p => p.id === editingId);
+        if (proposaAnterior?.status !== 'aprovado' && dataToSave.status === 'aprovado') {
+          window.dispatchEvent(new CustomEvent('propostaAprovada', { detail: dataToSave }));
+        }
       } else {
         await retryWithBackoff(
           () => Comercial.create(dataToSave),
