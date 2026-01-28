@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { FileText, Loader2, Plus, Pencil } from "lucide-react";
+import { FileText, Loader2, Plus, Pencil, Search } from "lucide-react";
 import { Comercial } from "@/entities/all";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
