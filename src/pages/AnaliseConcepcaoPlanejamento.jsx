@@ -109,49 +109,69 @@ export default function AnaliseConcepcaoPlanejamento() {
         const termino = new Date();
         const tempoTotal = (termino - inicio) / (1000 * 60 * 60);
 
-        // Atualizar Execucao
-        await Execucao.update(selectedExecucao.id, {
-            status: finalStatus === "Finalizado" ? "Finalizado" : "Paralisado",
-            termino: termino.toISOString(),
-            tempo_total: tempoTotal
-        });
-
-        // Atualizar PlanejamentoAtividade com horas_executadas_por_dia
-        const planejamento = planejamentos.find(p => p.id === selectedExecucao.planejamento_id);
-        if (planejamento) {
-            const diaKey = new Date(selectedExecucao.inicio).toISOString().split('T')[0]; // YYYY-MM-DD
-            const horasExecutadasPorDia = planejamento.horas_executadas_por_dia || {};
-            horasExecutadasPorDia[diaKey] = (horasExecutadasPorDia[diaKey] || 0) + tempoTotal;
-
-            // Calcular tempo_executado como soma total de horas_executadas_por_dia
-            const totalTempoExecutado = Object.values(horasExecutadasPorDia).reduce((sum, h) => sum + (Number(h) || 0), 0);
-
-            // Se horas_por_dia estiver vazio, preencher com as horas_executadas_por_dia
-            let horasPorDia = planejamento.horas_por_dia;
-            if (!horasPorDia || Object.keys(horasPorDia).length === 0) {
-              horasPorDia = horasExecutadasPorDia;
-            }
-
-            // Determinar o status final
-            const novoStatus = finalStatus === "Finalizado" ? "concluido" : "pausado";
-
-            // Atualizar o tipo correto de planejamento
-            const EntityToUpdate = planejamento.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
-            await EntityToUpdate.update(planejamento.id, {
-                horas_por_dia: horasPorDia,
-                horas_executadas_por_dia: horasExecutadasPorDia,
-                tempo_executado: totalTempoExecutado,
-                status: novoStatus
+        try {
+            // Atualizar Execucao
+            await Execucao.update(selectedExecucao.id, {
+                status: finalStatus === "Finalizado" ? "Finalizado" : "Paralisado",
+                termino: termino.toISOString(),
+                tempo_total: tempoTotal
             });
+
+            // Atualizar apenas o planejamento existente
+            const planejamento = planejamentos.find(p => p.id === selectedExecucao.planejamento_id);
+            if (planejamento) {
+                const diaKey = new Date(selectedExecucao.inicio).toISOString().split('T')[0];
+                const horasExecutadasPorDia = { ...(planejamento.horas_executadas_por_dia || {}) };
+                horasExecutadasPorDia[diaKey] = (horasExecutadasPorDia[diaKey] || 0) + tempoTotal;
+
+                const totalTempoExecutado = Object.values(horasExecutadasPorDia).reduce((sum, h) => sum + (Number(h) || 0), 0);
+
+                let horasPorDia = planejamento.horas_por_dia || {};
+                if (Object.keys(horasPorDia).length === 0) {
+                    horasPorDia = { ...horasExecutadasPorDia };
+                }
+
+                const novoStatus = finalStatus === "Finalizado" ? "concluido" : "pausado";
+
+                // Atualizar APENAS este planejamento específico
+                const EntityToUpdate = planejamento.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
+                await EntityToUpdate.update(planejamento.id, {
+                    horas_por_dia: horasPorDia,
+                    horas_executadas_por_dia: horasExecutadasPorDia,
+                    tempo_executado: totalTempoExecutado,
+                    status: novoStatus
+                });
+
+                // Atualizar estado local sem recarregar tudo
+                setPlanejamentos(prev => prev.map(p => 
+                    p.id === planejamento.id 
+                        ? { 
+                            ...p, 
+                            horas_por_dia: horasPorDia,
+                            horas_executadas_por_dia: horasExecutadasPorDia,
+                            tempo_executado: totalTempoExecutado,
+                            status: novoStatus
+                        }
+                        : p
+                ));
+
+                setExecucoesMap(prev => ({
+                    ...prev,
+                    [selectedExecucao.planejamento_id]: (prev[selectedExecucao.planejamento_id] || []).map(e => 
+                        e.id === selectedExecucao.id 
+                            ? { ...e, status: finalStatus === "Finalizado" ? "Finalizado" : "Paralisado", termino: termino.toISOString(), tempo_total: tempoTotal }
+                            : e
+                    )
+                }));
+            }
+        } catch (error) {
+            console.error("Erro ao finalizar atividade:", error);
         }
 
         // Fechar modal e limpar estado
         setIsStopModalOpen(false);
         setSelectedExecucao(null);
         setFinalStatus("Finalizado");
-        
-        // Recarregar dados após finalização
-        await loadData();
     };
     
     const getStatusBadge = (planejamento) => {
