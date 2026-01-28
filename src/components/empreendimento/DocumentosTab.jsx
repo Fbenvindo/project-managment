@@ -1156,7 +1156,12 @@ export default function DocumentosTab({
         }
         
         // Atividades específicas DESTA folha (com documento_id igual ao documento atual)
+        // IMPORTANTE: Excluir marcadores de conclusão (tempo: 0 com texto "Concluída na folha")
         if (ativ.empreendimento_id === empreendimento.id && ativ.documento_id === doc.id && ativ.tempo !== -999) {
+          // Não incluir marcadores de conclusão na lista
+          if (ativ.tempo === 0 && ativ.atividade?.includes('Concluída na folha')) {
+            return false;
+          }
           return true;
         }
         
@@ -1197,7 +1202,8 @@ export default function DocumentosTab({
       atividadesGerais = atividadesGerais.filter(ativ => {
         const globalExcluded = atividadesExcluidasGlobal.has(ativ.id);
         const docExcluded = atividadesExcluidasPorDoc.has(ativ.id);
-        return !globalExcluded && !docExcluded;
+        const docConcluida = atividadesConcluidasPorDoc.has(ativ.id);
+        return !globalExcluded && !docExcluded && !docConcluida;
       });
 
       console.log(`   ✅ Atividades disponíveis após filtros: ${atividadesGerais.length}\n`);
@@ -1224,6 +1230,12 @@ export default function DocumentosTab({
           p.atividade_id === atividade.id &&
           p.tipo_plano === 'atividade'
         );
+        
+        // Filtrar planejamentos com tempo 0 (inválidos/duplicados)
+        if (planejamentoDaAtividade && (planejamentoDaAtividade.tempo_planejado === 0 || !planejamentoDaAtividade.tempo_planejado)) {
+          return false;
+        }
+        
         return planejamentoDaAtividade?.status !== 'concluido';
       }).map(atividade => {
         const etapaFinal = etapaOverrides.has(atividade.id) 
@@ -1248,7 +1260,8 @@ export default function DocumentosTab({
         const planejamentoAtividade = planejamentosDoDocumento.find(p =>
           p.atividade_id === atividade.id &&
           p.etapa === etapaFinal &&
-          p.tipo_plano === 'atividade'
+          p.tipo_plano === 'atividade' &&
+          p.tempo_planejado > 0 // Ignorar planejamentos com tempo 0
         );
         
         // Verificar se está no planejamento de documento (grupo)
@@ -1412,11 +1425,15 @@ export default function DocumentosTab({
 
         if (existingMarkers && existingMarkers.length > 0) {
           // Já está marcada como concluída, então vamos desmarcar
-          console.log(`   Desmarcando como concluída...`);
-          await retryWithBackoff(
-            () => Atividade.delete(existingMarkers[0].id),
-            3, 1000, `removeConclusionMarker-${existingMarkers[0].id}`
-          );
+          console.log(`   Desmarcando como concluída (removendo ${existingMarkers.length} marcador(es))...`);
+          
+          // Remover TODOS os marcadores de conclusão (caso haja duplicatas)
+          for (const marker of existingMarkers) {
+            await retryWithBackoff(
+              () => Atividade.delete(marker.id),
+              3, 1000, `removeConclusionMarker-${marker.id}`
+            );
+          }
         } else {
           // Criar marcador de conclusão (usando tempo 0 em vez de -888)
           const novoMarcador = {

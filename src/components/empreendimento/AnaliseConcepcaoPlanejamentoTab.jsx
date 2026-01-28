@@ -82,12 +82,18 @@ export default function AnaliseConcepcaoPlanejamentoTab({
     // Mapa de atividades por ID
     const atividadesMap = useMemo(() => (atividades || []).reduce((acc, ativ) => ({ ...acc, [ativ.id]: ativ }), {}), [atividades]);
     
-    // CORRIGIDO: Mapear múltiplos planejamentos por atividade
+    // CORRIGIDO: Mapear múltiplos planejamentos por atividade (apenas não concluídos e não zerados sem documento)
     const planejamentosPorAtividadeMap = useMemo(() => {
         const map = {};
         (planejamentos || []).forEach(plan => {
             // Ensure activity exists and belongs to a documentation subdiscipline
             if (plan.atividade_id && atividadesMap[plan.atividade_id] && SUBDISCIPLINAS_DOCUMENTACAO.includes(atividadesMap[plan.atividade_id].subdisciplina)) {
+                // Filtrar planejamentos com tempo 0 e sem documento (planejamentos inválidos/duplicados)
+                // IMPORTANTE: NÃO filtrar planejamentos concluídos manualmente (tempo 0 com documento)
+                if ((plan.tempo_planejado === 0 || !plan.tempo_planejado) && !plan.documento_id) {
+                    return; // Pular planejamentos zerados sem documento
+                }
+                
                 if (!map[plan.atividade_id]) {
                     map[plan.atividade_id] = [];
                 }
@@ -143,53 +149,49 @@ export default function AnaliseConcepcaoPlanejamentoTab({
         }
     };
 
-    // Mostrar atividades com seus planejamentos ativos (não concluídos)
+    // CORRIGIDO: Mostrar todas as atividades disponíveis de documentação (não apenas as planejadas)
     const filteredData = useMemo(() => {
-        console.log('\n🔍 [AnaliseConcepcaoPlanejamentoTab] Filtrando atividades de documentação...');
-        console.log(`📊 Total de planejamentos recebidos: ${(planejamentos || []).length}`);
+        // console.log('🔍 Filtrando atividades de documentação...');
+        // console.log('📊 Total de atividades disponíveis:', atividades.length);
         
-        const atividadesComPlanejamentos = [];
-        
-        // Iterar pelos planejamentos ativos (não concluídos)
-        (planejamentos || []).forEach(plan => {
-            // Ignorar planejamentos concluídos
-            if (plan.status === 'concluido') {
-                console.log(`❌ Excluindo planejamento CONCLUÍDO: ${plan.descritivo || plan.id} (status: ${plan.status})`);
-                return;
-            }
+        // 1. Filtrar atividades GERAIS (sem empreendimento_id) com subdisciplinas de documentação
+        let atividadesDocumentacao = (atividades || []).filter(atividade => {
+            const isGeneral = !atividade.empreendimento_id; // Apenas atividades gerais
+            const hasDocSubdisciplina = SUBDISCIPLINAS_DOCUMENTACAO.includes(atividade.subdisciplina);
             
-            const atividade = atividadesMap[plan.atividade_id];
-            if (!atividade) return;
+            // console.log(`Atividade "${atividade.atividade}": geral=${isGeneral}, subdisciplina="${atividade.subdisciplina}", inclui=${hasDocSubdisciplina}`);
             
-            // Verificar se é atividade de documentação
-            if (!SUBDISCIPLINAS_DOCUMENTACAO.includes(atividade.subdisciplina)) return;
-            
-            // Aplicar filtros
-            if (debouncedSearchTerm && !(atividade.atividade || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase())) {
-                return;
-            }
-            
-            if (subdisciplinaFilter !== "todas" && atividade.subdisciplina !== subdisciplinaFilter) {
-                return;
-            }
-            
-            // Verificar se a atividade já foi adicionada
-            const existing = atividadesComPlanejamentos.find(item => item.atividade.id === atividade.id && item.planejamento.id === plan.id);
-            if (!existing) {
-                console.log(`✅ Adicionando: ${atividade.atividade} (status: ${plan.status})`);
-                atividadesComPlanejamentos.push({ atividade, planejamento: plan });
-            }
+            return isGeneral && hasDocSubdisciplina;
         });
+
+        // console.log('📋 Atividades de documentação encontradas:', atividadesDocumentacao.length);
+
+        // 2. Aplicar filtros de busca
+        if (debouncedSearchTerm) {
+            atividadesDocumentacao = atividadesDocumentacao.filter(atividade =>
+                (atividade.atividade || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+            );
+        }
         
-        console.log(`\n📋 Total após filtros básicos: ${atividadesComPlanejamentos.length}`);
+        // 3. Aplicar filtro de subdisciplina
+        if (subdisciplinaFilter !== "todas") {
+            atividadesDocumentacao = atividadesDocumentacao.filter(atividade =>
+                atividade.subdisciplina === subdisciplinaFilter
+            );
+        }
         
-        // Aplicar filtro de status baseado nos planejamentos individuais
-        let filtered = atividadesComPlanejamentos;
+        // CORRIGIDO: Lógica de filtro de status para múltiplos planejamentos
         if (statusFilter !== "todos") {
-            filtered = atividadesComPlanejamentos.filter(({ planejamento }) => {
-                const tempoExecutado = Number(planejamento.tempo_executado) || 0;
-                const tempoPlanejado = Number(planejamento.tempo_planejado) || 1;
-                const percentual = (tempoExecutado / tempoPlanejado) * 100;
+            atividadesDocumentacao = atividadesDocumentacao.filter(atividade => {
+                const planejamentosDaAtividade = planejamentosPorAtividadeMap[atividade.id] || [];
+                
+                if (planejamentosDaAtividade.length === 0) {
+                    return statusFilter === "nao_iniciado";
+                }
+                
+                const tempoPlanejadoTotal = planejamentosDaAtividade.reduce((sum, p) => sum + (Number(p.tempo_planejado) || 0), 0);
+                const tempoExecutadoTotal = planejamentosDaAtividade.reduce((sum, p) => sum + (Number(p.tempo_executado) || 0), 0);
+                const percentual = tempoPlanejadoTotal > 0 ? (tempoExecutadoTotal / tempoPlanejadoTotal) * 100 : 0;
                 
                 if (statusFilter === "nao_iniciado") return percentual === 0;
                 if (statusFilter === "em_andamento") return percentual > 0 && percentual < 100;
@@ -197,19 +199,17 @@ export default function AnaliseConcepcaoPlanejamentoTab({
                 return true;
             });
         }
-        
-        console.log(`\n✅ Total após filtro de status: ${filtered.length}`);
-        console.log(`🔍 ========================================\n`);
-        
-        // Ordenar
-        filtered.sort((a, b) => {
-            const nomeA = a.atividade.atividade || '';
-            const nomeB = b.atividade.atividade || '';
+
+        // 5. Ordenar por nome da atividade
+        atividadesDocumentacao.sort((a, b) => {
+            const nomeA = a.atividade || '';
+            const nomeB = b.atividade || '';
             return nomeA.localeCompare(nomeB, 'pt-BR', { sensitivity: 'base' });
         });
-        
-        return filtered;
-    }, [planejamentos, atividadesMap, debouncedSearchTerm, subdisciplinaFilter, statusFilter]);
+
+        // console.log('✅ Atividades filtradas finais:', atividadesDocumentacao.length);
+        return atividadesDocumentacao;
+    }, [atividades, debouncedSearchTerm, subdisciplinaFilter, statusFilter, planejamentosPorAtividadeMap]);
 
     // Filtrar apenas atividades de documentação para o modal
     const atividadesDocumentacao = useMemo(() => {
@@ -372,20 +372,27 @@ export default function AnaliseConcepcaoPlanejamentoTab({
                                 </TableRow>
                             </TableHeader>
                             <TableBody>
-                                {filteredData.length > 0 ? filteredData.map(({ atividade, planejamento }) => {
-                                    const tempoExecutado = Number(planejamento.tempo_executado) || 0;
-                                    const tempoPlanejado = Number(planejamento.tempo_planejado) || 1;
-                                    const percentual = calcularPercentual(tempoExecutado, tempoPlanejado);
+                                {filteredData.length > 0 ? filteredData.map(atividade => {
+                                    // CORRIGIDO: Lógica para múltiplos planejamentos
+                                    const planejamentosDaAtividade = planejamentosPorAtividadeMap[atividade.id] || [];
+                                    const tempoPlanejadoTotal = planejamentosDaAtividade.reduce((sum, p) => sum + (Number(p.tempo_planejado) || 0), 0);
+                                    const tempoExecutadoTotal = planejamentosDaAtividade.reduce((sum, p) => sum + (Number(p.tempo_executado) || 0), 0);
+                                    const percentual = tempoPlanejadoTotal > 0 ? calcularPercentual(tempoExecutadoTotal, tempoPlanejadoTotal) : 0;
                                     
                                     return (
-                                        <TableRow key={`${atividade.id}-${planejamento.id}`}>
+                                        <TableRow key={atividade.id}>
                                             <TableCell><Badge variant="outline">{atividade.etapa}</Badge></TableCell>
                                             <TableCell><Badge className="bg-purple-100 text-purple-800">{atividade.subdisciplina}</Badge></TableCell>
                                             <TableCell className="max-w-xs truncate" title={atividade.atividade}>{atividade.atividade}</TableCell>
                                             <TableCell>
-                                                {formatarTempo(tempoPlanejado)}
+                                                {formatarTempo(calcularTempoPadrao(atividade))}
+                                                {getMultiplicadorTexto(atividade) && (
+                                                    <span className="text-xs text-gray-500 block">
+                                                        {getMultiplicadorTexto(atividade)}
+                                                    </span>
+                                                )}
                                             </TableCell>
-                                            <TableCell>{formatarTempo(tempoExecutado)}</TableCell>
+                                            <TableCell>{formatarTempo(tempoExecutadoTotal)}</TableCell>
                                             <TableCell>
                                                 <Progress value={percentual} className="w-full" />
                                                 <span className="text-xs text-gray-500">{percentual}%</span>
@@ -393,8 +400,18 @@ export default function AnaliseConcepcaoPlanejamentoTab({
                                             <TableCell><Badge className={getStatusColor(percentual)}>{getStatusText(percentual)}</Badge></TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex gap-2 justify-end">
-                                                    {!activeExecution && planejamento.status !== 'concluido' && (
-                                                        <Button size="sm" onClick={() => handleIniciarAtividade(planejamento)}>
+                                                    {/* CORRIGIDO: Botão de planejar sempre visível */}
+                                                    <Button 
+                                                        size="sm" 
+                                                        onClick={() => handlePlanejarAtividade(atividade)}
+                                                        className="bg-blue-600 hover:bg-blue-700"
+                                                    >
+                                                        <Calendar className="w-3 h-3 mr-1" /> Planejar
+                                                    </Button>
+                                                    
+                                                    {/* Lógica de "Iniciar" pode ser revista no futuro, se necessário */}
+                                                    {planejamentosDaAtividade.length > 0 && !activeExecution && (
+                                                        <Button size="sm" onClick={() => handleIniciarAtividade(planejamentosDaAtividade[0])} title="Iniciar a primeira ocorrência planejada">
                                                             <Play className="w-3 h-3 mr-1" /> Iniciar
                                                         </Button>
                                                     )}

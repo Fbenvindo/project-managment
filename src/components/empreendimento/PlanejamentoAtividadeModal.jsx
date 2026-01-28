@@ -138,7 +138,8 @@ export default function PlanejamentoAtividadeModal({
       const [planejamentosAtividade, planejamentosDocumentoResult] = await Promise.all([
         retryWithBackoff(
           () => PlanejamentoAtividade.filter({
-            executor_principal: executorEmail
+            executor_principal: executorEmail,
+            status: { $ne: 'concluido' }
           }),
           3, 1000, 'buscarPlanejamentosAtividade'
         ),
@@ -146,7 +147,8 @@ export default function PlanejamentoAtividadeModal({
           async () => {
             try {
               return await PlanejamentoDocumento.filter({
-                executor_principal: executorEmail
+                executor_principal: executorEmail,
+                status: { $ne: 'concluido' }
               });
             } catch (err) {
               console.warn('⚠️ PlanejamentoDocumento não disponível ou erro ao buscar:', err.message);
@@ -156,14 +158,13 @@ export default function PlanejamentoAtividadeModal({
           3, 1000, 'buscarPlanejamentosDocumento'
         )
       ]);
-      
-      // CRÍTICO: Filtrar planejamentos concluídos APENAS para cálculo de carga
+
       const todosPlanejamentos = [
-        ...(planejamentosAtividade || []).filter(p => p.status !== 'concluido'),
-        ...(planejamentosDocumentoResult || []).filter(p => p.status !== 'concluido')
+        ...(planejamentosAtividade || []),
+        ...(planejamentosDocumentoResult || [])
       ];
 
-      console.log(`✅ Total de planejamentos encontrados (após filtrar concluídos): ${todosPlanejamentos.length}`);
+      console.log(`✅ Total de planejamentos encontrados: ${todosPlanejamentos.length}`);
       console.log(`   📋 PlanejamentoAtividade: ${planejamentosAtividade?.length || 0}`);
       console.log(`   📄 PlanejamentoDocumento: ${planejamentosDocumentoResult?.length || 0}\n`);
 
@@ -364,31 +365,6 @@ export default function PlanejamentoAtividadeModal({
     setIsLoading(true);
 
     try {
-      // CRÍTICO: Verificar se já existe um planejamento concluído para esta atividade
-      console.log('\n🔍 Verificando duplicatas...');
-      const [todosPlansAtiv, todosPlansDoc] = await Promise.all([
-        PlanejamentoAtividade.filter({ 
-          empreendimento_id: empreendimentoId,
-          base_descritivo: atividade.atividade
-        }),
-        PlanejamentoDocumento.filter({ 
-          empreendimento_id: empreendimentoId,
-          descritivo: atividade.atividade
-        }).catch(() => [])
-      ]);
-      
-      const todosPlanejamentosExistentes = [...todosPlansAtiv, ...todosPlansDoc];
-      const jaExisteEssaAtividade = todosPlanejamentosExistentes.some(p => p.status === 'concluido');
-      
-      if (jaExisteEssaAtividade) {
-        console.log('⚠️ JÁ EXISTE UM PLANEJAMENTO CONCLUÍDO PARA ESTA ATIVIDADE!');
-        console.log('🚫 Bloqueando criação de duplicata...\n');
-        alert(`⚠️ Já existe um registro concluído desta atividade "${atividade.atividade}" neste empreendimento. Não é possível criar duplicatas.`);
-        setIsLoading(false);
-        return;
-      }
-      console.log('✅ Não há duplicatas concluídas. Prosseguindo...\n');
-      
       let datasParaCriar = [];
 
       if (formData.recorrencia_ativada) {

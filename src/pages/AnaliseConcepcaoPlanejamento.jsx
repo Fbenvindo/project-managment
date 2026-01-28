@@ -109,61 +109,74 @@ export default function AnaliseConcepcaoPlanejamento() {
         const termino = new Date();
         const tempoTotal = (termino - inicio) / (1000 * 60 * 60);
 
-        try {
-            // Atualizar Execucao
-            await Execucao.update(selectedExecucao.id, {
-                status: finalStatus === "Finalizado" ? "Finalizado" : "Paralisado",
-                termino: termino.toISOString(),
-                tempo_total: tempoTotal
+        // Atualizar Execucao
+        await Execucao.update(selectedExecucao.id, {
+            status: finalStatus === "Finalizado" ? "Finalizado" : "Paralisado",
+            termino: termino.toISOString(),
+            tempo_total: tempoTotal
+        });
+
+        // Atualizar PlanejamentoAtividade com horas_executadas_por_dia
+        const planejamento = planejamentos.find(p => p.id === selectedExecucao.planejamento_id);
+        if (planejamento) {
+            const diaKey = new Date(selectedExecucao.inicio).toISOString().split('T')[0]; // YYYY-MM-DD
+            const horasExecutadasPorDia = planejamento.horas_executadas_por_dia || {};
+            horasExecutadasPorDia[diaKey] = (horasExecutadasPorDia[diaKey] || 0) + tempoTotal;
+
+            // Calcular tempo_executado como soma total de horas_executadas_por_dia
+            const totalTempoExecutado = Object.values(horasExecutadasPorDia).reduce((sum, h) => sum + (Number(h) || 0), 0);
+
+            // Se horas_por_dia estiver vazio, preencher com as horas_executadas_por_dia
+            let horasPorDia = planejamento.horas_por_dia;
+            if (!horasPorDia || Object.keys(horasPorDia).length === 0) {
+              horasPorDia = horasExecutadasPorDia;
+            }
+
+            // Atualizar o tipo correto de planejamento
+            const EntityToUpdate = planejamento.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
+            await EntityToUpdate.update(planejamento.id, {
+                horas_por_dia: horasPorDia,
+                horas_executadas_por_dia: horasExecutadasPorDia,
+                tempo_executado: totalTempoExecutado,
+                tempo_planejado: totalTempoExecutado,
+                is_quick_activity: true,
+                status: finalStatus === "Finalizado" ? "concluido" : "pausado"
             });
 
-            // Atualizar apenas o planejamento existente
-            const planejamento = planejamentos.find(p => p.id === selectedExecucao.planejamento_id);
-            if (planejamento) {
-                const diaKey = new Date(selectedExecucao.inicio).toISOString().split('T')[0];
-                const horasExecutadasPorDia = { ...(planejamento.horas_executadas_por_dia || {}) };
-                horasExecutadasPorDia[diaKey] = (horasExecutadasPorDia[diaKey] || 0) + tempoTotal;
-
-                const totalTempoExecutado = Object.values(horasExecutadasPorDia).reduce((sum, h) => sum + (Number(h) || 0), 0);
-
-                let horasPorDia = planejamento.horas_por_dia || {};
-                if (Object.keys(horasPorDia).length === 0) {
-                    horasPorDia = { ...horasExecutadasPorDia };
-                }
-
-                // NÃO alterar o status - apenas registrar tempo executado
-                // Atualizar APENAS este planejamento específico
-                const EntityToUpdate = planejamento.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
-                await EntityToUpdate.update(planejamento.id, {
-                    horas_por_dia: horasPorDia,
-                    horas_executadas_por_dia: horasExecutadasPorDia,
-                    tempo_executado: totalTempoExecutado
+            // Se a atividade foi finalizada, verificar se todas as atividades da folha estão concluídas
+            if (finalStatus === "Finalizado" && planejamento.documento_id) {
+                const planejamentosDoDocumento = planejamentos.filter(p => p.documento_id === planejamento.documento_id);
+                const todasConcluidas = planejamentosDoDocumento.every(p => {
+                    if (p.id === planejamento.id) return true; // A atual que acabou de ser concluída
+                    const outraExec = execucoesMap[p.id] || [];
+                    return outraExec.some(e => e.status === "Finalizado");
                 });
 
-                // Atualizar estado local
-                setPlanejamentos(prev => prev.map(p => 
-                    p.id === planejamento.id 
-                        ? { 
-                            ...p, 
-                            horas_por_dia: horasPorDia,
-                            horas_executadas_por_dia: horasExecutadasPorDia,
-                            tempo_executado: totalTempoExecutado
-                        }
-                        : p
-                ));
-
-                setExecucoesMap(prev => ({
-                    ...prev,
-                    [selectedExecucao.planejamento_id]: (prev[selectedExecucao.planejamento_id] || []).map(e => 
-                        e.id === selectedExecucao.id 
-                            ? { ...e, status: finalStatus === "Finalizado" ? "Finalizado" : "Paralisado", termino: termino.toISOString(), tempo_total: tempoTotal }
-                            : e
-                    )
-                }));
+                // Atualizar status do documento se todas estão concluídas
+                if (todasConcluidas && planejamentos.find(p => p.id === planejamento.id)?.tipo_planejamento === 'documento') {
+                    const doc = documentos.find(d => d.id === planejamento.documento_id);
+                    if (doc) {
+                        await Documento.update(doc.id, { status: 'concluido' });
+                    }
+                }
             }
-        } catch (error) {
-            console.error("Erro ao finalizar atividade:", error);
+
+            // Atualizar estado local
+            setPlanejamentos(prev => prev.map(p => 
+                p.id === planejamento.id 
+                    ? { ...p, horas_por_dia: horasPorDia, horas_executadas_por_dia: horasExecutadasPorDia, tempo_executado: totalTempoExecutado, status: finalStatus === "Finalizado" ? "concluido" : "pausado" }
+                    : p
+            ));
         }
+
+        setExecucoesMap(prev => ({
+            ...prev,
+            [selectedExecucao.planejamento_id]: prev[selectedExecucao.planejamento_id].map(e => 
+                e.id === selectedExecucao.id 
+                    ? { ...e, status: finalStatus === "Finalizado" ? "Finalizado" : "Paralisado", termino: termino.toISOString(), tempo_total: tempoTotal }
+                    : e
+            )
+        }));
 
         setIsStopModalOpen(false);
         setSelectedExecucao(null);
@@ -192,9 +205,6 @@ export default function AnaliseConcepcaoPlanejamento() {
         const disciplinasExcluidas = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
         
         return planejamentos.filter(plan => {
-            // Excluir atividades finalizadas
-            if (plan.status === 'concluido') return false;
-            
             const atividade = atividadesMap[plan.atividade_id];
             if (!atividade && !plan.descritivo) return false;
             
@@ -213,20 +223,14 @@ export default function AnaliseConcepcaoPlanejamento() {
     }, [planejamentos, atividadesMap, selectedEtapas, filterEmpreendimento, filterDisciplina]);
 
     const planejamentosDocumentacao = useMemo(() => {
-        console.log('\n🔍 [AnaliseConcepcaoPlanejamento] Filtrando planejamentos de documentação...');
-        console.log(`📊 Total de planejamentos recebidos: ${planejamentos.length}`);
-        
         const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
         
-        const filtered = planejamentos.filter(plan => {
-            // CRÍTICO: Excluir atividades finalizadas
-            if (plan.status === 'concluido') {
-                console.log(`❌ Excluindo CONCLUÍDO: ${plan.descritivo || plan.id} (status: ${plan.status})`);
-                return false;
-            }
-            
+        return planejamentos.filter(plan => {
             const atividade = atividadesMap[plan.atividade_id];
             if (!atividade && !plan.descritivo) return false;
+            
+            // Excluir atividades finalizadas
+            if (plan.status === 'concluido') return false;
             
             if (!atividade?.disciplina || !disciplinasDocumentacao.includes(atividade.disciplina)) {
                 return false;
@@ -237,17 +241,8 @@ export default function AnaliseConcepcaoPlanejamento() {
             const empreendimentoMatch = filterEmpreendimento === "todos" || plan.empreendimento_id === filterEmpreendimento;
             const disciplinaMatch = filterDisciplina === "todos" || atividade?.disciplina === filterDisciplina;
             
-            if (etapaMatch && empreendimentoMatch && disciplinaMatch) {
-                console.log(`✅ Incluindo: ${plan.descritivo || atividade?.atividade} (status: ${plan.status})`);
-                return true;
-            }
-            return false;
+            return etapaMatch && empreendimentoMatch && disciplinaMatch;
         });
-        
-        console.log(`\n✅ Total de planejamentos de documentação após filtros: ${filtered.length}`);
-        console.log(`🔍 ========================================\n`);
-        
-        return filtered;
     }, [planejamentos, atividadesMap, selectedEtapas, filterEmpreendimento, filterDisciplina]);
 
     const groupedByDocumento = useMemo(() => {
@@ -255,6 +250,9 @@ export default function AnaliseConcepcaoPlanejamento() {
          const semDocumento = [];
 
          filteredPlanejamentos.forEach(plan => {
+             // Excluir atividades finalizadas do agrupamento
+             if (plan.status === 'concluido') return;
+
              if (!plan.documento_id) {
                  semDocumento.push(plan);
                  return;
@@ -423,25 +421,23 @@ export default function AnaliseConcepcaoPlanejamento() {
                                                             </TableCell>
                                                         </TableRow>
                                                         {docPlanejamentos.map((planejamento, idx) => {
-                                                            // Não mostrar planejamentos concluídos
-                                                            if (planejamento.status === 'concluido') return null;
-                                                                const atividade = atividadesMap[planejamento.atividade_id];
-                                                                const execucoes = execucoesMap[planejamento.id] || [];
-                                                                const tempoExecutadoTotal = execucoes
-                                                                    .filter(e => e.status === "Finalizado")
-                                                                    .reduce((sum, e) => sum + (e.tempo_total || 0), 0);
-                                                                const tempoExibir = planejamento.tempo_executado || tempoExecutadoTotal;
+                                                            const atividade = atividadesMap[planejamento.atividade_id];
+                                                            const execucoes = execucoesMap[planejamento.id] || [];
+                                                            const tempoExecutadoTotal = execucoes
+                                                                .filter(e => e.status === "Finalizado")
+                                                                .reduce((sum, e) => sum + (e.tempo_total || 0), 0);
+                                                            const tempoExibir = planejamento.tempo_executado || tempoExecutadoTotal;
 
-                                                                return (
-                                                                    <TableRow key={planejamento.id}>
-                                                                        <TableCell>{idx === 0 && doc ? `${doc.disciplina || '-'}` : ""}</TableCell>
-                                                                        <TableCell>{planejamento.descritivo || atividade?.atividade || 'Atividade não encontrada'}</TableCell>
-                                                                        <TableCell className="text-center">{(planejamento.tempo_planejado || 0).toFixed(1)}h</TableCell>
-                                                                        <TableCell className="text-center">{tempoExibir.toFixed(1)}h</TableCell>
-                                                                        <TableCell className="text-center">{getStatusBadge(planejamento)}</TableCell>
-                                                                    </TableRow>
-                                                                );
-                                                            })}
+                                                            return planejamento.status !== 'concluido' ? (
+                                                                <TableRow key={planejamento.id}>
+                                                                    <TableCell>{idx === 0 && doc ? `${doc.disciplina || '-'}` : ""}</TableCell>
+                                                                    <TableCell>{planejamento.descritivo || atividade?.atividade || 'Atividade não encontrada'}</TableCell>
+                                                                    <TableCell className="text-center">{(planejamento.tempo_planejado || 0).toFixed(1)}h</TableCell>
+                                                                    <TableCell className="text-center">{tempoExibir.toFixed(1)}h</TableCell>
+                                                                    <TableCell className="text-center">{getStatusBadge(planejamento)}</TableCell>
+                                                                </TableRow>
+                                                            ) : null;
+                                                        })}
                                                     </React.Fragment>
                                                 ))
                                             )}
