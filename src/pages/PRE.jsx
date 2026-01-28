@@ -418,13 +418,12 @@ export default function PRE() {
               </div>
             )}
             {lastSavedTime && !autoSaveInProgress && (
-              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 no-print">
-                <CheckCircle className="w-4 h-4 text-green-600" />
-                <span className="text-sm text-green-700">Salvo automaticamente em {format(lastSavedTime, 'HH:mm:ss')}</span>
-              </div>
+             <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2 no-print">
+               <CheckCircle className="w-4 h-4 text-green-600" />
+               <span className="text-sm text-green-700">Salvo automaticamente em {format(lastSavedTime, 'HH:mm:ss')}</span>
+             </div>
             )}
-        (
-          <div className="bg-white border border-gray-400 shadow-lg">
+            <div className="bg-white border border-gray-400 shadow-lg">
             {/* Cabeçalho */}
             <div className="border-b-2 border-gray-800 p-4 flex items-center justify-between">
               <div className="flex items-center gap-4">
