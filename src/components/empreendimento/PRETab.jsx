@@ -204,6 +204,8 @@ export default function PRETab({ empreendimento, readOnly = false }) {
           ? { ...item, imagens: [...(item.imagens || []), file_url] } 
           : item
       ));
+      // Salva imediatamente após upload
+      setTimeout(() => handleAutoSave(), 500);
     } catch (error) {
       console.error('Erro ao fazer upload da imagem:', error);
       alert('Erro ao fazer upload da imagem.');
