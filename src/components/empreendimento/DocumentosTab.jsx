@@ -1224,6 +1224,12 @@ export default function DocumentosTab({
           p.atividade_id === atividade.id &&
           p.tipo_plano === 'atividade'
         );
+        
+        // Filtrar planejamentos com tempo 0 (inválidos/duplicados)
+        if (planejamentoDaAtividade && (planejamentoDaAtividade.tempo_planejado === 0 || !planejamentoDaAtividade.tempo_planejado)) {
+          return false;
+        }
+        
         return planejamentoDaAtividade?.status !== 'concluido';
       }).map(atividade => {
         const etapaFinal = etapaOverrides.has(atividade.id) 
