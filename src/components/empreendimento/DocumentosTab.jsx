@@ -1788,17 +1788,60 @@ export default function DocumentosTab({
         setIsUpdating(true);
         
         try {
-            for (const docId of documentIds) {
-                const docToUpdate = localDocumentos.find(d => d.id === docId);
-                if (!docToUpdate) continue;
-
+            // Ordenar documentos pela sequência de predecessoras
+            const docsToProcess = documentIds.map(id => localDocumentos.find(d => d.id === id)).filter(Boolean);
+            const orderedDocs = [];
+            const visited = new Set();
+            
+            // Função para encontrar documentos sem predecessora ou com predecessora fora do grupo
+            const findRootDocs = () => {
+                return docsToProcess.filter(d => 
+                    !d.predecessora_id || !documentIds.includes(d.predecessora_id)
+                );
+            };
+            
+            // Função para encontrar sucessores de um documento
+            const findSuccessors = (docId) => {
+                return docsToProcess.filter(d => d.predecessora_id === docId && !visited.has(d.id));
+            };
+            
+            // Começar pelos documentos raiz (sem predecessora no grupo)
+            let queue = findRootDocs();
+            
+            while (queue.length > 0) {
+                const currentDoc = queue.shift();
+                if (visited.has(currentDoc.id)) continue;
+                
+                orderedDocs.push(currentDoc);
+                visited.add(currentDoc.id);
+                
+                // Adicionar sucessores à fila
+                const successors = findSuccessors(currentDoc.id);
+                queue.push(...successors);
+            }
+            
+            console.log(`📊 Ordem de planejamento: ${orderedDocs.map(d => d.numero).join(' → ')}`);
+            
+            // Processar documentos em sequência
+            let ultimaDataTermino = null;
+            
+            for (const docToUpdate of orderedDocs) {
                 console.log(`💾 Atualizando executor_principal no documento ${docToUpdate.numero}...`);
+                
+                let updateData = { 
+                    executor_principal: executorEmail,
+                    multiplos_executores: false 
+                };
+                
+                // Se há uma data de término anterior E este documento é sucessor, usar essa data como início
+                if (ultimaDataTermino && docToUpdate.predecessora_id && documentIds.includes(docToUpdate.predecessora_id)) {
+                    updateData.inicio_planejado = ultimaDataTermino;
+                    console.log(`📅 Definindo início automático para ${docToUpdate.numero}: ${ultimaDataTermino}`);
+                }
+                
                 const docAtualizado = await retryWithBackoff(
-                    () => Documento.update(docId, { 
-                        executor_principal: executorEmail,
-                        multiplos_executores: false 
-                    }),
-                    3, 1000, `setExecutor-${docId}`
+                    () => Documento.update(docToUpdate.id, updateData),
+                    3, 1000, `setExecutor-${docToUpdate.id}`
                 );
                 
                 handleLocalUpdate(docAtualizado);
@@ -1811,7 +1854,7 @@ export default function DocumentosTab({
                 const dataManualInicio = temDataManual ? docAtualizado.inicio_planejado : null;
 
                 if (temDataManual) {
-                    console.log(`📅 Documento possui data de início manual: ${format(parseDate(docAtualizado.inicio_planejado), 'dd/MM/yyyy')}`);
+                    console.log(`📅 Documento possui data de início: ${format(parseDate(docAtualizado.inicio_planejado), 'dd/MM/yyyy')}`);
                 } else {
                     console.log(`🔍 Buscando disponibilidade na agenda do executor...`);
                 }
@@ -1825,11 +1868,22 @@ export default function DocumentosTab({
                     metodoData,
                     dataManualInicio
                 );
+                
+                // Buscar o documento atualizado para pegar a data de término
+                const docFinalizado = await retryWithBackoff(
+                    () => Documento.read(docToUpdate.id),
+                    3, 1000, `getDoc-${docToUpdate.id}`
+                );
+                
+                if (docFinalizado.termino_planejado) {
+                    ultimaDataTermino = docFinalizado.termino_planejado;
+                    console.log(`✅ Data de término de ${docToUpdate.numero}: ${ultimaDataTermino}`);
+                }
             }
             
             setCargaDiariaCache({});
             
-            console.log(`✅ Planejamento concluído para todos os documentos!`);
+            console.log(`✅ Planejamento em sequência concluído para todos os documentos!`);
             
         } catch (error) {
             console.error("❌ Erro ao definir executor e planejar:", error);
