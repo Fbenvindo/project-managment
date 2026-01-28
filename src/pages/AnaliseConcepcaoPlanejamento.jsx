@@ -132,31 +132,36 @@ export default function AnaliseConcepcaoPlanejamento() {
               horasPorDia = horasExecutadasPorDia;
             }
 
+            // Determinar o status final
+            const novoStatus = finalStatus === "Finalizado" ? "concluido" : "pausado";
+
             // Atualizar o tipo correto de planejamento
             const EntityToUpdate = planejamento.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
             await EntityToUpdate.update(planejamento.id, {
                 horas_por_dia: horasPorDia,
                 horas_executadas_por_dia: horasExecutadasPorDia,
                 tempo_executado: totalTempoExecutado,
-                tempo_planejado: totalTempoExecutado,
-                is_quick_activity: true,
-                status: finalStatus === "Finalizado" ? "concluido" : "pausado"
+                tempo_planejado: planejamento.tempo_planejado || totalTempoExecutado,
+                status: novoStatus
             });
 
-            // Não fazer nada relacionado ao documento ao finalizar manualmente
-            // A folha continuará visível, apenas a atividade terá seu status alterado
-
-            // Atualizar estado local
+            // Atualizar estado local mantendo a consistência
             setPlanejamentos(prev => prev.map(p => 
                 p.id === planejamento.id 
-                    ? { ...p, horas_por_dia: horasPorDia, horas_executadas_por_dia: horasExecutadasPorDia, tempo_executado: totalTempoExecutado, status: finalStatus === "Finalizado" ? "concluido" : "pausado" }
+                    ? { 
+                        ...p, 
+                        horas_por_dia: horasPorDia, 
+                        horas_executadas_por_dia: horasExecutadasPorDia, 
+                        tempo_executado: totalTempoExecutado, 
+                        status: novoStatus
+                    }
                     : p
             ));
         }
 
         setExecucoesMap(prev => ({
             ...prev,
-            [selectedExecucao.planejamento_id]: prev[selectedExecucao.planejamento_id].map(e => 
+            [selectedExecucao.planejamento_id]: (prev[selectedExecucao.planejamento_id] || []).map(e => 
                 e.id === selectedExecucao.id 
                     ? { ...e, status: finalStatus === "Finalizado" ? "Finalizado" : "Paralisado", termino: termino.toISOString(), tempo_total: tempoTotal }
                     : e
