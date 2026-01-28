@@ -409,9 +409,9 @@ export default function AnaliseConcepcaoPlanejamento() {
                                                                 )}
                                                             </TableCell>
                                                         </TableRow>
-                                                        {docPlanejamentos
-                                                            .filter(plan => plan.status !== 'concluido')
-                                                            .map((planejamento, idx) => {
+                                                        {docPlanejamentos.map((planejamento, idx) => {
+                                                            // Não mostrar planejamentos concluídos
+                                                            if (planejamento.status === 'concluido') return null;
                                                                 const atividade = atividadesMap[planejamento.atividade_id];
                                                                 const execucoes = execucoesMap[planejamento.id] || [];
                                                                 const tempoExecutadoTotal = execucoes
