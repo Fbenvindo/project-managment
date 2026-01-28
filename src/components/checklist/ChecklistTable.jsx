@@ -298,24 +298,30 @@ export default function ChecklistTable({ secao, items, checklist, onUpdate }) {
               ) : (
                 items.map((item) => (
                   <TableRow key={item.id} className="hover:bg-gray-50">
-                    <TableCell className="border font-medium text-center">
+                    <TableCell className="border font-medium text-center text-sm">
                       {item.numero_item}
                     </TableCell>
                     <TableCell className="border text-sm">
                       {item.descricao}
+                    </TableCell>
+                    <TableCell className="border text-center text-sm">
+                      {item.contribuicao || '-'}
+                    </TableCell>
+                    <TableCell className="border text-center text-sm">
+                      {item.tempo || '-'}
                     </TableCell>
                     {periodos.map((periodo, idx) => {
                       const status = item.status_por_periodo?.[periodo] || '-';
                       return (
                         <TableCell 
                           key={idx} 
-                          className={`border ${STATUS_COLORS[status]}`}
+                          className={`border ${STATUS_COLORS[status]} p-0`}
                         >
                           <Select
                             value={status}
                             onValueChange={(value) => handleStatusChange(item, periodo, value === '-' ? '' : value)}
                           >
-                            <SelectTrigger className="h-8 text-xs border-0 bg-transparent">
+                            <SelectTrigger className="h-7 text-xs border-0 bg-transparent rounded-none">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
