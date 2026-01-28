@@ -141,39 +141,17 @@ export default function AnaliseConcepcaoPlanejamento() {
                 horas_por_dia: horasPorDia,
                 horas_executadas_por_dia: horasExecutadasPorDia,
                 tempo_executado: totalTempoExecutado,
-                tempo_planejado: planejamento.tempo_planejado || totalTempoExecutado,
                 status: novoStatus
             });
-
-            // Atualizar estado local mantendo a consistência
-            setPlanejamentos(prev => prev.map(p => 
-                p.id === planejamento.id 
-                    ? { 
-                        ...p, 
-                        horas_por_dia: horasPorDia, 
-                        horas_executadas_por_dia: horasExecutadasPorDia, 
-                        tempo_executado: totalTempoExecutado, 
-                        status: novoStatus
-                    }
-                    : p
-            ));
         }
 
-        setExecucoesMap(prev => ({
-            ...prev,
-            [selectedExecucao.planejamento_id]: (prev[selectedExecucao.planejamento_id] || []).map(e => 
-                e.id === selectedExecucao.id 
-                    ? { ...e, status: finalStatus === "Finalizado" ? "Finalizado" : "Paralisado", termino: termino.toISOString(), tempo_total: tempoTotal }
-                    : e
-            )
-        }));
-
-        // Recarregar dados após finalização para evitar duplicatas
-        await loadData();
-        
+        // Fechar modal e limpar estado
         setIsStopModalOpen(false);
         setSelectedExecucao(null);
         setFinalStatus("Finalizado");
+        
+        // Recarregar dados após finalização
+        await loadData();
     };
     
     const getStatusBadge = (planejamento) => {
