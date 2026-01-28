@@ -34,6 +34,9 @@ export default function AnaliseConcepcaoPlanejamento() {
     const [planejamentoModalOpen, setPlanejamentoModalOpen] = useState(false);
     const [currentAtividade, setCurrentAtividade] = useState(null);
     const [usuarios, setUsuarios] = useState([]);
+    
+    const [isCompleteAllModalOpen, setIsCompleteAllModalOpen] = useState(false);
+    const [selectedPlanejamento, setSelectedPlanejamento] = useState(null);
 
     useEffect(() => {
         loadData();
