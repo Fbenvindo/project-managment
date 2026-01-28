@@ -484,7 +484,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                               <img
                                 src={imgUrl}
                                 alt={`Imagem ${idx + 1}`}
-                                className="w-full h-80 object-cover rounded border cursor-pointer hover:opacity-80 transition-all"
+                                className="w-full rounded border cursor-pointer hover:opacity-80 transition-all"
                               />
                               <button
                                 type="button"
