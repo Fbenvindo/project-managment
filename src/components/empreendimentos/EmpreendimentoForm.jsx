@@ -26,7 +26,14 @@ export default function EmpreendimentoForm({ empreendimento, onSubmit, onClose, 
     endereco: empreendimento?.endereco || "",
     num_proposta: empreendimento?.num_proposta || "",
     status: empreendimento?.status || "em_planejamento",
-    foto_url: empreendimento?.foto_url || ""
+    foto_url: empreendimento?.foto_url || "",
+    etapas: empreendimento?.etapas || [
+      "Estudo Preliminar",
+      "Ante-Projeto",
+      "Projeto Básico",
+      "Projeto Executivo",
+      "Liberado para Obra"
+    ]
   });
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
