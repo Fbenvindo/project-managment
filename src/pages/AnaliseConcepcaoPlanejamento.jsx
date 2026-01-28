@@ -221,9 +221,6 @@ export default function AnaliseConcepcaoPlanejamento() {
          const semDocumento = [];
 
          filteredPlanejamentos.forEach(plan => {
-             // Excluir atividades finalizadas do agrupamento
-             if (plan.status === 'concluido') return;
-
              if (!plan.documento_id) {
                  semDocumento.push(plan);
                  return;
