@@ -134,7 +134,7 @@ export default function AnaliseConcepcaoPlanejamento() {
                 // Marcar como concluído APENAS quando finalizado
                 const novoStatus = finalStatus === "Finalizado" ? "concluido" : planejamento.status;
 
-                // Atualizar APENAS este planejamento específico
+                // Atualizar APENAS este planejamento específico - SEM CRIAR NOVO
                 const EntityToUpdate = planejamento.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
                 await EntityToUpdate.update(planejamento.id, {
                     horas_por_dia: horasPorDia,
@@ -143,7 +143,7 @@ export default function AnaliseConcepcaoPlanejamento() {
                     status: novoStatus
                 });
 
-                // Atualizar estado local sem recarregar tudo
+                // Atualizar estado local
                 setPlanejamentos(prev => prev.map(p => 
                     p.id === planejamento.id 
                         ? { 
@@ -169,7 +169,6 @@ export default function AnaliseConcepcaoPlanejamento() {
             console.error("Erro ao finalizar atividade:", error);
         }
 
-        // Fechar modal e limpar estado
         setIsStopModalOpen(false);
         setSelectedExecucao(null);
         setFinalStatus("Finalizado");
