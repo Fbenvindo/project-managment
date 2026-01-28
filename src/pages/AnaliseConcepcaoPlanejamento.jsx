@@ -190,6 +190,54 @@ export default function AnaliseConcepcaoPlanejamento() {
         setSelectedExecucao(null);
         setFinalStatus("Finalizado");
     };
+
+    const handleCompleteActivityInAllSheets = async (planejamento, completeAll) => {
+        const inicio = new Date(selectedExecucao.inicio);
+        const termino = new Date();
+        const tempoTotal = (termino - inicio) / (1000 * 60 * 60);
+        
+        if (completeAll && planejamento.atividade_id) {
+            // Encontrar todas as atividades com o mesmo atividade_id
+            const mesmaAtividade = planejamentos.filter(p => 
+                p.atividade_id === planejamento.atividade_id && 
+                p.status !== 'concluido'
+            );
+            
+            // Atualizar todas as atividades similares
+            for (const plan of mesmaAtividade) {
+                const diaKey = new Date().toISOString().split('T')[0];
+                const horasExecutadasPorDia = plan.horas_executadas_por_dia || {};
+                horasExecutadasPorDia[diaKey] = (horasExecutadasPorDia[diaKey] || 0) + tempoTotal;
+                
+                const totalTempoExecutado = Object.values(horasExecutadasPorDia).reduce((sum, h) => sum + (Number(h) || 0), 0);
+                
+                let horasPorDia = plan.horas_por_dia;
+                if (!horasPorDia || Object.keys(horasPorDia).length === 0) {
+                    horasPorDia = horasExecutadasPorDia;
+                }
+                
+                const EntityToUpdate = plan.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
+                await EntityToUpdate.update(plan.id, {
+                    horas_por_dia: horasPorDia,
+                    horas_executadas_por_dia: horasExecutadasPorDia,
+                    tempo_executado: totalTempoExecutado,
+                    tempo_planejado: totalTempoExecutado,
+                    is_quick_activity: true,
+                    status: "concluido"
+                });
+            }
+            
+            setPlanejamentos(prev => prev.map(p => 
+                mesmaAtividade.some(ma => ma.id === p.id)
+                    ? { ...p, status: "concluido" }
+                    : p
+            ));
+        }
+        
+        setIsCompleteAllModalOpen(false);
+        setSelectedPlanejamento(null);
+        loadData();
+    };
     
     const getStatusBadge = (planejamento) => {
         const execucoes = execucoesMap[planejamento.id] || [];
