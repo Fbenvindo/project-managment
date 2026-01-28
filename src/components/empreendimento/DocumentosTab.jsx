@@ -2149,12 +2149,6 @@ export default function DocumentosTab({
                    Fechar
                  </Button>
                 )}
-                <Link to={createPageUrl(`AtividadesPlanejadas?doc_id=${doc.id}&emp_id=${empreendimento.id}`)}>
-                 <Button variant="outline" size="icon" className="h-8 w-8" disabled={isDocLoading}>
-                   <BarChart className="h-4 w-4" />
-                 </Button>
-                </Link>
-
                 {!readOnly && !expandedSequencing[doc.id] && !doc.predecessora_id && (
                   <>
                     <Button
