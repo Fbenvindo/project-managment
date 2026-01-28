@@ -1870,8 +1870,8 @@ export default function DocumentosTab({
                 );
                 
                 // Buscar o documento atualizado para pegar a data de término
-                const docFinalizado = await retryWithBackoff(
-                    () => Documento.read(docToUpdate.id),
+                const [docFinalizado] = await retryWithBackoff(
+                    () => Documento.filter({ id: docToUpdate.id }),
                     3, 1000, `getDoc-${docToUpdate.id}`
                 );
                 
