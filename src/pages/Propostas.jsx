@@ -220,9 +220,14 @@ export default function PropostasPage() {
                   <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <p className="text-gray-500">Nenhuma proposta cadastrada</p>
                 </div>
+              ) : filteredPropostas.length === 0 ? (
+                <div className="text-center py-12">
+                  <Search className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">Nenhuma proposta encontrada para "{searchTerm}"</p>
+                </div>
               ) : (
                 <div className="max-h-[calc(100vh-300px)] overflow-y-auto space-y-4">
-                  {propostas.map((proposta) => (
+                  {filteredPropostas.map((proposta) => (
                     <Card key={proposta.id} className="border-l-4" style={{ borderLeftColor: proposta.status === 'aprovado' ? '#10b981' : proposta.status === 'reprovado' ? '#ef4444' : '#6b7280' }}>
                       <CardContent className="p-4">
                         <div className="flex items-start justify-between mb-3">
