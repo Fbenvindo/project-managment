@@ -269,13 +269,20 @@ export default function AnaliseConcepcaoPlanejamento() {
              }
          });
 
-         const result = Object.values(grouped).sort((a,b) => {
-             const disciplinaA = a.doc.disciplina || '';
-             const disciplinaB = b.doc.disciplina || '';
-             const numeroA = a.doc.numero || '';
-             const numeroB = b.doc.numero || '';
-             return disciplinaA.localeCompare(disciplinaB) || numeroA.localeCompare(numeroB);
-         });
+         const result = Object.values(grouped)
+             .filter(group => {
+                 // Filtrar por subdisciplinas selecionadas
+                 if (selectedSubdisciplinas.length === 0) return true;
+                 const docSubs = group.doc?.subdisciplinas || [];
+                 return selectedSubdisciplinas.some(sub => docSubs.includes(sub));
+             })
+             .sort((a,b) => {
+                 const disciplinaA = a.doc.disciplina || '';
+                 const disciplinaB = b.doc.disciplina || '';
+                 const numeroA = a.doc.numero || '';
+                 const numeroB = b.doc.numero || '';
+                 return disciplinaA.localeCompare(disciplinaB) || numeroA.localeCompare(numeroB);
+             });
 
          // Adicionar atividades sem documento no início
          if (semDocumento.length > 0) {
@@ -283,7 +290,7 @@ export default function AnaliseConcepcaoPlanejamento() {
          }
 
          return result;
-     }, [filteredPlanejamentos, documentos]);
+     }, [filteredPlanejamentos, documentos, selectedSubdisciplinas]);
     
     const disciplinasDisponiveis = [...new Set(Object.values(atividadesMap).map(a => a.disciplina))];
 
