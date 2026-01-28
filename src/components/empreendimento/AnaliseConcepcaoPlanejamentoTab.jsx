@@ -143,49 +143,44 @@ export default function AnaliseConcepcaoPlanejamentoTab({
         }
     };
 
-    // CORRIGIDO: Mostrar todas as atividades disponíveis de documentação (não apenas as planejadas)
+    // Mostrar atividades com seus planejamentos ativos (não concluídos)
     const filteredData = useMemo(() => {
-        // console.log('🔍 Filtrando atividades de documentação...');
-        // console.log('📊 Total de atividades disponíveis:', atividades.length);
+        const atividadesComPlanejamentos = [];
         
-        // 1. Filtrar atividades GERAIS (sem empreendimento_id) com subdisciplinas de documentação
-        let atividadesDocumentacao = (atividades || []).filter(atividade => {
-            const isGeneral = !atividade.empreendimento_id; // Apenas atividades gerais
-            const hasDocSubdisciplina = SUBDISCIPLINAS_DOCUMENTACAO.includes(atividade.subdisciplina);
+        // Iterar pelos planejamentos ativos (não concluídos)
+        (planejamentos || []).forEach(plan => {
+            // Ignorar planejamentos concluídos
+            if (plan.status === 'concluido') return;
             
-            // console.log(`Atividade "${atividade.atividade}": geral=${isGeneral}, subdisciplina="${atividade.subdisciplina}", inclui=${hasDocSubdisciplina}`);
+            const atividade = atividadesMap[plan.atividade_id];
+            if (!atividade) return;
             
-            return isGeneral && hasDocSubdisciplina;
+            // Verificar se é atividade de documentação
+            if (!SUBDISCIPLINAS_DOCUMENTACAO.includes(atividade.subdisciplina)) return;
+            
+            // Aplicar filtros
+            if (debouncedSearchTerm && !(atividade.atividade || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase())) {
+                return;
+            }
+            
+            if (subdisciplinaFilter !== "todas" && atividade.subdisciplina !== subdisciplinaFilter) {
+                return;
+            }
+            
+            // Verificar se a atividade já foi adicionada
+            const existing = atividadesComPlanejamentos.find(item => item.atividade.id === atividade.id && item.planejamento.id === plan.id);
+            if (!existing) {
+                atividadesComPlanejamentos.push({ atividade, planejamento: plan });
+            }
         });
-
-        // console.log('📋 Atividades de documentação encontradas:', atividadesDocumentacao.length);
-
-        // 2. Aplicar filtros de busca
-        if (debouncedSearchTerm) {
-            atividadesDocumentacao = atividadesDocumentacao.filter(atividade =>
-                (atividade.atividade || '').toLowerCase().includes(debouncedSearchTerm.toLowerCase())
-            );
-        }
         
-        // 3. Aplicar filtro de subdisciplina
-        if (subdisciplinaFilter !== "todas") {
-            atividadesDocumentacao = atividadesDocumentacao.filter(atividade =>
-                atividade.subdisciplina === subdisciplinaFilter
-            );
-        }
-        
-        // CORRIGIDO: Lógica de filtro de status para múltiplos planejamentos
+        // Aplicar filtro de status baseado nos planejamentos individuais
+        let filtered = atividadesComPlanejamentos;
         if (statusFilter !== "todos") {
-            atividadesDocumentacao = atividadesDocumentacao.filter(atividade => {
-                const planejamentosDaAtividade = planejamentosPorAtividadeMap[atividade.id] || [];
-                
-                if (planejamentosDaAtividade.length === 0) {
-                    return statusFilter === "nao_iniciado";
-                }
-                
-                const tempoPlanejadoTotal = planejamentosDaAtividade.reduce((sum, p) => sum + (Number(p.tempo_planejado) || 0), 0);
-                const tempoExecutadoTotal = planejamentosDaAtividade.reduce((sum, p) => sum + (Number(p.tempo_executado) || 0), 0);
-                const percentual = tempoPlanejadoTotal > 0 ? (tempoExecutadoTotal / tempoPlanejadoTotal) * 100 : 0;
+            filtered = atividadesComPlanejamentos.filter(({ planejamento }) => {
+                const tempoExecutado = Number(planejamento.tempo_executado) || 0;
+                const tempoPlanejado = Number(planejamento.tempo_planejado) || 1;
+                const percentual = (tempoExecutado / tempoPlanejado) * 100;
                 
                 if (statusFilter === "nao_iniciado") return percentual === 0;
                 if (statusFilter === "em_andamento") return percentual > 0 && percentual < 100;
@@ -193,17 +188,16 @@ export default function AnaliseConcepcaoPlanejamentoTab({
                 return true;
             });
         }
-
-        // 5. Ordenar por nome da atividade
-        atividadesDocumentacao.sort((a, b) => {
-            const nomeA = a.atividade || '';
-            const nomeB = b.atividade || '';
+        
+        // Ordenar
+        filtered.sort((a, b) => {
+            const nomeA = a.atividade.atividade || '';
+            const nomeB = b.atividade.atividade || '';
             return nomeA.localeCompare(nomeB, 'pt-BR', { sensitivity: 'base' });
         });
-
-        // console.log('✅ Atividades filtradas finais:', atividadesDocumentacao.length);
-        return atividadesDocumentacao;
-    }, [atividades, debouncedSearchTerm, subdisciplinaFilter, statusFilter, planejamentosPorAtividadeMap]);
+        
+        return filtered;
+    }, [planejamentos, atividadesMap, debouncedSearchTerm, subdisciplinaFilter, statusFilter]);
 
     // Filtrar apenas atividades de documentação para o modal
     const atividadesDocumentacao = useMemo(() => {
