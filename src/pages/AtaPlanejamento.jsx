@@ -459,17 +459,25 @@ export default function AtaPlanejamento() {
       emissao: '/ /',
       status: 'rascunho'
     });
-    setProvidencias((ata.providencias || []).map((p, idx) => ({ 
-      ...p, 
-      id: Date.now() + idx,
-      respostas: p.respostas || [],
-      projeto: p.projeto || '',
-      providencias: p.providencias || '',
-      responsaveis: p.responsaveis || [],
-      dataReuniao: p.dataReuniao || '',
-      dataRetorno: p.dataRetorno || '',
-      status: p.status || 'pendente'
-    })));
+    setProvidencias((ata.providencias || []).map((p, idx) => {
+      // Migrar campo "resposta" legado para "respostas" array
+      let respostas = p.respostas || [];
+      if (p.resposta && !respostas.length) {
+        respostas = [p.resposta];
+      }
+      
+      return { 
+        ...p, 
+        id: Date.now() + idx,
+        respostas,
+        projeto: p.projeto || '',
+        providencias: p.providencias || '',
+        responsaveis: p.responsaveis || [],
+        dataReuniao: p.dataReuniao || '',
+        dataRetorno: p.dataRetorno || '',
+        status: p.status || 'pendente'
+      };
+    }));
     setShowSelectAtaModal(false);
     setViewMode('edit');
   };
@@ -488,17 +496,25 @@ export default function AtaPlanejamento() {
       emissao: ata.emissao || '/ /',
       status: ata.status || 'rascunho'
     });
-    setProvidencias((ata.providencias || []).map((p, idx) => ({ 
-      ...p, 
-      id: Date.now() + idx,
-      respostas: p.respostas || [],
-      projeto: p.projeto || '',
-      providencias: p.providencias || '',
-      responsaveis: p.responsaveis || [],
-      dataReuniao: p.dataReuniao || '',
-      dataRetorno: p.dataRetorno || '',
-      status: p.status || 'pendente'
-    })));
+    setProvidencias((ata.providencias || []).map((p, idx) => {
+      // Migrar campo "resposta" legado para "respostas" array
+      let respostas = p.respostas || [];
+      if (p.resposta && !respostas.length) {
+        respostas = [p.resposta];
+      }
+      
+      return { 
+        ...p, 
+        id: Date.now() + idx,
+        respostas,
+        projeto: p.projeto || '',
+        providencias: p.providencias || '',
+        responsaveis: p.responsaveis || [],
+        dataReuniao: p.dataReuniao || '',
+        dataRetorno: p.dataRetorno || '',
+        status: p.status || 'pendente'
+      };
+    }));
     setViewMode('edit');
   };
 
