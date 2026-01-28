@@ -192,7 +192,7 @@ export default function ChecklistTable({ secao, items, checklist, onUpdate }) {
               onClick={() => {
                 setShowForm(!showForm);
                 setEditingItem(null);
-                setFormData({ numero_item: '', descricao: '', observacoes: '' });
+                setFormData({ numero_item: '', descricao: '', contribuicao: '', tempo: '', observacoes: '' });
               }}
             >
               {showForm ? <X className="w-4 h-4 mr-2" /> : <Plus className="w-4 h-4 mr-2" />}
