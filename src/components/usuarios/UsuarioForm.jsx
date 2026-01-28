@@ -97,10 +97,10 @@ export default function UsuarioForm({ usuario, onSubmit, onCancel, allUsers, equ
         initial={{ scale: 0.95, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
         exit={{ scale: 0.95, opacity: 0 }}
-        className="w-full max-w-2xl"
+        className="w-full max-w-2xl max-h-[90vh] flex flex-col"
       >
-        <Card className="bg-white shadow-2xl">
-          <CardHeader className="border-b border-gray-100">
+        <Card className="bg-white shadow-2xl flex flex-col h-full">
+          <CardHeader className="border-b border-gray-100 flex-shrink-0">
             <div className="flex items-center justify-between">
               <CardTitle className="text-xl font-bold">
                 {usuario ? "Editar Usuário" : "Novo Usuário"}
@@ -111,7 +111,7 @@ export default function UsuarioForm({ usuario, onSubmit, onCancel, allUsers, equ
             </div>
           </CardHeader>
           
-          <CardContent className="p-6">
+          <CardContent className="p-6 overflow-y-auto flex-1">
             <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
