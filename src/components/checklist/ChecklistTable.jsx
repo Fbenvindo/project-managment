@@ -269,15 +269,23 @@ export default function ChecklistTable({ secao, items, checklist, onUpdate }) {
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-100">
-                <TableHead className="w-16 border">Item</TableHead>
-                <TableHead className="min-w-[300px] border">Descrição</TableHead>
+                <TableHead className="w-12 border text-center">Item</TableHead>
+                <TableHead className="min-w-[250px] border">Descrição</TableHead>
+                <TableHead className="w-20 border text-center">Contribuição</TableHead>
+                <TableHead className="w-16 border text-center">Tempo</TableHead>
+                <TableHead colSpan={periodos.length} className="border text-center font-bold">STATUS</TableHead>
+                <TableHead className="min-w-[150px] border">Observações</TableHead>
+                <TableHead className="w-20 border">Ações</TableHead>
+              </TableRow>
+              <TableRow className="bg-gray-50">
+                <TableHead colSpan="4" className="border"></TableHead>
                 {periodos.map((periodo, idx) => (
-                  <TableHead key={idx} className="w-20 border text-center text-xs">
+                  <TableHead key={idx} className="w-12 border text-center text-xs font-normal">
                     {periodo}
                   </TableHead>
                 ))}
-                <TableHead className="min-w-[200px] border">Observações</TableHead>
-                <TableHead className="w-24 border">Ações</TableHead>
+                <TableHead className="border"></TableHead>
+                <TableHead className="border"></TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
