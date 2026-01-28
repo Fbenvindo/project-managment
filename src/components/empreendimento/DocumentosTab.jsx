@@ -406,30 +406,30 @@ export default function DocumentosTab({
         console.log(`⏱️ Tempo total calculado: ${tempoTotal.toFixed(1)}h (com fator ${fatorDificuldade} e área ${areaPavimento ? areaPavimento + 'm²' : 'N/A'})`);
 
         const planejamentosAtividadeAntigos = localPlanejamentos.filter(p => 
-            p.documento_id === documento.id && p.etapa === etapa && p.tipo_plano === 'atividade' && p.status !== 'concluido'
+            p.documento_id === documento.id && p.etapa === etapa && p.tipo_plano === 'atividade'
         );
         
         if (planejamentosAtividadeAntigos.length > 0) {
-            console.log(`🧹 Removendo ${planejamentosAtividadeAntigos.length} planejamentos de atividade antigos da etapa "${etapa}" (preservando concluídos)...`);
+            console.log(`🧹 Removendo ${planejamentosAtividadeAntigos.length} planejamentos de atividade antigos da etapa "${etapa}"...`);
             await Promise.all(planejamentosAtividadeAntigos.map(p => 
                 retryWithBackoff(() => PlanejamentoAtividade.delete(p.id), 3, 1000, `deleteOldAtiv-${p.id}`)
             ));
             setLocalPlanejamentos(prev => prev.filter(p => 
-                !(p.documento_id === documento.id && p.etapa === etapa && p.tipo_plano === 'atividade' && p.status !== 'concluido')
+                !(p.documento_id === documento.id && p.etapa === etapa && p.tipo_plano === 'atividade')
             ));
         }
 
         const planejamentosDocumentoAntigos = localPlanejamentos.filter(p =>
-            p.documento_id === documento.id && p.etapa === etapa && p.tipo_plano === 'documento' && p.status !== 'concluido'
+            p.documento_id === documento.id && p.etapa === etapa && p.tipo_plano === 'documento'
         );
 
         if (planejamentosDocumentoAntigos.length > 0) {
-            console.log(`🧹 Removendo ${planejamentosDocumentoAntigos.length} planejamentos de documento antigos da etapa "${etapa}" (preservando concluídos)...`);
+            console.log(`🧹 Removendo ${planejamentosDocumentoAntigos.length} planejamentos de documento antigos da etapa "${etapa}"...`);
             await Promise.all(planejamentosDocumentoAntigos.map(p =>
                 retryWithBackoff(() => PlanejamentoDocumento.delete(p.id), 3, 1000, `deleteOldDocPlan-${p.id}`)
             ));
             setLocalPlanejamentos(prev => prev.filter(p =>
-                !(p.documento_id === documento.id && p.etapa === etapa && p.tipo_plano === 'documento' && p.status !== 'concluido')
+                !(p.documento_id === documento.id && p.etapa === etapa && p.tipo_plano === 'documento')
             ));
         }
 
