@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { format, parseISO } from "date-fns";
+import { useQuery } from "@tanstack/react-query";
 
 export default function OrcamentosPage() {
   const [isLoading, setIsLoading] = useState(true);
