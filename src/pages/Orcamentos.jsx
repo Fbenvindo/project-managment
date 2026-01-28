@@ -33,14 +33,15 @@ export default function OrcamentosPage() {
   }, []);
 
   const loadOrcamentos = async () => {
-    setIsLoading(true);
-    try {
-      const data = await retryWithBackoff(
-        () => Comercial.list(),
-        3, 2000, 'loadOrcamentos'
-      );
+     setIsLoading(true);
+     try {
+       // Adiciona timestamp para evitar cache
+       const data = await retryWithBackoff(
+         () => Comercial.list(),
+         3, 2000, `loadOrcamentos-${Date.now()}`
+       );
 
-      const grouped = {};
+       const grouped = {};
       
       data.forEach(proposta => {
         if (proposta.data_solicitacao) {
@@ -65,16 +66,11 @@ export default function OrcamentosPage() {
           grouped[mesAno].valorBimTotal += Number(proposta.valor_bim || 0);
           grouped[mesAno].valorCadTotal += Number(proposta.valor_cad || 0);
           
-          // Verifica se foi aprovado no mesmo mês
-          if (proposta.data_aprovacao && proposta.status === 'aprovado') {
-            const dateAprovacao = parseISO(proposta.data_aprovacao);
-            const mesAnoAprovacao = format(dateAprovacao, 'yyyy-MM');
-            
-            if (mesAnoAprovacao === mesAno) {
-              grouped[mesAno].valorBimAprovado += Number(proposta.valor_bim || 0);
-              grouped[mesAno].valorCadAprovado += Number(proposta.valor_cad || 0);
-              grouped[mesAno].quantidadeAprovada++;
-            }
+          // Verifica se foi aprovado (conta pela data de solicitação)
+          if (proposta.status === 'aprovado') {
+            grouped[mesAno].valorBimAprovado += Number(proposta.valor_bim || 0);
+            grouped[mesAno].valorCadAprovado += Number(proposta.valor_cad || 0);
+            grouped[mesAno].quantidadeAprovada++;
           }
         }
       });

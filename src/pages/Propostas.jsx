@@ -158,8 +158,13 @@ export default function PropostasPage() {
 
       setIsModalOpen(false);
       setEditingId(null);
-      loadPropostas();
-    } catch (error) {
+      await loadPropostas();
+
+      // Aguarda um pouco e dispara evento para sincronizar Orçamentos
+      setTimeout(() => {
+        window.dispatchEvent(new CustomEvent('propostaAtualizada'));
+      }, 500);
+      } catch (error) {
       console.error('Erro ao salvar proposta:', error);
       alert('Erro ao salvar proposta: ' + error.message);
     } finally {
