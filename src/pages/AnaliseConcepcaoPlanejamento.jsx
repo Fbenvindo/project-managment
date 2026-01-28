@@ -196,6 +196,9 @@ export default function AnaliseConcepcaoPlanejamento() {
         const disciplinasExcluidas = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
         
         return planejamentos.filter(plan => {
+            // Excluir atividades finalizadas
+            if (plan.status === 'concluido') return false;
+            
             const atividade = atividadesMap[plan.atividade_id];
             if (!atividade && !plan.descritivo) return false;
             
