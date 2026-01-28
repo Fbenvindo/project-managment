@@ -388,24 +388,26 @@ export default function AnaliseConcepcaoPlanejamento() {
                                                                 )}
                                                             </TableCell>
                                                         </TableRow>
-                                                        {docPlanejamentos.map((planejamento, idx) => {
-                                                            const atividade = atividadesMap[planejamento.atividade_id];
-                                                            const execucoes = execucoesMap[planejamento.id] || [];
-                                                            const tempoExecutadoTotal = execucoes
-                                                                .filter(e => e.status === "Finalizado")
-                                                                .reduce((sum, e) => sum + (e.tempo_total || 0), 0);
-                                                            const tempoExibir = planejamento.tempo_executado || tempoExecutadoTotal;
+                                                        {docPlanejamentos
+                                                            .filter(plan => plan.status !== 'concluido')
+                                                            .map((planejamento, idx) => {
+                                                                const atividade = atividadesMap[planejamento.atividade_id];
+                                                                const execucoes = execucoesMap[planejamento.id] || [];
+                                                                const tempoExecutadoTotal = execucoes
+                                                                    .filter(e => e.status === "Finalizado")
+                                                                    .reduce((sum, e) => sum + (e.tempo_total || 0), 0);
+                                                                const tempoExibir = planejamento.tempo_executado || tempoExecutadoTotal;
 
-                                                            return planejamento.status !== 'concluido' ? (
-                                                                <TableRow key={planejamento.id}>
-                                                                    <TableCell>{idx === 0 && doc ? `${doc.disciplina || '-'}` : ""}</TableCell>
-                                                                    <TableCell>{planejamento.descritivo || atividade?.atividade || 'Atividade não encontrada'}</TableCell>
-                                                                    <TableCell className="text-center">{(planejamento.tempo_planejado || 0).toFixed(1)}h</TableCell>
-                                                                    <TableCell className="text-center">{tempoExibir.toFixed(1)}h</TableCell>
-                                                                    <TableCell className="text-center">{getStatusBadge(planejamento)}</TableCell>
-                                                                </TableRow>
-                                                            ) : null;
-                                                        })}
+                                                                return (
+                                                                    <TableRow key={planejamento.id}>
+                                                                        <TableCell>{idx === 0 && doc ? `${doc.disciplina || '-'}` : ""}</TableCell>
+                                                                        <TableCell>{planejamento.descritivo || atividade?.atividade || 'Atividade não encontrada'}</TableCell>
+                                                                        <TableCell className="text-center">{(planejamento.tempo_planejado || 0).toFixed(1)}h</TableCell>
+                                                                        <TableCell className="text-center">{tempoExibir.toFixed(1)}h</TableCell>
+                                                                        <TableCell className="text-center">{getStatusBadge(planejamento)}</TableCell>
+                                                                    </TableRow>
+                                                                );
+                                                            })}
                                                     </React.Fragment>
                                                 ))
                                             )}
