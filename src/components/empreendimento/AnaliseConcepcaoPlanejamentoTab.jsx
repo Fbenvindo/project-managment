@@ -145,12 +145,18 @@ export default function AnaliseConcepcaoPlanejamentoTab({
 
     // Mostrar atividades com seus planejamentos ativos (não concluídos)
     const filteredData = useMemo(() => {
+        console.log('\n🔍 [AnaliseConcepcaoPlanejamentoTab] Filtrando atividades de documentação...');
+        console.log(`📊 Total de planejamentos recebidos: ${(planejamentos || []).length}`);
+        
         const atividadesComPlanejamentos = [];
         
         // Iterar pelos planejamentos ativos (não concluídos)
         (planejamentos || []).forEach(plan => {
             // Ignorar planejamentos concluídos
-            if (plan.status === 'concluido') return;
+            if (plan.status === 'concluido') {
+                console.log(`❌ Excluindo planejamento CONCLUÍDO: ${plan.descritivo || plan.id} (status: ${plan.status})`);
+                return;
+            }
             
             const atividade = atividadesMap[plan.atividade_id];
             if (!atividade) return;
@@ -170,9 +176,12 @@ export default function AnaliseConcepcaoPlanejamentoTab({
             // Verificar se a atividade já foi adicionada
             const existing = atividadesComPlanejamentos.find(item => item.atividade.id === atividade.id && item.planejamento.id === plan.id);
             if (!existing) {
+                console.log(`✅ Adicionando: ${atividade.atividade} (status: ${plan.status})`);
                 atividadesComPlanejamentos.push({ atividade, planejamento: plan });
             }
         });
+        
+        console.log(`\n📋 Total após filtros básicos: ${atividadesComPlanejamentos.length}`);
         
         // Aplicar filtro de status baseado nos planejamentos individuais
         let filtered = atividadesComPlanejamentos;
@@ -188,6 +197,9 @@ export default function AnaliseConcepcaoPlanejamentoTab({
                 return true;
             });
         }
+        
+        console.log(`\n✅ Total após filtro de status: ${filtered.length}`);
+        console.log(`🔍 ========================================\n`);
         
         // Ordenar
         filtered.sort((a, b) => {
