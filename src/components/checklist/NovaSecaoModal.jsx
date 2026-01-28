@@ -6,18 +6,34 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 
-export default function NovaSecaoModal({ isOpen, onClose, onSuccess, checklistId }) {
+const SECOES_ELETRICA = [
+  'MEMORIAL DESCRITIVO',
+  'ENTRADA DE ENERGIA',
+  'SISTEMA DE GERAÇÃO DE ENERGIA AUTÔNOMA',
+  'SISTEMA DE ENERGIA ININTERRUPTA (UPS) - CARGAS CRÍTICAS',
+  'DIAGRAMAS GERAIS DE MÉDIA TENSÃO',
+  'DIAGRAMAS GERAIS DE BAIXA TENSÃO',
+  'DIAGRAMAS DE ILUMINAÇÃO E TOMADAS',
+  'DIAGRAMAS DE BOMBAS E MOTORES',
+  'DISTRIBUIÇÃO DE ENERGIA - AUMENTADORES',
+  'DISTRIBUIÇÃO DE TOMADAS, ILUMINAÇÃO NORMAIS E EMERGÊNCIA',
+  'SISTEMAS DE PROTEÇÃO CONTRA DESCARGA ATMOSFÉRICA E ATERRAMENTOS'
+];
+
+export default function NovaSecaoModal({ isOpen, onClose, onSuccess, checklistId, tipoChecklist }) {
   const [isSaving, setIsSaving] = useState(false);
   const [nomeSecao, setNomeSecao] = useState('');
+  const [usarPredefinida, setUsarPredefinida] = useState(tipoChecklist === 'Elétrica');
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const secoesDisponiveis = tipoChecklist === 'Elétrica' ? SECOES_ELETRICA : [];
+
+  const handleSubmit = async (secao) => {
     setIsSaving(true);
 
     try {
       await base44.entities.ChecklistItem.create({
         checklist_id: checklistId,
-        secao: nomeSecao.toUpperCase(),
+        secao: secao.toUpperCase(),
         numero_item: '1.0',
         descricao: 'Item inicial - edite ou adicione mais itens',
         ordem: 0,
