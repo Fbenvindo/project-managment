@@ -812,165 +812,91 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header fixo */}
-      <div className="flex-shrink-0 space-y-4 p-4 bg-white border-b">
-        <div className="flex justify-between items-center">
-          <div className="flex items-center gap-3">
-            <h2 className="text-xl font-bold text-gray-800">Datas de Cadastro</h2>
-            {readOnly && <Badge variant="outline" className="text-xs">Somente Visualização</Badge>}
-            {!readOnly && hasUnsavedChanges && (
-              <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">
-                Alterações não salvas
-              </Badge>
-            )}
-          </div>
-          {!readOnly && (
-            <div className="flex gap-2">
-              {selectedFolhas.size > 0 && (
-                <>
-                  <Badge variant="outline" className="px-3 py-1">
-                    {selectedFolhas.size} folha{selectedFolhas.size > 1 ? 's' : ''} selecionada{selectedFolhas.size > 1 ? 's' : ''}
-                  </Badge>
-                  <Button
-                    variant="outline"
-                    onClick={handleMassEdit}
-                    className="border-purple-500 text-purple-600 hover:bg-purple-50"
-                  >
-                    <Wand2 className="w-4 h-4 mr-2" />
-                    Preencher em Massa
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={clearSelection}
-                    className="border-gray-400 text-gray-600 hover:bg-gray-50"
-                  >
-                    Limpar Seleção
-                  </Button>
-                </>
-              )}
-              <Button
-                variant="outline"
-                onClick={() => setShowImportModal(true)}
-                className="border-green-500 text-green-600 hover:bg-green-50"
-              >
-                <Upload className="w-4 h-4 mr-2" />
-                Importar
-              </Button>
-              <Button onClick={handleSave} disabled={isSaving}>
-                {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                Salvar
-              </Button>
-            </div>
+    <div className="space-y-4 relative overflow-hidden">
+      <div className="flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <h2 className="text-xl font-bold text-gray-800">Datas de Cadastro</h2>
+          {readOnly && <Badge variant="outline" className="text-xs">Somente Visualização</Badge>}
+          {!readOnly && hasUnsavedChanges && (
+            <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">
+              Alterações não salvas
+            </Badge>
           )}
         </div>
-
-        {/* Botão flutuante de salvar */}
         {!readOnly && (
-          <Button
-            onClick={handleSave}
-            disabled={isSaving}
-            className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow"
-            size="icon"
-          >
-            {isSaving ? (
-              <Loader2 className="w-6 h-6 animate-spin" />
-            ) : (
-              <Save className="w-6 h-6" />
+          <div className="flex gap-2">
+            {selectedFolhas.size > 0 && (
+              <>
+                <Badge variant="outline" className="px-3 py-1">
+                  {selectedFolhas.size} folha{selectedFolhas.size > 1 ? 's' : ''} selecionada{selectedFolhas.size > 1 ? 's' : ''}
+                </Badge>
+                <Button
+                  variant="outline"
+                  onClick={handleMassEdit}
+                  className="border-purple-500 text-purple-600 hover:bg-purple-50"
+                >
+                  <Wand2 className="w-4 h-4 mr-2" />
+                  Preencher em Massa
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={clearSelection}
+                  className="border-gray-400 text-gray-600 hover:bg-gray-50"
+                >
+                  Limpar Seleção
+                </Button>
+              </>
             )}
-          </Button>
+            <Button
+              variant="outline"
+              onClick={() => setShowImportModal(true)}
+              className="border-green-500 text-green-600 hover:bg-green-50"
+            >
+              <Upload className="w-4 h-4 mr-2" />
+              Importar
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving}>
+              {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+              Salvar
+            </Button>
+          </div>
         )}
       </div>
 
-      {/* Container com scroll - Layout em duas colunas */}
-      <div className="flex-1 flex overflow-hidden gap-0">
-        {/* Coluna fixa de folhas à esquerda */}
-        <div className="flex-shrink-0 bg-white border-r-2 border-gray-400 overflow-y-auto" style={{ width: '400px' }}>
-          <div className="sticky top-0 z-30 bg-blue-100 border-b border-gray-300">
-            <div className="p-2 font-semibold">
-              <div className="flex items-center gap-2">
-                {!readOnly && (
-                  <input
-                    type="checkbox"
-                    checked={linhas.length > 0 && selectedFolhas.size === linhas.length}
-                    onChange={(e) => e.target.checked ? selectAllFolhas() : clearSelection()}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                    title="Selecionar todas"
-                  />
-                )}
-                <span>Folha</span>
-              </div>
-            </div>
-          </div>
-          
-          {/* Lista de folhas */}
-          <div>
-            {linhas.length === 0 ? (
-              <div className="p-8 text-center text-gray-500 text-sm">
-                Nenhum documento cadastrado neste empreendimento.
-              </div>
-            ) : (
-              linhasPorDisciplina.map(([disciplina, linhasDaDisciplina]) => (
-                <div key={disciplina}>
-                  {/* Cabeçalho da disciplina */}
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-300 p-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
-                      <h3 className="font-semibold text-base text-gray-800">{disciplina}</h3>
-                      <Badge variant="secondary" className="ml-2 text-xs">
-                        {linhasDaDisciplina.length}
-                      </Badge>
-                    </div>
-                  </div>
-                  
-                  {/* Linhas da disciplina */}
-                  {linhasDaDisciplina.map((linha) => {
-                    const doc = documentos.find(d => d.id === linha.documento_id);
-                    return (
-                      <div 
-                        key={linha.id} 
-                        className="border-b border-gray-200 p-2 hover:bg-gray-50 group"
-                      >
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="flex items-center gap-2 flex-1 min-w-0">
-                            {!readOnly && (
-                              <input
-                                type="checkbox"
-                                checked={selectedFolhas.has(linha.id)}
-                                onChange={() => toggleSelectFolha(linha.id)}
-                                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
-                              />
-                            )}
-                            <div className="truncate text-sm" title={doc?.arquivo || doc?.numero || 'Sem folha'}>
-                              {doc?.arquivo || doc?.numero || 'Sem folha'}
-                            </div>
-                          </div>
-                          {!readOnly && linhasPorDisciplina.findIndex(([d]) => d === disciplina) !== -1 && 
-                           linhasPorDisciplina.find(([d]) => d === disciplina)[1].indexOf(linha) < 
-                           linhasPorDisciplina.find(([d]) => d === disciplina)[1].length - 1 && (
-                            <button
-                              onClick={() => copiarLinhaParaProxima(linha.id)}
-                              className="text-purple-600 hover:text-purple-800 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                              title="Copiar linha para próxima"
-                            >
-                              <Copy className="w-3 h-3" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
+      {/* Botão flutuante de salvar */}
+      {!readOnly && (
+        <Button
+          onClick={handleSave}
+          disabled={isSaving}
+          className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+          size="icon"
+        >
+          {isSaving ? (
+            <Loader2 className="w-6 h-6 animate-spin" />
+          ) : (
+            <Save className="w-6 h-6" />
+          )}
+        </Button>
+      )}
 
-        {/* Container de datas à direita com scroll horizontal */}
-        <div className="flex-1 overflow-auto bg-white">
-          <table className="w-full border-collapse text-sm relative">
-            <thead className="sticky top-0 z-20 bg-white">
-              <tr>
+      <div className="bg-white rounded-lg shadow overflow-x-auto relative isolate">
+        <table className="w-full border-collapse text-sm relative">
+          <thead>
+            <tr>
+              <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}>
+                <div className="flex items-center gap-2">
+                  {!readOnly && (
+                    <input
+                      type="checkbox"
+                      checked={linhas.length > 0 && selectedFolhas.size === linhas.length}
+                      onChange={(e) => e.target.checked ? selectAllFolhas() : clearSelection()}
+                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                      title="Selecionar todas"
+                    />
+                  )}
+                  <span>Folha</span>
+                </div>
+              </th>
               {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
                 const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                 const colSpanTotal = revisoesEtapa.length + 1;
@@ -995,9 +921,10 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                     </div>
                   </th>
                 );
-                })}
-                </tr>
-                <tr>
+              })}
+            </tr>
+            <tr>
+              <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}></th>
               {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, etapaIdx) => {
                 const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                 const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
@@ -1041,34 +968,69 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                     </th>
                   </React.Fragment>
                 );
-                })}
-                </tr>
-                </thead>
+              })}
+            </tr>
+          </thead>
           <tbody>
             {linhas.length === 0 ? (
               <tr>
-                <td colSpan={ETAPAS.filter(e => !etapasExcluidas.includes(e)).reduce((acc, etapa) => acc + (revisoesPorEtapa[etapa]?.length || 3) + 1, 0)} className="border border-gray-300 p-8 text-center text-gray-500">
-                  Configure as datas ao lado
+                <td colSpan={ETAPAS.filter(e => !etapasExcluidas.includes(e)).reduce((acc, etapa) => acc + (revisoesPorEtapa[etapa]?.length || 3) + 1, 1)} className="border border-gray-300 p-8 text-center text-gray-500">
+                  Nenhum documento cadastrado neste empreendimento. Cadastre documentos na aba "Documentos" primeiro.
                 </td>
               </tr>
             ) : (
               linhasPorDisciplina.map(([disciplina, linhasDaDisciplina]) => (
                 <React.Fragment key={disciplina}>
-                  {/* Cabeçalho da disciplina - apenas altura para alinhar */}
+                  {/* Cabeçalho da disciplina */}
                   <tr>
                     <td 
-                      colSpan={ETAPAS.filter(e => !etapasExcluidas.includes(e)).reduce((acc, etapa) => acc + (revisoesPorEtapa[etapa]?.length || 3) + 1, 0)} 
-                      className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-300"
-                      style={{ height: '52px' }}
+                      colSpan={ETAPAS.filter(e => !etapasExcluidas.includes(e)).reduce((acc, etapa) => acc + (revisoesPorEtapa[etapa]?.length || 3) + 1, 1)} 
+                      className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-gray-300 p-3"
                     >
+                      <div className="flex items-center gap-2">
+                        <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
+                        <h3 className="font-semibold text-lg text-gray-800">{disciplina}</h3>
+                        <Badge variant="secondary" className="ml-2">
+                          {linhasDaDisciplina.length} {linhasDaDisciplina.length === 1 ? 'documento' : 'documentos'}
+                        </Badge>
+                      </div>
                     </td>
                   </tr>
                   
-                  {/* Linhas de datas */}
+                  {/* Linhas da disciplina */}
                   {linhasDaDisciplina.map((linha) => {
+                    const doc = documentos.find(d => d.id === linha.documento_id);
                     const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
                     return (
-                      <tr key={linha.id} className="hover:bg-gray-50"  style={{ height: '45px' }}>
+                      <tr key={linha.id} className="hover:bg-gray-50">
+                        <td className="border border-gray-300 p-2 sticky left-0 bg-white z-20 font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] group" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}>
+                         <div className="flex items-center justify-between gap-2">
+                           <div className="flex items-center gap-2 flex-1 min-w-0">
+                             {!readOnly && (
+                               <input
+                                 type="checkbox"
+                                 checked={selectedFolhas.has(linha.id)}
+                                 onChange={() => toggleSelectFolha(linha.id)}
+                                 className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
+                               />
+                             )}
+                             <div className="truncate" title={doc?.arquivo || doc?.numero || 'Sem folha'}>
+                               {doc?.arquivo || doc?.numero || 'Sem folha'}
+                             </div>
+                           </div>
+                           {!readOnly && linhasPorDisciplina.findIndex(([d]) => d === disciplina) !== -1 && 
+                            linhasPorDisciplina.find(([d]) => d === disciplina)[1].indexOf(linha) < 
+                            linhasPorDisciplina.find(([d]) => d === disciplina)[1].length - 1 && (
+                             <button
+                               onClick={() => copiarLinhaParaProxima(linha.id)}
+                               className="text-purple-600 hover:text-purple-800 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                               title="Copiar linha para próxima"
+                             >
+                               <Copy className="w-3 h-3" />
+                             </button>
+                           )}
+                         </div>
+                        </td>
                         {etapasVisiveis.map((etapa, etapaIdx) => {
                           const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                           return (
@@ -1114,12 +1076,11 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 </React.Fragment>
               ))
             )}
-            </tbody>
-            </table>
-            </div>
-            </div>
+          </tbody>
+        </table>
+      </div>
 
-            {etapasExcluidas.length > 0 && (
+      {etapasExcluidas.length > 0 && (
         <div className="mt-4 bg-gray-50 border border-gray-300 rounded-lg p-4">
           <h3 className="text-sm font-semibold text-gray-700 mb-2">Etapas Excluídas</h3>
           <div className="flex flex-wrap gap-2">
@@ -1135,10 +1096,10 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
               </Button>
             ))}
           </div>
-          </div>
-          )}
+        </div>
+        )}
 
-          {/* Modal de Importação */}
+        {/* Modal de Importação */}
         <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
@@ -1289,6 +1250,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
             </div>
           </DialogContent>
         </Dialog>
-    </div>
-  );
-}
+        </div>
+        );
+        }
