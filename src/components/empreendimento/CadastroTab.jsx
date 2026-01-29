@@ -972,20 +972,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           <table className="w-full border-collapse text-sm relative">
           <thead>
             <tr>
-              <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}>
-                <div className="flex items-center gap-2">
-                  {!readOnly && (
-                    <input
-                      type="checkbox"
-                      checked={linhas.length > 0 && selectedFolhas.size === linhas.length}
-                      onChange={(e) => e.target.checked ? selectAllFolhas() : clearSelection()}
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                      title="Selecionar todas"
-                    />
-                  )}
-                  <span>Folha</span>
-                </div>
-              </th>
               {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
                 const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                 const colSpanTotal = revisoesEtapa.length + 1;
