@@ -31,11 +31,16 @@ export default function PavimentosTab({ empreendimentoId, onUpdate }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
-    // **NOVO**: Validar área como número
-    const areaFinal = parseFloat(formData.area);
+    if (!formData.nome) {
+      alert("Por favor, preencha o nome do pavimento.");
+      return;
+    }
+
+    // Área é opcional - converter para número ou null
+    const areaFinal = formData.area ? parseFloat(formData.area) : null;
     
-    if (!formData.nome || isNaN(areaFinal) || areaFinal <= 0) {
-      alert("Por favor, preencha o nome e uma área válida em m².");
+    if (formData.area && (isNaN(areaFinal) || areaFinal <= 0)) {
+      alert("Por favor, preencha uma área válida em m².");
       return;
     }
 
@@ -100,7 +105,7 @@ export default function PavimentosTab({ empreendimentoId, onUpdate }) {
                 />
               </div>
               <div>
-                <Label htmlFor="area">Área (m²) *</Label>
+                <Label htmlFor="area">Área (m²) (Opcional)</Label>
                 <Input
                   id="area"
                   type="number"
@@ -108,7 +113,6 @@ export default function PavimentosTab({ empreendimentoId, onUpdate }) {
                   placeholder="Ex: 150.50"
                   value={formData.area}
                   onChange={(e) => setFormData({ ...formData, area: e.target.value })}
-                  required
                 />
                 <p className="text-xs text-gray-500 mt-1">
                   Digite a área real do pavimento em metros quadrados
