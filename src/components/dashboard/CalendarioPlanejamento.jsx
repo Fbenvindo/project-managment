@@ -559,6 +559,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   
   const shouldShowDeleteButton = () => {
     // Admin tem permissão total, coordenador e superiores também podem.
+    // Para planejamentos de documento, permitir também para líder e direção
     return hasPermission('coordenador');
   };
   // Adjust: Allow adjusting time for quick activities too,
