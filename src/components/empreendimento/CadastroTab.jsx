@@ -996,8 +996,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           </div>
 
           {/* Container com scroll horizontal e vertical para as revisões */}
-          <div ref={revisoesScrollRef} className="flex-1 overflow-x-auto overflow-y-auto" style={{ overflowX: 'scroll' }}>
-            <table className="border-collapse text-sm relative" style={{ minWidth: 'max-content' }}>
+          <div ref={revisoesScrollRef} className="flex-1 overflow-y-auto" style={{ overflowX: 'scroll', overflowY: 'auto' }}>
+            <table className="border-collapse text-sm relative" style={{ minWidth: 'max-content', width: 'max-content' }}>
             <thead className="sticky top-0 z-20 bg-white">
               <tr>
               {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
