@@ -848,7 +848,7 @@ export default function DocumentosTab({
   const handleAtividadeSuccess = () => {
     setShowAtividadeForm(false);
     setEditingAtividade(null);
-    // Não chama onUpdate() - mudanças nas atividades não afetam a lista de documentos
+    onUpdate(); // Recarregar para atualizar lista de atividades disponíveis
   };
 
   const handleDelete = async (id) => {
