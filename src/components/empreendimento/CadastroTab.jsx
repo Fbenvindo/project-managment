@@ -882,26 +882,94 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         )}
       </div>
 
-      {/* Container com scroll */}
-      <div className="flex-1 overflow-auto">
-        <div className="bg-white rounded-lg shadow overflow-x-auto relative isolate">
-          <table className="w-full border-collapse text-sm relative">
-            <thead className="sticky top-0 z-30">
-              <tr>
-                <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-40 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}>
-                  <div className="flex items-center gap-2">
-                    {!readOnly && (
-                      <input
-                        type="checkbox"
-                        checked={linhas.length > 0 && selectedFolhas.size === linhas.length}
-                        onChange={(e) => e.target.checked ? selectAllFolhas() : clearSelection()}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                        title="Selecionar todas"
-                      />
-                    )}
-                    <span>Folha</span>
+      {/* Container com scroll - Layout em duas colunas */}
+      <div className="flex-1 flex overflow-hidden gap-0">
+        {/* Coluna fixa de folhas à esquerda */}
+        <div className="flex-shrink-0 bg-white border-r-2 border-gray-400 overflow-y-auto" style={{ width: '400px' }}>
+          <div className="sticky top-0 z-30 bg-blue-100 border-b border-gray-300">
+            <div className="p-2 font-semibold">
+              <div className="flex items-center gap-2">
+                {!readOnly && (
+                  <input
+                    type="checkbox"
+                    checked={linhas.length > 0 && selectedFolhas.size === linhas.length}
+                    onChange={(e) => e.target.checked ? selectAllFolhas() : clearSelection()}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    title="Selecionar todas"
+                  />
+                )}
+                <span>Folha</span>
+              </div>
+            </div>
+          </div>
+          
+          {/* Lista de folhas */}
+          <div>
+            {linhas.length === 0 ? (
+              <div className="p-8 text-center text-gray-500 text-sm">
+                Nenhum documento cadastrado neste empreendimento.
+              </div>
+            ) : (
+              linhasPorDisciplina.map(([disciplina, linhasDaDisciplina]) => (
+                <div key={disciplina}>
+                  {/* Cabeçalho da disciplina */}
+                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-300 p-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
+                      <h3 className="font-semibold text-base text-gray-800">{disciplina}</h3>
+                      <Badge variant="secondary" className="ml-2 text-xs">
+                        {linhasDaDisciplina.length}
+                      </Badge>
+                    </div>
                   </div>
-                </th>
+                  
+                  {/* Linhas da disciplina */}
+                  {linhasDaDisciplina.map((linha) => {
+                    const doc = documentos.find(d => d.id === linha.documento_id);
+                    return (
+                      <div 
+                        key={linha.id} 
+                        className="border-b border-gray-200 p-2 hover:bg-gray-50 group"
+                      >
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            {!readOnly && (
+                              <input
+                                type="checkbox"
+                                checked={selectedFolhas.has(linha.id)}
+                                onChange={() => toggleSelectFolha(linha.id)}
+                                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
+                              />
+                            )}
+                            <div className="truncate text-sm" title={doc?.arquivo || doc?.numero || 'Sem folha'}>
+                              {doc?.arquivo || doc?.numero || 'Sem folha'}
+                            </div>
+                          </div>
+                          {!readOnly && linhasPorDisciplina.findIndex(([d]) => d === disciplina) !== -1 && 
+                           linhasPorDisciplina.find(([d]) => d === disciplina)[1].indexOf(linha) < 
+                           linhasPorDisciplina.find(([d]) => d === disciplina)[1].length - 1 && (
+                            <button
+                              onClick={() => copiarLinhaParaProxima(linha.id)}
+                              className="text-purple-600 hover:text-purple-800 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                              title="Copiar linha para próxima"
+                            >
+                              <Copy className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Container de datas à direita com scroll horizontal */}
+        <div className="flex-1 overflow-auto bg-white">
+          <table className="w-full border-collapse text-sm relative">
+            <thead className="sticky top-0 z-20 bg-white">
               {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
                 const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                 const colSpanTotal = revisoesEtapa.length + 1;
@@ -929,7 +997,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
               })}
             </tr>
             <tr>
-              <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-40 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}></th>
               {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, etapaIdx) => {
                 const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                 const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
@@ -979,63 +1046,28 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           <tbody>
             {linhas.length === 0 ? (
               <tr>
-                <td colSpan={ETAPAS.filter(e => !etapasExcluidas.includes(e)).reduce((acc, etapa) => acc + (revisoesPorEtapa[etapa]?.length || 3) + 1, 1)} className="border border-gray-300 p-8 text-center text-gray-500">
-                  Nenhum documento cadastrado neste empreendimento. Cadastre documentos na aba "Documentos" primeiro.
+                <td colSpan={ETAPAS.filter(e => !etapasExcluidas.includes(e)).reduce((acc, etapa) => acc + (revisoesPorEtapa[etapa]?.length || 3) + 1, 0)} className="border border-gray-300 p-8 text-center text-gray-500">
+                  Configure as datas ao lado
                 </td>
               </tr>
             ) : (
               linhasPorDisciplina.map(([disciplina, linhasDaDisciplina]) => (
                 <React.Fragment key={disciplina}>
-                  {/* Cabeçalho da disciplina */}
+                  {/* Cabeçalho da disciplina - apenas altura para alinhar */}
                   <tr>
                     <td 
-                      colSpan={ETAPAS.filter(e => !etapasExcluidas.includes(e)).reduce((acc, etapa) => acc + (revisoesPorEtapa[etapa]?.length || 3) + 1, 1)} 
-                      className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-gray-300 p-3"
+                      colSpan={ETAPAS.filter(e => !etapasExcluidas.includes(e)).reduce((acc, etapa) => acc + (revisoesPorEtapa[etapa]?.length || 3) + 1, 0)} 
+                      className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-300"
+                      style={{ height: '52px' }}
                     >
-                      <div className="flex items-center gap-2">
-                        <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
-                        <h3 className="font-semibold text-lg text-gray-800">{disciplina}</h3>
-                        <Badge variant="secondary" className="ml-2">
-                          {linhasDaDisciplina.length} {linhasDaDisciplina.length === 1 ? 'documento' : 'documentos'}
-                        </Badge>
-                      </div>
                     </td>
                   </tr>
                   
-                  {/* Linhas da disciplina */}
+                  {/* Linhas de datas */}
                   {linhasDaDisciplina.map((linha) => {
-                    const doc = documentos.find(d => d.id === linha.documento_id);
                     const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
                     return (
-                      <tr key={linha.id} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 p-2 sticky left-0 bg-white z-20 font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] group" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}>
-                         <div className="flex items-center justify-between gap-2">
-                           <div className="flex items-center gap-2 flex-1 min-w-0">
-                             {!readOnly && (
-                               <input
-                                 type="checkbox"
-                                 checked={selectedFolhas.has(linha.id)}
-                                 onChange={() => toggleSelectFolha(linha.id)}
-                                 className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
-                               />
-                             )}
-                             <div className="truncate" title={doc?.arquivo || doc?.numero || 'Sem folha'}>
-                               {doc?.arquivo || doc?.numero || 'Sem folha'}
-                             </div>
-                           </div>
-                           {!readOnly && linhasPorDisciplina.findIndex(([d]) => d === disciplina) !== -1 && 
-                            linhasPorDisciplina.find(([d]) => d === disciplina)[1].indexOf(linha) < 
-                            linhasPorDisciplina.find(([d]) => d === disciplina)[1].length - 1 && (
-                             <button
-                               onClick={() => copiarLinhaParaProxima(linha.id)}
-                               className="text-purple-600 hover:text-purple-800 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                               title="Copiar linha para próxima"
-                             >
-                               <Copy className="w-3 h-3" />
-                             </button>
-                           )}
-                         </div>
-                        </td>
+                      <tr key={linha.id} className="hover:bg-gray-50"  style={{ height: '45px' }}>
                         {etapasVisiveis.map((etapa, etapaIdx) => {
                           const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                           return (
@@ -1084,6 +1116,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           </tbody>
           </table>
         </div>
+      </div>
 
         {etapasExcluidas.length > 0 && (
         <div className="mt-4 bg-gray-50 border border-gray-300 rounded-lg p-4">
