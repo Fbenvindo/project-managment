@@ -929,7 +929,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
               })}
             </tr>
             <tr>
-              <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}></th>
+              <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-40 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}></th>
               {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, etapaIdx) => {
                 const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                 const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
