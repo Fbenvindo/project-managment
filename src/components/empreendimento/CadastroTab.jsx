@@ -13,6 +13,9 @@ import { format } from "date-fns";
 const DEFAULT_REVISOES = ["R00", "R01", "R02"];
 
 export default function CadastroTab({ empreendimento, readOnly = false }) {
+  const folhasScrollRef = useRef(null);
+  const revisoesScrollRef = useRef(null);
+
   // Etapas do empreendimento convertidas para uppercase
   const ETAPAS = useMemo(() => {
     if (!empreendimento?.etapas || empreendimento.etapas.length === 0) {
@@ -43,6 +46,30 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   const [massEditEtapa, setMassEditEtapa] = useState('');
   const [massEditRevisao, setMassEditRevisao] = useState('');
   const [massEditData, setMassEditData] = useState('');
+
+  // Sincronizar scrolls
+  useEffect(() => {
+    const folhasEl = folhasScrollRef.current;
+    const revisoesEl = revisoesScrollRef.current;
+
+    if (!folhasEl || !revisoesEl) return;
+
+    const onFolhasScroll = () => {
+      revisoesEl.scrollTop = folhasEl.scrollTop;
+    };
+
+    const onRevisoesScroll = () => {
+      folhasEl.scrollTop = revisoesEl.scrollTop;
+    };
+
+    folhasEl.addEventListener('scroll', onFolhasScroll);
+    revisoesEl.addEventListener('scroll', onRevisoesScroll);
+
+    return () => {
+      folhasEl.removeEventListener('scroll', onFolhasScroll);
+      revisoesEl.removeEventListener('scroll', onRevisoesScroll);
+    };
+  }, []);
 
   useEffect(() => {
     if (empreendimento?.id && linhas.length === 0) {
@@ -882,7 +909,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       <div className="bg-white rounded-lg shadow overflow-hidden relative isolate">
         <div className="flex" style={{ maxHeight: 'calc(100vh - 300px)' }}>
           {/* Container fixo da coluna de folhas */}
-          <div className="flex-shrink-0 overflow-y-auto" style={{ width: '400px' }} id="folhas-scroll">
+          <div ref={folhasScrollRef} className="flex-shrink-0 overflow-y-auto" style={{ width: '400px' }}>
             <table className="w-full border-collapse text-sm">
               <thead className="sticky top-0 z-30 bg-white">
                 <tr>
@@ -969,7 +996,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           </div>
 
           {/* Container com scroll horizontal e vertical para as revisões */}
-          <div className="flex-1 overflow-x-auto overflow-y-auto" id="revisoes-scroll">
+          <div ref={revisoesScrollRef} className="flex-1 overflow-x-auto overflow-y-auto">
             <table className="w-full border-collapse text-sm relative">
             <thead className="sticky top-0 z-20 bg-white">
               <tr>
