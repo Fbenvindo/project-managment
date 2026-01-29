@@ -1202,8 +1202,8 @@ export default function DocumentosTab({
       atividadesGerais = atividadesGerais.filter(ativ => {
         const globalExcluded = atividadesExcluidasGlobal.has(ativ.id);
         const docExcluded = atividadesExcluidasPorDoc.has(ativ.id);
-        const docConcluida = atividadesConcluidasPorDoc.has(ativ.id);
-        return !globalExcluded && !docExcluded && !docConcluida;
+        // Não filtrar atividades concluídas - elas devem aparecer
+        return !globalExcluded && !docExcluded;
       });
 
       console.log(`   ✅ Atividades disponíveis após filtros: ${atividadesGerais.length}\n`);
