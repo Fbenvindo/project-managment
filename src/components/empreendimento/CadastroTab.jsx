@@ -970,6 +970,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         <div className="flex-1 overflow-auto bg-white">
           <table className="w-full border-collapse text-sm relative">
             <thead className="sticky top-0 z-20 bg-white">
+              <tr>
               {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
                 const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                 const colSpanTotal = revisoesEtapa.length + 1;
@@ -994,9 +995,9 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                     </div>
                   </th>
                 );
-              })}
-            </tr>
-            <tr>
+                })}
+                </tr>
+                <tr>
               {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, etapaIdx) => {
                 const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                 const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
@@ -1040,9 +1041,9 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                     </th>
                   </React.Fragment>
                 );
-              })}
-            </tr>
-          </thead>
+                })}
+                </tr>
+                </thead>
           <tbody>
             {linhas.length === 0 ? (
               <tr>
@@ -1113,12 +1114,12 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 </React.Fragment>
               ))
             )}
-          </tbody>
-          </table>
-        </div>
-      </div>
+            </tbody>
+            </table>
+            </div>
+            </div>
 
-        {etapasExcluidas.length > 0 && (
+            {etapasExcluidas.length > 0 && (
         <div className="mt-4 bg-gray-50 border border-gray-300 rounded-lg p-4">
           <h3 className="text-sm font-semibold text-gray-700 mb-2">Etapas Excluídas</h3>
           <div className="flex flex-wrap gap-2">
@@ -1134,11 +1135,10 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
               </Button>
             ))}
           </div>
-        </div>
-        )}
-      </div>
+          </div>
+          )}
 
-      {/* Modal de Importação */}
+          {/* Modal de Importação */}
         <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
