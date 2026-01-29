@@ -643,7 +643,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
                          realStatus === 'pausado' ? '#fffbeb' : '#ffffff',
           ...(isDragging && { boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)', transform: 'rotate(2deg)'})
         }}
-        className={`p-2 rounded border mb-1 text-xs group hover:shadow-md transition-shadow duration-200 relative ${
+        className={`p-2 rounded border mb-1 text-xs group hover:shadow-md transition-shadow duration-200 relative overflow-visible ${
           isSelected ? 'border-indigo-400 ring-2 ring-indigo-200' : 'border-gray-200'
         }`}
       >
