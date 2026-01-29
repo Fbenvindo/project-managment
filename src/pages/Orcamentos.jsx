@@ -25,6 +25,7 @@ export default function OrcamentosPage() {
       const grouped = {};
       
       data.forEach(proposta => {
+        // Agrupa por mês de solicitação
         if (proposta.data_solicitacao) {
           const date = parseISO(proposta.data_solicitacao);
           const mesAno = format(date, 'yyyy-MM');
@@ -46,18 +47,30 @@ export default function OrcamentosPage() {
           grouped[mesAno].quantidade++;
           grouped[mesAno].valorBimTotal += Number(proposta.valor_bim || 0);
           grouped[mesAno].valorCadTotal += Number(proposta.valor_cad || 0);
+        }
+        
+        // Agrupa por mês de aprovação
+        if (proposta.data_aprovacao && proposta.status === 'aprovado') {
+          const dateAprovacao = parseISO(proposta.data_aprovacao);
+          const mesAnoAprovacao = format(dateAprovacao, 'yyyy-MM');
+          const mesAnoAprovacaoDisplay = format(dateAprovacao, 'MM/yyyy');
           
-          // Verifica se foi aprovado no mesmo mês
-          if (proposta.data_aprovacao && proposta.status === 'aprovado') {
-            const dateAprovacao = parseISO(proposta.data_aprovacao);
-            const mesAnoAprovacao = format(dateAprovacao, 'yyyy-MM');
-            
-            if (mesAnoAprovacao === mesAno) {
-              grouped[mesAno].valorBimAprovado += Number(proposta.valor_bim || 0);
-              grouped[mesAno].valorCadAprovado += Number(proposta.valor_cad || 0);
-              grouped[mesAno].quantidadeAprovada++;
-            }
+          if (!grouped[mesAnoAprovacao]) {
+            grouped[mesAnoAprovacao] = {
+              mesAno: mesAnoAprovacao,
+              mesAnoDisplay: mesAnoAprovacaoDisplay,
+              quantidade: 0,
+              valorBimTotal: 0,
+              valorCadTotal: 0,
+              valorBimAprovado: 0,
+              valorCadAprovado: 0,
+              quantidadeAprovada: 0
+            };
           }
+          
+          grouped[mesAnoAprovacao].valorBimAprovado += Number(proposta.valor_bim || 0);
+          grouped[mesAnoAprovacao].valorCadAprovado += Number(proposta.valor_cad || 0);
+          grouped[mesAnoAprovacao].quantidadeAprovada++;
         }
       });
 
