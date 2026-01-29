@@ -430,16 +430,16 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                         />
                       </div>
 
-                      {/* Descritiva */}
+                      {/* Disciplina */}
                       <div>
-                        <label className="text-xs font-semibold text-gray-600 block mb-1">Descritiva</label>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Disciplina</label>
                         <Textarea
                           value={item.descritiva}
                           onChange={(e) => handleUpdateItem(item.id, 'descritiva', e.target.value)}
                           className="w-full text-sm print:border-none print:bg-transparent resize-none"
                           rows={3}
                           disabled={readOnly}
-                          placeholder="Descrição detalhada..."
+                          placeholder="Disciplina..."
                         />
                       </div>
 
