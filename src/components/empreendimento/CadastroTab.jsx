@@ -1048,63 +1048,33 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           <tbody>
             {linhas.length === 0 ? (
               <tr>
-                <td colSpan={ETAPAS.filter(e => !etapasExcluidas.includes(e)).reduce((acc, etapa) => acc + (revisoesPorEtapa[etapa]?.length || 3) + 1, 1)} className="border border-gray-300 p-8 text-center text-gray-500">
-                  Nenhum documento cadastrado neste empreendimento. Cadastre documentos na aba "Documentos" primeiro.
+                <td colSpan={ETAPAS.filter(e => !etapasExcluidas.includes(e)).reduce((acc, etapa) => acc + (revisoesPorEtapa[etapa]?.length || 3) + 1, 0)} className="border border-gray-300 p-8 text-center text-gray-500">
+                  Nenhum documento cadastrado
                 </td>
               </tr>
             ) : (
               linhasPorDisciplina.map(([disciplina, linhasDaDisciplina]) => (
-                <React.Fragment key={disciplina}>
-                  {/* Cabeçalho da disciplina */}
+                <React.Fragment key={`datas-${disciplina}`}>
                   <tr>
                     <td 
-                      colSpan={ETAPAS.filter(e => !etapasExcluidas.includes(e)).reduce((acc, etapa) => acc + (revisoesPorEtapa[etapa]?.length || 3) + 1, 1)} 
+                      colSpan={ETAPAS.filter(e => !etapasExcluidas.includes(e)).reduce((acc, etapa) => acc + (revisoesPorEtapa[etapa]?.length || 3) + 1, 0)} 
                       className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-gray-300 p-3"
                     >
                       <div className="flex items-center gap-2">
                         <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
                         <h3 className="font-semibold text-lg text-gray-800">{disciplina}</h3>
                         <Badge variant="secondary" className="ml-2">
-                          {linhasDaDisciplina.length} {linhasDaDisciplina.length === 1 ? 'documento' : 'documentos'}
+                          {linhasDaDisciplina.length}
                         </Badge>
                       </div>
                     </td>
                   </tr>
                   
-                  {/* Linhas da disciplina */}
                   {linhasDaDisciplina.map((linha) => {
                     const doc = documentos.find(d => d.id === linha.documento_id);
                     const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
                     return (
-                      <tr key={linha.id} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 p-2 sticky left-0 bg-white z-20 font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] group" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}>
-                         <div className="flex items-center justify-between gap-2">
-                           <div className="flex items-center gap-2 flex-1 min-w-0">
-                             {!readOnly && (
-                               <input
-                                 type="checkbox"
-                                 checked={selectedFolhas.has(linha.id)}
-                                 onChange={() => toggleSelectFolha(linha.id)}
-                                 className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
-                               />
-                             )}
-                             <div className="truncate" title={doc?.arquivo || doc?.numero || 'Sem folha'}>
-                               {doc?.arquivo || doc?.numero || 'Sem folha'}
-                             </div>
-                           </div>
-                           {!readOnly && linhasPorDisciplina.findIndex(([d]) => d === disciplina) !== -1 && 
-                            linhasPorDisciplina.find(([d]) => d === disciplina)[1].indexOf(linha) < 
-                            linhasPorDisciplina.find(([d]) => d === disciplina)[1].length - 1 && (
-                             <button
-                               onClick={() => copiarLinhaParaProxima(linha.id)}
-                               className="text-purple-600 hover:text-purple-800 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                               title="Copiar linha para próxima"
-                             >
-                               <Copy className="w-3 h-3" />
-                             </button>
-                           )}
-                         </div>
-                        </td>
+                      <tr key={`datas-${linha.id}`} className="hover:bg-gray-50">
                         {etapasVisiveis.map((etapa, etapaIdx) => {
                           const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                           return (
