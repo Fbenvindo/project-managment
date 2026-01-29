@@ -560,8 +560,8 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   const shouldShowDeleteButton = () => {
     // Admins sempre podem excluir
     if (user?.role === 'admin') return true;
-    // Coordenador e superiores também podem
-    return hasPermission('coordenador');
+    // Coordenador, Líder, Direção e Gestão também podem excluir
+    return hasPermission('coordenador') || hasPermission('lider') || hasPermission('direcao') || hasPermission('gestao');
   };
   // Adjust: Allow adjusting time for quick activities too,
   // but ONLY if it's a PlanejamentoAtividade (not an old 'exec-' Execucao)
