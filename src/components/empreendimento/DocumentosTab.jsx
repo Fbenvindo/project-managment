@@ -299,7 +299,7 @@ export default function DocumentosTab({
       if (totalDocsUpdatedInCascade > 0) {
         console.log(`✅ Cascata concluída. ${totalDocsUpdatedInCascade} documentos atualizados.`);
         setCargaDiariaCache({});
-        onUpdate();
+        // onUpdate() não é necessário - documentos já atualizados via handleLocalUpdate
       }
     } catch (error) {
       console.error("Erro durante cascata:", error);
@@ -848,7 +848,7 @@ export default function DocumentosTab({
   const handleAtividadeSuccess = () => {
     setShowAtividadeForm(false);
     setEditingAtividade(null);
-    onUpdate();
+    // Não chama onUpdate() - mudanças nas atividades não afetam a lista de documentos
   };
 
   const handleDelete = async (id) => {
