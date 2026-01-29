@@ -1121,7 +1121,9 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
               ))
             )}
           </tbody>
+          </tbody>
         </table>
+        </div>
       </div>
 
       {etapasExcluidas.length > 0 && (
