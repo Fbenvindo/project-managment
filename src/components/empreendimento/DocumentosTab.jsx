@@ -1388,10 +1388,7 @@ export default function DocumentosTab({
         setIsUpdatingActivity(false);
         setIsUpdatingActivity(true);
         
-        // Recarregar dados
-        setTimeout(() => {
-          onUpdate();
-        }, 100);
+        // Dados já atualizados localmente - não precisa recarregar
         
         if (atividadesMarcadas > 0) {
           setTimeout(() => {
@@ -1465,10 +1462,7 @@ export default function DocumentosTab({
         setIsUpdatingActivity(false);
         setIsUpdatingActivity(true);
         
-        // Recarregar dados
-        setTimeout(() => {
-          onUpdate();
-        }, 100);
+        // Dados já atualizados localmente - não precisa recarregar
       } catch (error) {
         console.error("❌ Erro ao marcar atividade como concluída:", error);
         alert("Erro ao atualizar o status da atividade: " + error.message);
