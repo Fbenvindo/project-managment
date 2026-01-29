@@ -2484,9 +2484,37 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     dayActivities.forEach((atividade) => {
       const horasAlocadasDia = Number(atividade.horas_por_dia?.[dayKey]) || 0;
       const horasExecutadasNoDia = Number(atividade.horas_executadas_por_dia?.[dayKey]) || 0;
+      const tempoExecutado = Number(atividade.tempo_executado) || 0;
       
-      // Simples: usar horas executadas do dia se tiver, senão usar alocado
-      soma += horasExecutadasNoDia > 0 ? horasExecutadasNoDia : horasAlocadasDia;
+      let horasDia = 0;
+      
+      if (atividade.isLegacyExecution) {
+        horasDia = tempoExecutado;
+      }
+      else if (atividade.isQuickActivity || atividade.is_quick_activity) {
+        horasDia = horasExecutadasNoDia > 0 ? horasExecutadasNoDia : horasAlocadasDia;
+      }
+      else {
+        // Prioridade 1: Se tem horas executadas neste dia
+        if (horasExecutadasNoDia > 0) {
+          horasDia = horasExecutadasNoDia;
+        }
+        // Prioridade 2: Se concluída mas horas_executadas_por_dia vazio, distribuir tempo_executado
+        else if (atividade.status === 'concluido' && tempoExecutado > 0 && Object.keys(atividade.horas_executadas_por_dia || {}).length === 0) {
+          const diasPlanejados = Object.keys(atividade.horas_por_dia || {});
+          if (diasPlanejados.length > 0 && diasPlanejados.includes(dayKey)) {
+            horasDia = tempoExecutado / diasPlanejados.length;
+          } else {
+            horasDia = tempoExecutado;
+          }
+        }
+        // Prioridade 3: Usar horas planejadas
+        else {
+          horasDia = horasAlocadasDia;
+        }
+      }
+      
+      soma += horasDia;
     });
     
     return Math.round(soma * 10) / 10;
