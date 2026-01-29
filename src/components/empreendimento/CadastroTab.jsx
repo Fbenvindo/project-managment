@@ -812,91 +812,96 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   }
 
   return (
-    <div className="space-y-4 relative overflow-hidden">
-      <div className="flex justify-between items-center">
-        <div className="flex items-center gap-3">
-          <h2 className="text-xl font-bold text-gray-800">Datas de Cadastro</h2>
-          {readOnly && <Badge variant="outline" className="text-xs">Somente Visualização</Badge>}
-          {!readOnly && hasUnsavedChanges && (
-            <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">
-              Alterações não salvas
-            </Badge>
+    <div className="h-full flex flex-col">
+      {/* Header fixo */}
+      <div className="flex-shrink-0 space-y-4 p-4 bg-white border-b">
+        <div className="flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <h2 className="text-xl font-bold text-gray-800">Datas de Cadastro</h2>
+            {readOnly && <Badge variant="outline" className="text-xs">Somente Visualização</Badge>}
+            {!readOnly && hasUnsavedChanges && (
+              <Badge variant="outline" className="bg-amber-100 text-amber-800 border-amber-300">
+                Alterações não salvas
+              </Badge>
+            )}
+          </div>
+          {!readOnly && (
+            <div className="flex gap-2">
+              {selectedFolhas.size > 0 && (
+                <>
+                  <Badge variant="outline" className="px-3 py-1">
+                    {selectedFolhas.size} folha{selectedFolhas.size > 1 ? 's' : ''} selecionada{selectedFolhas.size > 1 ? 's' : ''}
+                  </Badge>
+                  <Button
+                    variant="outline"
+                    onClick={handleMassEdit}
+                    className="border-purple-500 text-purple-600 hover:bg-purple-50"
+                  >
+                    <Wand2 className="w-4 h-4 mr-2" />
+                    Preencher em Massa
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={clearSelection}
+                    className="border-gray-400 text-gray-600 hover:bg-gray-50"
+                  >
+                    Limpar Seleção
+                  </Button>
+                </>
+              )}
+              <Button
+                variant="outline"
+                onClick={() => setShowImportModal(true)}
+                className="border-green-500 text-green-600 hover:bg-green-50"
+              >
+                <Upload className="w-4 h-4 mr-2" />
+                Importar
+              </Button>
+              <Button onClick={handleSave} disabled={isSaving}>
+                {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                Salvar
+              </Button>
+            </div>
           )}
         </div>
+
+        {/* Botão flutuante de salvar */}
         {!readOnly && (
-          <div className="flex gap-2">
-            {selectedFolhas.size > 0 && (
-              <>
-                <Badge variant="outline" className="px-3 py-1">
-                  {selectedFolhas.size} folha{selectedFolhas.size > 1 ? 's' : ''} selecionada{selectedFolhas.size > 1 ? 's' : ''}
-                </Badge>
-                <Button
-                  variant="outline"
-                  onClick={handleMassEdit}
-                  className="border-purple-500 text-purple-600 hover:bg-purple-50"
-                >
-                  <Wand2 className="w-4 h-4 mr-2" />
-                  Preencher em Massa
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={clearSelection}
-                  className="border-gray-400 text-gray-600 hover:bg-gray-50"
-                >
-                  Limpar Seleção
-                </Button>
-              </>
+          <Button
+            onClick={handleSave}
+            disabled={isSaving}
+            className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow"
+            size="icon"
+          >
+            {isSaving ? (
+              <Loader2 className="w-6 h-6 animate-spin" />
+            ) : (
+              <Save className="w-6 h-6" />
             )}
-            <Button
-              variant="outline"
-              onClick={() => setShowImportModal(true)}
-              className="border-green-500 text-green-600 hover:bg-green-50"
-            >
-              <Upload className="w-4 h-4 mr-2" />
-              Importar
-            </Button>
-            <Button onClick={handleSave} disabled={isSaving}>
-              {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-              Salvar
-            </Button>
-          </div>
+          </Button>
         )}
       </div>
 
-      {/* Botão flutuante de salvar */}
-      {!readOnly && (
-        <Button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow"
-          size="icon"
-        >
-          {isSaving ? (
-            <Loader2 className="w-6 h-6 animate-spin" />
-          ) : (
-            <Save className="w-6 h-6" />
-          )}
-        </Button>
-      )}
-
-      <div className="bg-white rounded-lg shadow overflow-x-auto relative isolate">
-        <table className="w-full border-collapse text-sm relative">
-          <thead>
-            <tr>
-              <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}>
-                <div className="flex items-center gap-2">
-                  {!readOnly && (
-                    <input
-                      type="checkbox"
-                      checked={linhas.length > 0 && selectedFolhas.size === linhas.length}
-                      onChange={(e) => e.target.checked ? selectAllFolhas() : clearSelection()}
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                      title="Selecionar todas"
-                    />
-                  )}
-                  <span>Folha</span>
-                </div>
-              </th>
+      {/* Container com scroll */}
+      <div className="flex-1 overflow-auto">
+        <div className="bg-white rounded-lg shadow overflow-x-auto relative isolate">
+          <table className="w-full border-collapse text-sm relative">
+            <thead className="sticky top-0 z-30">
+              <tr>
+                <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-40 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}>
+                  <div className="flex items-center gap-2">
+                    {!readOnly && (
+                      <input
+                        type="checkbox"
+                        checked={linhas.length > 0 && selectedFolhas.size === linhas.length}
+                        onChange={(e) => e.target.checked ? selectAllFolhas() : clearSelection()}
+                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                        title="Selecionar todas"
+                      />
+                    )}
+                    <span>Folha</span>
+                  </div>
+                </th>
               {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
                 const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                 const colSpanTotal = revisoesEtapa.length + 1;
