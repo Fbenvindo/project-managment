@@ -2331,16 +2331,14 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
                     });
                 }
 
-                // Se não foi concluída OU não tem execuções, usar dias planejados
-                if (plano.status !== 'concluido' || diasParaExibir.size === 0) {
-                    if (plano.horas_por_dia && typeof plano.horas_por_dia === 'object') {
-                        Object.keys(plano.horas_por_dia).forEach(dayKey => {
-                            const horas = Number(plano.horas_por_dia[dayKey]) || 0;
-                            if (horas > 0) {
-                                diasParaExibir.add(dayKey);
-                            }
-                        });
-                    }
+                // SEMPRE usar dias planejados se existirem
+                if (plano.horas_por_dia && typeof plano.horas_por_dia === 'object') {
+                    Object.keys(plano.horas_por_dia).forEach(dayKey => {
+                        const horas = Number(plano.horas_por_dia[dayKey]) || 0;
+                        if (horas > 0) {
+                            diasParaExibir.add(dayKey);
+                        }
+                    });
                 }
             }
 
