@@ -879,9 +879,9 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         </Button>
       )}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden relative isolate flex">
+      <div className="bg-white rounded-lg shadow overflow-hidden relative isolate flex" style={{ maxHeight: 'calc(100vh - 300px)' }}>
         {/* Container fixo da coluna de folhas */}
-        <div className="flex-shrink-0 overflow-y-auto" style={{ width: '400px', maxHeight: 'calc(100vh - 300px)' }}>
+        <div className="flex-shrink-0" style={{ width: '400px' }}>
           <table className="w-full border-collapse text-sm">
             <thead>
               <tr>
@@ -967,8 +967,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           </table>
         </div>
 
-        {/* Container com scroll horizontal para as revisões */}
-        <div className="flex-1 overflow-x-auto overflow-y-auto" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+        {/* Container com scroll horizontal e vertical para as revisões */}
+        <div className="flex-1 overflow-x-auto overflow-y-auto">
           <table className="w-full border-collapse text-sm relative">
           <thead>
             <tr>
