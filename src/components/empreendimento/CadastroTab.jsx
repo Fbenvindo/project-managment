@@ -1082,10 +1082,10 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
               ))
             )}
           </tbody>
-        </table>
-      </div>
+          </table>
+        </div>
 
-      {etapasExcluidas.length > 0 && (
+        {etapasExcluidas.length > 0 && (
         <div className="mt-4 bg-gray-50 border border-gray-300 rounded-lg p-4">
           <h3 className="text-sm font-semibold text-gray-700 mb-2">Etapas Excluídas</h3>
           <div className="flex flex-wrap gap-2">
