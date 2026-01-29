@@ -558,10 +558,8 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   const shouldShowStartButton = () => realStatus !== 'concluido' && !activeExecution && !plano.isLegacyExecution;
   
   const shouldShowDeleteButton = () => {
-    // Admins sempre podem excluir
-    if (user?.role === 'admin') return true;
-    // Coordenador, Líder, Direção e Gestão também podem excluir
-    return hasPermission('coordenador') || hasPermission('lider') || hasPermission('direcao') || hasPermission('gestao');
+    // Admins, Coordenador, Líder, Direção e Gestão podem excluir
+    return hasPermission('admin') || hasPermission('coordenador') || hasPermission('lider') || hasPermission('direcao') || hasPermission('gestao');
   };
   // Adjust: Allow adjusting time for quick activities too,
   // but ONLY if it's a PlanejamentoAtividade (not an old 'exec-' Execucao)
