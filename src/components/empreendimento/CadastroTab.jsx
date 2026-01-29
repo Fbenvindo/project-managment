@@ -1256,6 +1256,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
             </div>
           </DialogContent>
         </Dialog>
-        </div>
-        );
-        }
+    </div>
+  );
+}
