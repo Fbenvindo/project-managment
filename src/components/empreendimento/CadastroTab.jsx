@@ -1103,8 +1103,9 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           </div>
         </div>
         )}
+      </div>
 
-        {/* Modal de Importação */}
+      {/* Modal de Importação */}
         <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
