@@ -8,14 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2 } from 'lucide-react';
 
 const SECOES_PADRAO = [
-  'ENTREGA DE DOCUMENTOS',
-  'COMERCIAL/BRIEFING/CONCEPÇÃO/ESTUDO',
-  'ENTRADA DE ENERGIA',
-  'SISTEMA DE GERAÇÃO DE ENERGIA AUTÔNOMA',
-  'SISTEMA DE CIRCUITO HIDROTERMIA (VFC) - CARGAS CRÍTICAS',
-  'DIFERENTES NORMAS DE MÉDIA TENSÃO',
-  'DIFERENTES NORMAS DE BAIXA TENSÃO',
-  'SISTEMAS DE ILUMINAÇÃO E TOMADAS'
+  'Sistemas Eletrônicos',
+  'Incêndio',
+  'HVAC',
+  'Hidráulica',
+  'Elétrica'
 ];
 
 export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreendimentos }) {
