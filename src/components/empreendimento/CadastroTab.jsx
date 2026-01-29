@@ -1127,22 +1127,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         </div>
       </div>
       
-      <script dangerouslySetInnerHTML={{__html: `
-        (function() {
-          const folhasScroll = document.getElementById('folhas-scroll');
-          const revisoesScroll = document.getElementById('revisoes-scroll');
-          
-          if (folhasScroll && revisoesScroll) {
-            folhasScroll.addEventListener('scroll', () => {
-              revisoesScroll.scrollTop = folhasScroll.scrollTop;
-            });
-            
-            revisoesScroll.addEventListener('scroll', () => {
-              folhasScroll.scrollTop = revisoesScroll.scrollTop;
-            });
-          }
-        })();
-      `}} />
+
 
       {etapasExcluidas.length > 0 && (
         <div className="mt-4 bg-gray-50 border border-gray-300 rounded-lg p-4">
