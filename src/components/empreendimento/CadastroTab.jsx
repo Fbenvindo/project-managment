@@ -979,7 +979,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                   <th
                     key={etapa}
                     colSpan={colSpanTotal}
-                    className="border border-gray-300 bg-blue-200 p-2 text-center font-semibold relative group"
+                    className="border border-gray-300 bg-blue-200 p-2 text-center font-semibold relative group sticky top-0 z-20"
                     style={{ width: `${colSpanTotal * 150}px` }}
                   >
                     <div className="flex items-center justify-center gap-2">
@@ -999,7 +999,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
               })}
             </tr>
             <tr>
-              <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}></th>
               {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, etapaIdx) => {
                 const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                 const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
