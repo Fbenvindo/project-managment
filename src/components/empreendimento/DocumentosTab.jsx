@@ -1225,18 +1225,18 @@ export default function DocumentosTab({
       }
 
       return ordenarAtividades(atividadesGerais).filter(atividade => {
-        // Filtrar atividades concluídas no planejamento
         const planejamentoDaAtividade = planejamentosDoDocumento.find(p =>
           p.atividade_id === atividade.id &&
           p.tipo_plano === 'atividade'
         );
         
-        // Filtrar planejamentos com tempo 0 (inválidos/duplicados)
+        // Filtrar apenas planejamentos com tempo 0 (inválidos/duplicados)
         if (planejamentoDaAtividade && (planejamentoDaAtividade.tempo_planejado === 0 || !planejamentoDaAtividade.tempo_planejado)) {
           return false;
         }
         
-        return planejamentoDaAtividade?.status !== 'concluido';
+        // Não filtrar atividades concluídas - elas devem aparecer
+        return true;
       }).map(atividade => {
         const etapaFinal = etapaOverrides.has(atividade.id) 
           ? etapaOverrides.get(atividade.id) 
