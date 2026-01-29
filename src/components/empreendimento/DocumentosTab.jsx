@@ -77,6 +77,7 @@ export default function DocumentosTab({
   const [showAtividadeForm, setShowAtividadeForm] = useState(false);
   const [editingAtividade, setEditingAtividade] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [filtroArea, setFiltroArea] = useState("todas");
   const debouncedSearchTerm = useDebounce(searchTerm, 300);
   const [expandedRows, setExpandedRows] = useState({});
   const [showImportModal, setShowImportModal] = useState(false);
@@ -1065,10 +1066,15 @@ export default function DocumentosTab({
   }, [localDocumentos, handleLocalUpdate, setCargaDiariaCache, handleCascadingUpdate]);
 
   const filteredDocumentos = useMemo(() => {
-    const filtered = localDocumentos.filter(doc =>
+    let filtered = localDocumentos.filter(doc =>
       (doc.numero?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())) ||
       (doc.arquivo?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()))
     );
+
+    // Aplicar filtro de área/pavimento
+    if (filtroArea !== "todas") {
+      filtered = filtered.filter(doc => doc.pavimento_id === filtroArea);
+    }
 
     return filtered.sort((a, b) => {
       const arquivoA = (a.arquivo || '').trim().toLowerCase();
@@ -1080,7 +1086,7 @@ export default function DocumentosTab({
         ignorePunctuation: false
       });
     });
-  }, [localDocumentos, debouncedSearchTerm]);
+  }, [localDocumentos, debouncedSearchTerm, filtroArea]);
 
   const documentosPorDisciplina = useMemo(() => {
     const grupos = {};
@@ -2572,24 +2578,46 @@ export default function DocumentosTab({
             <div className="flex items-center gap-4 flex-1">
               <CardTitle>Documentos Cadastrados ({filteredDocumentos.length})</CardTitle>
               
-              <div className="flex items-center gap-2">
-                <Label htmlFor="etapa-planejamento" className="text-sm font-medium whitespace-nowrap">
-                  Planejar Etapa:
-                </Label>
-                <Select
-                  value={etapaParaPlanejamento}
-                  onValueChange={onEtapaChange}
-                >
-                  <SelectTrigger id="etapa-planejamento" className="w-[180px]">
-                    <SelectValue placeholder="Selecione a etapa" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="todas">Todas as etapas</SelectItem>
-                    {etapasDisponiveis.map(etapa => (
-                      <SelectItem key={etapa} value={etapa}>{etapa}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="etapa-planejamento" className="text-sm font-medium whitespace-nowrap">
+                    Planejar Etapa:
+                  </Label>
+                  <Select
+                    value={etapaParaPlanejamento}
+                    onValueChange={onEtapaChange}
+                  >
+                    <SelectTrigger id="etapa-planejamento" className="w-[180px]">
+                      <SelectValue placeholder="Selecione a etapa" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todas">Todas as etapas</SelectItem>
+                      {etapasDisponiveis.map(etapa => (
+                        <SelectItem key={etapa} value={etapa}>{etapa}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="filtro-area" className="text-sm font-medium whitespace-nowrap">
+                    Filtrar por Área:
+                  </Label>
+                  <Select
+                    value={filtroArea}
+                    onValueChange={setFiltroArea}
+                  >
+                    <SelectTrigger id="filtro-area" className="w-[180px]">
+                      <SelectValue placeholder="Todas as áreas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todas">Todas as áreas</SelectItem>
+                      {(pavimentos || []).map(pav => (
+                        <SelectItem key={pav.id} value={pav.id}>{pav.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           </div>
