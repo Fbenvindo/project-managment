@@ -131,6 +131,22 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
     return Array.from(subdisciplinasSet).sort();
   }, [formData.disciplina, allAtividades]);
 
+  const documentosFiltrados = useMemo(() => {
+    if (!formData.disciplina) return documentos;
+    
+    return documentos.filter(doc => {
+      // Filtrar por disciplina principal
+      if (doc.disciplina === formData.disciplina) return true;
+      
+      // Filtrar por disciplinas array (se existir)
+      if (doc.disciplinas && Array.isArray(doc.disciplinas)) {
+        return doc.disciplinas.includes(formData.disciplina);
+      }
+      
+      return false;
+    });
+  }, [documentos, formData.disciplina]);
+
   const handleToggleSubdisciplina = (subdisciplina) => {
     setSelectedSubdisciplinas(prev => {
       if (prev.includes(subdisciplina)) {
@@ -292,7 +308,7 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
           <div className="space-y-2 md:col-span-2">
            <Label htmlFor="folha">Folhas (Opcional)</Label>
            <div className="grid grid-cols-1 gap-2 p-4 border rounded-md max-h-64 overflow-y-auto bg-gray-50">
-             {documentos.length > 0 ? documentos.map(doc => (
+             {documentosFiltrados.length > 0 ? documentosFiltrados.map(doc => (
                <div key={doc.id} className="flex items-start space-x-2">
                  <Checkbox
                    id={`documento-${doc.id}`}
@@ -309,7 +325,7 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
                </div>
              )) : (
                <p className="text-sm text-gray-500 text-center py-2">
-                 Nenhuma folha cadastrada
+                 {formData.disciplina ? 'Nenhuma folha encontrada para esta disciplina' : 'Nenhuma folha cadastrada'}
                </p>
              )}
            </div>
