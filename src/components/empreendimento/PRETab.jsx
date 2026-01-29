@@ -415,42 +415,46 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                 <div key={item.id} className="flex gap-4 border border-gray-300 rounded-lg overflow-hidden bg-white">
                   {/* Container Principal (80%) */}
                   <div className="w-4/5 p-4 space-y-4 border-r border-gray-300">
-                    {/* De */}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">De</label>
-                      <Textarea
-                        value={item.de}
-                        onChange={(e) => handleUpdateItem(item.id, 'de', e.target.value)}
-                        className="w-full text-sm print:border-none print:bg-transparent resize-none"
-                        rows={3}
-                        disabled={readOnly}
-                        placeholder="De quem..."
-                      />
-                    </div>
+                    {/* De, Descritiva e Assunto - lado a lado */}
+                    <div className="grid grid-cols-3 gap-3">
+                      {/* De */}
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">De</label>
+                        <Textarea
+                          value={item.de}
+                          onChange={(e) => handleUpdateItem(item.id, 'de', e.target.value)}
+                          className="w-full text-sm print:border-none print:bg-transparent resize-none"
+                          rows={3}
+                          disabled={readOnly}
+                          placeholder="De quem..."
+                        />
+                      </div>
 
-                    {/* Descritiva */}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">Descritiva</label>
-                      <Textarea
-                        value={item.descritiva}
-                        onChange={(e) => handleUpdateItem(item.id, 'descritiva', e.target.value)}
-                        className="w-full text-sm print:border-none print:bg-transparent resize-y"
-                        disabled={readOnly}
-                        placeholder="Descrição detalhada..."
-                      />
-                    </div>
+                      {/* Descritiva */}
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Descritiva</label>
+                        <Textarea
+                          value={item.descritiva}
+                          onChange={(e) => handleUpdateItem(item.id, 'descritiva', e.target.value)}
+                          className="w-full text-sm print:border-none print:bg-transparent resize-none"
+                          rows={3}
+                          disabled={readOnly}
+                          placeholder="Descrição detalhada..."
+                        />
+                      </div>
 
-                    {/* Assunto */}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">Assunto</label>
-                      <Textarea
-                        value={item.assunto}
-                        onChange={(e) => handleUpdateItem(item.id, 'assunto', e.target.value)}
-                        className="w-full text-sm print:border-none print:bg-transparent resize-y"
-                        rows={3}
-                        disabled={readOnly}
-                        placeholder="Assunto..."
-                      />
+                      {/* Assunto */}
+                      <div>
+                        <label className="text-xs font-semibold text-gray-600 block mb-1">Assunto</label>
+                        <Textarea
+                          value={item.assunto}
+                          onChange={(e) => handleUpdateItem(item.id, 'assunto', e.target.value)}
+                          className="w-full text-sm print:border-none print:bg-transparent resize-none"
+                          rows={3}
+                          disabled={readOnly}
+                          placeholder="Assunto..."
+                        />
+                      </div>
                     </div>
 
                     {/* Comentário */}
