@@ -558,8 +558,9 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   const shouldShowStartButton = () => realStatus !== 'concluido' && !activeExecution && !plano.isLegacyExecution;
   
   const shouldShowDeleteButton = () => {
-    // Admin tem permissão total, coordenador e superiores também podem.
-    // Para planejamentos de documento, permitir também para líder e direção
+    // Admins sempre podem excluir
+    if (user?.role === 'admin') return true;
+    // Coordenador e superiores também podem
     return hasPermission('coordenador');
   };
   // Adjust: Allow adjusting time for quick activities too,
