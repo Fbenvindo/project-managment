@@ -879,31 +879,32 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         </Button>
       )}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden relative isolate flex" style={{ maxHeight: 'calc(100vh - 300px)' }}>
-        {/* Container fixo da coluna de folhas */}
-        <div className="flex-shrink-0" style={{ width: '400px' }}>
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr>
-                <th className="border border-gray-300 bg-blue-100 p-2 sticky top-0 z-30" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}>
-                  <div className="flex items-center gap-2">
-                    {!readOnly && (
-                      <input
-                        type="checkbox"
-                        checked={linhas.length > 0 && selectedFolhas.size === linhas.length}
-                        onChange={(e) => e.target.checked ? selectAllFolhas() : clearSelection()}
-                        className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                        title="Selecionar todas"
-                      />
-                    )}
-                    <span>Folha</span>
-                  </div>
-                </th>
-              </tr>
-              <tr>
-                <th className="border border-gray-300 bg-blue-50 p-2 sticky top-[42px] z-30" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}></th>
-              </tr>
-            </thead>
+      <div className="bg-white rounded-lg shadow overflow-hidden relative isolate">
+        <div className="flex" style={{ maxHeight: 'calc(100vh - 300px)' }}>
+          {/* Container fixo da coluna de folhas */}
+          <div className="flex-shrink-0 overflow-y-auto" style={{ width: '400px' }} id="folhas-scroll">
+            <table className="w-full border-collapse text-sm">
+              <thead className="sticky top-0 z-30 bg-white">
+                <tr>
+                  <th className="border border-gray-300 bg-blue-100 p-2" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}>
+                    <div className="flex items-center gap-2">
+                      {!readOnly && (
+                        <input
+                          type="checkbox"
+                          checked={linhas.length > 0 && selectedFolhas.size === linhas.length}
+                          onChange={(e) => e.target.checked ? selectAllFolhas() : clearSelection()}
+                          className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                          title="Selecionar todas"
+                        />
+                      )}
+                      <span>Folha</span>
+                    </div>
+                  </th>
+                </tr>
+                <tr>
+                  <th className="border border-gray-300 bg-blue-50 p-2" style={{ width: '400px', minWidth: '400px', maxWidth: '400px', height: '42px' }}></th>
+                </tr>
+              </thead>
             <tbody>
               {linhas.length === 0 ? (
                 <tr>
@@ -928,8 +929,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                     {linhasDaDisciplina.map((linha) => {
                       const doc = documentos.find(d => d.id === linha.documento_id);
                       return (
-                        <tr key={`folha-${linha.id}`} className="hover:bg-gray-50">
-                          <td className="border border-gray-300 p-2 bg-white font-medium group" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}>
+                        <tr key={`folha-${linha.id}`} className="hover:bg-gray-50" style={{ height: '42px' }}>
+                          <td className="border border-gray-300 p-2 bg-white font-medium group" style={{ width: '400px', minWidth: '400px', maxWidth: '400px', height: '42px' }}>
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-2 flex-1 min-w-0">
                                 {!readOnly && (
@@ -963,15 +964,15 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                   </React.Fragment>
                 ))
               )}
-            </tbody>
-          </table>
-        </div>
+              </tbody>
+            </table>
+          </div>
 
-        {/* Container com scroll horizontal e vertical para as revisões */}
-        <div className="flex-1 overflow-x-auto overflow-y-auto">
-          <table className="w-full border-collapse text-sm relative">
-          <thead>
-            <tr>
+          {/* Container com scroll horizontal e vertical para as revisões */}
+          <div className="flex-1 overflow-x-auto overflow-y-auto" id="revisoes-scroll">
+            <table className="w-full border-collapse text-sm relative">
+            <thead className="sticky top-0 z-20 bg-white">
+              <tr>
               {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
                 const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                 const colSpanTotal = revisoesEtapa.length + 1;
@@ -1074,7 +1075,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                     const doc = documentos.find(d => d.id === linha.documento_id);
                     const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
                     return (
-                      <tr key={`datas-${linha.id}`} className="hover:bg-gray-50">
+                      <tr key={`datas-${linha.id}`} className="hover:bg-gray-50" style={{ height: '42px' }}>
                         {etapasVisiveis.map((etapa, etapaIdx) => {
                           const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                           return (
@@ -1119,11 +1120,29 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                   })}
                 </React.Fragment>
               ))
-            )}
-          </tbody>
-        </table>
+              )}
+            </tbody>
+          </table>
+          </div>
         </div>
       </div>
+      
+      <script dangerouslySetInnerHTML={{__html: `
+        (function() {
+          const folhasScroll = document.getElementById('folhas-scroll');
+          const revisoesScroll = document.getElementById('revisoes-scroll');
+          
+          if (folhasScroll && revisoesScroll) {
+            folhasScroll.addEventListener('scroll', () => {
+              revisoesScroll.scrollTop = folhasScroll.scrollTop;
+            });
+            
+            revisoesScroll.addEventListener('scroll', () => {
+              folhasScroll.scrollTop = revisoesScroll.scrollTop;
+            });
+          }
+        })();
+      `}} />
 
       {etapasExcluidas.length > 0 && (
         <div className="mt-4 bg-gray-50 border border-gray-300 rounded-lg p-4">
