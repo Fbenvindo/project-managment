@@ -845,10 +845,20 @@ export default function DocumentosTab({
     setShowAtividadeForm(true);
   };
 
-  const handleAtividadeSuccess = () => {
+  const handleAtividadeSuccess = async () => {
+    // Salvar estado de expansão antes de atualizar
+    const expandedState = { ...expandedRows };
+    
     setShowAtividadeForm(false);
     setEditingAtividade(null);
-    onUpdate(); // Recarregar para atualizar lista de atividades disponíveis
+    
+    // Recarregar dados
+    await onUpdate();
+    
+    // Restaurar estado de expansão após atualização
+    setTimeout(() => {
+      setExpandedRows(expandedState);
+    }, 100);
   };
 
   const handleDelete = async (id) => {
