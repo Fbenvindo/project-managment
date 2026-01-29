@@ -1007,7 +1007,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                     {revisoesEtapa.map((revisao, revIdx) => (
                       <th
                         key={`${etapa}-${revisao}`}
-                        className="border border-gray-300 bg-blue-50 p-2 text-center font-medium"
+                        className="border border-gray-300 bg-blue-50 p-2 text-center font-medium sticky top-[42px] z-20"
                         style={{ width: '150px', minWidth: '150px' }}
                       >
                         <div className="flex items-center justify-center gap-1">
@@ -1025,7 +1025,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                       </th>
                     ))}
                     <th 
-                      className={`border bg-green-50 p-1 text-center ${
+                      className={`border bg-green-50 p-1 text-center sticky top-[42px] z-20 ${
                         etapaIdx < etapasVisiveis.length - 1 ? 'border-r-4 border-r-gray-800 border-gray-300' : 'border-gray-300'
                       }`}
                       style={{ width: '50px', minWidth: '50px' }}
