@@ -713,19 +713,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
             </div>
           </div>
           <div className="flex items-center shrink-0 gap-2">
-            {/* Delete Button */}
-            {shouldShowDeleteButton() && (
-              <Button
-                onClick={handleDeleteActivity}
-                disabled={isDeleting || !!activeExecution}
-                size="sm"
-                variant="ghost"
-                className="w-5 h-5 p-0 transition-colors text-gray-400 hover:text-red-600 hover:bg-red-100"
-                title={plano.isLegacyExecution ? "Excluir Execução Rápida Antiga" : plano.tipo_planejamento === 'documento' ? "Excluir Planejamento de Documento" : "Excluir Atividade"}
-              >
-                {isDeleting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-              </Button>
-            )}
+            {/* Espaço reservado - botões movidos para baixo */}
           </div>
         </div>
 
