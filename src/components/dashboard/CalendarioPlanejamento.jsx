@@ -695,14 +695,14 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
         {/* Top Row: Activity Name + Action Icons */}
         <div className="flex items-start justify-between mb-1.5">
           <div className={`flex-1 mr-2 ${hasSelections || isSelected ? 'ml-12' : 'ml-6'} overflow-hidden`}>
-            <p className="font-medium text-gray-800 leading-tight truncate" title={displayName}>
-              {displayName}
-            </p>
             {plano.empreendimento?.nome && (
-              <p className="text-xs text-gray-500 mt-0.5 font-medium">
+              <p className="text-xs text-gray-500 mb-0.5 font-medium">
                 📋 {plano.empreendimento.nome}
               </p>
             )}
+            <p className="font-medium text-gray-800 leading-tight truncate" title={displayName}>
+              {displayName}
+            </p>
             <div className="flex flex-wrap gap-1 mt-1">
               {plano.isQuickActivity && (
                 <Badge variant="outline" className="px-1 py-0.5 text-xs bg-gray-100 text-gray-600 border-gray-300">Execução Rápida</Badge>
