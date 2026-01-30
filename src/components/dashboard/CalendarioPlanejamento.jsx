@@ -1258,15 +1258,15 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
       const tempoExecutado = Number(atividade.tempo_executado) || 0;
       
       // Para legado, considerar o tempo executado total
-      if (atividade.isLegacyExecution) return tempoExecutado > 0.01;
+      if (atividade.isLegacyExecution) return tempoExecutado >= 0.05;
       
       // Para atividades rápidas, verificar execução OU alocação
       if (atividade.isQuickActivity || atividade.is_quick_activity) {
-        return horasExecutadas > 0.01 || horasAlocadas > 0.01;
+        return horasExecutadas >= 0.05 || horasAlocadas >= 0.05;
       }
       
       // Para atividades normais, verificar se tem horas significativas
-      return horasAlocadas > 0.01 || horasExecutadas > 0.01;
+      return horasAlocadas >= 0.05 || horasExecutadas >= 0.05;
     });
     
     return (
@@ -1307,11 +1307,11 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
       const horasExecutadas = Number(atividade.horas_executadas_por_dia?.[dayKey]) || 0;
       const tempoExecutado = Number(atividade.tempo_executado) || 0;
       
-      if (atividade.isLegacyExecution) return tempoExecutado > 0.01;
+      if (atividade.isLegacyExecution) return tempoExecutado >= 0.05;
       if (atividade.isQuickActivity || atividade.is_quick_activity) {
-        return horasExecutadas > 0.01 || horasAlocadas > 0.01;
+        return horasExecutadas >= 0.05 || horasAlocadas >= 0.05;
       }
-      return horasAlocadas > 0.01 || horasExecutadas > 0.01;
+      return horasAlocadas >= 0.05 || horasExecutadas >= 0.05;
     });
   });
   
@@ -1324,11 +1324,11 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
           const horasExecutadas = Number(atividade.horas_executadas_por_dia?.[dayKey]) || 0;
           const tempoExecutado = Number(atividade.tempo_executado) || 0;
           
-          if (atividade.isLegacyExecution) return tempoExecutado > 0.01;
+          if (atividade.isLegacyExecution) return tempoExecutado >= 0.05;
           if (atividade.isQuickActivity || atividade.is_quick_activity) {
-            return horasExecutadas > 0.01 || horasAlocadas > 0.01;
+            return horasExecutadas >= 0.05 || horasAlocadas >= 0.05;
           }
-          return horasAlocadas > 0.01 || horasExecutadas > 0.01;
+          return horasAlocadas >= 0.05 || horasExecutadas >= 0.05;
         });
         
         // Não renderizar grupos vazios
@@ -2377,8 +2377,8 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
                 if (plano.horas_executadas_por_dia && typeof plano.horas_executadas_por_dia === 'object') {
                     Object.keys(plano.horas_executadas_por_dia).forEach(dayKey => {
                         const horasExec = Number(plano.horas_executadas_por_dia[dayKey]) || 0;
-                        // Só mostrar no dia se houver horas significativas (> 0.01h)
-                        if (horasExec > 0.01) {
+                        // Só mostrar no dia se houver horas significativas (>= 0.05h = 3 minutos)
+                        if (horasExec >= 0.05) {
                             diasParaExibir.add(dayKey);
                         }
                     });
@@ -2388,8 +2388,8 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
                 if (plano.horas_por_dia && typeof plano.horas_por_dia === 'object') {
                     Object.keys(plano.horas_por_dia).forEach(dayKey => {
                         const horas = Number(plano.horas_por_dia[dayKey]) || 0;
-                        // Só mostrar no dia se houver horas significativas (> 0.01h = 36 segundos)
-                        if (horas > 0.01) {
+                        // Só mostrar no dia se houver horas significativas (>= 0.05h = 3 minutos)
+                        if (horas >= 0.05) {
                             diasParaExibir.add(dayKey);
                         }
                     });
