@@ -795,7 +795,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
           </div>
         )}
 
-        {/* Action Icons - Linha compacta sempre visível */}
+        {/* Action Icons - Todos os botões sempre aparentes na mesma linha */}
         <div className="flex gap-2 mt-2 items-center">
           {shouldShowStartButton() && (
             <button
@@ -819,6 +819,16 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
             <div className="p-1.5 rounded-md bg-red-500" title="Atividade atrasada">
               <span className="text-white text-xs font-bold">✕</span>
             </div>
+          )}
+          {shouldShowDeleteButton() && (
+            <button
+              onClick={handleDeleteActivity}
+              disabled={isDeleting || !!activeExecution}
+              className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-100 hover:text-red-600 transition-colors"
+              title={plano.isLegacyExecution ? "Excluir Execução Rápida Antiga" : plano.tipo_planejamento === 'documento' ? "Excluir Planejamento de Documento" : "Excluir Atividade"}
+            >
+              {isDeleting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+            </button>
           )}
           {shouldShowEditDescricaoButton() && (
             <button
