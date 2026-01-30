@@ -371,29 +371,42 @@ export default function PlanejamentoAtividadeModal({
     setIsLoading(true);
 
     try {
-      console.log('📋 Buscando documentos disponíveis para planejamento...');
+      console.log('📋 Filtrando folhas com essa atividade específica...');
       
-      // **NOVA LÓGICA**: Filtrar apenas folhas SEM executor_principal
-      const folhasDisponiveis = (documentos || []).filter(doc => {
-        const temExecutor = !!doc.executor_principal;
-        const resultado = !temExecutor;
+      // **NOVA LÓGICA**: Filtrar folhas que têm essa atividade E não têm executor
+      const baseAtividadeId = atividade.id;
+      const disciplinaAtiv = atividade.disciplina;
+      const subdisciplinaAtiv = atividade.subdisciplina;
+      
+      const folhasComAtividade = (documentos || []).filter(doc => {
+        // Verificar se a folha tem executor
+        if (doc.executor_principal) {
+          console.log(`   ⏭️ Folha ${doc.numero}: já tem executor`);
+          return false;
+        }
+
+        // Verificar se a atividade se aplica a essa folha (por disciplina/subdisciplina)
+        const disciplinaMatch = doc.disciplina === disciplinaAtiv;
+        const subdisciplinaMatch = !subdisciplinaAtiv || (doc.subdisciplinas || []).includes(subdisciplinaAtiv);
         
-        if (temExecutor) {
-          console.log(`   ⏭️ Pulando folha ${doc.numero}: já tem executor (${doc.executor_principal})`);
-        } else {
-          console.log(`   ✅ Folha ${doc.numero}: disponível para planejamento`);
+        if (!disciplinaMatch || !subdisciplinaMatch) {
+          console.log(`   ⏭️ Folha ${doc.numero}: atividade não se aplica (disc/subdisc não match)`);
+          return false;
         }
         
-        return resultado;
+        console.log(`   ✅ Folha ${doc.numero}: tem atividade e sem executor`);
+        return true;
       });
 
-      console.log(`\n📊 Total de folhas disponíveis: ${folhasDisponiveis.length} de ${documentos.length}`);
+      console.log(`\n📊 Folhas com essa atividade (sem executor): ${folhasComAtividade.length}`);
       
-      if (folhasDisponiveis.length === 0) {
-        alert('⚠️ Todas as folhas do empreendimento já possuem executor definido.\n\nPara replanejar, primeiro remova o executor da folha desejada.');
+      if (folhasComAtividade.length === 0) {
+        alert('⚠️ Essa atividade não está disponível em nenhuma folha sem executor.\n\nVerifique se:\n• A atividade já foi planejada em todas as folhas\n• Ou a folha não possui essa disciplina/subdisciplina');
         setIsLoading(false);
         return;
       }
+      
+      const folhasDisponiveis = folhasComAtividade;
 
       // Confirmar com o usuário
       const confirmacao = window.confirm(
