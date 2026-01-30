@@ -2149,9 +2149,9 @@ export default function DocumentosTab({
                 )}
                 {!readOnly && (
                 <TableCell>
-            <div className="flex items-center justify-end gap-2">
+            <div className="space-y-2">
                 {!readOnly && (
-                  <div className="w-[250px]">
+                  <>
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
@@ -2163,9 +2163,9 @@ export default function DocumentosTab({
                             {doc.predecessora_id 
                               ? (() => {
                                   const pred = localDocumentos.find(d => d.id === doc.predecessora_id);
-                                  return pred ? `${pred.numero} - ${pred.arquivo}` : 'Predecessor não encontrado';
+                                  return pred ? `${pred.numero}` : 'Não encontrado';
                                 })()
-                              : 'Selecione predecessor'}
+                              : 'Predecessora'}
                           </span>
                           <ChevronDown className="h-4 w-4 ml-2 opacity-50" />
                         </Button>
@@ -2222,7 +2222,27 @@ export default function DocumentosTab({
                         </div>
                       </PopoverContent>
                     </Popover>
-                  </div>
+                    
+                    <div className="flex items-center gap-1">
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="h-7 w-7 border-blue-500 text-blue-600 hover:bg-blue-50"
+                        onClick={() => handleOpenDocEtapaModal(doc)}
+                        disabled={isDocLoading}
+                        title="Planejar Documento"
+                      >
+                        <CalendarDays className="h-3.5 w-3.5" />
+                      </Button>
+
+                      <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleEdit(doc)} disabled={isDocLoading}>
+                        <Edit className="h-3.5 w-3.5" />
+                      </Button>
+                      <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => handleDelete(doc.id)} disabled={isDocLoading}>
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </div>
+                  </>
                 )}
               </div>
             </TableCell>
