@@ -730,19 +730,88 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
           </div>
         )}
 
-        {/* Meta/Info Row: Subdisciplina on left, Time on right */}
-        <div className="flex items-center justify-between flex-wrap gap-x-3 gap-y-1 mb-1.5">
-          {/* Left side: Subdisciplina */}
-          <div className="flex items-center gap-3 flex-wrap">
-              {subdisciplina && (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                  <span className="text-blue-600 font-medium">{subdisciplina}</span>
-                </div>
-              )}
+        {/* Meta/Info Row: Subdisciplina on left */}
+        <div className="flex items-center gap-3 flex-wrap mb-1.5">
+          {subdisciplina && (
+            <div className="flex items-center gap-1.5">
+              <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
+              <span className="text-blue-600 font-medium">{subdisciplina}</span>
+            </div>
+          )}
+        </div>
+        
+        {/* CORRIGIDO: Documento Row agora só renderiza para atividades normais, não para planejamentos de documento */}
+        {plano.tipo_planejamento !== 'documento' && documentoDisplay && (
+          <p className="text-gray-600 font-mono mb-1.5 break-words" title={`Documento: ${documentoDisplay}`}>
+            {documentoDisplay}
+          </p>
+        )}
+        
+        {/* OS Row */}
+        {plano.os && (
+          <p className="text-blue-600 font-semibold text-xs mb-1.5">
+            OS: {plano.os}
+          </p>
+        )}
+
+        {observacao && (
+          <div className="mt-1.5 p-2 bg-gray-50 border border-gray-200 rounded text-xs">
+            <p className="text-gray-700 italic">
+              <span className="font-semibold text-gray-600">💬 Obs:</span> {observacao}
+            </p>
           </div>
-          
-          {/* Right side: Time information - CORRIGIDO */}
+        )}
+
+        {/* Action Icons - Botão de status unificado + ações + horas */}
+        <div className="flex gap-2 mt-2 items-center justify-between">
+          <div className="flex gap-2 items-center">
+            {/* Botão de status unificado (Iniciar/Pausar/Atrasado) */}
+            <button
+              onClick={handleStartActivity}
+              disabled={!!activeExecution || isStarting || realStatus === 'concluido'}
+              className={`p-1.5 rounded-md transition-colors ${
+                activeExecution?.planejamento_id === plano.id 
+                  ? 'bg-yellow-500 hover:bg-yellow-600 animate-pulse' 
+                  : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado')
+                  ? 'bg-red-500 hover:bg-red-600'
+                  : 'bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed'
+              }`}
+              title={
+                activeExecution?.planejamento_id === plano.id 
+                  ? "Atividade em andamento" 
+                  : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado')
+                  ? "Atividade atrasada"
+                  : isStarting ? "Iniciando..." : "Iniciar atividade"
+              }
+            >
+              {activeExecution?.planejamento_id === plano.id ? (
+                <Clock className="w-3.5 h-3.5 text-white" />
+              ) : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado') ? (
+                <span className="text-white text-xs font-bold">✕</span>
+              ) : (
+                <Play className="w-3.5 h-3.5 text-white" fill="white" />
+              )}
+            </button>
+            
+            <button
+              onClick={handleDeleteActivity}
+              disabled={isDeleting || !!activeExecution}
+              className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-100 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              title={plano.isLegacyExecution ? "Excluir Execução Rápida Antiga" : plano.tipo_planejamento === 'documento' ? "Excluir Planejamento de Documento" : "Excluir Atividade"}
+            >
+              {isDeleting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+            </button>
+            
+            <button
+              onClick={handleOpenEditDescricao}
+              className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-100 transition-colors"
+              title="Editar descrição da atividade"
+            >
+              <Edit2 className="w-3.5 h-3.5 text-gray-600" />
+            </button>
+          </div>
+
+          {/* Time information */}
           <div className="flex items-center gap-2">
             {shouldShowAdjustButton() ? (
               <button
@@ -771,76 +840,6 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
               </div>
             )}
           </div>
-        </div>
-        
-        {/* CORRIGIDO: Documento Row agora só renderiza para atividades normais, não para planejamentos de documento */}
-        {plano.tipo_planejamento !== 'documento' && documentoDisplay && (
-          <p className="text-gray-600 font-mono mb-1.5 break-words" title={`Documento: ${documentoDisplay}`}>
-            {documentoDisplay}
-          </p>
-        )}
-        
-        {/* OS Row */}
-        {plano.os && (
-          <p className="text-blue-600 font-semibold text-xs mb-1.5">
-            OS: {plano.os}
-          </p>
-        )}
-
-        {observacao && (
-          <div className="mt-1.5 p-2 bg-gray-50 border border-gray-200 rounded text-xs">
-            <p className="text-gray-700 italic">
-              <span className="font-semibold text-gray-600">💬 Obs:</span> {observacao}
-            </p>
-          </div>
-        )}
-
-        {/* Action Icons - Botão de status unificado + ações */}
-        <div className="flex gap-2 mt-2 items-center">
-          {/* Botão de status unificado (Iniciar/Pausar/Atrasado) */}
-          <button
-            onClick={handleStartActivity}
-            disabled={!!activeExecution || isStarting || realStatus === 'concluido'}
-            className={`p-1.5 rounded-md transition-colors ${
-              activeExecution?.planejamento_id === plano.id 
-                ? 'bg-yellow-500 hover:bg-yellow-600 animate-pulse' 
-                : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado')
-                ? 'bg-red-500 hover:bg-red-600'
-                : 'bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed'
-            }`}
-            title={
-              activeExecution?.planejamento_id === plano.id 
-                ? "Atividade em andamento" 
-                : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado')
-                ? "Atividade atrasada"
-                : isStarting ? "Iniciando..." : "Iniciar atividade"
-            }
-          >
-            {activeExecution?.planejamento_id === plano.id ? (
-              <Clock className="w-3.5 h-3.5 text-white" />
-            ) : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado') ? (
-              <span className="text-white text-xs font-bold">✕</span>
-            ) : (
-              <Play className="w-3.5 h-3.5 text-white" fill="white" />
-            )}
-          </button>
-          
-          <button
-            onClick={handleDeleteActivity}
-            disabled={isDeleting || !!activeExecution}
-            className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-100 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            title={plano.isLegacyExecution ? "Excluir Execução Rápida Antiga" : plano.tipo_planejamento === 'documento' ? "Excluir Planejamento de Documento" : "Excluir Atividade"}
-          >
-            {isDeleting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-          </button>
-          
-          <button
-            onClick={handleOpenEditDescricao}
-            className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-100 transition-colors"
-            title="Editar descrição da atividade"
-          >
-            <Edit2 className="w-3.5 h-3.5 text-gray-600" />
-          </button>
         </div>
       </div>
 
