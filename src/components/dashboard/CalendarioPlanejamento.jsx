@@ -694,7 +694,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
 
         {/* Top Row: Activity Name + Action Icons */}
         <div className="flex items-start justify-between mb-1.5">
-          <div className={`flex-1 mr-2 ${hasSelections || isSelected ? 'ml-12' : 'ml-6'} overflow-hidden`}>
+          <div className="flex-1 mr-2 overflow-hidden">
             {plano.empreendimento?.nome && (
               <p className="text-xs text-gray-500 mb-0.5 font-medium truncate" title={plano.empreendimento.nome}>
                 📋 {plano.empreendimento.nome}
