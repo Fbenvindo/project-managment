@@ -1251,9 +1251,27 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
 
   // **NOVO**: No modo analítico, mostrar atividades diretamente sem grupos
   if (viewType === 'analitico') {
+    // Filtrar atividades com 0.0h neste dia específico
+    const activitiesComHoras = activities.filter(atividade => {
+      const horasAlocadas = Number(atividade.horas_por_dia?.[dayKey]) || 0;
+      const horasExecutadas = Number(atividade.horas_executadas_por_dia?.[dayKey]) || 0;
+      const tempoExecutado = Number(atividade.tempo_executado) || 0;
+      
+      // Para legado, considerar o tempo executado total
+      if (atividade.isLegacyExecution) return tempoExecutado > 0.01;
+      
+      // Para atividades rápidas, verificar execução OU alocação
+      if (atividade.isQuickActivity || atividade.is_quick_activity) {
+        return horasExecutadas > 0.01 || horasAlocadas > 0.01;
+      }
+      
+      // Para atividades normais, verificar se tem horas significativas
+      return horasAlocadas > 0.01 || horasExecutadas > 0.01;
+    });
+    
     return (
       <div className={`space-y-1 ${containerClass}`}>
-        {activities.map((atividade, index) => (
+        {activitiesComHoras.map((atividade, index) => (
           <Draggable 
             key={atividade.id} 
             draggableId={atividade.id} 
@@ -1282,13 +1300,47 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
   }
 
   // **MODO SINTÉTICO**: Mostrar apenas os grupos (pastas)
+  // Filtrar grupos vazios (onde todas as atividades têm 0.0h neste dia)
+  const groupsComHoras = Object.entries(activityGroups).filter(([groupKey, groupData]) => {
+    return groupData.atividades.some(atividade => {
+      const horasAlocadas = Number(atividade.horas_por_dia?.[dayKey]) || 0;
+      const horasExecutadas = Number(atividade.horas_executadas_por_dia?.[dayKey]) || 0;
+      const tempoExecutado = Number(atividade.tempo_executado) || 0;
+      
+      if (atividade.isLegacyExecution) return tempoExecutado > 0.01;
+      if (atividade.isQuickActivity || atividade.is_quick_activity) {
+        return horasExecutadas > 0.01 || horasAlocadas > 0.01;
+      }
+      return horasAlocadas > 0.01 || horasExecutadas > 0.01;
+    });
+  });
+  
   return (
     <div className={`space-y-1 ${containerClass}`}>
-      {Object.entries(activityGroups).map(([groupKey, groupData]) => {
+      {groupsComHoras.map(([groupKey, groupData]) => {
+        // Filtrar atividades do grupo com 0.0h neste dia
+        const atividadesComHoras = groupData.atividades.filter(atividade => {
+          const horasAlocadas = Number(atividade.horas_por_dia?.[dayKey]) || 0;
+          const horasExecutadas = Number(atividade.horas_executadas_por_dia?.[dayKey]) || 0;
+          const tempoExecutado = Number(atividade.tempo_executado) || 0;
+          
+          if (atividade.isLegacyExecution) return tempoExecutado > 0.01;
+          if (atividade.isQuickActivity || atividade.is_quick_activity) {
+            return horasExecutadas > 0.01 || horasAlocadas > 0.01;
+          }
+          return horasAlocadas > 0.01 || horasExecutadas > 0.01;
+        });
+        
+        // Não renderizar grupos vazios
+        if (atividadesComHoras.length === 0) return null;
+        
+        // Atualizar groupData com atividades filtradas
+        const groupDataFiltrado = { ...groupData, atividades: atividadesComHoras };
+        
         // **CORRIGIDO**: Remover restrição de "Atividades Gerais", apenas bloquear "Atividades Rápidas" (Legado) e concluídas
         const canDragGroup = canReprogram && 
-                            groupData.empreendimento?.nome !== 'Atividades Rápidas' && 
-                            !groupData.atividades.some(a => a.status === 'concluido' || a.isLegacyExecution);
+                            groupDataFiltrado.empreendimento?.nome !== 'Atividades Rápidas' && 
+                            !groupDataFiltrado.atividades.some(a => a.status === 'concluido' || a.isLegacyExecution);
         
         // Se pode arrastar o grupo, envolve em Draggable
         if (canDragGroup) {
@@ -1301,9 +1353,9 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
             >
               {(provided, snapshot) => (
                 <DailyActivityGroup
-                  empreendimento={groupData.empreendimento}
-                  executor={groupData.executor}
-                  atividades={groupData.atividades}
+                  empreendimento={groupDataFiltrado.empreendimento}
+                  executor={groupDataFiltrado.executor}
+                  atividades={groupDataFiltrado.atividades}
                   isExpanded={expandedGroups.has(groupKey)}
                   onToggle={() => toggleGroup(groupKey)}
                   disciplinas={disciplinas}
@@ -1328,9 +1380,9 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
           return (
             <DailyActivityGroup
               key={`group-${groupKey}-${dayKey}-static`}
-              empreendimento={groupData.empreendimento}
-              executor={groupData.executor}
-              atividades={groupData.atividades}
+              empreendimento={groupDataFiltrado.empreendimento}
+              executor={groupDataFiltrado.executor}
+              atividades={groupDataFiltrado.atividades}
               isExpanded={expandedGroups.has(groupKey)}
               onToggle={() => toggleGroup(groupKey)}
               disciplinas={disciplinas}
