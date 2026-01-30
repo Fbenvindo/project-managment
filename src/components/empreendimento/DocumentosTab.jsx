@@ -2150,33 +2150,7 @@ export default function DocumentosTab({
                 {!readOnly && (
                 <TableCell>
             <div className="flex items-center justify-end gap-2">
-                {!readOnly && !expandedSequencing[doc.id] && (
-                 <>
-                   <Button
-                     variant="outline"
-                     size="sm"
-                     onClick={() => toggleSequencing(doc.id)}
-                     className="text-xs h-7 border-purple-500 text-purple-600 hover:bg-purple-50"
-                     disabled={isDocLoading}
-                   >
-                     <CalendarIcon className="w-3 h-3 mr-1" />
-                     Predecessora
-                   </Button>
-                 </>
-                )}
-                {expandedSequencing[doc.id] && (
-                 <Button
-                   variant="outline"
-                   size="sm"
-                   onClick={() => toggleSequencing(doc.id)}
-                   className="text-xs h-7 border-purple-500 bg-purple-50 text-purple-600"
-                   disabled={isDocLoading}
-                 >
-                   <CalendarIcon className="w-3 h-3 mr-1" />
-                   Fechar
-                 </Button>
-                )}
-                {!readOnly && !expandedSequencing[doc.id] && !doc.predecessora_id && (
+                {!readOnly && !doc.predecessora_id && (
                   <>
                     <Button
                       variant="outline"
@@ -2202,9 +2176,8 @@ export default function DocumentosTab({
           )}
         </TableRow>
 
-        {expandedSequencing[doc.id] && (
-          <TableRow>
-            <TableCell colSpan={8} className="bg-purple-50">
+        <TableRow>
+          <TableCell colSpan={8} className="bg-purple-50">
               <div className="p-4">
                 <h4 className="font-semibold mb-4 flex items-center gap-2">
                   <CalendarIcon className="w-4 h-4" />
@@ -2331,8 +2304,7 @@ export default function DocumentosTab({
                 </div>
               </div>
             </TableCell>
-          </TableRow>
-        )}
+        </TableRow>
 
         {expandedRows[doc.id] && (
           <TableRow>
