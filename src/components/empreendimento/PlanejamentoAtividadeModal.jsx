@@ -60,14 +60,20 @@ export default function PlanejamentoAtividadeModal({
     console.log(`📄 [PlanejamentoAtividadeModal] Total de documentos recebidos:`, docs.length);
     console.log(`📄 [PlanejamentoAtividadeModal] Atividade:`, atividade.disciplina, '-', atividade.subdisciplina);
 
-    // Para Documentação, sempre mostrar todos os documentos
+    // Para Documentação, sempre mostrar todos os documentos SEM executor
     if (atividade.disciplina === 'Documentação') {
-      console.log(`📄 [PlanejamentoAtividadeModal] Documentação detectada - mostrando todos (${docs.length})`);
-      return docs;
+      const docsSemExecutor = docs.filter(d => !d.executor_principal);
+      console.log(`📄 [PlanejamentoAtividadeModal] Documentação detectada - ${docsSemExecutor.length} sem executor de ${docs.length} total`);
+      return docsSemExecutor;
     }
 
-    // Para outras disciplinas, tentar filtrar por disciplina + subdisciplina
+    // Para outras disciplinas, filtrar por disciplina + subdisciplina E sem executor
     let result = docs.filter(doc => {
+      // Primeiro verificar se a folha já tem executor
+      if (doc.executor_principal) {
+        return false;
+      }
+
       if (!atividade.subdisciplina || atividade.subdisciplina === null || atividade.subdisciplina === '') {
         return doc.disciplina === atividade.disciplina;
       }
@@ -77,13 +83,14 @@ export default function PlanejamentoAtividadeModal({
              docSubdisciplinas.includes(atividade.subdisciplina);
     });
 
-    // Se não encontrou documentos com filtro específico, mostrar todos do empreendimento
+    // Se não encontrou documentos com filtro específico, mostrar todos sem executor
     if (result.length === 0) {
-      console.log(`📄 [PlanejamentoAtividadeModal] Nenhum documento encontrado com filtro específico - mostrando todos (${docs.length})`);
-      return docs;
+      const docsSemExecutor = docs.filter(d => !d.executor_principal);
+      console.log(`📄 [PlanejamentoAtividadeModal] Nenhum documento encontrado com filtro específico - ${docsSemExecutor.length} sem executor`);
+      return docsSemExecutor;
     }
 
-    console.log(`📄 [PlanejamentoAtividadeModal] Documentos filtrados:`, result.length);
+    console.log(`📄 [PlanejamentoAtividadeModal] Documentos filtrados (sem executor):`, result.length);
     return result;
   }, [documentos, atividade]);
 
