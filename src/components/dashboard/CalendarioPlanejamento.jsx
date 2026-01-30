@@ -798,16 +798,6 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
             OS: {plano.os}
           </p>
         )}
-        
-        {/* Executor Row */}
-        {planoExecutor && (
-          <div className="flex items-center gap-1.5 text-gray-700">
-            <User className="w-3 h-3 flex-shrink-0"/>
-            <span className="break-words" title={planoExecutor.nome || planoExecutor.email}>
-              {planoExecutor.nome || planoExecutor.email}
-            </span>
-          </div>
-        )}
 
         {observacao && (
           <div className="mt-1.5 p-2 bg-gray-50 border border-gray-200 rounded text-xs">
