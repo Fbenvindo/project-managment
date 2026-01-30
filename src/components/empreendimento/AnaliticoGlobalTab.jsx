@@ -1457,6 +1457,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             <TableHead>Status</TableHead>
                             <TableHead>Etapa</TableHead>
                             <TableHead>Tempo Padrão</TableHead>
+                            <TableHead>Tempo Total</TableHead>
                             <TableHead className="text-center">Planejar</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                           </TableRow>
@@ -1519,6 +1520,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                   </TableCell>
                                   <TableCell className="text-sm">{ativ.etapa}</TableCell>
                                   <TableCell className="text-sm">{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
+                                  <TableCell className="text-sm font-semibold text-blue-600">
+                                    {grupo.folhas.length > 0 
+                                      ? `${grupo.folhas.reduce((sum, f) => sum + (Number(f.tempo) || 0), 0).toFixed(1)}h`
+                                      : '-'}
+                                  </TableCell>
                                   <TableCell className="text-center">
                                     <Button 
                                       size="sm" 
@@ -1592,6 +1598,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                     </TableCell>
                                     <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
                                     <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
+                                    <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
                                     <TableCell></TableCell>
                                     <TableCell></TableCell>
                                   </TableRow>
@@ -1615,6 +1622,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                      <TableHead>Status</TableHead>
                      <TableHead>Etapa</TableHead>
                      <TableHead>Tempo Padrão</TableHead>
+                     <TableHead>Tempo Total</TableHead>
                      <TableHead className="text-center">Planejar</TableHead>
                      <TableHead className="w-[50px]"></TableHead>
                    </TableRow>
@@ -1678,6 +1686,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                           </TableCell>
                           <TableCell>{ativ.etapa}</TableCell>
                           <TableCell>{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
+                          <TableCell className="font-semibold text-blue-600">
+                            {grupo.folhas.length > 0 
+                              ? `${grupo.folhas.reduce((sum, f) => sum + (Number(f.tempo) || 0), 0).toFixed(1)}h`
+                              : '-'}
+                          </TableCell>
                           <TableCell className="text-center">
                             <Button 
                               size="sm" 
@@ -1751,6 +1764,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                               </Badge>
                             </TableCell>
                             <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
+                            <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
                             <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
                             <TableCell></TableCell>
                             <TableCell></TableCell>
