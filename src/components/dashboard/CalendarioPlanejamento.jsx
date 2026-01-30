@@ -766,13 +766,13 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
                 title="Clique para ajustar o tempo (Coordenador ou superior)"
               >
                 <span className="font-semibold text-sm">
-                  {Math.ceil(tempoExecutado * 10) / 10}/{Math.ceil(tempoPlanejado * 10) / 10}h
+                  {Math.ceil(tempoPlanejado * 10) / 10}/{Math.ceil(tempoExecutado * 10) / 10}h
                 </span>
               </button>
             ) : (
                <div className="font-mono text-blue-600">
-                 <span className="font-semibold text-sm" title="Executado / Planejado">
-                   {Math.ceil(tempoExecutado * 10) / 10}/{Math.ceil(tempoPlanejado * 10) / 10}h
+                 <span className="font-semibold text-sm" title="Planejado / Executado">
+                   {Math.ceil(tempoPlanejado * 10) / 10}/{Math.ceil(tempoExecutado * 10) / 10}h
                  </span>
               </div>
             )}
