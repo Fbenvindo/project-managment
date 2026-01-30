@@ -795,21 +795,21 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
                 className="font-mono text-blue-600 hover:text-blue-800 hover:underline cursor-pointer flex flex-col items-end"
                 title="Clique para ajustar o tempo (Coordenador ou superior)"
               >
-                 <span className="font-semibold text-sm" title="Horas para este dia">{horasDoDia.toFixed(1)}h</span>
+                 <span className="font-semibold text-sm" title="Horas para este dia">{Math.ceil(horasDoDia * 10) / 10}h</span>
                  <span className="text-xs text-gray-500 font-normal" title="Executado / Total Planejado">
-                    ({tempoExecutado.toFixed(1)}h / {tempoPlanejado.toFixed(1)}h)
+                    ({Math.ceil(tempoExecutado * 10) / 10}h / {Math.ceil(tempoPlanejado * 10) / 10}h)
                 </span>
               </button>
             ) : (
                <div className="font-mono text-blue-600 flex flex-col items-end">
-                 <span className="font-semibold text-sm" title="Horas para este dia">{horasDoDia.toFixed(1)}h</span>
+                 <span className="font-semibold text-sm" title="Horas para este dia">{Math.ceil(horasDoDia * 10) / 10}h</span>
                  {realStatus === 'concluido' ? (
                    <span className="text-xs text-green-600 font-medium" title="Tempo total executado">
-                      ✓ {tempoExecutado.toFixed(1)}h executadas
+                      ✓ {Math.ceil(tempoExecutado * 10) / 10}h executadas
                    </span>
                  ) : (
                    <span className="text-xs text-gray-500 font-normal" title="Executado / Total Planejado">
-                      ({tempoExecutado.toFixed(1)}h / {tempoPlanejado.toFixed(1)}h)
+                      ({Math.ceil(tempoExecutado * 10) / 10}h / {Math.ceil(tempoPlanejado * 10) / 10}h)
                    </span>
                  )}
               </div>
@@ -999,7 +999,7 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
       soma += horasDoDia;
     });
 
-    return Math.round(soma * 10) / 10;
+    return Math.ceil(soma * 10) / 10;
   }, [atividades, dayKey]);
   
   const statusCounts = atividades.reduce((acc, atividade) => {
@@ -1139,7 +1139,7 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
                   className="px-1.5 py-0.5 rounded text-xs font-bold text-white"
                   style={{ backgroundColor: statusColor }}
                 >
-                  {totalHoras > 0 ? `${totalHoras.toFixed(1)}h` : '0h'}
+                  {totalHoras > 0 ? `${Math.ceil(totalHoras * 10) / 10}h` : '0h'}
                 </div>
                 <p className="text-xs text-gray-500 mt-0.5">{atividades.length} ativ.</p>
               </div>
@@ -1650,7 +1650,7 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
                             
                             total += horasDia;
                           });
-                          return `${(Math.round(total * 10) / 10).toFixed(1)}h`;
+                          return `${Math.ceil(total * 10) / 10}h`;
                         })()}
                       </span>
                     </div>
@@ -2569,7 +2569,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       soma += horasDia;
     });
     
-    return Math.round(soma * 10) / 10;
+    return Math.ceil(soma * 10) / 10;
   }, [currentDate, activitiesByDay, viewMode]);
 
   const headerTitle = useMemo(() => {
