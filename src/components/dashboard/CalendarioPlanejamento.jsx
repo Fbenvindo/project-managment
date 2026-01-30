@@ -795,27 +795,35 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
           </div>
         )}
 
-        {/* Action Icons - Todos os botões sempre visíveis na mesma linha */}
+        {/* Action Icons - Botão de status unificado + ações */}
         <div className="flex gap-2 mt-2 items-center">
+          {/* Botão de status unificado (Iniciar/Pausar/Atrasado) */}
           <button
             onClick={handleStartActivity}
-            disabled={!!activeExecution || isStarting}
-            className="p-1.5 rounded-md bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-            title={isStarting ? "Iniciando..." : "Iniciar atividade"}
+            disabled={!!activeExecution || isStarting || realStatus === 'concluido'}
+            className={`p-1.5 rounded-md transition-colors ${
+              activeExecution?.planejamento_id === plano.id 
+                ? 'bg-yellow-500 hover:bg-yellow-600 animate-pulse' 
+                : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado')
+                ? 'bg-red-500 hover:bg-red-600'
+                : 'bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed'
+            }`}
+            title={
+              activeExecution?.planejamento_id === plano.id 
+                ? "Atividade em andamento" 
+                : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado')
+                ? "Atividade atrasada"
+                : isStarting ? "Iniciando..." : "Iniciar atividade"
+            }
           >
-            <Play className="w-3.5 h-3.5 text-white" fill="white" />
+            {activeExecution?.planejamento_id === plano.id ? (
+              <Clock className="w-3.5 h-3.5 text-white" />
+            ) : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado') ? (
+              <span className="text-white text-xs font-bold">✕</span>
+            ) : (
+              <Play className="w-3.5 h-3.5 text-white" fill="white" />
+            )}
           </button>
-          
-          <button
-            className={`p-1.5 rounded-md transition-colors ${activeExecution?.planejamento_id === plano.id ? 'bg-yellow-500 hover:bg-yellow-600 animate-pulse' : 'bg-gray-300'}`}
-            title="Atividade em andamento"
-          >
-            <Clock className="w-3.5 h-3.5 text-white" />
-          </button>
-          
-          <div className={`p-1.5 rounded-md ${(realStatus === 'atrasado' || realStatus === 'replanejado_atrasado') ? 'bg-red-500' : 'bg-gray-300'}`} title="Atividade atrasada">
-            <span className="text-white text-xs font-bold">✕</span>
-          </div>
           
           <button
             onClick={handleDeleteActivity}
