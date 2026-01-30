@@ -2150,47 +2150,13 @@ export default function DocumentosTab({
                 {!readOnly && (
                 <TableCell>
             <div className="flex items-center justify-end gap-2">
-                {!readOnly && !doc.predecessora_id && (
-                  <>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      className="h-8 w-8 border-blue-500 text-blue-600 hover:bg-blue-50 hover:text-blue-700"
-                      onClick={() => handleOpenDocEtapaModal(doc)}
-                      disabled={isDocLoading}
-                      title="Planejar Documento"
-                    >
-                      <CalendarDays className="h-4 w-4" />
-                    </Button>
-
-                    <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => handleEdit(doc)} disabled={isDocLoading}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="destructive" size="icon" className="h-8 w-8" onClick={() => handleDelete(doc.id)} disabled={isDocLoading}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </>
-                )}
-              </div>
-            </TableCell>
-          )}
-        </TableRow>
-
-        <TableRow>
-          <TableCell colSpan={8} className="bg-purple-50">
-              <div className="p-4">
-                <h4 className="font-semibold mb-4 flex items-center gap-2">
-                  <CalendarIcon className="w-4 h-4" />
-                  Sequenciamento - {doc.numero}
-                </h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <Label className="text-sm font-medium">Documento Predecessor</Label>
+                {!readOnly && (
+                  <div className="w-[250px]">
                     <Popover>
                       <PopoverTrigger asChild>
                         <Button
                           variant="outline"
-                          className="w-full mt-1 justify-between"
+                          className="w-full justify-between text-xs h-8"
                           disabled={isDocLoading}
                         >
                           <span className="truncate">
@@ -2256,54 +2222,11 @@ export default function DocumentosTab({
                         </div>
                       </PopoverContent>
                     </Popover>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {doc.predecessora_id 
-                        ? "✅ Predecessor salvo. Datas calculadas ao planejar." 
-                        : "Sem predecessor"}
-                    </p>
                   </div>
-
-                  <div>
-                    <Label className="text-sm font-medium">Data de Início Manual</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className="w-full mt-1 justify-start text-left font-normal"
-                          disabled={isDocLoading || doc.multiplos_executores === true}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {doc.inicio_planejado && isValid(parseDate(doc.inicio_planejado))
-                            ? format(parseDate(doc.inicio_planejado), 'dd/MM/yyyy')
-                            : "Selecionar"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
-                        <Calendar
-                          mode="single"
-                          selected={doc.inicio_planejado && isValid(parseDate(doc.inicio_planejado))
-                            ? parseDate(doc.inicio_planejado)
-                            : undefined}
-                          onSelect={(date) => {
-                            if (date) {
-                              handleDataInicioChange(doc.id, format(date, 'yyyy-MM-dd'));
-                            }
-                          }}
-                          initialFocus
-                        />
-                      </PopoverContent>
-                      <p className="text-xs text-green-600 mt-2">
-                        ✅ Sucessoras ajustadas automaticamente
-                      </p>
-                    </Popover>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {doc.multiplos_executores ? "Defina no modal de planejamento" : 
-                       doc.inicio_planejado ? "✅ Data salva. Será usada ao planejar." : "Opcional - calcula automaticamente"}
-                    </p>
-                  </div>
-                </div>
+                )}
               </div>
             </TableCell>
+          )}
         </TableRow>
 
         {expandedRows[doc.id] && (
