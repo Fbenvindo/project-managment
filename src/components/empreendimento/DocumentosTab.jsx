@@ -2034,62 +2034,49 @@ export default function DocumentosTab({
           {!readOnly && (
             <TableCell className="w-[180px]">
               <div className="space-y-1">
-                <div className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`multi-${doc.id}`}
-                    checked={doc.multiplos_executores || false}
-                    onCheckedChange={(checked) => handleExecutorChange('multiplos_executores', checked)}
-                    disabled={isUpdating || isDocLoading}
-                  />
-                  <Label htmlFor={`multi-${doc.id}`} className="text-xs font-normal">Múltiplos Executores</Label>
-                </div>
-                {!doc.multiplos_executores && (
-                  <div className="space-y-1">
-                    {doc.executor_principal ? (
-                      <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
-                        <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span className="text-xs font-medium text-green-800">
-                            {usuariosOrdenados.find(u => u.email === doc.executor_principal)?.nome || doc.executor_principal}
-                          </span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleExecutorChange('executor_principal', null)}
-                          className="text-xs text-red-600 hover:text-red-700 h-6"
-                          disabled={isUpdating || isDocLoading}
-                        >
-                          Remover
-                        </Button>
-                      </div>
-                    ) : (
-                      <Select
-                        onValueChange={(value) => handleExecutorSelectChange(value)}
-                        disabled={isUpdating || isDocLoading}
-                      >
-                        <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
-                          <Users2 className="w-3 h-3 mr-1" />
-                          <SelectValue placeholder="Selecionar Executor" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {usuariosOrdenados.map(u => (
-                            <SelectItem key={u.id} value={u.email}>
-                              {u.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                {doc.executor_principal ? (
+                  <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-xs font-medium text-green-800">
+                        {usuariosOrdenados.find(u => u.email === doc.executor_principal)?.nome || doc.executor_principal}
+                      </span>
                     </div>
-                    )}
-                    {(isUpdating || isDocLoading) && (
-                    <div className="flex items-center gap-1 text-xs text-blue-600">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleExecutorChange('executor_principal', null)}
+                      className="text-xs text-red-600 hover:text-red-700 h-6"
+                      disabled={isUpdating || isDocLoading}
+                    >
+                      Remover
+                    </Button>
+                  </div>
+                ) : (
+                  <Select
+                    onValueChange={(value) => handleExecutorSelectChange(value)}
+                    disabled={isUpdating || isDocLoading}
+                  >
+                    <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
+                      <Users2 className="w-3 h-3 mr-1" />
+                      <SelectValue placeholder="Selecionar Executor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {usuariosOrdenados.map(u => (
+                        <SelectItem key={u.id} value={u.email}>
+                          {u.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+                {(isUpdating || isDocLoading) && (
+                  <div className="flex items-center gap-1 text-xs text-blue-600">
                     <Loader2 className="w-3 h-3 animate-spin" />
                     {isDocLoading ? "Planejando..." : "Salvando..."}
-                    </div>
-                    )}
-                    </div>
+                  </div>
+                )}
+              </div>
 
                     {/* Diálogo de aplicação a folhas relacionadas */}
                     <Dialog open={showExecutorDialog} onOpenChange={setShowExecutorDialog}>
