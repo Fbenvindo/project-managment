@@ -323,8 +323,7 @@ export default function PlanejamentoAtividadeModal({
       }
     }
 
-
-    if (!formData.multiplos_executores && !formData.executor_principal) {
+    if (!formData.executor_principal) {
       alert('Por favor, selecione um executor.');
       return;
     }
@@ -365,155 +364,87 @@ export default function PlanejamentoAtividadeModal({
     setIsLoading(true);
 
     try {
-      let datasParaCriar = [];
-
-      if (formData.recorrencia_ativada) {
-        console.log('📅 Modo: Recorrência ativada');
-
-        if (formData.tipo_recorrencia === 'datas_especificas') {
-          datasParaCriar = formData.datas_especificas;
-          console.log(`   Datas específicas: ${datasParaCriar.length} datas`);
+      console.log('📋 Buscando documentos disponíveis para planejamento...');
+      
+      // **NOVA LÓGICA**: Filtrar apenas folhas SEM executor_principal
+      const folhasDisponiveis = (documentos || []).filter(doc => {
+        const temExecutor = !!doc.executor_principal;
+        const resultado = !temExecutor;
+        
+        if (temExecutor) {
+          console.log(`   ⏭️ Pulando folha ${doc.numero}: já tem executor (${doc.executor_principal})`);
         } else {
-          const dataInicio = formData.data_inicio_recorrencia;
-          if (!dataInicio) throw new Error('Data de início da recorrência não definida.');
-
-          console.log(`   Tipo: ${formData.tipo_recorrencia}`);
-          console.log(`   Início: ${format(dataInicio, 'dd/MM/yyyy', { locale: pt })}`);
-          console.log(`   Ocorrências: ${formData.quantidade_ocorrencias}`);
-
-          for (let i = 0; i < formData.quantidade_ocorrencias; i++) {
-            let novaData;
-            if (formData.tipo_recorrencia === 'diaria') {
-              novaData = addDays(dataInicio, i);
-            } else if (formData.tipo_recorrencia === 'semanal') {
-              novaData = addWeeks(dataInicio, i);
-            } else if (formData.tipo_recorrencia === 'mensal') {
-              novaData = addMonths(dataInicio, i);
-            }
-            datasParaCriar.push(novaData);
-          }
-          console.log(`   Datas calculadas: ${datasParaCriar.length}`);
+          console.log(`   ✅ Folha ${doc.numero}: disponível para planejamento`);
         }
-      } else {
-        datasParaCriar = [null];
-        console.log('📅 Modo: Criação única');
+        
+        return resultado;
+      });
+
+      console.log(`\n📊 Total de folhas disponíveis: ${folhasDisponiveis.length} de ${documentos.length}`);
+      
+      if (folhasDisponiveis.length === 0) {
+        alert('⚠️ Todas as folhas do empreendimento já possuem executor definido.\n\nPara replanejar, primeiro remova o executor da folha desejada.');
+        setIsLoading(false);
+        return;
       }
 
-      console.log(`\n📊 Total de planejamentos a considerar: ${datasParaCriar.length}\n`);
+      // Confirmar com o usuário
+      const confirmacao = window.confirm(
+        `📋 Esta atividade será planejada em ${folhasDisponiveis.length} folha(s) sem executor:\n\n` +
+        folhasDisponiveis.map(d => `• ${d.numero} - ${d.arquivo}`).slice(0, 5).join('\n') +
+        (folhasDisponiveis.length > 5 ? `\n... e mais ${folhasDisponiveis.length - 5} folhas` : '') +
+        `\n\nExecutor: ${usuariosOrdenados.find(u => u.email === formData.executor_principal)?.nome}\n` +
+        `Tempo: ${formData.tempo_planejado}h por folha\n\nContinuar?`
+      );
+
+      if (!confirmacao) {
+        setIsLoading(false);
+        return;
+      }
 
       let totalCriados = 0;
+      let totalErros = 0;
 
-      if (formData.permite_multiplas_execucoes) {
-        console.log('🔄 Criando múltiplas execuções no mesmo dia...\n');
-
-        for (const dataEspecifica of datasParaCriar) {
-          for (const execucao of formData.execucoes) {
-            console.log(`   Execução: Documento ${execucao.documento_id || 'N/A'}, Tempo: ${execucao.tempo_planejado}h`);
-
-            const dadosPlanejamento = {
-              atividade_id: atividade.id,
-              empreendimento_id: empreendimentoId,
-              descritivo: atividade.atividade,
-              base_descritivo: atividade.atividade,
-              etapa: atividade.etapa,
-              tempo_planejado: parseFloat(execucao.tempo_planejado),
-              executor_principal: formData.executor_principal,
-              executores: [formData.executor_principal],
-              status: 'nao_iniciado',
-              documento_id: execucao.documento_id || null,
-              prioridade: 1
-            };
-
-            let dadosCalculo = null;
-            const fixedStartDateForDistribution = dataEspecifica || formData.data_inicio_manual;
-
-            if (formData.metodo_data === 'agenda' && !fixedStartDateForDistribution) {
-              console.log('   📅 Calculando data automaticamente (Agenda)...');
-              dadosCalculo = await calculateExecutorLoadAndDistribute(
-                formData.executor_principal,
-                dadosPlanejamento.tempo_planejado,
-                null
-              );
-            } else if (fixedStartDateForDistribution) {
-              console.log('   📅 Calculando distribuição para data fixa...');
-              dadosCalculo = await calculateExecutorLoadAndDistribute(
-                formData.executor_principal,
-                dadosPlanejamento.tempo_planejado,
-                fixedStartDateForDistribution
-              );
-            } else {
-              console.warn('   ⚠️ Nenhum método de data ou data de início definida. Usando modo agenda como fallback.');
-              dadosCalculo = await calculateExecutorLoadAndDistribute(
-                formData.executor_principal,
-                dadosPlanejamento.tempo_planejado,
-                null
-              );
-            }
-
-            dadosPlanejamento.inicio_planejado = dadosCalculo.dataInicio;
-            dadosPlanejamento.termino_planejado = dadosCalculo.dataTermino;
-            dadosPlanejamento.horas_por_dia = dadosCalculo.horasPorDia;
-
-            console.log('   💾 Criando planejamento:', {
-              executor: dadosPlanejamento.executor_principal,
-              tempo: dadosPlanejamento.tempo_planejado,
-              doc: dadosPlanejamento.documento_id,
-              inicio: dadosPlanejamento.inicio_planejado,
-              termino: dadosPlanejamento.termino_planejado,
-              horas_por_dia_count: Object.keys(dadosPlanejamento.horas_por_dia || {}).length,
-            });
-
-            await retryWithBackoff(
-              () => PlanejamentoAtividade.create(dadosPlanejamento),
-              3, 1000, 'createPlanejamentoAtividade'
-            );
-            totalCriados++;
-
-            console.log('   ✅ Criado com sucesso\n');
-          }
-        }
-
-        console.log(`✅ Todas as ${totalCriados} múltiplas execuções foram criadas!\n`);
-
-      } else {
-        for (const dataEspecifica of datasParaCriar) {
-          console.log(`\n--- Criando planejamento ${datasParaCriar.indexOf(dataEspecifica) + 1} de ${datasParaCriar.length} ---`);
+      // **NOVA LÓGICA**: Criar planejamento para cada folha disponível
+      for (const folha of folhasDisponiveis) {
+        try {
+          console.log(`\n📄 Planejando folha ${folha.numero}...`);
 
           const dadosPlanejamento = {
             atividade_id: atividade.id,
             empreendimento_id: empreendimentoId,
-            descritivo: atividade.atividade,
+            descritivo: `${atividade.atividade} - ${folha.numero}`,
             base_descritivo: atividade.atividade,
             etapa: atividade.etapa,
             tempo_planejado: parseFloat(formData.tempo_planejado),
-            executor_principal: formData.multiplos_executores ? null : formData.executor_principal,
-            executores: formData.multiplos_executores ? [] : [formData.executor_principal],
+            executor_principal: formData.executor_principal,
+            executores: [formData.executor_principal],
             status: 'nao_iniciado',
-            documento_id: formData.documento_id || null,
+            documento_id: folha.id,
             prioridade: 1
           };
 
           let dadosCalculo = null;
-          const fixedStartDateForDistribution = dataEspecifica || formData.data_inicio_manual;
+          const fixedStartDateForDistribution = formData.data_inicio_manual;
 
           if (formData.metodo_data === 'agenda' && !fixedStartDateForDistribution) {
-            console.log('📅 Método: Automático (usando calculateExecutorLoadAndDistribute para encontrar data)');
+            console.log('   📅 Calculando data automaticamente (Agenda)...');
             dadosCalculo = await calculateExecutorLoadAndDistribute(
-              dadosPlanejamento.executor_principal,
+              formData.executor_principal,
               dadosPlanejamento.tempo_planejado,
               null
             );
           } else if (fixedStartDateForDistribution) {
-            console.log('📅 Método: Manual/Recorrência (usando calculateExecutorLoadAndDistribute para distribuir a partir da data fixa)');
+            console.log('   📅 Calculando distribuição para data fixa...');
             dadosCalculo = await calculateExecutorLoadAndDistribute(
-              dadosPlanejamento.executor_principal,
+              formData.executor_principal,
               dadosPlanejamento.tempo_planejado,
               fixedStartDateForDistribution
             );
           } else {
-            console.warn('   ⚠️ Nenhum método de data ou data de início definida. Usando modo agenda como fallback.');
+            console.warn('   ⚠️ Usando modo agenda como fallback.');
             dadosCalculo = await calculateExecutorLoadAndDistribute(
-              dadosPlanejamento.executor_principal,
+              formData.executor_principal,
               dadosPlanejamento.tempo_planejado,
               null
             );
@@ -523,31 +454,39 @@ export default function PlanejamentoAtividadeModal({
           dadosPlanejamento.termino_planejado = dadosCalculo.dataTermino;
           dadosPlanejamento.horas_por_dia = dadosCalculo.horasPorDia;
 
-          console.log('💾 Salvando no banco de dados...');
-          console.log('   Dados:', {
+          console.log('   💾 Criando planejamento:', {
+            folha: folha.numero,
             executor: dadosPlanejamento.executor_principal,
-            atividade: dadosPlanejamento.descritivo,
             tempo: dadosPlanejamento.tempo_planejado,
             inicio: dadosPlanejamento.inicio_planejado,
-            termino: dadosPlanejamento.termino_planejado,
-            dias_alocados: Object.keys(dadosPlanejamento.horas_por_dia || {}).length
+            termino: dadosPlanejamento.termino_planejado
           });
 
           await retryWithBackoff(
             () => PlanejamentoAtividade.create(dadosPlanejamento),
-            3, 1000, 'createPlanejamentoAtividade'
+            3, 1000, `createPlanejamentoAtividade-${folha.id}`
           );
+          
           totalCriados++;
-
-          console.log('✅ Planejamento criado com sucesso!\n');
+          console.log('   ✅ Criado com sucesso\n');
+          
+        } catch (error) {
+          totalErros++;
+          console.error(`   ❌ Erro ao planejar folha ${folha.numero}:`, error);
         }
       }
 
-      console.log('✅ ========================================');
-      console.log('🎉 TODOS OS PLANEJAMENTOS FORAM CRIADOS!');
+      console.log('\n✅ ========================================');
+      console.log('🎉 PROCESSO CONCLUÍDO');
+      console.log(`   Sucessos: ${totalCriados}`);
+      console.log(`   Erros: ${totalErros}`);
       console.log('✅ ========================================\n');
 
-      alert(`✅ ${totalCriados} planejamento(s) criado(s) com sucesso!`);
+      alert(
+        `✅ Planejamento concluído!\n\n` +
+        `• ${totalCriados} folha(s) planejada(s) com sucesso\n` +
+        (totalErros > 0 ? `• ${totalErros} erro(s) (veja o console)` : '')
+      );
 
       if (onSuccess) onSuccess();
       onClose();
@@ -676,46 +615,35 @@ export default function PlanejamentoAtividadeModal({
               </div>
             )}
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="multiplos_executores"
-                checked={formData.multiplos_executores}
-                onCheckedChange={handleMultiplosExecutoresChange}
-              />
-              <Label htmlFor="multiplos_executores" className="cursor-pointer flex items-center gap-2">
+            <div>
+              <Label htmlFor="executor_principal" className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
-                Planejar para múltiplos executores
+                Executor (aplicará em todas as folhas sem executor)
               </Label>
+              <Select
+                value={formData.executor_principal}
+                onValueChange={handleExecutorChange}
+                required
+              >
+                <SelectTrigger id="executor_principal">
+                  <SelectValue placeholder="Selecione o executor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {usuariosOrdenados && usuariosOrdenados.length > 0 ? (
+                    usuariosOrdenados.map(u => (
+                      <SelectItem key={u.id} value={u.email}>
+                        {u.nome || u.email}
+                      </SelectItem>
+                    ))
+                  ) : (
+                    <SelectItem value={null} disabled>Nenhum usuário disponível</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-gray-500 mt-1">
+                💡 A atividade será planejada apenas em folhas que ainda não têm executor definido
+              </p>
             </div>
-
-            {!formData.multiplos_executores && (
-              <div>
-                <Label htmlFor="executor_principal" className="flex items-center gap-2">
-                  <Users className="w-4 h-4" />
-                  Executor
-                </Label>
-                <Select
-                  value={formData.executor_principal}
-                  onValueChange={handleExecutorChange}
-                  required={!formData.multiplos_executores}
-                >
-                  <SelectTrigger id="executor_principal">
-                    <SelectValue placeholder="Selecione o executor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {usuariosOrdenados && usuariosOrdenados.length > 0 ? (
-                      usuariosOrdenados.map(u => (
-                        <SelectItem key={u.id} value={u.email}>
-                          {u.nome || u.email}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value={null} disabled>Nenhum usuário disponível</SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
 
             <div>
               <Label htmlFor="metodo_data">Método de Cálculo da Data</Label>
@@ -767,33 +695,7 @@ export default function PlanejamentoAtividadeModal({
               </div>
             )}
 
-            {!formData.permite_multiplas_execucoes && (
-              <div className="space-y-2">
-                <Label htmlFor="documento_id">Vincular a um Documento (Folha)</Label>
-                <Select
-                  value={formData.documento_id || 'none'}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, documento_id: value === 'none' ? null : value }))}
-                >
-                  <SelectTrigger id="documento_id">
-                    <SelectValue placeholder="Não vincular a um documento" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none">Não vincular a um documento</SelectItem>
-                    {documentosDisponiveis.length > 0 ? (
-                      documentosDisponiveis.map(doc => (
-                        <SelectItem key={doc.id} value={doc.id}>
-                          {doc.numero} - {doc.arquivo}
-                        </SelectItem>
-                      ))
-                    ) : (
-                      <SelectItem value="no-docs" disabled>
-                        Nenhum documento disponível para esta disciplina/subdisciplina
-                      </SelectItem>
-                    )}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
+
 
             <div className="flex items-center space-x-2">
               <Checkbox
