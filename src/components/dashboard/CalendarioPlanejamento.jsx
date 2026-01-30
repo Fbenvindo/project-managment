@@ -833,12 +833,6 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
                  </span>
               </div>
             )}
-            
-            {realStatus === 'concluido' && (
-              <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center ml-1">
-                <span className="text-white text-xs font-bold">✓</span>
-              </div>
-            )}
           </div>
         </div>
       </div>
