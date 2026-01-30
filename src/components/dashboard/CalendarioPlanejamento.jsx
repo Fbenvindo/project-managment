@@ -795,50 +795,44 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
           </div>
         )}
 
-        {/* Action Icons - Todos os botões sempre aparentes na mesma linha */}
+        {/* Action Icons - Todos os botões sempre visíveis na mesma linha */}
         <div className="flex gap-2 mt-2 items-center">
-          {shouldShowStartButton() && (
-            <button
-              onClick={handleStartActivity}
-              disabled={!!activeExecution || isStarting}
-              className="p-1.5 rounded-md bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-              title={isStarting ? "Iniciando..." : "Iniciar atividade"}
-            >
-              <Play className="w-3.5 h-3.5 text-white" fill="white" />
-            </button>
-          )}
-          {activeExecution?.planejamento_id === plano.id && (
-            <button
-              className="p-1.5 rounded-md bg-yellow-500 hover:bg-yellow-600 transition-colors animate-pulse"
-              title="Atividade em andamento"
-            >
-              <Clock className="w-3.5 h-3.5 text-white" />
-            </button>
-          )}
-          {(realStatus === 'atrasado' || realStatus === 'replanejado_atrasado') && (
-            <div className="p-1.5 rounded-md bg-red-500" title="Atividade atrasada">
-              <span className="text-white text-xs font-bold">✕</span>
-            </div>
-          )}
-          {shouldShowDeleteButton() && (
-            <button
-              onClick={handleDeleteActivity}
-              disabled={isDeleting || !!activeExecution}
-              className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-100 hover:text-red-600 transition-colors"
-              title={plano.isLegacyExecution ? "Excluir Execução Rápida Antiga" : plano.tipo_planejamento === 'documento' ? "Excluir Planejamento de Documento" : "Excluir Atividade"}
-            >
-              {isDeleting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-            </button>
-          )}
-          {shouldShowEditDescricaoButton() && (
-            <button
-              onClick={handleOpenEditDescricao}
-              className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-100 transition-colors"
-              title="Editar descrição da atividade"
-            >
-              <Edit2 className="w-3.5 h-3.5 text-gray-600" />
-            </button>
-          )}
+          <button
+            onClick={handleStartActivity}
+            disabled={!!activeExecution || isStarting}
+            className="p-1.5 rounded-md bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            title={isStarting ? "Iniciando..." : "Iniciar atividade"}
+          >
+            <Play className="w-3.5 h-3.5 text-white" fill="white" />
+          </button>
+          
+          <button
+            className={`p-1.5 rounded-md transition-colors ${activeExecution?.planejamento_id === plano.id ? 'bg-yellow-500 hover:bg-yellow-600 animate-pulse' : 'bg-gray-300'}`}
+            title="Atividade em andamento"
+          >
+            <Clock className="w-3.5 h-3.5 text-white" />
+          </button>
+          
+          <div className={`p-1.5 rounded-md ${(realStatus === 'atrasado' || realStatus === 'replanejado_atrasado') ? 'bg-red-500' : 'bg-gray-300'}`} title="Atividade atrasada">
+            <span className="text-white text-xs font-bold">✕</span>
+          </div>
+          
+          <button
+            onClick={handleDeleteActivity}
+            disabled={isDeleting || !!activeExecution}
+            className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-100 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            title={plano.isLegacyExecution ? "Excluir Execução Rápida Antiga" : plano.tipo_planejamento === 'documento' ? "Excluir Planejamento de Documento" : "Excluir Atividade"}
+          >
+            {isDeleting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+          </button>
+          
+          <button
+            onClick={handleOpenEditDescricao}
+            className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-100 transition-colors"
+            title="Editar descrição da atividade"
+          >
+            <Edit2 className="w-3.5 h-3.5 text-gray-600" />
+          </button>
         </div>
       </div>
 
