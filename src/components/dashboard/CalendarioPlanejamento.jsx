@@ -742,44 +742,14 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
           </div>
         )}
 
-        {/* Meta/Info Row: Status on left, Time on right */}
+        {/* Meta/Info Row: Subdisciplina on left, Time on right */}
         <div className="flex items-center justify-between flex-wrap gap-x-3 gap-y-1 mb-1.5">
-          {/* Left side: Status indicators */}
+          {/* Left side: Subdisciplina */}
           <div className="flex items-center gap-3 flex-wrap">
               {subdisciplina && (
                 <div className="flex items-center gap-1.5">
                   <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
                   <span className="text-blue-600 font-medium">{subdisciplina}</span>
-                </div>
-              )}
-              {realStatus === 'concluido' && (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                  <span className="text-green-600 font-medium">Concluída</span>
-                </div>
-              )}
-              {realStatus === 'pausado' && (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                  <span className="text-yellow-600 font-medium">Pausada</span>
-                </div>
-              )}
-              {realStatus === 'atrasado' && (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-                  <span className="text-red-600 font-medium">Atrasado</span>
-                </div>
-              )}
-              {realStatus === 'replanejado_atrasado' && (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
-                  <span className="text-yellow-600 font-medium" title="Replanejada para depois da data original">Replanejada c/ Atraso</span>
-                </div>
-              )}
-              {realStatus === 'impactado_por_atraso' && (
-                <div className="flex items-center gap-1.5">
-                  <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                  <span className="text-purple-600 font-medium" title="Início replanejado ou predecessora atrasada">Impactada por Atraso</span>
                 </div>
               )}
           </div>
