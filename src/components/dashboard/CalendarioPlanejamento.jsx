@@ -807,43 +807,41 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
           </div>
         )}
 
-        {/* Action Icons - Linha compacta */}
-        {(shouldShowStartButton() || shouldShowEditDescricaoButton() || (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado')) && (
-          <div className="flex gap-2 mt-2 items-center">
-            {shouldShowStartButton() && (
-              <button
-                onClick={handleStartActivity}
-                disabled={!!activeExecution || isStarting}
-                className="p-1.5 rounded-md bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-                title={isStarting ? "Iniciando..." : "Iniciar atividade"}
-              >
-                <Play className="w-3.5 h-3.5 text-white" fill="white" />
-              </button>
-            )}
-            {activeExecution?.planejamento_id === plano.id && (
-              <button
-                className="p-1.5 rounded-md bg-yellow-500 hover:bg-yellow-600 transition-colors animate-pulse"
-                title="Atividade em andamento"
-              >
-                <Clock className="w-3.5 h-3.5 text-white" />
-              </button>
-            )}
-            {(realStatus === 'atrasado' || realStatus === 'replanejado_atrasado') && (
-              <div className="p-1.5 rounded-md bg-red-500" title="Atividade atrasada">
-                <span className="text-white text-xs font-bold">✕</span>
-              </div>
-            )}
-            {shouldShowEditDescricaoButton() && (
-              <button
-                onClick={handleOpenEditDescricao}
-                className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-100 transition-colors"
-                title="Editar descrição da atividade"
-              >
-                <Edit2 className="w-3.5 h-3.5 text-gray-600" />
-              </button>
-            )}
-          </div>
-        )}
+        {/* Action Icons - Linha compacta sempre visível */}
+        <div className="flex gap-2 mt-2 items-center">
+          {shouldShowStartButton() && (
+            <button
+              onClick={handleStartActivity}
+              disabled={!!activeExecution || isStarting}
+              className="p-1.5 rounded-md bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+              title={isStarting ? "Iniciando..." : "Iniciar atividade"}
+            >
+              <Play className="w-3.5 h-3.5 text-white" fill="white" />
+            </button>
+          )}
+          {activeExecution?.planejamento_id === plano.id && (
+            <button
+              className="p-1.5 rounded-md bg-yellow-500 hover:bg-yellow-600 transition-colors animate-pulse"
+              title="Atividade em andamento"
+            >
+              <Clock className="w-3.5 h-3.5 text-white" />
+            </button>
+          )}
+          {(realStatus === 'atrasado' || realStatus === 'replanejado_atrasado') && (
+            <div className="p-1.5 rounded-md bg-red-500" title="Atividade atrasada">
+              <span className="text-white text-xs font-bold">✕</span>
+            </div>
+          )}
+          {shouldShowEditDescricaoButton() && (
+            <button
+              onClick={handleOpenEditDescricao}
+              className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-100 transition-colors"
+              title="Editar descrição da atividade"
+            >
+              <Edit2 className="w-3.5 h-3.5 text-gray-600" />
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Modal para ajustar tempo */}
