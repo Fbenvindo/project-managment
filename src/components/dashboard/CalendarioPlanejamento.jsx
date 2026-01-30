@@ -762,26 +762,18 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
                   setAdjustedTime(tempoExecutado.toString());
                   setShowTimeAdjustModal(true);
                 }}
-                className="font-mono text-blue-600 hover:text-blue-800 hover:underline cursor-pointer flex flex-col items-end"
+                className="font-mono text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
                 title="Clique para ajustar o tempo (Coordenador ou superior)"
               >
-                 <span className="font-semibold text-sm" title="Horas para este dia">{Math.ceil(horasDoDia * 10) / 10}h</span>
-                 <span className="text-xs text-gray-500 font-normal" title="Executado / Total Planejado">
-                    ({Math.ceil(tempoExecutado * 10) / 10}h / {Math.ceil(tempoPlanejado * 10) / 10}h)
+                <span className="font-semibold text-sm">
+                  {Math.ceil(tempoExecutado * 10) / 10}/{Math.ceil(tempoPlanejado * 10) / 10}h
                 </span>
               </button>
             ) : (
-               <div className="font-mono text-blue-600 flex flex-col items-end">
-                 <span className="font-semibold text-sm" title="Horas para este dia">{Math.ceil(horasDoDia * 10) / 10}h</span>
-                 {realStatus === 'concluido' ? (
-                   <span className="text-xs text-green-600 font-medium" title="Tempo total executado">
-                      ✓ {Math.ceil(tempoExecutado * 10) / 10}h executadas
-                   </span>
-                 ) : (
-                   <span className="text-xs text-gray-500 font-normal" title="Executado / Total Planejado">
-                      ({Math.ceil(tempoExecutado * 10) / 10}h / {Math.ceil(tempoPlanejado * 10) / 10}h)
-                   </span>
-                 )}
+               <div className="font-mono text-blue-600">
+                 <span className="font-semibold text-sm" title="Executado / Planejado">
+                   {Math.ceil(tempoExecutado * 10) / 10}/{Math.ceil(tempoPlanejado * 10) / 10}h
+                 </span>
               </div>
             )}
             
