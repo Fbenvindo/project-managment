@@ -694,13 +694,13 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
 
         {/* Top Row: Activity Name + Action Icons */}
         <div className="flex items-start justify-between mb-1.5">
-          <div className={`flex-1 mr-2 ${hasSelections || isSelected ? 'ml-12' : 'ml-6'} overflow-hidden`}>
+          <div className={`flex-1 mr-2 ${hasSelections || isSelected ? 'ml-12' : 'ml-6'}`}>
             {plano.empreendimento?.nome && (
-              <p className="text-xs text-gray-500 mb-0.5 font-medium">
+              <p className="text-xs text-gray-500 mb-0.5 font-medium break-words">
                 📋 {plano.empreendimento.nome}
               </p>
             )}
-            <p className="font-medium text-gray-800 leading-tight truncate" title={displayName}>
+            <p className="font-medium text-gray-800 leading-tight break-words" title={displayName}>
               {displayName}
             </p>
             <div className="flex flex-wrap gap-1 mt-1">
