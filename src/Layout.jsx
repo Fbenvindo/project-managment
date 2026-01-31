@@ -53,18 +53,6 @@ const LayoutComponent = ({ children, currentPageName }) => {
         icon: Briefcase,
         show: true
       });
-      items.push({
-        title: "Propostas",
-        url: createPageUrl("Propostas"),
-        icon: FileText,
-        show: true
-      });
-      items.push({
-        title: "Orçamentos",
-        url: createPageUrl("Orcamentos"),
-        icon: Calculator,
-        show: true
-      });
     }
 
     if (hasPermission('coordenador')) {
