@@ -170,29 +170,38 @@ export default function EscopoForm({ formData, setFormData }) {
       </div>
 
       {formData.disciplinas?.length > 0 && (
-        <div>
-          <Label>Codisciplinas</Label>
-          <div className="border rounded-md p-3 max-h-48 overflow-y-auto grid grid-cols-2 gap-2">
-            {codisciplinasDisponiveis.length === 0 ? (
-              <p className="text-sm text-gray-500 col-span-2">Nenhuma codisciplina disponível</p>
-            ) : (
-              codisciplinasDisponiveis.map((codisciplina, idx) => (
-                <div key={idx} className="flex items-center space-x-2">
-                  <Checkbox
-                    id={`codisciplina-${idx}`}
-                    checked={formData.codisciplinas?.includes(codisciplina)}
-                    onCheckedChange={() => toggleCodisciplina(codisciplina)}
-                  />
-                  <label
-                    htmlFor={`codisciplina-${idx}`}
-                    className="text-sm font-medium leading-none cursor-pointer"
-                  >
-                    {codisciplina}
-                  </label>
+        <div className="space-y-3">
+          <Label>Codisciplinas por Disciplina</Label>
+          {disciplinasDisponiveis
+            .filter(d => formData.disciplinas?.includes(d.nome))
+            .map((disciplina) => (
+              <div key={disciplina.id} className="border rounded-md">
+                <div className="bg-gray-50 px-3 py-2 border-b">
+                  <span className="font-semibold text-sm">{disciplina.nome}</span>
                 </div>
-              ))
-            )}
-          </div>
+                <div className="p-3 grid grid-cols-2 gap-2">
+                  {disciplina.codisciplinas?.length === 0 || !disciplina.codisciplinas ? (
+                    <p className="text-sm text-gray-500 col-span-2">Nenhuma codisciplina disponível</p>
+                  ) : (
+                    disciplina.codisciplinas.map((codisciplina, idx) => (
+                      <div key={idx} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`codisciplina-${disciplina.id}-${idx}`}
+                          checked={formData.codisciplinas?.includes(codisciplina)}
+                          onCheckedChange={() => toggleCodisciplina(codisciplina)}
+                        />
+                        <label
+                          htmlFor={`codisciplina-${disciplina.id}-${idx}`}
+                          className="text-sm font-medium leading-none cursor-pointer"
+                        >
+                          {codisciplina}
+                        </label>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            ))}
         </div>
       )}
 
