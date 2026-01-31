@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { format } from "date-fns";
+import EscopoForm from "@/components/comercial/EscopoForm";
 
 const statusColors = {
   solicitado: "bg-gray-100 text-gray-800",
@@ -41,6 +42,12 @@ export default function PropostasPage() {
     cliente: '',
     empreendimento: '',
     tipo_empreendimento: '',
+    tipo_obra: '',
+    utilizacao: '',
+    parceiros: [],
+    disciplinas: [],
+    codisciplinas: [],
+    pavimentos: [],
     escopo: '',
     area: '',
     estado: '',
@@ -84,6 +91,12 @@ export default function PropostasPage() {
       cliente: '',
       empreendimento: '',
       tipo_empreendimento: '',
+      tipo_obra: '',
+      utilizacao: '',
+      parceiros: [],
+      disciplinas: [],
+      codisciplinas: [],
+      pavimentos: [],
       escopo: '',
       area: '',
       estado: '',
@@ -107,6 +120,12 @@ export default function PropostasPage() {
       cliente: proposta.cliente || '',
       empreendimento: proposta.empreendimento || '',
       tipo_empreendimento: proposta.tipo_empreendimento || '',
+      tipo_obra: proposta.tipo_obra || '',
+      utilizacao: proposta.utilizacao || '',
+      parceiros: proposta.parceiros || [],
+      disciplinas: proposta.disciplinas || [],
+      codisciplinas: proposta.codisciplinas || [],
+      pavimentos: proposta.pavimentos || [],
       escopo: proposta.escopo || '',
       area: proposta.area?.toString() || '',
       estado: proposta.estado || '',
@@ -442,12 +461,16 @@ export default function PropostasPage() {
             </div>
 
             <div className="col-span-2">
-              <Label htmlFor="escopo">Escopo</Label>
+              <EscopoForm formData={formData} setFormData={setFormData} />
+            </div>
+
+            <div className="col-span-2">
+              <Label htmlFor="escopo">Descrição do Escopo</Label>
               <Textarea
                 id="escopo"
                 value={formData.escopo}
                 onChange={(e) => setFormData({...formData, escopo: e.target.value})}
-                placeholder="Descrição do escopo do projeto"
+                placeholder="Descrição adicional do escopo do projeto"
                 rows={3}
               />
             </div>
