@@ -1834,7 +1834,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         <div className="flex gap-2 flex-wrap">
           {alteracoesEtapa.length > 0 && (
             <>
-              <PDFListaDesenvolvimento alteracoes={alteracoesEtapa} empreendimentoId={empreendimentoId} />
+              <PDFListaDesenvolvimento empreendimentoId={empreendimentoId} />
               <Button
                 variant="outline"
                 onClick={limparAlteracoes}

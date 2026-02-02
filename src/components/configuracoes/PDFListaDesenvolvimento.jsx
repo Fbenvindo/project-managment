@@ -11,7 +11,7 @@ import jsPDF from 'jspdf';
 
 const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/577f93874_logo_Interativa_versao_final_sem_fundo_0002.png";
 
-export default function PDFListaDesenvolvimento({ alteracoes = [], empreendimentoId = null }) {
+export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [pdfUrl, setPdfUrl] = useState(null);
@@ -24,7 +24,7 @@ export default function PDFListaDesenvolvimento({ alteracoes = [], empreendiment
 
   // Buscar todas as atividades do empreendimento quando abrir o modal
   useEffect(() => {
-    if (isOpen && empreendimentoId && Object.keys(atividadesCompletas).length === 0) {
+    if (isOpen && empreendimentoId) {
       buscarAtividadesEmpreendimento();
     }
   }, [isOpen, empreendimentoId]);
@@ -77,20 +77,7 @@ export default function PDFListaDesenvolvimento({ alteracoes = [], empreendiment
     }
   };
 
-  // Agrupar alterações por etapa nova
-  const alteracoesPorEtapa = React.useMemo(() => {
-    const grupos = {};
-    alteracoes.forEach(alt => {
-      if (!grupos[alt.etapa_nova]) {
-        grupos[alt.etapa_nova] = {};
-      }
-      if (!grupos[alt.etapa_nova][alt.disciplina]) {
-        grupos[alt.etapa_nova][alt.disciplina] = [];
-      }
-      grupos[alt.etapa_nova][alt.disciplina].push(alt);
-    });
-    return grupos;
-  }, [alteracoes]);
+
 
   const gerarPDF = async (visualizar = false) => {
     if (!dadosCliente.construtora || !dadosCliente.empreendimento) {
@@ -128,7 +115,7 @@ export default function PDFListaDesenvolvimento({ alteracoes = [], empreendiment
       // Título
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(14);
-      pdf.text('LISTA DE DESENVOLVIMENTO DE ATIVIDADES', pageWidth / 2, yPos, { align: 'center' });
+      pdf.text('RESUMO DE ATIVIDADES DO EMPREENDIMENTO', pageWidth / 2, yPos, { align: 'center' });
       yPos += 15;
 
       // Dados do cliente
@@ -149,7 +136,7 @@ export default function PDFListaDesenvolvimento({ alteracoes = [], empreendiment
       
       pdf.setFont('helvetica', 'normal');
       pdf.setFontSize(9);
-      const apresentacao = `O objetivo deste documento é fornecer informações acerca da lista de atividades e documentos a serem fornecidos em cada etapa de desenvolvimento do projeto.`;
+      const apresentacao = `Este documento apresenta o resumo completo de todas as atividades planejadas para este empreendimento, organizadas por etapa de desenvolvimento e disciplina.`;
       const linhasApresentacao = pdf.splitTextToSize(apresentacao, pageWidth - 2 * margin);
       pdf.text(linhasApresentacao, margin, yPos);
       yPos += (linhasApresentacao.length * 5) + 10;
@@ -165,9 +152,7 @@ export default function PDFListaDesenvolvimento({ alteracoes = [], empreendiment
       };
 
       // === ATIVIDADES POR ETAPA ===
-      // Usar atividades completas do empreendimento se disponível
-      const dadosParaPDF = Object.keys(atividadesCompletas).length > 0 ? atividadesCompletas : alteracoesPorEtapa;
-      const etapas = Object.keys(dadosParaPDF).sort();
+      const etapas = Object.keys(atividadesCompletas).sort();
       
       etapas.forEach((etapa, etapaIndex) => {
         checkPageBreak(15);
@@ -178,7 +163,7 @@ export default function PDFListaDesenvolvimento({ alteracoes = [], empreendiment
         pdf.text(`${etapaIndex + 1}. ${etapa.toUpperCase()}`, margin, yPos);
         yPos += 8;
 
-        const disciplinas = Object.keys(dadosParaPDF[etapa]).sort();
+        const disciplinas = Object.keys(atividadesCompletas[etapa]).sort();
         
         disciplinas.forEach((disciplina, discIndex) => {
           checkPageBreak(12);
@@ -189,7 +174,7 @@ export default function PDFListaDesenvolvimento({ alteracoes = [], empreendiment
           pdf.text(`${etapaIndex + 1}.${discIndex + 1} ${disciplina}`, margin + 5, yPos);
           yPos += 7;
 
-          const atividades = dadosParaPDF[etapa][disciplina];
+          const atividades = atividadesCompletas[etapa][disciplina];
           
           atividades.forEach((atividade, atIndex) => {
             checkPageBreak(6);
@@ -247,10 +232,13 @@ export default function PDFListaDesenvolvimento({ alteracoes = [], empreendiment
         const url = URL.createObjectURL(pdfBlob);
         setPdfUrl(url);
       } else {
-        const nomeArquivo = `Lista_Desenvolvimento_${dadosCliente.empreendimento.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}.pdf`;
+        const totalAtividades = Object.values(atividadesCompletas).reduce((acc, etapa) => 
+          acc + Object.values(etapa).reduce((sum, disc) => sum + disc.length, 0), 0
+        );
+        const nomeArquivo = `Resumo_Atividades_${dadosCliente.empreendimento.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}.pdf`;
         pdf.save(nomeArquivo);
         
-        alert(`✅ PDF baixado com sucesso!\n\n${alteracoes.length} alterações documentadas`);
+        alert(`✅ PDF baixado com sucesso!\n\n${totalAtividades} atividades documentadas`);
         setIsOpen(false);
         setPdfUrl(null);
         setDadosCliente({ construtora: "", empreendimento: "" });
@@ -277,16 +265,11 @@ export default function PDFListaDesenvolvimento({ alteracoes = [], empreendiment
     <>
       <Button
         onClick={() => setIsOpen(true)}
-        disabled={alteracoes.length === 0}
+        disabled={!empreendimentoId}
         className="bg-purple-600 hover:bg-purple-700"
       >
         <FileText className="w-4 h-4 mr-2" />
-        Gerar PDF de Alterações
-        {alteracoes.length > 0 && (
-          <span className="ml-2 bg-white text-purple-600 px-2 py-0.5 rounded-full text-xs font-bold">
-            {alteracoes.length}
-          </span>
-        )}
+        Gerar Resumo de Atividades
       </Button>
 
       <Dialog open={isOpen} onOpenChange={handleFechar}>
@@ -294,7 +277,7 @@ export default function PDFListaDesenvolvimento({ alteracoes = [], empreendiment
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-purple-600" />
-              Lista de Desenvolvimento de Atividades
+              Resumo de Atividades do Empreendimento
             </DialogTitle>
           </DialogHeader>
 
@@ -339,11 +322,7 @@ export default function PDFListaDesenvolvimento({ alteracoes = [], empreendiment
             ) : (
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <p className="text-sm text-blue-800">
-                  📋 {Object.keys(atividadesCompletas).length > 0 ? (
-                    <><strong>Todas as atividades planejadas</strong> do empreendimento serão documentadas</>
-                  ) : (
-                    <><strong>{alteracoes.length} alterações</strong> de etapa serão documentadas no PDF</>
-                  )}
+                  📋 <strong>Todas as atividades</strong> do empreendimento serão documentadas no PDF
                 </p>
               </div>
             )}
@@ -368,26 +347,18 @@ export default function PDFListaDesenvolvimento({ alteracoes = [], empreendiment
               />
             </div>
 
-            <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-              <h4 className="text-xs font-semibold text-gray-700 mb-2">
-                {Object.keys(atividadesCompletas).length > 0 ? 'Resumo das atividades:' : 'Resumo das alterações:'}
-              </h4>
-              <div className="space-y-1 max-h-32 overflow-y-auto">
-                {Object.keys(atividadesCompletas).length > 0 ? (
-                  Object.entries(atividadesCompletas).map(([etapa, disciplinas]) => (
+            {Object.keys(atividadesCompletas).length > 0 && (
+              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                <h4 className="text-xs font-semibold text-gray-700 mb-2">Resumo por etapa:</h4>
+                <div className="space-y-1 max-h-32 overflow-y-auto">
+                  {Object.entries(atividadesCompletas).map(([etapa, disciplinas]) => (
                     <div key={etapa} className="text-xs text-gray-600">
                       <span className="font-medium">{etapa}:</span> {Object.values(disciplinas).flat().length} atividades
                     </div>
-                  ))
-                ) : (
-                  Object.entries(alteracoesPorEtapa).map(([etapa, disciplinas]) => (
-                    <div key={etapa} className="text-xs text-gray-600">
-                      <span className="font-medium">{etapa}:</span> {Object.values(disciplinas).flat().length} atividades
-                    </div>
-                  ))
-                )}
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
               <DialogFooter>
