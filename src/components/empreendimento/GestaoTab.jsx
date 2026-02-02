@@ -255,7 +255,7 @@ export default function GestaoTab({ empreendimento, documentos, planejamentos, a
                 </tr>
                 <tr className="bg-gray-50">
                   <th className="border border-gray-300 p-2 text-xs text-gray-600 sticky left-0 bg-gray-50 z-10"></th>
-                  <th className="border border-gray-300 p-2 text-xs text-gray-600 bg-blue-50">%</th>
+                  <th className="border border-gray-300 p-2 text-xs text-gray-600 bg-blue-50">Planejado</th>
                   {matrizDisciplinasEtapas.disciplinas.map(disciplina => (
                     <th key={disciplina} className="border border-gray-300 p-2 text-xs text-gray-600">Planejado</th>
                   ))}
@@ -266,7 +266,10 @@ export default function GestaoTab({ empreendimento, documentos, planejamentos, a
                 <tr className="bg-blue-50 font-semibold">
                   <td className="border border-gray-300 p-3 sticky left-0 bg-blue-100 z-10">TOTAL</td>
                   <td className="border border-gray-300 p-3 text-center">
-                    {matrizDisciplinasEtapas.totalGeral.percentual}%
+                    <div>{matrizDisciplinasEtapas.totalGeral.planejado.toFixed(1)}h</div>
+                    {valorHora > 0 && (
+                      <div className="text-xs text-green-700 font-normal">{formatCurrency(matrizDisciplinasEtapas.totalGeral.planejado * valorHora)}</div>
+                    )}
                   </td>
                   {matrizDisciplinasEtapas.disciplinas.map(disciplina => {
                     const horas = matrizDisciplinasEtapas.totaisPorDisciplina[disciplina].planejado;
@@ -288,7 +291,10 @@ export default function GestaoTab({ empreendimento, documentos, planejamentos, a
                       {etapa}
                     </td>
                     <td className="border border-gray-300 p-3 text-center font-semibold">
-                      {matrizDisciplinasEtapas.totaisPorEtapa[etapa].percentual}%
+                      <div>{matrizDisciplinasEtapas.totaisPorEtapa[etapa].planejado.toFixed(1)}h</div>
+                      {valorHora > 0 && matrizDisciplinasEtapas.totaisPorEtapa[etapa].planejado > 0 && (
+                        <div className="text-xs text-green-700 font-normal">{formatCurrency(matrizDisciplinasEtapas.totaisPorEtapa[etapa].planejado * valorHora)}</div>
+                      )}
                     </td>
                     {matrizDisciplinasEtapas.disciplinas.map(disciplina => {
                       const dados = matrizDisciplinasEtapas.matriz[disciplina][etapa];
