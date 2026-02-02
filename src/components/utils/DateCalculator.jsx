@@ -129,8 +129,19 @@ export const distribuirHorasPorDias = (dataInicio, horasTotais, limiteDiario = 8
 
       console.log(`   📅 ${diaKey}: Carga atual ${cargaAtual.toFixed(1)}h, Espaço ${espacoDisponivel.toFixed(1)}h`);
 
-      // Alocar o que couber no dia
-      if (espacoDisponivel > 0.01) {
+      // Se for data fixa (manual), SEMPRE alocar no dia escolhido, ignorando limite de 8h
+      if (isStrictStartDate && tentativas === 1) {
+        const horasParaAlocar = horasRestantes;
+        const novaCarga = cargaAtual + horasParaAlocar;
+        
+        distribuicao[diaKey] = horasParaAlocar;
+        novaCargaDiaria[diaKey] = novaCarga;
+        horasRestantes = 0;
+        
+        console.log(`   🎯 Data fixa (manual): Alocado ${horasParaAlocar.toFixed(1)}h → Nova carga: ${novaCarga.toFixed(1)}h (sem limite)`);
+      }
+      // Alocar o que couber no dia (modo automático)
+      else if (espacoDisponivel > 0.01) {
         const horasParaAlocar = Math.min(espacoDisponivel, horasRestantes);
         
         // **CRÍTICO**: Validar antes de alocar
