@@ -1625,13 +1625,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                   <TableCell className="text-center">
                                     {!ativ.isEditable && (
                                       <Button 
-                                        size="sm" 
+                                        size="icon" 
                                         onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)}
                                         variant="outline"
                                         className="border-blue-500 text-blue-600 hover:bg-blue-50"
                                       >
-                                        <Edit2 className="w-4 h-4 mr-1" />
-                                        Editar Etapa
+                                        <Edit2 className="w-4 h-4" />
                                       </Button>
                                     )}
                                   </TableCell>
@@ -1905,13 +1904,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                           <TableCell className="text-center">
                             {!ativ.isEditable && (
                               <Button 
-                                size="sm" 
+                                size="icon" 
                                 onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)}
                                 variant="outline"
                                 className="border-blue-500 text-blue-600 hover:bg-blue-50"
                               >
-                                <Edit2 className="w-4 h-4 mr-1" />
-                                Editar Etapa
+                                <Edit2 className="w-4 h-4" />
                               </Button>
                             )}
                           </TableCell>
