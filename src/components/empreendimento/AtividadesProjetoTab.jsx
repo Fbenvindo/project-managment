@@ -498,11 +498,11 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
                       <TableHead className="w-12"></TableHead>
                       <TableHead>Atividade</TableHead>
                       <TableHead>Folhas</TableHead>
+                      <TableHead>Status</TableHead>
                       <TableHead>Etapa</TableHead>
-                      <TableHead>Disciplina</TableHead>
-                      <TableHead>Subdisciplina</TableHead>
-                      <TableHead>Tempo (h)</TableHead>
-                      <TableHead className="text-right">Ações</TableHead>
+                      <TableHead>Tempo Padrão</TableHead>
+                      <TableHead>Tempo Total</TableHead>
+                      <TableHead className="text-right">Planejar</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -546,44 +546,29 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
                               <Badge variant="secondary">Disponível</Badge>
                             )}
                           </TableCell>
+                          <TableCell>
+                            {atividade.status_planejamento === 'planejada' ? (
+                              <Badge className="bg-green-100 text-green-800">Planejada</Badge>
+                            ) : (
+                              <Badge variant="outline">Disponível</Badge>
+                            )}
+                          </TableCell>
                           <TableCell>{atividade.etapa}</TableCell>
-                          <TableCell>{atividade.disciplina}</TableCell>
-                          <TableCell>{atividade.subdisciplina}</TableCell>
-                          <TableCell>{atividade.tempo}</TableCell>
+                          <TableCell>{atividade.tempo}h</TableCell>
+                          <TableCell className="font-semibold">{(atividade.tempo * numFolhas).toFixed(1)}h</TableCell>
                           <TableCell className="text-right">
-                          <div className="flex gap-1 justify-end">
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => {
-                                console.log("🎯 Clicou no botão Planejar para:", atividade);
-                                handlePlanejarDiretamente(atividade);
-                              }}
-                              className="text-xs bg-blue-50 text-blue-700 hover:bg-blue-100"
-                            >
-                              <Calendar className="w-3 h-3 mr-1" />
-                              Planejar
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm" 
-                              onClick={() => handleAplicarADocumentos(atividade)}
-                              className="text-xs"
-                            >
-                              Aplicar
-                            </Button>
-                            <Button variant="ghost" size="icon" onClick={() => handleEdit(atividade)}>
-                              <Edit className="w-4 h-4" />
-                            </Button>
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              onClick={() => handleDelete(atividade.id)} 
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </div>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => {
+                              console.log("🎯 Clicou no botão Planejar para:", atividade);
+                              handlePlanejarDiretamente(atividade);
+                            }}
+                            className="bg-purple-600 text-white hover:bg-purple-700"
+                          >
+                            <Calendar className="w-3 h-3 mr-1" />
+                            Planejar
+                          </Button>
                         </TableCell>
                       </TableRow>
                     );

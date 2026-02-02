@@ -489,6 +489,15 @@ export default function PlanejamentoAtividadeModal({
           
           totalCriados++;
           console.log('   ✅ Criado com sucesso\n');
+
+          // **NOVO**: Marcar a atividade como "planejada"
+          try {
+            const { Atividade } = await import('@/entities/all');
+            await Atividade.update(atividade.id, { status_planejamento: 'planejada' });
+            console.log('   ✅ Atividade marcada como planejada');
+          } catch (error) {
+            console.warn('   ⚠️ Erro ao marcar atividade como planejada:', error);
+          }
           
         } catch (error) {
           totalErros++;
