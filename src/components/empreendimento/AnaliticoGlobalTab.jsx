@@ -1832,17 +1832,15 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           )}
         </div>
         <div className="flex gap-2 flex-wrap">
+          <PDFListaDesenvolvimento empreendimentoId={empreendimentoId} />
           {alteracoesEtapa.length > 0 && (
-            <>
-              <PDFListaDesenvolvimento empreendimentoId={empreendimentoId} />
-              <Button
-                variant="outline"
-                onClick={limparAlteracoes}
-                className="border-red-500 text-red-600 hover:bg-red-50"
-              >
-                Limpar Registro
-              </Button>
-            </>
+            <Button
+              variant="outline"
+              onClick={limparAlteracoes}
+              className="border-red-500 text-red-600 hover:bg-red-50"
+            >
+              Limpar Registro
+            </Button>
           )}
           <Button
             onClick={handleRestaurarExclusoesGlobais}
