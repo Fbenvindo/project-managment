@@ -1696,6 +1696,28 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                     </TableCell>
                                     <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
                                     <TableCell></TableCell>
+                                    <TableCell>
+                                      {folha.status === 'Planejada' ? (
+                                        (() => {
+                                          const planejamento = planejamentos?.find(p => 
+                                            p.documento_id === folha.source_documento_id && 
+                                            p.atividade_id === folha.base_atividade_id
+                                          );
+
+                                          if (planejamento?.inicio_planejado && planejamento?.termino_planejado) {
+                                            return (
+                                              <div className="flex items-center gap-1 text-gray-600 text-xs">
+                                                <Calendar className="w-3 h-3" />
+                                                <span>{format(parseISO(planejamento.inicio_planejado), 'dd/MM')} - {format(parseISO(planejamento.termino_planejado), 'dd/MM')}</span>
+                                              </div>
+                                            );
+                                          }
+                                          return <span className="text-xs text-gray-400">-</span>;
+                                        })()
+                                      ) : (
+                                        <span className="text-xs text-gray-400">-</span>
+                                      )}
+                                    </TableCell>
                                     <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
                                     <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
                                     <TableCell></TableCell>
@@ -1952,6 +1974,28 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             </TableCell>
                             <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
                             <TableCell></TableCell>
+                            <TableCell>
+                              {folha.status === 'Planejada' ? (
+                                (() => {
+                                  const planejamento = planejamentos?.find(p => 
+                                    p.documento_id === folha.source_documento_id && 
+                                    p.atividade_id === folha.base_atividade_id
+                                  );
+
+                                  if (planejamento?.inicio_planejado && planejamento?.termino_planejado) {
+                                    return (
+                                      <div className="flex items-center gap-1 text-gray-600 text-xs">
+                                        <Calendar className="w-3 h-3" />
+                                        <span>{format(parseISO(planejamento.inicio_planejado), 'dd/MM')} - {format(parseISO(planejamento.termino_planejado), 'dd/MM')}</span>
+                                      </div>
+                                    );
+                                  }
+                                  return <span className="text-xs text-gray-400">-</span>;
+                                })()
+                              ) : (
+                                <span className="text-xs text-gray-400">-</span>
+                              )}
+                            </TableCell>
                             <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
                             <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
                             <TableCell></TableCell>
