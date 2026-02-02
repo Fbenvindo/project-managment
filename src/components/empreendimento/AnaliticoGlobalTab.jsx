@@ -1470,7 +1470,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             <TableHead>Datas Planejadas</TableHead>
                             <TableHead>Tempo Padrão</TableHead>
                             <TableHead>Tempo Total</TableHead>
-                            <TableHead className="text-center">Planejar</TableHead>
+                            <TableHead className="text-center">Ações</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -1623,14 +1623,17 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                       : '-'}
                                   </TableCell>
                                   <TableCell className="text-center">
-                                    <Button 
-                                      size="sm" 
-                                      onClick={() => handlePlanejarAtividade(ativ)}
-                                      className="bg-purple-600 hover:bg-purple-700 text-white"
-                                    >
-                                      <Calendar className="w-4 h-4 mr-1" />
-                                      Planejar
-                                    </Button>
+                                    {!ativ.isEditable && (
+                                      <Button 
+                                        size="sm" 
+                                        onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)}
+                                        variant="outline"
+                                        className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                                      >
+                                        <Edit2 className="w-4 h-4 mr-1" />
+                                        Editar Etapa
+                                      </Button>
+                                    )}
                                   </TableCell>
                                   <TableCell>
                                     <DropdownMenu>
@@ -1651,14 +1654,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                           </>
                                         ) : (
                                           <>
-                                            <DropdownMenuItem onClick={() => handlePlanejarAtividade(ativ)} className="text-purple-600">
-                                              <Calendar className="w-4 h-4 mr-2" /> Planejar Atividade
-                                            </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => handleOpenEtapaModal(ativ)}>
                                               <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)} className="text-blue-600">
-                                              <Edit2 className="w-4 h-4 mr-2" /> Editar Etapa em Folhas Específicas
                                             </DropdownMenuItem>
                                             <DropdownMenuItem 
                                               onClick={() => handleOpenExcluirDeFolhasModal(ativ)} 
@@ -1752,7 +1749,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                      <TableHead>Datas Planejadas</TableHead>
                      <TableHead>Tempo Padrão</TableHead>
                      <TableHead>Tempo Total</TableHead>
-                     <TableHead className="text-center">Planejar</TableHead>
+                     <TableHead className="text-center">Ações</TableHead>
                      <TableHead className="w-[50px]"></TableHead>
                    </TableRow>
                 </TableHeader>
@@ -1906,14 +1903,17 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                               : '-'}
                           </TableCell>
                           <TableCell className="text-center">
-                            <Button 
-                              size="sm" 
-                              onClick={() => handlePlanejarAtividade(ativ)}
-                              className="bg-purple-600 hover:bg-purple-700 text-white"
-                            >
-                              <Calendar className="w-4 h-4 mr-1" />
-                              Planejar
-                            </Button>
+                            {!ativ.isEditable && (
+                              <Button 
+                                size="sm" 
+                                onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)}
+                                variant="outline"
+                                className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                              >
+                                <Edit2 className="w-4 h-4 mr-1" />
+                                Editar Etapa
+                              </Button>
+                            )}
                           </TableCell>
                           <TableCell>
                             <DropdownMenu>
@@ -1934,14 +1934,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                   </>
                                 ) : (
                                   <>
-                                    <DropdownMenuItem onClick={() => handlePlanejarAtividade(ativ)} className="text-purple-600">
-                                      <Calendar className="w-4 h-4 mr-2" /> Planejar Atividade
-                                    </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => handleOpenEtapaModal(ativ)}>
                                       <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)} className="text-blue-600">
-                                      <Edit2 className="w-4 h-4 mr-2" /> Editar Etapa em Folhas Específicas
                                     </DropdownMenuItem>
                                     <DropdownMenuItem 
                                       onClick={() => handleOpenExcluirDeFolhasModal(ativ)} 
