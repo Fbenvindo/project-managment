@@ -37,38 +37,32 @@ export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
       
       console.log(`📋 Encontradas ${atividadesEmpreendimento.length} atividades do empreendimento`);
       
-      // Agrupar por etapa e disciplina
-      const grupos = {};
+      // Agrupar por ATIVIDADE (mostrar todas as atividades e em quais etapas elas aparecem)
+      const atividadesPorNome = {};
       
       atividadesEmpreendimento.forEach(atividade => {
+        const nomeAtividade = atividade.atividade;
         const etapa = atividade.etapa;
         const disciplina = atividade.disciplina;
         
-        if (etapa && disciplina) {
-          if (!grupos[etapa]) {
-            grupos[etapa] = {};
-          }
-          if (!grupos[etapa][disciplina]) {
-            grupos[etapa][disciplina] = [];
+        if (nomeAtividade) {
+          if (!atividadesPorNome[nomeAtividade]) {
+            atividadesPorNome[nomeAtividade] = {
+              disciplina: disciplina || 'Sem disciplina',
+              subdisciplina: atividade.subdisciplina || '',
+              etapas: []
+            };
           }
           
-          // Evitar duplicatas
-          const existe = grupos[etapa][disciplina].some(a => 
-            a.nome_atividade === atividade.atividade
-          );
-          
-          if (!existe) {
-            grupos[etapa][disciplina].push({
-              nome_atividade: atividade.atividade,
-              disciplina: disciplina,
-              subdisciplina: atividade.subdisciplina || ''
-            });
+          // Adicionar etapa se não existir
+          if (etapa && !atividadesPorNome[nomeAtividade].etapas.includes(etapa)) {
+            atividadesPorNome[nomeAtividade].etapas.push(etapa);
           }
         }
       });
 
-      console.log('📊 Grupos criados:', Object.keys(grupos));
-      setAtividadesCompletas(grupos);
+      console.log('📊 Atividades agrupadas:', Object.keys(atividadesPorNome).length);
+      setAtividadesCompletas(atividadesPorNome);
     } catch (error) {
       console.error("Erro ao buscar atividades:", error);
       alert("Erro ao buscar atividades do empreendimento");
@@ -151,58 +145,46 @@ export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
         return false;
       };
 
-      // === ATIVIDADES POR ETAPA ===
-      const etapas = Object.keys(atividadesCompletas).sort();
+      // === LISTA DE ATIVIDADES E SUAS ETAPAS ===
+      pdf.setFont('helvetica', 'bold');
+      pdf.setFontSize(11);
+      pdf.text('LISTA DE ATIVIDADES', margin, yPos);
+      yPos += 8;
+
+      // Ordenar atividades alfabeticamente
+      const atividadesOrdenadas = Object.entries(atividadesCompletas).sort((a, b) => 
+        a[0].localeCompare(b[0], 'pt-BR')
+      );
       
-      etapas.forEach((etapa, etapaIndex) => {
+      atividadesOrdenadas.forEach(([nomeAtividade, dados], index) => {
         checkPageBreak(15);
-        
-        // Título da etapa
+
+        // Nome da atividade
         pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(11);
-        pdf.text(`${etapaIndex + 1}. ${etapa.toUpperCase()}`, margin, yPos);
-        yPos += 8;
-
-        const disciplinas = Object.keys(atividadesCompletas[etapa]).sort();
+        pdf.setFontSize(9);
+        const itemNum = `${index + 1}.`;
+        pdf.text(itemNum, margin, yPos);
         
-        disciplinas.forEach((disciplina, discIndex) => {
-          checkPageBreak(12);
-          
-          // Subtítulo da disciplina
-          pdf.setFont('helvetica', 'bold');
-          pdf.setFontSize(10);
-          pdf.text(`${etapaIndex + 1}.${discIndex + 1} ${disciplina}`, margin + 5, yPos);
-          yPos += 7;
+        const atividadeWidth = pageWidth - 2 * margin - 10;
+        const linhasAtividade = pdf.splitTextToSize(nomeAtividade, atividadeWidth);
+        pdf.text(linhasAtividade, margin + 8, yPos);
+        yPos += linhasAtividade.length * 4 + 2;
 
-          const atividades = atividadesCompletas[etapa][disciplina];
-          
-          atividades.forEach((atividade, atIndex) => {
-            checkPageBreak(6);
+        // Disciplina
+        pdf.setFont('helvetica', 'italic');
+        pdf.setFontSize(8);
+        pdf.setTextColor(80);
+        pdf.text(`Disciplina: ${dados.disciplina}${dados.subdisciplina ? ` - ${dados.subdisciplina}` : ''}`, margin + 8, yPos);
+        yPos += 4;
 
-            // Item da atividade em formato de tabela
-            pdf.setFont('helvetica', 'normal');
-            pdf.setFontSize(9);
-
-            const itemNum = atIndex + 1;
-            const colWidth = 10;
-            const descWidth = pageWidth - 2 * margin - colWidth - 2;
-
-            // Número da atividade
-            pdf.setFont('helvetica', 'normal');
-            pdf.text(itemNum.toString(), margin, yPos);
-
-            // Descrição da atividade
-            const linhas = pdf.splitTextToSize(atividade.nome_atividade, descWidth);
-            pdf.text(linhas, margin + colWidth + 2, yPos);
-
-            const alturaLinha = linhas.length * 4;
-            yPos += alturaLinha + 3;
-          });
-          
-          yPos += 3; // Espaço entre disciplinas
-        });
-        
-        yPos += 5; // Espaço entre etapas
+        // Etapas onde a atividade aparece
+        pdf.setFont('helvetica', 'normal');
+        pdf.setFontSize(8);
+        const etapasTexto = `Etapas: ${dados.etapas.sort().join(', ')}`;
+        const linhasEtapas = pdf.splitTextToSize(etapasTexto, atividadeWidth - 8);
+        pdf.text(linhasEtapas, margin + 8, yPos);
+        pdf.setTextColor(0);
+        yPos += linhasEtapas.length * 4 + 5;
       });
 
       // === RODAPÉ ===
@@ -232,9 +214,7 @@ export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
         const url = URL.createObjectURL(pdfBlob);
         setPdfUrl(url);
       } else {
-        const totalAtividades = Object.values(atividadesCompletas).reduce((acc, etapa) => 
-          acc + Object.values(etapa).reduce((sum, disc) => sum + disc.length, 0), 0
-        );
+        const totalAtividades = Object.keys(atividadesCompletas).length;
         const nomeArquivo = `Resumo_Atividades_${dadosCliente.empreendimento.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}.pdf`;
         pdf.save(nomeArquivo);
         
@@ -349,13 +329,9 @@ export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
 
             {Object.keys(atividadesCompletas).length > 0 && (
               <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                <h4 className="text-xs font-semibold text-gray-700 mb-2">Resumo por etapa:</h4>
-                <div className="space-y-1 max-h-32 overflow-y-auto">
-                  {Object.entries(atividadesCompletas).map(([etapa, disciplinas]) => (
-                    <div key={etapa} className="text-xs text-gray-600">
-                      <span className="font-medium">{etapa}:</span> {Object.values(disciplinas).flat().length} atividades
-                    </div>
-                  ))}
+                <h4 className="text-xs font-semibold text-gray-700 mb-2">Total de atividades:</h4>
+                <div className="text-sm text-gray-700">
+                  <strong>{Object.keys(atividadesCompletas).length}</strong> atividades únicas encontradas
                 </div>
               </div>
             )}
