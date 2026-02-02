@@ -252,7 +252,8 @@ export const ActivityTimerProvider = ({ children }) => {
                 }
                 
             } else {
-                // Calcular status automaticamente apenas quando finalStatus não foi especificado
+                // Quando não há finalStatus especificado, apenas atualizar tempo mas manter status atual
+                // NUNCA marcar como concluído automaticamente - só quando explicitamente finalizado
                 if (isAtividadeRapida) {
                     updateData.tempo_planejado = novoTempoExecutado;
                     const diaDaAtividade = planejamento.inicio_planejado || diaParaRegistrar;
@@ -260,20 +261,12 @@ export const ActivityTimerProvider = ({ children }) => {
                     updateData.status = 'em_andamento';
                     console.log(`   ⚡ Atividade rápida - atualizando tempo_planejado=${novoTempoExecutado.toFixed(4)}h e status para em_andamento`);
                 } else {
-                    if (novoTempoExecutado >= (Number(planejamento.tempo_planejado) || 0)) {
-                        updateData.status = 'concluido';
-                        updateData.termino_real = format(new Date(), 'yyyy-MM-dd');
-                        if (!planejamento.inicio_real) {
-                            updateData.inicio_real = diaParaRegistrar;
-                        }
-                        console.log(`   🎯 Tempo planejado atingido - marcando como concluída automaticamente`);
-                    } else {
-                        updateData.status = 'em_andamento';
-                        if (!planejamento.inicio_real) {
-                            updateData.inicio_real = diaParaRegistrar;
-                        }
-                        console.log(`   ▶️ Marcando como em andamento`);
+                    // Para atividades normais, manter em andamento independente do tempo
+                    updateData.status = 'em_andamento';
+                    if (!planejamento.inicio_real) {
+                        updateData.inicio_real = diaParaRegistrar;
                     }
+                    console.log(`   ▶️ Marcando como em andamento (tempo executado: ${novoTempoExecutado.toFixed(2)}h / planejado: ${(Number(planejamento.tempo_planejado) || 0).toFixed(2)}h)`);
                 }
             }
 
