@@ -1914,6 +1914,15 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const handleSaveExecutor = async (atividade, executorEmail) => {
     const atividadeId = atividade.base_atividade_id || atividade.id;
     
+    console.log(`\n🎯 ========================================`);
+    console.log(`🎯 SALVAR EXECUTOR`);
+    console.log(`🎯 ========================================`);
+    console.log(`   Atividade ID: ${atividadeId}`);
+    console.log(`   Atividade: ${atividade.atividade}`);
+    console.log(`   Executor Email: "${executorEmail}"`);
+    console.log(`   Executor vazio?: ${!executorEmail}`);
+    console.log(`🎯 ========================================\n`);
+    
     setIsSavingExecutor(prev => ({ ...prev, [atividadeId]: true }));
     
     try {
@@ -1928,6 +1937,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       }
       
       const atividadeOriginal = atividadeOriginalArr[0];
+      console.log(`✅ Atividade original encontrada:`, atividadeOriginal);
       
       // Verificar se já existe override global para esta atividade
       const existingOverrides = await retryWithBackoff(
@@ -1941,11 +1951,14 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       );
       
       if (existingOverrides && existingOverrides.length > 0) {
+        console.log(`📝 Atualizando override existente: ${existingOverrides[0].id}`);
         await retryWithBackoff(
           () => Atividade.update(existingOverrides[0].id, { executor_principal: executorEmail || null }),
           3, 500, `updateExecutorOverride-${existingOverrides[0].id}`
         );
+        console.log(`✅ Override atualizado`);
       } else if (executorEmail) {
+        console.log(`📝 Criando novo override com executor`);
         await retryWithBackoff(
           () => Atividade.create({
             ...atividadeOriginal,
@@ -1957,6 +1970,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           }),
           3, 500, `createExecutorOverride-${atividadeId}`
         );
+        console.log(`✅ Override criado`);
       }
       
       // Se não há executor, remover planejamentos existentes
@@ -2027,15 +2041,29 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       }
       
       // Buscar documentos que têm esta atividade
+      console.log(`\n🔍 Buscando documentos compatíveis...`);
+      console.log(`   Disciplina necessária: ${atividadeOriginal.disciplina}`);
+      console.log(`   Subdisciplina necessária: ${atividadeOriginal.subdisciplina}`);
+      console.log(`   Total de documentos no empreendimento: ${documentos.length}`);
+      
       const documentosComAtividade = documentos.filter(doc => {
         const disciplinaMatch = doc.disciplina === atividadeOriginal.disciplina;
         const subdisciplinasDoc = doc.subdisciplinas || [];
         const subdisciplinaMatch = subdisciplinasDoc.includes(atividadeOriginal.subdisciplina);
-        return disciplinaMatch && subdisciplinaMatch;
+        const matches = disciplinaMatch && subdisciplinaMatch;
+        
+        if (matches) {
+          console.log(`   ✅ Documento compatível: ${doc.numero} - ${doc.arquivo}`);
+        }
+        
+        return matches;
       });
       
+      console.log(`\n📊 Total de documentos compatíveis: ${documentosComAtividade.length}`);
+      
       if (documentosComAtividade.length === 0) {
-        alert(`Executor definido, mas não há documentos para planejar esta atividade.`);
+        console.warn(`⚠️ Nenhum documento compatível encontrado!`);
+        alert(`Executor definido, mas não há documentos compatíveis para planejar esta atividade.\n\nDisciplina: ${atividadeOriginal.disciplina}\nSubdisciplina: ${atividadeOriginal.subdisciplina}`);
         await fetchData();
         if (onUpdate) onUpdate();
         return;
@@ -2047,6 +2075,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       let dataAtual = new Date(dataInicioCalculada);
       
       for (const doc of documentosComAtividade) {
+        console.log(`\n📋 Processando documento: ${doc.numero}`);
+        
         // Verificar se já existe planejamento
         const planejamentosExistentes = await retryWithBackoff(
           () => PlanejamentoAtividade.filter({
@@ -2059,6 +2089,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         
         if (planejamentosExistentes && planejamentosExistentes.length > 0) {
           // Atualizar executor do planejamento existente
+          console.log(`   ✏️ Planejamento já existe (ID: ${planejamentosExistentes[0].id}), atualizando executor...`);
           await retryWithBackoff(
             () => PlanejamentoAtividade.update(planejamentosExistentes[0].id, {
               executor_principal: executorEmail,
@@ -2066,8 +2097,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             }),
             3, 500, `updatePlanExecutor-${planejamentosExistentes[0].id}`
           );
+          console.log(`   ✅ Executor atualizado no planejamento`);
           planejamentosJaExistentes++;
         } else {
+          console.log(`   📝 Criando novo planejamento...`);
           // Criar novo planejamento
           const fatorDificuldade = doc.fator_dificuldade || 1;
           const tempoCalculado = (atividadeOriginal.tempo || 0) * fatorDificuldade;
@@ -2085,22 +2118,27 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             }
           }
           
+          const dadosPlanejamento = {
+            empreendimento_id: empreendimentoId,
+            atividade_id: atividadeId,
+            documento_id: doc.id,
+            etapa: atividadeOriginal.etapa,
+            descritivo: atividadeOriginal.atividade,
+            tempo_planejado: tempoCalculado,
+            executor_principal: executorEmail,
+            executores: [executorEmail],
+            inicio_planejado: dataAtual.toISOString().split('T')[0],
+            termino_planejado: dataTermino.toISOString().split('T')[0],
+            status: 'nao_iniciado'
+          };
+          
+          console.log(`   📊 Dados do planejamento:`, dadosPlanejamento);
+          
           await retryWithBackoff(
-            () => PlanejamentoAtividade.create({
-              empreendimento_id: empreendimentoId,
-              atividade_id: atividadeId,
-              documento_id: doc.id,
-              etapa: atividadeOriginal.etapa,
-              descritivo: atividadeOriginal.atividade,
-              tempo_planejado: tempoCalculado,
-              executor_principal: executorEmail,
-              executores: [executorEmail],
-              inicio_planejado: dataAtual.toISOString().split('T')[0],
-              termino_planejado: dataTermino.toISOString().split('T')[0],
-              status: 'nao_iniciado'
-            }),
+            () => PlanejamentoAtividade.create(dadosPlanejamento),
             3, 500, `createPlan-${doc.id}-${atividadeId}`
           );
+          console.log(`   ✅ Planejamento criado com sucesso`);
           planejamentosCriados++;
           
           // Próxima atividade começa após esta
@@ -2111,6 +2149,13 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           }
         }
       }
+      
+      console.log(`\n✅ ========================================`);
+      console.log(`✅ PLANEJAMENTO CONCLUÍDO`);
+      console.log(`✅ ========================================`);
+      console.log(`   Criados: ${planejamentosCriados}`);
+      console.log(`   Atualizados: ${planejamentosJaExistentes}`);
+      console.log(`✅ ========================================\n`);
       
       await fetchData();
       if (onUpdate) onUpdate();
