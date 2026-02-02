@@ -1542,6 +1542,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                         </SelectValue>
                                       </SelectTrigger>
                                       <SelectContent>
+                                        <SelectItem value={null} className="text-xs text-red-600">
+                                          ✕ Remover executor
+                                        </SelectItem>
                                         {usuarios
                                           .filter(u => u.status === 'ativo')
                                           .sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))
@@ -1745,6 +1748,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                 </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
+                                <SelectItem value={null} className="text-xs text-red-600">
+                                  ✕ Remover executor
+                                </SelectItem>
                                 {usuarios
                                   .filter(u => u.status === 'ativo')
                                   .sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))
@@ -1866,11 +1872,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const handleSaveExecutor = async (atividade, executorEmail) => {
     const atividadeId = atividade.base_atividade_id || atividade.id;
     
-    if (!executorEmail) {
-      alert("Selecione um executor.");
-      return;
-    }
-    
     setIsSavingExecutor(prev => ({ ...prev, [atividadeId]: true }));
     
     try {
@@ -1899,10 +1900,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       
       if (existingOverrides && existingOverrides.length > 0) {
         await retryWithBackoff(
-          () => Atividade.update(existingOverrides[0].id, { executor_principal: executorEmail }),
+          () => Atividade.update(existingOverrides[0].id, { executor_principal: executorEmail || null }),
           3, 500, `updateExecutorOverride-${existingOverrides[0].id}`
         );
-      } else {
+      } else if (executorEmail) {
         await retryWithBackoff(
           () => Atividade.create({
             ...atividadeOriginal,
@@ -1914,6 +1915,14 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           }),
           3, 500, `createExecutorOverride-${atividadeId}`
         );
+      }
+      
+      // Se não há executor, apenas atualizar e sair
+      if (!executorEmail) {
+        await fetchData();
+        if (onUpdate) onUpdate();
+        alert("✅ Executor removido!");
+        return;
       }
       
       // Buscar a última atividade planejada do executor para calcular data de início
