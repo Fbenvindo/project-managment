@@ -1529,32 +1529,53 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                   </TableCell>
                                   <TableCell className="text-sm">{ativ.etapa}</TableCell>
                                   <TableCell>
-                                    <Select
-                                      value={ativ.executor_principal || ""}
-                                      onValueChange={(value) => handleSaveExecutor(ativ, value)}
-                                      disabled={isSavingExecutor[genericAtividadeIdToExclude]}
-                                    >
-                                      <SelectTrigger className="w-[180px] h-8 text-xs">
-                                        <SelectValue placeholder="Selecionar executor">
-                                          {ativ.executor_principal ? 
-                                            usuarios.find(u => u.email === ativ.executor_principal)?.nome || ativ.executor_principal
-                                            : "Selecionar executor"}
-                                        </SelectValue>
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value={null} className="text-xs text-red-600">
-                                          ✕ Remover executor
-                                        </SelectItem>
-                                        {usuarios
-                                          .filter(u => u.status === 'ativo')
-                                          .sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))
-                                          .map(u => (
-                                            <SelectItem key={u.email} value={u.email} className="text-xs">
-                                              {u.nome || u.email}
-                                            </SelectItem>
-                                          ))}
-                                      </SelectContent>
-                                    </Select>
+                                    <div className="w-[180px]">
+                                      {ativ.executor_principal ? (
+                                        <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
+                                          <div className="flex items-center gap-1">
+                                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                            <span className="text-xs font-medium text-green-800">
+                                              {usuarios.find(u => u.email === ativ.executor_principal)?.nome || ativ.executor_principal}
+                                            </span>
+                                          </div>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => handleSaveExecutor(ativ, "")}
+                                            className="text-xs text-red-600 hover:text-red-700 h-6"
+                                            disabled={isSavingExecutor[genericAtividadeIdToExclude]}
+                                          >
+                                            Remover
+                                          </Button>
+                                        </div>
+                                      ) : (
+                                        <Select
+                                          onValueChange={(value) => handleSaveExecutor(ativ, value)}
+                                          disabled={isSavingExecutor[genericAtividadeIdToExclude]}
+                                        >
+                                          <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
+                                            <Users2 className="w-3 h-3 mr-1" />
+                                            <SelectValue placeholder="Selecionar Executor" />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            {usuarios
+                                              .filter(u => u.status === 'ativo')
+                                              .sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))
+                                              .map(u => (
+                                                <SelectItem key={u.email} value={u.email} className="text-xs">
+                                                  {u.nome || u.email}
+                                                </SelectItem>
+                                              ))}
+                                          </SelectContent>
+                                        </Select>
+                                      )}
+                                      {isSavingExecutor[genericAtividadeIdToExclude] && (
+                                        <div className="flex items-center gap-1 text-xs text-blue-600 mt-1">
+                                          <Loader2 className="w-3 h-3 animate-spin" />
+                                          Planejando...
+                                        </div>
+                                      )}
+                                    </div>
                                   </TableCell>
                                   <TableCell className="text-sm">{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
                                   <TableCell className="text-sm font-semibold text-blue-600">
@@ -1735,32 +1756,53 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                           </TableCell>
                           <TableCell>{ativ.etapa}</TableCell>
                           <TableCell>
-                            <Select
-                              value={ativ.executor_principal || ""}
-                              onValueChange={(value) => handleSaveExecutor(ativ, value)}
-                              disabled={isSavingExecutor[genericAtividadeIdToExclude]}
-                            >
-                              <SelectTrigger className="w-[180px] h-8 text-xs">
-                                <SelectValue placeholder="Selecionar executor">
-                                  {ativ.executor_principal ? 
-                                    usuarios.find(u => u.email === ativ.executor_principal)?.nome || ativ.executor_principal
-                                    : "Selecionar executor"}
-                                </SelectValue>
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value={null} className="text-xs text-red-600">
-                                  ✕ Remover executor
-                                </SelectItem>
-                                {usuarios
-                                  .filter(u => u.status === 'ativo')
-                                  .sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))
-                                  .map(u => (
-                                    <SelectItem key={u.email} value={u.email} className="text-xs">
-                                      {u.nome || u.email}
-                                    </SelectItem>
-                                  ))}
-                              </SelectContent>
-                            </Select>
+                            <div className="w-[180px]">
+                              {ativ.executor_principal ? (
+                                <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
+                                  <div className="flex items-center gap-1">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                    <span className="text-xs font-medium text-green-800">
+                                      {usuarios.find(u => u.email === ativ.executor_principal)?.nome || ativ.executor_principal}
+                                    </span>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => handleSaveExecutor(ativ, "")}
+                                    className="text-xs text-red-600 hover:text-red-700 h-6"
+                                    disabled={isSavingExecutor[genericAtividadeIdToExclude]}
+                                  >
+                                    Remover
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Select
+                                  onValueChange={(value) => handleSaveExecutor(ativ, value)}
+                                  disabled={isSavingExecutor[genericAtividadeIdToExclude]}
+                                >
+                                  <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
+                                    <Users2 className="w-3 h-3 mr-1" />
+                                    <SelectValue placeholder="Selecionar Executor" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {usuarios
+                                      .filter(u => u.status === 'ativo')
+                                      .sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))
+                                      .map(u => (
+                                        <SelectItem key={u.email} value={u.email} className="text-xs">
+                                          {u.nome || u.email}
+                                        </SelectItem>
+                                      ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                              {isSavingExecutor[genericAtividadeIdToExclude] && (
+                                <div className="flex items-center gap-1 text-xs text-blue-600 mt-1">
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                  Planejando...
+                                </div>
+                              )}
+                            </div>
                           </TableCell>
                           <TableCell>{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
                           <TableCell className="font-semibold text-blue-600">
