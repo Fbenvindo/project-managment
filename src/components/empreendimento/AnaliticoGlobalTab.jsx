@@ -1625,14 +1625,31 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                   </TableCell>
                                   <TableCell className="text-center">
                                     {!ativ.isEditable && (
-                                      <Button 
-                                        size="icon" 
-                                        onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)}
-                                        variant="outline"
-                                        className="border-blue-500 text-blue-600 hover:bg-blue-50"
-                                      >
-                                        <Edit2 className="w-4 h-4" />
-                                      </Button>
+                                      <div className="flex items-center gap-2 justify-center">
+                                        <Button 
+                                          size="icon" 
+                                          onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)}
+                                          variant="outline"
+                                          className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                                          title="Editar Etapa"
+                                        >
+                                          <Edit2 className="w-4 h-4" />
+                                        </Button>
+                                        <Button 
+                                          size="icon" 
+                                          onClick={() => handleConcluirEmTodasFolhas(ativ)}
+                                          variant="outline"
+                                          className="border-green-500 text-green-600 hover:bg-green-50"
+                                          disabled={isConcluindo[genericAtividadeIdToExclude]}
+                                          title="Concluir em Todas as Folhas"
+                                        >
+                                          {isConcluindo[genericAtividadeIdToExclude] ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                          ) : (
+                                            <CheckCircle className="w-4 h-4" />
+                                          )}
+                                        </Button>
+                                      </div>
                                     )}
                                   </TableCell>
                                   <TableCell>
@@ -1656,13 +1673,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                           <>
                                             <DropdownMenuItem onClick={() => handleOpenEtapaModal(ativ)}>
                                               <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem 
-                                              onClick={() => handleConcluirEmTodasFolhas(ativ)} 
-                                              className="text-green-600"
-                                              disabled={isConcluindo[genericAtividadeIdToExclude]}
-                                            >
-                                              <CheckCircle className="w-4 h-4 mr-2" /> Concluir em Todas as Folhas
                                             </DropdownMenuItem>
                                             <DropdownMenuItem 
                                               onClick={() => handleOpenExcluirDeFolhasModal(ativ)} 
@@ -1911,14 +1921,31 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                           </TableCell>
                           <TableCell className="text-center">
                             {!ativ.isEditable && (
-                              <Button 
-                                size="icon" 
-                                onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)}
-                                variant="outline"
-                                className="border-blue-500 text-blue-600 hover:bg-blue-50"
-                              >
-                                <Edit2 className="w-4 h-4" />
-                              </Button>
+                              <div className="flex items-center gap-2 justify-center">
+                                <Button 
+                                  size="icon" 
+                                  onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)}
+                                  variant="outline"
+                                  className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                                  title="Editar Etapa"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </Button>
+                                <Button 
+                                  size="icon" 
+                                  onClick={() => handleConcluirEmTodasFolhas(ativ)}
+                                  variant="outline"
+                                  className="border-green-500 text-green-600 hover:bg-green-50"
+                                  disabled={isConcluindo[genericAtividadeIdToExclude]}
+                                  title="Concluir em Todas as Folhas"
+                                >
+                                  {isConcluindo[genericAtividadeIdToExclude] ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <CheckCircle className="w-4 h-4" />
+                                  )}
+                                </Button>
+                              </div>
                             )}
                           </TableCell>
                           <TableCell>
@@ -1942,13 +1969,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                   <>
                                     <DropdownMenuItem onClick={() => handleOpenEtapaModal(ativ)}>
                                       <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem 
-                                      onClick={() => handleConcluirEmTodasFolhas(ativ)} 
-                                      className="text-green-600"
-                                      disabled={isConcluindo[genericAtividadeIdToExclude]}
-                                    >
-                                      <CheckCircle className="w-4 h-4 mr-2" /> Concluir em Todas as Folhas
                                     </DropdownMenuItem>
                                     <DropdownMenuItem 
                                       onClick={() => handleOpenExcluirDeFolhasModal(ativ)} 
