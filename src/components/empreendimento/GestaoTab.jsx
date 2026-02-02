@@ -41,8 +41,6 @@ export default function GestaoTab({ empreendimento, documentos, planejamentos, a
     console.log('📊 [GestaoTab] Disciplinas encontradas:', disciplinas);
 
     // Criar matriz
-    // A matriz ainda será {disciplina: {etapa: {horasPlanejadas, horasExecutadas}}}
-    // A inversão é apenas na forma como é exibida
     const matriz = {};
     
     disciplinas.forEach(disciplina => {
@@ -50,7 +48,8 @@ export default function GestaoTab({ empreendimento, documentos, planejamentos, a
       etapasOrdenadas.forEach(etapa => {
         matriz[disciplina][etapa] = {
           horasPlanejadas: 0,
-          horasExecutadas: 0
+          horasExecutadas: 0,
+          horasTotais: 0  // Horas potenciais do catálogo
         };
       });
     });
@@ -61,15 +60,45 @@ export default function GestaoTab({ empreendimento, documentos, planejamentos, a
       pavimentosMap[pav.id] = pav;
     });
 
-    // Para cada documento, buscar planejamentos efetivos e somar horas
+    // Para cada documento, calcular horas totais do catálogo e planejamentos efetivos
     documentos.forEach(doc => {
       const disciplinaDoc = doc.disciplina;
+      const subdisciplinasDoc = doc.subdisciplinas || [];
+      const fatorDificuldade = doc.fator_dificuldade || 1;
+      
+      // Buscar área do pavimento vinculado
+      let areaPavimento = 1;
+      if (doc.pavimento_id && pavimentosMap[doc.pavimento_id]) {
+        areaPavimento = parseFloat(pavimentosMap[doc.pavimento_id].area) || 1;
+      } else if (doc.area) {
+        areaPavimento = parseFloat(doc.area) || 1;
+      }
 
       console.log(`📄 [GestaoTab] Processando documento ${doc.numero}:`, {
-        disciplina: disciplinaDoc
+        disciplina: disciplinaDoc,
+        subdisciplinas: subdisciplinasDoc,
+        areaPavimento
       });
 
-      // Buscar planejamentos efetivos deste documento
+      // Calcular horas totais do catálogo (para colunas de disciplinas)
+      const atividadesAplicaveis = atividades.filter(ativ => {
+        const isGlobal = !ativ.empreendimento_id;
+        const disciplinaMatch = ativ.disciplina === disciplinaDoc;
+        const subdisciplinaMatch = subdisciplinasDoc.includes(ativ.subdisciplina);
+        return isGlobal && disciplinaMatch && subdisciplinaMatch;
+      });
+
+      atividadesAplicaveis.forEach(ativ => {
+        const etapa = ativ.etapa;
+        const tempoBase = parseFloat(ativ.tempo) || 0;
+        const tempoTotal = tempoBase * areaPavimento * fatorDificuldade;
+
+        if (matriz[disciplinaDoc] && matriz[disciplinaDoc][etapa]) {
+          matriz[disciplinaDoc][etapa].horasTotais += tempoTotal;
+        }
+      });
+
+      // Buscar planejamentos efetivos (para coluna TOTAL)
       const planejamentosDoDocumento = planejamentos.filter(p => p.documento_id === doc.id);
       
       console.log(`  ✅ Planejamentos encontrados: ${planejamentosDoDocumento.length}`);
@@ -95,15 +124,18 @@ export default function GestaoTab({ empreendimento, documentos, planejamentos, a
     disciplinas.forEach(disciplina => {
       let totalPlanejado = 0;
       let totalExecutado = 0;
+      let horasTotais = 0;
       etapasOrdenadas.forEach(etapa => {
         if (matriz[disciplina] && matriz[disciplina][etapa]) {
           totalPlanejado += matriz[disciplina][etapa].horasPlanejadas;
           totalExecutado += matriz[disciplina][etapa].horasExecutadas;
+          horasTotais += matriz[disciplina][etapa].horasTotais;
         }
       });
       totaisPorDisciplina[disciplina] = {
         planejado: totalPlanejado,
         executado: totalExecutado,
+        total: horasTotais,
         percentual: totalPlanejado > 0 ? Math.round((totalExecutado / totalPlanejado) * 100) : 0
       };
     });
@@ -222,7 +254,7 @@ export default function GestaoTab({ empreendimento, documentos, planejamentos, a
                   <th className="border border-gray-300 p-2 text-xs text-gray-600 sticky left-0 bg-gray-50 z-10"></th>
                   <th className="border border-gray-300 p-2 text-xs text-gray-600 bg-blue-50">Planejado</th>
                   {matrizDisciplinasEtapas.disciplinas.map(disciplina => (
-                    <th key={disciplina} className="border border-gray-300 p-2 text-xs text-gray-600">Planejado</th>
+                    <th key={disciplina} className="border border-gray-300 p-2 text-xs text-gray-600">Total</th>
                   ))}
                 </tr>
               </thead>
@@ -237,7 +269,7 @@ export default function GestaoTab({ empreendimento, documentos, planejamentos, a
                     )}
                   </td>
                   {matrizDisciplinasEtapas.disciplinas.map(disciplina => {
-                    const horas = matrizDisciplinasEtapas.totaisPorDisciplina[disciplina].planejado;
+                    const horas = matrizDisciplinasEtapas.totaisPorDisciplina[disciplina].total;
                     return (
                       <td key={disciplina} className="border border-gray-300 p-3 text-center">
                         <div>{horas.toFixed(1)}h</div>
@@ -263,13 +295,13 @@ export default function GestaoTab({ empreendimento, documentos, planejamentos, a
                     </td>
                     {matrizDisciplinasEtapas.disciplinas.map(disciplina => {
                       const dados = matrizDisciplinasEtapas.matriz[disciplina][etapa];
-                      const temDados = dados.horasPlanejadas > 0;
+                      const temDados = dados.horasTotais > 0;
                       
                       return (
                         <td key={disciplina} className={`border border-gray-300 p-3 text-center ${!temDados ? 'text-gray-400' : ''}`}>
-                          <div>{dados.horasPlanejadas > 0 ? dados.horasPlanejadas.toFixed(1) : '0'}</div>
-                          {valorHora > 0 && dados.horasPlanejadas > 0 && (
-                            <div className="text-xs text-green-700">{formatCurrency(dados.horasPlanejadas * valorHora)}</div>
+                          <div>{dados.horasTotais > 0 ? dados.horasTotais.toFixed(1) : '0'}</div>
+                          {valorHora > 0 && dados.horasTotais > 0 && (
+                            <div className="text-xs text-green-700">{formatCurrency(dados.horasTotais * valorHora)}</div>
                           )}
                         </td>
                       );
