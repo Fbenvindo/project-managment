@@ -665,6 +665,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const [alteracoesEtapa, setAlteracoesEtapa] = useState([]);
   const [empreendimentoNome, setEmpreendimentoNome] = useState("");
   const [isSavingExecutor, setIsSavingExecutor] = useState({});
+  const [isConcluindo, setIsConcluindo] = useState({});
 
   const documentosMap = useMemo(() => {
     return new Map((documentos || []).map(doc => [doc.id, doc]));
@@ -1657,6 +1658,13 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                               <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
                                             </DropdownMenuItem>
                                             <DropdownMenuItem 
+                                              onClick={() => handleConcluirEmTodasFolhas(ativ)} 
+                                              className="text-green-600"
+                                              disabled={isConcluindo[genericAtividadeIdToExclude]}
+                                            >
+                                              <CheckCircle className="w-4 h-4 mr-2" /> Concluir em Todas as Folhas
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem 
                                               onClick={() => handleOpenExcluirDeFolhasModal(ativ)} 
                                               className="text-orange-600"
                                             >
@@ -1936,6 +1944,13 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                       <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
                                     </DropdownMenuItem>
                                     <DropdownMenuItem 
+                                      onClick={() => handleConcluirEmTodasFolhas(ativ)} 
+                                      className="text-green-600"
+                                      disabled={isConcluindo[genericAtividadeIdToExclude]}
+                                    >
+                                      <CheckCircle className="w-4 h-4 mr-2" /> Concluir em Todas as Folhas
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
                                       onClick={() => handleOpenExcluirDeFolhasModal(ativ)} 
                                       className="text-orange-600"
                                     >
@@ -2018,6 +2033,89 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                         })}
       </div>
     );
+  };
+
+  const handleConcluirEmTodasFolhas = async (atividade) => {
+    const atividadeId = atividade.base_atividade_id || atividade.id;
+    
+    if (!window.confirm(`Tem certeza que deseja CONCLUIR a atividade "${atividade.atividade}" em TODAS as folhas deste empreendimento?\n\nTodos os planejamentos relacionados serão marcados como concluídos.`)) {
+      return;
+    }
+    
+    setIsConcluindo(prev => ({ ...prev, [atividadeId]: true }));
+    
+    try {
+      console.log(`\n✅ ========================================`);
+      console.log(`✅ CONCLUINDO ATIVIDADE EM TODAS AS FOLHAS`);
+      console.log(`✅ ========================================`);
+      console.log(`   Atividade ID: ${atividadeId}`);
+      console.log(`   Atividade: ${atividade.atividade}`);
+      console.log(`   Empreendimento: ${empreendimentoId}`);
+      
+      // Buscar todos os planejamentos desta atividade
+      const planejamentos = await retryWithBackoff(
+        () => PlanejamentoAtividade.filter({
+          empreendimento_id: empreendimentoId,
+          atividade_id: atividadeId
+        }),
+        3, 500, `getConcluirPlanejamentos-${atividadeId}`
+      );
+      
+      console.log(`   📊 Total de planejamentos encontrados: ${planejamentos.length}`);
+      
+      if (planejamentos.length === 0) {
+        alert(`Nenhum planejamento encontrado para esta atividade. A atividade precisa estar planejada em pelo menos uma folha para ser concluída.`);
+        return;
+      }
+      
+      const hoje = format(new Date(), 'yyyy-MM-dd');
+      let concluidos = 0;
+      let jaFinalizados = 0;
+      
+      for (const plano of planejamentos) {
+        if (plano.status === 'concluido') {
+          jaFinalizados++;
+          console.log(`   ⏭️ Planejamento ${plano.id} já estava concluído`);
+          continue;
+        }
+        
+        await retryWithBackoff(
+          () => PlanejamentoAtividade.update(plano.id, {
+            status: 'concluido',
+            termino_real: hoje
+          }),
+          3, 500, `concluirPlan-${plano.id}`
+        );
+        
+        concluidos++;
+        console.log(`   ✅ Planejamento ${plano.id} concluído`);
+      }
+      
+      console.log(`\n✅ ========================================`);
+      console.log(`✅ CONCLUSÃO FINALIZADA`);
+      console.log(`✅ ========================================`);
+      console.log(`   Concluídos agora: ${concluidos}`);
+      console.log(`   Já finalizados: ${jaFinalizados}`);
+      console.log(`✅ ========================================\n`);
+      
+      await fetchData();
+      if (onUpdate) onUpdate();
+      
+      let mensagem = `✅ Atividade "${atividade.atividade}" concluída em todas as folhas!\n`;
+      if (concluidos > 0) {
+        mensagem += `\n• ${concluidos} planejamento(s) concluído(s)`;
+      }
+      if (jaFinalizados > 0) {
+        mensagem += `\n• ${jaFinalizados} já estava(m) finalizado(s)`;
+      }
+      alert(mensagem);
+      
+    } catch (error) {
+      console.error("Erro ao concluir atividade em todas as folhas:", error);
+      alert("Erro ao concluir atividade: " + error.message);
+    } finally {
+      setIsConcluindo(prev => ({ ...prev, [atividadeId]: false }));
+    }
   };
 
   const handleSaveExecutor = async (atividade, executorEmail) => {
