@@ -314,7 +314,6 @@ export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
         
         pdf.setFont('helvetica', 'normal');
         pdf.setFontSize(8);
-        pdf.text('Fone (Phone): 55. 11 2533.8282', margin, pageHeight - 8);
         pdf.text('www.interativaengenharia.com.br', margin, pageHeight - 4);
       }
 
