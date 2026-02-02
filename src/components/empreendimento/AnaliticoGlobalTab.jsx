@@ -1384,6 +1384,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     }
 
     const editableActivities = atividadesAgrupadas.filter(grupo => grupo.baseAtividade.isEditable);
+    const nonEditableActivities = atividadesAgrupadas.filter(grupo => !grupo.baseAtividade.isEditable);
+    const hasCheckboxColumn = editableActivities.length > 0;
 
     return (
       <div className="space-y-6">
@@ -1461,7 +1463,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                       <Table className="text-sm">
                         <TableHeader className="bg-white">
                           <TableRow>
-                            {editableActivities.length > 0 && <TableHead className="w-[50px]"></TableHead>}
+                            {hasCheckboxColumn && <TableHead className="w-[50px]"></TableHead>}
                             <TableHead className="w-[50px]"></TableHead>
                             <TableHead>Atividade</TableHead>
                             <TableHead>Folhas</TableHead>
@@ -1471,7 +1473,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             <TableHead>Datas Planejadas</TableHead>
                             <TableHead>Tempo Padrão</TableHead>
                             <TableHead>Tempo Total</TableHead>
-                            <TableHead className="text-center">Ações</TableHead>
+                            <TableHead className="text-center w-[120px]">Ações</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                           </TableRow>
                         </TableHeader>
@@ -1486,7 +1488,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             return (
                               <>
                                 <TableRow key={key} className="hover:bg-gray-50">
-                                  {editableActivities.length > 0 && (
+                                  {hasCheckboxColumn && (
                                     <TableCell>
                                       {ativ.isEditable && (
                                         <Checkbox
@@ -1694,7 +1696,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                 </TableRow>
                                 {isExpanded && grupo.folhas.map(folha => (
                                   <TableRow key={folha.uniqueId} className="bg-blue-50/50">
-                                    {editableActivities.length > 0 && <TableCell></TableCell>}
+                                    {hasCheckboxColumn && <TableCell></TableCell>}
                                     <TableCell className="pl-12">
                                       <ChevronRight className="w-3 h-3 text-gray-400 inline mr-1" />
                                     </TableCell>
@@ -1756,7 +1758,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                       <Table>
                 <TableHeader className="bg-gray-50">
                   <TableRow>
-                     {editableActivities.length > 0 && <TableHead className="w-[50px]"></TableHead>}
+                     {hasCheckboxColumn && <TableHead className="w-[50px]"></TableHead>}
                      <TableHead className="w-[50px]"></TableHead>
                      <TableHead>Atividade</TableHead>
                      <TableHead>Folhas</TableHead>
@@ -1766,7 +1768,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                      <TableHead>Datas Planejadas</TableHead>
                      <TableHead>Tempo Padrão</TableHead>
                      <TableHead>Tempo Total</TableHead>
-                     <TableHead className="text-center">Ações</TableHead>
+                     <TableHead className="text-center w-[120px]">Ações</TableHead>
                      <TableHead className="w-[50px]"></TableHead>
                    </TableRow>
                 </TableHeader>
@@ -1782,7 +1784,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                     return (
                       <>
                         <TableRow key={key} className="hover:bg-gray-50">
-                          {editableActivities.length > 0 && (
+                          {hasCheckboxColumn && (
                             <TableCell>
                               {ativ.isEditable && (
                                 <Checkbox
@@ -1991,7 +1993,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
                         {isExpanded && grupo.folhas.map(folha => (
                           <TableRow key={folha.uniqueId} className="bg-blue-50/50">
-                            {editableActivities.length > 0 && <TableCell></TableCell>}
+                            {hasCheckboxColumn && <TableCell></TableCell>}
                             <TableCell className="pl-12">
                               <ChevronRight className="w-3 h-3 text-gray-400 inline mr-1" />
                             </TableCell>
