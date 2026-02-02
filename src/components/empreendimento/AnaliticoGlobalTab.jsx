@@ -1959,11 +1959,31 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         );
       }
       
-      // Se não há executor, apenas atualizar e sair
+      // Se não há executor, remover planejamentos existentes
       if (!executorEmail) {
+        // Buscar e remover planejamentos desta atividade
+        const planejamentosParaRemover = await retryWithBackoff(
+          () => PlanejamentoAtividade.filter({
+            empreendimento_id: empreendimentoId,
+            atividade_id: atividadeId
+          }),
+          3, 500, `getPlanejamentosParaRemover-${atividadeId}`
+        );
+        
+        if (planejamentosParaRemover && planejamentosParaRemover.length > 0) {
+          await Promise.all(
+            planejamentosParaRemover.map(p => 
+              retryWithBackoff(
+                () => PlanejamentoAtividade.delete(p.id),
+                3, 500, `deletePlan-${p.id}`
+              )
+            )
+          );
+        }
+        
         await fetchData();
         if (onUpdate) onUpdate();
-        alert("✅ Executor removido!");
+        alert("✅ Executor removido e planejamentos excluídos!");
         return;
       }
       
