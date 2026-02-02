@@ -2129,7 +2129,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             executores: [executorEmail],
             inicio_planejado: dataAtual.toISOString().split('T')[0],
             termino_planejado: dataTermino.toISOString().split('T')[0],
-            status: 'nao_iniciado'
+            status: 'nao_iniciado',
+            tipo_plano: 'atividade'
           };
           
           console.log(`   📊 Dados do planejamento:`, dadosPlanejamento);
