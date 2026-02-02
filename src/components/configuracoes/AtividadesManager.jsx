@@ -241,17 +241,15 @@ export default function AtividadesManager({ atividades, disciplinas, onUpdate, i
               )}
             </div>
             <div className="flex gap-2 flex-wrap">
+              <PDFListaDesenvolvimento alteracoes={alteracoesEtapa} />
               {alteracoesEtapa.length > 0 && (
-                <>
-                  <PDFListaDesenvolvimento alteracoes={alteracoesEtapa} />
-                  <Button
-                    variant="outline"
-                    onClick={limparAlteracoes}
-                    className="border-red-500 text-red-600 hover:bg-red-50"
-                  >
-                    Limpar Registro
-                  </Button>
-                </>
+                <Button
+                  variant="outline"
+                  onClick={limparAlteracoes}
+                  className="border-red-500 text-red-600 hover:bg-red-50"
+                >
+                  Limpar Registro
+                </Button>
               )}
               <Button onClick={() => setShowForm(true)} className="bg-blue-600 hover:bg-blue-700">
                 <Plus className="w-4 h-4 mr-2" />
