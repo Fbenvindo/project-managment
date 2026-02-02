@@ -1534,7 +1534,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                       disabled={isSavingExecutor[genericAtividadeIdToExclude]}
                                     >
                                       <SelectTrigger className="w-[180px] h-8 text-xs">
-                                        <SelectValue placeholder="Selecionar executor" />
+                                        <SelectValue placeholder="Selecionar executor">
+                                          {ativ.executor_principal ? 
+                                            usuarios.find(u => u.email === ativ.executor_principal)?.nome || ativ.executor_principal
+                                            : "Selecionar executor"}
+                                        </SelectValue>
                                       </SelectTrigger>
                                       <SelectContent>
                                         {usuarios
@@ -1733,7 +1737,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                               disabled={isSavingExecutor[genericAtividadeIdToExclude]}
                             >
                               <SelectTrigger className="w-[180px] h-8 text-xs">
-                                <SelectValue placeholder="Selecionar executor" />
+                                <SelectValue placeholder="Selecionar executor">
+                                  {ativ.executor_principal ? 
+                                    usuarios.find(u => u.email === ativ.executor_principal)?.nome || ativ.executor_principal
+                                    : "Selecionar executor"}
+                                </SelectValue>
                               </SelectTrigger>
                               <SelectContent>
                                 {usuarios
@@ -1907,6 +1915,45 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         );
       }
       
+      // Buscar a última atividade planejada do executor para calcular data de início
+      const planejamentosExecutor = await retryWithBackoff(
+        () => PlanejamentoAtividade.filter({
+          empreendimento_id: empreendimentoId,
+          executor_principal: executorEmail
+        }),
+        3, 500, `getPlanejamentosExecutor-${executorEmail}`
+      );
+      
+      // Encontrar a última data de término
+      let dataInicioCalculada = null;
+      if (planejamentosExecutor && planejamentosExecutor.length > 0) {
+        const datasTermino = planejamentosExecutor
+          .map(p => p.termino_planejado || p.termino_ajustado)
+          .filter(Boolean)
+          .map(d => new Date(d))
+          .sort((a, b) => b - a);
+        
+        if (datasTermino.length > 0) {
+          const ultimaData = datasTermino[0];
+          // Próximo dia útil após a última atividade
+          dataInicioCalculada = new Date(ultimaData);
+          dataInicioCalculada.setDate(dataInicioCalculada.getDate() + 1);
+          
+          // Garantir que é dia útil
+          while (dataInicioCalculada.getDay() === 0 || dataInicioCalculada.getDay() === 6) {
+            dataInicioCalculada.setDate(dataInicioCalculada.getDate() + 1);
+          }
+        }
+      }
+      
+      // Se não tem data calculada, usar hoje
+      if (!dataInicioCalculada) {
+        dataInicioCalculada = new Date();
+        while (dataInicioCalculada.getDay() === 0 || dataInicioCalculada.getDay() === 6) {
+          dataInicioCalculada.setDate(dataInicioCalculada.getDate() + 1);
+        }
+      }
+      
       // Buscar documentos que têm esta atividade
       const documentosComAtividade = documentos.filter(doc => {
         const disciplinaMatch = doc.disciplina === atividadeOriginal.disciplina;
@@ -1925,6 +1972,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       // Criar planejamentos para cada documento
       let planejamentosCriados = 0;
       let planejamentosJaExistentes = 0;
+      let dataAtual = new Date(dataInicioCalculada);
       
       for (const doc of documentosComAtividade) {
         // Verificar se já existe planejamento
@@ -1952,6 +2000,19 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           const fatorDificuldade = doc.fator_dificuldade || 1;
           const tempoCalculado = (atividadeOriginal.tempo || 0) * fatorDificuldade;
           
+          // Calcular data de término (assumindo 8h/dia)
+          const diasNecessarios = Math.ceil(tempoCalculado / 8);
+          const dataTermino = new Date(dataAtual);
+          let diasAdicionados = 0;
+          
+          while (diasAdicionados < diasNecessarios) {
+            dataTermino.setDate(dataTermino.getDate() + 1);
+            // Pular fins de semana
+            if (dataTermino.getDay() !== 0 && dataTermino.getDay() !== 6) {
+              diasAdicionados++;
+            }
+          }
+          
           await retryWithBackoff(
             () => PlanejamentoAtividade.create({
               empreendimento_id: empreendimentoId,
@@ -1962,11 +2023,20 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
               tempo_planejado: tempoCalculado,
               executor_principal: executorEmail,
               executores: [executorEmail],
+              inicio_planejado: dataAtual.toISOString().split('T')[0],
+              termino_planejado: dataTermino.toISOString().split('T')[0],
               status: 'nao_iniciado'
             }),
             3, 500, `createPlan-${doc.id}-${atividadeId}`
           );
           planejamentosCriados++;
+          
+          // Próxima atividade começa após esta
+          dataAtual = new Date(dataTermino);
+          dataAtual.setDate(dataAtual.getDate() + 1);
+          while (dataAtual.getDay() === 0 || dataAtual.getDay() === 6) {
+            dataAtual.setDate(dataAtual.getDate() + 1);
+          }
         }
       }
       
