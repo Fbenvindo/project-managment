@@ -1584,31 +1584,37 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                       </div>
                                       </TableCell>
                                       <TableCell>
-                                      {grupo.folhas.some(f => f.status === 'Planejada') ? (
-                                      <div className="text-xs space-y-1">
-                                        {grupo.folhas
-                                          .filter(f => f.status === 'Planejada')
-                                          .map(f => {
-                                            const planejamento = planejamentos?.find(p => 
-                                              p.documento_id === f.source_documento_id && 
-                                              p.atividade_id === f.base_atividade_id
-                                            );
+                                        {grupo.folhas.some(f => f.status === 'Planejada') ? (
+                                          (() => {
+                                            const folhasPlanejadas = grupo.folhas.filter(f => f.status === 'Planejada');
+                                            const planejamentosComDatas = folhasPlanejadas
+                                              .map(f => planejamentos?.find(p => 
+                                                p.documento_id === f.source_documento_id && 
+                                                p.atividade_id === f.base_atividade_id
+                                              ))
+                                              .filter(p => p?.inicio_planejado && p?.termino_planejado);
 
-                                            if (planejamento?.inicio_planejado && planejamento?.termino_planejado) {
+                                            if (planejamentosComDatas.length > 0) {
+                                              const datas = planejamentosComDatas.map(p => ({
+                                                inicio: parseISO(p.inicio_planejado),
+                                                termino: parseISO(p.termino_planejado)
+                                              }));
+
+                                              const dataInicio = datas.reduce((min, d) => d.inicio < min ? d.inicio : min, datas[0].inicio);
+                                              const dataTermino = datas.reduce((max, d) => d.termino > max ? d.termino : max, datas[0].termino);
+
                                               return (
-                                                <div key={f.uniqueId} className="flex items-center gap-1 text-gray-600">
+                                                <div className="flex items-center gap-1 text-gray-600 text-xs">
                                                   <Calendar className="w-3 h-3" />
-                                                  <span>{format(parseISO(planejamento.inicio_planejado), 'dd/MM')} - {format(parseISO(planejamento.termino_planejado), 'dd/MM')}</span>
+                                                  <span>{format(dataInicio, 'dd/MM')} - {format(dataTermino, 'dd/MM')}</span>
                                                 </div>
                                               );
                                             }
-                                            return null;
-                                          })
-                                          .filter(Boolean)}
-                                      </div>
-                                      ) : (
-                                      <span className="text-xs text-gray-400">-</span>
-                                      )}
+                                            return <span className="text-xs text-gray-400">-</span>;
+                                          })()
+                                        ) : (
+                                          <span className="text-xs text-gray-400">-</span>
+                                        )}
                                       </TableCell>
                                       <TableCell className="text-sm">{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
                                       <TableCell className="text-sm font-semibold text-blue-600">
@@ -1861,31 +1867,37 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             </div>
                             </TableCell>
                             <TableCell>
-                            {grupo.folhas.some(f => f.status === 'Planejada') ? (
-                              <div className="text-xs space-y-1">
-                                {grupo.folhas
-                                  .filter(f => f.status === 'Planejada')
-                                  .map(f => {
-                                    const planejamento = planejamentos?.find(p => 
+                              {grupo.folhas.some(f => f.status === 'Planejada') ? (
+                                (() => {
+                                  const folhasPlanejadas = grupo.folhas.filter(f => f.status === 'Planejada');
+                                  const planejamentosComDatas = folhasPlanejadas
+                                    .map(f => planejamentos?.find(p => 
                                       p.documento_id === f.source_documento_id && 
                                       p.atividade_id === f.base_atividade_id
-                                    );
+                                    ))
+                                    .filter(p => p?.inicio_planejado && p?.termino_planejado);
 
-                                    if (planejamento?.inicio_planejado && planejamento?.termino_planejado) {
-                                      return (
-                                        <div key={f.uniqueId} className="flex items-center gap-1 text-gray-600">
-                                          <Calendar className="w-3 h-3" />
-                                          <span>{format(parseISO(planejamento.inicio_planejado), 'dd/MM')} - {format(parseISO(planejamento.termino_planejado), 'dd/MM')}</span>
-                                        </div>
-                                      );
-                                    }
-                                    return null;
-                                  })
-                                  .filter(Boolean)}
-                              </div>
-                            ) : (
-                              <span className="text-xs text-gray-400">-</span>
-                            )}
+                                  if (planejamentosComDatas.length > 0) {
+                                    const datas = planejamentosComDatas.map(p => ({
+                                      inicio: parseISO(p.inicio_planejado),
+                                      termino: parseISO(p.termino_planejado)
+                                    }));
+
+                                    const dataInicio = datas.reduce((min, d) => d.inicio < min ? d.inicio : min, datas[0].inicio);
+                                    const dataTermino = datas.reduce((max, d) => d.termino > max ? d.termino : max, datas[0].termino);
+
+                                    return (
+                                      <div className="flex items-center gap-1 text-gray-600 text-xs">
+                                        <Calendar className="w-3 h-3" />
+                                        <span>{format(dataInicio, 'dd/MM')} - {format(dataTermino, 'dd/MM')}</span>
+                                      </div>
+                                    );
+                                  }
+                                  return <span className="text-xs text-gray-400">-</span>;
+                                })()
+                              ) : (
+                                <span className="text-xs text-gray-400">-</span>
+                              )}
                             </TableCell>
                             <TableCell>{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
                             <TableCell className="font-semibold text-blue-600">
