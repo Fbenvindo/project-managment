@@ -155,14 +155,14 @@ export const ActivityTimerProvider = ({ children }) => {
             return;
         }
         
-        // Se não foi passado o dia de execução, usa o dia de hoje
+        // SEMPRE usar o dia atual da execução - NUNCA redistribuir em outros dias
         const diaParaRegistrar = diaExecucao || format(new Date(), 'yyyy-MM-dd');
         
         console.log(`\n🔧 [updatePlanejamento] INICIANDO ATUALIZAÇÃO`);
         console.log(`   Planejamento ID: ${planejamentoId}`);
         console.log(`   Tempo adicional: ${tempoAdicional?.toFixed(4)}h`);
         console.log(`   Status final: ${finalStatus}`);
-        console.log(`   Dia de execução: ${diaParaRegistrar}`);
+        console.log(`   🗓️ Dia de execução (FIXO): ${diaParaRegistrar} - NÃO será redistribuído`);
         console.log(`   Observação: ${observacao || 'N/A'}`);
         
         try {
@@ -216,11 +216,17 @@ export const ActivityTimerProvider = ({ children }) => {
                 console.log(`   💬 Salvando observação no planejamento`);
             }
 
-            // ATUALIZAR horas_executadas_por_dia com as horas do dia
+            // IMPORTANTE: Registrar horas APENAS no dia da execução, NUNCA redistribuir
             const horasExecutadasPorDia = planejamento.horas_executadas_por_dia || {};
-            horasExecutadasPorDia[diaParaRegistrar] = (horasExecutadasPorDia[diaParaRegistrar] || 0) + tempoAdicional;
+            const horasAnteriorNoDia = horasExecutadasPorDia[diaParaRegistrar] || 0;
+            const novasHorasNoDia = horasAnteriorNoDia + tempoAdicional;
+            horasExecutadasPorDia[diaParaRegistrar] = novasHorasNoDia;
             updateData.horas_executadas_por_dia = horasExecutadasPorDia;
-            console.log(`   📅 Atualizando horas_executadas_por_dia[${diaParaRegistrar}]: ${(horasExecutadasPorDia[diaParaRegistrar]).toFixed(4)}h`);
+            console.log(`   📅 Horas executadas em ${diaParaRegistrar}:`);
+            console.log(`      Anterior: ${horasAnteriorNoDia.toFixed(4)}h`);
+            console.log(`      Adicional: ${tempoAdicional.toFixed(4)}h`);
+            console.log(`      Total no dia: ${novasHorasNoDia.toFixed(4)}h`);
+            console.log(`      ✅ Horas ficam FIXAS neste dia, sem redistribuição`);
 
             // RESPEITAR O finalStatus PASSADO EXPLICITAMENTE
             if (finalStatus === 'concluido') {
@@ -341,8 +347,9 @@ export const ActivityTimerProvider = ({ children }) => {
                     );
                     
                     if (exec.planejamento_id) {
-                        // SEMPRE usar a data de hoje para registrar horas
+                        // SEMPRE usar a data de hoje - horas executadas ficam no dia da execução
                         const diaExec = format(new Date(), 'yyyy-MM-dd');
+                        console.log(`   🗓️ Pausando duplicata - ${tempoDecorrido.toFixed(2)}h ficam registradas em ${diaExec}`);
                         await updatePlanejamento(exec.planejamento_id, tempoDecorrido, 'pausado', 'Pausado automaticamente - execução duplicada detectada', diaExec);
                     }
                 }
@@ -571,9 +578,10 @@ export const ActivityTimerProvider = ({ children }) => {
 
             if (execution.planejamento_id) {
                 console.log(`🔄 [pauseExecution] Atualizando planejamento ${execution.planejamento_id}...`);
-                // SEMPRE usar a data de hoje (data local) para registrar as horas
+                // SEMPRE usar o dia ATUAL da execução - horas ficam no dia que foi executado
                 const diaExecucao = format(new Date(), 'yyyy-MM-dd');
-                console.log(`   📅 Registrando horas no dia: ${diaExecucao}`);
+                console.log(`   🗓️ Registrando ${tempoDecorridoHoras.toFixed(2)}h no dia: ${diaExecucao}`);
+                console.log(`   ⚠️ As horas ficam FIXAS neste dia, mesmo que ultrapasse o planejado`);
                 await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'pausado', observacao, diaExecucao);
                 console.log('✅ [pauseExecution] Planejamento atualizado');
             }
@@ -687,9 +695,10 @@ export const ActivityTimerProvider = ({ children }) => {
 
             if (execution.planejamento_id) {
                 console.log(`\n🔄 [finishExecution] ATUALIZANDO PLANEJAMENTO ${execution.planejamento_id}...`);
-                // SEMPRE usar a data de hoje (data local) para registrar as horas
+                // SEMPRE usar o dia ATUAL da execução - horas ficam no dia que foi executado
                 const diaExecucao = format(new Date(), 'yyyy-MM-dd');
-                console.log(`   📅 Registrando horas no dia: ${diaExecucao}`);
+                console.log(`   🗓️ Finalizando com ${tempoDecorridoHoras.toFixed(2)}h no dia: ${diaExecucao}`);
+                console.log(`   ⚠️ As horas ficam FIXAS neste dia, independente do tempo planejado`);
                 await updatePlanejamento(execution.planejamento_id, tempoDecorridoHoras, 'concluido', observacao, diaExecucao);
                 console.log('✅ [finishExecution] Planejamento atualizado\n');
 
