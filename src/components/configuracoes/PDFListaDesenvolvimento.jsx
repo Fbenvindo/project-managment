@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { FileText, Loader2 } from "lucide-react";
-import { Atividade, Empreendimento } from "@/entities/all";
+import { Atividade, Empreendimento, Documento } from "@/entities/all";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import jsPDF from 'jspdf';
@@ -25,15 +25,47 @@ export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
         };
       }
 
-      // Buscar atividades específicas do empreendimento
-      const atividadesEmpreendimento = await Atividade.filter({ empreendimento_id: empreendimentoId });
+      // Buscar atividades específicas do empreendimento e genéricas
+      const [atividadesEmpreendimento, todasAtividades, documentos] = await Promise.all([
+        Atividade.filter({ empreendimento_id: empreendimentoId }),
+        Atividade.list(),
+        Documento.filter({ empreendimento_id: empreendimentoId })
+      ]);
       
-      console.log(`📋 Encontradas ${atividadesEmpreendimento.length} atividades do empreendimento`);
+      console.log(`📋 Encontradas ${atividadesEmpreendimento.length} atividades específicas do empreendimento`);
+      console.log(`📋 Encontradas ${documentos.length} documentos/folhas`);
+      
+      // Mapear atividades genéricas
+      const atividadesGenericasMap = new Map(
+        (todasAtividades || [])
+          .filter(a => !a.empreendimento_id)
+          .map(a => [a.id, a])
+      );
+      
+      // Mapear exclusões
+      const excludedActivitiesSet = new Set();
+      const excludedFromDocumentMap = new Map();
+      
+      (atividadesEmpreendimento || []).forEach(pa => {
+        if (pa.id_atividade && pa.tempo === -999) {
+          if (pa.documento_id) {
+            if (!excludedFromDocumentMap.has(pa.id_atividade)) {
+              excludedFromDocumentMap.set(pa.id_atividade, new Set());
+            }
+            excludedFromDocumentMap.get(pa.id_atividade).add(pa.documento_id);
+          } else {
+            excludedActivitiesSet.add(pa.id_atividade);
+          }
+        }
+      });
       
       // Agrupar por ATIVIDADE (mostrar todas as atividades e em quais etapas elas aparecem)
       const atividadesPorNome = {};
       
+      // Adicionar atividades específicas do projeto
       atividadesEmpreendimento.forEach(atividade => {
+        if (atividade.tempo === -999 || atividade.id_atividade) return; // Pular exclusões e overrides
+        
         const nomeAtividade = atividade.atividade;
         const etapa = atividade.etapa;
         const disciplina = atividade.disciplina;
@@ -47,11 +79,49 @@ export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
             };
           }
           
-          // Adicionar etapa se não existir
           if (etapa && !atividadesPorNome[nomeAtividade].etapas.includes(etapa)) {
             atividadesPorNome[nomeAtividade].etapas.push(etapa);
           }
         }
+      });
+      
+      // Adicionar atividades do catálogo que se aplicam aos documentos
+      documentos.forEach(doc => {
+        const subdisciplinasDoc = doc.subdisciplinas || [];
+        const disciplinaDoc = doc.disciplina;
+        
+        atividadesGenericasMap.forEach(baseAtividade => {
+          const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
+          const isExcludedFromThisDoc = excludedFromDocumentMap.has(baseAtividade.id) && 
+                                        excludedFromDocumentMap.get(baseAtividade.id).has(doc.id);
+          
+          if (isExcludedFromProject || isExcludedFromThisDoc) {
+            return;
+          }
+
+          const disciplinaMatch = baseAtividade.disciplina === disciplinaDoc;
+          const subdisciplinaMatch = subdisciplinasDoc.includes(baseAtividade.subdisciplina);
+
+          if (disciplinaMatch && subdisciplinaMatch) {
+            const nomeAtividade = baseAtividade.atividade;
+            const etapa = baseAtividade.etapa;
+            const disciplina = baseAtividade.disciplina;
+            
+            if (nomeAtividade) {
+              if (!atividadesPorNome[nomeAtividade]) {
+                atividadesPorNome[nomeAtividade] = {
+                  disciplina: disciplina || 'Sem disciplina',
+                  subdisciplina: baseAtividade.subdisciplina || '',
+                  etapas: []
+                };
+              }
+              
+              if (etapa && !atividadesPorNome[nomeAtividade].etapas.includes(etapa)) {
+                atividadesPorNome[nomeAtividade].etapas.push(etapa);
+              }
+            }
+          }
+        });
       });
 
       console.log('📊 Atividades agrupadas:', Object.keys(atividadesPorNome).length);
