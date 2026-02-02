@@ -247,8 +247,14 @@ export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
 
       let atividadeCounter = 1;
       
-      Object.entries(atividadesPorEtapa).forEach(([etapa, atividades]) => {
-        checkPageBreak(20);
+      Object.entries(atividadesPorEtapa).forEach(([etapa, atividades], etapaIndex) => {
+        // Se a etapa tem 6 ou mais atividades e não é a primeira, começar em nova página
+        if (atividades.length >= 6 && etapaIndex > 0) {
+          pdf.addPage();
+          yPos = margin + 30;
+        } else {
+          checkPageBreak(20);
+        }
 
         // Nome da Etapa
         pdf.setFont('helvetica', 'bold');
