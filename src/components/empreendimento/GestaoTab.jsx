@@ -61,64 +61,29 @@ export default function GestaoTab({ empreendimento, documentos, planejamentos, a
       pavimentosMap[pav.id] = pav;
     });
 
-    // Para cada documento, buscar atividades aplicáveis e somar horas
+    // Para cada documento, buscar planejamentos efetivos e somar horas
     documentos.forEach(doc => {
       const disciplinaDoc = doc.disciplina;
-      const subdisciplinasDoc = doc.subdisciplinas || [];
-      const fatorDificuldade = doc.fator_dificuldade || 1;
-      
-      // Buscar área do pavimento vinculado, senão usar área do documento, senão 1
-      let areaPavimento = 1;
-      if (doc.pavimento_id && pavimentosMap[doc.pavimento_id]) {
-        areaPavimento = parseFloat(pavimentosMap[doc.pavimento_id].area) || 1;
-      } else if (doc.area) {
-        areaPavimento = parseFloat(doc.area) || 1;
-      }
 
       console.log(`📄 [GestaoTab] Processando documento ${doc.numero}:`, {
-        disciplina: disciplinaDoc,
-        subdisciplinas: subdisciplinasDoc,
-        fatorDificuldade,
-        areaPavimento,
-        pavimento_id: doc.pavimento_id
+        disciplina: disciplinaDoc
       });
 
-      // Buscar atividades globais que se aplicam a este documento
-      const atividadesAplicaveis = atividades.filter(ativ => {
-        // Apenas atividades do catálogo geral (sem empreendimento_id)
-        const isGlobal = !ativ.empreendimento_id;
-        const disciplinaMatch = ativ.disciplina === disciplinaDoc;
-        const subdisciplinaMatch = subdisciplinasDoc.includes(ativ.subdisciplina);
-        
-        return isGlobal && disciplinaMatch && subdisciplinaMatch;
-      });
-
-      console.log(`  ✅ Atividades aplicáveis: ${atividadesAplicaveis.length}`);
-
-      // Para cada atividade aplicável, somar horas na matriz
-      atividadesAplicaveis.forEach(ativ => {
-        const etapa = ativ.etapa;
-        const tempoBase = parseFloat(ativ.tempo) || 0;
-        
-        // Aplicar área e fator de dificuldade
-        const tempoPlanejado = tempoBase * areaPavimento * fatorDificuldade;
-
-        if (matriz[disciplinaDoc] && matriz[disciplinaDoc][etapa]) {
-          matriz[disciplinaDoc][etapa].horasPlanejadas += tempoPlanejado;
-          
-          console.log(`    💡 ${ativ.atividade} [${etapa}]: ${tempoBase}h/m² × ${areaPavimento}m² × ${fatorDificuldade} = ${tempoPlanejado.toFixed(1)}h`);
-        }
-      });
-
-      // Buscar tempo executado diretamente dos planejamentos deste documento
+      // Buscar planejamentos efetivos deste documento
       const planejamentosDoDocumento = planejamentos.filter(p => p.documento_id === doc.id);
       
+      console.log(`  ✅ Planejamentos encontrados: ${planejamentosDoDocumento.length}`);
+
       planejamentosDoDocumento.forEach(plano => {
         const etapa = plano.etapa;
+        const tempoPlanejado = plano.tempo_planejado || 0;
         const tempoExecutado = plano.tempo_executado || 0;
 
         if (matriz[disciplinaDoc] && matriz[disciplinaDoc][etapa]) {
+          matriz[disciplinaDoc][etapa].horasPlanejadas += tempoPlanejado;
           matriz[disciplinaDoc][etapa].horasExecutadas += tempoExecutado;
+          
+          console.log(`    💡 ${plano.descritivo || 'Atividade'} [${etapa}]: Planejado=${tempoPlanejado.toFixed(1)}h, Executado=${tempoExecutado.toFixed(1)}h`);
         }
       });
     });
