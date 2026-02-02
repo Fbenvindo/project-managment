@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Atividade, Disciplina, PlanejamentoAtividade, Documento, AlteracaoEtapa, Empreendimento, Usuario } from '@/entities/all';
+import { Atividade, Disciplina, PlanejamentoAtividade, Documento, AlteracaoEtapa, Empreendimento, Usuario, PlanejamentoDocumento } from '@/entities/all';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,10 +12,12 @@ import PlanejamentoAtividadeModal from './PlanejamentoAtividadeModal';
 import AtividadeFormModal from './AtividadeFormModal';
 import { debounce } from 'lodash';
 import { Badge } from '@/components/ui/badge';
-import { retryWithBackoff } from '../utils/apiUtils';
+import { retryWithBackoff, retryWithExtendedBackoff } from '../utils/apiUtils';
 import { Checkbox } from "@/components/ui/checkbox";
 import { base44 } from '@/api/base44Client';
 import PDFListaDesenvolvimento from '../configuracoes/PDFListaDesenvolvimento';
+import { getNextWorkingDay, distribuirHorasPorDias, isWorkingDay, calculateEndDate, ensureWorkingDay } from '../utils/DateCalculator';
+import { format, isValid, parseISO, addDays } from 'date-fns';
 
 const EtapaEditModal = ({ isOpen, onClose, atividade, onSave }) => {
   const [newEtapa, setNewEtapa] = useState('');
@@ -2001,44 +2003,45 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         return;
       }
       
-      // Buscar a última atividade planejada do executor para calcular data de início
-      const planejamentosExecutor = await retryWithBackoff(
-        () => PlanejamentoAtividade.filter({
-          empreendimento_id: empreendimentoId,
-          executor_principal: executorEmail
-        }),
-        3, 500, `getPlanejamentosExecutor-${executorEmail}`
-      );
+      // Buscar carga diária completa do executor
+      console.log(`\n🔄 Buscando agenda completa do executor ${executorEmail}...`);
+      const [planosAtividade, planosDocumento] = await Promise.all([
+        retryWithExtendedBackoff(
+          () => PlanejamentoAtividade.filter({ executor_principal: executorEmail }),
+          'loadAllPlansAtividade'
+        ),
+        retryWithExtendedBackoff(
+          () => PlanejamentoDocumento.filter({ executor_principal: executorEmail }),
+          'loadAllPlansDocumento'
+        )
+      ]);
       
-      // Encontrar a última data de término
-      let dataInicioCalculada = null;
-      if (planejamentosExecutor && planejamentosExecutor.length > 0) {
-        const datasTermino = planejamentosExecutor
-          .map(p => p.termino_planejado || p.termino_ajustado)
-          .filter(Boolean)
-          .map(d => new Date(d))
-          .sort((a, b) => b - a);
-        
-        if (datasTermino.length > 0) {
-          const ultimaData = datasTermino[0];
-          // Próximo dia útil após a última atividade
-          dataInicioCalculada = new Date(ultimaData);
-          dataInicioCalculada.setDate(dataInicioCalculada.getDate() + 1);
-          
-          // Garantir que é dia útil
-          while (dataInicioCalculada.getDay() === 0 || dataInicioCalculada.getDay() === 6) {
-            dataInicioCalculada.setDate(dataInicioCalculada.getDate() + 1);
-          }
+      const todosOsPlanos = [...(planosAtividade || []), ...(planosDocumento || [])];
+      const hoje = new Date();
+      const hojeMidnight = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+      const cargaDiaria = {};
+
+      todosOsPlanos.forEach((plano) => {
+        if (plano.horas_por_dia && typeof plano.horas_por_dia === 'object') {
+          Object.entries(plano.horas_por_dia).forEach(([data, horas]) => {
+            try {
+              const dataObj = parseISO(data);
+              if (isValid(dataObj) && dataObj >= hojeMidnight) {
+                const diaKey = format(dataObj, 'yyyy-MM-dd');
+                const horasValidas = Number(horas) || 0;
+                
+                if (horasValidas > 0 && horasValidas <= 12) {
+                  cargaDiaria[diaKey] = (cargaDiaria[diaKey] || 0) + horasValidas;
+                }
+              }
+            } catch (erro) {
+              console.warn(`Erro ao processar data ${data}:`, erro);
+            }
+          });
         }
-      }
+      });
       
-      // Se não tem data calculada, usar hoje
-      if (!dataInicioCalculada) {
-        dataInicioCalculada = new Date();
-        while (dataInicioCalculada.getDay() === 0 || dataInicioCalculada.getDay() === 6) {
-          dataInicioCalculada.setDate(dataInicioCalculada.getDate() + 1);
-        }
-      }
+      console.log(`📊 Carga diária do executor:`, cargaDiaria);
       
       // Buscar documentos que têm esta atividade
       console.log(`\n🔍 Buscando documentos compatíveis...`);
@@ -2072,7 +2075,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       // Criar planejamentos para cada documento
       let planejamentosCriados = 0;
       let planejamentosJaExistentes = 0;
-      let dataAtual = new Date(dataInicioCalculada);
       
       for (const doc of documentosComAtividade) {
         console.log(`\n📋 Processando documento: ${doc.numero}`);
@@ -2101,22 +2103,58 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           planejamentosJaExistentes++;
         } else {
           console.log(`   📝 Criando novo planejamento...`);
+          
           // Criar novo planejamento
           const fatorDificuldade = doc.fator_dificuldade || 1;
           const tempoCalculado = (atividadeOriginal.tempo || 0) * fatorDificuldade;
           
-          // Calcular data de término (assumindo 8h/dia)
-          const diasNecessarios = Math.ceil(tempoCalculado / 8);
-          const dataTermino = new Date(dataAtual);
-          let diasAdicionados = 0;
+          console.log(`   ⏱️ Tempo calculado: ${tempoCalculado.toFixed(1)}h (fator: ${fatorDificuldade})`);
           
-          while (diasAdicionados < diasNecessarios) {
-            dataTermino.setDate(dataTermino.getDate() + 1);
-            // Pular fins de semana
-            if (dataTermino.getDay() !== 0 && dataTermino.getDay() !== 6) {
-              diasAdicionados++;
+          // Buscar primeiro dia disponível na agenda do executor
+          console.log(`   🔍 Procurando primeiro dia útil disponível na agenda...`);
+          let dataInicio = new Date(hojeMidnight);
+          let tentativas = 0;
+          const maxTentativas = 365;
+          
+          while (tentativas < maxTentativas) {
+            if (isWorkingDay(dataInicio)) {
+              const diaKey = format(dataInicio, 'yyyy-MM-dd');
+              const cargaDoDia = cargaDiaria[diaKey] || 0;
+              const disponivel = 8 - cargaDoDia;
+              
+              if (disponivel >= 0.5) {
+                console.log(`   ✅ Primeiro dia disponível: ${format(dataInicio, 'dd/MM/yyyy')} (${disponivel.toFixed(1)}h livres)`);
+                break;
+              }
             }
+            dataInicio = addDays(dataInicio, 1);
+            tentativas++;
           }
+          
+          if (tentativas >= maxTentativas) {
+            throw new Error(`Não foi possível encontrar data disponível na agenda do executor.`);
+          }
+          
+          // Distribuir horas pelos dias disponíveis
+          console.log(`   🔄 Distribuindo ${tempoCalculado.toFixed(1)}h a partir de ${format(dataInicio, 'dd/MM/yyyy')}...`);
+          
+          const { distribuicao, dataTermino, novaCargaDiaria } = distribuirHorasPorDias(
+            dataInicio,
+            tempoCalculado,
+            8,
+            cargaDiaria,
+            false
+          );
+          
+          if (!distribuicao || Object.keys(distribuicao).length === 0) {
+            throw new Error(`Não foi possível distribuir as horas na agenda.`);
+          }
+          
+          const diasUtilizados = Object.keys(distribuicao).sort();
+          const inicioPlanejado = diasUtilizados[0];
+          const terminoPlanejado = format(dataTermino, 'yyyy-MM-dd');
+          
+          console.log(`   📊 Distribuição: ${inicioPlanejado} a ${terminoPlanejado}`);
           
           const dadosPlanejamento = {
             empreendimento_id: empreendimentoId,
@@ -2127,8 +2165,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             tempo_planejado: tempoCalculado,
             executor_principal: executorEmail,
             executores: [executorEmail],
-            inicio_planejado: dataAtual.toISOString().split('T')[0],
-            termino_planejado: dataTermino.toISOString().split('T')[0],
+            inicio_planejado: inicioPlanejado,
+            termino_planejado: terminoPlanejado,
+            horas_por_dia: distribuicao,
             status: 'nao_iniciado',
             tipo_plano: 'atividade'
           };
@@ -2142,12 +2181,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           console.log(`   ✅ Planejamento criado com sucesso`);
           planejamentosCriados++;
           
-          // Próxima atividade começa após esta
-          dataAtual = new Date(dataTermino);
-          dataAtual.setDate(dataAtual.getDate() + 1);
-          while (dataAtual.getDay() === 0 || dataAtual.getDay() === 6) {
-            dataAtual.setDate(dataAtual.getDate() + 1);
-          }
+          // Atualizar carga diária para próximos planejamentos
+          Object.assign(cargaDiaria, novaCargaDiaria);
         }
       }
       
