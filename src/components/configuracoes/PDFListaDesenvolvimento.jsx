@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { FileText, Loader2 } from "lucide-react";
-import { Atividade } from "@/entities/all";
+import { Atividade, Empreendimento } from "@/entities/all";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import jsPDF from 'jspdf';
@@ -13,7 +13,6 @@ export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
 
   const buscarDadosCompletos = async () => {
     try {
-      const { Empreendimento } = await import('@/entities/all');
       const empreendimentos = await Empreendimento.filter({ id: empreendimentoId });
       
       let dadosCliente = { construtora: "", empreendimento: "" };
