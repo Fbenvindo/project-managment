@@ -2138,7 +2138,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           // Distribuir horas pelos dias disponíveis
           console.log(`   🔄 Distribuindo ${tempoCalculado.toFixed(1)}h a partir de ${format(dataInicio, 'dd/MM/yyyy')}...`);
           
-          const { distribuicao, dataTermino, novaCargaDiaria } = distribuirHorasPorDias(
+          const resultadoDistribuicao = distribuirHorasPorDias(
             dataInicio,
             tempoCalculado,
             8,
@@ -2146,15 +2146,20 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             false
           );
           
-          if (!distribuicao || Object.keys(distribuicao).length === 0) {
+          if (!resultadoDistribuicao || !resultadoDistribuicao.distribuicao || Object.keys(resultadoDistribuicao.distribuicao).length === 0) {
             throw new Error(`Não foi possível distribuir as horas na agenda.`);
           }
           
+          const { distribuicao, dataTermino, novaCargaDiaria } = resultadoDistribuicao;
           const diasUtilizados = Object.keys(distribuicao).sort();
           const inicioPlanejado = diasUtilizados[0];
           const terminoPlanejado = format(dataTermino, 'yyyy-MM-dd');
           
-          console.log(`   📊 Distribuição: ${inicioPlanejado} a ${terminoPlanejado}`);
+          console.log(`   📊 Distribuição criada:`);
+          console.log(`      Início: ${inicioPlanejado}`);
+          console.log(`      Término: ${terminoPlanejado}`);
+          console.log(`      Dias: ${Object.keys(distribuicao).length}`);
+          console.log(`      Horas por dia:`, distribuicao);
           
           const dadosPlanejamento = {
             empreendimento_id: empreendimentoId,
@@ -2168,17 +2173,15 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             inicio_planejado: inicioPlanejado,
             termino_planejado: terminoPlanejado,
             horas_por_dia: distribuicao,
-            status: 'nao_iniciado',
-            tipo_plano: 'atividade'
+            status: 'nao_iniciado'
           };
           
-          console.log(`   📊 Dados do planejamento:`, dadosPlanejamento);
-          
-          await retryWithBackoff(
+          console.log(`   💾 Salvando planejamento no banco...`);
+          const planejamentoCriado = await retryWithBackoff(
             () => PlanejamentoAtividade.create(dadosPlanejamento),
             3, 500, `createPlan-${doc.id}-${atividadeId}`
           );
-          console.log(`   ✅ Planejamento criado com sucesso`);
+          console.log(`   ✅ Planejamento criado com ID: ${planejamentoCriado.id}`);
           planejamentosCriados++;
           
           // Atualizar carga diária para próximos planejamentos
