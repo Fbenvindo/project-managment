@@ -32,53 +32,42 @@ export default function PDFListaDesenvolvimento({ alteracoes = [], empreendiment
   const buscarAtividadesEmpreendimento = async () => {
     setLoadingAtividades(true);
     try {
-      // Buscar todos os documentos do empreendimento
-      const documentos = await Documento.filter({ empreendimento_id: empreendimentoId });
-      const documentoIds = documentos.map(d => d.id);
+      // Buscar atividades específicas do empreendimento
+      const atividadesEmpreendimento = await Atividade.filter({ empreendimento_id: empreendimentoId });
       
-      // Buscar todas as atividades (globais e específicas do empreendimento)
-      const todasAtividades = await Atividade.list();
+      console.log(`📋 Encontradas ${atividadesEmpreendimento.length} atividades do empreendimento`);
       
       // Agrupar por etapa e disciplina
       const grupos = {};
       
-      // Processar atividades vinculadas aos documentos
-      todasAtividades.forEach(atividade => {
-        // Verificar se a atividade está vinculada a algum documento deste empreendimento
-        const documentoIdsAtividade = atividade.documento_ids || [];
-        const temDocumentoVinculado = documentoIdsAtividade.some(docId => documentoIds.includes(docId));
+      atividadesEmpreendimento.forEach(atividade => {
+        const etapa = atividade.etapa;
+        const disciplina = atividade.disciplina;
         
-        // Ou se é uma atividade específica deste empreendimento
-        const isDoEmpreendimento = atividade.empreendimento_id === empreendimentoId;
-        
-        if (temDocumentoVinculado || isDoEmpreendimento) {
-          const etapa = atividade.etapa;
-          const disciplina = atividade.disciplina;
+        if (etapa && disciplina) {
+          if (!grupos[etapa]) {
+            grupos[etapa] = {};
+          }
+          if (!grupos[etapa][disciplina]) {
+            grupos[etapa][disciplina] = [];
+          }
           
-          if (etapa && disciplina) {
-            if (!grupos[etapa]) {
-              grupos[etapa] = {};
-            }
-            if (!grupos[etapa][disciplina]) {
-              grupos[etapa][disciplina] = [];
-            }
-            
-            // Evitar duplicatas
-            const existe = grupos[etapa][disciplina].some(a => 
-              a.nome_atividade === atividade.atividade
-            );
-            
-            if (!existe) {
-              grupos[etapa][disciplina].push({
-                nome_atividade: atividade.atividade,
-                disciplina: disciplina,
-                subdisciplina: atividade.subdisciplina || ''
-              });
-            }
+          // Evitar duplicatas
+          const existe = grupos[etapa][disciplina].some(a => 
+            a.nome_atividade === atividade.atividade
+          );
+          
+          if (!existe) {
+            grupos[etapa][disciplina].push({
+              nome_atividade: atividade.atividade,
+              disciplina: disciplina,
+              subdisciplina: atividade.subdisciplina || ''
+            });
           }
         }
       });
 
+      console.log('📊 Grupos criados:', Object.keys(grupos));
       setAtividadesCompletas(grupos);
     } catch (error) {
       console.error("Erro ao buscar atividades:", error);
