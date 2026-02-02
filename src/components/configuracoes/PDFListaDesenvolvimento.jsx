@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FileText, Loader2, Download, Calendar } from "lucide-react";
-import { AlteracaoEtapa, Atividade, PlanejamentoAtividade, Documento } from "@/entities/all";
+import { Atividade } from "@/entities/all";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import jsPDF from 'jspdf';
@@ -26,8 +26,26 @@ export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
   useEffect(() => {
     if (isOpen && empreendimentoId) {
       buscarAtividadesEmpreendimento();
+      buscarDadosEmpreendimento();
     }
   }, [isOpen, empreendimentoId]);
+
+  const buscarDadosEmpreendimento = async () => {
+    try {
+      const { Empreendimento } = await import('@/entities/all');
+      const empreendimentos = await Empreendimento.filter({ id: empreendimentoId });
+      
+      if (empreendimentos && empreendimentos.length > 0) {
+        const emp = empreendimentos[0];
+        setDadosCliente({
+          construtora: emp.cliente || "",
+          empreendimento: emp.nome || ""
+        });
+      }
+    } catch (error) {
+      console.error("Erro ao buscar dados do empreendimento:", error);
+    }
+  };
 
   const buscarAtividadesEmpreendimento = async () => {
     setLoadingAtividades(true);
