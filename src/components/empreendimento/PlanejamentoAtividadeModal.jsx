@@ -265,12 +265,15 @@ export default function PlanejamentoAtividadeModal({
 
       console.log('🔄 PASSO 5: Distribuindo horas na agenda do executor...\n');
 
+      // Se houver data fixa, permitir alocar na data escolhida mesmo com 8h
+      const forcarDataFixa = fixedStartDate !== null;
+
       const resultado = distribuirHorasPorDias(
         distributionStartDate,
         tempoPlanejado,
         8,
         cargaDiaria,
-        false
+        forcarDataFixa
       );
 
       const diasDistribuidos = Object.keys(resultado.distribuicao).sort();
