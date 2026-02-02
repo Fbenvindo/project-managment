@@ -126,7 +126,34 @@ export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
 
       console.log('📊 Atividades agrupadas:', Object.keys(atividadesPorNome).length);
       
-      return { dadosCliente, atividadesCompletas: atividadesPorNome };
+      // Reorganizar atividades por etapa
+      const atividadesPorEtapa = {};
+      
+      Object.entries(atividadesPorNome).forEach(([nomeAtividade, dados]) => {
+        dados.etapas.forEach(etapa => {
+          if (!atividadesPorEtapa[etapa]) {
+            atividadesPorEtapa[etapa] = [];
+          }
+          atividadesPorEtapa[etapa].push({
+            nome: nomeAtividade,
+            disciplina: dados.disciplina,
+            subdisciplina: dados.subdisciplina
+          });
+        });
+      });
+      
+      // Ordenar etapas na ordem correta
+      const ordemEtapas = ['Concepção', 'Planejamento', 'Estudo Preliminar', 'Ante-Projeto', 'Projeto Básico', 'Projeto Executivo', 'Liberado para Obra'];
+      const etapasOrdenadas = {};
+      ordemEtapas.forEach(etapa => {
+        if (atividadesPorEtapa[etapa]) {
+          etapasOrdenadas[etapa] = atividadesPorEtapa[etapa].sort((a, b) => 
+            a.nome.localeCompare(b.nome, 'pt-BR')
+          );
+        }
+      });
+      
+      return { dadosCliente, atividadesPorEtapa: etapasOrdenadas };
     } catch (error) {
       console.error("Erro ao buscar dados:", error);
       throw error;
@@ -142,7 +169,7 @@ export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
     
     try {
       // Buscar dados do empreendimento e atividades
-      const { dadosCliente, atividadesCompletas } = await buscarDadosCompletos();
+      const { dadosCliente, atividadesPorEtapa } = await buscarDadosCompletos();
       
       if (!dadosCliente.construtora || !dadosCliente.empreendimento) {
         alert("Erro: Dados do empreendimento não encontrados.");
@@ -212,46 +239,52 @@ export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
         return false;
       };
 
-      // === LISTA DE ATIVIDADES E SUAS ETAPAS ===
+      // === LISTA DE ATIVIDADES POR ETAPA ===
       pdf.setFont('helvetica', 'bold');
       pdf.setFontSize(11);
-      pdf.text('LISTA DE ATIVIDADES', margin, yPos);
-      yPos += 8;
+      pdf.text('LISTA DE ATIVIDADES POR ETAPA', margin, yPos);
+      yPos += 10;
 
-      // Ordenar atividades alfabeticamente
-      const atividadesOrdenadas = Object.entries(atividadesCompletas).sort((a, b) => 
-        a[0].localeCompare(b[0], 'pt-BR')
-      );
+      let atividadeCounter = 1;
       
-      atividadesOrdenadas.forEach(([nomeAtividade, dados], index) => {
-        checkPageBreak(15);
+      Object.entries(atividadesPorEtapa).forEach(([etapa, atividades]) => {
+        checkPageBreak(20);
 
-        // Nome da atividade
+        // Nome da Etapa
         pdf.setFont('helvetica', 'bold');
-        pdf.setFontSize(9);
-        const itemNum = `${index + 1}.`;
-        pdf.text(itemNum, margin, yPos);
-        
-        const atividadeWidth = pageWidth - 2 * margin - 10;
-        const linhasAtividade = pdf.splitTextToSize(nomeAtividade, atividadeWidth);
-        pdf.text(linhasAtividade, margin + 8, yPos);
-        yPos += linhasAtividade.length * 4 + 2;
-
-        // Disciplina
-        pdf.setFont('helvetica', 'italic');
-        pdf.setFontSize(8);
-        pdf.setTextColor(80);
-        pdf.text(`Disciplina: ${dados.disciplina}${dados.subdisciplina ? ` - ${dados.subdisciplina}` : ''}`, margin + 8, yPos);
-        yPos += 4;
-
-        // Etapas onde a atividade aparece
-        pdf.setFont('helvetica', 'normal');
-        pdf.setFontSize(8);
-        const etapasTexto = `Etapas: ${dados.etapas.sort().join(', ')}`;
-        const linhasEtapas = pdf.splitTextToSize(etapasTexto, atividadeWidth - 8);
-        pdf.text(linhasEtapas, margin + 8, yPos);
+        pdf.setFontSize(12);
+        pdf.setTextColor(0, 51, 153);
+        pdf.text(etapa.toUpperCase(), margin, yPos);
         pdf.setTextColor(0);
-        yPos += linhasEtapas.length * 4 + 5;
+        yPos += 8;
+        
+        // Atividades da etapa
+        atividades.forEach(atividade => {
+          checkPageBreak(15);
+
+          // Nome da atividade
+          pdf.setFont('helvetica', 'bold');
+          pdf.setFontSize(9);
+          const itemNum = `${atividadeCounter}.`;
+          pdf.text(itemNum, margin + 5, yPos);
+          
+          const atividadeWidth = pageWidth - 2 * margin - 15;
+          const linhasAtividade = pdf.splitTextToSize(atividade.nome, atividadeWidth);
+          pdf.text(linhasAtividade, margin + 13, yPos);
+          yPos += linhasAtividade.length * 4 + 2;
+
+          // Disciplina
+          pdf.setFont('helvetica', 'italic');
+          pdf.setFontSize(8);
+          pdf.setTextColor(80);
+          pdf.text(`${atividade.disciplina}${atividade.subdisciplina ? ` - ${atividade.subdisciplina}` : ''}`, margin + 13, yPos);
+          pdf.setTextColor(0);
+          yPos += 6;
+
+          atividadeCounter++;
+        });
+        
+        yPos += 5;
       });
 
       // === RODAPÉ ===
@@ -276,7 +309,7 @@ export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
       }
 
       // Baixar PDF diretamente
-      const totalAtividades = Object.keys(atividadesCompletas).length;
+      const totalAtividades = Object.values(atividadesPorEtapa).reduce((sum, ativs) => sum + ativs.length, 0);
       const nomeArquivo = `Resumo_Atividades_${dadosCliente.empreendimento.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}.pdf`;
       pdf.save(nomeArquivo);
       
