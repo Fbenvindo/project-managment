@@ -4,14 +4,14 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FileText, Loader2, Download, Calendar } from "lucide-react";
-import { AlteracaoEtapa } from "@/entities/all";
+import { AlteracaoEtapa, Atividade, PlanejamentoAtividade } from "@/entities/all";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import jsPDF from 'jspdf';
 
 const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/577f93874_logo_Interativa_versao_final_sem_fundo_0002.png";
 
-export default function PDFListaDesenvolvimento({ alteracoes = [] }) {
+export default function PDFListaDesenvolvimento({ alteracoes = [], empreendimentoId = null }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [pdfUrl, setPdfUrl] = useState(null);
@@ -19,6 +19,66 @@ export default function PDFListaDesenvolvimento({ alteracoes = [] }) {
     construtora: "",
     empreendimento: ""
   });
+  const [atividadesCompletas, setAtividadesCompletas] = useState({});
+  const [loadingAtividades, setLoadingAtividades] = useState(false);
+
+  // Buscar todas as atividades do empreendimento quando abrir o modal
+  useEffect(() => {
+    if (isOpen && empreendimentoId && Object.keys(atividadesCompletas).length === 0) {
+      buscarAtividadesEmpreendimento();
+    }
+  }, [isOpen, empreendimentoId]);
+
+  const buscarAtividadesEmpreendimento = async () => {
+    setLoadingAtividades(true);
+    try {
+      // Buscar todas as atividades planejadas
+      const planejamentos = await PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId });
+      
+      // Buscar atividades globais para pegar nomes
+      const atividadesGlobais = await Atividade.list();
+      const atividadesMap = new Map(atividadesGlobais.map(a => [a.id, a]));
+
+      // Agrupar por etapa e disciplina
+      const grupos = {};
+      
+      planejamentos.forEach(plano => {
+        const etapa = plano.etapa;
+        const atividadeGlobal = atividadesMap.get(plano.atividade_id);
+        
+        if (atividadeGlobal) {
+          const disciplina = atividadeGlobal.disciplina;
+          
+          if (!grupos[etapa]) {
+            grupos[etapa] = {};
+          }
+          if (!grupos[etapa][disciplina]) {
+            grupos[etapa][disciplina] = [];
+          }
+          
+          // Evitar duplicatas
+          const existe = grupos[etapa][disciplina].some(a => 
+            a.nome_atividade === (plano.descritivo || atividadeGlobal.atividade)
+          );
+          
+          if (!existe) {
+            grupos[etapa][disciplina].push({
+              nome_atividade: plano.descritivo || atividadeGlobal.atividade,
+              disciplina: disciplina,
+              subdisciplina: atividadeGlobal.subdisciplina
+            });
+          }
+        }
+      });
+
+      setAtividadesCompletas(grupos);
+    } catch (error) {
+      console.error("Erro ao buscar atividades:", error);
+      alert("Erro ao buscar atividades do empreendimento");
+    } finally {
+      setLoadingAtividades(false);
+    }
+  };
 
   // Agrupar alterações por etapa nova
   const alteracoesPorEtapa = React.useMemo(() => {
@@ -108,7 +168,9 @@ export default function PDFListaDesenvolvimento({ alteracoes = [] }) {
       };
 
       // === ATIVIDADES POR ETAPA ===
-      const etapas = Object.keys(alteracoesPorEtapa);
+      // Usar atividades completas do empreendimento se disponível
+      const dadosParaPDF = Object.keys(atividadesCompletas).length > 0 ? atividadesCompletas : alteracoesPorEtapa;
+      const etapas = Object.keys(dadosParaPDF).sort();
       
       etapas.forEach((etapa, etapaIndex) => {
         checkPageBreak(15);
@@ -119,7 +181,7 @@ export default function PDFListaDesenvolvimento({ alteracoes = [] }) {
         pdf.text(`${etapaIndex + 1}. ${etapa.toUpperCase()}`, margin, yPos);
         yPos += 8;
 
-        const disciplinas = Object.keys(alteracoesPorEtapa[etapa]);
+        const disciplinas = Object.keys(dadosParaPDF[etapa]).sort();
         
         disciplinas.forEach((disciplina, discIndex) => {
           checkPageBreak(12);
@@ -130,7 +192,7 @@ export default function PDFListaDesenvolvimento({ alteracoes = [] }) {
           pdf.text(`${etapaIndex + 1}.${discIndex + 1} ${disciplina}`, margin + 5, yPos);
           yPos += 7;
 
-          const atividades = alteracoesPorEtapa[etapa][disciplina];
+          const atividades = dadosParaPDF[etapa][disciplina];
           
           atividades.forEach((atividade, atIndex) => {
             checkPageBreak(6);
@@ -272,11 +334,22 @@ export default function PDFListaDesenvolvimento({ alteracoes = [] }) {
           ) : (
             <>
               <div className="space-y-4 py-4">
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-sm text-blue-800">
-                📋 <strong>{alteracoes.length} alterações</strong> de etapa serão documentadas no PDF
-              </p>
-            </div>
+            {loadingAtividades ? (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-2">
+                <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                <p className="text-sm text-blue-800">Buscando atividades do empreendimento...</p>
+              </div>
+            ) : (
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  📋 {Object.keys(atividadesCompletas).length > 0 ? (
+                    <><strong>Todas as atividades planejadas</strong> do empreendimento serão documentadas</>
+                  ) : (
+                    <><strong>{alteracoes.length} alterações</strong> de etapa serão documentadas no PDF</>
+                  )}
+                </p>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label htmlFor="construtora">Construtora *</Label>
@@ -299,13 +372,23 @@ export default function PDFListaDesenvolvimento({ alteracoes = [] }) {
             </div>
 
             <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-              <h4 className="text-xs font-semibold text-gray-700 mb-2">Resumo das alterações:</h4>
+              <h4 className="text-xs font-semibold text-gray-700 mb-2">
+                {Object.keys(atividadesCompletas).length > 0 ? 'Resumo das atividades:' : 'Resumo das alterações:'}
+              </h4>
               <div className="space-y-1 max-h-32 overflow-y-auto">
-                {Object.entries(alteracoesPorEtapa).map(([etapa, disciplinas]) => (
-                  <div key={etapa} className="text-xs text-gray-600">
-                    <span className="font-medium">{etapa}:</span> {Object.values(disciplinas).flat().length} atividades
-                  </div>
-                ))}
+                {Object.keys(atividadesCompletas).length > 0 ? (
+                  Object.entries(atividadesCompletas).map(([etapa, disciplinas]) => (
+                    <div key={etapa} className="text-xs text-gray-600">
+                      <span className="font-medium">{etapa}:</span> {Object.values(disciplinas).flat().length} atividades
+                    </div>
+                  ))
+                ) : (
+                  Object.entries(alteracoesPorEtapa).map(([etapa, disciplinas]) => (
+                    <div key={etapa} className="text-xs text-gray-600">
+                      <span className="font-medium">{etapa}:</span> {Object.values(disciplinas).flat().length} atividades
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
