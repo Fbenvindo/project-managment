@@ -4,7 +4,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FileText, Loader2, Download, Calendar } from "lucide-react";
-import { AlteracaoEtapa, Atividade, PlanejamentoAtividade } from "@/entities/all";
+import { AlteracaoEtapa, Atividade, PlanejamentoAtividade, Documento } from "@/entities/all";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import jsPDF from 'jspdf';
@@ -32,41 +32,49 @@ export default function PDFListaDesenvolvimento({ alteracoes = [], empreendiment
   const buscarAtividadesEmpreendimento = async () => {
     setLoadingAtividades(true);
     try {
-      // Buscar todas as atividades planejadas
-      const planejamentos = await PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId });
+      // Buscar todos os documentos do empreendimento
+      const documentos = await Documento.filter({ empreendimento_id: empreendimentoId });
+      const documentoIds = documentos.map(d => d.id);
       
-      // Buscar atividades globais para pegar nomes
-      const atividadesGlobais = await Atividade.list();
-      const atividadesMap = new Map(atividadesGlobais.map(a => [a.id, a]));
-
+      // Buscar todas as atividades (globais e específicas do empreendimento)
+      const todasAtividades = await Atividade.list();
+      
       // Agrupar por etapa e disciplina
       const grupos = {};
       
-      planejamentos.forEach(plano => {
-        const etapa = plano.etapa;
-        const atividadeGlobal = atividadesMap.get(plano.atividade_id);
+      // Processar atividades vinculadas aos documentos
+      todasAtividades.forEach(atividade => {
+        // Verificar se a atividade está vinculada a algum documento deste empreendimento
+        const documentoIdsAtividade = atividade.documento_ids || [];
+        const temDocumentoVinculado = documentoIdsAtividade.some(docId => documentoIds.includes(docId));
         
-        if (atividadeGlobal) {
-          const disciplina = atividadeGlobal.disciplina;
+        // Ou se é uma atividade específica deste empreendimento
+        const isDoEmpreendimento = atividade.empreendimento_id === empreendimentoId;
+        
+        if (temDocumentoVinculado || isDoEmpreendimento) {
+          const etapa = atividade.etapa;
+          const disciplina = atividade.disciplina;
           
-          if (!grupos[etapa]) {
-            grupos[etapa] = {};
-          }
-          if (!grupos[etapa][disciplina]) {
-            grupos[etapa][disciplina] = [];
-          }
-          
-          // Evitar duplicatas
-          const existe = grupos[etapa][disciplina].some(a => 
-            a.nome_atividade === (plano.descritivo || atividadeGlobal.atividade)
-          );
-          
-          if (!existe) {
-            grupos[etapa][disciplina].push({
-              nome_atividade: plano.descritivo || atividadeGlobal.atividade,
-              disciplina: disciplina,
-              subdisciplina: atividadeGlobal.subdisciplina
-            });
+          if (etapa && disciplina) {
+            if (!grupos[etapa]) {
+              grupos[etapa] = {};
+            }
+            if (!grupos[etapa][disciplina]) {
+              grupos[etapa][disciplina] = [];
+            }
+            
+            // Evitar duplicatas
+            const existe = grupos[etapa][disciplina].some(a => 
+              a.nome_atividade === atividade.atividade
+            );
+            
+            if (!existe) {
+              grupos[etapa][disciplina].push({
+                nome_atividade: atividade.atividade,
+                disciplina: disciplina,
+                subdisciplina: atividade.subdisciplina || ''
+              });
+            }
           }
         }
       });
