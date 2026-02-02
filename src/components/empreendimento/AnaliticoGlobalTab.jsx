@@ -662,6 +662,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   // Estados para rastreamento de alterações
   const [alteracoesEtapa, setAlteracoesEtapa] = useState([]);
   const [empreendimentoNome, setEmpreendimentoNome] = useState("");
+  const [isSavingExecutor, setIsSavingExecutor] = useState({});
 
   const documentosMap = useMemo(() => {
     return new Map((documentos || []).map(doc => [doc.id, doc]));
@@ -845,6 +846,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             const override = overrideEspecifico || overrideGlobal;
             
             const etapaCorreta = override ? override.etapa : baseAtividade.etapa;
+            const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
 
             const sourceDisplay = `Folha: ${doc.numero} - ${doc.arquivo || 'Sem Nome'}`;
 
@@ -862,6 +864,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                 status: 'Planejada',
                 isEditable: false,
                 etapa: existingPlan.etapa || etapaCorreta,
+                executor_principal: executorPrincipal,
                 base_atividade_id: baseAtividade.id,
               });
             } else {
@@ -877,6 +880,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                 status: 'Disponível',
                 isEditable: false,
                 etapa: etapaCorreta,
+                executor_principal: executorPrincipal,
                 base_atividade_id: baseAtividade.id,
               });
             }
@@ -1456,6 +1460,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             <TableHead>Folhas</TableHead>
                             <TableHead>Status</TableHead>
                             <TableHead>Etapa</TableHead>
+                            <TableHead>Executor</TableHead>
                             <TableHead>Tempo Padrão</TableHead>
                             <TableHead>Tempo Total</TableHead>
                             <TableHead className="text-center">Planejar</TableHead>
@@ -1522,6 +1527,27 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                     )}
                                   </TableCell>
                                   <TableCell className="text-sm">{ativ.etapa}</TableCell>
+                                  <TableCell>
+                                    <Select
+                                      value={ativ.executor_principal || ""}
+                                      onValueChange={(value) => handleSaveExecutor(ativ, value)}
+                                      disabled={isSavingExecutor[genericAtividadeIdToExclude]}
+                                    >
+                                      <SelectTrigger className="w-[180px] h-8 text-xs">
+                                        <SelectValue placeholder="Selecionar executor" />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {usuarios
+                                          .filter(u => u.status === 'ativo')
+                                          .sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))
+                                          .map(u => (
+                                            <SelectItem key={u.email} value={u.email} className="text-xs">
+                                              {u.nome || u.email}
+                                            </SelectItem>
+                                          ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </TableCell>
                                   <TableCell className="text-sm">{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
                                   <TableCell className="text-sm font-semibold text-blue-600">
                                     {grupo.folhas.length > 0 
@@ -1607,6 +1633,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                       )}
                                     </TableCell>
                                     <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
+                                    <TableCell></TableCell>
                                     <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
                                     <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
                                     <TableCell></TableCell>
@@ -1631,6 +1658,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                      <TableHead>Folhas</TableHead>
                      <TableHead>Status</TableHead>
                      <TableHead>Etapa</TableHead>
+                     <TableHead>Executor</TableHead>
                      <TableHead>Tempo Padrão</TableHead>
                      <TableHead>Tempo Total</TableHead>
                      <TableHead className="text-center">Planejar</TableHead>
@@ -1698,6 +1726,27 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             )}
                           </TableCell>
                           <TableCell>{ativ.etapa}</TableCell>
+                          <TableCell>
+                            <Select
+                              value={ativ.executor_principal || ""}
+                              onValueChange={(value) => handleSaveExecutor(ativ, value)}
+                              disabled={isSavingExecutor[genericAtividadeIdToExclude]}
+                            >
+                              <SelectTrigger className="w-[180px] h-8 text-xs">
+                                <SelectValue placeholder="Selecionar executor" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {usuarios
+                                  .filter(u => u.status === 'ativo')
+                                  .sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))
+                                  .map(u => (
+                                    <SelectItem key={u.email} value={u.email} className="text-xs">
+                                      {u.nome || u.email}
+                                    </SelectItem>
+                                  ))}
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
                           <TableCell>{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
                           <TableCell className="font-semibold text-blue-600">
                             {grupo.folhas.length > 0 
@@ -1784,6 +1833,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                               )}
                             </TableCell>
                             <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
+                            <TableCell></TableCell>
                             <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
                             <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
                             <TableCell></TableCell>
@@ -1802,6 +1852,67 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                         })}
       </div>
     );
+  };
+
+  const handleSaveExecutor = async (atividade, executorEmail) => {
+    const atividadeId = atividade.base_atividade_id || atividade.id;
+    
+    setIsSavingExecutor(prev => ({ ...prev, [atividadeId]: true }));
+    
+    try {
+      // Buscar atividade original
+      const atividadeOriginalArr = await retryWithBackoff(
+        () => Atividade.filter({ id: atividadeId }),
+        3, 500, `getOriginalActivity-${atividadeId}`
+      );
+      
+      if (!atividadeOriginalArr || atividadeOriginalArr.length === 0) {
+        throw new Error("Atividade original não encontrada.");
+      }
+      
+      const atividadeOriginal = atividadeOriginalArr[0];
+      
+      // Verificar se já existe override global para esta atividade
+      const existingOverrides = await retryWithBackoff(
+        () => Atividade.filter({
+          empreendimento_id: empreendimentoId,
+          id_atividade: atividadeId,
+          documento_id: null,
+          tempo: { operator: '!=', value: -999 }
+        }),
+        3, 500, `checkExistingExecutorOverride-${atividadeId}`
+      );
+      
+      if (existingOverrides && existingOverrides.length > 0) {
+        // Atualizar override existente
+        await retryWithBackoff(
+          () => Atividade.update(existingOverrides[0].id, { executor_principal: executorEmail }),
+          3, 500, `updateExecutorOverride-${existingOverrides[0].id}`
+        );
+      } else {
+        // Criar novo override
+        await retryWithBackoff(
+          () => Atividade.create({
+            ...atividadeOriginal,
+            id: undefined,
+            empreendimento_id: empreendimentoId,
+            id_atividade: atividadeId,
+            documento_id: null,
+            executor_principal: executorEmail
+          }),
+          3, 500, `createExecutorOverride-${atividadeId}`
+        );
+      }
+      
+      await fetchData();
+      if (onUpdate) onUpdate();
+      
+    } catch (error) {
+      console.error("Erro ao salvar executor:", error);
+      alert("Erro ao salvar executor: " + error.message);
+    } finally {
+      setIsSavingExecutor(prev => ({ ...prev, [atividadeId]: false }));
+    }
   };
 
   const limparAlteracoes = async () => {
