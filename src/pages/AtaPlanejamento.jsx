@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, FileText, Download, Printer, Save, Loader2, Check, FolderOpen, FilePlus, ArrowLeft } from "lucide-react";
+import { Plus, Trash2, FileText, Download, Printer, Save, Loader2, Check, FolderOpen, FilePlus, ArrowLeft, ChevronDown, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Empreendimento, Usuario, Documento, AtaReuniao } from "@/entities/all";
@@ -303,6 +303,7 @@ export default function AtaPlanejamento() {
   const [filtroUsuario, setFiltroUsuario] = useState('todos');
   const [filtroDataInicio, setFiltroDataInicio] = useState('');
   const [filtroDataFim, setFiltroDataFim] = useState('');
+  const [projetosMinimizados, setProjetosMinimizados] = useState({});
 
   useEffect(() => {
     loadData();
@@ -1127,14 +1128,27 @@ export default function AtaPlanejamento() {
           </div>
         ) : (
           <div className="space-y-6 p-2">
-            {providenciasAgrupadas.map((grupo, gIdx) => (
+            {providenciasAgrupadas.map((grupo, gIdx) => {
+              const isMinimizado = projetosMinimizados[grupo.projeto];
+              
+              return (
               <div key={gIdx} className="border border-gray-400 rounded-lg overflow-hidden">
                 {/* Título do Projeto */}
-                <div className="bg-yellow-100 border-b border-gray-400 p-3">
+                <div className="bg-yellow-100 border-b border-gray-400 p-3 flex items-center justify-between cursor-pointer no-print hover:bg-yellow-200 transition-colors"
+                     onClick={() => setProjetosMinimizados(prev => ({...prev, [grupo.projeto]: !prev[grupo.projeto]}))}>
+                  <h3 className="text-base font-bold text-gray-800">{grupo.projeto}</h3>
+                  <button className="p-1 hover:bg-yellow-300 rounded">
+                    {isMinimizado ? <ChevronRight className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </button>
+                </div>
+                
+                {/* Versão para impressão - sempre mostra título */}
+                <div className="hidden print:block bg-yellow-100 border-b border-gray-400 p-3">
                   <h3 className="text-base font-bold text-gray-800">{grupo.projeto}</h3>
                 </div>
 
                 {/* Itens do Projeto */}
+                {!isMinimizado && (
                 <div className="space-y-2 p-2">
                   {grupo.items.map((prov, pIdx) => (
                     <div 
@@ -1292,8 +1306,10 @@ export default function AtaPlanejamento() {
                     </div>
                   ))}
                 </div>
+                )}
               </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
