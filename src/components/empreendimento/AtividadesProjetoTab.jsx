@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit, Trash2, Search, Calendar, Check } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Calendar, Check, CheckCircle2 } from "lucide-react";
 import { Atividade } from "@/entities/all";
 import {
   Dialog,
@@ -548,9 +548,12 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
                           </TableCell>
                           <TableCell>
                             {atividade.status_planejamento === 'planejada' ? (
-                              <Badge className="bg-green-100 text-green-800">Planejada</Badge>
+                              <Badge className="bg-green-600 text-white font-semibold shadow-md flex items-center gap-1 w-fit">
+                                <CheckCircle2 className="w-4 h-4" />
+                                Planejada
+                              </Badge>
                             ) : (
-                              <Badge variant="outline">Disponível</Badge>
+                              <Badge variant="outline" className="text-gray-600">Disponível</Badge>
                             )}
                           </TableCell>
                           <TableCell>{atividade.etapa}</TableCell>
