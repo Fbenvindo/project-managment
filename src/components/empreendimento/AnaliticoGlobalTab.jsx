@@ -1857,6 +1857,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const handleSaveExecutor = async (atividade, executorEmail) => {
     const atividadeId = atividade.base_atividade_id || atividade.id;
     
+    if (!executorEmail) {
+      alert("Selecione um executor.");
+      return;
+    }
+    
     setIsSavingExecutor(prev => ({ ...prev, [atividadeId]: true }));
     
     try {
@@ -1884,13 +1889,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       );
       
       if (existingOverrides && existingOverrides.length > 0) {
-        // Atualizar override existente
         await retryWithBackoff(
           () => Atividade.update(existingOverrides[0].id, { executor_principal: executorEmail }),
           3, 500, `updateExecutorOverride-${existingOverrides[0].id}`
         );
       } else {
-        // Criar novo override
         await retryWithBackoff(
           () => Atividade.create({
             ...atividadeOriginal,
@@ -1904,12 +1907,84 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         );
       }
       
+      // Buscar documentos que têm esta atividade
+      const documentosComAtividade = documentos.filter(doc => {
+        const disciplinaMatch = doc.disciplina === atividadeOriginal.disciplina;
+        const subdisciplinasDoc = doc.subdisciplinas || [];
+        const subdisciplinaMatch = subdisciplinasDoc.includes(atividadeOriginal.subdisciplina);
+        return disciplinaMatch && subdisciplinaMatch;
+      });
+      
+      if (documentosComAtividade.length === 0) {
+        alert(`Executor definido, mas não há documentos para planejar esta atividade.`);
+        await fetchData();
+        if (onUpdate) onUpdate();
+        return;
+      }
+      
+      // Criar planejamentos para cada documento
+      let planejamentosCriados = 0;
+      let planejamentosJaExistentes = 0;
+      
+      for (const doc of documentosComAtividade) {
+        // Verificar se já existe planejamento
+        const planejamentosExistentes = await retryWithBackoff(
+          () => PlanejamentoAtividade.filter({
+            empreendimento_id: empreendimentoId,
+            atividade_id: atividadeId,
+            documento_id: doc.id
+          }),
+          3, 500, `checkExistingPlan-${doc.id}-${atividadeId}`
+        );
+        
+        if (planejamentosExistentes && planejamentosExistentes.length > 0) {
+          // Atualizar executor do planejamento existente
+          await retryWithBackoff(
+            () => PlanejamentoAtividade.update(planejamentosExistentes[0].id, {
+              executor_principal: executorEmail,
+              executores: [executorEmail]
+            }),
+            3, 500, `updatePlanExecutor-${planejamentosExistentes[0].id}`
+          );
+          planejamentosJaExistentes++;
+        } else {
+          // Criar novo planejamento
+          const fatorDificuldade = doc.fator_dificuldade || 1;
+          const tempoCalculado = (atividadeOriginal.tempo || 0) * fatorDificuldade;
+          
+          await retryWithBackoff(
+            () => PlanejamentoAtividade.create({
+              empreendimento_id: empreendimentoId,
+              atividade_id: atividadeId,
+              documento_id: doc.id,
+              etapa: atividadeOriginal.etapa,
+              descritivo: atividadeOriginal.atividade,
+              tempo_planejado: tempoCalculado,
+              executor_principal: executorEmail,
+              executores: [executorEmail],
+              status: 'nao_iniciado'
+            }),
+            3, 500, `createPlan-${doc.id}-${atividadeId}`
+          );
+          planejamentosCriados++;
+        }
+      }
+      
       await fetchData();
       if (onUpdate) onUpdate();
       
+      let mensagem = `✅ Executor "${usuarios.find(u => u.email === executorEmail)?.nome || executorEmail}" definido!\n`;
+      if (planejamentosCriados > 0) {
+        mensagem += `\n• ${planejamentosCriados} planejamento(s) criado(s)`;
+      }
+      if (planejamentosJaExistentes > 0) {
+        mensagem += `\n• ${planejamentosJaExistentes} planejamento(s) atualizado(s)`;
+      }
+      alert(mensagem);
+      
     } catch (error) {
-      console.error("Erro ao salvar executor:", error);
-      alert("Erro ao salvar executor: " + error.message);
+      console.error("Erro ao salvar executor e planejar:", error);
+      alert("Erro ao salvar executor e criar planejamentos: " + error.message);
     } finally {
       setIsSavingExecutor(prev => ({ ...prev, [atividadeId]: false }));
     }
