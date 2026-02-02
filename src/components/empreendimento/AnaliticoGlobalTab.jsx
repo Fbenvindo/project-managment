@@ -670,12 +670,14 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     return new Map((documentos || []).map(doc => [doc.id, doc]));
   }, [documentos]);
 
+  const [planejamentos, setPlanejamentos] = useState([]);
+
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
       const [
         projectActivities, 
-        planejamentos,
+        planejamentosData,
         allActivities,
         documentosData,
         disciplinasData,
@@ -697,6 +699,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       setEmpreendimentoNome((empreendimentoData && empreendimentoData[0]?.nome) || "");
       setAlteracoesEtapa(alteracoesData || []);
       setUsuarios(usuariosData || []);
+      setPlanejamentos(planejamentosData || []);
 
       // MODIFICADO: Criar dois mapas - um global e um por documento
       const overrideActivitiesGlobalMap = new Map(); // Overrides sem documento_id específico
@@ -732,7 +735,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         .map(a => [a.id, a])
       );
       
-      const planejamentosMap = new Map((planejamentos || []).map(p => [`${p.documento_id}-${p.atividade_id}`, p]));
+      const planejamentosMap = new Map((planejamentosData || []).map(p => [`${p.documento_id}-${p.atividade_id}`, p]));
 
       const normalizedProjectActivities = (projectActivities || [])
         .filter(pa => !pa.id_atividade && pa.tempo !== -999)
@@ -1464,6 +1467,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             <TableHead>Status</TableHead>
                             <TableHead>Etapa</TableHead>
                             <TableHead>Executor</TableHead>
+                            <TableHead>Datas Planejadas</TableHead>
                             <TableHead>Tempo Padrão</TableHead>
                             <TableHead>Tempo Total</TableHead>
                             <TableHead className="text-center">Planejar</TableHead>
@@ -1577,10 +1581,37 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                           Planejando...
                                         </div>
                                       )}
-                                    </div>
-                                  </TableCell>
-                                  <TableCell className="text-sm">{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
-                                  <TableCell className="text-sm font-semibold text-blue-600">
+                                      </div>
+                                      </TableCell>
+                                      <TableCell>
+                                      {grupo.folhas.some(f => f.status === 'Planejada') ? (
+                                      <div className="text-xs space-y-1">
+                                        {grupo.folhas
+                                          .filter(f => f.status === 'Planejada')
+                                          .map(f => {
+                                            const planejamento = planejamentos?.find(p => 
+                                              p.documento_id === f.source_documento_id && 
+                                              p.atividade_id === f.base_atividade_id
+                                            );
+
+                                            if (planejamento?.inicio_planejado && planejamento?.termino_planejado) {
+                                              return (
+                                                <div key={f.uniqueId} className="flex items-center gap-1 text-gray-600">
+                                                  <Calendar className="w-3 h-3" />
+                                                  <span>{format(parseISO(planejamento.inicio_planejado), 'dd/MM')} - {format(parseISO(planejamento.termino_planejado), 'dd/MM')}</span>
+                                                </div>
+                                              );
+                                            }
+                                            return null;
+                                          })
+                                          .filter(Boolean)}
+                                      </div>
+                                      ) : (
+                                      <span className="text-xs text-gray-400">-</span>
+                                      )}
+                                      </TableCell>
+                                      <TableCell className="text-sm">{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
+                                      <TableCell className="text-sm font-semibold text-blue-600">
                                     {grupo.folhas.length > 0 
                                       ? `${grupo.folhas.reduce((sum, f) => sum + (Number(f.tempo) || 0), 0).toFixed(1)}h`
                                       : '-'}
@@ -1690,6 +1721,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                      <TableHead>Status</TableHead>
                      <TableHead>Etapa</TableHead>
                      <TableHead>Executor</TableHead>
+                     <TableHead>Datas Planejadas</TableHead>
                      <TableHead>Tempo Padrão</TableHead>
                      <TableHead>Tempo Total</TableHead>
                      <TableHead className="text-center">Planejar</TableHead>
@@ -1805,9 +1837,36 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                 </div>
                               )}
                             </div>
-                          </TableCell>
-                          <TableCell>{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
-                          <TableCell className="font-semibold text-blue-600">
+                            </TableCell>
+                            <TableCell>
+                            {grupo.folhas.some(f => f.status === 'Planejada') ? (
+                              <div className="text-xs space-y-1">
+                                {grupo.folhas
+                                  .filter(f => f.status === 'Planejada')
+                                  .map(f => {
+                                    const planejamento = planejamentos?.find(p => 
+                                      p.documento_id === f.source_documento_id && 
+                                      p.atividade_id === f.base_atividade_id
+                                    );
+
+                                    if (planejamento?.inicio_planejado && planejamento?.termino_planejado) {
+                                      return (
+                                        <div key={f.uniqueId} className="flex items-center gap-1 text-gray-600">
+                                          <Calendar className="w-3 h-3" />
+                                          <span>{format(parseISO(planejamento.inicio_planejado), 'dd/MM')} - {format(parseISO(planejamento.termino_planejado), 'dd/MM')}</span>
+                                        </div>
+                                      );
+                                    }
+                                    return null;
+                                  })
+                                  .filter(Boolean)}
+                              </div>
+                            ) : (
+                              <span className="text-xs text-gray-400">-</span>
+                            )}
+                            </TableCell>
+                            <TableCell>{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
+                            <TableCell className="font-semibold text-blue-600">
                             {grupo.folhas.length > 0 
                               ? `${grupo.folhas.reduce((sum, f) => sum + (Number(f.tempo) || 0), 0).toFixed(1)}h`
                               : '-'}
