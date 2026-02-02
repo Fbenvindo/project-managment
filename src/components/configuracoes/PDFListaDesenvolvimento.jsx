@@ -1,9 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { FileText, Loader2, Download, Calendar } from "lucide-react";
+import { FileText, Loader2 } from "lucide-react";
 import { Atividade } from "@/entities/all";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -12,44 +9,23 @@ import jsPDF from 'jspdf';
 const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/577f93874_logo_Interativa_versao_final_sem_fundo_0002.png";
 
 export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
-  const [isOpen, setIsOpen] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [pdfUrl, setPdfUrl] = useState(null);
-  const [dadosCliente, setDadosCliente] = useState({
-    construtora: "",
-    empreendimento: ""
-  });
-  const [atividadesCompletas, setAtividadesCompletas] = useState({});
-  const [loadingAtividades, setLoadingAtividades] = useState(false);
 
-  // Buscar todas as atividades do empreendimento quando abrir o modal
-  useEffect(() => {
-    if (isOpen && empreendimentoId) {
-      buscarAtividadesEmpreendimento();
-      buscarDadosEmpreendimento();
-    }
-  }, [isOpen, empreendimentoId]);
-
-  const buscarDadosEmpreendimento = async () => {
+  const buscarDadosCompletos = async () => {
     try {
       const { Empreendimento } = await import('@/entities/all');
       const empreendimentos = await Empreendimento.filter({ id: empreendimentoId });
       
+      let dadosCliente = { construtora: "", empreendimento: "" };
+      
       if (empreendimentos && empreendimentos.length > 0) {
         const emp = empreendimentos[0];
-        setDadosCliente({
+        dadosCliente = {
           construtora: emp.cliente || "",
           empreendimento: emp.nome || ""
-        });
+        };
       }
-    } catch (error) {
-      console.error("Erro ao buscar dados do empreendimento:", error);
-    }
-  };
 
-  const buscarAtividadesEmpreendimento = async () => {
-    setLoadingAtividades(true);
-    try {
       // Buscar atividades específicas do empreendimento
       const atividadesEmpreendimento = await Atividade.filter({ empreendimento_id: empreendimentoId });
       
@@ -80,26 +56,30 @@ export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
       });
 
       console.log('📊 Atividades agrupadas:', Object.keys(atividadesPorNome).length);
-      setAtividadesCompletas(atividadesPorNome);
+      
+      return { dadosCliente, atividadesCompletas: atividadesPorNome };
     } catch (error) {
-      console.error("Erro ao buscar atividades:", error);
-      alert("Erro ao buscar atividades do empreendimento");
-    } finally {
-      setLoadingAtividades(false);
+      console.error("Erro ao buscar dados:", error);
+      throw error;
     }
   };
 
 
 
-  const gerarPDF = async (visualizar = false) => {
-    if (!dadosCliente.construtora || !dadosCliente.empreendimento) {
-      alert("Por favor, preencha os dados do cliente e empreendimento.");
-      return;
-    }
+  const handleGerarPDF = async () => {
+    if (!empreendimentoId) return;
 
     setIsGenerating(true);
     
     try {
+      // Buscar dados do empreendimento e atividades
+      const { dadosCliente, atividadesCompletas } = await buscarDadosCompletos();
+      
+      if (!dadosCliente.construtora || !dadosCliente.empreendimento) {
+        alert("Erro: Dados do empreendimento não encontrados.");
+        setIsGenerating(false);
+        return;
+      }
       const pdf = new jsPDF('p', 'mm', 'a4');
       const pageWidth = pdf.internal.pageSize.width;
       const pageHeight = pdf.internal.pageSize.height;
@@ -226,21 +206,12 @@ export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
         pdf.text('www.interativaengenharia.com.br', margin, pageHeight - 4);
       }
 
-      // Salvar ou Visualizar PDF
-      if (visualizar) {
-        const pdfBlob = pdf.output('blob');
-        const url = URL.createObjectURL(pdfBlob);
-        setPdfUrl(url);
-      } else {
-        const totalAtividades = Object.keys(atividadesCompletas).length;
-        const nomeArquivo = `Resumo_Atividades_${dadosCliente.empreendimento.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}.pdf`;
-        pdf.save(nomeArquivo);
-        
-        alert(`✅ PDF baixado com sucesso!\n\n${totalAtividades} atividades documentadas`);
-        setIsOpen(false);
-        setPdfUrl(null);
-        setDadosCliente({ construtora: "", empreendimento: "" });
-      }
+      // Baixar PDF diretamente
+      const totalAtividades = Object.keys(atividadesCompletas).length;
+      const nomeArquivo = `Resumo_Atividades_${dadosCliente.empreendimento.replace(/\s+/g, '_')}_${format(new Date(), 'yyyyMMdd')}.pdf`;
+      pdf.save(nomeArquivo);
+      
+      alert(`✅ PDF baixado com sucesso!\n\n${totalAtividades} atividades documentadas`);
       
     } catch (error) {
       console.error("Erro ao gerar PDF:", error);
@@ -250,141 +221,23 @@ export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
     }
   };
 
-  const handleFechar = () => {
-    if (pdfUrl) {
-      URL.revokeObjectURL(pdfUrl);
-      setPdfUrl(null);
-    }
-    setIsOpen(false);
-    setDadosCliente({ construtora: "", empreendimento: "" });
-  };
-
   return (
-    <>
-      <Button
-        onClick={() => setIsOpen(true)}
-        disabled={!empreendimentoId}
-        className="bg-purple-600 hover:bg-purple-700"
-      >
-        <FileText className="w-4 h-4 mr-2" />
-        Gerar Resumo de Atividades
-      </Button>
-
-      <Dialog open={isOpen} onOpenChange={handleFechar}>
-        <DialogContent className={pdfUrl ? "max-w-4xl max-h-[90vh]" : "max-w-md"}>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-purple-600" />
-              Resumo de Atividades do Empreendimento
-            </DialogTitle>
-          </DialogHeader>
-
-          {pdfUrl ? (
-            <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-sm text-blue-800">
-                  📄 Visualização do PDF - Role para ver todo o conteúdo
-                </p>
-              </div>
-              
-              <iframe
-                src={pdfUrl}
-                className="w-full h-[600px] border rounded-lg"
-                title="Preview do PDF"
-              />
-              
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={handleFechar}
-                >
-                  Fechar
-                </Button>
-                <Button
-                  onClick={() => gerarPDF(false)}
-                  className="bg-purple-600 hover:bg-purple-700"
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Baixar PDF
-                </Button>
-              </DialogFooter>
-            </div>
-          ) : (
-            <>
-              <div className="space-y-4 py-4">
-            {loadingAtividades ? (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-                <p className="text-sm text-blue-800">Buscando atividades do empreendimento...</p>
-              </div>
-            ) : (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-sm text-blue-800">
-                  📋 <strong>Todas as atividades</strong> do empreendimento serão documentadas no PDF
-                </p>
-              </div>
-            )}
-
-            <div className="space-y-2">
-              <Label htmlFor="construtora">Construtora *</Label>
-              <Input
-                id="construtora"
-                value={dadosCliente.construtora}
-                onChange={(e) => setDadosCliente(prev => ({ ...prev, construtora: e.target.value }))}
-                placeholder="Ex: ADOLPHO LINDENBERG"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="empreendimento">Empreendimento *</Label>
-              <Input
-                id="empreendimento"
-                value={dadosCliente.empreendimento}
-                onChange={(e) => setDadosCliente(prev => ({ ...prev, empreendimento: e.target.value }))}
-                placeholder="Ex: Mário Amaral"
-              />
-            </div>
-
-            {Object.keys(atividadesCompletas).length > 0 && (
-              <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                <h4 className="text-xs font-semibold text-gray-700 mb-2">Total de atividades:</h4>
-                <div className="text-sm text-gray-700">
-                  <strong>{Object.keys(atividadesCompletas).length}</strong> atividades únicas encontradas
-                </div>
-              </div>
-            )}
-          </div>
-
-              <DialogFooter>
-                <Button
-                  variant="outline"
-                  onClick={handleFechar}
-                  disabled={isGenerating}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={() => gerarPDF(true)}
-                  disabled={isGenerating || !dadosCliente.construtora || !dadosCliente.empreendimento}
-                  className="bg-purple-600 hover:bg-purple-700"
-                >
-                  {isGenerating ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Gerando...
-                    </>
-                  ) : (
-                    <>
-                      <FileText className="w-4 h-4 mr-2" />
-                      Visualizar PDF
-                    </>
-                  )}
-                </Button>
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-    </>
+    <Button
+      onClick={handleGerarPDF}
+      disabled={!empreendimentoId || isGenerating}
+      className="bg-purple-600 hover:bg-purple-700"
+    >
+      {isGenerating ? (
+        <>
+          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+          Gerando PDF...
+        </>
+      ) : (
+        <>
+          <FileText className="w-4 h-4 mr-2" />
+          Gerar Resumo de Atividades
+        </>
+      )}
+    </Button>
   );
 }
