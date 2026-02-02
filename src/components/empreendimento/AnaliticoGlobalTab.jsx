@@ -803,6 +803,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
               status: 'Planejada',
               isEditable: false,
               etapa: existingPlan.etapa || atividadeVinculada.etapa,
+              executor_principal: existingPlan.executor_principal,
               base_atividade_id: atividadeVinculada.id,
             });
           } else {
@@ -864,7 +865,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                 status: 'Planejada',
                 isEditable: false,
                 etapa: existingPlan.etapa || etapaCorreta,
-                executor_principal: executorPrincipal,
+                executor_principal: existingPlan.executor_principal || executorPrincipal,
                 base_atividade_id: baseAtividade.id,
               });
             } else {
