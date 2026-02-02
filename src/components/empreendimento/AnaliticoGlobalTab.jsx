@@ -7,7 +7,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Search, Filter, MoreHorizontal, Edit, Trash2, Loader2, PackageOpen, Layers, XCircle, FileX, RefreshCw, Edit2, ChevronRight, ChevronDown, Calendar } from 'lucide-react';
+import { PlusCircle, Search, Filter, MoreHorizontal, Edit, Trash2, Loader2, PackageOpen, Layers, XCircle, FileX, RefreshCw, Edit2, ChevronRight, ChevronDown, Calendar, CheckCircle2 } from 'lucide-react';
 import PlanejamentoAtividadeModal from './PlanejamentoAtividadeModal';
 import AtividadeFormModal from './AtividadeFormModal';
 import { debounce } from 'lodash';
@@ -1508,14 +1508,17 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                         {ativ.source === 'Projeto' ? 'Projeto' : 'Disponível'}
                                       </Badge>
                                     ) : (
-                                      <div className="flex gap-1">
-                                        {grupo.folhas.some(f => f.status === 'Planejada') && (
-                                          <Badge variant="success">Planejada</Badge>
-                                        )}
-                                        {grupo.folhas.some(f => f.status === 'Disponível') && (
-                                          <Badge variant="outline">Disponível</Badge>
-                                        )}
-                                      </div>
+                                     <div className="flex gap-1">
+                                       {grupo.folhas.some(f => f.status === 'Planejada') && (
+                                         <Badge className="bg-green-600 text-white font-semibold shadow-md flex items-center gap-1 w-fit">
+                                           <CheckCircle2 className="w-4 h-4" />
+                                           Planejada
+                                         </Badge>
+                                       )}
+                                       {grupo.folhas.some(f => f.status === 'Disponível') && (
+                                         <Badge variant="outline" className="text-gray-600">Disponível</Badge>
+                                       )}
+                                     </div>
                                     )}
                                   </TableCell>
                                   <TableCell className="text-sm">{ativ.etapa}</TableCell>
@@ -1592,9 +1595,16 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                     </TableCell>
                                     <TableCell></TableCell>
                                     <TableCell>
-                                      <Badge variant={folha.status === 'Planejada' ? 'success' : 'outline'} className="text-xs">
-                                        {folha.status}
-                                      </Badge>
+                                      {folha.status === 'Planejada' ? (
+                                        <Badge className="bg-green-600 text-white font-semibold shadow-md flex items-center gap-1 w-fit text-xs">
+                                          <CheckCircle2 className="w-3 h-3" />
+                                          Planejada
+                                        </Badge>
+                                      ) : (
+                                        <Badge variant="outline" className="text-xs text-gray-600">
+                                          {folha.status}
+                                        </Badge>
+                                      )}
                                     </TableCell>
                                     <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
                                     <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
@@ -1676,10 +1686,13 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             ) : (
                               <div className="flex gap-1">
                                 {grupo.folhas.some(f => f.status === 'Planejada') && (
-                                  <Badge variant="success">Planejada</Badge>
+                                  <Badge className="bg-green-600 text-white font-semibold shadow-md flex items-center gap-1 w-fit">
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    Planejada
+                                  </Badge>
                                 )}
                                 {grupo.folhas.some(f => f.status === 'Disponível') && (
-                                  <Badge variant="outline">Disponível</Badge>
+                                  <Badge variant="outline" className="text-gray-600">Disponível</Badge>
                                 )}
                               </div>
                             )}
@@ -1759,9 +1772,16 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             </TableCell>
                             <TableCell></TableCell>
                             <TableCell>
-                              <Badge variant={folha.status === 'Planejada' ? 'success' : 'outline'} className="text-xs">
-                                {folha.status}
-                              </Badge>
+                              {folha.status === 'Planejada' ? (
+                                <Badge className="bg-green-600 text-white font-semibold shadow-md flex items-center gap-1 w-fit text-xs">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  Planejada
+                                </Badge>
+                              ) : (
+                                <Badge variant="outline" className="text-xs text-gray-600">
+                                  {folha.status}
+                                </Badge>
+                              )}
                             </TableCell>
                             <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
                             <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
