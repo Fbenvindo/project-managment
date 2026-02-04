@@ -2224,7 +2224,23 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           );
         }
         
-        await fetchData();
+        // Atualizar apenas os planejamentos sem recarregar tudo
+        const planejamentosAtualizados = await retryWithBackoff(
+          () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }),
+          3, 500, 'refreshPlanejamentosAfterRemove'
+        );
+        setPlanejamentos(planejamentosAtualizados || []);
+        
+        // Atualizar combinedActivities mantendo o estado atual
+        setCombinedActivities(prev => {
+          return prev.map(ativ => {
+            if (ativ.base_atividade_id === atividadeId || ativ.id === atividadeId) {
+              return { ...ativ, executor_principal: null };
+            }
+            return ativ;
+          });
+        });
+        
         if (onUpdate) onUpdate();
         alert("✅ Executor removido e planejamentos excluídos!");
         return;
