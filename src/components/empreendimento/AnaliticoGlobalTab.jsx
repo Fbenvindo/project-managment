@@ -2439,7 +2439,23 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`   Atualizados: ${planejamentosJaExistentes}`);
       console.log(`✅ ========================================\n`);
       
-      await fetchData();
+      // Atualizar apenas os planejamentos sem recarregar tudo
+      const planejamentosAtualizados = await retryWithBackoff(
+        () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }),
+        3, 500, 'refreshPlanejamentosOnly'
+      );
+      setPlanejamentos(planejamentosAtualizados || []);
+      
+      // Atualizar combinedActivities mantendo o estado atual
+      setCombinedActivities(prev => {
+        return prev.map(ativ => {
+          if (ativ.base_atividade_id === atividadeId || ativ.id === atividadeId) {
+            return { ...ativ, executor_principal: executorEmail };
+          }
+          return ativ;
+        });
+      });
+      
       if (onUpdate) onUpdate();
       
       let mensagem = `✅ Executor "${usuarios.find(u => u.email === executorEmail)?.nome || executorEmail}" definido!\n`;
