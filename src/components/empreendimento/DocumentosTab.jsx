@@ -1115,27 +1115,28 @@ export default function DocumentosTab({
   }, [filteredDocumentos]);
 
   const etapasDisponiveis = useMemo(() => {
-    const etapas = new Set();
+    let etapas = [];
     
     // Usar as etapas cadastradas no empreendimento
     if (empreendimento?.etapas && empreendimento.etapas.length > 0) {
-      empreendimento.etapas.forEach(etapa => {
-        if (etapa !== 'Concepção' && etapa !== 'Planejamento') {
-          etapas.add(etapa);
-        }
-      });
+      etapas = empreendimento.etapas.filter(etapa =>
+        etapa !== 'Concepção' && etapa !== 'Planejamento'
+      );
     } else {
       // Fallback: buscar etapas das atividades
+      const etapasSet = new Set();
       allAtividades.forEach(atividade => {
         if (atividade && atividade.etapa && !atividade.empreendimento_id) {
           if (atividade.etapa !== 'Concepção' && atividade.etapa !== 'Planejamento') {
-            etapas.add(atividade.etapa);
+            etapasSet.add(atividade.etapa);
           }
         }
       });
+      etapas = Array.from(etapasSet);
     }
 
-    return Array.from(etapas).sort();
+    // Remover duplicatas finais
+    return [...new Set(etapas)].sort();
   }, [allAtividades, empreendimento]);
 
   const usuariosOrdenados = useMemo(() => {
