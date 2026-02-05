@@ -397,9 +397,52 @@ export default function DocumentoForm({
       console.log('📤 [DocumentoForm] Enviando para o banco:', docData);
 
       let savedDoc;
+      const oldFatorDificuldade = doc?.fator_dificuldade;
+      const newFatorDificuldade = Number(formData.fator_dificuldade);
+      
       if (doc) {
         savedDoc = await retryWithBackoff(() => Documento.update(doc.id, docData), 3, 500, 'updateDocumento');
         console.log('✅ [DocumentoForm] Documento atualizado:', savedDoc);
+        
+        // Se o fator de dificuldade mudou, atualizar planejamentos relacionados
+        if (oldFatorDificuldade && oldFatorDificuldade !== newFatorDificuldade) {
+          console.log(`🔄 Fator de dificuldade mudou de ${oldFatorDificuldade} para ${newFatorDificuldade}, atualizando planejamentos...`);
+          
+          try {
+            const { PlanejamentoAtividade } = await import('@/entities/all');
+            
+            // Buscar todos os planejamentos deste documento
+            const planejamentosDoc = await retryWithBackoff(
+              () => PlanejamentoAtividade.filter({
+                empreendimento_id: empreendimentoId,
+                documento_id: doc.id
+              }),
+              3, 500, 'getPlanejamentosParaRecalcular'
+            );
+            
+            console.log(`   📊 Encontrados ${planejamentosDoc.length} planejamentos para recalcular`);
+            
+            // Recalcular tempo de cada planejamento
+            const multiplicador = newFatorDificuldade / oldFatorDificuldade;
+            
+            for (const plano of planejamentosDoc) {
+              const novoTempo = plano.tempo_planejado * multiplicador;
+              console.log(`   🔢 Planejamento ${plano.id}: ${plano.tempo_planejado}h → ${novoTempo.toFixed(2)}h`);
+              
+              await retryWithBackoff(
+                () => PlanejamentoAtividade.update(plano.id, {
+                  tempo_planejado: Number(novoTempo.toFixed(2))
+                }),
+                3, 500, `updatePlanejamento-${plano.id}`
+              );
+            }
+            
+            console.log(`   ✅ ${planejamentosDoc.length} planejamentos atualizados com sucesso`);
+          } catch (error) {
+            console.error('❌ Erro ao atualizar planejamentos:', error);
+            // Não bloquear o salvamento do documento por erro nos planejamentos
+          }
+        }
       } else {
         savedDoc = await retryWithBackoff(() => Documento.create(docData), 3, 500, 'createDocumento');
         console.log('✅ [DocumentoForm] Documento criado:', savedDoc);
