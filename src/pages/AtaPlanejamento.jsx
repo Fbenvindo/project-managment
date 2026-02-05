@@ -6,6 +6,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Label } from "@/components/ui/label";
 import { Plus, Trash2, FileText, Download, Printer, Save, Loader2, Check, FolderOpen, FilePlus, ArrowLeft, ChevronDown, ChevronRight } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -303,6 +305,7 @@ export default function AtaPlanejamento() {
   const [filtroUsuario, setFiltroUsuario] = useState('todos');
   const [filtroDataInicio, setFiltroDataInicio] = useState('');
   const [filtroDataFim, setFiltroDataFim] = useState('');
+  const [ocultarConcluidos, setOcultarConcluidos] = useState(false);
   const [projetosMinimizados, setProjetosMinimizados] = useState({});
 
   useEffect(() => {
@@ -687,6 +690,11 @@ export default function AtaPlanejamento() {
       });
     }
     
+    // Filtro para ocultar concluídos
+    if (ocultarConcluidos) {
+      providenciasFiltradas = providenciasFiltradas.filter(p => p.status !== 'concluido');
+    }
+    
     const grupos = {};
     providenciasFiltradas.forEach(p => {
       const key = p.projeto;
@@ -699,7 +707,7 @@ export default function AtaPlanejamento() {
       grupos[key].items.push(p);
     });
     return Object.values(grupos);
-  }, [providencias, filtroProjetoSelecionado, filtroUsuario, filtroDataInicio, filtroDataFim]);
+  }, [providencias, filtroProjetoSelecionado, filtroUsuario, filtroDataInicio, filtroDataFim, ocultarConcluidos]);
 
   // Lista de projetos únicos para o filtro
   const projetosUnicos = useMemo(() => {
@@ -1100,7 +1108,18 @@ export default function AtaPlanejamento() {
                 />
               </div>
 
-              {(filtroProjetoSelecionado !== 'todos' || filtroUsuario !== 'todos' || filtroDataInicio || filtroDataFim) && (
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="ocultar-concluidos"
+                  checked={ocultarConcluidos}
+                  onCheckedChange={setOcultarConcluidos}
+                />
+                <Label htmlFor="ocultar-concluidos" className="text-sm font-medium text-gray-700 cursor-pointer">
+                  Ocultar concluídos
+                </Label>
+              </div>
+
+              {(filtroProjetoSelecionado !== 'todos' || filtroUsuario !== 'todos' || filtroDataInicio || filtroDataFim || ocultarConcluidos) && (
                 <Button 
                   variant="outline" 
                   size="sm" 
@@ -1109,6 +1128,7 @@ export default function AtaPlanejamento() {
                     setFiltroUsuario('todos');
                     setFiltroDataInicio('');
                     setFiltroDataFim('');
+                    setOcultarConcluidos(false);
                   }}
                   className="h-9"
                 >
