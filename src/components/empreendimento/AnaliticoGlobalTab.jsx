@@ -673,6 +673,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const [atividadesSelecionadasParaPlanejar, setAtividadesSelecionadasParaPlanejar] = useState(new Set());
   const [isConcluindoEtapa, setIsConcluindoEtapa] = useState(false);
   const [etapaParaConcluir, setEtapaParaConcluir] = useState('');
+  const [isRevertendoEtapa, setIsRevertendoEtapa] = useState(false);
+  const [etapaParaReverter, setEtapaParaReverter] = useState('');
 
   const documentosMap = useMemo(() => {
     return new Map((documentos || []).map(doc => [doc.id, doc]));
@@ -2923,6 +2925,81 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     }
   };
 
+  const handleReverterConclusaoEtapa = async (etapa) => {
+    if (!etapa) {
+      alert("Selecione uma etapa para reverter.");
+      return;
+    }
+
+    const atividadesDaEtapa = atividadesAgrupadas.filter(grupo => 
+      grupo.baseAtividade.etapa === etapa && !grupo.baseAtividade.isEditable
+    );
+
+    if (atividadesDaEtapa.length === 0) {
+      alert(`Nenhuma atividade encontrada para a etapa "${etapa}".`);
+      return;
+    }
+
+    if (!window.confirm(`Tem certeza que deseja REVERTER a conclusão de todas as atividades da etapa "${etapa}"?\n\nTodas as atividades concluídas voltarão ao status "não iniciado".`)) {
+      return;
+    }
+
+    setIsRevertendoEtapa(true);
+
+    try {
+      console.log(`\n🔄 ========================================`);
+      console.log(`🔄 REVERTER CONCLUSÃO DE ETAPA: ${etapa}`);
+      console.log(`🔄 ========================================`);
+      console.log(`   Total de atividades: ${atividadesDaEtapa.length}`);
+      console.log(`   Empreendimento: ${empreendimentoId}`);
+
+      let totalPlanejamentosRevertidos = 0;
+
+      for (const grupo of atividadesDaEtapa) {
+        const atividadeId = grupo.baseAtividade.base_atividade_id || grupo.baseAtividade.id;
+        
+        // Buscar todos os planejamentos desta atividade
+        const planejamentosAtividade = await retryWithBackoff(
+          () => PlanejamentoAtividade.filter({
+            empreendimento_id: empreendimentoId,
+            atividade_id: atividadeId
+          }),
+          3, 500, `getPlanejamentos-${atividadeId}`
+        );
+
+        for (const plano of planejamentosAtividade) {
+          if (plano.status === 'concluido') {
+            await retryWithBackoff(
+              () => PlanejamentoAtividade.update(plano.id, {
+                status: 'nao_iniciado',
+                termino_real: null
+              }),
+              3, 500, `reverterPlan-${plano.id}`
+            );
+            totalPlanejamentosRevertidos++;
+          }
+        }
+      }
+
+      console.log(`✅ ========================================`);
+      console.log(`✅ CONCLUSÃO DA ETAPA "${etapa}" REVERTIDA`);
+      console.log(`   Planejamentos revertidos: ${totalPlanejamentosRevertidos}`);
+      console.log(`✅ ========================================\n`);
+
+      await fetchData();
+      if (onUpdate) onUpdate();
+
+      alert(`✅ Conclusão da etapa "${etapa}" revertida!\n\n${totalPlanejamentosRevertidos} planejamento(s) voltou(aram) para "não iniciado".`);
+      setEtapaParaReverter('');
+
+    } catch (error) {
+      console.error("❌ Erro ao reverter conclusão da etapa:", error);
+      alert("Erro ao reverter conclusão da etapa: " + error.message);
+    } finally {
+      setIsRevertendoEtapa(false);
+    }
+  };
+
   const limparAlteracoes = async () => {
     if (!confirm("Deseja limpar o registro de alterações deste empreendimento? Esta ação não pode ser desfeita.")) {
       return;
@@ -2994,6 +3071,52 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                   className="w-full bg-purple-600 hover:bg-purple-700"
                 >
                   Concluir Etapa
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="border-orange-500 text-orange-600 hover:bg-orange-50"
+                disabled={isRevertendoEtapa}
+              >
+                {isRevertendoEtapa ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Revertendo...
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2" />
+                    Reverter Conclusão de Etapa
+                  </>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64" align="start">
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-sm font-medium">Selecione a Etapa</Label>
+                  <Select value={etapaParaReverter} onValueChange={setEtapaParaReverter}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Escolha uma etapa" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {etapasUnicas.map(etapa => (
+                        <SelectItem key={etapa} value={etapa}>{etapa}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  onClick={() => handleReverterConclusaoEtapa(etapaParaReverter)}
+                  disabled={!etapaParaReverter || isRevertendoEtapa}
+                  className="w-full bg-orange-600 hover:bg-orange-700"
+                >
+                  Reverter Conclusão
                 </Button>
               </div>
             </PopoverContent>
