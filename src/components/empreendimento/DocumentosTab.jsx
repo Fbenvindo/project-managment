@@ -1114,6 +1114,14 @@ export default function DocumentosTab({
   }, [filteredDocumentos]);
 
   const etapasDisponiveis = useMemo(() => {
+    // Usar as etapas cadastradas no empreendimento
+    if (empreendimento?.etapas && empreendimento.etapas.length > 0) {
+      return empreendimento.etapas.filter(etapa =>
+        etapa !== 'Concepção' && etapa !== 'Planejamento'
+      );
+    }
+    
+    // Fallback: buscar etapas das atividades
     const etapas = new Set();
     allAtividades.forEach(atividade => {
       if (atividade && atividade.etapa && !atividade.empreendimento_id) {
@@ -1124,7 +1132,7 @@ export default function DocumentosTab({
     return Array.from(etapas).filter(etapa =>
       etapa !== 'Concepção' && etapa !== 'Planejamento'
     ).sort();
-  }, [allAtividades]);
+  }, [allAtividades, empreendimento]);
 
   const usuariosOrdenados = useMemo(() => {
     return [...usuarios].sort((a, b) => {
