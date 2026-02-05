@@ -1652,7 +1652,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                     </div>
                                     </TableCell>
                                       <TableCell>
-                                        {grupo.folhas.some(f => f.status === 'Planejada') ? (
+                                        {datasInicio[genericAtividadeIdToExclude] ? (
+                                          <div className="flex items-center gap-1 text-blue-600 text-xs">
+                                            <Calendar className="w-3 h-3" />
+                                            <span>Início: {format(datasInicio[genericAtividadeIdToExclude], 'dd/MM/yyyy')}</span>
+                                          </div>
+                                        ) : grupo.folhas.some(f => f.status === 'Planejada') ? (
                                           (() => {
                                             const folhasPlanejadas = grupo.folhas.filter(f => f.status === 'Planejada');
                                             const planejamentosComDatas = folhasPlanejadas
@@ -1983,7 +1988,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             </div>
                             </TableCell>
                             <TableCell>
-                              {grupo.folhas.some(f => f.status === 'Planejada') ? (
+                              {datasInicio[genericAtividadeIdToExclude] ? (
+                                <div className="flex items-center gap-1 text-blue-600 text-xs">
+                                  <Calendar className="w-3 h-3" />
+                                  <span>Início: {format(datasInicio[genericAtividadeIdToExclude], 'dd/MM/yyyy')}</span>
+                                </div>
+                              ) : grupo.folhas.some(f => f.status === 'Planejada') ? (
                                 (() => {
                                   const folhasPlanejadas = grupo.folhas.filter(f => f.status === 'Planejada');
                                   const planejamentosComDatas = folhasPlanejadas
