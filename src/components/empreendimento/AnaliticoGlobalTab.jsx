@@ -1840,18 +1840,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                             >
                                               <Edit2 className="w-4 h-4 mr-2" /> Editar Etapa em Folhas Específicas
                                             </DropdownMenuItem>
-                                            <DropdownMenuItem 
-                                              onClick={() => handleOpenExcluirDeFolhasModal(ativ)} 
-                                              className="text-orange-600"
-                                            >
-                                              <FileX className="w-4 h-4 mr-2" /> Excluir de Folhas Específicas
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem 
-                                              onClick={() => handleExcluirAtividade(ativ)} 
-                                              className="text-red-600"
-                                            >
-                                              <XCircle className="w-4 h-4 mr-2" /> Excluir de Todas as Folhas (Empreendimento)
-                                            </DropdownMenuItem>
                                           </>
                                         )}
                                       </DropdownMenuContent>
@@ -2218,16 +2206,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                       <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
                                     </DropdownMenuItem>
                                     <DropdownMenuItem 
-                                      onClick={() => handleOpenExcluirDeFolhasModal(ativ)} 
-                                      className="text-orange-600"
+                                      onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)} 
+                                      className="text-blue-600"
                                     >
-                                      <FileX className="w-4 h-4 mr-2" /> Excluir de Folhas Específicas
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem 
-                                      onClick={() => handleExcluirAtividade(ativ)} 
-                                      className="text-red-600"
-                                    >
-                                      <XCircle className="w-4 h-4 mr-2" /> Excluir de Todas as Folhas (Empreendimento)
+                                      <Edit2 className="w-4 h-4 mr-2" /> Editar Etapa em Folhas Específicas
                                     </DropdownMenuItem>
                                   </>
                                   )}
