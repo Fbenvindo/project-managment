@@ -760,21 +760,45 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           if (!isExcludedFromProject) {
             const override = overrideActivitiesGlobalMap.get(baseAtividade.id);
             const etapaCorreta = override ? override.etapa : baseAtividade.etapa;
-            const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
             
-            atividadesDocumentacao.push({
-              ...baseAtividade,
-              uniqueId: `doc-${baseAtividade.id}`,
-              id: baseAtividade.id,
-              tempo: baseAtividade.tempo || 0,
-              source: 'Catálogo',
-              source_documento_id: null,
-              status: 'Disponível',
-              isEditable: false,
-              etapa: etapaCorreta,
-              executor_principal: executorPrincipal,
-              base_atividade_id: baseAtividade.id,
-            });
+            // Verificar se existe planejamento geral (sem documento_id) para esta atividade
+            const planKey = `null-${baseAtividade.id}`;
+            const existingPlan = planejamentosMap.get(planKey);
+            
+            if (existingPlan) {
+              // Se há planejamento geral, mostrar como "Planejada"
+              atividadesDocumentacao.push({
+                ...baseAtividade,
+                id: existingPlan.id,
+                uniqueId: `plano-${existingPlan.id}`,
+                atividade: existingPlan.descritivo || baseAtividade.atividade,
+                tempo: existingPlan.tempo_planejado,
+                source: 'Catálogo',
+                source_documento_id: null,
+                status: 'Planejada',
+                isEditable: false,
+                etapa: existingPlan.etapa || etapaCorreta,
+                executor_principal: existingPlan.executor_principal,
+                base_atividade_id: baseAtividade.id,
+              });
+            } else {
+              // Se não há planejamento, mostrar como "Disponível"
+              const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
+              
+              atividadesDocumentacao.push({
+                ...baseAtividade,
+                uniqueId: `doc-${baseAtividade.id}`,
+                id: baseAtividade.id,
+                tempo: baseAtividade.tempo || 0,
+                source: 'Catálogo',
+                source_documento_id: null,
+                status: 'Disponível',
+                isEditable: false,
+                etapa: etapaCorreta,
+                executor_principal: executorPrincipal,
+                base_atividade_id: baseAtividade.id,
+              });
+            }
           }
         }
       });
