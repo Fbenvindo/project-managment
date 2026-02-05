@@ -1078,7 +1078,8 @@ export default function DocumentosTab({
   const filteredDocumentos = useMemo(() => {
     let filtered = localDocumentos.filter(doc =>
       (doc.numero?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())) ||
-      (doc.arquivo?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()))
+      (doc.arquivo?.toLowerCase().includes(debouncedSearchTerm.toLowerCase())) ||
+      (doc.descritivo?.toLowerCase().includes(debouncedSearchTerm.toLowerCase()))
     );
 
     // Aplicar filtro de área/pavimento
