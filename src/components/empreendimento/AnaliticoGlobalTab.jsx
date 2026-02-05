@@ -1764,8 +1764,72 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                       : '-'}
                                   </TableCell>
                                   <TableCell className="text-center">
+                                    {!ativ.isEditable && (
+                                      <div className="flex items-center gap-2 justify-center">
+                                        <Button 
+                                          size="icon" 
+                                          onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)}
+                                          variant="outline"
+                                          className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                                          title="Editar Etapa"
+                                        >
+                                          <Edit2 className="w-4 h-4" />
+                                        </Button>
+                                        <Button 
+                                          size="icon" 
+                                          onClick={() => handleConcluirEmTodasFolhas(ativ)}
+                                          variant="outline"
+                                          className="border-green-500 text-green-600 hover:bg-green-50"
+                                          disabled={isConcluindo[genericAtividadeIdToExclude]}
+                                          title="Concluir em Todas as Folhas"
+                                        >
+                                          {isConcluindo[genericAtividadeIdToExclude] ? (
+                                            <Loader2 className="w-4 h-4 animate-spin" />
+                                          ) : (
+                                            <CheckCircle className="w-4 h-4" />
+                                          )}
+                                        </Button>
+                                      </div>
+                                    )}
                                   </TableCell>
                                   <TableCell>
+                                    <DropdownMenu>
+                                      <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" disabled={isDeleting || isDeletingMultiple}>
+                                          {isDeleting || isDeletingMultiple ? <Loader2 className="w-4 h-4 animate-spin" /> : <MoreHorizontal className="w-4 h-4" />}
+                                        </Button>
+                                      </DropdownMenuTrigger>
+                                      <DropdownMenuContent>
+                                        {ativ.isEditable ? (
+                                          <>
+                                            <DropdownMenuItem onClick={() => handleOpenModal(ativ)}>
+                                              <Edit className="w-4 h-4 mr-2" /> Editar Atividade
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem onClick={() => handleDelete(ativ.id)} className="text-red-600">
+                                              <Trash2 className="w-4 h-4 mr-2" /> Excluir Atividade de Projeto
+                                            </DropdownMenuItem>
+                                          </>
+                                        ) : (
+                                          <>
+                                            <DropdownMenuItem onClick={() => handleOpenEtapaModal(ativ)}>
+                                              <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem 
+                                              onClick={() => handleOpenExcluirDeFolhasModal(ativ)} 
+                                              className="text-orange-600"
+                                            >
+                                              <FileX className="w-4 h-4 mr-2" /> Excluir de Folhas Específicas
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem 
+                                              onClick={() => handleExcluirAtividade(ativ)} 
+                                              className="text-red-600"
+                                            >
+                                              <XCircle className="w-4 h-4 mr-2" /> Excluir de Todas as Folhas (Empreendimento)
+                                            </DropdownMenuItem>
+                                          </>
+                                        )}
+                                      </DropdownMenuContent>
+                                    </DropdownMenu>
                                   </TableCell>
                                 </TableRow>
                                 {isExpanded && grupo.folhas.map(folha => (
@@ -2057,8 +2121,72 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                               : '-'}
                           </TableCell>
                           <TableCell className="text-center">
+                            {!ativ.isEditable && (
+                              <div className="flex items-center gap-2 justify-center">
+                                <Button 
+                                  size="icon" 
+                                  onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)}
+                                  variant="outline"
+                                  className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                                  title="Editar Etapa"
+                                >
+                                  <Edit2 className="w-4 h-4" />
+                                </Button>
+                                <Button 
+                                  size="icon" 
+                                  onClick={() => handleConcluirEmTodasFolhas(ativ)}
+                                  variant="outline"
+                                  className="border-green-500 text-green-600 hover:bg-green-50"
+                                  disabled={isConcluindo[genericAtividadeIdToExclude]}
+                                  title="Concluir em Todas as Folhas"
+                                >
+                                  {isConcluindo[genericAtividadeIdToExclude] ? (
+                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                  ) : (
+                                    <CheckCircle className="w-4 h-4" />
+                                  )}
+                                </Button>
+                              </div>
+                            )}
                           </TableCell>
                           <TableCell>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" disabled={isDeleting || isDeletingMultiple}>
+                                  {isDeleting || isDeletingMultiple ? <Loader2 className="w-4 h-4 animate-spin" /> : <MoreHorizontal className="w-4 h-4" />}
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent>
+                                {ativ.isEditable ? (
+                                  <>
+                                    <DropdownMenuItem onClick={() => handleOpenModal(ativ)}>
+                                      <Edit className="w-4 h-4 mr-2" /> Editar Atividade
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem onClick={() => handleDelete(ativ.id)} className="text-red-600">
+                                      <Trash2 className="w-4 h-4 mr-2" /> Excluir Atividade de Projeto
+                                    </DropdownMenuItem>
+                                  </>
+                                ) : (
+                                  <>
+                                    <DropdownMenuItem onClick={() => handleOpenEtapaModal(ativ)}>
+                                      <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => handleOpenExcluirDeFolhasModal(ativ)} 
+                                      className="text-orange-600"
+                                    >
+                                      <FileX className="w-4 h-4 mr-2" /> Excluir de Folhas Específicas
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem 
+                                      onClick={() => handleExcluirAtividade(ativ)} 
+                                      className="text-red-600"
+                                    >
+                                      <XCircle className="w-4 h-4 mr-2" /> Excluir de Todas as Folhas (Empreendimento)
+                                    </DropdownMenuItem>
+                                  </>
+                                  )}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </TableCell>
                         </TableRow>
 
