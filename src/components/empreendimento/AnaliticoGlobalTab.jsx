@@ -1789,6 +1789,26 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                             <CheckCircle className="w-4 h-4" />
                                           )}
                                         </Button>
+                                        <Button 
+                                          size="icon" 
+                                          onClick={() => handleOpenExcluirDeFolhasModal(ativ)}
+                                          variant="outline"
+                                          className="border-orange-500 text-orange-600 hover:bg-orange-50"
+                                          disabled={isDeleting}
+                                          title="Excluir de Folhas Específicas"
+                                        >
+                                          {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileX className="w-4 h-4" />}
+                                        </Button>
+                                        <Button 
+                                          size="icon" 
+                                          onClick={() => handleExcluirAtividade(ativ)}
+                                          variant="outline"
+                                          className="border-red-500 text-red-600 hover:bg-red-50"
+                                          disabled={isDeleting}
+                                          title="Excluir de Todas as Folhas"
+                                        >
+                                          {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                                        </Button>
                                       </div>
                                     )}
                                   </TableCell>
@@ -2151,6 +2171,26 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                   ) : (
                                     <CheckCircle className="w-4 h-4" />
                                   )}
+                                </Button>
+                                <Button 
+                                  size="icon" 
+                                  onClick={() => handleOpenExcluirDeFolhasModal(ativ)}
+                                  variant="outline"
+                                  className="border-orange-500 text-orange-600 hover:bg-orange-50"
+                                  disabled={isDeleting}
+                                  title="Excluir de Folhas Específicas"
+                                >
+                                  {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileX className="w-4 h-4" />}
+                                </Button>
+                                <Button 
+                                  size="icon" 
+                                  onClick={() => handleExcluirAtividade(ativ)}
+                                  variant="outline"
+                                  className="border-red-500 text-red-600 hover:bg-red-50"
+                                  disabled={isDeleting}
+                                  title="Excluir de Todas as Folhas"
+                                >
+                                  {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
                                 </Button>
                               </div>
                             )}
