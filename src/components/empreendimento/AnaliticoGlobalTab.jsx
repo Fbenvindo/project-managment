@@ -7,10 +7,9 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { PlusCircle, Search, Filter, MoreHorizontal, Edit, Trash2, Loader2, PackageOpen, Layers, XCircle, FileX, RefreshCw, Edit2, ChevronRight, ChevronDown, Calendar, CheckCircle2, Users2, CheckCircle, Link2 } from 'lucide-react';
+import { PlusCircle, Search, Filter, MoreHorizontal, Edit, Trash2, Loader2, PackageOpen, Layers, XCircle, FileX, RefreshCw, Edit2, ChevronRight, ChevronDown, Calendar, CheckCircle2, Users2, CheckCircle } from 'lucide-react';
 import PlanejamentoAtividadeModal from './PlanejamentoAtividadeModal';
 import AtividadeFormModal from './AtividadeFormModal';
-import DefinirPredecessoraModal from './DefinirPredecessoraModal';
 import { debounce } from 'lodash';
 import { Badge } from '@/components/ui/badge';
 import { retryWithBackoff, retryWithExtendedBackoff } from '../utils/apiUtils';
@@ -656,7 +655,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const [isEtapaModalOpen, setIsEtapaModalOpen] = useState(false);
   const [isExcluirDeFolhasModalOpen, setIsExcluirDeFolhasModalOpen] = useState(false);
   const [isEditarEtapaEmFolhasModalOpen, setIsEditarEtapaEmFolhasModalOpen] = useState(false);
-  const [isDefinirPredecessoraModalOpen, setIsDefinirPredecessoraModalOpen] = useState(false);
   const [isPlanejamentoModalOpen, setIsPlanejamentoModalOpen] = useState(false);
   const [atividadeParaPlanejar, setAtividadeParaPlanejar] = useState(null);
   
@@ -1222,11 +1220,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     setIsExcluirDeFolhasModalOpen(true);
   };
 
-  const handleOpenDefinirPredecessoraModal = (atividade) => {
-    setSelectedAtividade(atividade);
-    setIsDefinirPredecessoraModalOpen(true);
-  };
-
   const handlePlanejarAtividade = (atividade) => {
     setAtividadeParaPlanejar(atividade);
     setIsPlanejamentoModalOpen(true);
@@ -1754,12 +1747,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                               <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
                                             </DropdownMenuItem>
                                             <DropdownMenuItem 
-                                              onClick={() => handleOpenDefinirPredecessoraModal(ativ)} 
-                                              className="text-purple-600"
-                                            >
-                                              <Link2 className="w-4 h-4 mr-2" /> Definir como Predecessora
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem 
                                               onClick={() => handleOpenExcluirDeFolhasModal(ativ)} 
                                               className="text-orange-600"
                                             >
@@ -2094,12 +2081,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                   <>
                                     <DropdownMenuItem onClick={() => handleOpenEtapaModal(ativ)}>
                                       <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem 
-                                      onClick={() => handleOpenDefinirPredecessoraModal(ativ)} 
-                                      className="text-purple-600"
-                                    >
-                                      <Link2 className="w-4 h-4 mr-2" /> Definir como Predecessora
                                     </DropdownMenuItem>
                                     <DropdownMenuItem 
                                       onClick={() => handleOpenExcluirDeFolhasModal(ativ)} 
@@ -2855,22 +2836,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         atividade={selectedAtividade}
         documentos={documentos}
         empreendimentoId={empreendimentoId}
-        onSuccess={() => {
-          fetchData();
-          if (onUpdate) onUpdate();
-        }}
-      />
-
-      <DefinirPredecessoraModal
-        isOpen={isDefinirPredecessoraModalOpen}
-        onClose={() => {
-          setIsDefinirPredecessoraModalOpen(false);
-          setSelectedAtividade(null);
-        }}
-        atividade={selectedAtividade}
-        documentos={documentos}
-        empreendimentoId={empreendimentoId}
-        planejamentos={planejamentos}
         onSuccess={() => {
           fetchData();
           if (onUpdate) onUpdate();
