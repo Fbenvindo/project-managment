@@ -2444,27 +2444,37 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           
           // Buscar primeiro dia disponível na agenda do executor
           console.log(`   🔍 Procurando primeiro dia útil disponível na agenda...`);
-          let dataInicio = new Date(hojeMidnight);
-          let tentativas = 0;
-          const maxTentativas = 365;
+          let dataInicio = dataInicioCustom ? new Date(dataInicioCustom) : new Date(hojeMidnight);
           
-          while (tentativas < maxTentativas) {
-            if (isWorkingDay(dataInicio)) {
-              const diaKey = format(dataInicio, 'yyyy-MM-dd');
-              const cargaDoDia = cargaDiaria[diaKey] || 0;
-              const disponivel = 8 - cargaDoDia;
-              
-              if (disponivel >= 0.5) {
-                console.log(`   ✅ Primeiro dia disponível: ${format(dataInicio, 'dd/MM/yyyy')} (${disponivel.toFixed(1)}h livres)`);
-                break;
-              }
+          // Se data custom foi fornecida, garantir que seja dia útil
+          if (dataInicioCustom) {
+            console.log(`   📅 Data de início personalizada: ${format(dataInicio, 'dd/MM/yyyy')}`);
+            if (!isWorkingDay(dataInicio)) {
+              dataInicio = getNextWorkingDay(dataInicio);
+              console.log(`   ⚠️ Data ajustada para próximo dia útil: ${format(dataInicio, 'dd/MM/yyyy')}`);
             }
-            dataInicio = addDays(dataInicio, 1);
-            tentativas++;
-          }
-          
-          if (tentativas >= maxTentativas) {
-            throw new Error(`Não foi possível encontrar data disponível na agenda do executor.`);
+          } else {
+            let tentativas = 0;
+            const maxTentativas = 365;
+            
+            while (tentativas < maxTentativas) {
+              if (isWorkingDay(dataInicio)) {
+                const diaKey = format(dataInicio, 'yyyy-MM-dd');
+                const cargaDoDia = cargaDiaria[diaKey] || 0;
+                const disponivel = 8 - cargaDoDia;
+                
+                if (disponivel >= 0.5) {
+                  console.log(`   ✅ Primeiro dia disponível: ${format(dataInicio, 'dd/MM/yyyy')} (${disponivel.toFixed(1)}h livres)`);
+                  break;
+                }
+              }
+              dataInicio = addDays(dataInicio, 1);
+              tentativas++;
+            }
+            
+            if (tentativas >= maxTentativas) {
+              throw new Error(`Não foi possível encontrar data disponível na agenda do executor.`);
+            }
           }
           
           const resultadoDistribuicao = distribuirHorasPorDias(
