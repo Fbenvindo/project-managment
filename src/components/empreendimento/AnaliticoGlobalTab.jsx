@@ -1613,7 +1613,15 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                      </div>
                                     )}
                                   </TableCell>
-                                  <TableCell className="text-sm">{ativ.etapa}</TableCell>
+                                  <TableCell className="text-sm">
+                                    <button
+                                      onClick={() => handleOpenEtapaModal(ativ)}
+                                      className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
+                                      title="Clique para editar a etapa"
+                                    >
+                                      {ativ.etapa}
+                                    </button>
+                                  </TableCell>
                                   <TableCell>
                                     <div className="w-[210px]">
                                     {ativ.executor_principal ? (
@@ -1984,7 +1992,15 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                               </div>
                             )}
                           </TableCell>
-                          <TableCell>{ativ.etapa}</TableCell>
+                          <TableCell>
+                            <button
+                              onClick={() => handleOpenEtapaModal(ativ)}
+                              className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
+                              title="Clique para editar a etapa"
+                            >
+                              {ativ.etapa}
+                            </button>
+                          </TableCell>
                           <TableCell>
                             <div className="w-[210px]">
                               {ativ.executor_principal ? (
