@@ -1497,61 +1497,6 @@ export default function DocumentosTab({
       }
     };
 
-    const handleExcluirDeTodasAsFolhas = async (activityObj) => {
-      const confirmMessage = `Tem certeza que deseja excluir a atividade "${activityObj.atividade}" de TODAS as folhas deste empreendimento?\n\nEsta atividade não aparecerá mais em nenhuma folha.`;
-      
-      if (!window.confirm(confirmMessage)) {
-        return;
-      }
-
-      setIsUpdatingActivity(true);
-      try {
-        // Verificar se já existe marcador global
-        const existingMarkers = await retryWithBackoff(
-          () => Atividade.filter({
-            empreendimento_id: empreendimento.id,
-            id_atividade: activityObj.id,
-            documento_id: null,
-            tempo: -999
-          }),
-          3, 1000, `checkGlobalExclusionMarker-${activityObj.id}`
-        );
-
-        if (existingMarkers && existingMarkers.length > 0) {
-          alert(`A atividade "${activityObj.atividade}" já está excluída globalmente.`);
-          setIsUpdatingActivity(false);
-          return;
-        }
-
-        // Criar marcador global de exclusão
-        const novoMarcador = {
-          etapa: activityObj.etapa,
-          disciplina: activityObj.disciplina,
-          subdisciplina: activityObj.subdisciplina,
-          atividade: `(Excluída) ${activityObj.atividade}`,
-          funcao: activityObj.funcao,
-          empreendimento_id: empreendimento.id,
-          id_atividade: activityObj.id,
-          documento_id: null,
-          tempo: -999
-        };
-
-        await retryWithBackoff(
-          () => Atividade.create(novoMarcador),
-          3, 1000, `createGlobalExclusionMarker-${activityObj.id}`
-        );
-
-        await onUpdate();
-        alert(`✅ Atividade "${activityObj.atividade}" removida de TODAS as folhas deste empreendimento!`);
-        
-      } catch (error) {
-        console.error("Erro ao excluir atividade de todas as folhas:", error);
-        alert("Erro ao excluir atividade: " + error.message);
-      } finally {
-        setIsUpdatingActivity(false);
-      }
-    };
-
     const handleExcluirAtividade = async (activityObj) => {
       // **LOG IMEDIATO**: Verificar se a função está sendo chamada
       console.log(`\n🎯 ========================================`);
@@ -2506,21 +2451,11 @@ export default function DocumentosTab({
                            variant="ghost"
                            size="icon"
                            onClick={() => handleExcluirAtividade(atividade)}
-                           className="text-orange-500 hover:text-orange-700 hover:bg-orange-50"
-                           title="Excluir de Folhas Específicas"
-                           disabled={isUpdatingActivity}
-                          >
-                           <Trash2 className="w-4 h-4" />
-                          </Button>
-                          <Button
-                           variant="ghost"
-                           size="icon"
-                           onClick={() => handleExcluirDeTodasAsFolhas(atividade)}
                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                           title="Excluir de Todas as Folhas (Empreendimento)"
+                           title="Excluir atividade SOMENTE desta folha"
                            disabled={isUpdatingActivity}
                           >
-                           <Trash2 className="w-4 h-4" />
+                           {isUpdatingActivity ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                           </Button>
                           </div>
                           </div>
