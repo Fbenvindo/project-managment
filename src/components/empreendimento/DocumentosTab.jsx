@@ -11,8 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Search, Edit, Trash2, ChevronDown, ChevronRight, BarChart, CalendarDays, FileText, Loader2, Users2, CalendarIcon, Check, Upload, Download, CheckCircle2, MoreHorizontal } from "lucide-react";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Plus, Search, Edit, Trash2, ChevronDown, ChevronRight, BarChart, CalendarDays, FileText, Loader2, Users2, CalendarIcon, Check, Upload, Download, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import DocumentoForm from "./DocumentoForm";
 import AtividadeFormModal from "./AtividadeFormModal";
@@ -2503,34 +2502,26 @@ export default function DocumentosTab({
                           >
                            {isUpdatingActivity ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                           </Button>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-gray-500 hover:text-gray-700 hover:bg-gray-100"
-                                disabled={isUpdatingActivity}
-                              >
-                                <MoreHorizontal className="w-4 h-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem
-                                onClick={() => handleExcluirAtividade(atividade)}
-                                className="text-orange-600"
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Excluir de Folhas Específicas
-                              </DropdownMenuItem>
-                              <DropdownMenuItem
-                                onClick={() => handleExcluirDeTodasAsFolhas(atividade)}
-                                className="text-red-600"
-                              >
-                                <Trash2 className="w-4 h-4 mr-2" />
-                                Excluir de Todas as Folhas (Empreendimento)
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
+                          <Button
+                           variant="ghost"
+                           size="icon"
+                           onClick={() => handleExcluirAtividade(atividade)}
+                           className="text-orange-500 hover:text-orange-700 hover:bg-orange-50"
+                           title="Excluir de Folhas Específicas"
+                           disabled={isUpdatingActivity}
+                          >
+                           <Trash2 className="w-4 h-4" />
+                          </Button>
+                          <Button
+                           variant="ghost"
+                           size="icon"
+                           onClick={() => handleExcluirDeTodasAsFolhas(atividade)}
+                           className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                           title="Excluir de Todas as Folhas (Empreendimento)"
+                           disabled={isUpdatingActivity}
+                          >
+                           <Trash2 className="w-4 h-4" />
+                          </Button>
                           </div>
                           </div>
                     );
