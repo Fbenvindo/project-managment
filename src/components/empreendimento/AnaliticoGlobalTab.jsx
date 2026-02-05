@@ -1112,13 +1112,21 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     setIsEditarEtapaEmFolhasModalOpen(true);
   };
 
-  const handleSaveEtapa = async (newEtapa) => {
+  const handleSaveEtapa = async (newEtapa, escopo = 'empreendimento') => {
     if (!selectedAtividade || !selectedAtividade.base_atividade_id) {
       alert("Não foi possível identificar a atividade base para atualização.");
       return;
     }
   
     try {
+      // Se escopo é 'folha', usar a modal de editar em folhas específicas
+      if (escopo === 'folha' && selectedAtividade.source_documento_id) {
+        setSelectedAtividade(null);
+        setIsEtapaModalOpen(false);
+        setIsEditarEtapaEmFolhasModalOpen(true);
+        return;
+      }
+
       const allPlanejamentos = await retryWithBackoff(() => PlanejamentoAtividade.filter({ 
         empreendimento_id: empreendimentoId,
         atividade_id: selectedAtividade.base_atividade_id
@@ -3247,6 +3255,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         isOpen={isEtapaModalOpen}
         onClose={() => setIsEtapaModalOpen(false)}
         atividade={selectedAtividade}
+        documentos={documentos}
         onSave={handleSaveEtapa}
       />
 
