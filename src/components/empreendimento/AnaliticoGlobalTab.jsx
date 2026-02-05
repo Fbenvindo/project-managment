@@ -670,6 +670,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const [isSavingExecutor, setIsSavingExecutor] = useState({});
   const [isConcluindo, setIsConcluindo] = useState({});
   const [datasInicio, setDatasInicio] = useState({});
+  const [atividadesSelecionadasParaPlanejar, setAtividadesSelecionadasParaPlanejar] = useState(new Set());
 
   const documentosMap = useMemo(() => {
     return new Map((documentos || []).map(doc => [doc.id, doc]));
@@ -1454,6 +1455,28 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             )}
           </div>
         )}
+        
+        {atividadesSelecionadasParaPlanejar.size > 0 && (
+          <div className="flex items-center justify-between p-4 border-2 border-blue-500 rounded-lg bg-blue-50 shadow-sm">
+            <div className="flex items-center gap-3">
+              <Badge className="bg-blue-600 text-white">
+                {atividadesSelecionadasParaPlanejar.size} atividade{atividadesSelecionadasParaPlanejar.size > 1 ? 's' : ''} selecionada{atividadesSelecionadasParaPlanejar.size > 1 ? 's' : ''}
+              </Badge>
+              <span className="text-sm text-gray-700">
+                Selecione executor e data para planejar em lote
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setAtividadesSelecionadasParaPlanejar(new Set())}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        )}
 
         {atividadesPorDisciplina.map(([disciplina, grupos]) => {
           const isDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina);
@@ -1568,7 +1591,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                   </TableCell>
                                   <TableCell className="text-sm">{ativ.etapa}</TableCell>
                                   <TableCell>
-                                    <div className="w-[180px]">
+                                    <div className="w-[210px]">
                                     {ativ.executor_principal ? (
                                       <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
                                         <div className="flex items-center gap-1">
@@ -1589,8 +1612,29 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                       </div>
                                     ) : (
                                       <div className="flex gap-1">
+                                        <Checkbox
+                                          checked={atividadesSelecionadasParaPlanejar.has(genericAtividadeIdToExclude)}
+                                          onCheckedChange={(checked) => {
+                                            setAtividadesSelecionadasParaPlanejar(prev => {
+                                              const newSet = new Set(prev);
+                                              if (checked) {
+                                                newSet.add(genericAtividadeIdToExclude);
+                                              } else {
+                                                newSet.delete(genericAtividadeIdToExclude);
+                                              }
+                                              return newSet;
+                                            });
+                                          }}
+                                          disabled={isSavingExecutor[genericAtividadeIdToExclude]}
+                                        />
                                         <Select
-                                          onValueChange={(value) => handleSaveExecutor(ativ, value, datasInicio[genericAtividadeIdToExclude])}
+                                          onValueChange={(value) => {
+                                            if (atividadesSelecionadasParaPlanejar.size > 0 && atividadesSelecionadasParaPlanejar.has(genericAtividadeIdToExclude)) {
+                                              handlePlanejarMultiplas(value, datasInicio[genericAtividadeIdToExclude]);
+                                            } else {
+                                              handleSaveExecutor(ativ, value, datasInicio[genericAtividadeIdToExclude]);
+                                            }
+                                          }}
                                           disabled={isSavingExecutor[genericAtividadeIdToExclude]}
                                         >
                                           <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
@@ -1904,7 +1948,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                           </TableCell>
                           <TableCell>{ativ.etapa}</TableCell>
                           <TableCell>
-                            <div className="w-[180px]">
+                            <div className="w-[210px]">
                               {ativ.executor_principal ? (
                                 <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
                                   <div className="flex items-center gap-1">
@@ -1925,8 +1969,29 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                 </div>
                               ) : (
                                 <div className="flex gap-1">
+                                  <Checkbox
+                                    checked={atividadesSelecionadasParaPlanejar.has(genericAtividadeIdToExclude)}
+                                    onCheckedChange={(checked) => {
+                                      setAtividadesSelecionadasParaPlanejar(prev => {
+                                        const newSet = new Set(prev);
+                                        if (checked) {
+                                          newSet.add(genericAtividadeIdToExclude);
+                                        } else {
+                                          newSet.delete(genericAtividadeIdToExclude);
+                                        }
+                                        return newSet;
+                                      });
+                                    }}
+                                    disabled={isSavingExecutor[genericAtividadeIdToExclude]}
+                                  />
                                   <Select
-                                    onValueChange={(value) => handleSaveExecutor(ativ, value, datasInicio[genericAtividadeIdToExclude])}
+                                    onValueChange={(value) => {
+                                      if (atividadesSelecionadasParaPlanejar.size > 0 && atividadesSelecionadasParaPlanejar.has(genericAtividadeIdToExclude)) {
+                                        handlePlanejarMultiplas(value, datasInicio[genericAtividadeIdToExclude]);
+                                      } else {
+                                        handleSaveExecutor(ativ, value, datasInicio[genericAtividadeIdToExclude]);
+                                      }
+                                    }}
                                     disabled={isSavingExecutor[genericAtividadeIdToExclude]}
                                   >
                                     <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
@@ -2691,6 +2756,92 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       setIsSavingExecutor(prev => ({ ...prev, [atividadeId]: false }));
     } finally {
       setIsSavingExecutor(prev => ({ ...prev, [atividadeId]: false }));
+    }
+  };
+
+  const handlePlanejarMultiplas = async (executorEmail, dataInicioCustom = null) => {
+    if (atividadesSelecionadasParaPlanejar.size === 0) {
+      alert("Nenhuma atividade selecionada para planejar.");
+      return;
+    }
+
+    const atividadesParaPlanejar = Array.from(atividadesSelecionadasParaPlanejar);
+    const confirmacao = window.confirm(
+      `Deseja planejar ${atividadesParaPlanejar.length} atividade${atividadesParaPlanejar.length > 1 ? 's' : ''} para ${usuarios.find(u => u.email === executorEmail)?.nome || executorEmail}?${dataInicioCustom ? `\n\nData de início: ${format(dataInicioCustom, 'dd/MM/yyyy')}` : ''}`
+    );
+
+    if (!confirmacao) return;
+
+    console.log(`\n🎯 ========================================`);
+    console.log(`🎯 PLANEJAR MÚLTIPLAS ATIVIDADES`);
+    console.log(`🎯 ========================================`);
+    console.log(`   Quantidade: ${atividadesParaPlanejar.length}`);
+    console.log(`   Executor: ${executorEmail}`);
+    console.log(`   Data início: ${dataInicioCustom ? format(dataInicioCustom, 'dd/MM/yyyy') : 'automática'}`);
+    console.log(`🎯 ========================================\n`);
+
+    // Marcar todas como "salvando"
+    const savingState = {};
+    atividadesParaPlanejar.forEach(id => {
+      savingState[id] = true;
+    });
+    setIsSavingExecutor(prev => ({ ...prev, ...savingState }));
+
+    try {
+      let planejadosComSucesso = 0;
+      let erros = 0;
+
+      for (const atividadeId of atividadesParaPlanejar) {
+        try {
+          // Buscar a atividade no combinedActivities
+          const atividadeEncontrada = combinedActivities.find(
+            ativ => (ativ.base_atividade_id === atividadeId || ativ.id === atividadeId) && !ativ.isEditable
+          );
+
+          if (!atividadeEncontrada) {
+            console.warn(`⚠️ Atividade ${atividadeId} não encontrada`);
+            erros++;
+            continue;
+          }
+
+          console.log(`▶️ Planejando: ${atividadeEncontrada.atividade}`);
+          await handleSaveExecutor(atividadeEncontrada, executorEmail, dataInicioCustom);
+          planejadosComSucesso++;
+          
+          // Pequeno delay entre requisições
+          await new Promise(resolve => setTimeout(resolve, 200));
+        } catch (error) {
+          console.error(`❌ Erro ao planejar atividade ${atividadeId}:`, error);
+          erros++;
+        }
+      }
+
+      console.log(`\n✅ ========================================`);
+      console.log(`✅ PLANEJAMENTO EM LOTE CONCLUÍDO`);
+      console.log(`✅ ========================================`);
+      console.log(`   Planejadas: ${planejadosComSucesso}`);
+      console.log(`   Erros: ${erros}`);
+      console.log(`✅ ========================================\n`);
+
+      // Limpar seleção
+      setAtividadesSelecionadasParaPlanejar(new Set());
+
+      if (erros === 0) {
+        alert(`✅ ${planejadosComSucesso} atividade${planejadosComSucesso > 1 ? 's planejadas' : ' planejada'} com sucesso!`);
+      } else {
+        alert(`⚠️ Processo concluído:\n${planejadosComSucesso} planejada(s)\n${erros} erro(s)`);
+      }
+
+    } catch (error) {
+      console.error("❌ Erro no planejamento em lote:", error);
+      alert("Erro ao planejar atividades: " + error.message);
+    } finally {
+      // Limpar estado de "salvando"
+      const clearSavingState = {};
+      atividadesParaPlanejar.forEach(id => {
+        clearSavingState[id] = false;
+      });
+      setIsSavingExecutor(prev => ({ ...prev, ...clearSavingState }));
     }
   };
 
