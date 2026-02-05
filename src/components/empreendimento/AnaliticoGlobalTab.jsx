@@ -3075,52 +3075,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
               </div>
             </PopoverContent>
           </Popover>
-
-          <Popover>
-            <PopoverTrigger asChild>
-              <Button
-                variant="outline"
-                className="border-orange-500 text-orange-600 hover:bg-orange-50"
-                disabled={isRevertendoEtapa}
-              >
-                {isRevertendoEtapa ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Revertendo...
-                  </>
-                ) : (
-                  <>
-                    <RefreshCw className="w-4 h-4 mr-2" />
-                    Reverter Conclusão de Etapa
-                  </>
-                )}
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-64" align="start">
-              <div className="space-y-3">
-                <div>
-                  <Label className="text-sm font-medium">Selecione a Etapa</Label>
-                  <Select value={etapaParaReverter} onValueChange={setEtapaParaReverter}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Escolha uma etapa" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {etapasUnicas.map(etapa => (
-                        <SelectItem key={etapa} value={etapa}>{etapa}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button
-                  onClick={() => handleReverterConclusaoEtapa(etapaParaReverter)}
-                  disabled={!etapaParaReverter || isRevertendoEtapa}
-                  className="w-full bg-orange-600 hover:bg-orange-700"
-                >
-                  Reverter Conclusão
-                </Button>
-              </div>
-            </PopoverContent>
-          </Popover>
           
           <Button onClick={() => handleOpenModal()}>
             <PlusCircle className="w-4 h-4 mr-2" />
