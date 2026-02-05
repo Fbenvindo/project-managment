@@ -1815,6 +1815,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                               <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
                                             </DropdownMenuItem>
                                             <DropdownMenuItem 
+                                              onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)} 
+                                              className="text-blue-600"
+                                            >
+                                              <Edit2 className="w-4 h-4 mr-2" /> Editar Etapa em Folhas Específicas
+                                            </DropdownMenuItem>
+                                            <DropdownMenuItem 
                                               onClick={() => handleOpenExcluirDeFolhasModal(ativ)} 
                                               className="text-orange-600"
                                             >
