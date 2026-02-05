@@ -22,8 +22,9 @@ import { ptBR } from 'date-fns/locale';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 
-const EtapaEditModal = ({ isOpen, onClose, atividade, onSave }) => {
+const EtapaEditModal = ({ isOpen, onClose, atividade, onSave, documentos }) => {
   const [newEtapa, setNewEtapa] = useState('');
+  const [escopo, setEscopo] = useState('empreendimento');
   const [isSaving, setIsSaving] = useState(false);
   
   const etapas = ['Estudo Preliminar', 'Ante-Projeto', 'Projeto Básico', 'Projeto Executivo', 'Liberado para Obra', 'Concepção', 'Planejamento'];
@@ -31,6 +32,7 @@ const EtapaEditModal = ({ isOpen, onClose, atividade, onSave }) => {
   useEffect(() => {
     if (isOpen && atividade) {
       setNewEtapa(atividade.etapa || '');
+      setEscopo('empreendimento');
     }
   }, [isOpen, atividade]);
 
@@ -41,7 +43,7 @@ const EtapaEditModal = ({ isOpen, onClose, atividade, onSave }) => {
     }
     setIsSaving(true);
     try {
-      await onSave(newEtapa);
+      await onSave(newEtapa, escopo);
       onClose();
     } catch (error) {
       console.error("Failed to save etapa:", error);
@@ -51,15 +53,17 @@ const EtapaEditModal = ({ isOpen, onClose, atividade, onSave }) => {
     }
   };
 
+  const temFolhas = atividade?.source_documento_id;
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent>
         {atividade ? (
           <>
             <DialogHeader>
-              <DialogTitle>Editar Etapa da Atividade no Empreendimento</DialogTitle>
+              <DialogTitle>Editar Etapa da Atividade</DialogTitle>
               <DialogDescription>
-                A etapa será alterada para todas as ocorrências de "{atividade.atividade}" neste empreendimento.
+                Selecione a nova etapa e o escopo da alteração.
               </DialogDescription>
             </DialogHeader>
             <div className="py-4 space-y-4">
@@ -73,6 +77,43 @@ const EtapaEditModal = ({ isOpen, onClose, atividade, onSave }) => {
                     {etapas.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-3 p-3 bg-gray-50 rounded-lg border">
+                <Label className="font-semibold">Escopo da Alteração</Label>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="radio"
+                      id="escopo-empreendimento"
+                      name="escopo"
+                      value="empreendimento"
+                      checked={escopo === 'empreendimento'}
+                      onChange={(e) => setEscopo(e.target.value)}
+                      className="w-4 h-4"
+                    />
+                    <label htmlFor="escopo-empreendimento" className="cursor-pointer flex-1">
+                      <div className="font-medium text-sm">Em todo o Empreendimento</div>
+                      <div className="text-xs text-gray-500">Altera a etapa em todas as folhas</div>
+                    </label>
+                  </div>
+                  {temFolhas && (
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="radio"
+                        id="escopo-folha"
+                        name="escopo"
+                        value="folha"
+                        checked={escopo === 'folha'}
+                        onChange={(e) => setEscopo(e.target.value)}
+                        className="w-4 h-4"
+                      />
+                      <label htmlFor="escopo-folha" className="cursor-pointer flex-1">
+                        <div className="font-medium text-sm">Apenas nesta Folha</div>
+                        <div className="text-xs text-gray-500">{atividade.source_documento_numero} - {atividade.source_documento_arquivo}</div>
+                      </label>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
             <DialogFooter>
