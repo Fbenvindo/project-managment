@@ -2234,14 +2234,15 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           });
         });
         
-        // Atualizar planejamentos em background (sem esperar)
+        // Atualizar planejamentos em background (sem esperar e sem onUpdate)
         setTimeout(() => {
           retryWithBackoff(
             () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }),
             3, 500, 'refreshPlanejamentosAfterRemove'
           ).then(planejamentosAtualizados => {
             setPlanejamentos(planejamentosAtualizados || []);
-            if (onUpdate) onUpdate();
+          }).catch(err => {
+            console.warn("Erro ao atualizar planejamentos após remoção:", err);
           });
         }, 100);
         return;
@@ -2541,14 +2542,15 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         });
       });
       
-      // Atualizar planejamentos em background (sem esperar)
+      // Atualizar planejamentos em background (sem esperar e sem onUpdate)
       setTimeout(() => {
         retryWithBackoff(
           () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }),
           3, 500, 'refreshPlanejamentosOnly'
         ).then(planejamentosAtualizados => {
           setPlanejamentos(planejamentosAtualizados || []);
-          if (onUpdate) onUpdate();
+        }).catch(err => {
+          console.warn("Erro ao atualizar planejamentos em background:", err);
         });
       }, 100);
       
