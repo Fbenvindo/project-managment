@@ -2224,14 +2224,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           );
         }
         
-        // Atualizar apenas os planejamentos sem recarregar tudo
-        const planejamentosAtualizados = await retryWithBackoff(
-          () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }),
-          3, 500, 'refreshPlanejamentosAfterRemove'
-        );
-        setPlanejamentos(planejamentosAtualizados || []);
-        
-        // Atualizar combinedActivities mantendo o estado atual
+        // Atualizar combinedActivities de forma otimista (instantâneo)
         setCombinedActivities(prev => {
           return prev.map(ativ => {
             if (ativ.base_atividade_id === atividadeId || ativ.id === atividadeId) {
@@ -2241,8 +2234,17 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           });
         });
         
-        if (onUpdate) onUpdate();
-        alert("✅ Executor removido e planejamentos excluídos!");
+        // Atualizar planejamentos em background (sem esperar)
+        setTimeout(() => {
+          retryWithBackoff(
+            () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }),
+            3, 500, 'refreshPlanejamentosAfterRemove'
+          ).then(planejamentosAtualizados => {
+            setPlanejamentos(planejamentosAtualizados || []);
+            if (onUpdate) onUpdate();
+          });
+        }, 100);
+        
         return;
       }
       
@@ -2310,8 +2312,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       if (documentosComAtividade.length === 0) {
         console.warn(`⚠️ Nenhum documento compatível encontrado!`);
         alert(`Executor definido, mas não há documentos compatíveis para planejar esta atividade.\n\nDisciplina: ${atividadeOriginal.disciplina}\nSubdisciplina: ${atividadeOriginal.subdisciplina}`);
-        await fetchData();
-        if (onUpdate) onUpdate();
+        setIsSavingExecutor(prev => ({ ...prev, [atividadeId]: false }));
         return;
       }
       
@@ -2439,34 +2440,26 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`   Atualizados: ${planejamentosJaExistentes}`);
       console.log(`✅ ========================================\n`);
       
-      // Atualizar apenas os planejamentos sem recarregar tudo (em background)
-      retryWithBackoff(
-        () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }),
-        3, 500, 'refreshPlanejamentosOnly'
-      ).then(planejamentosAtualizados => {
-        setPlanejamentos(planejamentosAtualizados || []);
-      });
-      
-      // Atualizar combinedActivities de forma otimista
+      // Atualizar combinedActivities de forma otimista (instantâneo)
       setCombinedActivities(prev => {
         return prev.map(ativ => {
           if (ativ.base_atividade_id === atividadeId || ativ.id === atividadeId) {
-            return { ...ativ, executor_principal: executorEmail, status: 'Planejada' };
+            return { ...ativ, executor_principal: executorEmail };
           }
           return ativ;
         });
       });
       
-      if (onUpdate) onUpdate();
-      
-      let mensagem = `✅ Executor "${usuarios.find(u => u.email === executorEmail)?.nome || executorEmail}" definido!\n`;
-      if (planejamentosCriados > 0) {
-        mensagem += `\n• ${planejamentosCriados} planejamento(s) criado(s)`;
-      }
-      if (planejamentosJaExistentes > 0) {
-        mensagem += `\n• ${planejamentosJaExistentes} planejamento(s) atualizado(s)`;
-      }
-      alert(mensagem);
+      // Atualizar planejamentos em background (sem esperar)
+      setTimeout(() => {
+        retryWithBackoff(
+          () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }),
+          3, 500, 'refreshPlanejamentosOnly'
+        ).then(planejamentosAtualizados => {
+          setPlanejamentos(planejamentosAtualizados || []);
+          if (onUpdate) onUpdate();
+        });
+      }, 100);
       
     } catch (error) {
       console.error("Erro ao salvar executor e planejar:", error);
