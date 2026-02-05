@@ -1152,18 +1152,88 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     setIsEditarEtapaEmFolhasModalOpen(true);
   };
 
-  const handleSaveEtapa = async (newEtapa, escopo = 'empreendimento') => {
+  const handleSaveEtapa = async (newEtapa, escopo = 'empreendimento', selectedFolhaId = '') => {
     if (!selectedAtividade || !selectedAtividade.base_atividade_id) {
       alert("Não foi possível identificar a atividade base para atualização.");
       return;
     }
   
     try {
-      // Se escopo é 'folha', usar a modal de editar em folhas específicas
-      if (escopo === 'folha' && selectedAtividade.source_documento_id) {
-        setSelectedAtividade(null);
+      // Se escopo é 'folha' e uma folha foi selecionada, fazer a alteração direto
+      if (escopo === 'folha' && selectedFolhaId) {
+        const allPlanejamentos = await retryWithBackoff(() => PlanejamentoAtividade.filter({ 
+          empreendimento_id: empreendimentoId,
+          atividade_id: selectedAtividade.base_atividade_id,
+          documento_id: selectedFolhaId
+        }), 3, 500, 'findPlanosForEtapaUpdateSpecificDoc');
+    
+        // Registrar alteração
+        const user = await base44.auth.me();
+        const etapaAnterior = selectedAtividade.etapa;
+        const folhaObj = documentos.find(d => d.id === selectedFolhaId);
+        
+        await AlteracaoEtapa.create({
+          atividade_id: selectedAtividade.base_atividade_id,
+          id_atividade: selectedAtividade.id_atividade || "",
+          nome_atividade: selectedAtividade.atividade,
+          disciplina: selectedAtividade.disciplina,
+          subdisciplina: selectedAtividade.subdisciplina || "",
+          etapa_anterior: etapaAnterior,
+          etapa_nova: newEtapa,
+          empreendimento_id: empreendimentoId,
+          empreendimento_nome: empreendimentoNome,
+          data_alteracao: new Date().toISOString(),
+          usuario_email: user.email,
+          usuario_nome: user.full_name || user.nome || user.email,
+          folha_numero: folhaObj?.numero || "",
+          folha_arquivo: folhaObj?.arquivo || ""
+        });
+
+        if (allPlanejamentos.length > 0) {
+          const updatePromises = allPlanejamentos.map(plano => 
+            retryWithBackoff(() => PlanejamentoAtividade.update(plano.id, { etapa: newEtapa }), 3, 500, `updateEtapa-${plano.id}`)
+          );
+          await Promise.all(updatePromises);
+        } else {
+          // Criar override específico da folha
+          const baseAtividadeArr = await retryWithBackoff(() => Atividade.filter({ id: selectedAtividade.base_atividade_id }), 3, 500, 'findBaseAtividade');
+          
+          if (!baseAtividadeArr || baseAtividadeArr.length === 0) {
+            throw new Error("Atividade base original não encontrada.");
+          }
+          
+          const atividadeOriginal = baseAtividadeArr[0];
+          
+          const existingOverride = await retryWithBackoff(() => Atividade.filter({
+            empreendimento_id: empreendimentoId,
+            id_atividade: selectedAtividade.base_atividade_id,
+            documento_id: selectedFolhaId,
+            tempo: { operator: '!=', value: -999 } 
+          }), 3, 500, 'findExistingOverrideForDoc');
+
+          const foundOverride = existingOverride.find(o => o.id_atividade === selectedAtividade.base_atividade_id);
+
+          if (foundOverride) {
+            await retryWithBackoff(() => Atividade.update(foundOverride.id, { etapa: newEtapa }), 3, 500, 'updateAtividadeOverrideDoc');
+          } else {
+            const overrideAtividade = {
+              ...atividadeOriginal,
+              id_atividade: selectedAtividade.base_atividade_id,
+              etapa: newEtapa,
+              empreendimento_id: empreendimentoId,
+              documento_id: selectedFolhaId,
+            };
+            delete overrideAtividade.id;
+            await retryWithBackoff(() => Atividade.create(overrideAtividade), 3, 500, 'createAtividadeOverrideDoc');
+          }
+        }
+
+        alert(`A etapa de "${selectedAtividade.atividade}" foi alterada para "${newEtapa}" na folha ${folhaObj?.numero} - ${folhaObj?.arquivo}.`);
+        const alteracoes = await AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId });
+        setAlteracoesEtapa(alteracoes || []);
+        fetchData();
+        if(onUpdate) onUpdate();
         setIsEtapaModalOpen(false);
-        setIsEditarEtapaEmFolhasModalOpen(true);
         return;
       }
 
