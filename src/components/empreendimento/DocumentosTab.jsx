@@ -11,7 +11,8 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Search, Edit, Trash2, ChevronDown, ChevronRight, BarChart, CalendarDays, FileText, Loader2, Users2, CalendarIcon, Check, Upload, Download, CheckCircle2 } from "lucide-react";
+import { Plus, Search, Edit, Trash2, ChevronDown, ChevronRight, BarChart, CalendarDays, FileText, Loader2, Users2, CalendarIcon, Check, Upload, Download, CheckCircle2, MoreHorizontal } from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { motion, AnimatePresence } from "framer-motion";
 import DocumentoForm from "./DocumentoForm";
 import AtividadeFormModal from "./AtividadeFormModal";
@@ -1497,6 +1498,61 @@ export default function DocumentosTab({
       }
     };
 
+    const handleExcluirDeTodasAsFolhas = async (activityObj) => {
+      const confirmMessage = `Tem certeza que deseja excluir a atividade "${activityObj.atividade}" de TODAS as folhas deste empreendimento?\n\nEsta atividade não aparecerá mais em nenhuma folha.`;
+      
+      if (!window.confirm(confirmMessage)) {
+        return;
+      }
+
+      setIsUpdatingActivity(true);
+      try {
+        // Verificar se já existe marcador global
+        const existingMarkers = await retryWithBackoff(
+          () => Atividade.filter({
+            empreendimento_id: empreendimento.id,
+            id_atividade: activityObj.id,
+            documento_id: null,
+            tempo: -999
+          }),
+          3, 1000, `checkGlobalExclusionMarker-${activityObj.id}`
+        );
+
+        if (existingMarkers && existingMarkers.length > 0) {
+          alert(`A atividade "${activityObj.atividade}" já está excluída globalmente.`);
+          setIsUpdatingActivity(false);
+          return;
+        }
+
+        // Criar marcador global de exclusão
+        const novoMarcador = {
+          etapa: activityObj.etapa,
+          disciplina: activityObj.disciplina,
+          subdisciplina: activityObj.subdisciplina,
+          atividade: `(Excluída) ${activityObj.atividade}`,
+          funcao: activityObj.funcao,
+          empreendimento_id: empreendimento.id,
+          id_atividade: activityObj.id,
+          documento_id: null,
+          tempo: -999
+        };
+
+        await retryWithBackoff(
+          () => Atividade.create(novoMarcador),
+          3, 1000, `createGlobalExclusionMarker-${activityObj.id}`
+        );
+
+        await onUpdate();
+        alert(`✅ Atividade "${activityObj.atividade}" removida de TODAS as folhas deste empreendimento!`);
+        
+      } catch (error) {
+        console.error("Erro ao excluir atividade de todas as folhas:", error);
+        alert("Erro ao excluir atividade: " + error.message);
+      } finally {
+        setIsUpdatingActivity(false);
+      }
+    };
+
     const handleExcluirAtividade = async (activityObj) => {
       // **LOG IMEDIATO**: Verificar se a função está sendo chamada
       console.log(`\n🎯 ========================================`);
@@ -2447,16 +2503,34 @@ export default function DocumentosTab({
                           >
                            {isUpdatingActivity ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
                           </Button>
-                          <Button
-                           variant="ghost"
-                           size="icon"
-                           onClick={() => handleExcluirAtividade(atividade)}
-                           className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                           title="Excluir atividade SOMENTE desta folha"
-                           disabled={isUpdatingActivity}
-                          >
-                           {isUpdatingActivity ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                                disabled={isUpdatingActivity}
+                              >
+                                <MoreHorizontal className="w-4 h-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={() => handleExcluirAtividade(atividade)}
+                                className="text-orange-600"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Excluir de Folhas Específicas
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() => handleExcluirDeTodasAsFolhas(atividade)}
+                                className="text-red-600"
+                              >
+                                <Trash2 className="w-4 h-4 mr-2" />
+                                Excluir de Todas as Folhas (Empreendimento)
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                           </div>
                           </div>
                     );
