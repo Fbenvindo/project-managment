@@ -2439,18 +2439,19 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`   Atualizados: ${planejamentosJaExistentes}`);
       console.log(`✅ ========================================\n`);
       
-      // Atualizar apenas os planejamentos sem recarregar tudo
-      const planejamentosAtualizados = await retryWithBackoff(
+      // Atualizar apenas os planejamentos sem recarregar tudo (em background)
+      retryWithBackoff(
         () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }),
         3, 500, 'refreshPlanejamentosOnly'
-      );
-      setPlanejamentos(planejamentosAtualizados || []);
+      ).then(planejamentosAtualizados => {
+        setPlanejamentos(planejamentosAtualizados || []);
+      });
       
-      // Atualizar combinedActivities mantendo o estado atual
+      // Atualizar combinedActivities de forma otimista
       setCombinedActivities(prev => {
         return prev.map(ativ => {
           if (ativ.base_atividade_id === atividadeId || ativ.id === atividadeId) {
-            return { ...ativ, executor_principal: executorEmail };
+            return { ...ativ, executor_principal: executorEmail, status: 'Planejada' };
           }
           return ativ;
         });
