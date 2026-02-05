@@ -2855,16 +2855,21 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       return;
     }
 
-    const atividadesDaEtapa = atividadesAgrupadas.filter(grupo => 
-      grupo.baseAtividade.etapa === etapa && !grupo.baseAtividade.isEditable
+    // Buscar TODOS os planejamentos da etapa diretamente
+    const todosPlanejamentos = await retryWithBackoff(
+      () => PlanejamentoAtividade.filter({
+        empreendimento_id: empreendimentoId,
+        etapa: etapa
+      }),
+      3, 500, `getTodosPlanejamentosEtapa-${etapa}`
     );
 
-    if (atividadesDaEtapa.length === 0) {
-      alert(`Nenhuma atividade encontrada para a etapa "${etapa}".`);
+    if (todosPlanejamentos.length === 0) {
+      alert(`Nenhuma atividade planejada encontrada para a etapa "${etapa}".\n\nAs atividades precisam estar planejadas (com executor definido) antes de serem concluídas.`);
       return;
     }
 
-    if (!window.confirm(`Tem certeza que deseja CONCLUIR TODAS as atividades da etapa "${etapa}" em TODAS as folhas do empreendimento?\n\n${atividadesDaEtapa.length} atividade(s) serão concluídas.`)) {
+    if (!window.confirm(`Tem certeza que deseja CONCLUIR TODAS as atividades da etapa "${etapa}" em TODAS as folhas do empreendimento?\n\n${todosPlanejamentos.length} planejamento(s) serão concluídos.`)) {
       return;
     }
 
@@ -2874,47 +2879,49 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`\n🏁 ========================================`);
       console.log(`🏁 CONCLUIR ETAPA COMPLETA: ${etapa}`);
       console.log(`🏁 ========================================`);
-      console.log(`   Total de atividades: ${atividadesDaEtapa.length}`);
+      console.log(`   Total de planejamentos: ${todosPlanejamentos.length}`);
       console.log(`   Empreendimento: ${empreendimentoId}`);
 
       let totalPlanejamentosConcluidos = 0;
+      let jaFinalizados = 0;
+      const hoje = format(new Date(), 'yyyy-MM-dd');
 
-      for (const grupo of atividadesDaEtapa) {
-        const atividadeId = grupo.baseAtividade.base_atividade_id || grupo.baseAtividade.id;
-        
-        // Buscar todos os planejamentos desta atividade
-        const planejamentosAtividade = await retryWithBackoff(
-          () => PlanejamentoAtividade.filter({
-            empreendimento_id: empreendimentoId,
-            atividade_id: atividadeId
-          }),
-          3, 500, `getPlanejamentos-${atividadeId}`
-        );
-
-        for (const plano of planejamentosAtividade) {
-          if (plano.status !== 'concluido') {
-            const hoje = format(new Date(), 'yyyy-MM-dd');
-            await retryWithBackoff(
-              () => PlanejamentoAtividade.update(plano.id, {
-                status: 'concluido',
-                termino_real: hoje
-              }),
-              3, 500, `concluirPlan-${plano.id}`
-            );
-            totalPlanejamentosConcluidos++;
-          }
+      for (const plano of todosPlanejamentos) {
+        if (plano.status === 'concluido') {
+          jaFinalizados++;
+          console.log(`   ⏭️ Planejamento ${plano.id} já estava concluído`);
+          continue;
         }
+
+        await retryWithBackoff(
+          () => PlanejamentoAtividade.update(plano.id, {
+            status: 'concluido',
+            termino_real: hoje
+          }),
+          3, 500, `concluirPlan-${plano.id}`
+        );
+        totalPlanejamentosConcluidos++;
+        console.log(`   ✅ Planejamento ${plano.id} concluído`);
       }
 
       console.log(`✅ ========================================`);
       console.log(`✅ ETAPA "${etapa}" CONCLUÍDA`);
       console.log(`   Planejamentos concluídos: ${totalPlanejamentosConcluidos}`);
+      console.log(`   Já finalizados: ${jaFinalizados}`);
       console.log(`✅ ========================================\n`);
 
       await fetchData();
       if (onUpdate) onUpdate();
 
-      alert(`✅ Etapa "${etapa}" concluída em todas as folhas!\n\n${totalPlanejamentosConcluidos} planejamento(s) marcado(s) como concluído(s).`);
+      let mensagem = `✅ Etapa "${etapa}" concluída em todas as folhas!`;
+      if (totalPlanejamentosConcluidos > 0) {
+        mensagem += `\n\n${totalPlanejamentosConcluidos} planejamento(s) marcado(s) como concluído(s).`;
+      }
+      if (jaFinalizados > 0) {
+        mensagem += `\n${jaFinalizados} já estava(m) finalizado(s).`;
+      }
+      
+      alert(mensagem);
       setEtapaParaConcluir('');
 
     } catch (error) {
