@@ -18,6 +18,8 @@ import { base44 } from '@/api/base44Client';
 import PDFListaDesenvolvimento from '../configuracoes/PDFListaDesenvolvimento';
 import { getNextWorkingDay, distribuirHorasPorDias, isWorkingDay, calculateEndDate, ensureWorkingDay } from '../utils/DateCalculator';
 import { format, isValid, parseISO, addDays } from 'date-fns';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 
 const EtapaEditModal = ({ isOpen, onClose, atividade, onSave }) => {
   const [newEtapa, setNewEtapa] = useState('');
@@ -666,6 +668,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const [empreendimentoNome, setEmpreendimentoNome] = useState("");
   const [isSavingExecutor, setIsSavingExecutor] = useState({});
   const [isConcluindo, setIsConcluindo] = useState({});
+  const [datasInicio, setDatasInicio] = useState({});
 
   const documentosMap = useMemo(() => {
     return new Map((documentos || []).map(doc => [doc.id, doc]));
@@ -1565,27 +1568,28 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                   <TableCell className="text-sm">{ativ.etapa}</TableCell>
                                   <TableCell>
                                     <div className="w-[180px]">
-                                      {ativ.executor_principal ? (
-                                        <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
-                                          <div className="flex items-center gap-1">
-                                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                            <span className="text-xs font-medium text-green-800">
-                                              {usuarios.find(u => u.email === ativ.executor_principal)?.nome || ativ.executor_principal}
-                                            </span>
-                                          </div>
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            onClick={() => handleSaveExecutor(ativ, "")}
-                                            className="text-xs text-red-600 hover:text-red-700 h-6"
-                                            disabled={isSavingExecutor[genericAtividadeIdToExclude]}
-                                          >
-                                            Remover
-                                          </Button>
+                                    {ativ.executor_principal ? (
+                                      <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
+                                        <div className="flex items-center gap-1">
+                                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                          <span className="text-xs font-medium text-green-800">
+                                            {usuarios.find(u => u.email === ativ.executor_principal)?.nome || ativ.executor_principal}
+                                          </span>
                                         </div>
-                                      ) : (
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => handleSaveExecutor(ativ, "")}
+                                          className="text-xs text-red-600 hover:text-red-700 h-6"
+                                          disabled={isSavingExecutor[genericAtividadeIdToExclude]}
+                                        >
+                                          Remover
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <div className="flex gap-1">
                                         <Select
-                                          onValueChange={(value) => handleSaveExecutor(ativ, value)}
+                                          onValueChange={(value) => handleSaveExecutor(ativ, value, datasInicio[genericAtividadeIdToExclude])}
                                           disabled={isSavingExecutor[genericAtividadeIdToExclude]}
                                         >
                                           <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
@@ -1603,15 +1607,48 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                               ))}
                                           </SelectContent>
                                         </Select>
-                                      )}
-                                      {isSavingExecutor[genericAtividadeIdToExclude] && (
-                                        <div className="flex items-center gap-1 text-xs text-blue-600 mt-1">
-                                          <Loader2 className="w-3 h-3 animate-spin" />
-                                          Planejando...
-                                        </div>
-                                      )}
+                                        <Popover>
+                                          <PopoverTrigger asChild>
+                                            <Button
+                                              variant="outline"
+                                              size="icon"
+                                              className={`h-7 w-7 ${datasInicio[genericAtividadeIdToExclude] ? 'border-green-500 text-green-600' : ''}`}
+                                              disabled={isSavingExecutor[genericAtividadeIdToExclude]}
+                                            >
+                                              <Calendar className="w-3 h-3" />
+                                            </Button>
+                                          </PopoverTrigger>
+                                          <PopoverContent className="w-auto p-0" align="start">
+                                            <CalendarComponent
+                                              mode="single"
+                                              selected={datasInicio[genericAtividadeIdToExclude]}
+                                              onSelect={(date) => setDatasInicio(prev => ({ ...prev, [genericAtividadeIdToExclude]: date }))}
+                                              disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                                            />
+                                            {datasInicio[genericAtividadeIdToExclude] && (
+                                              <div className="p-2 border-t">
+                                                <Button
+                                                  variant="ghost"
+                                                  size="sm"
+                                                  onClick={() => setDatasInicio(prev => ({ ...prev, [genericAtividadeIdToExclude]: null }))}
+                                                  className="w-full text-xs"
+                                                >
+                                                  Limpar Data
+                                                </Button>
+                                              </div>
+                                            )}
+                                          </PopoverContent>
+                                        </Popover>
                                       </div>
-                                      </TableCell>
+                                    )}
+                                    {isSavingExecutor[genericAtividadeIdToExclude] && (
+                                      <div className="flex items-center gap-1 text-xs text-blue-600 mt-1">
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                        Planejando...
+                                      </div>
+                                    )}
+                                    </div>
+                                    </TableCell>
                                       <TableCell>
                                         {grupo.folhas.some(f => f.status === 'Planejada') ? (
                                           (() => {
@@ -1880,25 +1917,59 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                   </Button>
                                 </div>
                               ) : (
-                                <Select
-                                  onValueChange={(value) => handleSaveExecutor(ativ, value)}
-                                  disabled={isSavingExecutor[genericAtividadeIdToExclude]}
-                                >
-                                  <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
-                                    <Users2 className="w-3 h-3 mr-1" />
-                                    <SelectValue placeholder="Selecionar Executor" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {usuarios
-                                      .filter(u => u.status === 'ativo')
-                                      .sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))
-                                      .map(u => (
-                                        <SelectItem key={u.email} value={u.email} className="text-xs">
-                                          {u.nome || u.email}
-                                        </SelectItem>
-                                      ))}
-                                  </SelectContent>
-                                </Select>
+                                <div className="flex gap-1">
+                                  <Select
+                                    onValueChange={(value) => handleSaveExecutor(ativ, value, datasInicio[genericAtividadeIdToExclude])}
+                                    disabled={isSavingExecutor[genericAtividadeIdToExclude]}
+                                  >
+                                    <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
+                                      <Users2 className="w-3 h-3 mr-1" />
+                                      <SelectValue placeholder="Selecionar Executor" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {usuarios
+                                        .filter(u => u.status === 'ativo')
+                                        .sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))
+                                        .map(u => (
+                                          <SelectItem key={u.email} value={u.email} className="text-xs">
+                                            {u.nome || u.email}
+                                          </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                  </Select>
+                                  <Popover>
+                                    <PopoverTrigger asChild>
+                                      <Button
+                                        variant="outline"
+                                        size="icon"
+                                        className={`h-7 w-7 ${datasInicio[genericAtividadeIdToExclude] ? 'border-green-500 text-green-600' : ''}`}
+                                        disabled={isSavingExecutor[genericAtividadeIdToExclude]}
+                                      >
+                                        <Calendar className="w-3 h-3" />
+                                      </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-auto p-0" align="start">
+                                      <CalendarComponent
+                                        mode="single"
+                                        selected={datasInicio[genericAtividadeIdToExclude]}
+                                        onSelect={(date) => setDatasInicio(prev => ({ ...prev, [genericAtividadeIdToExclude]: date }))}
+                                        disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                                      />
+                                      {datasInicio[genericAtividadeIdToExclude] && (
+                                        <div className="p-2 border-t">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={() => setDatasInicio(prev => ({ ...prev, [genericAtividadeIdToExclude]: null }))}
+                                            className="w-full text-xs"
+                                          >
+                                            Limpar Data
+                                          </Button>
+                                        </div>
+                                      )}
+                                    </PopoverContent>
+                                  </Popover>
+                                </div>
                               )}
                               {isSavingExecutor[genericAtividadeIdToExclude] && (
                                 <div className="flex items-center gap-1 text-xs text-blue-600 mt-1">
@@ -2166,7 +2237,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     }
   };
 
-  const handleSaveExecutor = async (atividade, executorEmail) => {
+  const handleSaveExecutor = async (atividade, executorEmail, dataInicioCustom = null) => {
     const atividadeId = atividade.base_atividade_id || atividade.id;
     
     console.log(`\n🎯 ========================================`);
@@ -2176,6 +2247,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     console.log(`   Atividade: ${atividade.atividade}`);
     console.log(`   Executor Email: "${executorEmail}"`);
     console.log(`   Executor vazio?: ${!executorEmail}`);
+    console.log(`   Data início custom: ${dataInicioCustom ? format(dataInicioCustom, 'dd/MM/yyyy') : 'não definida'}`);
     console.log(`🎯 ========================================\n`);
     
     setIsSavingExecutor(prev => ({ ...prev, [atividadeId]: true }));
@@ -2473,27 +2545,37 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           
           // Buscar primeiro dia disponível na agenda do executor
           console.log(`   🔍 Procurando primeiro dia útil disponível na agenda...`);
-          let dataInicio = new Date(hojeMidnight);
-          let tentativas = 0;
-          const maxTentativas = 365;
+          let dataInicio = dataInicioCustom ? new Date(dataInicioCustom) : new Date(hojeMidnight);
           
-          while (tentativas < maxTentativas) {
-            if (isWorkingDay(dataInicio)) {
-              const diaKey = format(dataInicio, 'yyyy-MM-dd');
-              const cargaDoDia = cargaDiaria[diaKey] || 0;
-              const disponivel = 8 - cargaDoDia;
-              
-              if (disponivel >= 0.5) {
-                console.log(`   ✅ Primeiro dia disponível: ${format(dataInicio, 'dd/MM/yyyy')} (${disponivel.toFixed(1)}h livres)`);
-                break;
-              }
+          // Se data custom foi fornecida, garantir que seja dia útil
+          if (dataInicioCustom) {
+            console.log(`   📅 Data de início personalizada: ${format(dataInicio, 'dd/MM/yyyy')}`);
+            if (!isWorkingDay(dataInicio)) {
+              dataInicio = getNextWorkingDay(dataInicio);
+              console.log(`   ⚠️ Data ajustada para próximo dia útil: ${format(dataInicio, 'dd/MM/yyyy')}`);
             }
-            dataInicio = addDays(dataInicio, 1);
-            tentativas++;
-          }
-          
-          if (tentativas >= maxTentativas) {
-            throw new Error(`Não foi possível encontrar data disponível na agenda do executor.`);
+          } else {
+            let tentativas = 0;
+            const maxTentativas = 365;
+            
+            while (tentativas < maxTentativas) {
+              if (isWorkingDay(dataInicio)) {
+                const diaKey = format(dataInicio, 'yyyy-MM-dd');
+                const cargaDoDia = cargaDiaria[diaKey] || 0;
+                const disponivel = 8 - cargaDoDia;
+                
+                if (disponivel >= 0.5) {
+                  console.log(`   ✅ Primeiro dia disponível: ${format(dataInicio, 'dd/MM/yyyy')} (${disponivel.toFixed(1)}h livres)`);
+                  break;
+                }
+              }
+              dataInicio = addDays(dataInicio, 1);
+              tentativas++;
+            }
+            
+            if (tentativas >= maxTentativas) {
+              throw new Error(`Não foi possível encontrar data disponível na agenda do executor.`);
+            }
           }
           
           // Distribuir horas pelos dias disponíveis
