@@ -2999,33 +2999,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             </PopoverContent>
           </Popover>
           
-          {alteracoesEtapa.length > 0 && (
-            <Button
-              variant="outline"
-              onClick={limparAlteracoes}
-              className="border-red-500 text-red-600 hover:bg-red-50"
-            >
-              Limpar Registro
-            </Button>
-          )}
-          <Button
-            onClick={handleRestaurarExclusoesGlobais}
-            variant="outline"
-            className="border-green-500 text-green-700 hover:bg-green-50"
-            disabled={isRestoringGlobal}
-          >
-            {isRestoringGlobal ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Restaurando...
-              </>
-            ) : (
-              <>
-                <RefreshCw className="w-4 h-4 mr-2" />
-                Restaurar Exclusões Globais
-              </>
-            )}
-          </Button>
           <Button onClick={() => handleOpenModal()}>
             <PlusCircle className="w-4 h-4 mr-2" />
             Nova Atividade de Projeto
