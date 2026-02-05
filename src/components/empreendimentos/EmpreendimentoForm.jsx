@@ -9,14 +9,14 @@ import { X, Upload, Save } from "lucide-react";
 import { motion } from "framer-motion";
 import { UploadFile } from "@/integrations/Core";
 
-const ETAPAS_DISPONIVEIS = [
-  "Concepção",
-  "Planejamento",
-  "Estudo Preliminar",
-  "Ante-Projeto",
-  "Projeto Básico",
-  "Projeto Executivo",
-  "Liberado para Obra"
+const ETAPAS_PADRAO = [
+  "Etapa 1",
+  "Etapa 2",
+  "Etapa 3",
+  "Etapa 4",
+  "Etapa 5",
+  "Etapa 6",
+  "Etapa 7"
 ];
 
 export default function EmpreendimentoForm({ empreendimento, onSubmit, onClose, onSuccess }) {
@@ -35,6 +35,12 @@ export default function EmpreendimentoForm({ empreendimento, onSubmit, onClose, 
       "Liberado para Obra"
     ]
   });
+  
+  const [etapasEditaveis, setEtapasEditaveis] = useState(() => {
+    // Inicializar com as etapas existentes ou 7 etapas vazias
+    const etapasAtuais = empreendimento?.etapas || [];
+    return ETAPAS_PADRAO.map((_, index) => etapasAtuais[index] || "");
+  });
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -42,17 +48,14 @@ export default function EmpreendimentoForm({ empreendimento, onSubmit, onClose, 
     setFormData(prev => ({ ...prev, [field]: value }));
   };
 
-  const handleEtapaToggle = (etapa) => {
-    setFormData(prev => {
-      const currentEtapas = prev.etapas || [];
-      const isSelected = currentEtapas.includes(etapa);
-      
-      if (isSelected) {
-        return { ...prev, etapas: currentEtapas.filter(e => e !== etapa) };
-      } else {
-        return { ...prev, etapas: [...currentEtapas, etapa] };
-      }
-    });
+  const handleEtapaChange = (index, valor) => {
+    const novasEtapas = [...etapasEditaveis];
+    novasEtapas[index] = valor;
+    setEtapasEditaveis(novasEtapas);
+    
+    // Atualizar formData apenas com etapas preenchidas
+    const etapasPreenchidas = novasEtapas.filter(e => e.trim() !== "");
+    setFormData(prev => ({ ...prev, etapas: etapasPreenchidas }));
   };
 
   const handleFileUpload = async (e) => {
@@ -185,24 +188,23 @@ export default function EmpreendimentoForm({ empreendimento, onSubmit, onClose, 
               <div className="space-y-3">
                 <Label>Etapas do Empreendimento</Label>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  {ETAPAS_DISPONIVEIS.map((etapa) => (
-                    <div key={etapa} className="flex items-center space-x-2">
-                      <Checkbox
-                        id={`etapa-${etapa}`}
-                        checked={formData.etapas?.includes(etapa) || false}
-                        onCheckedChange={() => handleEtapaToggle(etapa)}
-                      />
-                      <Label 
-                        htmlFor={`etapa-${etapa}`}
-                        className="text-sm font-normal cursor-pointer"
-                      >
-                        {etapa}
+                  {ETAPAS_PADRAO.map((etapaLabel, index) => (
+                    <div key={index} className="space-y-1">
+                      <Label htmlFor={`etapa-${index}`} className="text-xs font-medium text-gray-600">
+                        {etapaLabel}
                       </Label>
+                      <Input
+                        id={`etapa-${index}`}
+                        value={etapasEditaveis[index]}
+                        onChange={(e) => handleEtapaChange(index, e.target.value)}
+                        placeholder={`Ex: Estudo Preliminar, Projeto Executivo...`}
+                        className="h-9"
+                      />
                     </div>
                   ))}
                 </div>
                 <p className="text-xs text-gray-500">
-                  Selecione as etapas que farão parte deste empreendimento
+                  Nomeie as etapas do empreendimento. Deixe em branco as que não forem utilizadas.
                 </p>
               </div>
 
