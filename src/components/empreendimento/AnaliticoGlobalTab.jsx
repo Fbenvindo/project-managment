@@ -682,6 +682,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
   const [planejamentos, setPlanejamentos] = useState([]);
 
+  const [allEmpreendimentos, setAllEmpreendimentos] = useState([]);
+
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
@@ -693,7 +695,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         disciplinasData,
         empreendimentoData,
         alteracoesData,
-        usuariosData
+        usuariosData,
+        todosEmpreendimentos
       ] = await Promise.all([
         retryWithBackoff(() => Atividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchProjectActivities'),
         retryWithBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchPlanejamentos'),
@@ -702,7 +705,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         retryWithBackoff(() => Disciplina.list(), 3, 500, 'fetchDisciplinas'),
         retryWithBackoff(() => Empreendimento.filter({ id: empreendimentoId }), 3, 500, 'fetchEmpreendimento'),
         retryWithBackoff(() => AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAlteracoes'),
-        retryWithBackoff(() => Usuario.list(), 3, 500, 'fetchUsuarios')
+        retryWithBackoff(() => Usuario.list(), 3, 500, 'fetchUsuarios'),
+        retryWithBackoff(() => Empreendimento.list(), 3, 500, 'fetchAllEmpreendimentos')
       ]);
 
       setDocumentos(documentosData || []);
@@ -710,6 +714,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       setAlteracoesEtapa(alteracoesData || []);
       setUsuarios(usuariosData || []);
       setPlanejamentos(planejamentosData || []);
+      setAllEmpreendimentos(todosEmpreendimentos || []);
 
       // MODIFICADO: Criar dois mapas - um global e um por documento
       const overrideActivitiesGlobalMap = new Map(); // Overrides sem documento_id específico
@@ -1034,7 +1039,15 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     return result;
   }, [atividadesAgrupadas]);
   
-  const etapasUnicas = useMemo(() => [...new Set(combinedActivities.map(a => a.etapa).filter(Boolean))], [combinedActivities]);
+  const etapasUnicas = useMemo(() => {
+    // Buscar etapas do empreendimento cadastrado
+    const empreendimento = allEmpreendimentos?.find(e => e.id === empreendimentoId);
+    if (empreendimento?.etapas && empreendimento.etapas.length > 0) {
+      return empreendimento.etapas;
+    }
+    // Fallback: etapas únicas das atividades
+    return [...new Set(combinedActivities.map(a => a.etapa).filter(Boolean))];
+  }, [combinedActivities, empreendimentoId]);
 
   const handleOpenModal = (atividade = null) => {
     setSelectedAtividade(atividade);
