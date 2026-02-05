@@ -8,6 +8,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { PlusCircle, Search, Filter, MoreHorizontal, Edit, Trash2, Loader2, PackageOpen, Layers, XCircle, FileX, RefreshCw, Edit2, ChevronRight, ChevronDown, Calendar, CheckCircle2, Users2, CheckCircle } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import PlanejamentoAtividadeModal from './PlanejamentoAtividadeModal';
 import AtividadeFormModal from './AtividadeFormModal';
 import { debounce } from 'lodash';
@@ -671,6 +672,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const [isConcluindo, setIsConcluindo] = useState({});
   const [datasInicio, setDatasInicio] = useState({});
   const [atividadesSelecionadasParaPlanejar, setAtividadesSelecionadasParaPlanejar] = useState(new Set());
+  const [isConcluindoEtapa, setIsConcluindoEtapa] = useState(false);
+  const [etapaParaConcluir, setEtapaParaConcluir] = useState('');
 
   const documentosMap = useMemo(() => {
     return new Map((documentos || []).map(doc => [doc.id, doc]));
@@ -2845,6 +2848,82 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     }
   };
 
+  const handleConcluirEtapaCompleta = async (etapa) => {
+    if (!etapa) {
+      alert("Selecione uma etapa para concluir.");
+      return;
+    }
+
+    const atividadesDaEtapa = atividadesAgrupadas.filter(grupo => 
+      grupo.baseAtividade.etapa === etapa && !grupo.baseAtividade.isEditable
+    );
+
+    if (atividadesDaEtapa.length === 0) {
+      alert(`Nenhuma atividade encontrada para a etapa "${etapa}".`);
+      return;
+    }
+
+    if (!window.confirm(`Tem certeza que deseja CONCLUIR TODAS as atividades da etapa "${etapa}" em TODAS as folhas do empreendimento?\n\n${atividadesDaEtapa.length} atividade(s) serão concluídas.`)) {
+      return;
+    }
+
+    setIsConcluindoEtapa(true);
+
+    try {
+      console.log(`\n🏁 ========================================`);
+      console.log(`🏁 CONCLUIR ETAPA COMPLETA: ${etapa}`);
+      console.log(`🏁 ========================================`);
+      console.log(`   Total de atividades: ${atividadesDaEtapa.length}`);
+      console.log(`   Empreendimento: ${empreendimentoId}`);
+
+      let totalPlanejamentosConcluidos = 0;
+
+      for (const grupo of atividadesDaEtapa) {
+        const atividadeId = grupo.baseAtividade.base_atividade_id || grupo.baseAtividade.id;
+        
+        // Buscar todos os planejamentos desta atividade
+        const planejamentosAtividade = await retryWithBackoff(
+          () => PlanejamentoAtividade.filter({
+            empreendimento_id: empreendimentoId,
+            atividade_id: atividadeId
+          }),
+          3, 500, `getPlanejamentos-${atividadeId}`
+        );
+
+        for (const plano of planejamentosAtividade) {
+          if (plano.status !== 'concluido') {
+            const hoje = format(new Date(), 'yyyy-MM-dd');
+            await retryWithBackoff(
+              () => PlanejamentoAtividade.update(plano.id, {
+                status: 'concluido',
+                termino_real: hoje
+              }),
+              3, 500, `concluirPlan-${plano.id}`
+            );
+            totalPlanejamentosConcluidos++;
+          }
+        }
+      }
+
+      console.log(`✅ ========================================`);
+      console.log(`✅ ETAPA "${etapa}" CONCLUÍDA`);
+      console.log(`   Planejamentos concluídos: ${totalPlanejamentosConcluidos}`);
+      console.log(`✅ ========================================\n`);
+
+      await fetchData();
+      if (onUpdate) onUpdate();
+
+      alert(`✅ Etapa "${etapa}" concluída em todas as folhas!\n\n${totalPlanejamentosConcluidos} planejamento(s) marcado(s) como concluído(s).`);
+      setEtapaParaConcluir('');
+
+    } catch (error) {
+      console.error("❌ Erro ao concluir etapa:", error);
+      alert("Erro ao concluir etapa: " + error.message);
+    } finally {
+      setIsConcluindoEtapa(false);
+    }
+  };
+
   const limparAlteracoes = async () => {
     if (!confirm("Deseja limpar o registro de alterações deste empreendimento? Esta ação não pode ser desfeita.")) {
       return;
@@ -2874,6 +2953,53 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         </div>
         <div className="flex gap-2 flex-wrap">
           <PDFListaDesenvolvimento empreendimentoId={empreendimentoId} />
+          
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="border-purple-500 text-purple-600 hover:bg-purple-50"
+                disabled={isConcluindoEtapa}
+              >
+                {isConcluindoEtapa ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Concluindo...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="w-4 h-4 mr-2" />
+                    Concluir Etapa Completa
+                  </>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-64" align="start">
+              <div className="space-y-3">
+                <div>
+                  <Label className="text-sm font-medium">Selecione a Etapa</Label>
+                  <Select value={etapaParaConcluir} onValueChange={setEtapaParaConcluir}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Escolha uma etapa" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {etapasUnicas.map(etapa => (
+                        <SelectItem key={etapa} value={etapa}>{etapa}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  onClick={() => handleConcluirEtapaCompleta(etapaParaConcluir)}
+                  disabled={!etapaParaConcluir || isConcluindoEtapa}
+                  className="w-full bg-purple-600 hover:bg-purple-700"
+                >
+                  Concluir Etapa
+                </Button>
+              </div>
+            </PopoverContent>
+          </Popover>
+          
           {alteracoesEtapa.length > 0 && (
             <Button
               variant="outline"

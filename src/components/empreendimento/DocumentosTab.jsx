@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Search, Edit, Trash2, ChevronDown, ChevronRight, BarChart, CalendarDays, FileText, Loader2, Users2, CalendarIcon, Check, Upload, Download } from "lucide-react";
+import { Plus, Search, Edit, Trash2, ChevronDown, ChevronRight, BarChart, CalendarDays, FileText, Loader2, Users2, CalendarIcon, Check, Upload, Download, CheckCircle2 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import DocumentoForm from "./DocumentoForm";
 import AtividadeFormModal from "./AtividadeFormModal";
@@ -2244,6 +2244,60 @@ export default function DocumentosTab({
                 <div className="flex justify-between items-center mb-3">
                   <h4 className="font-semibold">Atividades da Folha: {doc.numero}</h4>
                   <div className="flex gap-2">
+                    {etapaParaPlanejamento !== 'todas' && atividadesDisponiveis.filter(a => a.etapa === etapaParaPlanejamento && !a.estaConcluida).length > 0 && (
+                      <Button
+                        size="sm"
+                        onClick={async () => {
+                          const atividadesDaEtapa = atividadesDisponiveis.filter(a => a.etapa === etapaParaPlanejamento && !a.estaConcluida);
+                          if (!window.confirm(`Tem certeza que deseja concluir TODAS as ${atividadesDaEtapa.length} atividades da etapa "${etapaParaPlanejamento}" nesta folha?`)) {
+                            return;
+                          }
+                          setIsUpdatingActivity(true);
+                          try {
+                            for (const atividade of atividadesDaEtapa) {
+                              const existingMarkers = await retryWithBackoff(
+                                () => Atividade.filter({
+                                  empreendimento_id: empreendimento.id,
+                                  id_atividade: atividade.id,
+                                  documento_id: doc.id,
+                                  tempo: 0
+                                }),
+                                3, 1000, `checkConclusionMarker-${atividade.id}-${doc.id}`
+                              );
+                              
+                              if (existingMarkers && existingMarkers.length > 0) continue;
+                              
+                              await retryWithBackoff(
+                                () => Atividade.create({
+                                  etapa: atividade.etapa,
+                                  disciplina: atividade.disciplina,
+                                  subdisciplina: atividade.subdisciplina,
+                                  atividade: `(Concluída na folha ${doc.numero}) ${atividade.atividade}`,
+                                  funcao: atividade.funcao,
+                                  empreendimento_id: empreendimento.id,
+                                  id_atividade: atividade.id,
+                                  documento_id: doc.id,
+                                  tempo: 0
+                                }),
+                                3, 1000, `createConclusionMarker-${atividade.id}-${doc.id}`
+                              );
+                            }
+                            alert(`✅ Todas as ${atividadesDaEtapa.length} atividades da etapa "${etapaParaPlanejamento}" foram concluídas!`);
+                            await onUpdate();
+                          } catch (error) {
+                            console.error("Erro ao concluir etapa:", error);
+                            alert("Erro ao concluir atividades: " + error.message);
+                          } finally {
+                            setIsUpdatingActivity(false);
+                          }
+                        }}
+                        className="bg-purple-600 hover:bg-purple-700 text-white"
+                        disabled={isUpdatingActivity}
+                      >
+                        <CheckCircle2 className="w-4 h-4 mr-2" />
+                        Concluir Etapa "{etapaParaPlanejamento}"
+                      </Button>
+                    )}
                     {selectedAtividades.length > 0 && (
                       <Button
                         size="sm"
