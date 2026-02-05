@@ -100,6 +100,7 @@ export default function DocumentosTab({
   const [executorPreSelecionado, setExecutorPreSelecionado] = useState(null);
 
   const [cargaDiariaCache, setCargaDiariaCache] = useState({});
+  const [disciplinasMinimizadas, setDisciplinasMinimizadas] = useState({});
 
   useEffect(() => {
     setLocalDocumentos(documentos);
@@ -2607,19 +2608,28 @@ export default function DocumentosTab({
               </p>
             </div>
           ) : (
-            <div className="space-y-6">
-              {documentosPorDisciplina.map(([disciplina, docs]) => (
-                <div key={disciplina} className="border rounded-lg overflow-hidden">
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border-b">
-                    <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
-                      <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
-                      {disciplina}
-                      <Badge variant="secondary" className="ml-2">
-                        {docs.length} {docs.length === 1 ? 'documento' : 'documentos'}
-                      </Badge>
-                    </h3>
-                  </div>
-                  <div className="overflow-x-auto">
+           <div className="space-y-6">
+             {documentosPorDisciplina.map(([disciplina, docs]) => {
+               const isMinimizado = disciplinasMinimizadas[disciplina];
+               return (
+               <div key={disciplina} className="border rounded-lg overflow-hidden">
+                 <div 
+                   className="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border-b flex items-center justify-between cursor-pointer hover:from-blue-100 hover:to-indigo-100 transition-colors"
+                   onClick={() => setDisciplinasMinimizadas(prev => ({...prev, [disciplina]: !prev[disciplina]}))}
+                 >
+                   <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
+                     <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
+                     {disciplina}
+                     <Badge variant="secondary" className="ml-2">
+                       {docs.length} {docs.length === 1 ? 'documento' : 'documentos'}
+                     </Badge>
+                   </h3>
+                   <button className="p-1 hover:bg-blue-200 rounded transition-colors">
+                     {isMinimizado ? <ChevronRight className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                   </button>
+                 </div>
+                 {!isMinimizado && (
+                 <div className="overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
@@ -2657,8 +2667,10 @@ export default function DocumentosTab({
                       </TableBody>
                     </Table>
                   </div>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </CardContent>
