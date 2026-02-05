@@ -752,8 +752,13 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       
       const planejamentosMap = new Map((planejamentosData || []).map(p => [`${p.documento_id}-${p.atividade_id}`, p]));
 
+      // Buscar etapas cadastradas no empreendimento
+      const empreendimento = (empreendimentoData && empreendimentoData[0]) || null;
+      const etapasCadastradas = empreendimento?.etapas || [];
+      
       const normalizedProjectActivities = (projectActivities || [])
         .filter(pa => !pa.id_atividade && pa.tempo !== -999)
+        .filter(pa => etapasCadastradas.length === 0 || etapasCadastradas.includes(pa.etapa))
         .map(ativ => ({
           ...ativ,
           uniqueId: `proj-${ativ.id}`,
@@ -770,8 +775,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       allGenericActivitiesMap.forEach(baseAtividade => {
         if (disciplinasDocumentacao.includes(baseAtividade.disciplina)) {
           const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
+          const etapaValida = etapasCadastradas.length === 0 || etapasCadastradas.includes(baseAtividade.etapa);
           
-          if (!isExcludedFromProject) {
+          if (!isExcludedFromProject && etapaValida) {
             const override = overrideActivitiesGlobalMap.get(baseAtividade.id);
             const etapaCorreta = override ? override.etapa : baseAtividade.etapa;
             
@@ -874,8 +880,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
           const isExcludedFromThisDoc = excludedFromDocumentMap.has(baseAtividade.id) && 
                                         excludedFromDocumentMap.get(baseAtividade.id).has(doc.id);
+          const etapaValida = etapasCadastradas.length === 0 || etapasCadastradas.includes(baseAtividade.etapa);
           
-          if (isExcludedFromProject || isExcludedFromThisDoc) {
+          if (isExcludedFromProject || isExcludedFromThisDoc || !etapaValida) {
             return;
           }
 
