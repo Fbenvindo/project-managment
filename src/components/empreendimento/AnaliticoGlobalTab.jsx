@@ -25,14 +25,32 @@ import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 const EtapaEditModal = ({ isOpen, onClose, atividade, onSave, documentos }) => {
   const [newEtapa, setNewEtapa] = useState('');
   const [escopo, setEscopo] = useState('empreendimento');
+  const [selectedFolha, setSelectedFolha] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   
   const etapas = ['Estudo Preliminar', 'Ante-Projeto', 'Projeto Básico', 'Projeto Executivo', 'Liberado para Obra', 'Concepção', 'Planejamento'];
+
+  // Encontrar todas as folhas relacionadas a esta atividade
+  const folhasComAtividade = useMemo(() => {
+    if (!atividade || !documentos) return [];
+    
+    return documentos.filter(doc => {
+      const disciplinaMatch = doc.disciplina === atividade.disciplina;
+      const subdisciplinasDoc = doc.subdisciplinas || [];
+      const subdisciplinaMatch = subdisciplinasDoc.includes(atividade.subdisciplina);
+      return disciplinaMatch && subdisciplinaMatch;
+    }).sort((a, b) => {
+      const arquivoA = (a.arquivo || '').trim().toLowerCase();
+      const arquivoB = (b.arquivo || '').trim().toLowerCase();
+      return arquivoA.localeCompare(arquivoB, 'pt-BR', { numeric: true });
+    });
+  }, [atividade, documentos]);
 
   useEffect(() => {
     if (isOpen && atividade) {
       setNewEtapa(atividade.etapa || '');
       setEscopo('empreendimento');
+      setSelectedFolha('');
     }
   }, [isOpen, atividade]);
 
@@ -41,9 +59,13 @@ const EtapaEditModal = ({ isOpen, onClose, atividade, onSave, documentos }) => {
       alert("Por favor, selecione uma etapa.");
       return;
     }
+    if (escopo === 'folha' && !selectedFolha) {
+      alert("Por favor, selecione uma folha.");
+      return;
+    }
     setIsSaving(true);
     try {
-      await onSave(newEtapa, escopo);
+      await onSave(newEtapa, escopo, selectedFolha);
       onClose();
     } catch (error) {
       console.error("Failed to save etapa:", error);
@@ -53,7 +75,7 @@ const EtapaEditModal = ({ isOpen, onClose, atividade, onSave, documentos }) => {
     }
   };
 
-  const temFolhas = atividade?.source_documento_id;
+  const temFolhas = folhasComAtividade && folhasComAtividade.length > 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -97,7 +119,7 @@ const EtapaEditModal = ({ isOpen, onClose, atividade, onSave, documentos }) => {
                     </label>
                   </div>
                   {temFolhas && (
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-start gap-3">
                       <input
                         type="radio"
                         id="escopo-folha"
@@ -105,12 +127,30 @@ const EtapaEditModal = ({ isOpen, onClose, atividade, onSave, documentos }) => {
                         value="folha"
                         checked={escopo === 'folha'}
                         onChange={(e) => setEscopo(e.target.value)}
-                        className="w-4 h-4"
+                        className="w-4 h-4 mt-2"
                       />
-                      <label htmlFor="escopo-folha" className="cursor-pointer flex-1">
-                        <div className="font-medium text-sm">Apenas nesta Folha</div>
-                        <div className="text-xs text-gray-500">{atividade.source_documento_numero} - {atividade.source_documento_arquivo}</div>
-                      </label>
+                      <div className="flex-1">
+                        <label htmlFor="escopo-folha" className="cursor-pointer">
+                          <div className="font-medium text-sm">Apenas em Folhas Específicas</div>
+                          <div className="text-xs text-gray-500">Selecione qual(is) folha(s)</div>
+                        </label>
+                        {escopo === 'folha' && (
+                          <div className="mt-2">
+                            <Select value={selectedFolha} onValueChange={setSelectedFolha}>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Selecione a folha" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {folhasComAtividade.map(doc => (
+                                  <SelectItem key={doc.id} value={doc.id}>
+                                    {doc.numero} - {doc.arquivo}
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>
