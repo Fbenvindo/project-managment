@@ -760,6 +760,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           if (!isExcludedFromProject) {
             const override = overrideActivitiesGlobalMap.get(baseAtividade.id);
             const etapaCorreta = override ? override.etapa : baseAtividade.etapa;
+            const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
             
             atividadesDocumentacao.push({
               ...baseAtividade,
@@ -771,6 +772,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
               status: 'Disponível',
               isEditable: false,
               etapa: etapaCorreta,
+              executor_principal: executorPrincipal,
               base_atividade_id: baseAtividade.id,
             });
           }
