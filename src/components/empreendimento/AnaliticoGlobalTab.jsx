@@ -2309,18 +2309,109 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       
       console.log(`\n📊 Total de documentos compatíveis: ${documentosComAtividade.length}`);
       
-      if (documentosComAtividade.length === 0) {
-        console.warn(`⚠️ Nenhum documento compatível encontrado!`);
-        alert(`Executor definido, mas não há documentos compatíveis para planejar esta atividade.\n\nDisciplina: ${atividadeOriginal.disciplina}\nSubdisciplina: ${atividadeOriginal.subdisciplina}`);
-        setIsSavingExecutor(prev => ({ ...prev, [atividadeId]: false }));
-        return;
-      }
-      
-      // Criar planejamentos para cada documento
+      // Criar planejamentos para cada documento (ou um planejamento geral se não houver documentos)
       let planejamentosCriados = 0;
       let planejamentosJaExistentes = 0;
       
-      for (const doc of documentosComAtividade) {
+      if (documentosComAtividade.length === 0) {
+        console.warn(`⚠️ Nenhum documento compatível encontrado, criando planejamento geral vinculado ao empreendimento...`);
+        
+        // Verificar se já existe planejamento geral
+        const planejamentosExistentes = await retryWithBackoff(
+          () => PlanejamentoAtividade.filter({
+            empreendimento_id: empreendimentoId,
+            atividade_id: atividadeId,
+            documento_id: null
+          }),
+          3, 500, `checkExistingGeneralPlan-${atividadeId}`
+        );
+        
+        if (planejamentosExistentes && planejamentosExistentes.length > 0) {
+          // Atualizar executor do planejamento existente
+          console.log(`   ✏️ Planejamento geral já existe (ID: ${planejamentosExistentes[0].id}), atualizando executor...`);
+          await retryWithBackoff(
+            () => PlanejamentoAtividade.update(planejamentosExistentes[0].id, {
+              executor_principal: executorEmail,
+              executores: [executorEmail]
+            }),
+            3, 500, `updateGeneralPlanExecutor-${planejamentosExistentes[0].id}`
+          );
+          console.log(`   ✅ Executor atualizado no planejamento geral`);
+          planejamentosJaExistentes++;
+        } else {
+          console.log(`   📝 Criando novo planejamento geral...`);
+          
+          const tempoCalculado = atividadeOriginal.tempo || 0;
+          console.log(`   ⏱️ Tempo: ${tempoCalculado.toFixed(1)}h`);
+          
+          // Buscar primeiro dia disponível na agenda do executor
+          console.log(`   🔍 Procurando primeiro dia útil disponível na agenda...`);
+          let dataInicio = new Date(hojeMidnight);
+          let tentativas = 0;
+          const maxTentativas = 365;
+          
+          while (tentativas < maxTentativas) {
+            if (isWorkingDay(dataInicio)) {
+              const diaKey = format(dataInicio, 'yyyy-MM-dd');
+              const cargaDoDia = cargaDiaria[diaKey] || 0;
+              const disponivel = 8 - cargaDoDia;
+              
+              if (disponivel >= 0.5) {
+                console.log(`   ✅ Primeiro dia disponível: ${format(dataInicio, 'dd/MM/yyyy')} (${disponivel.toFixed(1)}h livres)`);
+                break;
+              }
+            }
+            dataInicio = addDays(dataInicio, 1);
+            tentativas++;
+          }
+          
+          if (tentativas >= maxTentativas) {
+            throw new Error(`Não foi possível encontrar data disponível na agenda do executor.`);
+          }
+          
+          const resultadoDistribuicao = distribuirHorasPorDias(
+            dataInicio,
+            tempoCalculado,
+            8,
+            cargaDiaria,
+            false
+          );
+          
+          if (!resultadoDistribuicao || !resultadoDistribuicao.distribuicao || Object.keys(resultadoDistribuicao.distribuicao).length === 0) {
+            throw new Error(`Não foi possível distribuir as horas na agenda.`);
+          }
+          
+          const { distribuicao, dataTermino } = resultadoDistribuicao;
+          const diasUtilizados = Object.keys(distribuicao).sort();
+          const inicioPlanejado = diasUtilizados[0];
+          const terminoPlanejado = format(dataTermino, 'yyyy-MM-dd');
+          
+          const dadosPlanejamento = {
+            empreendimento_id: empreendimentoId,
+            atividade_id: atividadeId,
+            documento_id: null,
+            etapa: atividadeOriginal.etapa,
+            descritivo: atividadeOriginal.atividade,
+            tempo_planejado: tempoCalculado,
+            executor_principal: executorEmail,
+            executores: [executorEmail],
+            inicio_planejado: inicioPlanejado,
+            termino_planejado: terminoPlanejado,
+            horas_por_dia: distribuicao,
+            status: 'nao_iniciado'
+          };
+          
+          console.log(`   💾 Salvando planejamento geral no banco...`);
+          await retryWithBackoff(
+            () => PlanejamentoAtividade.create(dadosPlanejamento),
+            3, 500, `createGeneralPlan-${atividadeId}`
+          );
+          console.log(`   ✅ Planejamento geral criado`);
+          planejamentosCriados++;
+        }
+      } else {
+        // Processar documentos normalmente
+        for (const doc of documentosComAtividade) {
         console.log(`\n📋 Processando documento: ${doc.numero}`);
         
         // Verificar se já existe planejamento
@@ -2431,6 +2522,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           // Atualizar carga diária para próximos planejamentos
           Object.assign(cargaDiaria, novaCargaDiaria);
         }
+      }
       }
       
       console.log(`\n✅ ========================================`);
