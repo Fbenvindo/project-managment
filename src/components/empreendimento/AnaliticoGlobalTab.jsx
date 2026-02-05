@@ -18,6 +18,7 @@ import { base44 } from '@/api/base44Client';
 import PDFListaDesenvolvimento from '../configuracoes/PDFListaDesenvolvimento';
 import { getNextWorkingDay, distribuirHorasPorDias, isWorkingDay, calculateEndDate, ensureWorkingDay } from '../utils/DateCalculator';
 import { format, isValid, parseISO, addDays } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 
@@ -1624,6 +1625,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                               selected={datasInicio[genericAtividadeIdToExclude]}
                                               onSelect={(date) => setDatasInicio(prev => ({ ...prev, [genericAtividadeIdToExclude]: date }))}
                                               disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                                              locale={ptBR}
                                             />
                                             {datasInicio[genericAtividadeIdToExclude] && (
                                               <div className="p-2 border-t">
@@ -1954,6 +1956,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                         selected={datasInicio[genericAtividadeIdToExclude]}
                                         onSelect={(date) => setDatasInicio(prev => ({ ...prev, [genericAtividadeIdToExclude]: date }))}
                                         disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
+                                        locale={ptBR}
                                       />
                                       {datasInicio[genericAtividadeIdToExclude] && (
                                         <div className="p-2 border-t">
