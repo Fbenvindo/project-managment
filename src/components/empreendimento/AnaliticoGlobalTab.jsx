@@ -2244,7 +2244,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             if (onUpdate) onUpdate();
           });
         }, 100);
-        
         return;
       }
       
@@ -2556,6 +2555,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     } catch (error) {
       console.error("Erro ao salvar executor e planejar:", error);
       alert("Erro ao salvar executor e criar planejamentos: " + error.message);
+      setIsSavingExecutor(prev => ({ ...prev, [atividadeId]: false }));
     } finally {
       setIsSavingExecutor(prev => ({ ...prev, [atividadeId]: false }));
     }
