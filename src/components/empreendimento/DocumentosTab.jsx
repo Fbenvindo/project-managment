@@ -2566,7 +2566,7 @@ export default function DocumentosTab({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="todas">Todas as etapas</SelectItem>
-                      {etapasDisponiveis.map(etapa => (
+                      {[...new Set(etapasDisponiveis)].map(etapa => (
                         <SelectItem key={etapa} value={etapa}>{etapa}</SelectItem>
                       ))}
                     </SelectContent>

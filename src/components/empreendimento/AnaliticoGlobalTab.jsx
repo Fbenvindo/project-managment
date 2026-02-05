@@ -3086,7 +3086,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                       <SelectValue placeholder="Escolha uma etapa" />
                     </SelectTrigger>
                     <SelectContent>
-                      {etapasUnicas.map(etapa => (
+                      {[...new Set(etapasUnicas)].map(etapa => (
                         <SelectItem key={etapa} value={etapa}>{etapa}</SelectItem>
                       ))}
                     </SelectContent>
@@ -3125,7 +3125,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                 <SelectTrigger className="w-auto md:w-48"><SelectValue placeholder="Filtrar por Etapa" /></SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">Todas as Etapas</SelectItem>
-                    {etapasUnicas.map(etapa => <SelectItem key={etapa} value={etapa}>{etapa}</SelectItem>)}
+                    {[...new Set(etapasUnicas)].map(etapa => <SelectItem key={etapa} value={etapa}>{etapa}</SelectItem>)}
                 </SelectContent>
             </Select>
         </div>
