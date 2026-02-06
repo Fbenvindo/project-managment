@@ -640,10 +640,10 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     return etapasVisiveis.reduce((total, etapa) => {
       const isMinimizada = etapasMinimizadas[etapa];
       if (isMinimizada) {
-        return total + 50;
+        return total + 40;
       }
       const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
-      return total + ((revisoesEtapa.length * 110) + 50);
+      return total + ((revisoesEtapa.length * 85) + 40);
     }, 0);
   }, [ETAPAS, etapasExcluidas, etapasMinimizadas, revisoesPorEtapa]);
 
@@ -907,18 +907,18 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           {/* Container de Folhas Fixo - 20% */}
           <div className="w-[20%] border-r-2 border-gray-300 flex flex-col bg-gray-50">
             {/* Cabeçalho Fixo das Folhas */}
-            <div className="bg-blue-100 border-b-2 border-gray-300 px-3 sticky top-0 z-30 flex items-center" style={{ height: '97px' }}>
+            <div className="bg-blue-100 border-b-2 border-gray-300 px-2 sticky top-0 z-30 flex items-center" style={{ height: '72px' }}>
               <div className="flex items-center gap-2">
                 {!readOnly && (
                   <input
                     type="checkbox"
                     checked={linhas.length > 0 && selectedFolhas.size === linhas.length}
                     onChange={(e) => e.target.checked ? selectAllFolhas() : clearSelection()}
-                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
                     title="Selecionar todas"
                   />
                 )}
-                <span className="font-semibold">Folha</span>
+                <span className="font-semibold text-sm">Folha</span>
               </div>
             </div>
 
@@ -940,11 +940,11 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 linhasPorDisciplina.map(([disciplina, linhasDaDisciplina]) => (
                   <div key={disciplina}>
                     {/* Cabeçalho da Disciplina */}
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-300 px-3 flex items-center" style={{ height: '57px' }}>
-                      <div className="flex items-center gap-2 w-full">
-                        <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
-                        <h3 className="font-semibold text-base text-gray-800">{disciplina}</h3>
-                        <Badge variant="secondary" className="ml-2 text-xs">
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-300 px-2 flex items-center" style={{ height: '44px' }}>
+                      <div className="flex items-center gap-1.5 w-full">
+                        <div className="w-1 h-5 bg-blue-600 rounded-full"></div>
+                        <h3 className="font-semibold text-sm text-gray-800">{disciplina}</h3>
+                        <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">
                           {linhasDaDisciplina.length}
                         </Badge>
                       </div>
@@ -956,24 +956,24 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                       return (
                         <div
                           key={linha.id}
-                          className="border-b border-gray-200 px-3 hover:bg-gray-100 transition-colors flex items-center"
-                          style={{ height: '60px' }}
+                          className="border-b border-gray-200 px-2 hover:bg-gray-100 transition-colors flex items-center"
+                          style={{ height: '48px' }}
                         >
-                          <div className="flex items-center gap-2 w-full">
+                          <div className="flex items-center gap-1.5 w-full">
                             {!readOnly && (
                               <input
                                 type="checkbox"
                                 checked={selectedFolhas.has(linha.id)}
                                 onChange={() => toggleSelectFolha(linha.id)}
-                                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
+                                className="w-3 h-3 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
                               />
                             )}
                             <div className="flex-1 min-w-0">
-                              <div className="font-medium text-sm text-gray-900 truncate" title={doc?.arquivo || doc?.numero || 'Sem folha'}>
+                              <div className="font-medium text-xs text-gray-900 truncate" title={doc?.arquivo || doc?.numero || 'Sem folha'}>
                                 {doc?.arquivo || doc?.numero || 'Sem folha'}
                               </div>
                               {doc?.descritivo && (
-                                <div className="text-xs text-gray-500 mt-1 line-clamp-2" title={doc.descritivo}>
+                                <div className="text-xs text-gray-500 mt-0.5 line-clamp-1" title={doc.descritivo}>
                                   {doc.descritivo}
                                 </div>
                               )}
@@ -1001,7 +1001,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
             >
               <div style={{ width: `${larguraTotalEtapas}px` }}>
                 {/* Cabeçalho Fixo das Etapas */}
-                <div className="bg-blue-100 border-b-2 border-gray-300 sticky top-0 z-20" style={{ minWidth: `${larguraTotalEtapas}px`, height: '97px' }}>
+                <div className="bg-blue-100 border-b-2 border-gray-300 sticky top-0 z-20" style={{ minWidth: `${larguraTotalEtapas}px`, height: '72px' }}>
                   <div className="flex h-full">
                     {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
                       const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
@@ -1012,27 +1012,27 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                         <div
                           key={etapa}
                           className="border-r border-gray-300 last:border-r-0 relative group flex-shrink-0 flex flex-col"
-                          style={{ width: isMinimizada ? '50px' : `${(revisoesEtapa.length * 110) + 50}px`, minWidth: isMinimizada ? '50px' : `${(revisoesEtapa.length * 110) + 50}px` }}
+                          style={{ width: isMinimizada ? '40px' : `${(revisoesEtapa.length * 85) + 40}px`, minWidth: isMinimizada ? '40px' : `${(revisoesEtapa.length * 85) + 40}px` }}
                         >
-                          <div className="p-2 text-center font-semibold flex-1 flex items-center justify-center">
-                            <div className="flex items-center justify-center gap-2">
+                          <div className="p-1.5 text-center font-semibold flex-1 flex items-center justify-center">
+                            <div className="flex items-center justify-center gap-1">
                               <button
                                 onClick={() => toggleMinimizarEtapa(etapa)}
-                                className="text-gray-600 hover:text-gray-900 p-1"
+                                className="text-gray-600 hover:text-gray-900 p-0.5"
                                 title={isMinimizada ? "Expandir" : "Minimizar"}
                               >
-                                {isMinimizada ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                                {isMinimizada ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
                               </button>
-                              <span className={`${isMinimizada ? 'writing-mode-vertical-rl transform rotate-180 text-xs' : 'text-sm'}`}>
+                              <span className={`${isMinimizada ? 'writing-mode-vertical-rl transform rotate-180 text-xs' : 'text-xs'}`}>
                                 {isMinimizada ? etapa.substring(0, 3).toUpperCase() : etapa}
                               </span>
                               {!readOnly && !isMinimizada && (
                                 <button
                                   onClick={() => handleExcluirEtapa(etapa)}
-                                  className="absolute top-1 right-1 text-red-500 hover:text-red-700 p-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded"
+                                  className="absolute top-0.5 right-0.5 text-red-500 hover:text-red-700 p-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded"
                                   title="Excluir etapa"
                                 >
-                                  <Trash2 className="w-3 h-3" />
+                                  <Trash2 className="w-2.5 h-2.5" />
                                 </button>
                               )}
                             </div>
@@ -1044,10 +1044,10 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                               {revisoesEtapa.map((revisao) => (
                                 <div
                                   key={`${etapa}-${revisao}`}
-                                  className="border-r border-gray-200 p-2 text-center font-medium text-sm"
-                                  style={{ width: '110px', minWidth: '110px' }}
+                                  className="border-r border-gray-200 p-1 text-center font-medium text-xs"
+                                  style={{ width: '85px', minWidth: '85px' }}
                                 >
-                                  <div className="flex items-center justify-center gap-1">
+                                  <div className="flex items-center justify-center gap-0.5">
                                     <span>{revisao}</span>
                                     {!readOnly && (
                                       <button
@@ -1055,20 +1055,20 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                                         className="text-red-500 hover:text-red-700 p-0.5"
                                         title={`Excluir revisão ${revisao}`}
                                       >
-                                        <Trash2 className="w-3 h-3" />
+                                        <Trash2 className="w-2.5 h-2.5" />
                                       </button>
                                     )}
                                   </div>
                                 </div>
                               ))}
-                              <div className="bg-green-50 p-1 text-center" style={{ width: '50px', minWidth: '50px' }}>
+                              <div className="bg-green-50 p-0.5 text-center" style={{ width: '40px', minWidth: '40px' }}>
                                 {!readOnly && (
                                   <button
                                     onClick={() => handleAddRevisao(etapa)}
                                     className="text-green-600 hover:text-green-800 p-0.5"
                                     title="Adicionar revisão"
                                   >
-                                    <Plus className="w-4 h-4" />
+                                    <Plus className="w-3 h-3" />
                                   </button>
                                 )}
                               </div>
@@ -1090,7 +1090,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 linhasPorDisciplina.map(([disciplina, linhasDaDisciplina]) => (
                   <div key={disciplina}>
                     {/* Cabeçalho da Disciplina - para alinhar com a coluna de folhas */}
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-300 flex" style={{ minWidth: `${larguraTotalEtapas}px`, height: '57px' }}>
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-300 flex" style={{ minWidth: `${larguraTotalEtapas}px`, height: '44px' }}>
                       {ETAPAS.filter(e => !etapasExcluidas.includes(e)).map((etapa) => {
                         const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                         const isMinimizada = etapasMinimizadas[etapa];
@@ -1099,8 +1099,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                             key={`${disciplina}-${etapa}`}
                             className="border-r border-gray-200 flex-shrink-0"
                             style={{ 
-                              width: isMinimizada ? '50px' : `${(revisoesEtapa.length * 110) + 50}px`,
-                              minWidth: isMinimizada ? '50px' : `${(revisoesEtapa.length * 110) + 50}px`
+                              width: isMinimizada ? '40px' : `${(revisoesEtapa.length * 85) + 40}px`,
+                              minWidth: isMinimizada ? '40px' : `${(revisoesEtapa.length * 85) + 40}px`
                             }}
                           ></div>
                         );
@@ -1113,7 +1113,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                       const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
                       
                       return (
-                        <div key={linha.id} className="flex border-b border-gray-200 hover:bg-gray-50" style={{ minWidth: `${larguraTotalEtapas}px`, height: '60px' }}>
+                        <div key={linha.id} className="flex border-b border-gray-200 hover:bg-gray-50" style={{ minWidth: `${larguraTotalEtapas}px`, height: '48px' }}>
                           {etapasVisiveis.map((etapa) => {
                             const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                             const isMinimizada = etapasMinimizadas[etapa];
@@ -1123,39 +1123,39 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                               <div
                                 key={`${linha.id}-${etapa}`}
                                 className="border-r border-gray-200 last:border-r-0 flex-shrink-0"
-                                style={{ width: isMinimizada ? '50px' : `${(revisoesEtapa.length * 110) + 50}px`, minWidth: isMinimizada ? '50px' : `${(revisoesEtapa.length * 110) + 50}px` }}
+                                style={{ width: isMinimizada ? '40px' : `${(revisoesEtapa.length * 85) + 40}px`, minWidth: isMinimizada ? '40px' : `${(revisoesEtapa.length * 85) + 40}px` }}
                               >
                                 {isMinimizada ? (
-                                  <div className="h-full flex items-center justify-center p-1 bg-gray-50"></div>
+                                  <div className="h-full flex items-center justify-center p-0.5 bg-gray-50"></div>
                                 ) : (
                                   <div className="flex">
                                     {revisoesEtapa.map((revisao) => (
                                      <div
                                        key={`${linha.id}-${etapa}-${revisao}`}
-                                       className="border-r border-gray-100 p-2 flex-shrink-0 flex items-center"
-                                       style={{ width: '110px', minWidth: '110px' }}
+                                       className="border-r border-gray-100 p-1 flex-shrink-0 flex items-center"
+                                       style={{ width: '85px', minWidth: '85px' }}
                                      >
-                                       <div className="flex gap-1 group w-full relative">
+                                       <div className="flex gap-0.5 group w-full relative">
                                          <Input
                                            type="date"
                                            value={getDataValue(linha, etapa, revisao)}
                                            onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
-                                           className={`h-9 text-xs flex-1 pointer-events-auto relative z-10 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:hidden [&::-webkit-clear-button]:hidden ${!getDataValue(linha, etapa, revisao) ? '[color-scheme:light] [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-calendar-picker-indicator]:opacity-100' : ''}`}
+                                           className={`h-7 text-[10px] flex-1 pointer-events-auto relative z-10 px-1 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:hidden [&::-webkit-clear-button]:hidden ${!getDataValue(linha, etapa, revisao) ? '[color-scheme:light] [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-calendar-picker-indicator]:opacity-100' : ''}`}
                                            disabled={readOnly}
                                          />
                                          {!readOnly && getDataValue(linha, etapa, revisao) && (
                                            <button
                                              onClick={() => copiarDataParaBaixo(linha.id, etapa, revisao)}
-                                             className="text-purple-600 hover:text-purple-800 p-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 relative z-20"
+                                             className="text-purple-600 hover:text-purple-800 p-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 relative z-20"
                                              title="Preencher todas abaixo"
                                            >
-                                             <Wand2 className="w-3.5 h-3.5" />
+                                             <Wand2 className="w-3 h-3" />
                                            </button>
                                          )}
                                        </div>
                                      </div>
                                     ))}
-                                    <div className="p-1 flex-shrink-0" style={{ width: '50px', minWidth: '50px' }}></div>
+                                    <div className="p-0.5 flex-shrink-0" style={{ width: '40px', minWidth: '40px' }}></div>
                                   </div>
                                 )}
                               </div>
