@@ -632,6 +632,18 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
   }, [linhas, documentos]);
 
+  const larguraTotalEtapas = useMemo(() => {
+    const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
+    return etapasVisiveis.reduce((total, etapa) => {
+      const isMinimizada = etapasMinimizadas[etapa];
+      if (isMinimizada) {
+        return total + 60;
+      }
+      const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+      return total + ((revisoesEtapa.length * 140) + 60);
+    }, 0);
+  }, [ETAPAS, etapasExcluidas, etapasMinimizadas, revisoesPorEtapa]);
+
   const handleExportTemplate = () => {
     const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
     
@@ -967,7 +979,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           {/* Container de Etapas com Scroll Horizontal - 80% */}
           <div className="w-[80%] flex flex-col">
             <div className="flex-1 overflow-auto">
-              <div className="inline-block min-w-full">
+              <div style={{ minWidth: `${larguraTotalEtapas}px` }}>
                 {/* Cabeçalho Fixo das Etapas */}
                 <div className="bg-blue-100 border-b-2 border-gray-300 sticky top-0 z-20">
                   <div className="flex">
