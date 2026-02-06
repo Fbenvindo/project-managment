@@ -889,8 +889,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="flex h-[calc(100vh-300px)]">
-          {/* Container de Folhas Fixo - 20% */}
-          <div className="w-[20%] min-w-[250px] border-r-2 border-gray-300 flex flex-col bg-gray-50">
+          {/* Container de Folhas Fixo - 30% */}
+          <div className="w-[30%] border-r-2 border-gray-300 flex flex-col bg-gray-50">
             {/* Cabeçalho Fixo das Folhas */}
             <div className="bg-blue-100 border-b-2 border-gray-300 p-3 sticky top-0 z-30">
               <div className="flex items-center gap-2">
@@ -964,8 +964,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
             </div>
           </div>
 
-          {/* Container de Etapas com Scroll Horizontal - 80% */}
-          <div className="w-[80%] flex flex-col overflow-x-auto">
+          {/* Container de Etapas com Scroll Horizontal - 70% */}
+          <div className="w-[70%] flex flex-col">
             {/* Cabeçalho Fixo das Etapas */}
             <div className="bg-blue-100 border-b-2 border-gray-300 sticky top-0 z-20">
               <div className="flex">
