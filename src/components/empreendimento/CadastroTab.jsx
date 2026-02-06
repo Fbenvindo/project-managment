@@ -965,9 +965,9 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           </div>
 
           {/* Container de Etapas com Scroll Horizontal - 80% */}
-          <div className="w-[80%] flex flex-col overflow-x-auto">
+          <div className="w-[80%] flex flex-col">
             {/* Cabeçalho Fixo das Etapas */}
-            <div className="bg-blue-100 border-b-2 border-gray-300 sticky top-0 z-20">
+            <div className="bg-blue-100 border-b-2 border-gray-300 sticky top-0 z-20 overflow-x-auto scrollbar-hide">
               <div className="flex min-w-max">
                 {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
                   const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
@@ -1047,7 +1047,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
             </div>
 
             {/* Área de Dados com Scroll */}
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 overflow-auto">
               {linhas.length === 0 ? (
                 <div className="p-8 text-center text-gray-500">
                   Nenhum documento cadastrado
