@@ -1070,7 +1070,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 linhasPorDisciplina.map(([disciplina, linhasDaDisciplina]) => (
                   <div key={disciplina}>
                     {/* Cabeçalho da Disciplina - para alinhar com a coluna de folhas */}
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-300 flex" style={{ minWidth: `${larguraTotalEtapas}px` }}>
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-300 p-3 flex" style={{ minWidth: `${larguraTotalEtapas}px` }}>
                       {ETAPAS.filter(e => !etapasExcluidas.includes(e)).map((etapa) => {
                         const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                         const isMinimizada = etapasMinimizadas[etapa];
@@ -1080,8 +1080,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                             className="border-r border-gray-200 flex-shrink-0"
                             style={{ 
                               width: isMinimizada ? '50px' : `${(revisoesEtapa.length * 110) + 50}px`,
-                              minWidth: isMinimizada ? '50px' : `${(revisoesEtapa.length * 110) + 50}px`,
-                              height: '57px'
+                              minWidth: isMinimizada ? '50px' : `${(revisoesEtapa.length * 110) + 50}px`
                             }}
                           ></div>
                         );
