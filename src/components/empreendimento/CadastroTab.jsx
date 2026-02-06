@@ -992,7 +992,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           <div className="w-[80%] flex flex-col overflow-hidden">
             <div 
               ref={dataScrollRef}
-              className="flex-1 overflow-auto"
+              className="flex-1 overflow-x-auto overflow-y-auto"
               onScroll={(e) => {
                 if (folhasScrollRef.current && e.target.scrollTop !== folhasScrollRef.current.scrollTop) {
                   folhasScrollRef.current.scrollTop = e.target.scrollTop;
