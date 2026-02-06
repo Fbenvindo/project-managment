@@ -637,10 +637,10 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     return etapasVisiveis.reduce((total, etapa) => {
       const isMinimizada = etapasMinimizadas[etapa];
       if (isMinimizada) {
-        return total + 60;
+        return total + 50;
       }
       const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
-      return total + ((revisoesEtapa.length * 140) + 60);
+      return total + ((revisoesEtapa.length * 110) + 50);
     }, 0);
   }, [ETAPAS, etapasExcluidas, etapasMinimizadas, revisoesPorEtapa]);
 
@@ -992,7 +992,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                         <div
                           key={etapa}
                           className="border-r border-gray-300 last:border-r-0 relative group flex-shrink-0"
-                          style={{ width: isMinimizada ? '60px' : `${colSpanTotal * 140}px`, minWidth: isMinimizada ? '60px' : `${colSpanTotal * 140}px` }}
+                          style={{ width: isMinimizada ? '50px' : `${(revisoesEtapa.length * 110) + 50}px`, minWidth: isMinimizada ? '50px' : `${(revisoesEtapa.length * 110) + 50}px` }}
                         >
                           <div className="p-2 text-center font-semibold">
                             <div className="flex items-center justify-center gap-2">
@@ -1025,7 +1025,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                                 <div
                                   key={`${etapa}-${revisao}`}
                                   className="border-r border-gray-200 p-2 text-center font-medium text-sm"
-                                  style={{ width: '140px', minWidth: '140px' }}
+                                  style={{ width: '110px', minWidth: '110px' }}
                                 >
                                   <div className="flex items-center justify-center gap-1">
                                     <span>{revisao}</span>
@@ -1041,7 +1041,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                                   </div>
                                 </div>
                               ))}
-                              <div className="bg-green-50 p-1 text-center" style={{ width: '60px', minWidth: '60px' }}>
+                              <div className="bg-green-50 p-1 text-center" style={{ width: '50px', minWidth: '50px' }}>
                                 {!readOnly && (
                                   <button
                                     onClick={() => handleAddRevisao(etapa)}
@@ -1085,7 +1085,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                               <div
                                 key={`${linha.id}-${etapa}`}
                                 className="border-r border-gray-200 last:border-r-0 flex-shrink-0"
-                                style={{ width: isMinimizada ? '60px' : `${colSpanTotal * 140}px`, minWidth: isMinimizada ? '60px' : `${colSpanTotal * 140}px` }}
+                                style={{ width: isMinimizada ? '50px' : `${(revisoesEtapa.length * 110) + 50}px`, minWidth: isMinimizada ? '50px' : `${(revisoesEtapa.length * 110) + 50}px` }}
                               >
                                 {isMinimizada ? (
                                   <div className="h-full flex items-center justify-center p-1 bg-gray-50"></div>
@@ -1095,7 +1095,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                                       <div
                                         key={`${linha.id}-${etapa}-${revisao}`}
                                         className="border-r border-gray-100 p-1 flex-shrink-0"
-                                        style={{ width: '140px', minWidth: '140px' }}
+                                        style={{ width: '110px', minWidth: '110px' }}
                                       >
                                         <div className="flex gap-1 group">
                                           <Input
@@ -1117,7 +1117,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                                         </div>
                                       </div>
                                     ))}
-                                    <div className="p-1 flex-shrink-0" style={{ width: '60px', minWidth: '60px' }}></div>
+                                    <div className="p-1 flex-shrink-0" style={{ width: '50px', minWidth: '50px' }}></div>
                                   </div>
                                 )}
                               </div>
