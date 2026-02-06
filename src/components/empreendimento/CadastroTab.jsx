@@ -44,6 +44,9 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   const [massEditRevisao, setMassEditRevisao] = useState('');
   const [massEditData, setMassEditData] = useState('');
   const [etapasMinimizadas, setEtapasMinimizadas] = useState({});
+  
+  const folhasScrollRef = useRef(null);
+  const dataScrollRef = useRef(null);
 
   useEffect(() => {
     if (empreendimento?.id && linhas.length === 0) {
