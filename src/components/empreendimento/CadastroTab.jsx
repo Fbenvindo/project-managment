@@ -8,6 +8,13 @@ import { DataCadastro, Documento } from "@/entities/all";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { format } from "date-fns";
 
+// Estilos para esconder scrollbar
+const scrollbarHideStyles = `
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+`;
+
 // As etapas serão carregadas do empreendimento
 
 const DEFAULT_REVISOES = ["R00", "R01", "R02"];
@@ -836,6 +843,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
   return (
     <div className="space-y-4 relative">
+      <style>{scrollbarHideStyles}</style>
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
           <h2 className="text-xl font-bold text-gray-800">Datas de Cadastro</h2>
@@ -925,7 +933,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
             {/* Lista de Folhas */}
             <div 
               ref={folhasScrollRef}
-              className="flex-1 overflow-y-auto"
+              className="flex-1 overflow-y-auto scrollbar-hide"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               onScroll={(e) => {
                 if (dataScrollRef.current) {
                   dataScrollRef.current.scrollTop = e.target.scrollTop;
@@ -992,7 +1001,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           <div className="w-[80%] flex flex-col overflow-hidden">
             <div 
               ref={dataScrollRef}
-              className="flex-1 overflow-x-auto overflow-y-auto"
+              className="flex-1 overflow-x-auto overflow-y-auto scrollbar-hide"
+              style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               onScroll={(e) => {
                 if (folhasScrollRef.current && e.target.scrollTop !== folhasScrollRef.current.scrollTop) {
                   folhasScrollRef.current.scrollTop = e.target.scrollTop;
