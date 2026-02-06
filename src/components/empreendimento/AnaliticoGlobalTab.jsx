@@ -3126,7 +3126,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     }
 
     // Buscar TODOS os planejamentos da etapa diretamente
-    const todosPlanejamentos = await retryWithBackoff(
+    let todosPlanejamentos = await retryWithBackoff(
       () => PlanejamentoAtividade.filter({
         empreendimento_id: empreendimentoId,
         etapa: etapa
@@ -3134,9 +3134,58 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       3, 500, `getTodosPlanejamentosEtapa-${etapa}`
     );
 
+    // Se não há planejamentos, criar planejamentos concluídos para todas as atividades da etapa
     if (todosPlanejamentos.length === 0) {
-      alert(`Nenhuma atividade planejada encontrada para a etapa "${etapa}".\n\nAs atividades precisam estar planejadas (com executor definido) antes de serem concluídas.`);
-      return;
+      console.log(`   ℹ️ Nenhum planejamento encontrado para etapa "${etapa}". Criando planejamentos concluídos...`);
+      
+      const atividadesEtapa = combinedActivities.filter(ativ => ativ.etapa === etapa && !ativ.isEditable);
+      
+      if (atividadesEtapa.length === 0) {
+        alert(`Nenhuma atividade encontrada para a etapa "${etapa}".`);
+        return;
+      }
+      
+      const hoje = format(new Date(), 'yyyy-MM-dd');
+      let novosPlanejamentos = [];
+      
+      for (const ativ of atividadesEtapa) {
+        const atividadeId = ativ.base_atividade_id || ativ.id;
+        const atividadeOriginalArr = await retryWithBackoff(
+          () => Atividade.filter({ id: atividadeId }),
+          3, 500, `getActivity-${atividadeId}`
+        );
+        
+        if (!atividadeOriginalArr || atividadeOriginalArr.length === 0) continue;
+        
+        const atividadeOriginal = atividadeOriginalArr[0];
+        const documentosComAtividade = documentos.filter(doc => {
+          const disciplinaMatch = doc.disciplina === atividadeOriginal.disciplina;
+          const subdisciplinasDoc = doc.subdisciplinas || [];
+          const subdisciplinaMatch = subdisciplinasDoc.includes(atividadeOriginal.subdisciplina);
+          return disciplinaMatch && subdisciplinaMatch;
+        });
+        
+        for (const doc of documentosComAtividade) {
+          const novoPlanejamento = await retryWithBackoff(
+            () => PlanejamentoAtividade.create({
+              empreendimento_id: empreendimentoId,
+              atividade_id: atividadeId,
+              documento_id: doc.id,
+              etapa: etapa,
+              descritivo: atividadeOriginal.atividade,
+              tempo_planejado: atividadeOriginal.tempo || 0,
+              status: 'concluido',
+              termino_real: hoje,
+              horas_por_dia: {}
+            }),
+            3, 500, `createEtapaPlan-${doc.id}-${atividadeId}`
+          );
+          novosPlanejamentos.push(novoPlanejamento);
+        }
+      }
+      
+      todosPlanejamentos = novosPlanejamentos;
+      console.log(`   ✅ ${novosPlanejamentos.length} planejamento(s) concluído(s) criado(s)`);
     }
 
     if (!window.confirm(`Tem certeza que deseja CONCLUIR TODAS as atividades da etapa "${etapa}" em TODAS as folhas do empreendimento?\n\n${todosPlanejamentos.length} planejamento(s) serão concluídos.`)) {
