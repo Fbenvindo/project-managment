@@ -427,11 +427,11 @@ export default function PRETab({ empreendimento, readOnly = false }) {
               </Card>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse text-sm">
+            <div className="overflow-x-auto relative">
+              <table className="w-full border-collapse text-sm relative">
                 <thead>
                   <tr>
-                    <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '200px', minWidth: '200px' }}>
+                    <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-30 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '200px', minWidth: '200px', maxWidth: '200px' }}>
                       Folha
                     </th>
                     {SECOES.map(secao => {
@@ -469,7 +469,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                   {items.map((item) => (
                     <tr key={item.id} className="hover:bg-gray-50">
                       {/* Coluna Folha - Fixa */}
-                      <td className="border border-gray-300 p-2 sticky left-0 bg-white z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '200px', minWidth: '200px' }}>
+                      <td className="border border-gray-300 p-2 sticky left-0 bg-white z-30 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '200px', minWidth: '200px', maxWidth: '200px' }}>
                         <div className="text-sm font-medium text-gray-800">{item.descritiva || 'Sem descrição'}</div>
                         <div className="text-xs text-gray-500 mt-1">Item: {item.item}</div>
                       </td>
