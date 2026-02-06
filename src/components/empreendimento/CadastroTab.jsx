@@ -1001,8 +1001,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
             >
               <div style={{ width: `${larguraTotalEtapas}px` }}>
                 {/* Cabeçalho Fixo das Etapas */}
-                <div className="bg-blue-100 border-b-2 border-gray-300 sticky top-0 z-20" style={{ minWidth: `${larguraTotalEtapas}px` }}>
-                  <div className="flex">
+                <div className="bg-blue-100 border-b-2 border-gray-300 sticky top-0 z-20" style={{ minWidth: `${larguraTotalEtapas}px`, minHeight: '97px' }}>
+                  <div className="flex h-full">
                     {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
                       const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                       const isMinimizada = etapasMinimizadas[etapa];
@@ -1011,10 +1011,10 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                       return (
                         <div
                           key={etapa}
-                          className="border-r border-gray-300 last:border-r-0 relative group flex-shrink-0"
+                          className="border-r border-gray-300 last:border-r-0 relative group flex-shrink-0 flex flex-col"
                           style={{ width: isMinimizada ? '50px' : `${(revisoesEtapa.length * 110) + 50}px`, minWidth: isMinimizada ? '50px' : `${(revisoesEtapa.length * 110) + 50}px` }}
                         >
-                          <div className="p-2 text-center font-semibold">
+                          <div className="p-2 text-center font-semibold flex-1 flex items-center justify-center">
                             <div className="flex items-center justify-center gap-2">
                               <button
                                 onClick={() => toggleMinimizarEtapa(etapa)}
