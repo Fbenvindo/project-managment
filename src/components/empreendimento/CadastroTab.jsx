@@ -203,6 +203,20 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         ...prev,
         [etapa]: ['R00']
       }));
+      // Marcar revisão como existente nas linhas mesmo sem dados
+      setLinhas(prev => prev.map(linha => {
+        const novasDatas = { ...linha.datas };
+        if (!novasDatas[etapa]) {
+          novasDatas[etapa] = {};
+        }
+        if (!novasDatas[etapa]._revisoes_existentes) {
+          novasDatas[etapa]._revisoes_existentes = [];
+        }
+        if (!novasDatas[etapa]._revisoes_existentes.includes('R00')) {
+          novasDatas[etapa]._revisoes_existentes.push('R00');
+        }
+        return { ...linha, datas: novasDatas };
+      }));
       return;
     }
     const ultimaRevisao = revisoesEtapa[revisoesEtapa.length - 1];
@@ -213,6 +227,20 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     setRevisoesPorEtapa(prev => ({
       ...prev,
       [etapa]: [...(prev[etapa] || []), novaRevisao]
+    }));
+    // Marcar revisão como existente nas linhas mesmo sem dados
+    setLinhas(prev => prev.map(linha => {
+      const novasDatas = { ...linha.datas };
+      if (!novasDatas[etapa]) {
+        novasDatas[etapa] = {};
+      }
+      if (!novasDatas[etapa]._revisoes_existentes) {
+        novasDatas[etapa]._revisoes_existentes = [];
+      }
+      if (!novasDatas[etapa]._revisoes_existentes.includes(novaRevisao)) {
+        novasDatas[etapa]._revisoes_existentes.push(novaRevisao);
+      }
+      return { ...linha, datas: novasDatas };
     }));
   };
 
