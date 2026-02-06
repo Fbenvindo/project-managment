@@ -643,7 +643,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         return total + 40;
       }
       const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
-      return total + ((revisoesEtapa.length * 85) + 40);
+      return total + ((revisoesEtapa.length * 110) + 40);
     }, 0);
   }, [ETAPAS, etapasExcluidas, etapasMinimizadas, revisoesPorEtapa]);
 
@@ -1012,7 +1012,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                         <div
                           key={etapa}
                           className="border-r border-gray-300 last:border-r-0 relative group flex-shrink-0 flex flex-col"
-                          style={{ width: isMinimizada ? '40px' : `${(revisoesEtapa.length * 85) + 40}px`, minWidth: isMinimizada ? '40px' : `${(revisoesEtapa.length * 85) + 40}px` }}
+                          style={{ width: isMinimizada ? '40px' : `${(revisoesEtapa.length * 110) + 40}px`, minWidth: isMinimizada ? '40px' : `${(revisoesEtapa.length * 110) + 40}px` }}
                         >
                           <div className="p-1.5 text-center font-semibold flex-1 flex items-center justify-center">
                             <div className="flex items-center justify-center gap-1">
@@ -1045,7 +1045,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                                 <div
                                   key={`${etapa}-${revisao}`}
                                   className="border-r border-gray-200 p-1 text-center font-medium text-xs"
-                                  style={{ width: '85px', minWidth: '85px' }}
+                                  style={{ width: '110px', minWidth: '110px' }}
                                 >
                                   <div className="flex items-center justify-center gap-0.5">
                                     <span>{revisao}</span>
@@ -1099,8 +1099,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                             key={`${disciplina}-${etapa}`}
                             className="border-r border-gray-200 flex-shrink-0"
                             style={{ 
-                              width: isMinimizada ? '40px' : `${(revisoesEtapa.length * 85) + 40}px`,
-                              minWidth: isMinimizada ? '40px' : `${(revisoesEtapa.length * 85) + 40}px`
+                              width: isMinimizada ? '40px' : `${(revisoesEtapa.length * 110) + 40}px`,
+                              minWidth: isMinimizada ? '40px' : `${(revisoesEtapa.length * 110) + 40}px`
                             }}
                           ></div>
                         );
@@ -1123,7 +1123,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                               <div
                                 key={`${linha.id}-${etapa}`}
                                 className="border-r border-gray-200 last:border-r-0 flex-shrink-0"
-                                style={{ width: isMinimizada ? '40px' : `${(revisoesEtapa.length * 85) + 40}px`, minWidth: isMinimizada ? '40px' : `${(revisoesEtapa.length * 85) + 40}px` }}
+                                style={{ width: isMinimizada ? '40px' : `${(revisoesEtapa.length * 110) + 40}px`, minWidth: isMinimizada ? '40px' : `${(revisoesEtapa.length * 110) + 40}px` }}
                               >
                                 {isMinimizada ? (
                                   <div className="h-full flex items-center justify-center p-0.5 bg-gray-50"></div>
@@ -1133,7 +1133,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                                      <div
                                        key={`${linha.id}-${etapa}-${revisao}`}
                                        className="border-r border-gray-100 p-0.5 flex-shrink-0 flex items-center relative group"
-                                       style={{ width: '85px', minWidth: '85px' }}
+                                       style={{ width: '110px', minWidth: '110px' }}
                                      >
                                        <input
                                          type="date"
