@@ -2491,23 +2491,67 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       let concluidos = 0;
       let jaFinalizados = 0;
       
-      for (const plano of planejamentos) {
-        if (plano.status === 'concluido') {
-          jaFinalizados++;
-          console.log(`   ⏭️ Planejamento ${plano.id} já estava concluído`);
-          continue;
-        }
+      // Se não há planejamentos, criar um para cada folha com status concluído
+      if (planejamentos.length === 0) {
+        console.log(`   ℹ️ Nenhum planejamento encontrado. Criando planejamentos concluídos para cada folha...`);
         
-        await retryWithBackoff(
-          () => PlanejamentoAtividade.update(plano.id, {
-            status: 'concluido',
-            termino_real: hoje
-          }),
-          3, 500, `concluirPlan-${plano.id}`
+        const atividadeOriginalArr = await retryWithBackoff(
+          () => Atividade.filter({ id: atividadeId }),
+          3, 500, `getOriginalActivity-${atividadeId}`
         );
         
-        concluidos++;
-        console.log(`   ✅ Planejamento ${plano.id} concluído`);
+        if (!atividadeOriginalArr || atividadeOriginalArr.length === 0) {
+          throw new Error("Atividade original não encontrada.");
+        }
+        
+        const atividadeOriginal = atividadeOriginalArr[0];
+        const documentosComAtividade = documentos.filter(doc => {
+          const disciplinaMatch = doc.disciplina === atividadeOriginal.disciplina;
+          const subdisciplinasDoc = doc.subdisciplinas || [];
+          const subdisciplinaMatch = subdisciplinasDoc.includes(atividadeOriginal.subdisciplina);
+          return disciplinaMatch && subdisciplinaMatch;
+        });
+        
+        console.log(`   📋 Criando planejamentos para ${documentosComAtividade.length} folha(s)...`);
+        
+        for (const doc of documentosComAtividade) {
+          await retryWithBackoff(
+            () => PlanejamentoAtividade.create({
+              empreendimento_id: empreendimentoId,
+              atividade_id: atividadeId,
+              documento_id: doc.id,
+              etapa: atividadeOriginal.etapa,
+              descritivo: atividadeOriginal.atividade,
+              tempo_planejado: atividadeOriginal.tempo || 0,
+              status: 'concluido',
+              termino_real: hoje,
+              horas_por_dia: {}
+            }),
+            3, 500, `createConcludedPlan-${doc.id}-${atividadeId}`
+          );
+          concluidos++;
+          console.log(`   ✅ Planejamento concluído criado para folha ${doc.numero}`);
+        }
+      } else {
+        // Atualizar planejamentos existentes
+        for (const plano of planejamentos) {
+          if (plano.status === 'concluido') {
+            jaFinalizados++;
+            console.log(`   ⏭️ Planejamento ${plano.id} já estava concluído`);
+            continue;
+          }
+          
+          await retryWithBackoff(
+            () => PlanejamentoAtividade.update(plano.id, {
+              status: 'concluido',
+              termino_real: hoje
+            }),
+            3, 500, `concluirPlan-${plano.id}`
+          );
+          
+          concluidos++;
+          console.log(`   ✅ Planejamento ${plano.id} concluído`);
+        }
       }
       
       console.log(`\n✅ ========================================`);
