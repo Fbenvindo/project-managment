@@ -1132,21 +1132,9 @@ export default function DocumentosTab({
   }, [filteredDocumentos]);
 
   const etapasDisponiveis = useMemo(() => {
-    // Sempre usar as etapas padrão
-    const etapasPadrao = ['Estudo Preliminar', 'Ante-Projeto', 'Projeto Básico', 'Projeto Executivo', 'Liberado para Obra'];
-    
-    // Se o empreendimento tem etapas cadastradas, usar apenas as que estão cadastradas
-    if (empreendimento?.etapas && empreendimento.etapas.length > 0) {
-      const etapasCadastradas = empreendimento.etapas.filter(etapa =>
-        etapa !== 'Concepção' && etapa !== 'Planejamento'
-      );
-      // Retornar apenas as etapas padrão que estão cadastradas no empreendimento
-      return etapasPadrao.filter(etapa => etapasCadastradas.includes(etapa));
-    }
-    
-    // Se não há etapas cadastradas, retornar todas as etapas padrão
-    return etapasPadrao;
-  }, [empreendimento]);
+    // Sempre retornar todas as etapas padrão
+    return ['Estudo Preliminar', 'Ante-Projeto', 'Projeto Básico', 'Projeto Executivo', 'Liberado para Obra'];
+  }, []);
 
   const usuariosOrdenados = useMemo(() => {
     return [...usuarios].sort((a, b) => {
