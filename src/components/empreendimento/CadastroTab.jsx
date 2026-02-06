@@ -989,7 +989,15 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
           {/* Container de Etapas com Scroll Horizontal - 80% */}
           <div className="w-[80%] flex flex-col overflow-hidden">
-            <div className="flex-1 overflow-auto">
+            <div 
+              ref={dataScrollRef}
+              className="flex-1 overflow-auto"
+              onScroll={(e) => {
+                if (folhasScrollRef.current && e.target.scrollTop !== folhasScrollRef.current.scrollTop) {
+                  folhasScrollRef.current.scrollTop = e.target.scrollTop;
+                }
+              }}
+            >
               <div style={{ width: `${larguraTotalEtapas}px` }}>
                 {/* Cabeçalho Fixo das Etapas */}
                 <div className="bg-blue-100 border-b-2 border-gray-300 sticky top-0 z-20" style={{ minWidth: `${larguraTotalEtapas}px` }}>
