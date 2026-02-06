@@ -397,6 +397,15 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
         { key: 'planejamento_hidraulica_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
       ]
     },
+    eletrica: {
+      title: 'ELÉTRICA',
+      columns: [
+        { key: 'projeto', label: 'PROJETO', width: '200px' },
+        { key: 'planejamento_eletrica_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+        { key: 'planejamento_eletrica_calculo', label: 'CÁLCULO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
+        { key: 'planejamento_eletrica_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
+      ]
+    },
     incendio: {
       title: 'INCÊNDIO',
       columns: [
