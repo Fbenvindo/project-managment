@@ -981,7 +981,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
             <div className="flex-1 overflow-auto">
               <div style={{ minWidth: `${larguraTotalEtapas}px` }}>
                 {/* Cabeçalho Fixo das Etapas */}
-                <div className="bg-blue-100 border-b-2 border-gray-300 sticky top-0 z-20">
+                <div className="bg-blue-100 border-b-2 border-gray-300 sticky top-0 z-20" style={{ minWidth: `${larguraTotalEtapas}px` }}>
                   <div className="flex">
                     {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
                       const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
@@ -991,7 +991,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                       return (
                         <div
                           key={etapa}
-                          className="border-r border-gray-300 last:border-r-0 relative group"
+                          className="border-r border-gray-300 last:border-r-0 relative group flex-shrink-0"
                           style={{ width: isMinimizada ? '60px' : `${colSpanTotal * 140}px`, minWidth: isMinimizada ? '60px' : `${colSpanTotal * 140}px` }}
                         >
                           <div className="p-2 text-center font-semibold">
@@ -1061,7 +1061,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 </div>
 
                 {/* Área de Dados */}
-                <div>
+                <div style={{ minWidth: `${larguraTotalEtapas}px` }}>
               {linhas.length === 0 ? (
                 <div className="p-8 text-center text-gray-500">
                   Nenhum documento cadastrado
@@ -1075,7 +1075,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                       const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
                       
                       return (
-                        <div key={linha.id} className="flex border-b border-gray-200 hover:bg-gray-50">
+                        <div key={linha.id} className="flex border-b border-gray-200 hover:bg-gray-50" style={{ minWidth: `${larguraTotalEtapas}px` }}>
                           {etapasVisiveis.map((etapa) => {
                             const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                             const isMinimizada = etapasMinimizadas[etapa];
@@ -1084,7 +1084,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                             return (
                               <div
                                 key={`${linha.id}-${etapa}`}
-                                className="border-r border-gray-200 last:border-r-0"
+                                className="border-r border-gray-200 last:border-r-0 flex-shrink-0"
                                 style={{ width: isMinimizada ? '60px' : `${colSpanTotal * 140}px`, minWidth: isMinimizada ? '60px' : `${colSpanTotal * 140}px` }}
                               >
                                 {isMinimizada ? (
@@ -1094,7 +1094,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                                     {revisoesEtapa.map((revisao) => (
                                       <div
                                         key={`${linha.id}-${etapa}-${revisao}`}
-                                        className="border-r border-gray-100 p-1"
+                                        className="border-r border-gray-100 p-1 flex-shrink-0"
                                         style={{ width: '140px', minWidth: '140px' }}
                                       >
                                         <div className="flex gap-1 group">
@@ -1117,7 +1117,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                                         </div>
                                       </div>
                                     ))}
-                                    <div className="p-1" style={{ width: '60px', minWidth: '60px' }}></div>
+                                    <div className="p-1 flex-shrink-0" style={{ width: '60px', minWidth: '60px' }}></div>
                                   </div>
                                 )}
                               </div>
