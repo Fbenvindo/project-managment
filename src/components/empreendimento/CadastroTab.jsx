@@ -135,10 +135,17 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 }
                 
                 Object.keys(etapaData).forEach(rev => {
-                  if (rev !== '_excluida' && rev !== '_revisoes_excluidas') {
+                  if (rev !== '_excluida' && rev !== '_revisoes_excluidas' && rev !== '_revisoes_existentes') {
                     revisoesMap[etapa].add(rev);
                   }
                 });
+                
+                // Carregar revisões que foram criadas (mesmo sem dados)
+                if (etapaData._revisoes_existentes && Array.isArray(etapaData._revisoes_existentes)) {
+                  etapaData._revisoes_existentes.forEach(rev => {
+                    revisoesMap[etapa].add(rev);
+                  });
+                }
                 
                 // Detectar revisões excluídas
                 if (etapaData._revisoes_excluidas && Array.isArray(etapaData._revisoes_excluidas)) {
