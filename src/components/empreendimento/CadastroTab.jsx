@@ -554,9 +554,11 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           if (!etapaData) return false;
           // Verificar se tem marcador de exclusão
           if (etapaData._excluida) return true;
+          // Verificar se tem revisões existentes (mesmo sem dados preenchidos)
+          if (etapaData._revisoes_existentes && Array.isArray(etapaData._revisoes_existentes) && etapaData._revisoes_existentes.length > 0) return true;
           // Verificar se tem alguma data preenchida
           return Object.entries(etapaData).some(([key, data]) => 
-            key !== '_excluida' && data && typeof data === 'string' && data.trim()
+            key !== '_excluida' && key !== '_revisoes_excluidas' && key !== '_revisoes_existentes' && data && typeof data === 'string' && data.trim()
           );
         });
         
