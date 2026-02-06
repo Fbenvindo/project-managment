@@ -940,7 +940,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 linhasPorDisciplina.map(([disciplina, linhasDaDisciplina]) => (
                   <div key={disciplina}>
                     {/* Cabeçalho da Disciplina */}
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-300 p-3">
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-300 p-3" style={{ minHeight: '57px' }}>
                       <div className="flex items-center gap-2">
                         <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
                         <h3 className="font-semibold text-base text-gray-800">{disciplina}</h3>
@@ -957,6 +957,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                         <div
                           key={linha.id}
                           className="border-b border-gray-200 p-3 hover:bg-gray-100 transition-colors"
+                          style={{ minHeight: '60px' }}
                         >
                           <div className="flex items-center gap-2">
                             {!readOnly && (
@@ -1089,7 +1090,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 linhasPorDisciplina.map(([disciplina, linhasDaDisciplina]) => (
                   <div key={disciplina}>
                     {/* Cabeçalho da Disciplina - para alinhar com a coluna de folhas */}
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-300 p-3 flex" style={{ minWidth: `${larguraTotalEtapas}px` }}>
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-300 flex" style={{ minWidth: `${larguraTotalEtapas}px`, minHeight: '57px' }}>
                       {ETAPAS.filter(e => !etapasExcluidas.includes(e)).map((etapa) => {
                         const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                         const isMinimizada = etapasMinimizadas[etapa];
@@ -1112,7 +1113,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                       const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
                       
                       return (
-                        <div key={linha.id} className="flex border-b border-gray-200 hover:bg-gray-50" style={{ minWidth: `${larguraTotalEtapas}px` }}>
+                        <div key={linha.id} className="flex border-b border-gray-200 hover:bg-gray-50" style={{ minWidth: `${larguraTotalEtapas}px`, minHeight: '60px' }}>
                           {etapasVisiveis.map((etapa) => {
                             const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                             const isMinimizada = etapasMinimizadas[etapa];
