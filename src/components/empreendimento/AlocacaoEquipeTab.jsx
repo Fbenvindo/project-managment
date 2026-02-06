@@ -465,7 +465,8 @@ export default function AlocacaoEquipeTab({
       if (!alocacao[executor]) {
         alocacao[executor] = {
           planejado: {},
-          reprogramado: {}
+          reprogramado: {},
+          realizado: {}
         };
       }
 
@@ -492,6 +493,31 @@ export default function AlocacaoEquipeTab({
             const exists = alocacao[executor].planejado[dataStr].find(i => i.label === label);
             if (!exists) {
               alocacao[executor].planejado[dataStr].push({ label, cor: empCor, empNome });
+            }
+          }
+        });
+      }
+
+      // Processar horas_executadas_por_dia para datas realizadas
+      if (plan.horas_executadas_por_dia && typeof plan.horas_executadas_por_dia === 'object') {
+        Object.entries(plan.horas_executadas_por_dia).forEach(([dataStr, horas]) => {
+          if (Number(horas) > 0) {
+            if (!alocacao[executor].realizado[dataStr]) {
+              alocacao[executor].realizado[dataStr] = [];
+            }
+            
+            const empId = plan.empreendimento_id;
+            const emp = empreendimentosMap[empId];
+            const empNome = emp?.nome || 'Sem Emp.';
+            const empCor = coresEmpreendimentos[empId] || '#6B7280';
+            
+            const doc = plan.documento_id ? documentosMap[plan.documento_id] : null;
+            const docNumero = doc?.numero || null;
+            
+            const label = docNumero || empNome.substring(0, 3).toUpperCase();
+            const exists = alocacao[executor].realizado[dataStr].find(i => i.label === label);
+            if (!exists) {
+              alocacao[executor].realizado[dataStr].push({ label, cor: empCor, empNome });
             }
           }
         });
@@ -602,14 +628,14 @@ export default function AlocacaoEquipeTab({
                   {/* Linhas de cada usuário */}
                   {usuariosEquipe.map(usuario => {
                     const email = usuario.email;
-                    const alocacaoUser = alocacaoPorUsuarioDia[email] || { planejado: {}, reprogramado: {} };
+                    const alocacaoUser = alocacaoPorUsuarioDia[email] || { planejado: {}, reprogramado: {}, realizado: {} };
                     const osManuaisUser = osManuais[email] || {};
                     
                     return (
                       <React.Fragment key={usuario.id}>
                         {/* Linha Programado */}
                         <tr className="bg-gray-100">
-                          <td className="border border-gray-300 p-1 sticky left-0 bg-gray-100 z-10" rowSpan={2}>
+                          <td className="border border-gray-300 p-1 sticky left-0 bg-gray-100 z-10" rowSpan={3}>
                             <div className="font-medium">{usuario.nome || usuario.full_name}</div>
                             <div className="text-gray-500 text-xs">{usuario.cargo || ''}</div>
                           </td>
@@ -677,6 +703,39 @@ export default function AlocacaoEquipeTab({
                                       title="Clique para remover"
                                     >
                                       {item.label} ×
+                                    </span>
+                                  ))}
+                                </div>
+                              </td>
+                            );
+                          })}
+                        </tr>
+
+                        {/* Linha Realizado */}
+                        <tr className="bg-white">
+                          <td className="border border-gray-300 p-1 text-xs font-medium">Realizado</td>
+                          {diasExibidos.map(dia => {
+                            const dataStr = format(dia, 'yyyy-MM-dd');
+                            const items = alocacaoUser.realizado[dataStr] || [];
+                            const hasItems = items.length > 0;
+                            
+                            return (
+                              <td 
+                                key={dataStr}
+                                className={`border border-gray-300 p-0.5 text-center ${
+                                  dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-200' : ''
+                                }`}
+                                style={hasItems ? { backgroundColor: '#FEF3C7' } : {}}
+                                title={hasItems ? items.map(i => `${i.label} (${i.empNome})`).join(', ') : ''}
+                              >
+                                <div className="flex flex-wrap gap-0.5 justify-center">
+                                  {items.map((item, idx) => (
+                                    <span 
+                                      key={idx} 
+                                      className="px-1 rounded text-white text-[10px] font-medium"
+                                      style={{ backgroundColor: item.cor }}
+                                    >
+                                      {item.label}
                                     </span>
                                   ))}
                                 </div>
