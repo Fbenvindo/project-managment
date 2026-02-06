@@ -578,8 +578,6 @@ export default function DocumentosTab({
         console.log(`\n✅ PLANEJAMENTO CONCLUÍDO!`);
         console.log(`   Tempo total: ${tempoTotal.toFixed(1)}h`);
         console.log(`   Período: ${format(parseISO(inicioPlanejado), 'dd/MM/yyyy')} a ${format(parseISO(terminoPlanejado), 'dd/MM/yyyy')}`);
-        
-        alert(`✅ Documento planejado com sucesso!\nEtapa: ${etapa}\nTempo: ${tempoTotal.toFixed(1)}h\nPeríodo: ${format(parseISO(inicioPlanejado), 'dd/MM/yyyy')} a ${format(parseISO(terminoPlanejado), 'dd/MM/yyyy')}`);
 
     } catch (error) {
         console.error("❌ Erro no planejamento automático:", error);
@@ -899,10 +897,29 @@ export default function DocumentosTab({
 
   const handleSaveDocEtapaPlanning = useCallback(() => {
     setCargaDiariaCache({});
-    onUpdate();
+    // Atualizar dados silenciosamente em background
+    setTimeout(() => {
+      retryWithBackoff(
+        () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimento.id }),
+        3, 500, 'refreshPlanejamentosAtividadeSilent'
+      ).then(plansAtividade => {
+        retryWithBackoff(
+          () => PlanejamentoDocumento.filter({ empreendimento_id: empreendimento.id }),
+          3, 500, 'refreshPlanejamentosDocumentoSilent'
+        ).then(plansDocumento => {
+          const allPlans = [
+            ...(plansAtividade || []).map(p => ({ ...p, tipo_plano: 'atividade' })),
+            ...(plansDocumento || []).map(p => ({ ...p, tipo_plano: 'documento' }))
+          ];
+          setLocalPlanejamentos(allPlans);
+        });
+      }).catch(err => {
+        console.warn("Erro ao atualizar planejamentos em background:", err);
+      });
+    }, 200);
     handleCloseDocEtapaModal();
     setExecutorPreSelecionado(null);
-  }, [onUpdate, handleCloseDocEtapaModal]);
+  }, [empreendimento.id, handleCloseDocEtapaModal]);
 
   const toggleRow = useCallback((id) => {
     setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
@@ -1925,6 +1942,27 @@ export default function DocumentosTab({
             setCargaDiariaCache({});
             
             console.log(`✅ Planejamento em sequência concluído para todos os documentos!`);
+            
+            // Atualizar planejamentos em background silenciosamente
+            setTimeout(() => {
+              retryWithBackoff(
+                () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimento.id }),
+                3, 500, 'refreshPlansAtividadeSilent'
+              ).then(plansAtividade => {
+                retryWithBackoff(
+                  () => PlanejamentoDocumento.filter({ empreendimento_id: empreendimento.id }),
+                  3, 500, 'refreshPlansDocumentoSilent'
+                ).then(plansDocumento => {
+                  const allPlans = [
+                    ...(plansAtividade || []).map(p => ({ ...p, tipo_plano: 'atividade' })),
+                    ...(plansDocumento || []).map(p => ({ ...p, tipo_plano: 'documento' }))
+                  ];
+                  setLocalPlanejamentos(allPlans);
+                });
+              }).catch(err => {
+                console.warn("Erro ao atualizar planejamentos em background:", err);
+              });
+            }, 200);
             
         } catch (error) {
             console.error("❌ Erro ao definir executor e planejar:", error);
