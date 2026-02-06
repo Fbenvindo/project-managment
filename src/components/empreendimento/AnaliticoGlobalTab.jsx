@@ -2627,17 +2627,21 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           );
         }
         
-        // Atualizar combinedActivities de forma otimista (instantâneo)
+        // Atualizar combinedActivities de forma otimista e completa
         setCombinedActivities(prev => {
           return prev.map(ativ => {
             if (ativ.base_atividade_id === atividadeId || ativ.id === atividadeId) {
-              return { ...ativ, executor_principal: null };
+              return { 
+                ...ativ, 
+                executor_principal: null,
+                status: 'Disponível'
+              };
             }
             return ativ;
           });
         });
         
-        // Atualizar planejamentos em background (sem esperar e sem onUpdate)
+        // Atualizar planejamentos em background silenciosamente (sem onUpdate)
         setTimeout(() => {
           retryWithBackoff(
             () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }),
@@ -2955,17 +2959,21 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`   Atualizados: ${planejamentosJaExistentes}`);
       console.log(`✅ ========================================\n`);
       
-      // Atualizar combinedActivities de forma otimista (instantâneo)
+      // Atualizar combinedActivities de forma otimista e completa
       setCombinedActivities(prev => {
         return prev.map(ativ => {
           if (ativ.base_atividade_id === atividadeId || ativ.id === atividadeId) {
-            return { ...ativ, executor_principal: executorEmail };
+            return { 
+              ...ativ, 
+              executor_principal: executorEmail,
+              status: executorEmail ? 'Planejada' : 'Disponível'
+            };
           }
           return ativ;
         });
       });
       
-      // Atualizar planejamentos em background (sem esperar e sem onUpdate)
+      // Atualizar planejamentos em background silenciosamente (sem onUpdate para não recarregar página)
       setTimeout(() => {
         retryWithBackoff(
           () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }),
