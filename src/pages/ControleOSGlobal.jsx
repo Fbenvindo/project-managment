@@ -40,6 +40,7 @@ export default function ControleOSGlobal() {
     { id: 'concessionarias', label: 'Concessionárias' },
     { id: 'monitoramento', label: 'Monitoramento' },
     { id: 'hidraulica', label: 'Hidráulica' },
+    { id: 'eletrica', label: 'Elétrica' },
     { id: 'incendio', label: 'Incêndio' },
     { id: 'sistemas', label: 'Sistemas Eletrônicos' },
     { id: 'ar', label: 'Ar Condicionado' },
