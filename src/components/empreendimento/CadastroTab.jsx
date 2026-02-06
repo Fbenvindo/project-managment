@@ -907,7 +907,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           {/* Container de Folhas Fixo - 20% */}
           <div className="w-[20%] border-r-2 border-gray-300 flex flex-col bg-gray-50">
             {/* Cabeçalho Fixo das Folhas */}
-            <div className="bg-blue-100 border-b-2 border-gray-300 p-3 sticky top-0 z-30">
+            <div className="bg-blue-100 border-b-2 border-gray-300 p-3 sticky top-0 z-30 flex items-center" style={{ minHeight: '97px' }}>
               <div className="flex items-center gap-2">
                 {!readOnly && (
                   <input
