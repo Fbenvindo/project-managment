@@ -1135,18 +1135,18 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                                        className="border-r border-gray-100 p-2 flex-shrink-0 flex items-center"
                                        style={{ width: '110px', minWidth: '110px' }}
                                      >
-                                       <div className="flex gap-1 group w-full">
+                                       <div className="flex gap-1 group w-full relative">
                                          <Input
                                            type="date"
                                            value={getDataValue(linha, etapa, revisao)}
                                            onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
-                                           className={`h-9 text-xs w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:hidden [&::-webkit-clear-button]:hidden ${!getDataValue(linha, etapa, revisao) ? '[color-scheme:light] [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-calendar-picker-indicator]:opacity-100' : ''}`}
+                                           className={`h-9 text-xs flex-1 pointer-events-auto relative z-10 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:hidden [&::-webkit-clear-button]:hidden ${!getDataValue(linha, etapa, revisao) ? '[color-scheme:light] [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-calendar-picker-indicator]:opacity-100' : ''}`}
                                            disabled={readOnly}
                                          />
                                          {!readOnly && getDataValue(linha, etapa, revisao) && (
                                            <button
                                              onClick={() => copiarDataParaBaixo(linha.id, etapa, revisao)}
-                                             className="text-purple-600 hover:text-purple-800 p-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                                             className="text-purple-600 hover:text-purple-800 p-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 relative z-20"
                                              title="Preencher todas abaixo"
                                            >
                                              <Wand2 className="w-3.5 h-3.5" />
