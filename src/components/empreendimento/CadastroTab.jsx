@@ -835,7 +835,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   }
 
   return (
-    <div className="space-y-4 relative overflow-hidden">
+    <div className="space-y-4 relative">
       <div className="flex justify-between items-center">
         <div className="flex items-center gap-3">
           <h2 className="text-xl font-bold text-gray-800">Datas de Cadastro</h2>
@@ -902,8 +902,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         </Button>
       )}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden max-w-full">
-        <div className="flex h-[calc(100vh-300px)] overflow-hidden">
+      <div className="bg-white rounded-lg shadow">
+        <div className="flex h-[calc(100vh-300px)] overflow-hidden max-w-full">
           {/* Container de Folhas Fixo - 20% */}
           <div className="w-[20%] border-r-2 border-gray-300 flex flex-col bg-gray-50">
             {/* Cabeçalho Fixo das Folhas */}
