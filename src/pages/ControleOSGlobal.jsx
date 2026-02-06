@@ -95,21 +95,31 @@ export default function ControleOSGlobal() {
 
       // Verificar se é um campo de planejamento
       if (field.startsWith('planejamento_')) {
-        const parts = field.replace('planejamento_', '').split('_');
-        const disciplina = parts[0]; // hidraulica, eletrica, incendio, sistemas, ar, memorial
-        const subField = parts.slice(1).join('_'); // concepcao, calculo, diagrama, esp_tec, matlib
+        let disciplinaKey, subField;
+        const fieldWithoutPrefix = field.replace('planejamento_', '');
 
-        // Mapear nomes
-        const disciplinaMap = {
-          'hidraulica': 'hidraulica',
-          'eletrica': 'eletrica',
-          'incendio': 'incendio',
-          'sistemas': 'sistemas_eletronicos',
-          'ar': 'ar_condicionado',
-          'memorial': 'memorial'
-        };
+        // Verificar se começa com disciplinas compostas
+        if (fieldWithoutPrefix.startsWith('ar_condicionado_')) {
+          disciplinaKey = 'ar_condicionado';
+          subField = fieldWithoutPrefix.replace('ar_condicionado_', '');
+        } else if (fieldWithoutPrefix.startsWith('sistemas_eletronicos_')) {
+          disciplinaKey = 'sistemas_eletronicos';
+          subField = fieldWithoutPrefix.replace('sistemas_eletronicos_', '');
+        } else {
+          // Para disciplinas simples
+          const parts = fieldWithoutPrefix.split('_');
+          const disciplina = parts[0];
+          subField = parts.slice(1).join('_');
 
-        const disciplinaKey = disciplinaMap[disciplina] || disciplina;
+          const disciplinaMap = {
+            'hidraulica': 'hidraulica',
+            'eletrica': 'eletrica',
+            'incendio': 'incendio',
+            'memorial': 'memorial'
+          };
+
+          disciplinaKey = disciplinaMap[disciplina] || disciplina;
+        }
 
         updateData = {
           planejamento: {
