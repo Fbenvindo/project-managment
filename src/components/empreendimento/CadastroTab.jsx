@@ -1130,30 +1130,30 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                                 ) : (
                                   <div className="flex">
                                     {revisoesEtapa.map((revisao) => (
-                                      <div
-                                        key={`${linha.id}-${etapa}-${revisao}`}
-                                        className="border-r border-gray-100 p-1 flex-shrink-0"
-                                        style={{ width: '110px', minWidth: '110px' }}
-                                      >
-                                        <div className="flex gap-1 group">
-                                          <Input
-                                            type="date"
-                                            value={getDataValue(linha, etapa, revisao)}
-                                            onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
-                                            className={`h-8 text-xs w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:hidden [&::-webkit-clear-button]:hidden ${!getDataValue(linha, etapa, revisao) ? '[color-scheme:light] [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-calendar-picker-indicator]:opacity-100' : ''}`}
-                                            disabled={readOnly}
-                                          />
-                                          {!readOnly && getDataValue(linha, etapa, revisao) && (
-                                            <button
-                                              onClick={() => copiarDataParaBaixo(linha.id, etapa, revisao)}
-                                              className="text-purple-600 hover:text-purple-800 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                              title="Preencher todas abaixo"
-                                            >
-                                              <Wand2 className="w-3.5 h-3.5" />
-                                            </button>
-                                          )}
-                                        </div>
-                                      </div>
+                                     <div
+                                       key={`${linha.id}-${etapa}-${revisao}`}
+                                       className="border-r border-gray-100 p-2 flex-shrink-0 flex items-center"
+                                       style={{ width: '110px', minWidth: '110px' }}
+                                     >
+                                       <div className="flex gap-1 group w-full">
+                                         <Input
+                                           type="date"
+                                           value={getDataValue(linha, etapa, revisao)}
+                                           onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
+                                           className={`h-9 text-xs w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:hidden [&::-webkit-clear-button]:hidden ${!getDataValue(linha, etapa, revisao) ? '[color-scheme:light] [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-calendar-picker-indicator]:opacity-100' : ''}`}
+                                           disabled={readOnly}
+                                         />
+                                         {!readOnly && getDataValue(linha, etapa, revisao) && (
+                                           <button
+                                             onClick={() => copiarDataParaBaixo(linha.id, etapa, revisao)}
+                                             className="text-purple-600 hover:text-purple-800 p-1 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0"
+                                             title="Preencher todas abaixo"
+                                           >
+                                             <Wand2 className="w-3.5 h-3.5" />
+                                           </button>
+                                         )}
+                                       </div>
+                                     </div>
                                     ))}
                                     <div className="p-1 flex-shrink-0" style={{ width: '50px', minWidth: '50px' }}></div>
                                   </div>
