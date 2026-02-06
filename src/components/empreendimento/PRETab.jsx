@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Printer, Save, FileText, Loader2, Upload, X } from "lucide-react";
+import { Plus, Trash2, Printer, Save, FileText, Loader2, Upload, X, ChevronDown, ChevronRight } from "lucide-react";
 import { ItemPRE } from "@/entities/all";
 import { format } from "date-fns";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
@@ -88,6 +88,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
   const [isSaving, setIsSaving] = useState(false);
   const [items, setItems] = useState([]);
   const [lastSaved, setLastSaved] = useState(null);
+  const [secoesMinimizadas, setSecoesMinimizadas] = useState({});
   const [headerData, setHeaderData] = useState({
     cliente: empreendimento?.cliente || '',
     obra: empreendimento?.nome || '',
@@ -308,6 +309,21 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     window.print();
   };
 
+  const toggleSecao = (secao) => {
+    setSecoesMinimizadas(prev => ({
+      ...prev,
+      [secao]: !prev[secao]
+    }));
+  };
+
+  const SECOES = [
+    { id: 'metadados', label: 'Item/Data/Localização/Status' },
+    { id: 'descricao', label: 'De/Disciplina/Assunto' },
+    { id: 'comentario', label: 'Comentário' },
+    { id: 'resposta', label: 'Resposta' },
+    { id: 'imagens', label: 'Imagens' }
+  ];
+
   return (
     <>
       <style>{printStyles}</style>
@@ -401,223 +417,267 @@ export default function PRETab({ empreendimento, readOnly = false }) {
             </div>
           </div>
 
-          <div className="space-y-4 p-4">
-            {items.length === 0 ? (
+          {items.length === 0 ? (
+            <div className="p-8">
               <Card>
                 <CardContent className="p-8 text-center">
                   <FileText className="w-12 h-12 mx-auto text-gray-300 mb-3" />
                   <p className="text-gray-500">Nenhum item cadastrado. Clique em "Adicionar Item" para começar.</p>
                 </CardContent>
               </Card>
-            ) : (
-              items.map((item) => (
-                <div key={item.id} className="flex gap-4 border border-gray-300 rounded-lg overflow-hidden bg-white">
-                  {/* Container Principal (80%) */}
-                  <div className="w-4/5 p-4 space-y-4 border-r border-gray-300">
-                    {/* De, Descritiva e Assunto - lado a lado */}
-                    <div className="grid grid-cols-3 gap-3">
-                      {/* De */}
-                      <div>
-                        <label className="text-xs font-semibold text-gray-600 block mb-1">De</label>
-                        <Textarea
-                          value={item.de}
-                          onChange={(e) => handleUpdateItem(item.id, 'de', e.target.value)}
-                          className="w-full text-sm print:border-none print:bg-transparent resize-none"
-                          rows={3}
-                          disabled={readOnly}
-                          placeholder="De quem..."
-                        />
-                      </div>
-
-                      {/* Disciplina */}
-                      <div>
-                        <label className="text-xs font-semibold text-gray-600 block mb-1">Disciplina</label>
-                        <Textarea
-                          value={item.descritiva}
-                          onChange={(e) => handleUpdateItem(item.id, 'descritiva', e.target.value)}
-                          className="w-full text-sm print:border-none print:bg-transparent resize-none"
-                          rows={3}
-                          disabled={readOnly}
-                          placeholder="Disciplina..."
-                        />
-                      </div>
-
-                      {/* Assunto */}
-                      <div>
-                        <label className="text-xs font-semibold text-gray-600 block mb-1">Assunto</label>
-                        <Textarea
-                          value={item.assunto}
-                          onChange={(e) => handleUpdateItem(item.id, 'assunto', e.target.value)}
-                          className="w-full text-sm print:border-none print:bg-transparent resize-none"
-                          rows={3}
-                          disabled={readOnly}
-                          placeholder="Assunto..."
-                        />
-                      </div>
-                    </div>
-
-                    {/* Comentário */}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">Comentário</label>
-                      <Textarea
-                        value={item.comentario}
-                        onChange={(e) => handleUpdateItem(item.id, 'comentario', e.target.value)}
-                        className="w-full text-sm print:border-none print:bg-transparent resize-y"
-                        rows={4}
-                        disabled={readOnly}
-                        placeholder="Comentários adicionais..."
-                      />
-                    </div>
-
-                    {/* Resposta */}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">Resposta</label>
-                      <Textarea
-                        value={item.resposta}
-                        onChange={(e) => handleUpdateItem(item.id, 'resposta', e.target.value)}
-                        className="w-full text-sm print:border-none print:bg-transparent resize-y"
-                        rows={3}
-                        placeholder="Resposta/Resolução..."
-                      />
-                    </div>
-
-                    {/* Imagens */}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-2">Imagens</label>
-                      <div className="space-y-2">
-                        <div className="no-print">
-                          <input
-                            type="file"
-                            id={`file-input-${item.id}`}
-                            accept="image/*"
-                            onChange={(e) => {
-                              const file = e.target.files?.[0];
-                              if (file) handleUploadImage(item.id, file);
-                              e.target.value = '';
-                            }}
-                            className="hidden"
-                          />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="w-full"
-                            onClick={() => document.getElementById(`file-input-${item.id}`).click()}
-                          >
-                            <Upload className="w-3 h-3 mr-2" />
-                            Anexar Imagem
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-2 gap-3">
-                          {(item.imagens || []).map((imgUrl, idx) => (
-                            <div key={idx} className="relative group">
-                              <img
-                                src={imgUrl}
-                                alt={`Imagem ${idx + 1}`}
-                                className="w-full rounded border cursor-pointer hover:opacity-80 transition-all"
-                              />
-                              <button
-                                type="button"
-                                onClick={() => handleRemoveImage(item.id, imgUrl)}
-                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity no-print z-10"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Container Secundário (20%) */}
-                  <div className="w-1/5 p-4 space-y-4 flex flex-col">
-                    {/* Item */}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">Item</label>
-                      {readOnly ? (
-                        <div className="text-sm font-medium p-2 bg-gray-50 rounded">{item.item}</div>
-                      ) : (
-                        <Input
-                          value={item.item}
-                          onChange={(e) => handleUpdateItem(item.id, 'item', e.target.value)}
-                          className="h-9 text-sm text-center font-medium print:border-none print:bg-transparent"
-                        />
-                      )}
-                    </div>
-
-                    {/* Data */}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">Data</label>
-                      {readOnly ? (
-                        <div className="text-sm p-2 bg-gray-50 rounded">{item.data ? format(new Date(item.data), 'dd/MM/yyyy') : ''}</div>
-                      ) : (
-                        <Input
-                          type="date"
-                          value={item.data}
-                          onChange={(e) => handleUpdateItem(item.id, 'data', e.target.value)}
-                          className="h-9 text-sm print:border-none print:bg-transparent"
-                        />
-                      )}
-                    </div>
-
-                    {/* Localização */}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">Localização</label>
-                      <Textarea
-                        value={item.localizacao}
-                        onChange={(e) => handleUpdateItem(item.id, 'localizacao', e.target.value)}
-                        className="w-full text-sm print:border-none print:bg-transparent resize-none"
-                        rows={3}
-                        disabled={readOnly}
-                        placeholder="Localização..."
-                      />
-                    </div>
-
-                    {/* Status */}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">Status</label>
-                      {readOnly ? (
-                        <div className={`text-sm p-2 rounded text-center font-medium ${STATUS_COLORS[item.status] || 'bg-gray-100'}`}>
-                          {item.status || 'Sem status'}
-                        </div>
-                      ) : (
-                        <Select
-                          value={item.status}
-                          onValueChange={(value) => handleUpdateItem(item.id, 'status', value)}
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse text-sm">
+                <thead>
+                  <tr>
+                    <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '200px', minWidth: '200px' }}>
+                      Folha
+                    </th>
+                    {SECOES.map(secao => {
+                      const isMinimizada = secoesMinimizadas[secao.id];
+                      return (
+                        <th
+                          key={secao.id}
+                          className="border border-gray-300 bg-blue-200 p-2 text-center font-semibold relative group"
+                          style={{ minWidth: isMinimizada ? '50px' : '300px' }}
                         >
-                          <SelectTrigger className={`h-9 text-sm print:border-none print:bg-transparent ${STATUS_COLORS[item.status] || ''}`}>
-                            <SelectValue placeholder="Sem status" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value={null}>Sem status</SelectItem>
-                            <SelectItem value="Em andamento">Em andamento</SelectItem>
-                            <SelectItem value="Pendente">Pendente</SelectItem>
-                            <SelectItem value="Concluído">Concluído</SelectItem>
-                            <SelectItem value="Cancelado">Cancelado</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      )}
-                    </div>
-
-                    {/* Ações */}
+                          <div className="flex items-center justify-center gap-2">
+                            <button
+                              onClick={() => toggleSecao(secao.id)}
+                              className="text-gray-600 hover:text-gray-800 p-1"
+                              title={isMinimizada ? "Expandir" : "Minimizar"}
+                            >
+                              {isMinimizada ? 
+                                <ChevronRight className="w-4 h-4" /> : 
+                                <ChevronDown className="w-4 h-4" />
+                              }
+                            </button>
+                            {!isMinimizada && <span>{secao.label}</span>}
+                          </div>
+                        </th>
+                      );
+                    })}
                     {!readOnly && (
-                      <div className="mt-auto pt-4 no-print">
-                        <Button
-                          variant="ghost"
-                          className="w-full text-red-500 hover:text-red-700 hover:bg-red-50"
-                          onClick={() => handleDeleteItem(item.id)}
-                        >
-                          <Trash2 className="w-4 h-4 mr-2" />
-                          Excluir
-                        </Button>
-                      </div>
+                      <th className="border border-gray-300 bg-red-100 p-2 text-center" style={{ width: '80px' }}>
+                        Ações
+                      </th>
                     )}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.map((item) => (
+                    <tr key={item.id} className="hover:bg-gray-50">
+                      {/* Coluna Folha - Fixa */}
+                      <td className="border border-gray-300 p-2 sticky left-0 bg-white z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '200px', minWidth: '200px' }}>
+                        <div className="text-sm font-medium text-gray-800">{item.descritiva || 'Sem descrição'}</div>
+                        <div className="text-xs text-gray-500 mt-1">Item: {item.item}</div>
+                      </td>
+
+                      {/* Metadados */}
+                      <td className="border border-gray-300 p-2" style={{ minWidth: secoesMinimizadas['metadados'] ? '50px' : '300px' }}>
+                        {!secoesMinimizadas['metadados'] && (
+                          <div className="space-y-2">
+                            <div>
+                              <label className="text-xs font-semibold text-gray-600 block mb-1">Item</label>
+                              {readOnly ? (
+                                <div className="text-sm p-1 bg-gray-50 rounded">{item.item}</div>
+                              ) : (
+                                <Input
+                                  value={item.item}
+                                  onChange={(e) => handleUpdateItem(item.id, 'item', e.target.value)}
+                                  className="h-8 text-xs"
+                                />
+                              )}
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-gray-600 block mb-1">Data</label>
+                              {readOnly ? (
+                                <div className="text-sm p-1 bg-gray-50 rounded">{item.data ? format(new Date(item.data), 'dd/MM/yyyy') : ''}</div>
+                              ) : (
+                                <Input
+                                  type="date"
+                                  value={item.data}
+                                  onChange={(e) => handleUpdateItem(item.id, 'data', e.target.value)}
+                                  className="h-8 text-xs"
+                                />
+                              )}
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-gray-600 block mb-1">Localização</label>
+                              <Textarea
+                                value={item.localizacao}
+                                onChange={(e) => handleUpdateItem(item.id, 'localizacao', e.target.value)}
+                                className="text-xs resize-none"
+                                rows={2}
+                                disabled={readOnly}
+                                placeholder="Localização..."
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-gray-600 block mb-1">Status</label>
+                              {readOnly ? (
+                                <div className={`text-xs p-1 rounded text-center ${STATUS_COLORS[item.status] || 'bg-gray-100'}`}>
+                                  {item.status || 'Sem status'}
+                                </div>
+                              ) : (
+                                <Select
+                                  value={item.status}
+                                  onValueChange={(value) => handleUpdateItem(item.id, 'status', value)}
+                                >
+                                  <SelectTrigger className={`h-8 text-xs ${STATUS_COLORS[item.status] || ''}`}>
+                                    <SelectValue placeholder="Sem status" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value={null}>Sem status</SelectItem>
+                                    <SelectItem value="Em andamento">Em andamento</SelectItem>
+                                    <SelectItem value="Pendente">Pendente</SelectItem>
+                                    <SelectItem value="Concluído">Concluído</SelectItem>
+                                    <SelectItem value="Cancelado">Cancelado</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              )}
+                            </div>
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Descrição (De/Disciplina/Assunto) */}
+                      <td className="border border-gray-300 p-2" style={{ minWidth: secoesMinimizadas['descricao'] ? '50px' : '300px' }}>
+                        {!secoesMinimizadas['descricao'] && (
+                          <div className="space-y-2">
+                            <div>
+                              <label className="text-xs font-semibold text-gray-600 block mb-1">De</label>
+                              <Textarea
+                                value={item.de}
+                                onChange={(e) => handleUpdateItem(item.id, 'de', e.target.value)}
+                                className="text-xs resize-none"
+                                rows={2}
+                                disabled={readOnly}
+                                placeholder="De quem..."
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-gray-600 block mb-1">Disciplina</label>
+                              <Textarea
+                                value={item.descritiva}
+                                onChange={(e) => handleUpdateItem(item.id, 'descritiva', e.target.value)}
+                                className="text-xs resize-none"
+                                rows={2}
+                                disabled={readOnly}
+                                placeholder="Disciplina..."
+                              />
+                            </div>
+                            <div>
+                              <label className="text-xs font-semibold text-gray-600 block mb-1">Assunto</label>
+                              <Textarea
+                                value={item.assunto}
+                                onChange={(e) => handleUpdateItem(item.id, 'assunto', e.target.value)}
+                                className="text-xs resize-none"
+                                rows={2}
+                                disabled={readOnly}
+                                placeholder="Assunto..."
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Comentário */}
+                      <td className="border border-gray-300 p-2" style={{ minWidth: secoesMinimizadas['comentario'] ? '50px' : '300px' }}>
+                        {!secoesMinimizadas['comentario'] && (
+                          <Textarea
+                            value={item.comentario}
+                            onChange={(e) => handleUpdateItem(item.id, 'comentario', e.target.value)}
+                            className="text-xs resize-y w-full"
+                            rows={6}
+                            disabled={readOnly}
+                            placeholder="Comentários adicionais..."
+                          />
+                        )}
+                      </td>
+
+                      {/* Resposta */}
+                      <td className="border border-gray-300 p-2" style={{ minWidth: secoesMinimizadas['resposta'] ? '50px' : '300px' }}>
+                        {!secoesMinimizadas['resposta'] && (
+                          <Textarea
+                            value={item.resposta}
+                            onChange={(e) => handleUpdateItem(item.id, 'resposta', e.target.value)}
+                            className="text-xs resize-y w-full"
+                            rows={6}
+                            placeholder="Resposta/Resolução..."
+                          />
+                        )}
+                      </td>
+
+                      {/* Imagens */}
+                      <td className="border border-gray-300 p-2" style={{ minWidth: secoesMinimizadas['imagens'] ? '50px' : '300px' }}>
+                        {!secoesMinimizadas['imagens'] && (
+                          <div className="space-y-2">
+                            <div className="no-print">
+                              <input
+                                type="file"
+                                id={`file-input-${item.id}`}
+                                accept="image/*"
+                                onChange={(e) => {
+                                  const file = e.target.files?.[0];
+                                  if (file) handleUploadImage(item.id, file);
+                                  e.target.value = '';
+                                }}
+                                className="hidden"
+                              />
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                className="w-full"
+                                onClick={() => document.getElementById(`file-input-${item.id}`).click()}
+                              >
+                                <Upload className="w-3 h-3 mr-2" />
+                                Anexar
+                              </Button>
+                            </div>
+                            <div className="grid grid-cols-2 gap-2">
+                              {(item.imagens || []).map((imgUrl, idx) => (
+                                <div key={idx} className="relative group">
+                                  <img
+                                    src={imgUrl}
+                                    alt={`Imagem ${idx + 1}`}
+                                    className="w-full rounded border cursor-pointer hover:opacity-80"
+                                  />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveImage(item.id, imgUrl)}
+                                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity no-print"
+                                  >
+                                    <X className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                      </td>
+
+                      {/* Ações */}
+                      {!readOnly && (
+                        <td className="border border-gray-300 p-2 text-center">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50"
+                            onClick={() => handleDeleteItem(item.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </td>
+                      )}
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       </div>
     </>
