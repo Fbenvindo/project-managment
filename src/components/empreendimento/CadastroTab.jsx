@@ -965,89 +965,91 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           </div>
 
           {/* Container de Etapas com Scroll Horizontal - 80% */}
-          <div className="w-[80%] flex flex-col overflow-x-auto">
-            {/* Cabeçalho Fixo das Etapas */}
-            <div className="bg-blue-100 border-b-2 border-gray-300 sticky top-0 z-20">
-              <div className="flex">
-                {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
-                  const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
-                  const isMinimizada = etapasMinimizadas[etapa];
-                  const colSpanTotal = isMinimizada ? 1 : revisoesEtapa.length + 1;
-                  
-                  return (
-                    <div
-                      key={etapa}
-                      className="border-r border-gray-300 last:border-r-0 relative group"
-                      style={{ width: isMinimizada ? '60px' : `${colSpanTotal * 140}px`, minWidth: isMinimizada ? '60px' : `${colSpanTotal * 140}px` }}
-                    >
-                      <div className="p-2 text-center font-semibold">
-                        <div className="flex items-center justify-center gap-2">
-                          <button
-                            onClick={() => toggleMinimizarEtapa(etapa)}
-                            className="text-gray-600 hover:text-gray-900 p-1"
-                            title={isMinimizada ? "Expandir" : "Minimizar"}
-                          >
-                            {isMinimizada ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-                          </button>
-                          <span className={`${isMinimizada ? 'writing-mode-vertical-rl transform rotate-180 text-xs' : 'text-sm'}`}>
-                            {isMinimizada ? etapa.substring(0, 3).toUpperCase() : etapa}
-                          </span>
-                          {!readOnly && !isMinimizada && (
-                            <button
-                              onClick={() => handleExcluirEtapa(etapa)}
-                              className="absolute top-1 right-1 text-red-500 hover:text-red-700 p-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded"
-                              title="Excluir etapa"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          )}
-                        </div>
-                      </div>
+          <div className="w-[80%] flex flex-col">
+            <div className="flex-1 overflow-auto">
+              <div className="inline-block min-w-full">
+                {/* Cabeçalho Fixo das Etapas */}
+                <div className="bg-blue-100 border-b-2 border-gray-300 sticky top-0 z-20">
+                  <div className="flex">
+                    {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
+                      const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+                      const isMinimizada = etapasMinimizadas[etapa];
+                      const colSpanTotal = isMinimizada ? 1 : revisoesEtapa.length + 1;
                       
-                      {/* Cabeçalho de Revisões */}
-                      {!isMinimizada && (
-                        <div className="flex border-t border-gray-300 bg-blue-50">
-                          {revisoesEtapa.map((revisao) => (
-                            <div
-                              key={`${etapa}-${revisao}`}
-                              className="border-r border-gray-200 p-2 text-center font-medium text-sm"
-                              style={{ width: '140px', minWidth: '140px' }}
-                            >
-                              <div className="flex items-center justify-center gap-1">
-                                <span>{revisao}</span>
+                      return (
+                        <div
+                          key={etapa}
+                          className="border-r border-gray-300 last:border-r-0 relative group"
+                          style={{ width: isMinimizada ? '60px' : `${colSpanTotal * 140}px`, minWidth: isMinimizada ? '60px' : `${colSpanTotal * 140}px` }}
+                        >
+                          <div className="p-2 text-center font-semibold">
+                            <div className="flex items-center justify-center gap-2">
+                              <button
+                                onClick={() => toggleMinimizarEtapa(etapa)}
+                                className="text-gray-600 hover:text-gray-900 p-1"
+                                title={isMinimizada ? "Expandir" : "Minimizar"}
+                              >
+                                {isMinimizada ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                              </button>
+                              <span className={`${isMinimizada ? 'writing-mode-vertical-rl transform rotate-180 text-xs' : 'text-sm'}`}>
+                                {isMinimizada ? etapa.substring(0, 3).toUpperCase() : etapa}
+                              </span>
+                              {!readOnly && !isMinimizada && (
+                                <button
+                                  onClick={() => handleExcluirEtapa(etapa)}
+                                  className="absolute top-1 right-1 text-red-500 hover:text-red-700 p-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded"
+                                  title="Excluir etapa"
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          
+                          {/* Cabeçalho de Revisões */}
+                          {!isMinimizada && (
+                            <div className="flex border-t border-gray-300 bg-blue-50">
+                              {revisoesEtapa.map((revisao) => (
+                                <div
+                                  key={`${etapa}-${revisao}`}
+                                  className="border-r border-gray-200 p-2 text-center font-medium text-sm"
+                                  style={{ width: '140px', minWidth: '140px' }}
+                                >
+                                  <div className="flex items-center justify-center gap-1">
+                                    <span>{revisao}</span>
+                                    {!readOnly && (
+                                      <button
+                                        onClick={() => handleRemoveRevisao(etapa, revisao)}
+                                        className="text-red-500 hover:text-red-700 p-0.5"
+                                        title={`Excluir revisão ${revisao}`}
+                                      >
+                                        <Trash2 className="w-3 h-3" />
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                              <div className="bg-green-50 p-1 text-center" style={{ width: '60px', minWidth: '60px' }}>
                                 {!readOnly && (
                                   <button
-                                    onClick={() => handleRemoveRevisao(etapa, revisao)}
-                                    className="text-red-500 hover:text-red-700 p-0.5"
-                                    title={`Excluir revisão ${revisao}`}
+                                    onClick={() => handleAddRevisao(etapa)}
+                                    className="text-green-600 hover:text-green-800 p-0.5"
+                                    title="Adicionar revisão"
                                   >
-                                    <Trash2 className="w-3 h-3" />
+                                    <Plus className="w-4 h-4" />
                                   </button>
                                 )}
                               </div>
                             </div>
-                          ))}
-                          <div className="bg-green-50 p-1 text-center" style={{ width: '60px', minWidth: '60px' }}>
-                            {!readOnly && (
-                              <button
-                                onClick={() => handleAddRevisao(etapa)}
-                                className="text-green-600 hover:text-green-800 p-0.5"
-                                title="Adicionar revisão"
-                              >
-                                <Plus className="w-4 h-4" />
-                              </button>
-                            )}
-                          </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
+                      );
+                    })}
+                  </div>
+                </div>
 
-            {/* Área de Dados com Scroll */}
-            <div className="flex-1 overflow-y-auto">
+                {/* Área de Dados */}
+                <div>
               {linhas.length === 0 ? (
                 <div className="p-8 text-center text-gray-500">
                   Nenhum documento cadastrado
@@ -1115,6 +1117,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                   </div>
                 ))
               )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
