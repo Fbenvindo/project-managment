@@ -1132,27 +1132,25 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                                     {revisoesEtapa.map((revisao) => (
                                      <div
                                        key={`${linha.id}-${etapa}-${revisao}`}
-                                       className="border-r border-gray-100 p-1 flex-shrink-0 flex items-center"
+                                       className="border-r border-gray-100 p-0.5 flex-shrink-0 flex items-center relative group"
                                        style={{ width: '85px', minWidth: '85px' }}
                                      >
-                                       <div className="flex gap-0.5 group w-full relative">
-                                         <Input
-                                           type="date"
-                                           value={getDataValue(linha, etapa, revisao)}
-                                           onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
-                                           className={`h-7 text-[10px] flex-1 pointer-events-auto relative z-10 px-1 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:hidden [&::-webkit-clear-button]:hidden ${!getDataValue(linha, etapa, revisao) ? '[color-scheme:light] [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-calendar-picker-indicator]:opacity-100' : ''}`}
-                                           disabled={readOnly}
-                                         />
-                                         {!readOnly && getDataValue(linha, etapa, revisao) && (
-                                           <button
-                                             onClick={() => copiarDataParaBaixo(linha.id, etapa, revisao)}
-                                             className="text-purple-600 hover:text-purple-800 p-0.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0 relative z-20"
-                                             title="Preencher todas abaixo"
-                                           >
-                                             <Wand2 className="w-3 h-3" />
-                                           </button>
-                                         )}
-                                       </div>
+                                       <Input
+                                         type="date"
+                                         value={getDataValue(linha, etapa, revisao)}
+                                         onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
+                                         className={`h-7 text-[10px] w-full px-0.5 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:hidden [&::-webkit-clear-button]:hidden ${!getDataValue(linha, etapa, revisao) ? '[color-scheme:light] [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-calendar-picker-indicator]:opacity-100' : ''}`}
+                                         disabled={readOnly}
+                                       />
+                                       {!readOnly && getDataValue(linha, etapa, revisao) && (
+                                         <button
+                                           onClick={() => copiarDataParaBaixo(linha.id, etapa, revisao)}
+                                           className="text-purple-600 hover:text-purple-800 p-0.5 absolute right-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                           title="Preencher todas abaixo"
+                                         >
+                                           <Wand2 className="w-2.5 h-2.5" />
+                                         </button>
+                                       )}
                                      </div>
                                     ))}
                                     <div className="p-0.5 flex-shrink-0" style={{ width: '40px', minWidth: '40px' }}></div>
