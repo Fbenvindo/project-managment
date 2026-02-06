@@ -965,10 +965,10 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           </div>
 
           {/* Container de Etapas com Scroll Horizontal - 80% */}
-          <div className="w-[80%] flex flex-col">
+          <div className="w-[80%] flex flex-col overflow-x-auto">
             {/* Cabeçalho Fixo das Etapas */}
             <div className="bg-blue-100 border-b-2 border-gray-300 sticky top-0 z-20">
-              <div className="flex">
+              <div className="flex min-w-max">
                 {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
                   const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                   const isMinimizada = etapasMinimizadas[etapa];
@@ -1061,7 +1061,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                       const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
                       
                       return (
-                        <div key={linha.id} className="flex border-b border-gray-200 hover:bg-gray-50">
+                        <div key={linha.id} className="flex border-b border-gray-200 hover:bg-gray-50 min-w-max">
                           {etapasVisiveis.map((etapa) => {
                             const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                             const isMinimizada = etapasMinimizadas[etapa];
