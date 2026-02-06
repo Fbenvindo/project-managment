@@ -206,7 +206,7 @@ const LayoutComponent = ({ children, currentPageName }) => {
           </SidebarFooter>
         </Sidebar>
 
-        <main className="flex-1 flex flex-col">
+        <main className="flex-1 flex flex-col overflow-hidden">
           <header className="bg-white border-b border-gray-200 px-6 py-4 md:hidden">
             <div className="flex items-center gap-4">
               <SidebarTrigger className="hover:bg-gray-100 p-2 rounded-lg transition-colors" />
@@ -214,7 +214,7 @@ const LayoutComponent = ({ children, currentPageName }) => {
             </div>
           </header>
 
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto overflow-x-hidden">
             {children}
           </div>
         </main>
