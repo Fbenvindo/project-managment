@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2, Save, Loader2, Upload, Download, Copy, ArrowDown, ArrowRight, Wand2 } from "lucide-react";
+import { Plus, Trash2, Save, Loader2, Upload, Download, Copy, ArrowDown, ArrowRight, Wand2, ChevronRight, ChevronLeft } from "lucide-react";
 import { DataCadastro, Documento } from "@/entities/all";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { format } from "date-fns";
@@ -43,6 +43,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   const [massEditEtapa, setMassEditEtapa] = useState('');
   const [massEditRevisao, setMassEditRevisao] = useState('');
   const [massEditData, setMassEditData] = useState('');
+  const [etapasMinimizadas, setEtapasMinimizadas] = useState({});
 
   useEffect(() => {
     if (empreendimento?.id && linhas.length === 0) {
@@ -444,6 +445,13 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     setMassEditRevisao('');
     setMassEditData('');
     clearSelection();
+  };
+
+  const toggleMinimizarEtapa = (etapa) => {
+    setEtapasMinimizadas(prev => ({
+      ...prev,
+      [etapa]: !prev[etapa]
+    }));
   };
 
   const copiarDataParaDireita = (linhaId, etapa, revisao) => {
@@ -879,205 +887,237 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         </Button>
       )}
 
-      <div className="bg-white rounded-lg shadow overflow-x-auto relative isolate">
-        <table className="w-full border-collapse text-sm relative">
-          <thead>
-            <tr>
-              <th className="border border-gray-300 bg-blue-100 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}>
-                <div className="flex items-center gap-2">
-                  {!readOnly && (
-                    <input
-                      type="checkbox"
-                      checked={linhas.length > 0 && selectedFolhas.size === linhas.length}
-                      onChange={(e) => e.target.checked ? selectAllFolhas() : clearSelection()}
-                      className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
-                      title="Selecionar todas"
-                    />
-                  )}
-                  <span>Folha</span>
+      <div className="bg-white rounded-lg shadow overflow-hidden">
+        <div className="flex h-[calc(100vh-300px)]">
+          {/* Container de Folhas Fixo - 30% */}
+          <div className="w-[30%] border-r-2 border-gray-300 flex flex-col bg-gray-50">
+            {/* Cabeçalho Fixo das Folhas */}
+            <div className="bg-blue-100 border-b-2 border-gray-300 p-3 sticky top-0 z-30">
+              <div className="flex items-center gap-2">
+                {!readOnly && (
+                  <input
+                    type="checkbox"
+                    checked={linhas.length > 0 && selectedFolhas.size === linhas.length}
+                    onChange={(e) => e.target.checked ? selectAllFolhas() : clearSelection()}
+                    className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                    title="Selecionar todas"
+                  />
+                )}
+                <span className="font-semibold">Folha</span>
+              </div>
+            </div>
+
+            {/* Lista de Folhas com Scroll */}
+            <div className="flex-1 overflow-y-auto">
+              {linhas.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  Nenhum documento cadastrado neste empreendimento. Cadastre documentos na aba "Documentos" primeiro.
                 </div>
-              </th>
-              {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
-                const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
-                const colSpanTotal = revisoesEtapa.length + 1;
-                return (
-                  <th
-                    key={etapa}
-                    colSpan={colSpanTotal}
-                    className="border border-gray-300 bg-blue-200 p-2 text-center font-semibold relative group"
-                    style={{ width: `${colSpanTotal * 150}px` }}
-                  >
-                    <div className="flex items-center justify-center gap-2">
-                      <span>Datas de cadastro:<br />{etapa}</span>
-                      {!readOnly && (
-                        <button
-                          onClick={() => handleExcluirEtapa(etapa)}
-                          className="absolute top-1 right-1 text-red-500 hover:text-red-700 p-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded"
-                          title="Excluir etapa"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      )}
+              ) : (
+                linhasPorDisciplina.map(([disciplina, linhasDaDisciplina]) => (
+                  <div key={disciplina}>
+                    {/* Cabeçalho da Disciplina */}
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-300 p-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
+                        <h3 className="font-semibold text-base text-gray-800">{disciplina}</h3>
+                        <Badge variant="secondary" className="ml-2 text-xs">
+                          {linhasDaDisciplina.length}
+                        </Badge>
+                      </div>
                     </div>
-                  </th>
-                );
-              })}
-            </tr>
-            <tr>
-              <th className="border border-gray-300 bg-blue-50 p-2 sticky left-0 z-20 shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)]" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}></th>
-              {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, etapaIdx) => {
-                const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
-                const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
-                return (
-                  <React.Fragment key={`rev-${etapa}`}>
-                    {revisoesEtapa.map((revisao, revIdx) => (
-                      <th
-                        key={`${etapa}-${revisao}`}
-                        className="border border-gray-300 bg-blue-50 p-2 text-center font-medium"
-                        style={{ width: '150px', minWidth: '150px' }}
-                      >
-                        <div className="flex items-center justify-center gap-1">
-                          <span>{revisao}</span>
-                          {!readOnly && (
+
+                    {/* Folhas da Disciplina */}
+                    {linhasDaDisciplina.map((linha) => {
+                      const doc = documentos.find(d => d.id === linha.documento_id);
+                      return (
+                        <div
+                          key={linha.id}
+                          className="border-b border-gray-200 p-3 hover:bg-gray-100 transition-colors"
+                        >
+                          <div className="flex items-center gap-2">
+                            {!readOnly && (
+                              <input
+                                type="checkbox"
+                                checked={selectedFolhas.has(linha.id)}
+                                onChange={() => toggleSelectFolha(linha.id)}
+                                className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
+                              />
+                            )}
+                            <div className="flex-1 min-w-0">
+                              <div className="font-medium text-sm text-gray-900 truncate" title={doc?.arquivo || doc?.numero || 'Sem folha'}>
+                                {doc?.arquivo || doc?.numero || 'Sem folha'}
+                              </div>
+                              {doc?.descritivo && (
+                                <div className="text-xs text-gray-500 mt-1 line-clamp-2" title={doc.descritivo}>
+                                  {doc.descritivo}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+
+          {/* Container de Etapas com Scroll Horizontal - 70% */}
+          <div className="w-[70%] flex flex-col">
+            {/* Cabeçalho Fixo das Etapas */}
+            <div className="bg-blue-100 border-b-2 border-gray-300 sticky top-0 z-20">
+              <div className="flex">
+                {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
+                  const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+                  const isMinimizada = etapasMinimizadas[etapa];
+                  const colSpanTotal = isMinimizada ? 1 : revisoesEtapa.length + 1;
+                  
+                  return (
+                    <div
+                      key={etapa}
+                      className="border-r border-gray-300 last:border-r-0 relative group"
+                      style={{ width: isMinimizada ? '60px' : `${colSpanTotal * 140}px`, minWidth: isMinimizada ? '60px' : `${colSpanTotal * 140}px` }}
+                    >
+                      <div className="p-2 text-center font-semibold">
+                        <div className="flex items-center justify-center gap-2">
+                          <button
+                            onClick={() => toggleMinimizarEtapa(etapa)}
+                            className="text-gray-600 hover:text-gray-900 p-1"
+                            title={isMinimizada ? "Expandir" : "Minimizar"}
+                          >
+                            {isMinimizada ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+                          </button>
+                          <span className={`${isMinimizada ? 'writing-mode-vertical-rl transform rotate-180 text-xs' : 'text-sm'}`}>
+                            {isMinimizada ? etapa.substring(0, 3).toUpperCase() : etapa}
+                          </span>
+                          {!readOnly && !isMinimizada && (
                             <button
-                              onClick={() => handleRemoveRevisao(etapa, revisao)}
-                              className="text-red-500 hover:text-red-700 p-0.5"
-                              title={`Excluir revisão ${revisao} de ${etapa}`}
+                              onClick={() => handleExcluirEtapa(etapa)}
+                              className="absolute top-1 right-1 text-red-500 hover:text-red-700 p-1 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded"
+                              title="Excluir etapa"
                             >
                               <Trash2 className="w-3 h-3" />
                             </button>
                           )}
                         </div>
-                      </th>
-                    ))}
-                    <th 
-                      className={`border bg-green-50 p-1 text-center ${
-                        etapaIdx < etapasVisiveis.length - 1 ? 'border-r-4 border-r-gray-800 border-gray-300' : 'border-gray-300'
-                      }`}
-                      style={{ width: '50px', minWidth: '50px' }}
-                    >
-                      {!readOnly && (
-                        <button
-                          onClick={() => handleAddRevisao(etapa)}
-                          className="text-green-600 hover:text-green-800 p-0.5"
-                          title={`Adicionar revisão em ${etapa}`}
-                        >
-                          <Plus className="w-4 h-4" />
-                        </button>
-                      )}
-                    </th>
-                  </React.Fragment>
-                );
-              })}
-            </tr>
-          </thead>
-          <tbody>
-            {linhas.length === 0 ? (
-              <tr>
-                <td colSpan={ETAPAS.filter(e => !etapasExcluidas.includes(e)).reduce((acc, etapa) => acc + (revisoesPorEtapa[etapa]?.length || 3) + 1, 1)} className="border border-gray-300 p-8 text-center text-gray-500">
-                  Nenhum documento cadastrado neste empreendimento. Cadastre documentos na aba "Documentos" primeiro.
-                </td>
-              </tr>
-            ) : (
-              linhasPorDisciplina.map(([disciplina, linhasDaDisciplina]) => (
-                <React.Fragment key={disciplina}>
-                  {/* Cabeçalho da disciplina */}
-                  <tr>
-                    <td 
-                      colSpan={ETAPAS.filter(e => !etapasExcluidas.includes(e)).reduce((acc, etapa) => acc + (revisoesPorEtapa[etapa]?.length || 3) + 1, 1)} 
-                      className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-gray-300 p-3"
-                    >
-                      <div className="flex items-center gap-2">
-                        <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
-                        <h3 className="font-semibold text-lg text-gray-800">{disciplina}</h3>
-                        <Badge variant="secondary" className="ml-2">
-                          {linhasDaDisciplina.length} {linhasDaDisciplina.length === 1 ? 'documento' : 'documentos'}
-                        </Badge>
                       </div>
-                    </td>
-                  </tr>
-                  
-                  {/* Linhas da disciplina */}
-                  {linhasDaDisciplina.map((linha) => {
-                    const doc = documentos.find(d => d.id === linha.documento_id);
-                    const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
-                    return (
-                      <tr key={linha.id} className="hover:bg-gray-50">
-                        <td className="border border-gray-300 p-2 sticky left-0 bg-white z-20 font-medium shadow-[2px_0_4px_-2px_rgba(0,0,0,0.1)] group" style={{ width: '400px', minWidth: '400px', maxWidth: '400px' }}>
-                         <div className="flex items-center justify-between gap-2">
-                           <div className="flex items-center gap-2 flex-1 min-w-0">
-                             {!readOnly && (
-                               <input
-                                 type="checkbox"
-                                 checked={selectedFolhas.has(linha.id)}
-                                 onChange={() => toggleSelectFolha(linha.id)}
-                                 className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer flex-shrink-0"
-                               />
-                             )}
-                             <div className="truncate" title={doc?.arquivo || doc?.numero || 'Sem folha'}>
-                               {doc?.arquivo || doc?.numero || 'Sem folha'}
-                             </div>
-                           </div>
-                           {!readOnly && linhasPorDisciplina.findIndex(([d]) => d === disciplina) !== -1 && 
-                            linhasPorDisciplina.find(([d]) => d === disciplina)[1].indexOf(linha) < 
-                            linhasPorDisciplina.find(([d]) => d === disciplina)[1].length - 1 && (
-                             <button
-                               onClick={() => copiarLinhaParaProxima(linha.id)}
-                               className="text-purple-600 hover:text-purple-800 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                               title="Copiar linha para próxima"
-                             >
-                               <Copy className="w-3 h-3" />
-                             </button>
-                           )}
-                         </div>
-                        </td>
-                        {etapasVisiveis.map((etapa, etapaIdx) => {
-                          const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
-                          return (
-                            <React.Fragment key={`${linha.id}-${etapa}`}>
-                              {revisoesEtapa.map((revisao, revIdx) => (
-                                <td 
-                                  key={`${linha.id}-${etapa}-${revisao}`} 
-                                  className="border border-gray-300 p-1"
-                                  style={{ width: '150px', minWidth: '150px' }}
-                                >
-                                    <div className="flex gap-1 group">
-                                    <Input
-                                     type="date"
-                                     value={getDataValue(linha, etapa, revisao)}
-                                     onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
-                                     className={`h-8 text-xs w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:hidden [&::-webkit-clear-button]:hidden ${!getDataValue(linha, etapa, revisao) ? '[color-scheme:light] [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-calendar-picker-indicator]:opacity-100' : ''}`}
-                                     disabled={readOnly}
-                                    />
-                                    {!readOnly && getDataValue(linha, etapa, revisao) && (
-                                     <button
-                                       onClick={() => copiarDataParaBaixo(linha.id, etapa, revisao)}
-                                       className="text-purple-600 hover:text-purple-800 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                       title="Preencher todas abaixo"
-                                     >
-                                       <Wand2 className="w-3.5 h-3.5" />
-                                     </button>
-                                    )}
-                                    </div>
-                                </td>
-                              ))}
-                              <td 
-                                className={`border p-1 ${
-                                  etapaIdx < etapasVisiveis.length - 1 ? 'border-r-4 border-r-gray-800 border-gray-300' : 'border-gray-300'
-                                }`}
-                                style={{ width: '50px', minWidth: '50px' }}
-                              ></td>
-                            </React.Fragment>
-                          );
-                        })}
-                      </tr>
-                    );
-                  })}
-                </React.Fragment>
-              ))
-            )}
-          </tbody>
-        </table>
+                      
+                      {/* Cabeçalho de Revisões */}
+                      {!isMinimizada && (
+                        <div className="flex border-t border-gray-300 bg-blue-50">
+                          {revisoesEtapa.map((revisao) => (
+                            <div
+                              key={`${etapa}-${revisao}`}
+                              className="border-r border-gray-200 p-2 text-center font-medium text-sm"
+                              style={{ width: '140px', minWidth: '140px' }}
+                            >
+                              <div className="flex items-center justify-center gap-1">
+                                <span>{revisao}</span>
+                                {!readOnly && (
+                                  <button
+                                    onClick={() => handleRemoveRevisao(etapa, revisao)}
+                                    className="text-red-500 hover:text-red-700 p-0.5"
+                                    title={`Excluir revisão ${revisao}`}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          <div className="bg-green-50 p-1 text-center" style={{ width: '60px', minWidth: '60px' }}>
+                            {!readOnly && (
+                              <button
+                                onClick={() => handleAddRevisao(etapa)}
+                                className="text-green-600 hover:text-green-800 p-0.5"
+                                title="Adicionar revisão"
+                              >
+                                <Plus className="w-4 h-4" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Área de Dados com Scroll */}
+            <div className="flex-1 overflow-y-auto">
+              {linhas.length === 0 ? (
+                <div className="p-8 text-center text-gray-500">
+                  Nenhum documento cadastrado
+                </div>
+              ) : (
+                linhasPorDisciplina.map(([disciplina, linhasDaDisciplina]) => (
+                  <div key={disciplina}>
+                    {/* Linhas da Disciplina */}
+                    {linhasDaDisciplina.map((linha) => {
+                      const doc = documentos.find(d => d.id === linha.documento_id);
+                      const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
+                      
+                      return (
+                        <div key={linha.id} className="flex border-b border-gray-200 hover:bg-gray-50">
+                          {etapasVisiveis.map((etapa) => {
+                            const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+                            const isMinimizada = etapasMinimizadas[etapa];
+                            const colSpanTotal = isMinimizada ? 1 : revisoesEtapa.length + 1;
+                            
+                            return (
+                              <div
+                                key={`${linha.id}-${etapa}`}
+                                className="border-r border-gray-200 last:border-r-0"
+                                style={{ width: isMinimizada ? '60px' : `${colSpanTotal * 140}px`, minWidth: isMinimizada ? '60px' : `${colSpanTotal * 140}px` }}
+                              >
+                                {isMinimizada ? (
+                                  <div className="h-full flex items-center justify-center p-1 bg-gray-50"></div>
+                                ) : (
+                                  <div className="flex">
+                                    {revisoesEtapa.map((revisao) => (
+                                      <div
+                                        key={`${linha.id}-${etapa}-${revisao}`}
+                                        className="border-r border-gray-100 p-1"
+                                        style={{ width: '140px', minWidth: '140px' }}
+                                      >
+                                        <div className="flex gap-1 group">
+                                          <Input
+                                            type="date"
+                                            value={getDataValue(linha, etapa, revisao)}
+                                            onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
+                                            className={`h-8 text-xs w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:hidden [&::-webkit-clear-button]:hidden ${!getDataValue(linha, etapa, revisao) ? '[color-scheme:light] [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-calendar-picker-indicator]:opacity-100' : ''}`}
+                                            disabled={readOnly}
+                                          />
+                                          {!readOnly && getDataValue(linha, etapa, revisao) && (
+                                            <button
+                                              onClick={() => copiarDataParaBaixo(linha.id, etapa, revisao)}
+                                              className="text-purple-600 hover:text-purple-800 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                              title="Preencher todas abaixo"
+                                            >
+                                              <Wand2 className="w-3.5 h-3.5" />
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    ))}
+                                    <div className="p-1" style={{ width: '60px', minWidth: '60px' }}></div>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      );
+                    })}
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
       </div>
 
       {etapasExcluidas.length > 0 && (
