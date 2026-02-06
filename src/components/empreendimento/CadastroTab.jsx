@@ -1135,11 +1135,11 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                                        className="border-r border-gray-100 p-0.5 flex-shrink-0 flex items-center relative group"
                                        style={{ width: '85px', minWidth: '85px' }}
                                      >
-                                       <Input
+                                       <input
                                          type="date"
                                          value={getDataValue(linha, etapa, revisao)}
                                          onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
-                                         className={`h-7 text-[10px] w-full px-0.5 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:hidden [&::-webkit-clear-button]:hidden ${!getDataValue(linha, etapa, revisao) ? '[color-scheme:light] [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-calendar-picker-indicator]:opacity-100' : ''}`}
+                                         className="h-8 text-xs w-full px-1 border border-gray-300 rounded cursor-pointer"
                                          disabled={readOnly}
                                        />
                                        {!readOnly && getDataValue(linha, etapa, revisao) && (
