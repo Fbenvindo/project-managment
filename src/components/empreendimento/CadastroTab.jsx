@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2, Save, Loader2, Upload, Download, Copy, ArrowDown, ArrowRight, Wand2, ChevronDown, ChevronRight } from "lucide-react";
+import { Plus, Trash2, Save, Loader2, Upload, Download, Copy, ArrowDown, ArrowRight, Wand2 } from "lucide-react";
 import { DataCadastro, Documento } from "@/entities/all";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { format } from "date-fns";
@@ -29,7 +29,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
   const [revisoesPorEtapa, setRevisoesPorEtapa] = useState({});
   const [etapasExcluidas, setEtapasExcluidas] = useState([]);
-  const [etapasMinimizadas, setEtapasMinimizadas] = useState([]);
   const [linhas, setLinhas] = useState([]);
   const [documentos, setDocumentos] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
@@ -909,18 +908,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                     style={{ width: `${colSpanTotal * 150}px` }}
                   >
                     <div className="flex items-center justify-center gap-2">
-                      <button
-                        onClick={() => setEtapasMinimizadas(prev => 
-                          prev.includes(etapa) ? prev.filter(e => e !== etapa) : [...prev, etapa]
-                        )}
-                        className="text-gray-600 hover:text-gray-800 p-1"
-                        title={etapasMinimizadas.includes(etapa) ? "Expandir" : "Minimizar"}
-                      >
-                        {etapasMinimizadas.includes(etapa) ? 
-                          <ChevronRight className="w-4 h-4" /> : 
-                          <ChevronDown className="w-4 h-4" />
-                        }
-                      </button>
                       <span>Datas de cadastro:<br />{etapa}</span>
                       {!readOnly && (
                         <button
@@ -941,10 +928,9 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
               {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, etapaIdx) => {
                 const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                 const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
-                const isMinimizada = etapasMinimizadas.includes(etapa);
                 return (
                   <React.Fragment key={`rev-${etapa}`}>
-                    {!isMinimizada && revisoesEtapa.map((revisao, revIdx) => (
+                    {revisoesEtapa.map((revisao, revIdx) => (
                       <th
                         key={`${etapa}-${revisao}`}
                         className="border border-gray-300 bg-blue-50 p-2 text-center font-medium"
@@ -970,7 +956,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                       }`}
                       style={{ width: '50px', minWidth: '50px' }}
                     >
-                      {!readOnly && !isMinimizada && (
+                      {!readOnly && (
                         <button
                           onClick={() => handleAddRevisao(etapa)}
                           className="text-green-600 hover:text-green-800 p-0.5"
@@ -1046,44 +1032,43 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                          </div>
                         </td>
                         {etapasVisiveis.map((etapa, etapaIdx) => {
-                         const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
-                         const isMinimizada = etapasMinimizadas.includes(etapa);
-                         return (
-                           <React.Fragment key={`${linha.id}-${etapa}`}>
-                             {!isMinimizada && revisoesEtapa.map((revisao, revIdx) => (
-                               <td 
-                                 key={`${linha.id}-${etapa}-${revisao}`} 
-                                 className="border border-gray-300 p-1"
-                                 style={{ width: '150px', minWidth: '150px' }}
-                               >
-                                   <div className="flex gap-1 group">
-                                   <Input
-                                    type="date"
-                                    value={getDataValue(linha, etapa, revisao)}
-                                    onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
-                                    className={`h-8 text-xs w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:hidden [&::-webkit-clear-button]:hidden ${!getDataValue(linha, etapa, revisao) ? '[color-scheme:light] [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-calendar-picker-indicator]:opacity-100' : ''}`}
-                                    disabled={readOnly}
-                                   />
-                                   {!readOnly && getDataValue(linha, etapa, revisao) && (
-                                    <button
-                                      onClick={() => copiarDataParaBaixo(linha.id, etapa, revisao)}
-                                      className="text-purple-600 hover:text-purple-800 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                      title="Preencher todas abaixo"
-                                    >
-                                      <Wand2 className="w-3.5 h-3.5" />
-                                    </button>
-                                   )}
-                                   </div>
-                               </td>
-                             ))}
-                             <td 
-                               className={`border p-1 ${
-                                 etapaIdx < etapasVisiveis.length - 1 ? 'border-r-4 border-r-gray-800 border-gray-300' : 'border-gray-300'
-                               }`}
-                               style={{ width: '50px', minWidth: '50px' }}
-                             ></td>
-                           </React.Fragment>
-                         );
+                          const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+                          return (
+                            <React.Fragment key={`${linha.id}-${etapa}`}>
+                              {revisoesEtapa.map((revisao, revIdx) => (
+                                <td 
+                                  key={`${linha.id}-${etapa}-${revisao}`} 
+                                  className="border border-gray-300 p-1"
+                                  style={{ width: '150px', minWidth: '150px' }}
+                                >
+                                    <div className="flex gap-1 group">
+                                    <Input
+                                     type="date"
+                                     value={getDataValue(linha, etapa, revisao)}
+                                     onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
+                                     className={`h-8 text-xs w-full [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-inner-spin-button]:hidden [&::-webkit-clear-button]:hidden ${!getDataValue(linha, etapa, revisao) ? '[color-scheme:light] [&::-webkit-datetime-edit]:opacity-0 [&::-webkit-calendar-picker-indicator]:opacity-100' : ''}`}
+                                     disabled={readOnly}
+                                    />
+                                    {!readOnly && getDataValue(linha, etapa, revisao) && (
+                                     <button
+                                       onClick={() => copiarDataParaBaixo(linha.id, etapa, revisao)}
+                                       className="text-purple-600 hover:text-purple-800 p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                       title="Preencher todas abaixo"
+                                     >
+                                       <Wand2 className="w-3.5 h-3.5" />
+                                     </button>
+                                    )}
+                                    </div>
+                                </td>
+                              ))}
+                              <td 
+                                className={`border p-1 ${
+                                  etapaIdx < etapasVisiveis.length - 1 ? 'border-r-4 border-r-gray-800 border-gray-300' : 'border-gray-300'
+                                }`}
+                                style={{ width: '50px', minWidth: '50px' }}
+                              ></td>
+                            </React.Fragment>
+                          );
                         })}
                       </tr>
                     );
