@@ -249,9 +249,8 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     
     setIsSaving(true);
     try {
-      const savedItems = [];
-      
-      for (const item of items) {
+      // Salvar todos os itens em paralelo
+      const savePromises = items.map(async (item) => {
         const itemData = {
           empreendimento_id: empreendimento.id,
           item: item.item,
@@ -267,13 +266,13 @@ export default function PRETab({ empreendimento, readOnly = false }) {
         };
 
         if (item.isNew || item.id.toString().startsWith('temp-')) {
-          const created = await retryWithBackoff(() => ItemPRE.create(itemData), 3, 2000, 'PRE-Create');
-          savedItems.push(created);
+          return retryWithBackoff(() => ItemPRE.create(itemData), 3, 2000, 'PRE-Create');
         } else {
-          const updated = await retryWithBackoff(() => ItemPRE.update(item.id, itemData), 3, 2000, `PRE-Update-${item.id}`);
-          savedItems.push(updated);
+          return retryWithBackoff(() => ItemPRE.update(item.id, itemData), 3, 2000, `PRE-Update-${item.id}`);
         }
-      }
+      });
+
+      const savedItems = await Promise.all(savePromises);
       
       const sortedSavedItems = savedItems.sort((a, b) => {
         const parseItem = (str) => {
