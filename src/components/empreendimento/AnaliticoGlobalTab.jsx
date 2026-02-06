@@ -2487,11 +2487,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       
       console.log(`   📊 Total de planejamentos encontrados: ${planejamentos.length}`);
       
-      if (planejamentos.length === 0) {
-        alert(`Nenhum planejamento encontrado para esta atividade. A atividade precisa estar planejada em pelo menos uma folha para ser concluída.`);
-        return;
-      }
-      
       const hoje = format(new Date(), 'yyyy-MM-dd');
       let concluidos = 0;
       let jaFinalizados = 0;
