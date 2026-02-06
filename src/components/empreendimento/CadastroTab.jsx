@@ -977,9 +977,9 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           </div>
 
           {/* Container de Etapas com Scroll Horizontal - 80% */}
-          <div className="w-[80%] flex flex-col">
-            <div className="flex-1 overflow-auto">
-              <div style={{ minWidth: `${larguraTotalEtapas}px` }}>
+          <div className="w-[80%] flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-x-auto overflow-y-auto">
+              <div style={{ width: `${larguraTotalEtapas}px`, minWidth: '100%' }}>
                 {/* Cabeçalho Fixo das Etapas */}
                 <div className="bg-blue-100 border-b-2 border-gray-300 sticky top-0 z-20" style={{ minWidth: `${larguraTotalEtapas}px` }}>
                   <div className="flex">
