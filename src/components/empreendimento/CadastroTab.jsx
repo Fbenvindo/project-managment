@@ -902,8 +902,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         </Button>
       )}
 
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="flex h-[calc(100vh-300px)]">
+      <div className="bg-white rounded-lg shadow overflow-hidden max-w-full">
+        <div className="flex h-[calc(100vh-300px)] overflow-hidden">
           {/* Container de Folhas Fixo - 20% */}
           <div className="w-[20%] border-r-2 border-gray-300 flex flex-col bg-gray-50">
             {/* Cabeçalho Fixo das Folhas */}
