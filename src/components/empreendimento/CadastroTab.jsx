@@ -923,7 +923,15 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
             </div>
 
             {/* Lista de Folhas */}
-            <div className="flex-1 overflow-y-hidden">
+            <div 
+              ref={folhasScrollRef}
+              className="flex-1 overflow-y-auto"
+              onScroll={(e) => {
+                if (dataScrollRef.current) {
+                  dataScrollRef.current.scrollTop = e.target.scrollTop;
+                }
+              }}
+            >
               {linhas.length === 0 ? (
                 <div className="p-8 text-center text-gray-500">
                   Nenhum documento cadastrado neste empreendimento. Cadastre documentos na aba "Documentos" primeiro.
