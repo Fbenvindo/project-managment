@@ -1139,7 +1139,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                                          type="date"
                                          value={getDataValue(linha, etapa, revisao)}
                                          onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
-                                         className="h-8 text-xs w-full px-1 border border-gray-300 rounded cursor-pointer"
+                                         className="h-8 text-xs w-full px-1 border border-gray-300 rounded cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 hover:[&::-webkit-calendar-picker-indicator]:opacity-100"
+                                         style={{ color: getDataValue(linha, etapa, revisao) ? 'black' : 'transparent' }}
                                          disabled={readOnly}
                                        />
                                        {!readOnly && getDataValue(linha, etapa, revisao) && (
