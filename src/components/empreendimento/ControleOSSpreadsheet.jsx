@@ -305,6 +305,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
 
   const cronogramaOptions = [
     "NA",
+    "Concluído",
     "Concluído - EX",
     "Concluído - EX R00",
     "Concluído - LO",
