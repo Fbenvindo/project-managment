@@ -456,7 +456,7 @@ export default function AtividadesManager({ atividades, disciplinas, onUpdate, i
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2 flex-wrap">
                               <h4 className="font-medium text-gray-900">
-                                {atividade.atividade}
+                                {String(atividade.atividade || '')}
                               </h4>
 
                               {/* NOVO: Campo de edição inline para ID */}
@@ -536,12 +536,12 @@ export default function AtividadesManager({ atividades, disciplinas, onUpdate, i
 
                               <span className="flex items-center gap-1">
                                 <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                                {atividade.disciplina}
+                                {String(atividade.disciplina || '')}
                               </span>
                               {atividade.subdisciplina && (
                                 <span className="flex items-center gap-1">
                                   <div className="w-2 h-2 bg-green-400 rounded-full"></div>
-                                  {atividade.subdisciplina}
+                                  {String(atividade.subdisciplina || '')}
                                 </span>
                               )}
                               {atividade.tempo > 0 && (
@@ -553,7 +553,7 @@ export default function AtividadesManager({ atividades, disciplinas, onUpdate, i
                               {atividade.funcao && (
                                 <span className="flex items-center gap-1">
                                   <User className="w-3 h-3 text-gray-500" />
-                                  {atividade.funcao}
+                                  {String(atividade.funcao || '')}
                                 </span>
                               )}
                             </div>
