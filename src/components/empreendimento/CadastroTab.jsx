@@ -34,6 +34,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   const [isSaving, setIsSaving] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [loadedEmpreendimentoId, setLoadedEmpreendimentoId] = useState(null);
   const autoSaveTimeoutRef = useRef(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFile, setImportFile] = useState(null);
@@ -49,10 +50,20 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   const dataScrollRef = useRef(null);
 
   useEffect(() => {
-    if (empreendimento?.id && linhas.length === 0) {
+    if (empreendimento?.id && empreendimento?.id !== loadedEmpreendimentoId) {
+      console.log(`🔄 Mudança de empreendimento detectada: ${loadedEmpreendimentoId} -> ${empreendimento.id}`);
+      setLinhas([]);
+      setRevisoesPorEtapa({});
+      setEtapasExcluidas([]);
+      setLoadedEmpreendimentoId(empreendimento.id);
+    }
+  }, [empreendimento?.id, loadedEmpreendimentoId]);
+
+  useEffect(() => {
+    if (empreendimento?.id && loadedEmpreendimentoId === empreendimento.id && linhas.length === 0) {
       loadData();
     }
-  }, [empreendimento?.id]);
+  }, [loadedEmpreendimentoId]);
 
   // Auto-save desabilitado - causava conflitos de rate limit
   // useEffect(() => {
