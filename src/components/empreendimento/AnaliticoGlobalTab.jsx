@@ -585,7 +585,7 @@ const ExcluirDeFolhasModal = ({ isOpen, onClose, atividade, documentos, empreend
                 id_atividade: baseAtividadeId,
                 documento_id: docId,
                 tempo: -999,
-                atividade: `(Excluída da folha ${doc?.numero}) ${atividadeOriginal.atividade}`
+                atividade: atividadeOriginal.atividade
               }),
               3, 500, `createExclusionMarker-${docId}-${baseAtividadeId}`
             )
@@ -1379,7 +1379,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           id_atividade: genericAtividadeIdToExclude,
           tempo: -999,
           documento_id: null,
-          atividade: `(Excluída) ${atividadeOriginal.atividade}`
+          atividade: atividadeOriginal.atividade
         }),
         3, 500, `createExclusionMarker-${genericAtividadeIdToExclude}`
       );
@@ -2521,6 +2521,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
               atividade_id: atividadeId,
               documento_id: doc.id,
               etapa: atividadeOriginal.etapa,
+              base_descritivo: atividadeOriginal.atividade,
               descritivo: atividadeOriginal.atividade,
               tempo_planejado: atividadeOriginal.tempo || 0,
               status: 'concluido',
@@ -3171,7 +3172,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
               empreendimento_id: empreendimentoId,
               atividade_id: atividadeId,
               documento_id: doc.id,
-              etapa: etapa,
+              etapa: atividadeOriginal.etapa,
+              base_descritivo: atividadeOriginal.atividade,
               descritivo: atividadeOriginal.atividade,
               tempo_planejado: atividadeOriginal.tempo || 0,
               status: 'concluido',
