@@ -50,20 +50,17 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   const dataScrollRef = useRef(null);
 
   useEffect(() => {
-    if (empreendimento?.id && empreendimento?.id !== loadedEmpreendimentoId) {
-      console.log(`🔄 Mudança de empreendimento detectada: ${loadedEmpreendimentoId} -> ${empreendimento.id}`);
-      setLinhas([]);
-      setRevisoesPorEtapa({});
-      setEtapasExcluidas([]);
-      setLoadedEmpreendimentoId(empreendimento.id);
-    }
-  }, [empreendimento?.id, loadedEmpreendimentoId]);
+    if (!empreendimento?.id) return;
 
-  useEffect(() => {
-    if (empreendimento?.id && loadedEmpreendimentoId === empreendimento.id && linhas.length === 0) {
+    // Se mudou de empreendimento, reseta e carrega dados do novo
+    if (empreendimento.id !== loadedEmpreendimentoId) {
+      console.log(`🔄 Mudança de empreendimento: ${loadedEmpreendimentoId} -> ${empreendimento.id}`);
+      setLoadedEmpreendimentoId(empreendimento.id);
+      setIsLoading(true);
+      // Carrega dados imediatamente
       loadData();
     }
-  }, [loadedEmpreendimentoId]);
+  }, [empreendimento?.id]);
 
   // Auto-save desabilitado - causava conflitos de rate limit
   // useEffect(() => {
