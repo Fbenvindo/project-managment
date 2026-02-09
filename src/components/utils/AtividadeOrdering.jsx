@@ -25,16 +25,16 @@ export const ordenarAtividades = (atividades) => {
     
     // Depois ordena por disciplina
     if (a.disciplina !== b.disciplina) {
-      return (a.disciplina || '').localeCompare(b.disciplina || '');
+      return String(a.disciplina || '').localeCompare(String(b.disciplina || ''));
     }
     
     // Por último ordena por subdisciplina
     if (a.subdisciplina !== b.subdisciplina) {
-      return (a.subdisciplina || '').localeCompare(b.subdisciplina || '');
+      return String(a.subdisciplina || '').localeCompare(String(b.subdisciplina || ''));
     }
     
     // Por último ordena por nome da atividade
-    return (a.atividade || '').localeCompare(b.atividade || '');
+    return String(a.atividade || '').localeCompare(String(b.atividade || ''));
   });
 };
 
