@@ -28,9 +28,9 @@ export default function AnaliticoList({ analiticoItens, atividadesMap }) {
                   <TableCell>
                     <Badge variant="outline">{item.etapa}</Badge>
                   </TableCell>
-                  <TableCell>{atividade.disciplina}</TableCell>
-                  <TableCell>{atividade.subdisciplina}</TableCell>
-                  <TableCell className="font-medium">{atividade.atividade}</TableCell>
+                  <TableCell>{String(atividade.disciplina || '')}</TableCell>
+                  <TableCell>{String(atividade.subdisciplina || '')}</TableCell>
+                  <TableCell className="font-medium">{String(atividade.atividade || '')}</TableCell>
                   <TableCell className="font-bold text-blue-600">
                     {item.tempo_real?.toFixed(2)}h
                   </TableCell>
