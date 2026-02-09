@@ -128,12 +128,13 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
             Object.entries(item.datas).forEach(([etapa, etapaData]) => {
               if (etapaData && typeof etapaData === 'object') {
                 if (!revisoesMap[etapa]) {
-                  revisoesMap[etapa] = new Set(DEFAULT_REVISOES);
+                  revisoesMap[etapa] = new Set();
                 }
                 if (!revisoesExcluidasMap[etapa]) {
                   revisoesExcluidasMap[etapa] = new Set();
                 }
                 
+                // Adicionar revisões que têm dados preenchidos
                 Object.keys(etapaData).forEach(rev => {
                   if (rev !== '_excluida' && rev !== '_revisoes_excluidas' && rev !== '_revisoes_existentes') {
                     revisoesMap[etapa].add(rev);
