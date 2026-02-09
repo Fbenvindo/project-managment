@@ -330,16 +330,16 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
       .filter(a => a.tempo !== -999) // Excluir marcadores de exclusão
       .filter(a => {
         // Filtro por nome
-        const nomeMatch = (a.atividade || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const nomeMatch = String(a.atividade || '').toLowerCase().includes(searchTerm.toLowerCase());
         
         // Filtro por etapa
-        const etapaMatch = !etapaFilter || (a.etapa || '').toLowerCase() === etapaFilter.toLowerCase();
+        const etapaMatch = !etapaFilter || String(a.etapa || '').toLowerCase() === etapaFilter.toLowerCase();
         
         // Filtro por disciplina
-        const disciplinaMatch = !disciplinaFilter || (a.disciplina || '').toLowerCase() === disciplinaFilter.toLowerCase();
+        const disciplinaMatch = !disciplinaFilter || String(a.disciplina || '').toLowerCase() === disciplinaFilter.toLowerCase();
         
         // Filtro por subdisciplina
-        const subdisciplinaMatch = !subdisciplinaFilter || (a.subdisciplina || '').toLowerCase() === subdisciplinaFilter.toLowerCase();
+        const subdisciplinaMatch = !subdisciplinaFilter || String(a.subdisciplina || '').toLowerCase() === subdisciplinaFilter.toLowerCase();
         
         return nomeMatch && etapaMatch && disciplinaMatch && subdisciplinaMatch;
       });
@@ -529,7 +529,7 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
                               onCheckedChange={() => handleToggleAtividade(atividade.id)}
                             />
                           </TableCell>
-                          <TableCell className="font-medium">{atividade.atividade}</TableCell>
+                          <TableCell className="font-medium">{String(atividade.atividade || '')}</TableCell>
                           <TableCell>
                             {numFolhas > 0 ? (
                               <div className="flex flex-col gap-1">
