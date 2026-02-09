@@ -1050,12 +1050,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     const filtered = combinedActivities.filter(ativ => {
       const searchLower = filters.search.toLowerCase();
       const searchMatch = !filters.search ||
-        ativ.atividade?.toLowerCase().includes(searchLower) ||
-        ativ.disciplina?.toLowerCase().includes(searchLower) ||
-        ativ.subdisciplina?.toLowerCase().includes(searchLower) ||
-        ativ.etapa?.toLowerCase().includes(searchLower) ||
-        ativ.source?.toLowerCase().includes(searchLower) ||
-        ativ.status?.toLowerCase().includes(searchLower);
+        String(ativ.atividade || '').toLowerCase().includes(searchLower) ||
+        String(ativ.disciplina || '').toLowerCase().includes(searchLower) ||
+        String(ativ.subdisciplina || '').toLowerCase().includes(searchLower) ||
+        String(ativ.etapa || '').toLowerCase().includes(searchLower) ||
+        String(ativ.source || '').toLowerCase().includes(searchLower) ||
+        String(ativ.status || '').toLowerCase().includes(searchLower);
       
       const disciplinaMatch = filters.disciplina === 'all' || ativ.disciplina === filters.disciplina;
       const etapaMatch = filters.etapa === 'all' || ativ.etapa === 'all' || ativ.etapa === filters.etapa;
@@ -1747,7 +1747,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                       </Button>
                                     )}
                                   </TableCell>
-                                  <TableCell className="font-medium text-sm">{ativ.atividade}</TableCell>
+                                  <TableCell className="font-medium text-sm">{String(ativ.atividade || '')}</TableCell>
                                   <TableCell>
                                     <Badge variant="outline">
                                       {grupo.folhas.length} {grupo.folhas.length === 1 ? 'folha' : 'folhas'}
@@ -2126,7 +2126,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                               </Button>
                             )}
                           </TableCell>
-                          <TableCell className="font-medium">{ativ.atividade}</TableCell>
+                          <TableCell className="font-medium">{String(ativ.atividade || '')}</TableCell>
                           <TableCell>
                             <Badge variant="outline">
                               {grupo.folhas.length} {grupo.folhas.length === 1 ? 'folha' : 'folhas'}
