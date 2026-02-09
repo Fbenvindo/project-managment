@@ -53,7 +53,16 @@ const AtividadeFormDialog = ({ open, setOpen, empreendimentoId, disciplinas, onU
     
     try {
       if (atividade.id) {
-        // EDIÇÃO: Apenas atualiza a atividade existente
+        // CRÍTICO: Verificar se é uma atividade do catálogo ou do projeto
+        const ehAtividadeCatalogo = !atividade.empreendimento_id;
+        
+        if (ehAtividadeCatalogo) {
+          // NÃO permitir edição de atividades do catálogo
+          alert("Atividades do catálogo não podem ser editadas. Para personalizar, crie uma nova atividade para este projeto.");
+          return;
+        }
+        
+        // EDIÇÃO: Apenas atualiza a atividade do projeto
         const payload = { 
           ...atividade, 
           tempo: Number(atividade.tempo) || 0, 
@@ -64,7 +73,7 @@ const AtividadeFormDialog = ({ open, setOpen, empreendimentoId, disciplinas, onU
         onUpdate();
         setOpen(false);
       } else {
-        // CRIAÇÃO: Cria atividade vinculada à folha selecionada
+        // CRIAÇÃO: Cria atividade vinculada ao empreendimento/folha
         const payload = { 
           ...atividade, 
           tempo: Number(atividade.tempo) || 0, 
@@ -204,6 +213,15 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
   };
 
   const handleDelete = async (id) => {
+    // Verificar se a atividade é do catálogo
+    const atividade = atividades.find(a => a.id === id);
+    const ehAtividadeCatalogo = atividade && !atividade.empreendimento_id;
+    
+    if (ehAtividadeCatalogo) {
+      alert("Atividades do catálogo não podem ser excluídas daqui. Use a seção de Configurações para gerenciar o catálogo.");
+      return;
+    }
+    
     if (window.confirm("Tem certeza que deseja excluir esta atividade específica do projeto?")) {
       try {
         await Atividade.delete(id);

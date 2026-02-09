@@ -493,11 +493,17 @@ export default function PlanejamentoAtividadeModal({
           totalCriados++;
           console.log('   ✅ Criado com sucesso\n');
 
-          // **NOVO**: Marcar a atividade como "planejada"
+          // **NOVO**: Marcar a atividade como "planejada" APENAS se for do projeto
           try {
             const { Atividade } = await import('@/entities/all');
-            await Atividade.update(atividade.id, { status_planejamento: 'planejada' });
-            console.log('   ✅ Atividade marcada como planejada');
+            
+            // CRÍTICO: Só atualizar se a atividade pertencer a um empreendimento
+            if (atividade.empreendimento_id) {
+              await Atividade.update(atividade.id, { status_planejamento: 'planejada' });
+              console.log('   ✅ Atividade do projeto marcada como planejada');
+            } else {
+              console.log('   ℹ️ Atividade do catálogo - não será marcada como planejada');
+            }
           } catch (error) {
             console.warn('   ⚠️ Erro ao marcar atividade como planejada:', error);
           }

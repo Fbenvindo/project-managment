@@ -184,7 +184,16 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
     
     try {
       if (atividade && atividade.id) {
-        // Edição - atualiza apenas uma atividade
+        // CRÍTICO: Verificar se é uma atividade do catálogo
+        const ehAtividadeCatalogo = !atividade.empreendimento_id;
+        
+        if (ehAtividadeCatalogo) {
+          alert("Atividades do catálogo não podem ser editadas. Para personalizar, crie uma nova atividade para este projeto.");
+          setIsSubmitting(false);
+          return;
+        }
+        
+        // Edição - atualiza apenas atividade do projeto
         const dataToSave = {
           ...formData,
           subdisciplina: selectedSubdisciplinas[0],
