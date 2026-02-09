@@ -1740,13 +1740,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   const hasSelectedUser = !!filters.user;
   const isViewingAllUsers = filters.user === 'all';
 
-  // Auto-selecionar o próprio usuário no primeiro acesso
-  useEffect(() => {
-    if (user?.email && !filters.user) {
-      console.log(`🔄 Auto-selecionando usuário: ${user.email}`);
-      setFilters(prev => ({ ...prev, user: user.email }));
-    }
-  }, [user?.email, filters.user]);
+  // Auto-seleção removida - usuário deve selecionar manualmente para ver a tela de aviso
 
   const executorMap = useMemo(() => {
     return usuarios.reduce((acc, u) => {
