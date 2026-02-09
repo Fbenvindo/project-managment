@@ -77,14 +77,17 @@ export default function AtividadesManager({ atividades, disciplinas, onUpdate, i
   };
 
   // CORREÇÃO: Normalizar atividades para garantir que campos sejam strings
+  // Filtrar apenas atividades do catálogo (sem empreendimento_id)
   const atividadesNormalizadas = useMemo(() => {
-    return (atividades || []).map(atividade => ({
-      ...atividade,
-      atividade: typeof atividade.atividade === 'string' ? atividade.atividade : '',
-      disciplina: typeof atividade.disciplina === 'string' ? atividade.disciplina : '',
-      subdisciplina: typeof atividade.subdisciplina === 'string' ? atividade.subdisciplina : '',
-      etapa: typeof atividade.etapa === 'string' ? atividade.etapa : ''
-    }));
+    return (atividades || [])
+      .filter(atividade => !atividade.empreendimento_id)
+      .map(atividade => ({
+        ...atividade,
+        atividade: typeof atividade.atividade === 'string' ? atividade.atividade : '',
+        disciplina: typeof atividade.disciplina === 'string' ? atividade.disciplina : '',
+        subdisciplina: typeof atividade.subdisciplina === 'string' ? atividade.subdisciplina : '',
+        etapa: typeof atividade.etapa === 'string' ? atividade.etapa : ''
+      }));
   }, [atividades]);
 
   // CORREÇÃO: Usar função utilitária para ordenar
