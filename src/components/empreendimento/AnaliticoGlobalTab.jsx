@@ -756,6 +756,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const [etapaParaConcluir, setEtapaParaConcluir] = useState('');
   const [isRevertendoEtapa, setIsRevertendoEtapa] = useState(false);
   const [etapaParaReverter, setEtapaParaReverter] = useState('');
+  const [isMudandoEtapaGlobal, setIsMudandoEtapaGlobal] = useState(false);
+  const [etapaMudancaGlobal, setEtapaMudancaGlobal] = useState('');
 
   const documentosMap = useMemo(() => {
     return new Map((documentos || []).map(doc => [doc.id, doc]));
