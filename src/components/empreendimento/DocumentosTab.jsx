@@ -255,7 +255,7 @@ export default function DocumentosTab({
                     ? parseFloat(tempoOverridesChild.get(ativ.id)) || 0
                     : parseFloat(ativ.tempo) || 0;
                 // "Confecção de A-" usa apenas horas x pav (sem fator de dificuldade)
-                const isConfeccaoA = ativ.atividade && ativ.atividade.trim().startsWith('Confecção de A-');
+                const isConfeccaoA = ativ.atividade && String(ativ.atividade).trim().startsWith('Confecção de A-');
                 const multiplier = isConfeccaoA ? 1 : fatorDificuldadeChild;
                 const tempoCalculado = tempoBase * multiplier;
                 return total + tempoCalculado;
@@ -2386,7 +2386,7 @@ export default function DocumentosTab({
                           <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <span className={`font-medium ${atividade.estaConcluida || atividade.statusPlanejamento === 'concluido' ? 'line-through text-gray-500' : ''}`}>
-                              {String(atividade.atividade || '').replace(/^\(Concluída na folha \d+\)\s*/, '')}
+                              {String(atividade.atividade || '').replace(/^\(Concluída na folha \d+\)\s*/, '').trim() || 'Atividade'}
                             </span>
                             {atividade.statusPlanejamento === 'concluido' && (
                               <Badge className="bg-green-600 text-white text-xs">
