@@ -1308,7 +1308,7 @@ export default function DocumentosTab({
         const fatorDificuldade = doc.fator_dificuldade || 1;
         
         // "Confecção de A-" usa apenas horas x pav (sem fator de dificuldade)
-        const isConfeccaoA = atividade.atividade && String(atividade.atividade).trim().startsWith('Confecção de A-');
+        const isConfeccaoA = nomeAtividadeSeguro.trim().startsWith('Confecção de A-');
         const multiplier = isConfeccaoA ? 1 : fatorDificuldade;
 
         // CORRIGIDO: tempo base já é total, não h/m²
