@@ -550,11 +550,13 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       const linhasParaSalvar = linhas.filter(linha => {
         if (!linha.documento_id) return false;
         
-        // Verificar se há alguma data preenchida OU marcadores de exclusão de etapa
+        // Verificar se há alguma data preenchida OU marcadores de exclusão/revisões
         const temDados = linha.datas && Object.values(linha.datas).some(etapaData => {
-          if (!etapaData) return false;
+          if (!etapaData || typeof etapaData !== 'object') return false;
           // Verificar se tem marcador de exclusão
           if (etapaData._excluida) return true;
+          // Verificar se tem revisões excluídas (significa que houve mudanças)
+          if (etapaData._revisoes_excluidas && Array.isArray(etapaData._revisoes_excluidas) && etapaData._revisoes_excluidas.length > 0) return true;
           // Verificar se tem revisões existentes (mesmo sem dados preenchidos)
           if (etapaData._revisoes_existentes && Array.isArray(etapaData._revisoes_existentes) && etapaData._revisoes_existentes.length > 0) return true;
           // Verificar se tem alguma data preenchida
@@ -565,6 +567,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         
         return temDados;
       });
+      
+      console.log(`Salvando ${linhasParaSalvar.length} linhas`);
 
       // Processar sequencialmente para evitar rate limit
       let successCount = 0;
