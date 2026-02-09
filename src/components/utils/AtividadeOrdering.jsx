@@ -24,17 +24,23 @@ export const ordenarAtividades = (atividades) => {
     }
     
     // Depois ordena por disciplina
-    if (a.disciplina !== b.disciplina) {
-      return (a.disciplina || '').localeCompare(b.disciplina || '');
+    const discA = String(a.disciplina || '');
+    const discB = String(b.disciplina || '');
+    if (discA !== discB) {
+      return discA.localeCompare(discB);
     }
     
     // Por último ordena por subdisciplina
-    if (a.subdisciplina !== b.subdisciplina) {
-      return (a.subdisciplina || '').localeCompare(b.subdisciplina || '');
+    const subdA = String(a.subdisciplina || '');
+    const subdB = String(b.subdisciplina || '');
+    if (subdA !== subdB) {
+      return subdA.localeCompare(subdB);
     }
     
     // Por último ordena por nome da atividade
-    return (a.atividade || '').localeCompare(b.atividade || '');
+    const atA = String(a.atividade || '');
+    const atB = String(b.atividade || '');
+    return atA.localeCompare(atB);
   });
 };
 
