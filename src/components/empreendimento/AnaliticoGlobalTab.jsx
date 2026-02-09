@@ -3343,6 +3343,146 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     }
   };
 
+  const handleMudarEtapaGlobal = async (novaEtapa) => {
+    if (!novaEtapa) {
+      alert("Selecione a nova etapa.");
+      return;
+    }
+
+    const atividadesDaEtapaAntiga = atividadesAgrupadas.filter(grupo =>
+      grupo.baseAtividade.etapa === etapaMudancaGlobal && !grupo.baseAtividade.isEditable
+    );
+
+    const totalAtividades = atividadesDaEtapaAntiga.length;
+    if (totalAtividades === 0) {
+      alert(`Nenhuma atividade encontrada para a etapa "${etapaMudancaGlobal}".`);
+      return;
+    }
+
+    if (!window.confirm(
+      `Tem certeza que deseja mover ${totalAtividades} atividade(s) de "${etapaMudancaGlobal}" para "${novaEtapa}" em TODAS as folhas deste empreendimento?\n\nEsta ação só afeta este empreendimento.`
+    )) {
+      return;
+    }
+
+    setIsMudandoEtapaGlobal(true);
+
+    try {
+      console.log(`\n🔀 ========================================`);
+      console.log(`🔀 MOVER ETAPA GLOBAL: ${etapaMudancaGlobal} → ${novaEtapa}`);
+      console.log(`🔀 ========================================`);
+      console.log(`   Empreendimento: ${empreendimentoId}`);
+      console.log(`   Atividades: ${totalAtividades}`);
+
+      const user = await base44.auth.me();
+      let atividadesMudadas = 0;
+      let planejamentosMudados = 0;
+
+      for (const grupo of atividadesDaEtapaAntiga) {
+        const atividadeId = grupo.baseAtividade.base_atividade_id || grupo.baseAtividade.id;
+
+        // Registrar a mudança
+        await AlteracaoEtapa.create({
+          atividade_id: atividadeId,
+          id_atividade: grupo.baseAtividade.id_atividade || "",
+          nome_atividade: grupo.baseAtividade.atividade,
+          disciplina: grupo.baseAtividade.disciplina,
+          subdisciplina: grupo.baseAtividade.subdisciplina || "",
+          etapa_anterior: etapaMudancaGlobal,
+          etapa_nova: novaEtapa,
+          empreendimento_id: empreendimentoId,
+          empreendimento_nome: empreendimentoNome,
+          data_alteracao: new Date().toISOString(),
+          usuario_email: user.email,
+          usuario_nome: user.full_name || user.nome || user.email
+        });
+
+        // Buscar todos os planejamentos desta atividade
+        const planejamentosAtividade = await retryWithBackoff(
+          () => PlanejamentoAtividade.filter({
+            empreendimento_id: empreendimentoId,
+            atividade_id: atividadeId
+          }),
+          3, 500, `getPlanejamentosGlobal-${atividadeId}`
+        );
+
+        // Atualizar planejamentos
+        if (planejamentosAtividade && planejamentosAtividade.length > 0) {
+          const updatePromises = planejamentosAtividade.map(plano =>
+            retryWithBackoff(
+              () => PlanejamentoAtividade.update(plano.id, { etapa: novaEtapa }),
+              3, 500, `updateEtapaGlobal-${plano.id}`
+            )
+          );
+          await Promise.all(updatePromises);
+          planejamentosMudados += planejamentosAtividade.length;
+        }
+
+        // Criar/atualizar override global
+        const existingOverrides = await retryWithBackoff(
+          () => Atividade.filter({
+            empreendimento_id: empreendimentoId,
+            id_atividade: atividadeId,
+            documento_id: null,
+            tempo: { operator: '!=', value: -999 }
+          }),
+          3, 500, `checkOverrideGlobal-${atividadeId}`
+        );
+
+        if (existingOverrides && existingOverrides.length > 0) {
+          await retryWithBackoff(
+            () => Atividade.update(existingOverrides[0].id, { etapa: novaEtapa }),
+            3, 500, `updateOverrideGlobal-${existingOverrides[0].id}`
+          );
+        } else {
+          const atividadeOriginalArr = await retryWithBackoff(
+            () => Atividade.filter({ id: atividadeId }),
+            3, 500, `getActivityForOverride-${atividadeId}`
+          );
+
+          if (atividadeOriginalArr && atividadeOriginalArr.length > 0) {
+            const atividadeOriginal = atividadeOriginalArr[0];
+            await retryWithBackoff(
+              () => Atividade.create({
+                ...atividadeOriginal,
+                id: undefined,
+                empreendimento_id: empreendimentoId,
+                id_atividade: atividadeId,
+                documento_id: null,
+                etapa: novaEtapa
+              }),
+              3, 500, `createOverrideGlobal-${atividadeId}`
+            );
+          }
+        }
+
+        atividadesMudadas++;
+        console.log(`   ✅ Atividade ${atividadeId} movida para "${novaEtapa}"`);
+      }
+
+      console.log(`\n🔀 ========================================`);
+      console.log(`🔀 MUDANÇA CONCLUÍDA`);
+      console.log(`   Atividades movidas: ${atividadesMudadas}`);
+      console.log(`   Planejamentos atualizados: ${planejamentosMudados}`);
+      console.log(`🔀 ========================================\n`);
+
+      await fetchData();
+      if (onUpdate) onUpdate();
+
+      alert(
+        `✅ Sucesso! ${atividadesMudadas} atividade(s) movida(s) de "${etapaMudancaGlobal}" para "${novaEtapa}".\n\n` +
+        `${planejamentosMudados} planejamento(s) foi/foram atualizado(s).`
+      );
+      setEtapaMudancaGlobal('');
+
+    } catch (error) {
+      console.error("Erro ao mover etapa global:", error);
+      alert("Erro ao mover atividades: " + error.message);
+    } finally {
+      setIsMudandoEtapaGlobal(false);
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
