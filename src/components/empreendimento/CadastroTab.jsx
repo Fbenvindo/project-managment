@@ -594,14 +594,33 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         try {
           console.log(`\n📨 [${i + 1}/${linhasParaSalvar.length}] Salvando linha: ${linha.id}`);
           
+          // Preservar metadados (_revisoes_existentes, _revisoes_excluidas, _excluida) para cada etapa
+          const datasComMetadados = {};
+          if (linha.datas) {
+            Object.entries(linha.datas).forEach(([etapa, etapaData]) => {
+              if (etapaData && typeof etapaData === 'object') {
+                datasComMetadados[etapa] = {
+                  ...etapaData // Mantém TUDO: dados + metadados (_revisoes_existentes, etc)
+                };
+              }
+            });
+          }
+          
           const linhaData = {
             empreendimento_id: empreendimento.id,
             ordem: linha.ordem,
             documento_id: linha.documento_id,
-            datas: linha.datas || {}
+            datas: datasComMetadados
           };
           
           console.log(`  Dados a salvar:`, linhaData);
+          console.log(`  Metadados preservados:`, {
+            revisoes_existentes: Object.entries(datasComMetadados).map(([etapa, data]) => ({
+              etapa,
+              revisoes_existentes: data?._revisoes_existentes,
+              revisoes_excluidas: data?._revisoes_excluidas
+            }))
+          });
 
           let result;
           let attempts = 0;
