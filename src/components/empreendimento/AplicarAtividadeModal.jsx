@@ -78,7 +78,7 @@ export default function AplicarAtividadeModal({ isOpen, onClose, empreendimentoI
                 novosPlanejamentos.push({
                     empreendimento_id: empreendimentoId,
                     atividade_id: atividade.id,
-                    descritivo: atividade.atividade,
+                    descritivo: String(atividade.atividade || ''),
                     etapa: atividade.etapa,
                     tempo_planejado: tempoTotal,
                     executor_principal: executorEmail,
