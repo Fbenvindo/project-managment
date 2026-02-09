@@ -1214,7 +1214,7 @@ export default function DocumentosTab({
               console.log(`   ❌ Exclusão global: atividade ${ativ.id_atividade}`);
               atividadesExcluidasGlobal.add(ativ.id_atividade);
             }
-          } else if (ativ.tempo === 0 && ativ.documento_id === doc.id && ativ.atividade?.includes('Concluída na folha')) {
+          } else if (ativ.tempo === 0 && ativ.documento_id === doc.id && String(ativ.atividade || '').includes('Concluída na folha')) {
             // Conclusões (identificadas por tempo 0 e texto "Concluída na folha")
             console.log(`   ✅ Concluída na folha ${doc.numero}: atividade ${ativ.id_atividade}`);
             atividadesConcluidasPorDoc.add(ativ.id_atividade);
