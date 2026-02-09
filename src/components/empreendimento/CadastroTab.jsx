@@ -592,12 +592,16 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         const linha = linhasParaSalvar[i];
         
         try {
+          console.log(`\n📨 [${i + 1}/${linhasParaSalvar.length}] Salvando linha: ${linha.id}`);
+          
           const linhaData = {
             empreendimento_id: empreendimento.id,
             ordem: linha.ordem,
             documento_id: linha.documento_id,
             datas: linha.datas || {}
           };
+          
+          console.log(`  Dados a salvar:`, linhaData);
 
           let result;
           let attempts = 0;
@@ -605,15 +609,19 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           
           while (attempts < maxAttempts) {
             try {
-              if (linha.isNew || linha.id.toString().startsWith('temp-')) {
+              const isNew = linha.isNew || linha.id.toString().startsWith('temp-');
+              console.log(`  🔄 Tentativa ${attempts + 1}/${maxAttempts} (${isNew ? 'CREATE' : 'UPDATE'})`);
+              
+              if (isNew) {
                 result = await DataCadastro.create(linhaData);
               } else {
                 result = await DataCadastro.update(linha.id, linhaData);
               }
+              console.log(`  ✅ Sucesso! ID: ${result.id}`);
               break; // Sucesso, sair do loop
             } catch (err) {
               attempts++;
-              console.error(`Tentativa ${attempts} falhou para linha ${linha.id}:`, err);
+              console.error(`  ❌ Tentativa ${attempts} falhou:`, err.message);
               
               if (attempts >= maxAttempts) {
                 throw err; // Excedeu tentativas, lançar erro
@@ -621,7 +629,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
               
               // Aguardar antes de tentar novamente (backoff menor)
               const waitTime = 1000 * attempts;
-              console.log(`Aguardando ${waitTime}ms antes de tentar novamente...`);
+              console.log(`  ⏳ Aguardando ${waitTime}ms...`);
               await new Promise(resolve => setTimeout(resolve, waitTime));
             }
           }
@@ -635,7 +643,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           }
         } catch (error) {
           errorCount++;
-          console.error(`Erro na linha ${linha.id}:`, error);
+          console.error(`❌ ERRO na linha ${linha.id}:`, error);
         }
       }
 
