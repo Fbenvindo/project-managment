@@ -409,7 +409,7 @@ export default function AtividadesManager({ atividades, disciplinas, onUpdate, i
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas as Disciplinas</SelectItem>
-                {(disciplinas || []).map((disciplina) => (
+                {(disciplinas || []).sort((a, b) => (a.nome || '').localeCompare(b.nome || '')).map((disciplina) => (
                   <SelectItem key={disciplina.id} value={disciplina.nome}>
                     {disciplina.nome}
                   </SelectItem>
