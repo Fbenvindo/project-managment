@@ -546,29 +546,29 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     }
     setIsSaving(true);
     try {
-      // Filtrar apenas linhas que têm dados para salvar
+      // Filtrar apenas linhas que têm dados para salvar (apenas dados reais do usuário, não metadados)
       const linhasParaSalvar = linhas.filter(linha => {
         if (!linha.documento_id) return false;
+        if (!linha.datas || Object.keys(linha.datas).length === 0) return false;
         
-        // Verificar se há alguma data preenchida OU marcadores de exclusão/revisões
-        const temDados = linha.datas && Object.values(linha.datas).some(etapaData => {
+        // Salvar apenas se tem dados preenchidos OU mudanças estruturais (exclusões)
+        return Object.values(linha.datas).some(etapaData => {
           if (!etapaData || typeof etapaData !== 'object') return false;
-          // Verificar se tem marcador de exclusão
+          
+          // Tem marcador de exclusão = deve salvar
           if (etapaData._excluida) return true;
-          // Verificar se tem revisões excluídas (significa que houve mudanças)
-          if (etapaData._revisoes_excluidas && Array.isArray(etapaData._revisoes_excluidas) && etapaData._revisoes_excluidas.length > 0) return true;
-          // Verificar se tem revisões existentes (mesmo sem dados preenchidos)
-          if (etapaData._revisoes_existentes && Array.isArray(etapaData._revisoes_existentes) && etapaData._revisoes_existentes.length > 0) return true;
-          // Verificar se tem alguma data preenchida
+          
+          // Tem revisões excluídas = deve salvar (houve mudanças)
+          if (etapaData._revisoes_excluidas?.length > 0) return true;
+          
+          // Tem alguma data preenchida = deve salvar
           return Object.entries(etapaData).some(([key, data]) => 
-            key !== '_excluida' && key !== '_revisoes_excluidas' && key !== '_revisoes_existentes' && data && typeof data === 'string' && data.trim()
+            !key.startsWith('_') && data && typeof data === 'string' && data.trim()
           );
         });
-        
-        return temDados;
       });
       
-      console.log(`Salvando ${linhasParaSalvar.length} linhas`);
+      console.log(`Salvando ${linhasParaSalvar.length} linhas (de ${linhas.length} total)`);
 
       // Processar sequencialmente para evitar rate limit
       let successCount = 0;
