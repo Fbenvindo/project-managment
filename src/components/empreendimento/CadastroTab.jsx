@@ -541,12 +541,16 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
 
   const handleSave = async (silent = false) => {
+    console.log('💾 INICIANDO SALVAMENTO');
     if (isSaving) {
-      console.log('Já está salvando, ignorando chamada duplicada');
+      console.log('⚠️ Já está salvando, ignorando chamada duplicada');
       return;
     }
     setIsSaving(true);
     try {
+      console.log('📋 Estado atual hasUnsavedChanges:', hasUnsavedChanges);
+      console.log('📋 Total de linhas:', linhas.length);
+      
       // Filtrar apenas linhas que têm dados para salvar (apenas dados reais do usuário, não metadados)
       const linhasParaSalvar = linhas.filter(linha => {
         if (!linha.documento_id) return false;
@@ -572,7 +576,12 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         });
       });
       
-      console.log(`Salvando ${linhasParaSalvar.length} linhas (de ${linhas.length} total)`);
+      console.log(`📤 ${linhasParaSalvar.length} linhas para salvar (de ${linhas.length} total)`);
+      console.log('📤 Primeiras 3 linhas para debug:', linhasParaSalvar.slice(0, 3).map(l => ({
+        id: l.id,
+        documento_id: l.documento_id,
+        datas: l.datas
+      })));
 
       // Processar sequencialmente para evitar rate limit
       let successCount = 0;
