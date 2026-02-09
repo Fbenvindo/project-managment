@@ -146,17 +146,26 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                   revisoesExcluidasMap[etapa] = new Set();
                 }
 
+                // Adicionar revisões que têm dados preenchidos
+                Object.keys(etapaData).forEach(rev => {
+                 if (rev !== '_excluida' && rev !== '_revisoes_excluidas' && rev !== '_revisoes_existentes') {
+                   const valor = etapaData[rev];
+                   console.log(`    📝 Revisão com dados: ${rev} = ${valor}`);
+                   revisoesMap[etapa].add(rev);
+                 }
+                });
+
                 // Carregar revisões que foram criadas (mesmo sem dados)
                 if ('_revisoes_existentes' in etapaData) {
-                  console.log(`    📋 _revisoes_existentes encontrado:`, etapaData._revisoes_existentes);
-                  if (Array.isArray(etapaData._revisoes_existentes)) {
-                    etapaData._revisoes_existentes.forEach(rev => {
-                      console.log(`      ➕ Adicionando revisão criada: ${rev}`);
-                      revisoesMap[etapa].add(rev);
-                    });
-                  } else {
-                    console.log(`      ❌ _revisoes_existentes NÃO é array!`);
-                  }
+                 console.log(`    📋 _revisoes_existentes encontrado:`, etapaData._revisoes_existentes);
+                 if (Array.isArray(etapaData._revisoes_existentes)) {
+                   etapaData._revisoes_existentes.forEach(rev => {
+                     console.log(`      ➕ Adicionando revisão criada: ${rev}`);
+                     revisoesMap[etapa].add(rev);
+                   });
+                 } else {
+                   console.log(`      ❌ _revisoes_existentes NÃO é array!`);
+                 }
                 }
 
                 // Detectar revisões excluídas
@@ -170,11 +179,11 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 if (etapaData._excluida) {
                   etapasExcluidasSet.add(etapa);
                 }
-                }
-                });
-                }
-                });
-                console.log('🎯 Resumo de revisões carregadas:', revisoesMap);
+              }
+            });
+          }
+        });
+        console.log('🎯 Resumo de revisões carregadas:', revisoesMap);
       }
       
       // Inicializar revisões para todas as etapas, removendo as excluídas
