@@ -177,6 +177,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         revisoesCompletas[etapa] = todasRevisoes.filter(rev => !revisoesExcluidas.has(rev));
       });
       
+      console.log('📋 Revisões carregadas do banco:', revisoesCompletas);
       setRevisoesPorEtapa(revisoesCompletas);
       setEtapasExcluidas(Array.from(etapasExcluidasSet));
       
