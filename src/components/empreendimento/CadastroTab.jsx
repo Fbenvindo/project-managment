@@ -185,12 +185,19 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       // Inicializar revisões para todas as etapas, removendo as excluídas
       const revisoesCompletas = {};
       ETAPAS.forEach(etapa => {
-        const todasRevisoes = revisoesMap[etapa] 
+        // Se há revisões mapeadas nesta etapa, usar elas
+        let todasRevisoes = revisoesMap[etapa] 
           ? Array.from(revisoesMap[etapa]).sort()
           : [];
-        
+
+        // Se nenhuma revisão foi encontrada, inicializar com DEFAULT_REVISOES
+        if (todasRevisoes.length === 0) {
+          todasRevisoes = DEFAULT_REVISOES;
+        }
+
         const revisoesExcluidas = revisoesExcluidasMap[etapa] || new Set();
         revisoesCompletas[etapa] = todasRevisoes.filter(rev => !revisoesExcluidas.has(rev));
+        console.log(`✅ Etapa ${etapa}: ${revisoesCompletas[etapa].join(', ')}`);
       });
       
       console.log('📋 Revisões carregadas do banco:', revisoesCompletas);
