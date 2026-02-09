@@ -220,7 +220,7 @@ export default function DocumentosTab({
                 return false;
               }
               const disciplinaMatch = ativ.disciplina === disciplinaChild;
-              const subdisciplinaMatch = subdisciplinasChild.includes(ativ.subdisciplina);
+              const subdisciplinaMatch = Array.isArray(subdisciplinasChild) && subdisciplinasChild.includes(ativ.subdisciplina);
               return disciplinaMatch && subdisciplinaMatch;
             });
 
@@ -360,7 +360,7 @@ export default function DocumentosTab({
           }
 
           const disciplinaMatch = ativ.disciplina === disciplinaDoc;
-          const subdisciplinaMatch = subdisciplinasDoc.includes(ativ.subdisciplina);
+          const subdisciplinaMatch = Array.isArray(subdisciplinasDoc) && subdisciplinasDoc.includes(ativ.subdisciplina);
           return disciplinaMatch && subdisciplinaMatch;
         });
 
@@ -1178,7 +1178,7 @@ export default function DocumentosTab({
         // Atividades gerais (sem empreendimento_id)
         if (!ativ.empreendimento_id) {
           const disciplinaMatch = ativ.disciplina === disciplinaDoc;
-          const subdisciplinaMatch = subdisciplinasDoc.includes(ativ.subdisciplina);
+          const subdisciplinaMatch = Array.isArray(subdisciplinasDoc) && subdisciplinasDoc.includes(ativ.subdisciplina);
           return disciplinaMatch && subdisciplinaMatch;
         }
         
@@ -1464,7 +1464,7 @@ export default function DocumentosTab({
             etapa: activityObj.etapa,
             disciplina: activityObj.disciplina,
             subdisciplina: activityObj.subdisciplina,
-            atividade: `(Concluída na folha ${doc.numero}) ${activityObj.atividade}`,
+            atividade: `(Concluída na folha ${doc.numero}) ${String(activityObj.atividade || '')}`,
             funcao: activityObj.funcao,
             empreendimento_id: empreendimento.id,
             id_atividade: activityObj.id,
@@ -1604,7 +1604,7 @@ export default function DocumentosTab({
             etapa: activityObj.etapa,
             disciplina: activityObj.disciplina,
             subdisciplina: activityObj.subdisciplina,
-            atividade: `(Excluída da folha ${doc.numero}) ${activityObj.atividade}`,
+            atividade: `(Excluída da folha ${doc.numero}) ${String(activityObj.atividade || '')}`,
             funcao: activityObj.funcao,
             empreendimento_id: empreendimento.id,
             id_atividade: activityObj.id,
