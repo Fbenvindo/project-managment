@@ -205,7 +205,10 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         console.log(`✅ Etapa ${etapa}: ${revisoesCompletas[etapa].join(', ')} (Total: ${revisoesCompletas[etapa].length})`);
       });
       
-      console.log('📋 Revisões finais para setar no estado:', revisoesCompletas);
+      // Log com stringify para evitar problema de referência do console
+      console.log('📋 Revisões finais para setar no estado:', JSON.stringify(revisoesCompletas, null, 2));
+      console.log('📋 ETAPAS para debug:', ETAPAS);
+      console.log('📋 revisoesMap para debug:', revisoesMap);
       setRevisoesPorEtapa(revisoesCompletas);
       setEtapasExcluidas(Array.from(etapasExcluidasSet));
       
