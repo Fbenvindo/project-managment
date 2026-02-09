@@ -3543,6 +3543,61 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
               </div>
             </PopoverContent>
           </Popover>
+
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                disabled={isMudandoEtapaGlobal}
+              >
+                {isMudandoEtapaGlobal ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Movendo...
+                  </>
+                ) : (
+                  <>
+                    <Layers className="w-4 h-4 mr-2" />
+                    Mover Etapa
+                  </>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-80" align="start">
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-sm font-medium">De qual etapa?</Label>
+                  <Select value={etapaMudancaGlobal} onValueChange={setEtapaMudancaGlobal}>
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Escolha a etapa atual" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[...new Set(etapasUnicas)].map(etapa => (
+                        <SelectItem key={etapa} value={etapa}>{etapa}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label className="text-sm font-medium">Para qual etapa?</Label>
+                  <Select 
+                    onValueChange={(newEtapa) => handleMudarEtapaGlobal(newEtapa)}
+                    disabled={!etapaMudancaGlobal || isMudandoEtapaGlobal}
+                  >
+                    <SelectTrigger className="mt-2">
+                      <SelectValue placeholder="Escolha a nova etapa" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[...new Set(etapasUnicas)].filter(e => e !== etapaMudancaGlobal).map(etapa => (
+                        <SelectItem key={etapa} value={etapa}>{etapa}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
           
           <Button onClick={() => handleOpenModal()}>
             <PlusCircle className="w-4 h-4 mr-2" />
