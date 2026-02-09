@@ -317,7 +317,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   };
 
   const handleUpdateData = (linhaId, etapa, revisao, valor) => {
-    console.log('Atualizando data:', { linhaId, etapa, revisao, valor });
+    console.log('📝 handleUpdateData:', { linhaId, etapa, revisao, valor });
     setLinhas(prev => {
       const updated = prev.map(linha => {
         if (linha.id !== linhaId) return linha;
@@ -329,18 +329,19 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         // Se o valor estiver vazio, deletar a chave ao invés de setar como vazio
         if (!valor || valor.trim() === '') {
           delete novasDatas[etapa][revisao];
+          console.log(`  ❌ Deletado: ${linhaId}/${etapa}/${revisao}`);
         } else {
           novasDatas[etapa][revisao] = valor;
+          console.log(`  ✅ Adicionado: ${linhaId}/${etapa}/${revisao} = ${valor}`);
         }
         
         return { ...linha, datas: novasDatas };
       });
-      console.log('Estado atualizado');
       return updated;
     });
     // Garantir que o flag de mudanças não salvas é setado DEPOIS da atualização das linhas
     setTimeout(() => {
-      console.log('Marcando mudanças não salvas');
+      console.log('🔔 Marcando como "Alterações não salvas"');
       setHasUnsavedChanges(true);
     }, 0);
   };
