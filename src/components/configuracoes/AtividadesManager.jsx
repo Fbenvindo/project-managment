@@ -78,7 +78,11 @@ export default function AtividadesManager({ atividades, disciplinas, onUpdate, i
 
   // CORREÇÃO: Usar função utilitária para ordenar
   const atividadesOrdenadas = useMemo(() => {
-    return ordenarAtividades(atividades || []);
+    if (!Array.isArray(atividades)) {
+      console.warn('atividades não é um array:', atividades);
+      return [];
+    }
+    return ordenarAtividades(atividades);
   }, [atividades]);
 
   // CORREÇÃO: Aplicar filtros às atividades ordenadas
