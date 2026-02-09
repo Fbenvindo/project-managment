@@ -541,9 +541,10 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
   const handleSave = async (silent = false) => {
     if (isSaving) {
-      console.log('Já está salvando, ignorando chamada duplicada');
+      console.log('🔴 Já está salvando, ignorando chamada duplicada');
       return;
     }
+    console.log('🟢 Iniciando salvamento...');
     setIsSaving(true);
     try {
       // Filtrar apenas linhas que têm dados para salvar
@@ -565,6 +566,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         
         return temDados;
       });
+      
+      console.log(`📊 Linhas para salvar: ${linhasParaSalvar.length} de ${linhas.length}`);
 
       // Processar sequencialmente para evitar rate limit
       let successCount = 0;
