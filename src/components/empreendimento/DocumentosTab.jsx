@@ -2384,7 +2384,7 @@ export default function DocumentosTab({
                           <div className="flex-1">
                           <div className="flex items-center gap-2">
                             <span className={`font-medium ${atividade.estaConcluida || atividade.statusPlanejamento === 'concluido' ? 'line-through text-gray-500' : ''}`}>
-                              {atividade.atividade.replace(/^\(Concluída na folha \d+\)\s*/, '')}
+                              {String(atividade.atividade || '').replace(/^\(Concluída na folha \d+\)\s*/, '')}
                             </span>
                             {atividade.statusPlanejamento === 'concluido' && (
                               <Badge className="bg-green-600 text-white text-xs">
