@@ -541,55 +541,40 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
   const handleSave = async (silent = false) => {
     if (isSaving) {
-      console.log('⏸️ Já está salvando, ignorando chamada duplicada');
+      console.log('Já está salvando, ignorando chamada duplicada');
       return;
     }
-    
-    console.log('💾 Iniciando processo de salvamento...');
     setIsSaving(true);
-    
     try {
-      // Filtrar APENAS linhas que têm DATAS REALMENTE PREENCHIDAS
+      // Filtrar apenas linhas que têm dados para salvar
       const linhasParaSalvar = linhas.filter(linha => {
         if (!linha.documento_id) return false;
         
-        const temDatasPreenchidas = linha.datas && Object.values(linha.datas).some(etapaData => {
-          if (!etapaData || typeof etapaData !== 'object') return false;
+        // Verificar se há alguma data preenchida OU marcadores de exclusão de etapa
+        const temDados = linha.datas && Object.values(linha.datas).some(etapaData => {
+          if (!etapaData) return false;
+          // Verificar se tem marcador de exclusão
+          if (etapaData._excluida) return true;
+          // Verificar se tem revisões existentes (mesmo sem dados preenchidos)
+          if (etapaData._revisoes_existentes && Array.isArray(etapaData._revisoes_existentes) && etapaData._revisoes_existentes.length > 0) return true;
+          // Verificar se tem alguma data preenchida
           return Object.entries(etapaData).some(([key, data]) => 
-            key !== '_excluida' && 
-            key !== '_revisoes_excluidas' && 
-            key !== '_revisoes_existentes' && 
-            data && 
-            typeof data === 'string' && 
-            data.trim() &&
-            data !== '0001-01-01'
+            key !== '_excluida' && key !== '_revisoes_excluidas' && key !== '_revisoes_existentes' && data && typeof data === 'string' && data.trim()
           );
         });
         
-        return temDatasPreenchidas;
+        return temDados;
       });
 
-      console.log(`📊 Total de linhas: ${linhas.length}, linhas com dados: ${linhasParaSalvar.length}`);
-
-      if (linhasParaSalvar.length === 0) {
-        console.log('⚠️ Nenhuma linha com dados para salvar');
-        if (!silent) {
-          alert('Nenhuma data preenchida para salvar.');
-        }
-        return;
-      }
-
+      // Processar sequencialmente para evitar rate limit
       let successCount = 0;
       let errorCount = 0;
       const updatedLinhas = new Map();
 
-      // Processar em lotes para melhor performance
       for (let i = 0; i < linhasParaSalvar.length; i++) {
         const linha = linhasParaSalvar[i];
         
         try {
-          console.log(`💾 [${i + 1}/${linhasParaSalvar.length}] Salvando linha documento_id: ${linha.documento_id}`);
-          
           const linhaData = {
             empreendimento_id: empreendimento.id,
             ordem: linha.ordem,
@@ -598,24 +583,42 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           };
 
           let result;
-          if (linha.isNew || linha.id.toString().startsWith('temp-')) {
-            result = await DataCadastro.create(linhaData);
-            console.log(`✅ Linha criada com sucesso: ${result.id}`);
-          } else {
-            result = await DataCadastro.update(linha.id, linhaData);
-            console.log(`✅ Linha atualizada com sucesso: ${linha.id}`);
+          let attempts = 0;
+          const maxAttempts = 3;
+          
+          while (attempts < maxAttempts) {
+            try {
+              if (linha.isNew || linha.id.toString().startsWith('temp-')) {
+                result = await DataCadastro.create(linhaData);
+              } else {
+                result = await DataCadastro.update(linha.id, linhaData);
+              }
+              break; // Sucesso, sair do loop
+            } catch (err) {
+              attempts++;
+              console.error(`Tentativa ${attempts} falhou para linha ${linha.id}:`, err);
+              
+              if (attempts >= maxAttempts) {
+                throw err; // Excedeu tentativas, lançar erro
+              }
+              
+              // Aguardar antes de tentar novamente (backoff menor)
+              const waitTime = 1000 * attempts;
+              console.log(`Aguardando ${waitTime}ms antes de tentar novamente...`);
+              await new Promise(resolve => setTimeout(resolve, waitTime));
+            }
           }
 
           successCount++;
           updatedLinhas.set(linha.id, result);
 
-          // Delay reduzido para evitar rate limit
-          if (i < linhasParaSalvar.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 200));
+          // Delay menor entre cada requisição (apenas se houver muitas linhas)
+          if (linhasParaSalvar.length > 10 && i < linhasParaSalvar.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
           }
         } catch (error) {
           errorCount++;
-          console.error(`❌ Erro ao salvar linha ${linha.id}:`, error);
+          console.error(`Erro na linha ${linha.id}:`, error);
         }
       }
 
@@ -629,8 +632,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       }));
 
       setHasUnsavedChanges(false);
-      
-      console.log(`✅ Salvamento concluído: ${successCount} sucesso, ${errorCount} erros`);
 
       if (!silent) {
         if (errorCount > 0) {
@@ -640,12 +641,11 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         }
       }
     } catch (error) {
-      console.error('❌ Erro crítico ao salvar:', error);
+      console.error('Erro crítico ao salvar:', error);
       if (!silent) {
         alert(`Erro ao salvar dados: ${error.message || 'Erro desconhecido'}`);
       }
     } finally {
-      console.log('🏁 Finalizando processo de salvamento');
       setIsSaving(false);
     }
   };
