@@ -756,6 +756,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const [etapaParaConcluir, setEtapaParaConcluir] = useState('');
   const [isRevertendoEtapa, setIsRevertendoEtapa] = useState(false);
   const [etapaParaReverter, setEtapaParaReverter] = useState('');
+  const [showExecutorChoiceDialog, setShowExecutorChoiceDialog] = useState(false);
+  const [pendingExecutorData, setPendingExecutorData] = useState(null);
 
   const documentosMap = useMemo(() => {
     return new Map((documentos || []).map(doc => [doc.id, doc]));
@@ -1823,7 +1825,13 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                             if (atividadesSelecionadasParaPlanejar.size > 0 && atividadesSelecionadasParaPlanejar.has(genericAtividadeIdToExclude)) {
                                               handlePlanejarMultiplas(value, datasInicio[genericAtividadeIdToExclude]);
                                             } else {
-                                              handleSaveExecutor(ativ, value, datasInicio[genericAtividadeIdToExclude]);
+                                              // Mostrar diálogo de escolha
+                                              setPendingExecutorData({
+                                                atividade: ativ,
+                                                executorEmail: value,
+                                                dataInicio: datasInicio[genericAtividadeIdToExclude]
+                                              });
+                                              setShowExecutorChoiceDialog(true);
                                             }
                                           }}
                                           disabled={isSavingExecutor[genericAtividadeIdToExclude]}
@@ -2202,7 +2210,13 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                       if (atividadesSelecionadasParaPlanejar.size > 0 && atividadesSelecionadasParaPlanejar.has(genericAtividadeIdToExclude)) {
                                         handlePlanejarMultiplas(value, datasInicio[genericAtividadeIdToExclude]);
                                       } else {
-                                        handleSaveExecutor(ativ, value, datasInicio[genericAtividadeIdToExclude]);
+                                        // Mostrar diálogo de escolha
+                                        setPendingExecutorData({
+                                          atividade: ativ,
+                                          executorEmail: value,
+                                          dataInicio: datasInicio[genericAtividadeIdToExclude]
+                                        });
+                                        setShowExecutorChoiceDialog(true);
                                       }
                                     }}
                                     disabled={isSavingExecutor[genericAtividadeIdToExclude]}
@@ -2578,6 +2592,84 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       alert("Erro ao concluir atividade: " + error.message);
     } finally {
       setIsConcluindo(prev => ({ ...prev, [atividadeId]: false }));
+    }
+  };
+
+  const handleSaveExecutorOnly = async (atividade, executorEmail) => {
+    const atividadeId = atividade.base_atividade_id || atividade.id;
+    
+    console.log(`\n💾 ========================================`);
+    console.log(`💾 APENAS SALVAR EXECUTOR (PRÉ-PLANEJAMENTO)`);
+    console.log(`💾 ========================================`);
+    console.log(`   Atividade ID: ${atividadeId}`);
+    console.log(`   Atividade: ${atividade.atividade}`);
+    console.log(`   Executor: ${executorEmail}`);
+    console.log(`💾 ========================================\n`);
+    
+    setIsSavingExecutor(prev => ({ ...prev, [atividadeId]: true }));
+    
+    try {
+      // Buscar atividade original
+      const atividadeOriginalArr = await retryWithBackoff(
+        () => Atividade.filter({ id: atividadeId }),
+        3, 500, `getOriginalActivity-${atividadeId}`
+      );
+      
+      if (!atividadeOriginalArr || atividadeOriginalArr.length === 0) {
+        throw new Error("Atividade original não encontrada.");
+      }
+      
+      const atividadeOriginal = atividadeOriginalArr[0];
+      
+      // Verificar se já existe override global
+      const existingOverrides = await retryWithBackoff(
+        () => Atividade.filter({
+          empreendimento_id: empreendimentoId,
+          id_atividade: atividadeId,
+          documento_id: null,
+          tempo: { operator: '!=', value: -999 }
+        }),
+        3, 500, `checkExistingExecutorOverride-${atividadeId}`
+      );
+      
+      if (existingOverrides && existingOverrides.length > 0) {
+        console.log(`📝 Atualizando override existente: ${existingOverrides[0].id}`);
+        await retryWithBackoff(
+          () => Atividade.update(existingOverrides[0].id, { executor_principal: executorEmail }),
+          3, 500, `updateExecutorOverride-${existingOverrides[0].id}`
+        );
+      } else {
+        console.log(`📝 Criando novo override com executor`);
+        await retryWithBackoff(
+          () => Atividade.create({
+            ...atividadeOriginal,
+            id: undefined,
+            empreendimento_id: empreendimentoId,
+            id_atividade: atividadeId,
+            documento_id: null,
+            executor_principal: executorEmail
+          }),
+          3, 500, `createExecutorOverride-${atividadeId}`
+        );
+      }
+      
+      // Atualizar interface otimisticamente
+      setCombinedActivities(prev => {
+        return prev.map(ativ => {
+          if (ativ.base_atividade_id === atividadeId || ativ.id === atividadeId) {
+            return { ...ativ, executor_principal: executorEmail };
+          }
+          return ativ;
+        });
+      });
+      
+      console.log(`✅ Executor ${executorEmail} pré-planejado para "${atividade.atividade}"`);
+      
+    } catch (error) {
+      console.error("Erro ao salvar executor:", error);
+      alert("Erro ao salvar executor: " + error.message);
+    } finally {
+      setIsSavingExecutor(prev => ({ ...prev, [atividadeId]: false }));
     }
   };
 
@@ -3509,6 +3601,60 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           onSuccess={handlePlanejarComplete}
         />
       )}
+      
+      {/* Diálogo de escolha entre salvar executor ou planejar */}
+      <Dialog open={showExecutorChoiceDialog} onOpenChange={setShowExecutorChoiceDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Como deseja proceder?</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {pendingExecutorData && (
+              <>
+                <p className="text-sm text-gray-600">
+                  Atividade: <strong>{pendingExecutorData.atividade.atividade}</strong>
+                </p>
+                <p className="text-sm text-gray-600">
+                  Executor: <strong>{usuarios.find(u => u.email === pendingExecutorData.executorEmail)?.nome || pendingExecutorData.executorEmail}</strong>
+                </p>
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                  <p className="text-xs text-blue-700">
+                    💡 <strong>Pré-planejar:</strong> Apenas salva o executor sem criar o planejamento completo ainda.
+                  </p>
+                  <p className="text-xs text-blue-700 mt-1">
+                    💡 <strong>Salvar e Planejar:</strong> Salva o executor e cria o planejamento automático com distribuição de horas.
+                  </p>
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={async () => {
+                      await handleSaveExecutorOnly(pendingExecutorData.atividade, pendingExecutorData.executorEmail);
+                      setShowExecutorChoiceDialog(false);
+                      setPendingExecutorData(null);
+                    }}
+                    className="border-gray-300 hover:bg-gray-50"
+                  >
+                    <Users2 className="w-4 h-4 mr-2" />
+                    Apenas Pré-Planejar (Salvar Executor)
+                  </Button>
+                  <Button
+                    onClick={async () => {
+                      setShowExecutorChoiceDialog(false);
+                      await handleSaveExecutor(pendingExecutorData.atividade, pendingExecutorData.executorEmail, pendingExecutorData.dataInicio);
+                      setPendingExecutorData(null);
+                    }}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Calendar className="w-4 h-4 mr-2" />
+                    Salvar e Planejar Agora
+                  </Button>
+                </div>
+              </>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
