@@ -1505,8 +1505,9 @@ export default function DocumentosTab({
       console.log(`   Documento atual:`, { id: doc.id, numero: doc.numero });
       console.log(`🎯 ========================================\n`);
       
-      const confirmMessage = `Tem certeza que deseja excluir a atividade "${activityObj.atividade}" SOMENTE desta folha "${doc.numero}"?\n\nEsta atividade continuará disponível em outras folhas do projeto.`;
-      
+      const nomeAtividade = String(activityObj.atividade || '');
+      const confirmMessage = `Tem certeza que deseja excluir a atividade "${nomeAtividade}" SOMENTE desta folha "${doc.numero}"?\n\nEsta atividade continuará disponível em outras folhas do projeto.`;
+
       if (!window.confirm(confirmMessage)) {
         console.log(`❌ Usuário cancelou a exclusão`);
         return;
@@ -1519,7 +1520,7 @@ export default function DocumentosTab({
         console.log(`🗑️ ========================================`);
         console.log(`📋 INICIANDO PROCESSO DE EXCLUSÃO`);
         console.log(`🗑️ ========================================`);
-        console.log(`   Atividade: "${activityObj.atividade}"`);
+        console.log(`   Atividade: "${nomeAtividade}"`);
         console.log(`   ID da Atividade: ${activityObj.id}`);
         console.log(`   empreendimento_id da atividade: ${activityObj.empreendimento_id}`);
         console.log(`   Folha: ${doc.numero}`);
@@ -1594,7 +1595,7 @@ export default function DocumentosTab({
 
           if (existingMarkers && existingMarkers.length > 0) {
             console.log(`\n⚠️ Marcador já existe - ABORTANDO operação`);
-            alert(`A atividade "${activityObj.atividade}" já está excluída desta folha.`);
+            alert(`A atividade "${nomeAtividade}" já está excluída desta folha.`);
             setIsUpdatingActivity(false);
             return;
           }
@@ -1685,7 +1686,7 @@ export default function DocumentosTab({
         console.log(`🎉 PROCESSO CONCLUÍDO COM SUCESSO!`);
         console.log(`🎉 ========================================\n`);
         
-        alert(`✅ Atividade "${activityObj.atividade}" removida APENAS da folha "${doc.numero}"!\n\nEla continuará disponível nas outras folhas.`);
+        alert(`✅ Atividade "${nomeAtividade}" removida APENAS da folha "${doc.numero}"!\n\nEla continuará disponível nas outras folhas.`);
         
       } catch (error) {
         console.error("\n💥 ========================================");
