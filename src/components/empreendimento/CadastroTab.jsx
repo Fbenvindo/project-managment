@@ -129,14 +129,18 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       const etapasExcluidasSet = new Set();
       
       if (data && data.length > 0) {
-        data.forEach(item => {
+        console.log('📊 Processando dados carregados do banco:', data.length, 'registros');
+        data.forEach((item, itemIdx) => {
+          console.log(`\n[${itemIdx}] Processando item ID: ${item.id}, documento_id: ${item.documento_id}`);
           if (item.documento_id) {
             dataMap.set(item.documento_id, item);
           }
-          
+
           // Detectar revisões existentes e excluídas por etapa
           if (item.datas) {
+            console.log(`  Datas para este item:`, Object.keys(item.datas));
             Object.entries(item.datas).forEach(([etapa, etapaData]) => {
+              console.log(`  📌 Processando etapa: ${etapa}`, etapaData);
               if (etapaData && typeof etapaData === 'object') {
                 if (!revisoesMap[etapa]) {
                   revisoesMap[etapa] = new Set();
@@ -144,34 +148,36 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 if (!revisoesExcluidasMap[etapa]) {
                   revisoesExcluidasMap[etapa] = new Set();
                 }
-                
+
                 // Adicionar revisões que têm dados preenchidos
                 Object.keys(etapaData).forEach(rev => {
                  if (rev !== '_excluida' && rev !== '_revisoes_excluidas' && rev !== '_revisoes_existentes') {
-                   console.log(`  📝 Revisão com dados encontrada: ${etapa}/${rev}`);
+                   const valor = etapaData[rev];
+                   console.log(`    📝 Revisão com dados: ${rev} = ${valor}`);
                    revisoesMap[etapa].add(rev);
                  }
                 });
 
                 // Carregar revisões que foram criadas (mesmo sem dados)
-                // CRÍTICO: Carregar MESMO que esteja vazio, pois a presença da chave significa que foi criado
                 if ('_revisoes_existentes' in etapaData) {
-                 console.log(`  📋 Encontrado _revisoes_existentes para ${etapa}:`, etapaData._revisoes_existentes);
+                 console.log(`    📋 _revisoes_existentes encontrado:`, etapaData._revisoes_existentes);
                  if (Array.isArray(etapaData._revisoes_existentes)) {
                    etapaData._revisoes_existentes.forEach(rev => {
-                     console.log(`    ➕ Adicionando revisão criada: ${rev}`);
+                     console.log(`      ➕ Adicionando revisão criada: ${rev}`);
                      revisoesMap[etapa].add(rev);
                    });
+                 } else {
+                   console.log(`      ❌ _revisoes_existentes NÃO é array!`);
                  }
                 }
-                
+
                 // Detectar revisões excluídas
                 if (etapaData._revisoes_excluidas && Array.isArray(etapaData._revisoes_excluidas)) {
                   etapaData._revisoes_excluidas.forEach(rev => {
                     revisoesExcluidasMap[etapa].add(rev);
                   });
                 }
-                
+
                 // Detectar etapas excluídas
                 if (etapaData._excluida) {
                   etapasExcluidasSet.add(etapa);
@@ -180,6 +186,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
             });
           }
         });
+        console.log('🎯 Resumo de revisões carregadas:', revisoesMap);
       }
       
       // Inicializar revisões para todas as etapas, removendo as excluídas
