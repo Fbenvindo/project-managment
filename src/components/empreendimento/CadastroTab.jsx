@@ -1176,7 +1176,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                           {/* Cabeçalho de Revisões */}
                           {!isMinimizada && (
                             <div className="flex border-t border-gray-300 bg-blue-50">
-                              {console.log(`🔍 Renderizando cabeçalho ${etapa}:`, revisoesEtapa)}
+                              {console.log(`🔍 Renderizando cabeçalho ${etapa}:`, revisoesEtapa, 'Estado:', revisoesPorEtapa)}
                               {revisoesEtapa.map((revisao) => (
                                 <div
                                   key={`${etapa}-${revisao}`}
