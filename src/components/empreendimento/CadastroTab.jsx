@@ -143,9 +143,10 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 
                 // Carregar revisões que foram criadas (mesmo sem dados)
                 if (etapaData._revisoes_existentes && Array.isArray(etapaData._revisoes_existentes)) {
-                  etapaData._revisoes_existentes.forEach(rev => {
-                    revisoesMap[etapa].add(rev);
-                  });
+                 console.log(`  📋 Carregando _revisoes_existentes para ${etapa}:`, etapaData._revisoes_existentes);
+                 etapaData._revisoes_existentes.forEach(rev => {
+                   revisoesMap[etapa].add(rev);
+                 });
                 }
                 
                 // Detectar revisões excluídas
