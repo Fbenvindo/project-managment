@@ -2327,23 +2327,35 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
                 // NÃO usar horas_por_dia para atividades rápidas - esse campo pode conter dados incorretos
             } else {
                 // Para atividades normais (não rápidas)
-                // Se a atividade foi concluída E tem horas executadas registradas, mostrar APENAS nos dias executados
                 const realStatus = calculateActivityStatus(plano, filteredPlanejamentos);
                 const foiExecutada = plano.horas_executadas_por_dia && 
                                     typeof plano.horas_executadas_por_dia === 'object' && 
                                     Object.keys(plano.horas_executadas_por_dia).length > 0;
                 
-                if (realStatus === 'concluido' && foiExecutada) {
-                    // Atividade concluída: mostrar APENAS nos dias em que foi executada
-                    Object.keys(plano.horas_executadas_por_dia).forEach(dayKey => {
-                        const horasExec = Number(plano.horas_executadas_por_dia[dayKey]) || 0;
-                        if (horasExec >= 0.05) {
-                            diasParaExibir.add(dayKey);
+                if (realStatus === 'concluido') {
+                    // Atividade concluída
+                    if (foiExecutada) {
+                        // Caso 1: Tem execuções registradas - mostrar APENAS nos dias executados
+                        Object.keys(plano.horas_executadas_por_dia).forEach(dayKey => {
+                            const horasExec = Number(plano.horas_executadas_por_dia[dayKey]) || 0;
+                            if (horasExec >= 0.05) {
+                                diasParaExibir.add(dayKey);
+                            }
+                        });
+                    } else if (plano.termino_real) {
+                        // Caso 2: Concluída manualmente - mostrar apenas no dia de término real
+                        diasParaExibir.add(plano.termino_real);
+                    } else {
+                        // Caso 3: Concluída mas sem data de término - mostrar no último dia planejado
+                        if (plano.horas_por_dia && typeof plano.horas_por_dia === 'object') {
+                            const diasPlanejados = Object.keys(plano.horas_por_dia).sort();
+                            if (diasPlanejados.length > 0) {
+                                diasParaExibir.add(diasPlanejados[diasPlanejados.length - 1]);
+                            }
                         }
-                    });
+                    }
                 } else {
-                    // Atividade não concluída ou sem execução: mostrar nos dias planejados
-                    // Se tem execução parcial, mostrar tanto dias executados quanto planejados
+                    // Atividade não concluída: mostrar nos dias planejados e executados
                     if (foiExecutada) {
                         Object.keys(plano.horas_executadas_por_dia).forEach(dayKey => {
                             const horasExec = Number(plano.horas_executadas_por_dia[dayKey]) || 0;
