@@ -214,8 +214,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       console.log('📋 ETAPAS para debug:', ETAPAS);
       console.log('📋 revisoesMap para debug:', revisoesMap);
       console.log('🔴 ANTES DE SETAR STATE - revisoesCompletas:', JSON.stringify(revisoesCompletas, null, 2));
-      setRevisoesPorEtapa(revisoesCompletas);
-      setEtapasExcluidas(Array.from(etapasExcluidasSet));
       
       // Criar uma linha para cada documento
       const novasLinhas = sortedDocs.map((doc, idx) => {
@@ -230,12 +228,11 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         };
       });
       
+      // Setar tudo junto de uma vez
+      setRevisoesPorEtapa(revisoesCompletas);
+      setEtapasExcluidas(Array.from(etapasExcluidasSet));
       setLinhas(novasLinhas);
-      
-      // Log após setar tudo
-      setTimeout(() => {
-        console.log('🔴 ESTADO FINAL APÓS SETAR - revisoesPorEtapa deveria ser:', JSON.stringify(revisoesCompletas, null, 2));
-      }, 0);
+      setLoadedEmpreendimentoId(empreendimento.id);
       
       // Log final para confirmar que revisões foram setadas
       console.log('🎬 FINAL DO LOADDATA - Revisões devem estar em revisoesPorEtapa agora');
