@@ -185,15 +185,11 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       // Inicializar revisões para todas as etapas, removendo as excluídas
       const revisoesCompletas = {};
       ETAPAS.forEach(etapa => {
-        // Se há revisões mapeadas nesta etapa, usar elas
+        // Usar APENAS as revisões mapeadas (dados + _revisoes_existentes)
+        // NÃO usar DEFAULT_REVISOES como fallback, pois pode sobrescrever revisões criadas
         let todasRevisoes = revisoesMap[etapa] 
           ? Array.from(revisoesMap[etapa]).sort()
           : [];
-
-        // Se nenhuma revisão foi encontrada, inicializar com DEFAULT_REVISOES
-        if (todasRevisoes.length === 0) {
-          todasRevisoes = DEFAULT_REVISOES;
-        }
 
         const revisoesExcluidas = revisoesExcluidasMap[etapa] || new Set();
         revisoesCompletas[etapa] = todasRevisoes.filter(rev => !revisoesExcluidas.has(rev));
