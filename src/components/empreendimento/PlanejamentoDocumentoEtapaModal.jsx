@@ -67,7 +67,7 @@ export default function PlanejamentoDocumentoEtapaModal({
        const subdisciplinaMatch = subdisciplinasDoc.includes(ativ.subdisciplina);
 
        // "Confecção de A-" usa apenas horas x pav (não multiplica por etapas)
-       const isConfeccaoA = ativ.atividade && ativ.atividade.trim().startsWith('Confecção de A-');
+       const isConfeccaoA = ativ.atividade && String(ativ.atividade).trim().startsWith('Confecção de A-');
 
        const match = isGeneral && disciplinaMatch && subdisciplinaMatch;
       
@@ -130,7 +130,7 @@ export default function PlanejamentoDocumentoEtapaModal({
         const atividadesDaEtapa = atividadesDisponiveisPorEtapa[etapa.nome] || [];
         const tempoTotalAtividades = atividadesDaEtapa.reduce((sum, ativ) => {
           // "Confecção de A-" usa apenas horas x pav (sem fator de dificuldade)
-          const isConfeccaoA = ativ.atividade && ativ.atividade.trim().startsWith('Confecção de A-');
+          const isConfeccaoA = ativ.atividade && String(ativ.atividade).trim().startsWith('Confecção de A-');
           const multiplier = isConfeccaoA ? 1 : (documento.fator_dificuldade || 1);
           return sum + ((Number(ativ.tempo) || 0) * multiplier);
         }, 0);
@@ -753,7 +753,7 @@ export default function PlanejamentoDocumentoEtapaModal({
                             <div className="mt-3 space-y-1">
                               <p className="text-xs font-medium text-gray-500 mb-2">Atividades incluídas:</p>
                               {atividadesDaEtapa.map((ativ, idx) => {
-                                const isConfeccaoA = ativ.atividade && ativ.atividade.trim().startsWith('Confecção de A-');
+                                const isConfeccaoA = ativ.atividade && String(ativ.atividade).trim().startsWith('Confecção de A-');
                                 const horas = (Number(ativ.tempo) || 0) * (isConfeccaoA ? 1 : (documento.fator_dificuldade || 1));
                                 return (
                                   <div key={idx} className="text-xs text-gray-600 flex items-center gap-2 pl-2">
