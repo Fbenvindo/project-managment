@@ -83,15 +83,7 @@ const calculateActivityStatus = (plano, allPlanejamentos = []) => {
     return 'concluido';
   }
 
-  // **PRIORIDADE 2**: Se tempo_executado >= tempo_planejado, considerar concluída AUTOMATICAMENTE
-  const tempoExecutado = Number(plano.tempo_executado) || 0;
-  const tempoPlanejado = Number(plano.tempo_planejado) || 0;
-  
-  if (tempoPlanejado > 0 && tempoExecutado >= tempoPlanejado) {
-    return 'concluido';
-  }
-
-  // **PRIORIDADE 3**: Se está marcada como atrasada manualmente OU automaticamente, retorna atrasado
+  // **PRIORIDADE 2**: Se está marcada como atrasada manualmente OU automaticamente, retorna atrasado
   if (plano.status === 'atrasado' || isActivityOverdue(plano)) {
     return 'atrasado';
   }
