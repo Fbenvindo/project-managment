@@ -551,12 +551,15 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         if (!linha.documento_id) return false;
         if (!linha.datas || Object.keys(linha.datas).length === 0) return false;
         
-        // Salvar apenas se tem dados preenchidos OU mudanças estruturais (exclusões)
+        // Salvar apenas se tem dados preenchidos OU mudanças estruturais (exclusões, revisões criadas/excluídas)
         return Object.values(linha.datas).some(etapaData => {
           if (!etapaData || typeof etapaData !== 'object') return false;
           
           // Tem marcador de exclusão = deve salvar
           if (etapaData._excluida) return true;
+          
+          // Tem revisões criadas (mesmo sem dados) = deve salvar
+          if (etapaData._revisoes_existentes?.length > 0) return true;
           
           // Tem revisões excluídas = deve salvar (houve mudanças)
           if (etapaData._revisoes_excluidas?.length > 0) return true;
