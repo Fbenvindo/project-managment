@@ -38,43 +38,25 @@ export default function FinalizarAtividadeButton({ plano, displayName, onSuccess
       console.log(`   Tempo planejado original: ${plano.tempo_planejado}h`);
       console.log(`   Observação: ${observacao || '(nenhuma)'}`);
 
-      const horasPorDiaOriginal = plano.horas_por_dia || {};
-      const diasAlocados = Object.keys(horasPorDiaOriginal).sort();
-      
-      let novasHorasPorDia = {};
-      
-      // Ajustar distribuição proporcional
-      if (diasAlocados.length > 0 && plano.tempo_planejado > 0) {
-        const totalHorasOriginais = Object.values(horasPorDiaOriginal).reduce((sum, h) => sum + h, 0);
-        
-        if (totalHorasOriginais > 0) {
-          diasAlocados.forEach(dia => {
-            const horasOriginaisDia = horasPorDiaOriginal[dia];
-            const proporcao = horasOriginaisDia / totalHorasOriginais;
-            const novasHoras = tempoTotalExecutado * proporcao;
-            
-            if (novasHoras > 0.01) {
-              novasHorasPorDia[dia] = Number(novasHoras.toFixed(2));
-            }
-          });
-          
-          console.log(`   ✅ Distribuição ajustada:`, novasHorasPorDia);
+      // Mapear horas executadas por dia (calculadas a partir das execuções)
+      const horasExecutadasPorDia = {};
+      (execucoesAtividade || []).forEach(exec => {
+        if (exec.inicio) {
+          const diaExec = format(new Date(exec.inicio), 'yyyy-MM-dd');
+          const tempoExec = Number(exec.tempo_total) || 0;
+          horasExecutadasPorDia[diaExec] = (horasExecutadasPorDia[diaExec] || 0) + tempoExec;
         }
-      } else {
-        const diaInicio = plano.inicio_planejado;
-        if (diaInicio) {
-          novasHorasPorDia = { [diaInicio]: tempoTotalExecutado };
-        }
-      }
+      });
+
+      console.log(`   ✅ Horas executadas por dia:`, horasExecutadasPorDia);
 
       const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
 
       const updateData = {
         tempo_executado: tempoTotalExecutado,
-        tempo_planejado: tempoTotalExecutado, // **CRÍTICO**: Atualizar tempo_planejado para refletir o tempo real
         status: 'concluido',
         termino_real: format(new Date(), 'yyyy-MM-dd'),
-        horas_por_dia: novasHorasPorDia
+        horas_executadas_por_dia: horasExecutadasPorDia
       };
 
       if (observacao && observacao.trim()) {
