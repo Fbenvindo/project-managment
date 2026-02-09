@@ -170,7 +170,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       ETAPAS.forEach(etapa => {
         const todasRevisoes = revisoesMap[etapa] 
           ? Array.from(revisoesMap[etapa]).sort()
-          : [...DEFAULT_REVISOES];
+          : [];
         
         const revisoesExcluidas = revisoesExcluidasMap[etapa] || new Set();
         revisoesCompletas[etapa] = todasRevisoes.filter(rev => !revisoesExcluidas.has(rev));
