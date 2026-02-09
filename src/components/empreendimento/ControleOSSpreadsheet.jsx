@@ -107,7 +107,7 @@ const GestaoCell = ({ value, editable, onUpdate, usuarios }) => {
         autoFocus
         className="w-full px-2 py-1 text-xs rounded border-2 border-blue-500"
       >
-        <option value="NA">Selecione...</option>
+        <option value="">Selecione...</option>
         {usuarios.map(user => (
           <option key={user.email} value={user.nome || user.email}>
             {user.nome || user.email}
