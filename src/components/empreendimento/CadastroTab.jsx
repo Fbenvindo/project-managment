@@ -583,88 +583,80 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         datas: l.datas
       })));
 
-      // Processar sequencialmente para evitar rate limit
+      // Processar em paralelo para performance
+      console.log('⚡ Iniciando salvamento paralelo...');
       let successCount = 0;
       let errorCount = 0;
       const updatedLinhas = new Map();
 
-      for (let i = 0; i < linhasParaSalvar.length; i++) {
-        const linha = linhasParaSalvar[i];
-        
-        try {
-          console.log(`\n📨 [${i + 1}/${linhasParaSalvar.length}] Salvando linha: ${linha.id}`);
-          
-          // Preservar metadados (_revisoes_existentes, _revisoes_excluidas, _excluida) para cada etapa
-          const datasComMetadados = {};
-          if (linha.datas) {
-            Object.entries(linha.datas).forEach(([etapa, etapaData]) => {
-              if (etapaData && typeof etapaData === 'object') {
-                datasComMetadados[etapa] = {
-                  ...etapaData // Mantém TUDO: dados + metadados (_revisoes_existentes, etc)
-                };
-              }
-            });
-          }
-          
-          const linhaData = {
-            empreendimento_id: empreendimento.id,
-            ordem: linha.ordem,
-            documento_id: linha.documento_id,
-            datas: datasComMetadados
-          };
-          
-          console.log(`  Dados a salvar:`, linhaData);
-          console.log(`  Metadados preservados:`, {
-            revisoes_existentes: Object.entries(datasComMetadados).map(([etapa, data]) => ({
-              etapa,
-              revisoes_existentes: data?._revisoes_existentes,
-              revisoes_excluidas: data?._revisoes_excluidas
-            }))
-          });
-
-          let result;
-          let attempts = 0;
-          const maxAttempts = 3;
-          
-          while (attempts < maxAttempts) {
-            try {
-              const isNew = linha.isNew || linha.id.toString().startsWith('temp-');
-              console.log(`  🔄 Tentativa ${attempts + 1}/${maxAttempts} (${isNew ? 'CREATE' : 'UPDATE'})`);
-              
-              if (isNew) {
-                result = await DataCadastro.create(linhaData);
-              } else {
-                result = await DataCadastro.update(linha.id, linhaData);
-              }
-              console.log(`  ✅ Sucesso! ID: ${result.id}`);
-              break; // Sucesso, sair do loop
-            } catch (err) {
-              attempts++;
-              console.error(`  ❌ Tentativa ${attempts} falhou:`, err.message);
-              
-              if (attempts >= maxAttempts) {
-                throw err; // Excedeu tentativas, lançar erro
-              }
-              
-              // Aguardar antes de tentar novamente (backoff menor)
-              const waitTime = 1000 * attempts;
-              console.log(`  ⏳ Aguardando ${waitTime}ms...`);
-              await new Promise(resolve => setTimeout(resolve, waitTime));
+      // Criar promises para todos os salvamentos
+      const savePromises = linhasParaSalvar.map((linha, i) => 
+        (async () => {
+          try {
+            console.log(`\n📨 [${i + 1}/${linhasParaSalvar.length}] Salvando linha: ${linha.id}`);
+            
+            // Preservar metadados
+            const datasComMetadados = {};
+            if (linha.datas) {
+              Object.entries(linha.datas).forEach(([etapa, etapaData]) => {
+                if (etapaData && typeof etapaData === 'object') {
+                  datasComMetadados[etapa] = {
+                    ...etapaData
+                  };
+                }
+              });
             }
-          }
+            
+            const linhaData = {
+              empreendimento_id: empreendimento.id,
+              ordem: linha.ordem,
+              documento_id: linha.documento_id,
+              datas: datasComMetadados
+            };
+            
+            console.log(`  Dados a salvar:`, linhaData);
 
-          successCount++;
-          updatedLinhas.set(linha.id, result);
+            let result;
+            let attempts = 0;
+            const maxAttempts = 3;
+            
+            while (attempts < maxAttempts) {
+              try {
+                const isNew = linha.isNew || linha.id.toString().startsWith('temp-');
+                console.log(`  🔄 Tentativa ${attempts + 1}/${maxAttempts} (${isNew ? 'CREATE' : 'UPDATE'})`);
+                
+                if (isNew) {
+                  result = await DataCadastro.create(linhaData);
+                } else {
+                  result = await DataCadastro.update(linha.id, linhaData);
+                }
+                console.log(`  ✅ Sucesso! ID: ${result.id}`);
+                break;
+              } catch (err) {
+                attempts++;
+                console.error(`  ❌ Tentativa ${attempts} falhou:`, err.message);
+                
+                if (attempts >= maxAttempts) {
+                  throw err;
+                }
+                
+                const waitTime = 1000 * attempts;
+                console.log(`  ⏳ Aguardando ${waitTime}ms...`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+              }
+            }
 
-          // Delay menor entre cada requisição (apenas se houver muitas linhas)
-          if (linhasParaSalvar.length > 10 && i < linhasParaSalvar.length - 1) {
-            await new Promise(resolve => setTimeout(resolve, 500));
+            successCount++;
+            updatedLinhas.set(linha.id, result);
+          } catch (error) {
+            errorCount++;
+            console.error(`❌ ERRO na linha ${linha.id}:`, error);
           }
-        } catch (error) {
-          errorCount++;
-          console.error(`❌ ERRO na linha ${linha.id}:`, error);
-        }
-      }
+        })()
+      );
+
+      // Executar todos os salvamentos em paralelo
+      await Promise.all(savePromises);
 
       // Atualizar estado local com os IDs salvos
       console.log(`\n✨ Atualizando ${successCount} linhas salvas no estado local`);
