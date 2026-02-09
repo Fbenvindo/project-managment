@@ -71,7 +71,7 @@ export default function AplicarAtividadeModal({ isOpen, onClose, empreendimentoI
                 const inicioPlanejado = Object.keys(distribuicao).sort()[0];
 
                 if (!inicioPlanejado) {
-                    console.warn(`Não foi possível alocar horas para a atividade: ${atividade.atividade}. Pulando.`);
+                    console.warn(`Não foi possível alocar horas para a atividade: ${String(atividade.atividade || '')}. Pulando.`);
                     continue;
                 }
 
