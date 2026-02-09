@@ -584,7 +584,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
           let result;
           let attempts = 0;
-          const maxAttempts = 5;
+          const maxAttempts = 3;
           
           while (attempts < maxAttempts) {
             try {
@@ -602,8 +602,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 throw err; // Excedeu tentativas, lançar erro
               }
               
-              // Aguardar antes de tentar novamente (backoff exponencial)
-              const waitTime = 3000 * Math.pow(2, attempts - 1);
+              // Aguardar antes de tentar novamente (backoff menor)
+              const waitTime = 1000 * attempts;
               console.log(`Aguardando ${waitTime}ms antes de tentar novamente...`);
               await new Promise(resolve => setTimeout(resolve, waitTime));
             }
@@ -612,8 +612,10 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           successCount++;
           updatedLinhas.set(linha.id, result);
 
-          // Delay entre cada requisição para evitar rate limit
-          await new Promise(resolve => setTimeout(resolve, 4000));
+          // Delay menor entre cada requisição (apenas se houver muitas linhas)
+          if (linhasParaSalvar.length > 10 && i < linhasParaSalvar.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, 500));
+          }
         } catch (error) {
           errorCount++;
           console.error(`Erro na linha ${linha.id}:`, error);
