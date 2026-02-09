@@ -139,7 +139,7 @@ export default function AplicarAtividadeModal({ isOpen, onClose, empreendimentoI
                                             : 'hover:bg-gray-100'
                                     }`}
                                 >
-                                    <span>{atividade.etapa} - {atividade.atividade}</span>
+                                    <span>{atividade.etapa} - {String(atividade.atividade || '')}</span>
                                     <span className="text-sm font-mono text-gray-600">{atividade.tempo}h</span>
                                 </div>
                             ))}
