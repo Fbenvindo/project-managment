@@ -106,11 +106,14 @@ export default function NovoPlanejamentoModal({
     let filtered = [...atividades];
     if (activityFilters.search) {
       const searchTerm = activityFilters.search.toLowerCase();
-      filtered = filtered.filter(ativ =>
-        ativ.atividade?.toLowerCase().includes(searchTerm) ||
-        ativ.disciplina?.toLowerCase().includes(searchTerm) ||
-        ativ.subdisciplina?.toLowerCase().includes(searchTerm)
-      );
+      filtered = filtered.filter(ativ => {
+        const atividadeStr = String(ativ.atividade || '').toLowerCase();
+        const disciplinaStr = String(ativ.disciplina || '').toLowerCase();
+        const subdisciplinaStr = String(ativ.subdisciplina || '').toLowerCase();
+        return atividadeStr.includes(searchTerm) ||
+               disciplinaStr.includes(searchTerm) ||
+               subdisciplinaStr.includes(searchTerm);
+      });
     }
     if (activityFilters.disciplina !== "all") {
       filtered = filtered.filter(ativ => ativ.disciplina === activityFilters.disciplina);
