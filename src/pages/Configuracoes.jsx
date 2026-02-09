@@ -6,6 +6,7 @@ import DisciplinasManager from "../components/configuracoes/DisciplinasManager";
 import AtividadesManager from "../components/configuracoes/AtividadesManager";
 import AtividadeFuncaoManager from "../components/configuracoes/AtividadeFuncaoManager";
 import EquipesManager from "../components/configuracoes/EquipesManager";
+import LimparNomesAtividades from "../components/utils/LimparNomesAtividades";
 
 export default function ConfiguracoesPage() {
   const [disciplinas, setDisciplinas] = useState([]);
@@ -39,6 +40,8 @@ export default function ConfiguracoesPage() {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="p-6 md:p-8 space-y-8">
         <h1 className="text-3xl font-bold text-gray-900">Configurações Gerais</h1>
+        <LimparNomesAtividades />
+        
         <Tabs defaultValue="disciplinas" className="w-full">
           <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
             <TabsTrigger value="disciplinas">Disciplinas</TabsTrigger>
