@@ -648,14 +648,18 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       }
 
       // Atualizar estado local com os IDs salvos
+      console.log(`\n✨ Atualizando ${successCount} linhas salvas no estado local`);
       setLinhas(prev => prev.map(linha => {
         const savedData = updatedLinhas.get(linha.id);
         if (savedData) {
+          console.log(`  ✅ ${linha.id} -> ${savedData.id}`);
           return { ...linha, id: savedData.id, isNew: false };
         }
         return linha;
       }));
 
+      console.log(`\n🎉 SALVAMENTO COMPLETO - Sucesso: ${successCount}, Erros: ${errorCount}`);
+      console.log('🔄 Setando hasUnsavedChanges = false');
       setHasUnsavedChanges(false);
 
       if (!silent) {
@@ -666,11 +670,12 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         }
       }
     } catch (error) {
-      console.error('Erro crítico ao salvar:', error);
+      console.error('💥 ERRO CRÍTICO ao salvar:', error);
       if (!silent) {
         alert(`Erro ao salvar dados: ${error.message || 'Erro desconhecido'}`);
       }
     } finally {
+      console.log('🔚 Finalizando salvamento - setando isSaving = false');
       setIsSaving(false);
     }
   };
