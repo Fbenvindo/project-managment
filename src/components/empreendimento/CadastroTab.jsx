@@ -640,7 +640,25 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
               datas: datasComMetadados
             };
             
-            console.log(`  Dados a salvar:`, linhaData);
+            // GARANTIR que revisões criadas são salvas mesmo que vazias
+            const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
+            etapasVisiveis.forEach(etapa => {
+              const revisoesEtapa = revisoesPorEtapa[etapa];
+              if (revisoesEtapa && revisoesEtapa.length > 0) {
+                if (!datasComMetadados[etapa]) {
+                  datasComMetadados[etapa] = {};
+                }
+                // FORÇAR que _revisoes_existentes tem as revisões reais
+                datasComMetadados[etapa]._revisoes_existentes = revisoesEtapa;
+              }
+            });
+            
+            const linhaDataFinal = {
+              ...linhaData,
+              datas: datasComMetadados
+            };
+            
+            console.log(`  Dados FINAL a salvar:`, linhaDataFinal);
 
             let result;
             let attempts = 0;
@@ -652,9 +670,9 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 console.log(`  🔄 Tentativa ${attempts + 1}/${maxAttempts} (${isNew ? 'CREATE' : 'UPDATE'})`);
                 
                 if (isNew) {
-                  result = await DataCadastro.create(linhaData);
+                  result = await DataCadastro.create(linhaDataFinal);
                 } else {
-                  result = await DataCadastro.update(linha.id, linhaData);
+                  result = await DataCadastro.update(linha.id, linhaDataFinal);
                 }
                 console.log(`  ✅ Sucesso! ID: ${result.id}`);
                 break;
