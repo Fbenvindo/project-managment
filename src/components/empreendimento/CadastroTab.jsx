@@ -173,7 +173,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 }
                 });
                 }
-        console.log('🎯 Resumo de revisões carregadas:', revisoesMap);
+                });
+                console.log('🎯 Resumo de revisões carregadas:', revisoesMap);
       }
       
       // Inicializar revisões para todas as etapas, removendo as excluídas
