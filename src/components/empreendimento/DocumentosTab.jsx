@@ -1265,6 +1265,8 @@ export default function DocumentosTab({
         // Não filtrar atividades concluídas - elas devem aparecer
         return true;
       }).map(atividade => {
+        // Garantir que atividade.atividade é sempre string
+        const nomeAtividadeSeguro = String(atividade.atividade || '');
         const etapaFinal = etapaOverrides.has(atividade.id) 
           ? etapaOverrides.get(atividade.id) 
           : atividade.etapa;
