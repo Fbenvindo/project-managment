@@ -1798,10 +1798,25 @@ export default function DocumentosTab({
 
     const handleExecutorSelectChange = async (executorEmail) => {
         if (!executorEmail) return;
+        
+        if (etapaParaPlanejamento === 'todas') {
+            alert("Por favor, selecione uma etapa específica no dropdown 'Planejar Etapa' antes de atribuir um executor.");
+            return;
+        }
 
-        // Mostrar diálogo perguntando se quer apenas salvar ou planejar também
-        setPendingExecutor(executorEmail);
-        setShowExecutorDialog(true);
+        // Verificar se existem predecessoras ou sucessoras
+        const predecessoras = localDocumentos.filter(d => d.predecessora_id === doc.id);
+        const sucessoras = localDocumentos.filter(d => d.id === doc.predecessora_id);
+        
+        if (predecessoras.length > 0 || sucessoras.length > 0) {
+            // Mostrar diálogo para perguntar se quer aplicar às outras folhas
+            setPendingExecutor(executorEmail);
+            setShowExecutorDialog(true);
+            return;
+        }
+
+        // Se não há predecessoras/sucessoras, aplicar diretamente
+        await applyExecutor(executorEmail, [doc.id]);
     };
 
     const applyExecutor = async (executorEmail, documentIds) => {
@@ -1949,41 +1964,8 @@ export default function DocumentosTab({
         }
     };
 
-    const handleSaveExecutorOnly = async () => {
-        if (!pendingExecutor) return;
-        
-        setIsUpdating(true);
-        try {
-            console.log(`💾 Salvando executor ${pendingExecutor} no documento ${doc.numero} (sem planejamento)...`);
-            
-            const docAtualizado = await retryWithBackoff(
-                () => Documento.update(doc.id, {
-                    executor_principal: pendingExecutor,
-                    multiplos_executores: false
-                }),
-                3, 1000, `saveExecutorOnly-${doc.id}`
-            );
-            
-            handleLocalUpdate(docAtualizado);
-            console.log(`✅ Executor salvo com sucesso!`);
-            
-        } catch (error) {
-            console.error("❌ Erro ao salvar executor:", error);
-            alert("Erro ao salvar executor: " + error.message);
-        } finally {
-            setIsUpdating(false);
-            setShowExecutorDialog(false);
-            setPendingExecutor(null);
-        }
-    };
-
     const handleApplyToRelated = async (applyToRelated) => {
         if (!pendingExecutor) return;
-        
-        if (etapaParaPlanejamento === 'todas') {
-            alert("Por favor, selecione uma etapa específica no dropdown 'Planejar Etapa' antes de planejar.");
-            return;
-        }
 
         const documentIds = [doc.id];
         
@@ -2128,86 +2110,36 @@ export default function DocumentosTab({
                 )}
               </div>
 
-                    {/* Diálogo de escolha entre salvar executor ou planejar */}
+                    {/* Diálogo de aplicação a folhas relacionadas */}
                     <Dialog open={showExecutorDialog} onOpenChange={setShowExecutorDialog}>
                     <DialogContent className="max-w-md">
                     <DialogHeader>
-                      <DialogTitle>Como deseja proceder?</DialogTitle>
+                      <DialogTitle>Aplicar executor a folhas relacionadas?</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4 p-4">
-                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
-                        <p className="text-sm text-gray-700">
-                          <strong>Executor:</strong> {usuariosOrdenados.find(u => u.email === pendingExecutor)?.nome || pendingExecutor}
-                        </p>
-                      </div>
-                      
-                      <div className="space-y-3">
-                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                          <p className="text-xs text-blue-800 font-medium mb-1">Pré-planejar</p>
-                          <p className="text-xs text-blue-700">
-                            Apenas salva o executor sem criar o planejamento completo ainda.
-                          </p>
-                        </div>
-                        
-                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                          <p className="text-xs text-green-800 font-medium mb-1">Salvar e Planejar</p>
-                          <p className="text-xs text-green-700">
-                            Salva o executor e cria o planejamento automático com distribuição de horas.
-                          </p>
-                        </div>
-                      </div>
-                      
-                      {etapaParaPlanejamento === 'todas' && (
-                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-                          <p className="text-xs text-red-700">
-                            ⚠️ Selecione uma etapa específica no dropdown "Planejar Etapa" para poder planejar.
-                          </p>
-                        </div>
-                      )}
-                      
-                      <div className="flex flex-col gap-2 pt-2">
+                    <div className="space-y-4">
+                      <p className="text-sm text-gray-600">
+                        Esta folha possui folhas predecessoras ou sucessoras. Deseja aplicar o executor <strong>{pendingExecutor}</strong> também a elas?
+                      </p>
+                      <div className="flex justify-end gap-2">
                         <Button
                           variant="outline"
-                          onClick={handleSaveExecutorOnly}
+                          onClick={() => handleApplyToRelated(false)}
                           disabled={isUpdating}
                         >
-                          {isUpdating ? (
-                            <>
-                              <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Salvando...
-                            </>
-                          ) : (
-                            <>
-                              <Users2 className="w-4 h-4 mr-2" />
-                              Apenas Pré-Planejar
-                            </>
-                          )}
+                          Apenas esta folha
                         </Button>
                         <Button
-                          onClick={() => {
-                            const predecessoras = localDocumentos.filter(d => d.predecessora_id === doc.id);
-                            const sucessoras = localDocumentos.filter(d => d.id === doc.predecessora_id);
-                            
-                            if (predecessoras.length > 0 || sucessoras.length > 0) {
-                              if (window.confirm(`Esta folha possui folhas relacionadas. Deseja aplicar a todas as folhas relacionadas?`)) {
-                                handleApplyToRelated(true);
-                              } else {
-                                handleApplyToRelated(false);
-                              }
-                            } else {
-                              handleApplyToRelated(false);
-                            }
-                          }}
-                          disabled={isUpdating || etapaParaPlanejamento === 'todas'}
+                          onClick={() => handleApplyToRelated(true)}
+                          disabled={isUpdating}
                           className="bg-blue-600 hover:bg-blue-700"
                         >
                           {isUpdating ? (
                             <>
                               <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                              Planejando...
+                              Aplicando...
                             </>
                           ) : (
-                            'Salvar e Planejar Agora'
+                            'Aplicar a todas'
                           )}
                         </Button>
                       </div>
