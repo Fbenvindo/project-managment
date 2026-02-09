@@ -2134,24 +2134,42 @@ export default function DocumentosTab({
                     <DialogHeader>
                       <DialogTitle>Como deseja proceder?</DialogTitle>
                     </DialogHeader>
-                    <div className="space-y-4">
-                      <p className="text-sm text-gray-600">
-                        Executor selecionado: <strong>{usuarios.find(u => u.email === pendingExecutor)?.nome || pendingExecutor}</strong>
-                      </p>
-                      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                        <p className="text-xs text-blue-700">
-                          💡 <strong>Pré-planejar:</strong> Apenas salva o executor sem criar o planejamento completo ainda.
-                        </p>
-                        <p className="text-xs text-blue-700 mt-1">
-                          💡 <strong>Salvar e Planejar:</strong> Salva o executor e cria o planejamento automático com distribuição de horas.
+                    <div className="space-y-4 p-4">
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-3">
+                        <p className="text-sm text-gray-700">
+                          <strong>Executor:</strong> {usuariosOrdenados.find(u => u.email === pendingExecutor)?.nome || pendingExecutor}
                         </p>
                       </div>
-                      <div className="flex flex-col gap-2">
+                      
+                      <div className="space-y-3">
+                        <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                          <p className="text-xs text-blue-800 font-medium mb-1">Pré-planejar</p>
+                          <p className="text-xs text-blue-700">
+                            Apenas salva o executor sem criar o planejamento completo ainda.
+                          </p>
+                        </div>
+                        
+                        <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                          <p className="text-xs text-green-800 font-medium mb-1">Salvar e Planejar</p>
+                          <p className="text-xs text-green-700">
+                            Salva o executor e cria o planejamento automático com distribuição de horas.
+                          </p>
+                        </div>
+                      </div>
+                      
+                      {etapaParaPlanejamento === 'todas' && (
+                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-xs text-red-700">
+                            ⚠️ Selecione uma etapa específica no dropdown "Planejar Etapa" para poder planejar.
+                          </p>
+                        </div>
+                      )}
+                      
+                      <div className="flex flex-col gap-2 pt-2">
                         <Button
                           variant="outline"
                           onClick={handleSaveExecutorOnly}
                           disabled={isUpdating}
-                          className="border-gray-300 hover:bg-gray-50"
                         >
                           {isUpdating ? (
                             <>
@@ -2161,7 +2179,7 @@ export default function DocumentosTab({
                           ) : (
                             <>
                               <Users2 className="w-4 h-4 mr-2" />
-                              Apenas Pré-Planejar (Salvar Executor)
+                              Apenas Pré-Planejar
                             </>
                           )}
                         </Button>
@@ -2171,7 +2189,6 @@ export default function DocumentosTab({
                             const sucessoras = localDocumentos.filter(d => d.id === doc.predecessora_id);
                             
                             if (predecessoras.length > 0 || sucessoras.length > 0) {
-                              // Mostrar outro diálogo para aplicar a folhas relacionadas
                               if (window.confirm(`Esta folha possui folhas relacionadas. Deseja aplicar a todas as folhas relacionadas?`)) {
                                 handleApplyToRelated(true);
                               } else {
@@ -2190,18 +2207,10 @@ export default function DocumentosTab({
                               Planejando...
                             </>
                           ) : (
-                            <>
-                              <Calendar className="w-4 h-4 mr-2" />
-                              Salvar e Planejar Agora
-                            </>
+                            'Salvar e Planejar Agora'
                           )}
                         </Button>
                       </div>
-                      {etapaParaPlanejamento === 'todas' && (
-                        <p className="text-xs text-red-600">
-                          ⚠️ Selecione uma etapa específica no dropdown 'Planejar Etapa' para poder planejar.
-                        </p>
-                      )}
                     </div>
                     </DialogContent>
                     </Dialog>
