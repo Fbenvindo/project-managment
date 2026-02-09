@@ -76,10 +76,21 @@ export default function AtividadesManager({ atividades, disciplinas, onUpdate, i
     }
   };
 
+  // CORREÇÃO: Normalizar atividades para garantir que campos sejam strings
+  const atividadesNormalizadas = useMemo(() => {
+    return (atividades || []).map(atividade => ({
+      ...atividade,
+      atividade: typeof atividade.atividade === 'string' ? atividade.atividade : '',
+      disciplina: typeof atividade.disciplina === 'string' ? atividade.disciplina : '',
+      subdisciplina: typeof atividade.subdisciplina === 'string' ? atividade.subdisciplina : '',
+      etapa: typeof atividade.etapa === 'string' ? atividade.etapa : ''
+    }));
+  }, [atividades]);
+
   // CORREÇÃO: Usar função utilitária para ordenar
   const atividadesOrdenadas = useMemo(() => {
-    return ordenarAtividades(atividades || []);
-  }, [atividades]);
+    return ordenarAtividades(atividadesNormalizadas);
+  }, [atividadesNormalizadas]);
 
   // CORREÇÃO: Aplicar filtros às atividades ordenadas
   const atividadesFiltradas = useMemo(() => {
