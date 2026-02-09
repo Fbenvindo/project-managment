@@ -206,6 +206,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
     if (revisoesEtapa.length === 0) {
       // Se não há revisões, começar com R00
+      console.log(`➕ Adicionando primeira revisão (R00) em ${etapa}`);
       setHasUnsavedChanges(true);
       setRevisoesPorEtapa(prev => ({
         ...prev,
@@ -231,6 +232,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     const numero = parseInt(ultimaRevisao.substring(1)) + 1;
     const novaRevisao = `R${String(numero).padStart(2, '0')}`;
 
+    console.log(`➕ Adicionando revisão ${novaRevisao} em ${etapa} (antes: ${revisoesEtapa.join(', ')})`);
     setHasUnsavedChanges(true);
     setRevisoesPorEtapa(prev => ({
       ...prev,
@@ -240,16 +242,18 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     setLinhas(prev => prev.map(linha => {
       const novasDatas = { ...linha.datas };
       if (!novasDatas[etapa]) {
-        novasDatas[etapa] = {};
-      }
-      if (!novasDatas[etapa]._revisoes_existentes) {
-        novasDatas[etapa]._revisoes_existentes = [];
-      }
-      if (!novasDatas[etapa]._revisoes_existentes.includes(novaRevisao)) {
-        novasDatas[etapa]._revisoes_existentes.push(novaRevisao);
+        novasDatas[etapa] = { _revisoes_existentes: [novaRevisao] };
+      } else {
+        if (!novasDatas[etapa]._revisoes_existentes) {
+          novasDatas[etapa]._revisoes_existentes = [];
+        }
+        if (!novasDatas[etapa]._revisoes_existentes.includes(novaRevisao)) {
+          novasDatas[etapa]._revisoes_existentes.push(novaRevisao);
+        }
       }
       return { ...linha, datas: novasDatas };
     }));
+    console.log(`✅ Revisão ${novaRevisao} marcada em todas as ${linhas.length} linhas`);
   };
 
   const handleRemoveRevisao = (etapa, revisao) => {
