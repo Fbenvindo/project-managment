@@ -223,6 +223,9 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       });
       
       setLinhas(novasLinhas);
+      
+      // Log final para confirmar que revisões foram setadas
+      console.log('🎬 FINAL DO LOADDATA - Revisões devem estar em revisoesPorEtapa agora');
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
