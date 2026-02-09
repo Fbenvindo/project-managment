@@ -438,7 +438,7 @@ export default function NovoPlanejamentoModal({
       if (activity) {
         setFormData(prev => ({
           ...prev,
-          descritivo: activity.atividade || prev.descritivo,
+          descritivo: String(activity.atividade || '') || prev.descritivo,
           tempo_planejado: activity.tempo?.toString() || prev.tempo_planejado,
         }));
       }
@@ -865,12 +865,12 @@ export default function NovoPlanejamentoModal({
                       <SelectGroup key={etapa}>
                         <SelectLabel>{etapa} ({atividadesDoGrupo.length})</SelectLabel>
                         {atividadesDoGrupo.map(ativ => (
-                          <SelectItem key={ativ.id} value={ativ.id}>
-                            <div className="flex flex-col items-start text-left">
-                              <span>{ativ.atividade}</span>
-                              <span className="text-xs text-gray-500">{ativ.disciplina} {ativ.subdisciplina ? `• ${ativ.subdisciplina}` : ''}</span>
-                            </div>
-                          </SelectItem>
+                         <SelectItem key={ativ.id} value={ativ.id}>
+                           <div className="flex flex-col items-start text-left">
+                             <span>{String(ativ.atividade || '')}</span>
+                             <span className="text-xs text-gray-500">{String(ativ.disciplina || '')} {ativ.subdisciplina ? `• ${String(ativ.subdisciplina)}` : ''}</span>
+                           </div>
+                         </SelectItem>
                         ))}
                       </SelectGroup>
                     ))) : (<SelectItem value="no-activities" disabled>Nenhuma atividade encontrada</SelectItem>)}

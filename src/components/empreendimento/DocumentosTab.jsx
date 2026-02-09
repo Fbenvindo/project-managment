@@ -399,7 +399,7 @@ export default function DocumentosTab({
                 ? parseFloat(tempoOverrides.get(ativ.id)) || 0
                 : parseFloat(ativ.tempo) || 0;
             // "Confecção de A-" usa apenas horas x pav (sem fator de dificuldade)
-            const isConfeccaoA = ativ.atividade && ativ.atividade.trim().startsWith('Confecção de A-');
+            const isConfeccaoA = ativ.atividade && String(ativ.atividade).trim().startsWith('Confecção de A-');
             const multiplier = isConfeccaoA ? 1 : fatorDificuldade;
             const tempoCalculado = tempoBase * multiplier;
             return total + tempoCalculado;
@@ -1186,7 +1186,7 @@ export default function DocumentosTab({
         // IMPORTANTE: Excluir marcadores de conclusão (tempo: 0 com texto "Concluída na folha")
         if (ativ.empreendimento_id === empreendimento.id && ativ.documento_id === doc.id && ativ.tempo !== -999) {
           // Não incluir marcadores de conclusão na lista
-          if (ativ.tempo === 0 && ativ.atividade?.includes('Concluída na folha')) {
+          if (ativ.tempo === 0 && String(ativ.atividade || '').includes('Concluída na folha')) {
             return false;
           }
           return true;
@@ -1306,7 +1306,7 @@ export default function DocumentosTab({
         const fatorDificuldade = doc.fator_dificuldade || 1;
         
         // "Confecção de A-" usa apenas horas x pav (sem fator de dificuldade)
-        const isConfeccaoA = atividade.atividade && atividade.atividade.trim().startsWith('Confecção de A-');
+        const isConfeccaoA = atividade.atividade && String(atividade.atividade).trim().startsWith('Confecção de A-');
         const multiplier = isConfeccaoA ? 1 : fatorDificuldade;
 
         // CORRIGIDO: tempo base já é total, não h/m²
