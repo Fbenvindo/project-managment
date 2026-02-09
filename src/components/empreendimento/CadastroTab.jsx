@@ -195,6 +195,13 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         // Usar APENAS as revisões mapeadas (dados + _revisoes_existentes)
         // NÃO usar DEFAULT_REVISOES como fallback, pois pode sobrescrever revisões criadas
         const revisoesEtapaSet = revisoesMap[etapa];
+        console.log(`🔎 Buscando ${etapa}:`, {
+          existe: !!revisoesEtapaSet,
+          isSet: revisoesEtapaSet instanceof Set,
+          size: revisoesEtapaSet?.size,
+          values: revisoesEtapaSet ? Array.from(revisoesEtapaSet) : 'N/A'
+        });
+        
         let todasRevisoes = revisoesEtapaSet && revisoesEtapaSet.size > 0
           ? Array.from(revisoesEtapaSet).sort()
           : [];
