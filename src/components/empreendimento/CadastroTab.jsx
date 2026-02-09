@@ -194,16 +194,18 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       ETAPAS.forEach(etapa => {
         // Usar APENAS as revisões mapeadas (dados + _revisoes_existentes)
         // NÃO usar DEFAULT_REVISOES como fallback, pois pode sobrescrever revisões criadas
-        let todasRevisoes = revisoesMap[etapa] 
-          ? Array.from(revisoesMap[etapa]).sort()
+        const revisoesEtapaSet = revisoesMap[etapa];
+        let todasRevisoes = revisoesEtapaSet && revisoesEtapaSet.size > 0
+          ? Array.from(revisoesEtapaSet).sort()
           : [];
 
         const revisoesExcluidas = revisoesExcluidasMap[etapa] || new Set();
-        revisoesCompletas[etapa] = todasRevisoes.filter(rev => !revisoesExcluidas.has(rev));
-        console.log(`✅ Etapa ${etapa}: ${revisoesCompletas[etapa].join(', ')}`);
+        const filtradas = todasRevisoes.filter(rev => !revisoesExcluidas.has(rev));
+        revisoesCompletas[etapa] = filtradas;
+        console.log(`✅ Etapa ${etapa}: ${revisoesCompletas[etapa].join(', ')} (Total: ${revisoesCompletas[etapa].length})`);
       });
       
-      console.log('📋 Revisões carregadas do banco:', revisoesCompletas);
+      console.log('📋 Revisões finais para setar no estado:', revisoesCompletas);
       setRevisoesPorEtapa(revisoesCompletas);
       setEtapasExcluidas(Array.from(etapasExcluidasSet));
       
