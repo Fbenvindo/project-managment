@@ -209,7 +209,9 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       console.log('📋 Revisões finais para setar no estado:', JSON.stringify(revisoesCompletas, null, 2));
       console.log('📋 ETAPAS para debug:', ETAPAS);
       console.log('📋 revisoesMap para debug:', revisoesMap);
+      console.log('🔴 ANTES DE SETAR STATE - revisoesCompletas:', JSON.stringify(revisoesCompletas, null, 2));
       setRevisoesPorEtapa(revisoesCompletas);
+      console.log('🔴 DEPOIS DE SETAR STATE - revisoesPorEtapa:', JSON.stringify(revisoesPorEtapa, null, 2));
       setEtapasExcluidas(Array.from(etapasExcluidasSet));
       
       // Criar uma linha para cada documento
