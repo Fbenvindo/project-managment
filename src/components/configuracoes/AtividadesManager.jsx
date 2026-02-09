@@ -452,7 +452,7 @@ export default function AtividadesManager({ atividades, disciplinas, onUpdate, i
                           <div className="flex-1">
                             <div className="flex items-center gap-3 mb-2 flex-wrap">
                               <h4 className="font-medium text-gray-900">
-                                {atividade.atividade}
+                                {typeof atividade.atividade === 'string' ? atividade.atividade : 'Sem descrição'}
                               </h4>
 
                               {/* NOVO: Campo de edição inline para ID */}
