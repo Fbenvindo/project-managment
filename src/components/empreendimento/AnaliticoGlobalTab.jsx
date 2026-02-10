@@ -3679,7 +3679,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         empreendimentoId={empreendimentoId}
         onSuccess={() => {
           fetchData();
-          if (onUpdate) onUpdate();
         }}
       />
 
@@ -3694,7 +3693,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         empreendimentoId={empreendimentoId}
         onSuccess={() => {
           fetchData();
-          if (onUpdate) onUpdate();
         }}
       />
 
