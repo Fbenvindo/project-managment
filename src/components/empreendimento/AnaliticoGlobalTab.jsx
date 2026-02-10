@@ -170,7 +170,7 @@ const EtapaEditModal = ({ isOpen, onClose, atividade, onSave, documentos }) => {
   );
 };
 
-const EditarEtapaEmFolhasModal = ({ isOpen, onClose, atividade, documentos, empreendimentoId, onSuccess, setCombinedActivities, setAlteracoesEtapa, setPlanejamentos }) => {
+const EditarEtapaEmFolhasModal = ({ isOpen, onClose, atividade, documentos, empreendimentoId, onSuccess }) => {
   const [selectedDocumentos, setSelectedDocumentos] = useState(new Set());
   const [novaEtapa, setNovaEtapa] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -360,26 +360,12 @@ const EditarEtapaEmFolhasModal = ({ isOpen, onClose, atividade, documentos, empr
       }
       mensagem += `\n\nFolhas: ${folhasNames}`;
 
-      // Atualizar estado local
-      const atividadeBaseId = atividade.base_atividade_id || atividade.id;
-      setCombinedActivities(prev => prev.map(ativ => {
-        if ((ativ.base_atividade_id === atividadeBaseId || ativ.id === atividadeBaseId) && 
-            selectedDocumentos.has(ativ.source_documento_id)) {
-          return { ...ativ, etapa: novaEtapa };
-        }
-        return ativ;
-      }));
-      
-      // Recarregar alterações e planejamentos
-      const [alteracoes, planejamentosAtuais] = await Promise.all([
-        AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId }),
-        PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId })
-      ]);
-      setAlteracoesEtapa(alteracoes || []);
-      setPlanejamentos(planejamentosAtuais || []);
-      
-      onClose();
       alert(mensagem);
+      
+      // Recarregar alterações
+      const alteracoes = await AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId });
+      if (onSuccess) onSuccess();
+      onClose();
 
     } catch (error) {
       console.error("Erro ao editar etapa em folhas específicas:", error);
@@ -614,8 +600,10 @@ const ExcluirDeFolhasModal = ({ isOpen, onClose, atividade, documentos, empreend
         .filter(Boolean)
         .join(', ');
 
-      onClose();
       alert(`✅ Atividade "${atividade.atividade}" foi excluída das seguintes folhas:\n${folhasNames}`);
+      
+      if (onSuccess) onSuccess();
+      onClose();
 
     } catch (error) {
       console.error("Erro ao excluir atividade de folhas:", error);
@@ -1242,25 +1230,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           }
         }
 
-        // Atualizar estado local
-        const baseAtividadeId = selectedAtividade.base_atividade_id;
-        setCombinedActivities(prev => prev.map(ativ => {
-          if ((ativ.base_atividade_id === baseAtividadeId || ativ.id === baseAtividadeId) && 
-              ativ.source_documento_id === selectedFolhaId) {
-            return { ...ativ, etapa: newEtapa };
-          }
-          return ativ;
-        }));
-        
-        const [alteracoes, planejamentosAtualizados] = await Promise.all([
-          AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId }),
-          PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId })
-        ]);
-        setAlteracoesEtapa(alteracoes || []);
-        setPlanejamentos(planejamentosAtualizados || []);
-        setIsEtapaModalOpen(false);
-        
         alert(`A etapa de "${selectedAtividade.atividade}" foi alterada para "${newEtapa}" na folha ${folhaObj?.numero} - ${folhaObj?.arquivo}.`);
+        const alteracoes = await AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId });
+        setAlteracoesEtapa(alteracoes || []);
+        fetchData();
+        if(onUpdate) onUpdate();
+        setIsEtapaModalOpen(false);
         return;
       }
 
@@ -1308,6 +1283,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
         if (foundOverride) {
             await retryWithBackoff(() => Atividade.update(foundOverride.id, { etapa: newEtapa }), 3, 500, 'updateAtividadeOverride');
+            alert(`A etapa para "${selectedAtividade.atividade}" foi atualizada para "${newEtapa}" para todo este empreendimento.`);
         } else {
             const overrideAtividade = {
                 ...atividadeOriginal,
@@ -1319,16 +1295,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             delete overrideAtividade.id;
 
             await retryWithBackoff(() => Atividade.create(overrideAtividade), 3, 500, 'createAtividadeOverride');
+            alert(`A etapa para "${selectedAtividade.atividade}" foi definida como "${newEtapa}" para todo este empreendimento. Futuros planejamentos e visualizações de atividades "Disponíveis" usarão esta nova etapa.`);
         }
-        
-        // Atualizar estado local para atividades sem folhas
-        const baseAtividadeId = selectedAtividade.base_atividade_id;
-        setCombinedActivities(prev => prev.map(ativ => {
-          if (ativ.base_atividade_id === baseAtividadeId || ativ.id === baseAtividadeId) {
-            return { ...ativ, etapa: newEtapa };
-          }
-          return ativ;
-        }));
 
       } else {
         const updatePromises = allPlanejamentos.map(plano => 
@@ -1336,15 +1304,16 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         );
         
         await Promise.all(updatePromises);
+        
+        alert(`${allPlanejamentos.length} ocorrência(s) da atividade foram atualizadas para a etapa "${newEtapa}".`);
       }
       
-      // Recarregar todos os dados do banco para garantir sincronização
-      await fetchData();
-      setIsEtapaModalOpen(false);
-      
-      alert(allPlanejamentos.length === 0 
-        ? `A etapa para "${selectedAtividade.atividade}" foi atualizada para "${newEtapa}" para todo este empreendimento.`
-        : `${allPlanejamentos.length} ocorrência(s) da atividade foram atualizadas para a etapa "${newEtapa}".`);
+      // Recarregar alterações
+      const alteracoes = await AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId });
+      setAlteracoesEtapa(alteracoes || []);
+  
+      fetchData();
+      if(onUpdate) onUpdate();
   
     } catch (error) {
       console.error("Erro ao atualizar etapa:", error);
@@ -1357,9 +1326,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     if (window.confirm("Tem certeza que deseja excluir esta atividade do projeto? Atividades de folhas não são afetadas.")) {
       try {
         await retryWithBackoff(() => Atividade.delete(id), 3, 500, 'deleteAtividade');
-        
-        // Atualizar estado local removendo a atividade
-        setCombinedActivities(prev => prev.filter(a => a.id !== id));
+        fetchData(); 
+        if(onUpdate) onUpdate();
       } catch (error) {
         console.error("Erro ao excluir atividade:", error);
         alert("Não foi possível excluir a atividade.");
@@ -1420,10 +1388,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
       console.log(`✅ Marcador de exclusão criado com sucesso para atividade genérica ${genericAtividadeIdToExclude}`);
       
-      // Remover atividade do estado local
-      setCombinedActivities(prev => prev.filter(a => 
-        (a.base_atividade_id !== genericAtividadeIdToExclude) && (a.id !== genericAtividadeIdToExclude)
-      ));
+      await fetchData();
+      if (onUpdate) onUpdate();
       
       alert(`Atividade "${atividade.atividade}" foi marcada como excluída de todas as folhas deste empreendimento.`);
 
@@ -1523,9 +1489,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       }
 
       setSelectedIds(new Set());
-      
-      // Remover do estado local
-      setCombinedActivities(prev => prev.filter(a => !idsArray.includes(a.uniqueId)));
+      fetchData();
+      if (onUpdate) onUpdate();
 
       if (results.errors === 0) {
         if (results.notFound > 0) {
@@ -1592,14 +1557,14 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`   Deletados: ${deletados}`);
       console.log(`   Erros: ${erros}`);
 
-      // Recarregar dados após restauração
-      await fetchData();
-      
       if (erros === 0) {
         alert(`✅ Sucesso! ${deletados} atividade(s) foram restauradas e agora estão disponíveis em todos os documentos.`);
       } else {
-        alert(`⚠️ Processo concluído com avisos:\n${deletados} restauradas\n${erros} erros`);
+        alert(`⚠️ Processo concluído com avisos:\n${deletados} restauradas\n${erros} erros\n\nAtualize a página para ver as mudanças.`);
       }
+
+      fetchData();
+      if (onUpdate) onUpdate();
 
     } catch (error) {
       console.error("❌ Erro ao restaurar exclusões globais:", error);
@@ -2598,12 +2563,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`   Já finalizados: ${jaFinalizados}`);
       console.log(`✅ ========================================\n`);
       
-      // Atualizar planejamentos localmente
-      const planejamentosAtualizados = await retryWithBackoff(
-        () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }),
-        3, 500, 'refreshPlanejamentosAfterConcluir'
-      );
-      setPlanejamentos(planejamentosAtualizados || []);
+      await fetchData();
+      if (onUpdate) onUpdate();
       
       let mensagem = `✅ Atividade "${atividade.atividade}" concluída em todas as folhas!\n`;
       if (concluidos > 0) {
@@ -3270,12 +3231,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`   Já finalizados: ${jaFinalizados}`);
       console.log(`✅ ========================================\n`);
 
-      // Atualizar planejamentos localmente
-      const planejamentosAtualizados = await retryWithBackoff(
-        () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }),
-        3, 500, 'refreshPlanejamentosAfterConcluirEtapa'
-      );
-      setPlanejamentos(planejamentosAtualizados || []);
+      await fetchData();
+      if (onUpdate) onUpdate();
 
       let mensagem = `✅ Etapa "${etapa}" concluída em todas as folhas!`;
       if (totalPlanejamentosConcluidos > 0) {
@@ -3357,12 +3314,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`   Planejamentos revertidos: ${totalPlanejamentosRevertidos}`);
       console.log(`✅ ========================================\n`);
 
-      // Atualizar planejamentos localmente
-      const planejamentosAtualizados = await retryWithBackoff(
-        () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }),
-        3, 500, 'refreshPlanejamentosAfterReverter'
-      );
-      setPlanejamentos(planejamentosAtualizados || []);
+      await fetchData();
+      if (onUpdate) onUpdate();
 
       alert(`✅ Conclusão da etapa "${etapa}" revertida!\n\n${totalPlanejamentosRevertidos} planejamento(s) voltou(aram) para "não iniciado".`);
       setEtapaParaReverter('');
@@ -3513,19 +3466,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`   Planejamentos atualizados: ${planejamentosMudados}`);
       console.log(`🔀 ========================================\n`);
 
-      // Atualizar dados localmente sem reload
-      const [planejamentosAtualizados, alteracoesAtualizadas] = await Promise.all([
-        retryWithBackoff(
-          () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }),
-          3, 500, 'refreshPlanejamentosAfterMover'
-        ),
-        retryWithBackoff(
-          () => AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId }),
-          3, 500, 'refreshAlteracoesAfterMover'
-        )
-      ]);
-      setPlanejamentos(planejamentosAtualizados || []);
-      setAlteracoesEtapa(alteracoesAtualizadas || []);
+      await fetchData();
+      if (onUpdate) onUpdate();
 
       alert(
         `✅ Sucesso! ${atividadesMudadas} atividade(s) movida(s) de "${etapaMudancaGlobal}" para "${novaEtapa}".\n\n` +
@@ -3729,234 +3671,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         atividade={selectedAtividade}
         documentos={documentos}
         empreendimentoId={empreendimentoId}
-        setCombinedActivities={setCombinedActivities}
-        setAlteracoesEtapa={setAlteracoesEtapa}
-        setPlanejamentos={setPlanejamentos}
-        onSuccess={async () => {
-          // Recarregar apenas combinedActivities
-          const projectActivities = await retryWithBackoff(() => Atividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'refreshAfterEtapaChange');
-          const allActivities = await retryWithBackoff(() => Atividade.list(), 3, 500, 'refreshAllActivities');
-          
-          // Reconstruir combinedActivities com as novas etapas
-          const overrideActivitiesGlobalMap = new Map();
-          const overrideActivitiesByDocMap = new Map();
-          const excludedActivitiesSet = new Set();
-          const excludedFromDocumentMap = new Map();
-          
-          (projectActivities || []).forEach(pa => {
-              if (pa.id_atividade) {
-                  if (pa.tempo === -999) {
-                      if (pa.documento_id) {
-                        if (!excludedFromDocumentMap.has(pa.id_atividade)) {
-                          excludedFromDocumentMap.set(pa.id_atividade, new Set());
-                        }
-                        excludedFromDocumentMap.get(pa.id_atividade).add(pa.documento_id);
-                      } else {
-                        excludedActivitiesSet.add(pa.id_atividade);
-                      }
-                  } else {
-                      if (pa.documento_id) {
-                        const key = `${pa.documento_id}|${pa.id_atividade}`;
-                        overrideActivitiesByDocMap.set(key, pa);
-                      } else {
-                        overrideActivitiesGlobalMap.set(pa.id_atividade, pa);
-                      }
-                  }
-              }
-          });
-          
-          const allGenericActivitiesMap = new Map((allActivities || [])
-            .filter(a => !a.empreendimento_id)
-            .map(a => [a.id, a])
-          );
-          
-          const planejamentosMap = new Map((planejamentos || []).map(p => [`${p.documento_id}-${p.atividade_id}`, p]));
-          
-          const empreendimentoData = await retryWithBackoff(() => Empreendimento.filter({ id: empreendimentoId }), 3, 500, 'fetchEmp');
-          const empreendimento = (empreendimentoData && empreendimentoData[0]) || null;
-          const etapasCadastradas = empreendimento?.etapas || [];
-          
-          const normalizedProjectActivities = (projectActivities || [])
-            .filter(pa => !pa.id_atividade && pa.tempo !== -999)
-            .filter(pa => etapasCadastradas.length === 0 || etapasCadastradas.includes(pa.etapa))
-            .map(ativ => ({
-              ...ativ,
-              uniqueId: `proj-${ativ.id}`,
-              source: 'Projeto',
-              status: 'N/A',
-              isEditable: true,
-              base_atividade_id: ativ.id,
-          }));
-
-          const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
-          const atividadesDocumentacao = [];
-          
-          allGenericActivitiesMap.forEach(baseAtividade => {
-            if (disciplinasDocumentacao.includes(baseAtividade.disciplina)) {
-              const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
-              const etapaValida = etapasCadastradas.length === 0 || etapasCadastradas.includes(baseAtividade.etapa);
-              
-              if (!isExcludedFromProject && etapaValida) {
-                const override = overrideActivitiesGlobalMap.get(baseAtividade.id);
-                const etapaCorreta = override ? override.etapa : baseAtividade.etapa;
-                
-                const planKey = `null-${baseAtividade.id}`;
-                const existingPlan = planejamentosMap.get(planKey);
-                
-                if (existingPlan) {
-                  atividadesDocumentacao.push({
-                    ...baseAtividade,
-                    id: existingPlan.id,
-                    uniqueId: `plano-${existingPlan.id}`,
-                    atividade: existingPlan.descritivo || baseAtividade.atividade,
-                    tempo: existingPlan.tempo_planejado,
-                    source: 'Catálogo',
-                    source_documento_id: null,
-                    status: 'Planejada',
-                    isEditable: false,
-                    etapa: existingPlan.etapa || etapaCorreta,
-                    executor_principal: existingPlan.executor_principal,
-                    base_atividade_id: baseAtividade.id,
-                  });
-                } else {
-                  const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
-                  
-                  atividadesDocumentacao.push({
-                    ...baseAtividade,
-                    uniqueId: `doc-${baseAtividade.id}`,
-                    id: baseAtividade.id,
-                    tempo: baseAtividade.tempo || 0,
-                    source: 'Catálogo',
-                    source_documento_id: null,
-                    status: 'Disponível',
-                    isEditable: false,
-                    etapa: etapaCorreta,
-                    executor_principal: executorPrincipal,
-                    base_atividade_id: baseAtividade.id,
-                  });
-                }
-              }
-            }
-          });
-
-          let documentActivities = [];
-          (documentos || []).forEach(doc => {
-            const subdisciplinasDoc = doc.subdisciplinas || [];
-            const disciplinaDoc = doc.disciplina;
-            const fatorDificuldade = doc.fator_dificuldade || 1;
-
-            const atividadesVinculadasDoc = (projectActivities || []).filter(pa => 
-              pa.documento_id === doc.id && 
-              !pa.id_atividade && 
-              pa.tempo !== -999
-            );
-            
-            atividadesVinculadasDoc.forEach(atividadeVinculada => {
-              const planKey = `${doc.id}-${atividadeVinculada.id}`;
-              const existingPlan = planejamentosMap.get(planKey);
-              const sourceDisplay = `Folha: ${doc.numero} - ${doc.arquivo || 'Sem Nome'}`;
-              
-              if (existingPlan) {
-                documentActivities.push({
-                  ...atividadeVinculada,
-                  id: existingPlan.id,
-                  uniqueId: `plano-${existingPlan.id}`,
-                  atividade: existingPlan.descritivo || atividadeVinculada.atividade,
-                  tempo: existingPlan.tempo_planejado,
-                  source: sourceDisplay,
-                  source_documento_id: doc.id,
-                  source_documento_numero: doc.numero,
-                  source_documento_arquivo: doc.arquivo,
-                  status: 'Planejada',
-                  isEditable: false,
-                  etapa: existingPlan.etapa || atividadeVinculada.etapa,
-                  executor_principal: existingPlan.executor_principal,
-                  base_atividade_id: atividadeVinculada.id,
-                });
-              } else {
-                documentActivities.push({
-                  ...atividadeVinculada,
-                  uniqueId: `avail-${doc.id}-${atividadeVinculada.id}`,
-                  id: atividadeVinculada.id,
-                  tempo: atividadeVinculada.tempo || 0,
-                  source: sourceDisplay,
-                  source_documento_id: doc.id,
-                  source_documento_numero: doc.numero,
-                  source_documento_arquivo: doc.arquivo,
-                  status: 'Disponível',
-                  isEditable: false,
-                  etapa: atividadeVinculada.etapa,
-                  base_atividade_id: atividadeVinculada.id,
-                });
-              }
-            });
-            
-            allGenericActivitiesMap.forEach(baseAtividade => {
-              const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
-              const isExcludedFromThisDoc = excludedFromDocumentMap.has(baseAtividade.id) && 
-                                            excludedFromDocumentMap.get(baseAtividade.id).has(doc.id);
-              const etapaValida = etapasCadastradas.length === 0 || etapasCadastradas.includes(baseAtividade.etapa);
-              
-              if (isExcludedFromProject || isExcludedFromThisDoc || !etapaValida) {
-                return;
-              }
-
-              const disciplinaMatch = baseAtividade.disciplina === disciplinaDoc;
-              const subdisciplinaMatch = subdisciplinasDoc.includes(baseAtividade.subdisciplina);
-
-              if (disciplinaMatch && subdisciplinaMatch) {
-                const planKey = `${doc.id}-${baseAtividade.id}`;
-                const existingPlan = planejamentosMap.get(planKey);
-                
-                const overrideKey = `${doc.id}|${baseAtividade.id}`;
-                const overrideEspecifico = overrideActivitiesByDocMap.get(overrideKey);
-                const overrideGlobal = overrideActivitiesGlobalMap.get(baseAtividade.id);
-                const override = overrideEspecifico || overrideGlobal;
-                
-                const etapaCorreta = override ? override.etapa : baseAtividade.etapa;
-                const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
-
-                const sourceDisplay = `Folha: ${doc.numero} - ${doc.arquivo || 'Sem Nome'}`;
-
-                if (existingPlan) {
-                  documentActivities.push({
-                    ...baseAtividade,
-                    id: existingPlan.id,
-                    uniqueId: `plano-${existingPlan.id}`,
-                    atividade: existingPlan.descritivo || baseAtividade.atividade,
-                    tempo: existingPlan.tempo_planejado,
-                    source: sourceDisplay,
-                    source_documento_id: doc.id,
-                    source_documento_numero: doc.numero,
-                    source_documento_arquivo: doc.arquivo,
-                    status: 'Planejada',
-                    isEditable: false,
-                    etapa: existingPlan.etapa || etapaCorreta,
-                    executor_principal: existingPlan.executor_principal || executorPrincipal,
-                    base_atividade_id: baseAtividade.id,
-                  });
-                } else {
-                  documentActivities.push({
-                    ...baseAtividade,
-                    uniqueId: `avail-${doc.id}-${baseAtividade.id}`,
-                    id: baseAtividade.id,
-                    tempo: (baseAtividade.tempo || 0) * fatorDificuldade,
-                    source: sourceDisplay,
-                    source_documento_id: doc.id,
-                    source_documento_numero: doc.numero,
-                    source_documento_arquivo: doc.arquivo,
-                    status: 'Disponível',
-                    isEditable: false,
-                    etapa: etapaCorreta,
-                    executor_principal: executorPrincipal,
-                    base_atividade_id: baseAtividade.id,
-                  });
-                }
-              }
-            });
-          });
-
-          setCombinedActivities([...normalizedProjectActivities, ...documentActivities, ...atividadesDocumentacao]);
+        onSuccess={() => {
+          fetchData();
+          if (onUpdate) onUpdate();
         }}
       />
 
@@ -3969,7 +3686,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         atividade={selectedAtividade}
         documentos={documentos}
         empreendimentoId={empreendimentoId}
-        onSuccess={() => {}}
+        onSuccess={() => {
+          fetchData();
+          if (onUpdate) onUpdate();
+        }}
       />
 
       {isPlanejamentoModalOpen && atividadeParaPlanejar && (

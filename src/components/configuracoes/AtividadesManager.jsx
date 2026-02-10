@@ -34,14 +34,6 @@ export default function AtividadesManager({ atividades, disciplinas, onUpdate, i
   // Estados para rastreamento de alterações
   const [alteracoesEtapa, setAlteracoesEtapa] = useState([]);
   const [isLoadingAlteracoes, setIsLoadingAlteracoes] = useState(false);
-  
-  // Estado local para atividades
-  const [localAtividades, setLocalAtividades] = useState(atividades);
-
-  // Sincronizar estado local com props
-  useEffect(() => {
-    setLocalAtividades(atividades);
-  }, [atividades]);
 
   // Carregar alterações de etapa ao montar
   useEffect(() => {
@@ -87,7 +79,7 @@ export default function AtividadesManager({ atividades, disciplinas, onUpdate, i
   // CORREÇÃO: Normalizar atividades para garantir que campos sejam strings
   // Filtrar apenas atividades do catálogo (sem empreendimento_id)
   const atividadesNormalizadas = useMemo(() => {
-    return (localAtividades || [])
+    return (atividades || [])
       .filter(atividade => !atividade.empreendimento_id)
       .map(atividade => ({
         ...atividade,
@@ -96,7 +88,7 @@ export default function AtividadesManager({ atividades, disciplinas, onUpdate, i
         subdisciplina: typeof atividade.subdisciplina === 'string' ? atividade.subdisciplina : '',
         etapa: typeof atividade.etapa === 'string' ? atividade.etapa : ''
       }));
-  }, [localAtividades]);
+  }, [atividades]);
 
   // CORREÇÃO: Usar função utilitária para ordenar
   const atividadesOrdenadas = useMemo(() => {
@@ -170,18 +162,13 @@ export default function AtividadesManager({ atividades, disciplinas, onUpdate, i
           setAlteracoesEtapa(alteracoes || []);
         }
         
-        const atividadeAtualizada = await Atividade.update(editingAtividade.id, dataToSave);
-        
-        // Atualizar estado local sem reload
-        setLocalAtividades(prev => prev.map(a => a.id === atividadeAtualizada.id ? atividadeAtualizada : a));
+        await Atividade.update(editingAtividade.id, dataToSave);
       } else {
-        const novaAtividade = await Atividade.create(dataToSave);
-        
-        // Adicionar ao estado local sem reload
-        setLocalAtividades(prev => [...prev, novaAtividade]);
+        await Atividade.create(dataToSave);
       }
       
       resetForm();
+      onUpdate();
     } catch (error) {
       console.error("Erro ao salvar atividade:", error);
       alert("Erro ao salvar atividade: " + error.message);
@@ -205,9 +192,7 @@ export default function AtividadesManager({ atividades, disciplinas, onUpdate, i
   const handleDelete = async (id) => {
     if (confirm("Tem certeza que deseja excluir esta atividade?")) {
       await Atividade.delete(id);
-      
-      // Remover do estado local sem reload
-      setLocalAtividades(prev => prev.filter(a => a.id !== id));
+      onUpdate();
     }
   };
 
@@ -234,19 +219,17 @@ export default function AtividadesManager({ atividades, disciplinas, onUpdate, i
 
   const handleSaveId = async (atividadeId) => {
     try {
-      const atividade = localAtividades.find(a => a.id === atividadeId);
+      const atividade = atividades.find(a => a.id === atividadeId);
       if (!atividade) return;
 
-      const atividadeAtualizada = await Atividade.update(atividadeId, {
+      await Atividade.update(atividadeId, {
         ...atividade,
         id_atividade: tempIdValue.trim()
       });
 
-      // Atualizar estado local sem reload
-      setLocalAtividades(prev => prev.map(a => a.id === atividadeId ? atividadeAtualizada : a));
-
       setEditingIdAtividade(null);
       setTempIdValue("");
+      onUpdate();
     } catch (error) {
       console.error("Erro ao salvar ID:", error);
       alert("Erro ao salvar o ID da atividade.");
