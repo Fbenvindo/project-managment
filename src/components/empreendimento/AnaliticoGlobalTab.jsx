@@ -759,6 +759,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const [etapaParaReverter, setEtapaParaReverter] = useState('');
   const [isMudandoEtapaGlobal, setIsMudandoEtapaGlobal] = useState(false);
   const [etapaMudancaGlobal, setEtapaMudancaGlobal] = useState('');
+  const [editandoTempo, setEditandoTempo] = useState({});
+  const [novoTempo, setNovoTempo] = useState({});
 
   const documentosMap = useMemo(() => {
     return new Map((documentos || []).map(doc => [doc.id, doc]));
@@ -1923,10 +1925,103 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                           })()
                                         ) : (
                                           <span className="text-xs text-gray-400">-</span>
-                                        )}
-                                      </TableCell>
-                                      <TableCell className="text-sm">{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
-                                      <TableCell className="text-sm font-semibold text-blue-600">
+                                          )}
+                                          </TableCell>
+                                          <TableCell className="text-sm">
+                                          {editandoTempo[key] ? (
+                                            <div className="flex items-center gap-1">
+                                              <Input
+                                                type="number"
+                                                step="0.1"
+                                                min="0"
+                                                value={novoTempo[key] ?? ativ.tempo ?? 0}
+                                                onChange={(e) => setNovoTempo(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))}
+                                                className="w-20 h-7 text-xs"
+                                                autoFocus
+                                              />
+                                              <span className="text-xs">h</span>
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-6 w-6 p-0 text-green-600 hover:text-green-700"
+                                                onClick={async () => {
+                                                  try {
+                                                    const atividadeId = ativ.base_atividade_id || ativ.id;
+                                                    const tempo = novoTempo[key] ?? ativ.tempo ?? 0;
+
+                                                    const atividadeOriginalArr = await retryWithBackoff(
+                                                      () => Atividade.filter({ id: atividadeId }),
+                                                      3, 500, `getOriginalActivityForTempoEdit-${atividadeId}`
+                                                    );
+
+                                                    if (!atividadeOriginalArr || atividadeOriginalArr.length === 0) {
+                                                      throw new Error("Atividade original não encontrada.");
+                                                    }
+
+                                                    const existingOverrides = await retryWithBackoff(
+                                                      () => Atividade.filter({
+                                                        empreendimento_id: empreendimentoId,
+                                                        id_atividade: atividadeId,
+                                                        documento_id: null,
+                                                        tempo: { operator: '!=', value: -999 }
+                                                      }),
+                                                      3, 500, `checkExistingTempoOverride-${atividadeId}`
+                                                    );
+
+                                                    if (existingOverrides && existingOverrides.length > 0) {
+                                                      await retryWithBackoff(
+                                                        () => Atividade.update(existingOverrides[0].id, { tempo }),
+                                                        3, 500, `updateTempoOverride-${existingOverrides[0].id}`
+                                                      );
+                                                    } else {
+                                                      await retryWithBackoff(
+                                                        () => Atividade.create({
+                                                          ...atividadeOriginalArr[0],
+                                                          id: undefined,
+                                                          empreendimento_id: empreendimentoId,
+                                                          id_atividade: atividadeId,
+                                                          documento_id: null,
+                                                          tempo
+                                                        }),
+                                                        3, 500, `createTempoOverride-${atividadeId}`
+                                                      );
+                                                    }
+
+                                                    setEditandoTempo(prev => ({ ...prev, [key]: false }));
+                                                    fetchData();
+                                                  } catch (error) {
+                                                    console.error("Erro ao salvar tempo:", error);
+                                                    alert("Erro ao salvar tempo: " + error.message);
+                                                  }
+                                                }}
+                                              >
+                                                ✓
+                                              </Button>
+                                              <Button
+                                                size="sm"
+                                                variant="ghost"
+                                                className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                                                onClick={() => {
+                                                  setEditandoTempo(prev => ({ ...prev, [key]: false }));
+                                                  setNovoTempo(prev => ({ ...prev, [key]: undefined }));
+                                                }}
+                                              >
+                                                ✕
+                                              </Button>
+                                            </div>
+                                          ) : (
+                                            <button
+                                              onClick={() => {
+                                                setEditandoTempo(prev => ({ ...prev, [key]: true }));
+                                                setNovoTempo(prev => ({ ...prev, [key]: ativ.tempo ?? 0 }));
+                                              }}
+                                              className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
+                                            >
+                                              {ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}
+                                            </button>
+                                          )}
+                                          </TableCell>
+                                          <TableCell className="text-sm font-semibold text-blue-600">
                                     {grupo.folhas.length > 0 
                                       ? `${grupo.folhas.reduce((sum, f) => sum + (Number(f.tempo) || 0), 0).toFixed(1)}h`
                                       : '-'}
@@ -2302,10 +2397,103 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                 })()
                               ) : (
                                 <span className="text-xs text-gray-400">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell>{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
-                            <TableCell className="font-semibold text-blue-600">
+                                )}
+                                </TableCell>
+                                <TableCell>
+                                {editandoTempo[key] ? (
+                                  <div className="flex items-center gap-1">
+                                    <Input
+                                      type="number"
+                                      step="0.1"
+                                      min="0"
+                                      value={novoTempo[key] ?? ativ.tempo ?? 0}
+                                      onChange={(e) => setNovoTempo(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))}
+                                      className="w-20 h-7 text-xs"
+                                      autoFocus
+                                    />
+                                    <span className="text-xs">h</span>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 w-6 p-0 text-green-600 hover:text-green-700"
+                                      onClick={async () => {
+                                        try {
+                                          const atividadeId = ativ.base_atividade_id || ativ.id;
+                                          const tempo = novoTempo[key] ?? ativ.tempo ?? 0;
+
+                                          const atividadeOriginalArr = await retryWithBackoff(
+                                            () => Atividade.filter({ id: atividadeId }),
+                                            3, 500, `getOriginalActivityForTempoEdit-${atividadeId}`
+                                          );
+
+                                          if (!atividadeOriginalArr || atividadeOriginalArr.length === 0) {
+                                            throw new Error("Atividade original não encontrada.");
+                                          }
+
+                                          const existingOverrides = await retryWithBackoff(
+                                            () => Atividade.filter({
+                                              empreendimento_id: empreendimentoId,
+                                              id_atividade: atividadeId,
+                                              documento_id: null,
+                                              tempo: { operator: '!=', value: -999 }
+                                            }),
+                                            3, 500, `checkExistingTempoOverride-${atividadeId}`
+                                          );
+
+                                          if (existingOverrides && existingOverrides.length > 0) {
+                                            await retryWithBackoff(
+                                              () => Atividade.update(existingOverrides[0].id, { tempo }),
+                                              3, 500, `updateTempoOverride-${existingOverrides[0].id}`
+                                            );
+                                          } else {
+                                            await retryWithBackoff(
+                                              () => Atividade.create({
+                                                ...atividadeOriginalArr[0],
+                                                id: undefined,
+                                                empreendimento_id: empreendimentoId,
+                                                id_atividade: atividadeId,
+                                                documento_id: null,
+                                                tempo
+                                              }),
+                                              3, 500, `createTempoOverride-${atividadeId}`
+                                            );
+                                          }
+
+                                          setEditandoTempo(prev => ({ ...prev, [key]: false }));
+                                          fetchData();
+                                        } catch (error) {
+                                          console.error("Erro ao salvar tempo:", error);
+                                          alert("Erro ao salvar tempo: " + error.message);
+                                        }
+                                      }}
+                                    >
+                                      ✓
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
+                                      onClick={() => {
+                                        setEditandoTempo(prev => ({ ...prev, [key]: false }));
+                                        setNovoTempo(prev => ({ ...prev, [key]: undefined }));
+                                      }}
+                                    >
+                                      ✕
+                                    </Button>
+                                  </div>
+                                ) : (
+                                  <button
+                                    onClick={() => {
+                                      setEditandoTempo(prev => ({ ...prev, [key]: true }));
+                                      setNovoTempo(prev => ({ ...prev, [key]: ativ.tempo ?? 0 }));
+                                    }}
+                                    className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
+                                  >
+                                    {ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}
+                                  </button>
+                                )}
+                                </TableCell>
+                                <TableCell className="font-semibold text-blue-600">
                             {grupo.folhas.length > 0 
                               ? `${grupo.folhas.reduce((sum, f) => sum + (Number(f.tempo) || 0), 0).toFixed(1)}h`
                               : '-'}
