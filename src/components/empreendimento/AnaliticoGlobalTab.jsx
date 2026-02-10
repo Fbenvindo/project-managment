@@ -3433,10 +3433,14 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       );
       
       if (existingOverrides && existingOverrides.length > 0) {
-        console.log(`📝 Atualizando override existente com novo tempo`);
-        await retryWithBackoff(
-          () => Atividade.update(existingOverrides[0].id, { tempo: novoTempo }),
-          3, 500, `updateTempoOverride-${existingOverrides[0].id}`
+        console.log(`📝 Atualizando ${existingOverrides.length} override(s) global com novo tempo`);
+        await Promise.all(
+          existingOverrides.map(override =>
+            retryWithBackoff(
+              () => Atividade.update(override.id, { tempo: novoTempo }),
+              3, 500, `updateTempoOverride-${override.id}`
+            )
+          )
         );
       } else {
         console.log(`📝 Criando novo override com tempo customizado`);
@@ -3450,6 +3454,30 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             tempo: novoTempo
           }),
           3, 500, `createTempoOverride-${atividadeId}`
+        );
+      }
+
+      // Atualizar também overrides específicos de documento para a mesma atividade
+      console.log(`📝 Buscando overrides específicos de documento...`);
+      const documentOverrides = await retryWithBackoff(
+        () => Atividade.filter({
+          empreendimento_id: empreendimentoId,
+          id_atividade: atividadeId,
+          documento_id: { operator: '!=', value: null },
+          tempo: { operator: '!=', value: -999 }
+        }),
+        3, 500, `checkDocumentOverrides-${atividadeId}`
+      );
+
+      if (documentOverrides && documentOverrides.length > 0) {
+        console.log(`📝 Atualizando ${documentOverrides.length} override(s) de documento com novo tempo`);
+        await Promise.all(
+          documentOverrides.map(override =>
+            retryWithBackoff(
+              () => Atividade.update(override.id, { tempo: novoTempo }),
+              3, 500, `updateDocumentTempoOverride-${override.id}`
+            )
+          )
         );
       }
       
