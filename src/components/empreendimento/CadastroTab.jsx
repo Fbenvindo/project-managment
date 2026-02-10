@@ -974,6 +974,14 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     );
   }
 
+  // 🔍 DEBUG: Verificar estado de revisões no momento da renderização
+  console.log('🎬 RENDERIZAÇÃO - Estado atual de revisoesPorEtapa:', JSON.stringify(revisoesPorEtapa, null, 2));
+  console.log('📊 ETAPAS para renderizar:', ETAPAS);
+  ETAPAS.forEach(etapa => {
+    const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+    console.log(`  ${etapa}: ${revisoesEtapa.length} revisões ->`, revisoesEtapa);
+  });
+
   return (
     <div className="space-y-4 relative">
       <div className="flex justify-between items-center">
