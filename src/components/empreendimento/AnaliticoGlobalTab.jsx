@@ -360,9 +360,23 @@ const EditarEtapaEmFolhasModal = ({ isOpen, onClose, atividade, documentos, empr
       }
       mensagem += `\n\nFolhas: ${folhasNames}`;
 
-      // Recarregar alterações sem chamar onSuccess (não recarrega página)
-      const alteracoes = await AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId });
+      // Atualizar estado local
+      const baseAtividadeId = atividade.base_atividade_id || atividade.id;
+      setCombinedActivities(prev => prev.map(ativ => {
+        if ((ativ.base_atividade_id === baseAtividadeId || ativ.id === baseAtividadeId) && 
+            selectedDocumentos.has(ativ.source_documento_id)) {
+          return { ...ativ, etapa: novaEtapa };
+        }
+        return ativ;
+      }));
+      
+      // Recarregar alterações e planejamentos
+      const [alteracoes, planejamentosAtualizados] = await Promise.all([
+        AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId }),
+        PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId })
+      ]);
       setAlteracoesEtapa(alteracoes || []);
+      setPlanejamentos(planejamentosAtualizados || []);
       
       onClose();
       alert(mensagem);
@@ -1228,8 +1242,22 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           }
         }
 
-        const alteracoes = await AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId });
+        // Atualizar estado local
+        const baseAtividadeId = selectedAtividade.base_atividade_id;
+        setCombinedActivities(prev => prev.map(ativ => {
+          if ((ativ.base_atividade_id === baseAtividadeId || ativ.id === baseAtividadeId) && 
+              ativ.source_documento_id === selectedFolhaId) {
+            return { ...ativ, etapa: newEtapa };
+          }
+          return ativ;
+        }));
+        
+        const [alteracoes, planejamentosAtualizados] = await Promise.all([
+          AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId }),
+          PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId })
+        ]);
         setAlteracoesEtapa(alteracoes || []);
+        setPlanejamentos(planejamentosAtualizados || []);
         setIsEtapaModalOpen(false);
         
         alert(`A etapa de "${selectedAtividade.atividade}" foi alterada para "${newEtapa}" na folha ${folhaObj?.numero} - ${folhaObj?.arquivo}.`);
