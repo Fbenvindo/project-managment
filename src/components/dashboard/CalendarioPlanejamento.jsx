@@ -803,7 +803,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
             </button>
           </div>
 
-          {/* Time information */}
+          {/* Time information - showing hours for this specific day */}
           <div className="flex items-center gap-2">
             {shouldShowAdjustButton() ? (
               <button
@@ -815,13 +815,13 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
                 title="Clique para ajustar o tempo (Coordenador ou superior)"
               >
                 <span className="font-semibold text-sm">
-                  {Math.ceil(tempoPlanejado * 10) / 10}/{Math.ceil(tempoExecutado * 10) / 10}h
+                  {Math.ceil(horasAlocadasDia * 10) / 10}/{Math.ceil(horasExecutadasNoDia * 10) / 10}h{(plano.horas_por_dia && Object.keys(plano.horas_por_dia).length > 1 && Object.keys(plano.horas_por_dia).sort().indexOf(dayKey) < Object.keys(plano.horas_por_dia).length - 1) ? ' ...' : ''}
                 </span>
               </button>
             ) : (
                <div className="font-mono text-blue-600">
-                 <span className="font-semibold text-sm" title="Planejado / Executado">
-                   {Math.ceil(tempoPlanejado * 10) / 10}/{Math.ceil(tempoExecutado * 10) / 10}h
+                 <span className="font-semibold text-sm" title={horasAlocadasDia > 0 && Object.keys(plano.horas_por_dia || {}).length > 1 ? "Planejado / Executado (continua em outros dias)" : "Planejado / Executado"}>
+                   {Math.ceil(horasAlocadasDia * 10) / 10}/{Math.ceil(horasExecutadasNoDia * 10) / 10}h{(plano.horas_por_dia && Object.keys(plano.horas_por_dia).length > 1 && Object.keys(plano.horas_por_dia).sort().indexOf(dayKey) < Object.keys(plano.horas_por_dia).length - 1) ? ' ...' : ''}
                  </span>
               </div>
             )}
