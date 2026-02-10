@@ -2700,7 +2700,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`✅ ========================================\n`);
       
       await fetchData();
-      if (onUpdate) onUpdate();
       
       let mensagem = `✅ Atividade "${atividade.atividade}" concluída em todas as folhas!\n`;
       if (concluidos > 0) {

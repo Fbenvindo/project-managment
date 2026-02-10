@@ -821,8 +821,13 @@ export default function DocumentosTab({
       alert(mensagem);
 
       if (sucessos > 0) {
-        // Recarregar documentos localmente
-        await fetchPavimentos();
+        // Recarregar documentos localmente em background
+        setTimeout(() => {
+          retryWithBackoff(
+            () => Documento.filter({ empreendimento_id: empreendimento.id }),
+            3, 500, 'refreshDocumentosSilent'
+          ).then(docs => setLocalDocumentos(docs || [])).catch(err => console.warn("Erro:", err));
+        }, 200);
         setShowImportModal(false);
         setImportFile(null);
       }
