@@ -3397,28 +3397,20 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           usuario_nome: user.full_name || user.nome || user.email
         });
 
-        // Buscar todos os planejamentos desta atividade
-        const planejamentosAtividade = await retryWithBackoff(
-          () => PlanejamentoAtividade.filter({
-            empreendimento_id: empreendimentoId,
-            atividade_id: atividadeId
-          }),
-          3, 500, `getPlanejamentosGlobal-${atividadeId}`
+        // Buscar atividade original
+        const atividadeOriginalArr = await retryWithBackoff(
+          () => Atividade.filter({ id: atividadeId }),
+          3, 500, `getActivityForOverride-${atividadeId}`
         );
 
-        // Atualizar planejamentos
-        if (planejamentosAtividade && planejamentosAtividade.length > 0) {
-          const updatePromises = planejamentosAtividade.map(plano =>
-            retryWithBackoff(
-              () => PlanejamentoAtividade.update(plano.id, { etapa: novaEtapa }),
-              3, 500, `updateEtapaGlobal-${plano.id}`
-            )
-          );
-          await Promise.all(updatePromises);
-          planejamentosMudados += planejamentosAtividade.length;
+        if (!atividadeOriginalArr || atividadeOriginalArr.length === 0) {
+          console.warn(`⚠️ Atividade original ${atividadeId} não encontrada, pulando...`);
+          continue;
         }
 
-        // Criar/atualizar override global
+        const atividadeOriginal = atividadeOriginalArr[0];
+
+        // Criar/atualizar override global PRIMEIRO
         const existingOverrides = await retryWithBackoff(
           () => Atividade.filter({
             empreendimento_id: empreendimentoId,
@@ -3430,30 +3422,47 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         );
 
         if (existingOverrides && existingOverrides.length > 0) {
+          console.log(`   ✏️ Atualizando override global existente para ${atividadeId}`);
           await retryWithBackoff(
             () => Atividade.update(existingOverrides[0].id, { etapa: novaEtapa }),
             3, 500, `updateOverrideGlobal-${existingOverrides[0].id}`
           );
         } else {
-          const atividadeOriginalArr = await retryWithBackoff(
-            () => Atividade.filter({ id: atividadeId }),
-            3, 500, `getActivityForOverride-${atividadeId}`
+          console.log(`   📝 Criando novo override global para ${atividadeId}`);
+          await retryWithBackoff(
+            () => Atividade.create({
+              ...atividadeOriginal,
+              id: undefined,
+              empreendimento_id: empreendimentoId,
+              id_atividade: atividadeId,
+              documento_id: null,
+              etapa: novaEtapa
+            }),
+            3, 500, `createOverrideGlobal-${atividadeId}`
           );
+        }
 
-          if (atividadeOriginalArr && atividadeOriginalArr.length > 0) {
-            const atividadeOriginal = atividadeOriginalArr[0];
-            await retryWithBackoff(
-              () => Atividade.create({
-                ...atividadeOriginal,
-                id: undefined,
-                empreendimento_id: empreendimentoId,
-                id_atividade: atividadeId,
-                documento_id: null,
-                etapa: novaEtapa
-              }),
-              3, 500, `createOverrideGlobal-${atividadeId}`
-            );
-          }
+        // Atualizar planejamentos DEPOIS
+        const planejamentosAtividade = await retryWithBackoff(
+          () => PlanejamentoAtividade.filter({
+            empreendimento_id: empreendimentoId,
+            atividade_id: atividadeId
+          }),
+          3, 500, `getPlanejamentosGlobal-${atividadeId}`
+        );
+
+        if (planejamentosAtividade && planejamentosAtividade.length > 0) {
+          const updatePromises = planejamentosAtividade.map(plano =>
+            retryWithBackoff(
+              () => PlanejamentoAtividade.update(plano.id, { etapa: novaEtapa }),
+              3, 500, `updateEtapaGlobal-${plano.id}`
+            )
+          );
+          await Promise.all(updatePromises);
+          planejamentosMudados += planejamentosAtividade.length;
+          console.log(`   ✅ ${planejamentosAtividade.length} planejamento(s) atualizado(s)`);
+        } else {
+          console.log(`   ℹ️ Nenhum planejamento encontrado para esta atividade`);
         }
 
         atividadesMudadas++;
