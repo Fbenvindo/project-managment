@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Atividade, Disciplina, PlanejamentoAtividade, Documento, AlteracaoEtapa, Empreendimento, Usuario } from '@/entities/all';
+import { Atividade, Disciplina, PlanejamentoAtividade, Documento, AlteracaoEtapa, Empreendimento, Usuario, AtividadesDoProjeto } from '@/entities/all';
 
 const PlanejamentoDocumento = base44.entities.PlanejamentoDocumento;
 import { Button } from '@/components/ui/button';
@@ -783,7 +783,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         empreendimentoData,
         alteracoesData,
         usuariosData,
-        todosEmpreendimentos
+        todosEmpreendimentos,
+        atividadesDoProjetoData
       ] = await Promise.all([
         retryWithBackoff(() => Atividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchProjectActivities'),
         retryWithBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchPlanejamentos'),
@@ -793,7 +794,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         retryWithBackoff(() => Empreendimento.filter({ id: empreendimentoId }), 3, 500, 'fetchEmpreendimento'),
         retryWithBackoff(() => AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAlteracoes'),
         retryWithBackoff(() => Usuario.list(), 3, 500, 'fetchUsuarios'),
-        retryWithBackoff(() => Empreendimento.list(), 3, 500, 'fetchAllEmpreendimentos')
+        retryWithBackoff(() => Empreendimento.list(), 3, 500, 'fetchAllEmpreendimentos'),
+        retryWithBackoff(() => AtividadesDoProjeto.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAtividadesDoProjeto')
       ]);
 
       setDocumentos(documentosData || []);
@@ -802,14 +804,19 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       setUsuarios(usuariosData || []);
       setPlanejamentos(planejamentosData || []);
       setAllEmpreendimentos(todosEmpreendimentos || []);
+      
+      // Usar AtividadesDoProjeto se disponível, senão usar projectActivities
+      const activitiesToProcess = (atividadesDoProjetoData && atividadesDoProjetoData.length > 0) 
+        ? atividadesDoProjetoData 
+        : projectActivities;
 
       // MODIFICADO: Criar dois mapas - um global e um por documento
-      const overrideActivitiesGlobalMap = new Map(); // Overrides sem documento_id específico
-      const overrideActivitiesByDocMap = new Map(); // Overrides com documento_id específico (chave: "docId|atividadeId")
-      const excludedActivitiesSet = new Set();
-      const excludedFromDocumentMap = new Map();
-      
-      (projectActivities || []).forEach(pa => {
+       const overrideActivitiesGlobalMap = new Map(); // Overrides sem documento_id específico
+       const overrideActivitiesByDocMap = new Map(); // Overrides com documento_id específico (chave: "docId|atividadeId")
+       const excludedActivitiesSet = new Set();
+       const excludedFromDocumentMap = new Map();
+
+       (activitiesToProcess || []).forEach(pa => {
           if (pa.id_atividade) {
               if (pa.tempo === -999) {
                   if (pa.documento_id) {
@@ -843,7 +850,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       const empreendimento = (empreendimentoData && empreendimentoData[0]) || null;
       const etapasCadastradas = empreendimento?.etapas || [];
       
-      const normalizedProjectActivities = (projectActivities || [])
+      const normalizedProjectActivities = (activitiesToProcess || [])
         .filter(pa => !pa.id_atividade && pa.tempo !== -999)
         .filter(pa => etapasCadastradas.length === 0 || etapasCadastradas.includes(pa.etapa))
         .map(ativ => ({
