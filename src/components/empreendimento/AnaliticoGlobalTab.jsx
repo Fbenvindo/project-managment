@@ -3485,10 +3485,15 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       
       // Fechar edição
       setEditandoTempo(prev => ({ ...prev, [atividadeId]: false }));
-      
+      setNovosTempoPadrao(prev => {
+        const newState = { ...prev };
+        delete newState[atividadeId];
+        return newState;
+      });
+
       // Recarregar dados
       await fetchData();
-      
+
       alert(`✅ Tempo padrão de "${atividade.atividade}" atualizado para ${novoTempo}h neste empreendimento.`);
       
     } catch (error) {
