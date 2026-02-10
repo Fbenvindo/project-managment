@@ -1338,22 +1338,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         await Promise.all(updatePromises);
       }
       
-      // Atualizar estado local
-      const baseAtividadeId = selectedAtividade.base_atividade_id;
-      setCombinedActivities(prev => prev.map(ativ => {
-        if (ativ.base_atividade_id === baseAtividadeId || ativ.id === baseAtividadeId) {
-          return { ...ativ, etapa: newEtapa };
-        }
-        return ativ;
-      }));
-      
-      // Recarregar alterações e planejamentos
-      const [alteracoes, planejamentosAtualizados] = await Promise.all([
-        AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId }),
-        PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId })
-      ]);
-      setAlteracoesEtapa(alteracoes || []);
-      setPlanejamentos(planejamentosAtualizados || []);
+      // Recarregar todos os dados do banco para garantir sincronização
+      await fetchData();
       setIsEtapaModalOpen(false);
       
       alert(allPlanejamentos.length === 0 
