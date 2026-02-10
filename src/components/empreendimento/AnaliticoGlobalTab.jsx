@@ -762,6 +762,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const [etapaMudancaGlobal, setEtapaMudancaGlobal] = useState('');
   const [editandoTempo, setEditandoTempo] = useState({});
   const [novosTempoPadrao, setNovosTempoPadrao] = useState({});
+  const [atividadesSelecionadasParaExcluir, setAtividadesSelecionadasParaExcluir] = useState(new Set());
+  const [isExcluindoMultiplasFolhas, setIsExcluindoMultiplasFolhas] = useState(false);
 
   const documentosMap = useMemo(() => {
     return new Map((documentos || []).map(doc => [doc.id, doc]));
