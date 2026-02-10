@@ -184,14 +184,25 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
     
     try {
       if (atividade && atividade.id) {
-        // Edição - atualiza apenas uma atividade
+        // Edição - atualiza apenas os campos modificáveis
         const dataToSave = {
-          ...formData,
-          subdisciplina: selectedSubdisciplinas[0],
+          etapa: formData.etapa,
+          atividade: formData.atividade,
           tempo: formData.tempo ? Number(formData.tempo) : null,
-          documento_ids: selectedDocumentoIds.length > 0 ? selectedDocumentoIds : [],
-          documento_id: selectedDocumentoIds[0] || null, // Manter por compatibilidade
         };
+        
+        // Apenas incluir subdisciplina se foi alterada
+        if (selectedSubdisciplinas.length > 0 && selectedSubdisciplinas[0] !== atividade.subdisciplina) {
+          dataToSave.subdisciplina = selectedSubdisciplinas[0];
+        }
+        
+        // Apenas incluir documento_ids se foi alterado
+        if (selectedDocumentoIds.length > 0) {
+          dataToSave.documento_ids = selectedDocumentoIds;
+          dataToSave.documento_id = selectedDocumentoIds[0];
+        }
+        
+        console.log('📝 Atualizando atividade com dados:', dataToSave);
         await Atividade.update(atividade.id, dataToSave);
       } else {
         // Criação - criar uma atividade para cada combinação de subdisciplina x folha
