@@ -284,6 +284,32 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
     }
   };
 
+  const handleExcluirMultiplas = async () => {
+    if (selectedAtividades.length === 0) {
+      alert("Selecione pelo menos uma atividade");
+      return;
+    }
+
+    if (!window.confirm(`Tem certeza que deseja EXCLUIR permanentemente ${selectedAtividades.length} atividade(s)?`)) {
+      return;
+    }
+
+    setIsDeleting(true);
+    try {
+      for (const atividadeId of selectedAtividades) {
+        await Atividade.delete(atividadeId);
+      }
+      setSelectedAtividades([]);
+      onUpdate();
+      alert(`✅ ${selectedAtividades.length} atividade(s) excluída(s) com sucesso!`);
+    } catch (error) {
+      console.error("Erro ao excluir atividades:", error);
+      alert("Erro ao excluir atividades: " + error.message);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
   // The handlePlanejamentoSubmit function has been removed from AtividadesProjetoTab
   // because PlanejamentoAtividadeModal is now responsible for its own submission logic
   // via its internal state and `onSuccess` callback.
