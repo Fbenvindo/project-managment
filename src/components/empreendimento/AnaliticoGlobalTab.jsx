@@ -896,7 +896,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                 ...baseAtividade,
                 uniqueId: `doc-${baseAtividade.id}`,
                 id: baseAtividade.id,
-                tempo: baseAtividade.tempo || 0,
+                tempo: override?.tempo || baseAtividade.tempo || 0,
                 source: 'Catálogo',
                 source_documento_id: null,
                 status: 'Disponível',
@@ -1010,20 +1010,20 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
               });
             } else {
               documentActivities.push({
-                ...baseAtividade,
-                uniqueId: `avail-${doc.id}-${baseAtividade.id}`,
-                id: baseAtividade.id,
-                tempo: (baseAtividade.tempo || 0) * fatorDificuldade,
-                source: sourceDisplay,
-                source_documento_id: doc.id,
-                source_documento_numero: doc.numero,
-                source_documento_arquivo: doc.arquivo,
-                status: 'Disponível',
-                isEditable: false,
-                etapa: etapaCorreta,
-                executor_principal: executorPrincipal,
-                base_atividade_id: baseAtividade.id,
-              });
+                  ...baseAtividade,
+                  uniqueId: `avail-${doc.id}-${baseAtividade.id}`,
+                  id: baseAtividade.id,
+                  tempo: ((override?.tempo || baseAtividade.tempo || 0) * fatorDificuldade),
+                  source: sourceDisplay,
+                  source_documento_id: doc.id,
+                  source_documento_numero: doc.numero,
+                  source_documento_arquivo: doc.arquivo,
+                  status: 'Disponível',
+                  isEditable: false,
+                  etapa: etapaCorreta,
+                  executor_principal: executorPrincipal,
+                  base_atividade_id: baseAtividade.id,
+                });
             }
           }
         });
