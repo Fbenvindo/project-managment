@@ -3522,6 +3522,88 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     }
   };
 
+  const handleExcluirMultiplas = async (folhaSelecionada = null) => {
+    if (atividadesSelecionadasParaExcluir.size === 0) {
+      alert("Selecione pelo menos uma atividade.");
+      return;
+    }
+
+    const atividadesParaExcluir = Array.from(atividadesSelecionadasParaExcluir);
+    const atividadesEncontradas = combinedActivities.filter(a => 
+      atividadesParaExcluir.includes(a.base_atividade_id || a.id)
+    );
+
+    if (atividadesEncontradas.length === 0) {
+      alert("Nenhuma atividade encontrada.");
+      return;
+    }
+
+    if (folhaSelecionada) {
+      // Excluir de uma folha específica
+      const confirmacao = window.confirm(
+        `Tem certeza que deseja excluir ${atividadesEncontradas.length} atividade(s) da folha ${folhaSelecionada}?`
+      );
+
+      if (!confirmacao) return;
+
+      setIsExcluindoMultiplasFolhas(true);
+
+      try {
+        const folhaObj = documentos.find(d => d.id === folhaSelecionada);
+        let deletados = 0;
+
+        for (const ativ of atividadesEncontradas) {
+          const atividadeId = ativ.base_atividade_id || ativ.id;
+          
+          const atividadeOriginalArr = await retryWithBackoff(
+            () => Atividade.filter({ id: atividadeId }),
+            3, 500, `getActivityForMultipleDelete-${atividadeId}`
+          );
+
+          if (!atividadeOriginalArr || atividadeOriginalArr.length === 0) continue;
+
+          const atividadeOriginal = atividadeOriginalArr[0];
+          
+          const existingMarkers = await retryWithBackoff(
+            () => Atividade.filter({
+              empreendimento_id: empreendimentoId,
+              id_atividade: atividadeId,
+              documento_id: folhaSelecionada,
+              tempo: -999
+            }),
+            3, 500, `checkMarkerForDelete-${atividadeId}`
+          );
+
+          if (!existingMarkers || existingMarkers.length === 0) {
+            await retryWithBackoff(
+              () => Atividade.create({
+                ...atividadeOriginal,
+                id: undefined,
+                empreendimento_id: empreendimentoId,
+                id_atividade: atividadeId,
+                documento_id: folhaSelecionada,
+                tempo: -999,
+                atividade: `(Excluída da folha ${folhaObj?.numero}) ${atividadeOriginal.atividade}`
+              }),
+              3, 500, `createMarkerMultiDelete-${atividadeId}`
+            );
+            deletados++;
+          }
+        }
+
+        alert(`✅ ${deletados} atividade(s) excluída(s) da folha ${folhaObj?.numero}`);
+        setAtividadesSelecionadasParaExcluir(new Set());
+        await fetchData();
+        if (onUpdate) onUpdate();
+      } catch (error) {
+        console.error("Erro ao excluir múltiplas atividades:", error);
+        alert("Erro ao excluir atividades: " + error.message);
+      } finally {
+        setIsExcluindoMultiplasFolhas(false);
+      }
+    }
+  };
+
   const handleMudarEtapaGlobal = async (novaEtapa) => {
     if (!novaEtapa) {
       alert("Selecione a nova etapa.");
