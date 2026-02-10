@@ -3367,7 +3367,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`✅ ========================================\n`);
 
       await fetchData();
-      if (onUpdate) onUpdate();
 
       let mensagem = `✅ Etapa "${etapa}" concluída em todas as folhas!`;
       if (totalPlanejamentosConcluidos > 0) {
