@@ -1230,12 +1230,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           }
         }
 
-        alert(`A etapa de "${selectedAtividade.atividade}" foi alterada para "${newEtapa}" na folha ${folhaObj?.numero} - ${folhaObj?.arquivo}.`);
         const alteracoes = await AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId });
         setAlteracoesEtapa(alteracoes || []);
-        fetchData();
-        if(onUpdate) onUpdate();
         setIsEtapaModalOpen(false);
+        
+        alert(`A etapa de "${selectedAtividade.atividade}" foi alterada para "${newEtapa}" na folha ${folhaObj?.numero} - ${folhaObj?.arquivo}.`);
         return;
       }
 
@@ -1312,9 +1311,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       const alteracoes = await AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId });
       setAlteracoesEtapa(alteracoes || []);
   
-      fetchData();
-      if(onUpdate) onUpdate();
-  
     } catch (error) {
       console.error("Erro ao atualizar etapa:", error);
       alert("Ocorreu um erro ao atualizar a etapa da atividade.");
@@ -1326,8 +1322,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     if (window.confirm("Tem certeza que deseja excluir esta atividade do projeto? Atividades de folhas não são afetadas.")) {
       try {
         await retryWithBackoff(() => Atividade.delete(id), 3, 500, 'deleteAtividade');
-        fetchData(); 
-        if(onUpdate) onUpdate();
+        
+        // Atualizar estado local removendo a atividade
+        setCombinedActivities(prev => prev.filter(a => a.id !== id));
       } catch (error) {
         console.error("Erro ao excluir atividade:", error);
         alert("Não foi possível excluir a atividade.");
@@ -1388,8 +1385,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
       console.log(`✅ Marcador de exclusão criado com sucesso para atividade genérica ${genericAtividadeIdToExclude}`);
       
-      await fetchData();
-      if (onUpdate) onUpdate();
+      // Remover atividade do estado local
+      setCombinedActivities(prev => prev.filter(a => 
+        (a.base_atividade_id !== genericAtividadeIdToExclude) && (a.id !== genericAtividadeIdToExclude)
+      ));
       
       alert(`Atividade "${atividade.atividade}" foi marcada como excluída de todas as folhas deste empreendimento.`);
 
