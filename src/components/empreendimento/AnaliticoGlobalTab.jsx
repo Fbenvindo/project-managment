@@ -3466,8 +3466,40 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`   Planejamentos atualizados: ${planejamentosMudados}`);
       console.log(`🔀 ========================================\n`);
 
-      await fetchData();
-      if (onUpdate) onUpdate();
+      // Atualizar estado local de forma otimista
+      setCombinedActivities(prev => {
+        return prev.map(ativ => {
+          const atividadeId = ativ.base_atividade_id || ativ.id;
+          const pertenceAEtapaAntiga = ativ.etapa === etapaMudancaGlobal && !ativ.isEditable;
+          
+          if (pertenceAEtapaAntiga) {
+            return { ...ativ, etapa: novaEtapa };
+          }
+          return ativ;
+        });
+      });
+
+      // Recarregar alterações registradas em background
+      setTimeout(() => {
+        retryWithBackoff(
+          () => AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId }),
+          3, 500, 'refreshAlteracoesOnly'
+        ).then(alteracoesAtualizadas => {
+          setAlteracoesEtapa(alteracoesAtualizadas || []);
+        }).catch(err => {
+          console.warn("Erro ao atualizar alterações em background:", err);
+        });
+        
+        // Atualizar planejamentos em background
+        retryWithBackoff(
+          () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }),
+          3, 500, 'refreshPlanejamentosOnly'
+        ).then(planejamentosAtualizados => {
+          setPlanejamentos(planejamentosAtualizados || []);
+        }).catch(err => {
+          console.warn("Erro ao atualizar planejamentos em background:", err);
+        });
+      }, 100);
 
       alert(
         `✅ Sucesso! ${atividadesMudadas} atividade(s) movida(s) de "${etapaMudancaGlobal}" para "${novaEtapa}".\n\n` +
