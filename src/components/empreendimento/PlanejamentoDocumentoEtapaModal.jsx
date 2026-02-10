@@ -61,21 +61,33 @@ export default function PlanejamentoDocumentoEtapaModal({
     console.log(`   - Subdisciplinas: [${subdisciplinasDoc.join(', ')}]`);
     console.log(`   - Etapa para planejamento: ${etapaParaPlanejamento}`);
 
+    // Incluir tanto atividades gerais quanto atividades específicas vinculadas a esta folha
     let atividadesCorrespondentes = allAtividades.filter(ativ => {
-       const isGeneral = !ativ.empreendimento_id;
-       const disciplinaMatch = ativ.disciplina === disciplinaDoc;
-       const subdisciplinaMatch = subdisciplinasDoc.includes(ativ.subdisciplina);
-
-       // "Confecção de A-" usa apenas horas x pav (não multiplica por etapas)
-       const isConfeccaoA = ativ.atividade && String(ativ.atividade).trim().startsWith('Confecção de A-');
-
-       const match = isGeneral && disciplinaMatch && subdisciplinaMatch;
-      
-      if (match) {
-        console.log(`   ✅ Match: ${ativ.atividade} (${ativ.etapa} - ${ativ.subdisciplina})`);
-      }
-
-      return match;
+       // Atividades gerais (sem empreendimento_id)
+       if (!ativ.empreendimento_id) {
+         const disciplinaMatch = ativ.disciplina === disciplinaDoc;
+         const subdisciplinaMatch = subdisciplinasDoc.includes(ativ.subdisciplina);
+         const match = disciplinaMatch && subdisciplinaMatch;
+         
+         if (match) {
+           console.log(`   ✅ Match (genérica): ${ativ.atividade} (${ativ.etapa} - ${ativ.subdisciplina})`);
+         }
+         
+         return match;
+       }
+       
+       // Atividades específicas DESTA folha (com documento_id igual ao documento atual)
+       if (ativ.empreendimento_id === empreendimentoId && ativ.documento_id === documento.id && ativ.tempo !== -999) {
+         // Não incluir marcadores de conclusão na lista
+         if (ativ.tempo === 0 && String(ativ.atividade || '').includes('Concluída na folha')) {
+           console.log(`   ⏭️ Ignorando marcador de conclusão: ${ativ.atividade}`);
+           return false;
+         }
+         console.log(`   ✅ Match (específica da folha): ${ativ.atividade} (${ativ.etapa})`);
+         return true;
+       }
+       
+       return false;
     });
 
     console.log(`📊 Atividades correspondentes encontradas: ${atividadesCorrespondentes.length}`);
