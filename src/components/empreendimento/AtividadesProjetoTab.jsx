@@ -214,6 +214,36 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
     setEditingAtividade(atividade);
     setShowForm(true);
   };
+  
+  const handleUpdateLocal = (atividadeAtualizada) => {
+    if (Array.isArray(atividadeAtualizada)) {
+      // Múltiplas atividades
+      setLocalAtividades(prev => {
+        const updated = [...prev];
+        atividadeAtualizada.forEach(ativ => {
+          const index = updated.findIndex(a => a.id === ativ.id);
+          if (index !== -1) {
+            updated[index] = ativ;
+          } else {
+            updated.push(ativ);
+          }
+        });
+        return updated;
+      });
+    } else if (atividadeAtualizada?.id) {
+      // Single atividade - atualizar ou adicionar
+      setLocalAtividades(prev => {
+        const index = prev.findIndex(a => a.id === atividadeAtualizada.id);
+        if (index !== -1) {
+          const updated = [...prev];
+          updated[index] = atividadeAtualizada;
+          return updated;
+        } else {
+          return [...prev, atividadeAtualizada];
+        }
+      });
+    }
+  };
 
   const handleDelete = async (id) => {
     if (window.confirm("Tem certeza que deseja excluir esta atividade específica do projeto?")) {
@@ -392,7 +422,7 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
         setOpen={setShowForm}
         empreendimentoId={empreendimentoId}
         disciplinas={disciplinas}
-        onUpdate={onUpdate}
+        onUpdate={handleUpdateLocal}
         atividadeToEdit={editingAtividade}
         documentos={documentos}
       />
