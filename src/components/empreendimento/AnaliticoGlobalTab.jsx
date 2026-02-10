@@ -760,6 +760,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const [etapaParaReverter, setEtapaParaReverter] = useState('');
   const [isMudandoEtapaGlobal, setIsMudandoEtapaGlobal] = useState(false);
   const [etapaMudancaGlobal, setEtapaMudancaGlobal] = useState('');
+  const [editandoTempo, setEditandoTempo] = useState({});
+  const [novosTempoPadrao, setNovosTempoPadrao] = useState({});
 
   const documentosMap = useMemo(() => {
     return new Map((documentos || []).map(doc => [doc.id, doc]));
@@ -2305,7 +2307,55 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                 <span className="text-xs text-gray-400">-</span>
                               )}
                             </TableCell>
-                            <TableCell>{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
+                            <TableCell>
+                              {editandoTempo[genericAtividadeIdToExclude] ? (
+                                <div className="flex items-center gap-1">
+                                  <Input
+                                    type="number"
+                                    step="0.1"
+                                    min="0"
+                                    value={novosTempoPadrao[genericAtividadeIdToExclude] ?? ativ.tempo ?? 0}
+                                    onChange={(e) => setNovosTempoPadrao(prev => ({ ...prev, [genericAtividadeIdToExclude]: e.target.value }))}
+                                    className="w-20 h-7 text-xs"
+                                    onKeyDown={(e) => {
+                                      if (e.key === 'Enter') {
+                                        handleSalvarTempoPadrao(ativ, genericAtividadeIdToExclude);
+                                      } else if (e.key === 'Escape') {
+                                        setEditandoTempo(prev => ({ ...prev, [genericAtividadeIdToExclude]: false }));
+                                      }
+                                    }}
+                                    autoFocus
+                                  />
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => handleSalvarTempoPadrao(ativ, genericAtividadeIdToExclude)}
+                                    className="h-7 w-7"
+                                  >
+                                    <CheckCircle className="w-4 h-4 text-green-600" />
+                                  </Button>
+                                  <Button
+                                    size="icon"
+                                    variant="ghost"
+                                    onClick={() => setEditandoTempo(prev => ({ ...prev, [genericAtividadeIdToExclude]: false }))}
+                                    className="h-7 w-7"
+                                  >
+                                    <XCircle className="w-4 h-4 text-gray-400" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    setEditandoTempo(prev => ({ ...prev, [genericAtividadeIdToExclude]: true }));
+                                    setNovosTempoPadrao(prev => ({ ...prev, [genericAtividadeIdToExclude]: ativ.tempo ?? 0 }));
+                                  }}
+                                  className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
+                                  title="Clique para editar o tempo padrão"
+                                >
+                                  {ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}
+                                </button>
+                              )}
+                            </TableCell>
                             <TableCell className="font-semibold text-blue-600">
                             {grupo.folhas.length > 0 
                               ? `${grupo.folhas.reduce((sum, f) => sum + (Number(f.tempo) || 0), 0).toFixed(1)}h`
@@ -3340,6 +3390,83 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     } catch (error) {
       console.error("Erro ao limpar alterações:", error);
       alert("Erro ao limpar alterações: " + error.message);
+    }
+  };
+
+  const handleSalvarTempoPadrao = async (atividade, atividadeId) => {
+    const novoTempo = parseFloat(novosTempoPadrao[atividadeId]);
+    
+    if (isNaN(novoTempo) || novoTempo < 0) {
+      alert("Por favor, insira um tempo válido.");
+      return;
+    }
+
+    try {
+      console.log(`\n⏱️ ========================================`);
+      console.log(`⏱️ ATUALIZAR TEMPO PADRÃO`);
+      console.log(`⏱️ ========================================`);
+      console.log(`   Atividade ID: ${atividadeId}`);
+      console.log(`   Atividade: ${atividade.atividade}`);
+      console.log(`   Novo Tempo: ${novoTempo}h`);
+      
+      // Buscar atividade original
+      const atividadeOriginalArr = await retryWithBackoff(
+        () => Atividade.filter({ id: atividadeId }),
+        3, 500, `getOriginalActivity-${atividadeId}`
+      );
+      
+      if (!atividadeOriginalArr || atividadeOriginalArr.length === 0) {
+        throw new Error("Atividade original não encontrada.");
+      }
+      
+      const atividadeOriginal = atividadeOriginalArr[0];
+      
+      // Verificar se já existe override global
+      const existingOverrides = await retryWithBackoff(
+        () => Atividade.filter({
+          empreendimento_id: empreendimentoId,
+          id_atividade: atividadeId,
+          documento_id: null,
+          tempo: { operator: '!=', value: -999 }
+        }),
+        3, 500, `checkExistingTempoOverride-${atividadeId}`
+      );
+      
+      if (existingOverrides && existingOverrides.length > 0) {
+        console.log(`📝 Atualizando override existente com novo tempo`);
+        await retryWithBackoff(
+          () => Atividade.update(existingOverrides[0].id, { tempo: novoTempo }),
+          3, 500, `updateTempoOverride-${existingOverrides[0].id}`
+        );
+      } else {
+        console.log(`📝 Criando novo override com tempo customizado`);
+        await retryWithBackoff(
+          () => Atividade.create({
+            ...atividadeOriginal,
+            id: undefined,
+            empreendimento_id: empreendimentoId,
+            id_atividade: atividadeId,
+            documento_id: null,
+            tempo: novoTempo
+          }),
+          3, 500, `createTempoOverride-${atividadeId}`
+        );
+      }
+      
+      console.log(`✅ Tempo padrão atualizado com sucesso`);
+      
+      // Fechar edição
+      setEditandoTempo(prev => ({ ...prev, [atividadeId]: false }));
+      
+      // Recarregar dados
+      await fetchData();
+      if (onUpdate) onUpdate();
+      
+      alert(`✅ Tempo padrão de "${atividade.atividade}" atualizado para ${novoTempo}h neste empreendimento.`);
+      
+    } catch (error) {
+      console.error("❌ Erro ao atualizar tempo padrão:", error);
+      alert("Erro ao atualizar tempo padrão: " + error.message);
     }
   };
 
