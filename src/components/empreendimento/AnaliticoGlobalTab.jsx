@@ -806,38 +806,38 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       setAllEmpreendimentos(todosEmpreendimentos || []);
       
       // Usar AtividadesDoProjeto se disponível, senão usar projectActivities
-      const activitiesToProcess = (atividadesDoProjetoData && atividadesDoProjetoData.length > 0) 
-        ? atividadesDoProjetoData 
-        : projectActivities;
+       const activitiesToProcess = (atividadesDoProjetoData && atividadesDoProjetoData.length > 0) 
+         ? atividadesDoProjetoData 
+         : projectActivities;
 
-      // MODIFICADO: Criar dois mapas - um global e um por documento
+       // MODIFICADO: Sempre buscar overrides de projectActivities (Atividade) independentemente da fonte
        const overrideActivitiesGlobalMap = new Map(); // Overrides sem documento_id específico
        const overrideActivitiesByDocMap = new Map(); // Overrides com documento_id específico (chave: "docId|atividadeId")
        const excludedActivitiesSet = new Set();
        const excludedFromDocumentMap = new Map();
 
-       (activitiesToProcess || []).forEach(pa => {
-          if (pa.id_atividade) {
-              if (pa.tempo === -999) {
-                  if (pa.documento_id) {
-                    if (!excludedFromDocumentMap.has(pa.id_atividade)) {
-                      excludedFromDocumentMap.set(pa.id_atividade, new Set());
-                    }
-                    excludedFromDocumentMap.get(pa.id_atividade).add(pa.documento_id);
-                  } else {
-                    excludedActivitiesSet.add(pa.id_atividade);
-                  }
-              } else {
-                  // MODIFICADO: Separar overrides por documento
-                  if (pa.documento_id) {
-                    const key = `${pa.documento_id}|${pa.id_atividade}`;
-                    overrideActivitiesByDocMap.set(key, pa);
-                  } else {
-                    overrideActivitiesGlobalMap.set(pa.id_atividade, pa);
-                  }
-              }
-          }
-      });
+       // Processar overrides sempre da entidade Atividade (projectActivities)
+       (projectActivities || []).forEach(pa => {
+           if (pa.id_atividade) {
+               if (pa.tempo === -999) {
+                   if (pa.documento_id) {
+                     if (!excludedFromDocumentMap.has(pa.id_atividade)) {
+                       excludedFromDocumentMap.set(pa.id_atividade, new Set());
+                     }
+                     excludedFromDocumentMap.get(pa.id_atividade).add(pa.documento_id);
+                   } else {
+                     excludedActivitiesSet.add(pa.id_atividade);
+                   }
+               } else {
+                   if (pa.documento_id) {
+                     const key = `${pa.documento_id}|${pa.id_atividade}`;
+                     overrideActivitiesByDocMap.set(key, pa);
+                   } else {
+                     overrideActivitiesGlobalMap.set(pa.id_atividade, pa);
+                   }
+               }
+           }
+       });
       
       const allGenericActivitiesMap = new Map((allActivities || [])
         .filter(a => !a.empreendimento_id)
