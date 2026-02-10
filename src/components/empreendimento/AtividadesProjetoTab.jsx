@@ -5,7 +5,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Plus, Edit, Trash2, Search, Calendar, Check, CheckCircle2 } from "lucide-react";
 import { Atividade } from "@/entities/all";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { Label } from "@/components/ui/label";
 import {
   Dialog,
   DialogContent,
