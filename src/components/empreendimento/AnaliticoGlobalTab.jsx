@@ -1327,8 +1327,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     if (window.confirm("Tem certeza que deseja excluir esta atividade do projeto? Atividades de folhas não são afetadas.")) {
       try {
         await retryWithBackoff(() => Atividade.delete(id), 3, 500, 'deleteAtividade');
-        fetchData(); 
-        if(onUpdate) onUpdate();
+        fetchData();
       } catch (error) {
         console.error("Erro ao excluir atividade:", error);
         alert("Não foi possível excluir a atividade.");
@@ -1390,7 +1389,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`✅ Marcador de exclusão criado com sucesso para atividade genérica ${genericAtividadeIdToExclude}`);
       
       await fetchData();
-      if (onUpdate) onUpdate();
       
       alert(`Atividade "${atividade.atividade}" foi marcada como excluída de todas as folhas deste empreendimento.`);
 
@@ -1416,7 +1414,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     setIsPlanejamentoModalOpen(false);
     setAtividadeParaPlanejar(null);
     fetchData();
-    if (onUpdate) onUpdate();
   };
 
   const handleSelectItem = (uniqueId) => {
@@ -1491,7 +1488,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
       setSelectedIds(new Set());
       fetchData();
-      if (onUpdate) onUpdate();
 
       if (results.errors === 0) {
         if (results.notFound > 0) {
@@ -1565,7 +1561,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       }
 
       fetchData();
-      if (onUpdate) onUpdate();
 
     } catch (error) {
       console.error("❌ Erro ao restaurar exclusões globais:", error);
@@ -3805,7 +3800,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           onSuccess={() => {
             setIsModalOpen(false);
             fetchData();
-            if(onUpdate) onUpdate();
           }}
         />
       )}
