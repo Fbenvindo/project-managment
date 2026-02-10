@@ -897,21 +897,26 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
               });
             } else {
               // Se não há planejamento, mostrar como "Disponível"
-              const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
-              
-              atividadesDocumentacao.push({
-                ...baseAtividade,
-                uniqueId: `doc-${baseAtividade.id}`,
-                id: baseAtividade.id,
-                tempo: override?.tempo || baseAtividade.tempo || 0,
-                source: 'Catálogo',
-                source_documento_id: null,
-                status: 'Disponível',
-                isEditable: false,
-                etapa: etapaCorreta,
-                executor_principal: executorPrincipal,
-                base_atividade_id: baseAtividade.id,
-              });
+               const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
+
+               // Aplicar override de tempo se existir
+               const tempoFinal = override?.tempo !== undefined && override?.tempo !== null 
+                 ? override.tempo 
+                 : (baseAtividade.tempo || 0);
+
+               atividadesDocumentacao.push({
+                 ...baseAtividade,
+                 uniqueId: `doc-${baseAtividade.id}`,
+                 id: baseAtividade.id,
+                 tempo: tempoFinal,
+                 source: 'Catálogo',
+                 source_documento_id: null,
+                 status: 'Disponível',
+                 isEditable: false,
+                 etapa: etapaCorreta,
+                 executor_principal: executorPrincipal,
+                 base_atividade_id: baseAtividade.id,
+               });
             }
           }
         }
