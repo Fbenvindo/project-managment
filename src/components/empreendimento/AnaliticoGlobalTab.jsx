@@ -360,12 +360,12 @@ const EditarEtapaEmFolhasModal = ({ isOpen, onClose, atividade, documentos, empr
       }
       mensagem += `\n\nFolhas: ${folhasNames}`;
 
-      alert(mensagem);
-      
-      // Recarregar alterações
+      // Recarregar alterações sem chamar onSuccess (não recarrega página)
       const alteracoes = await AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId });
-      if (onSuccess) onSuccess();
+      setAlteracoesEtapa(alteracoes || []);
+      
       onClose();
+      alert(mensagem);
 
     } catch (error) {
       console.error("Erro ao editar etapa em folhas específicas:", error);
@@ -600,10 +600,8 @@ const ExcluirDeFolhasModal = ({ isOpen, onClose, atividade, documentos, empreend
         .filter(Boolean)
         .join(', ');
 
-      alert(`✅ Atividade "${atividade.atividade}" foi excluída das seguintes folhas:\n${folhasNames}`);
-      
-      if (onSuccess) onSuccess();
       onClose();
+      alert(`✅ Atividade "${atividade.atividade}" foi excluída das seguintes folhas:\n${folhasNames}`);
 
     } catch (error) {
       console.error("Erro ao excluir atividade de folhas:", error);
@@ -1488,8 +1486,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       }
 
       setSelectedIds(new Set());
-      fetchData();
-      if (onUpdate) onUpdate();
+      
+      // Remover do estado local
+      setCombinedActivities(prev => prev.filter(a => !idsArray.includes(a.uniqueId)));
 
       if (results.errors === 0) {
         if (results.notFound > 0) {
@@ -1556,14 +1555,14 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`   Deletados: ${deletados}`);
       console.log(`   Erros: ${erros}`);
 
+      // Recarregar dados após restauração
+      await fetchData();
+      
       if (erros === 0) {
         alert(`✅ Sucesso! ${deletados} atividade(s) foram restauradas e agora estão disponíveis em todos os documentos.`);
       } else {
-        alert(`⚠️ Processo concluído com avisos:\n${deletados} restauradas\n${erros} erros\n\nAtualize a página para ver as mudanças.`);
+        alert(`⚠️ Processo concluído com avisos:\n${deletados} restauradas\n${erros} erros`);
       }
-
-      fetchData();
-      if (onUpdate) onUpdate();
 
     } catch (error) {
       console.error("❌ Erro ao restaurar exclusões globais:", error);
@@ -2562,8 +2561,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`   Já finalizados: ${jaFinalizados}`);
       console.log(`✅ ========================================\n`);
       
-      await fetchData();
-      if (onUpdate) onUpdate();
+      // Atualizar planejamentos localmente
+      const planejamentosAtualizados = await retryWithBackoff(
+        () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }),
+        3, 500, 'refreshPlanejamentosAfterConcluir'
+      );
+      setPlanejamentos(planejamentosAtualizados || []);
       
       let mensagem = `✅ Atividade "${atividade.atividade}" concluída em todas as folhas!\n`;
       if (concluidos > 0) {
@@ -3230,8 +3233,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`   Já finalizados: ${jaFinalizados}`);
       console.log(`✅ ========================================\n`);
 
-      await fetchData();
-      if (onUpdate) onUpdate();
+      // Atualizar planejamentos localmente
+      const planejamentosAtualizados = await retryWithBackoff(
+        () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }),
+        3, 500, 'refreshPlanejamentosAfterConcluirEtapa'
+      );
+      setPlanejamentos(planejamentosAtualizados || []);
 
       let mensagem = `✅ Etapa "${etapa}" concluída em todas as folhas!`;
       if (totalPlanejamentosConcluidos > 0) {
@@ -3313,8 +3320,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`   Planejamentos revertidos: ${totalPlanejamentosRevertidos}`);
       console.log(`✅ ========================================\n`);
 
-      await fetchData();
-      if (onUpdate) onUpdate();
+      // Atualizar planejamentos localmente
+      const planejamentosAtualizados = await retryWithBackoff(
+        () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }),
+        3, 500, 'refreshPlanejamentosAfterReverter'
+      );
+      setPlanejamentos(planejamentosAtualizados || []);
 
       alert(`✅ Conclusão da etapa "${etapa}" revertida!\n\n${totalPlanejamentosRevertidos} planejamento(s) voltou(aram) para "não iniciado".`);
       setEtapaParaReverter('');
@@ -3465,8 +3476,19 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`   Planejamentos atualizados: ${planejamentosMudados}`);
       console.log(`🔀 ========================================\n`);
 
-      await fetchData();
-      if (onUpdate) onUpdate();
+      // Atualizar dados localmente sem reload
+      const [planejamentosAtualizados, alteracoesAtualizadas] = await Promise.all([
+        retryWithBackoff(
+          () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }),
+          3, 500, 'refreshPlanejamentosAfterMover'
+        ),
+        retryWithBackoff(
+          () => AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId }),
+          3, 500, 'refreshAlteracoesAfterMover'
+        )
+      ]);
+      setPlanejamentos(planejamentosAtualizados || []);
+      setAlteracoesEtapa(alteracoesAtualizadas || []);
 
       alert(
         `✅ Sucesso! ${atividadesMudadas} atividade(s) movida(s) de "${etapaMudancaGlobal}" para "${novaEtapa}".\n\n` +
@@ -3670,10 +3692,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         atividade={selectedAtividade}
         documentos={documentos}
         empreendimentoId={empreendimentoId}
-        onSuccess={() => {
-          fetchData();
-          if (onUpdate) onUpdate();
-        }}
+        onSuccess={() => {}}
       />
 
       <ExcluirDeFolhasModal
@@ -3685,10 +3704,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         atividade={selectedAtividade}
         documentos={documentos}
         empreendimentoId={empreendimentoId}
-        onSuccess={() => {
-          fetchData();
-          if (onUpdate) onUpdate();
-        }}
+        onSuccess={() => {}}
       />
 
       {isPlanejamentoModalOpen && atividadeParaPlanejar && (
