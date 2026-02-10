@@ -170,7 +170,7 @@ const EtapaEditModal = ({ isOpen, onClose, atividade, onSave, documentos }) => {
   );
 };
 
-const EditarEtapaEmFolhasModal = ({ isOpen, onClose, atividade, documentos, empreendimentoId, onSuccess }) => {
+const EditarEtapaEmFolhasModal = ({ isOpen, onClose, atividade, documentos, empreendimentoId, onSuccess, setCombinedActivities, setAlteracoesEtapa, setPlanejamentos }) => {
   const [selectedDocumentos, setSelectedDocumentos] = useState(new Set());
   const [novaEtapa, setNovaEtapa] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -361,9 +361,14 @@ const EditarEtapaEmFolhasModal = ({ isOpen, onClose, atividade, documentos, empr
       mensagem += `\n\nFolhas: ${folhasNames}`;
 
       // Atualizar estado local
-      if (onSuccess) {
-        onSuccess(); // Chamar callback para atualizar no componente pai
-      }
+      const atividadeBaseId = atividade.base_atividade_id || atividade.id;
+      setCombinedActivities(prev => prev.map(ativ => {
+        if ((ativ.base_atividade_id === atividadeBaseId || ativ.id === atividadeBaseId) && 
+            selectedDocumentos.has(ativ.source_documento_id)) {
+          return { ...ativ, etapa: novaEtapa };
+        }
+        return ativ;
+      }));
       
       // Recarregar alterações e planejamentos
       const [alteracoes, planejamentosAtuais] = await Promise.all([
@@ -3715,6 +3720,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         atividade={selectedAtividade}
         documentos={documentos}
         empreendimentoId={empreendimentoId}
+        setCombinedActivities={setCombinedActivities}
+        setAlteracoesEtapa={setAlteracoesEtapa}
+        setPlanejamentos={setPlanejamentos}
         onSuccess={async () => {
           // Recarregar apenas combinedActivities
           const projectActivities = await retryWithBackoff(() => Atividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'refreshAfterEtapaChange');
