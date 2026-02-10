@@ -366,7 +366,8 @@ const EditarEtapaEmFolhasModal = ({ isOpen, onClose, atividade, documentos, empr
       
       // Recarregar alterações
       const alteracoes = await AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId });
-      if (onSuccess) onSuccess();
+      setAlteracoesEtapa(alteracoes || []);
+      await fetchData();
       onClose();
 
     } catch (error) {
@@ -604,7 +605,7 @@ const ExcluirDeFolhasModal = ({ isOpen, onClose, atividade, documentos, empreend
 
       alert(`✅ Atividade "${atividade.atividade}" foi excluída das seguintes folhas:\n${folhasNames}`);
       
-      if (onSuccess) onSuccess();
+      await fetchData();
       onClose();
 
     } catch (error) {
@@ -3686,10 +3687,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         atividade={selectedAtividade}
         documentos={documentos}
         empreendimentoId={empreendimentoId}
-        onSuccess={() => {
-          fetchData();
-          if (onUpdate) onUpdate();
-        }}
       />
 
       <ExcluirDeFolhasModal
@@ -3701,10 +3698,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         atividade={selectedAtividade}
         documentos={documentos}
         empreendimentoId={empreendimentoId}
-        onSuccess={() => {
-          fetchData();
-          if (onUpdate) onUpdate();
-        }}
       />
 
       {isPlanejamentoModalOpen && atividadeParaPlanejar && (
