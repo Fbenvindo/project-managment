@@ -999,39 +999,45 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             const sourceDisplay = `Folha: ${doc.numero} - ${doc.arquivo || 'Sem Nome'}`;
 
             if (existingPlan) {
-              documentActivities.push({
-                ...baseAtividade,
-                id: existingPlan.id,
-                uniqueId: `plano-${existingPlan.id}`,
-                atividade: existingPlan.descritivo || baseAtividade.atividade,
-                tempo: existingPlan.tempo_planejado,
-                source: sourceDisplay,
-                source_documento_id: doc.id,
-                source_documento_numero: doc.numero,
-                source_documento_arquivo: doc.arquivo,
-                status: 'Planejada',
-                isEditable: false,
-                etapa: existingPlan.etapa || etapaCorreta,
-                executor_principal: existingPlan.executor_principal || executorPrincipal,
-                base_atividade_id: baseAtividade.id,
-              });
-            } else {
-              documentActivities.push({
+                documentActivities.push({
                   ...baseAtividade,
-                  uniqueId: `avail-${doc.id}-${baseAtividade.id}`,
-                  id: baseAtividade.id,
-                  tempo: ((override?.tempo || baseAtividade.tempo || 0) * fatorDificuldade),
+                  id: existingPlan.id,
+                  uniqueId: `plano-${existingPlan.id}`,
+                  atividade: existingPlan.descritivo || baseAtividade.atividade,
+                  tempo: existingPlan.tempo_planejado,
                   source: sourceDisplay,
                   source_documento_id: doc.id,
                   source_documento_numero: doc.numero,
                   source_documento_arquivo: doc.arquivo,
-                  status: 'Disponível',
+                  status: 'Planejada',
                   isEditable: false,
-                  etapa: etapaCorreta,
-                  executor_principal: executorPrincipal,
+                  etapa: existingPlan.etapa || etapaCorreta,
+                  executor_principal: existingPlan.executor_principal || executorPrincipal,
                   base_atividade_id: baseAtividade.id,
                 });
-            }
+              } else {
+                // Aplicar override de tempo se existir
+                const tempoComOverride = override?.tempo !== undefined && override?.tempo !== null
+                  ? override.tempo
+                  : (baseAtividade.tempo || 0);
+                const tempoFinal = tempoComOverride * fatorDificuldade;
+
+                documentActivities.push({
+                    ...baseAtividade,
+                    uniqueId: `avail-${doc.id}-${baseAtividade.id}`,
+                    id: baseAtividade.id,
+                    tempo: tempoFinal,
+                    source: sourceDisplay,
+                    source_documento_id: doc.id,
+                    source_documento_numero: doc.numero,
+                    source_documento_arquivo: doc.arquivo,
+                    status: 'Disponível',
+                    isEditable: false,
+                    etapa: etapaCorreta,
+                    executor_principal: executorPrincipal,
+                    base_atividade_id: baseAtividade.id,
+                  });
+              }
           }
         });
       });
