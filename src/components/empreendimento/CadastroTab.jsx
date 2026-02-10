@@ -188,26 +188,37 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       
       // Inicializar revisões para todas as etapas, removendo as excluídas
       const revisoesCompletas = {};
+      console.log('🔍 CONSTRUINDO revisoesCompletas A PARTIR DE revisoesMap');
+      console.log('📋 revisoesMap ANTES de processar:', revisoesMap);
+      console.log('📋 ETAPAS do empreendimento:', ETAPAS);
+      
       ETAPAS.forEach(etapa => {
         // Usar APENAS as revisões mapeadas (dados + _revisoes_existentes)
         // NÃO usar DEFAULT_REVISOES como fallback, pois pode sobrescrever revisões criadas
         const revisoesEtapaSet = revisoesMap[etapa];
-        console.log(`🔎 Buscando ${etapa}:`, {
-          existe: !!revisoesEtapaSet,
-          isSet: revisoesEtapaSet instanceof Set,
-          size: revisoesEtapaSet?.size,
-          values: revisoesEtapaSet ? Array.from(revisoesEtapaSet) : 'N/A'
-        });
+        console.log(`\n🔎 Processando ${etapa}:`);
+        console.log(`  revisoesMap[${etapa}]:`, revisoesEtapaSet);
+        console.log(`  É Set?`, revisoesEtapaSet instanceof Set);
+        console.log(`  Tamanho:`, revisoesEtapaSet?.size);
+        console.log(`  Valores:`, revisoesEtapaSet ? Array.from(revisoesEtapaSet) : 'N/A');
         
         let todasRevisoes = revisoesEtapaSet && revisoesEtapaSet.size > 0
           ? Array.from(revisoesEtapaSet).sort()
           : [];
+        
+        console.log(`  todasRevisoes APÓS conversão:`, todasRevisoes);
 
         const revisoesExcluidas = revisoesExcluidasMap[etapa] || new Set();
+        console.log(`  revisoesExcluidas:`, Array.from(revisoesExcluidas));
+        
         const filtradas = todasRevisoes.filter(rev => !revisoesExcluidas.has(rev));
+        console.log(`  filtradas FINAL:`, filtradas);
+        
         revisoesCompletas[etapa] = filtradas;
         console.log(`✅ Etapa ${etapa}: ${revisoesCompletas[etapa].join(', ')} (Total: ${revisoesCompletas[etapa].length})`);
       });
+      
+      console.log('🎯 revisoesCompletas COMPLETO:', JSON.stringify(revisoesCompletas, null, 2));
       
       // Log com stringify para evitar problema de referência do console
       console.log('📋 Revisões finais para setar no estado:', JSON.stringify(revisoesCompletas, null, 2));
