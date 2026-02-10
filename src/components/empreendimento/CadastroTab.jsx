@@ -256,42 +256,26 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
 
 
-  const handleAddRevisao = (etapa) => {
+  const handleAddRevisao = async (etapa) => {
     const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+    let novaRevisao;
+    
     if (revisoesEtapa.length === 0) {
-      // Se não há revisões, começar com R00
-      console.log(`➕ Adicionando primeira revisão (R00) em ${etapa}`);
-      setHasUnsavedChanges(true);
-      setRevisoesPorEtapa(prev => ({
-        ...prev,
-        [etapa]: ['R00']
-      }));
-      // Marcar revisão como existente nas linhas mesmo sem dados
-      setLinhas(prev => prev.map(linha => {
-        const novasDatas = { ...linha.datas };
-        if (!novasDatas[etapa]) {
-          novasDatas[etapa] = {};
-        }
-        if (!novasDatas[etapa]._revisoes_existentes) {
-          novasDatas[etapa]._revisoes_existentes = [];
-        }
-        if (!novasDatas[etapa]._revisoes_existentes.includes('R00')) {
-          novasDatas[etapa]._revisoes_existentes.push('R00');
-        }
-        return { ...linha, datas: novasDatas };
-      }));
-      return;
+      novaRevisao = 'R00';
+      console.log(`➕ Adicionando primeira revisão (${novaRevisao}) em ${etapa}`);
+    } else {
+      const ultimaRevisao = revisoesEtapa[revisoesEtapa.length - 1];
+      const numero = parseInt(ultimaRevisao.substring(1)) + 1;
+      novaRevisao = `R${String(numero).padStart(2, '0')}`;
+      console.log(`➕ Adicionando revisão ${novaRevisao} em ${etapa} (antes: ${revisoesEtapa.join(', ')})`);
     }
-    const ultimaRevisao = revisoesEtapa[revisoesEtapa.length - 1];
-    const numero = parseInt(ultimaRevisao.substring(1)) + 1;
-    const novaRevisao = `R${String(numero).padStart(2, '0')}`;
 
-    console.log(`➕ Adicionando revisão ${novaRevisao} em ${etapa} (antes: ${revisoesEtapa.join(', ')})`);
-    setHasUnsavedChanges(true);
+    // Atualizar estado local
     setRevisoesPorEtapa(prev => ({
       ...prev,
       [etapa]: [...(prev[etapa] || []), novaRevisao]
     }));
+    
     // Marcar revisão como existente nas linhas mesmo sem dados
     setLinhas(prev => prev.map(linha => {
       const novasDatas = { ...linha.datas };
@@ -307,7 +291,15 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       }
       return { ...linha, datas: novasDatas };
     }));
-    console.log(`✅ Revisão ${novaRevisao} marcada em todas as ${linhas.length} linhas`);
+    
+    console.log(`✅ Revisão ${novaRevisao} marcada em todas as linhas`);
+    console.log(`💾 Salvando automaticamente para persistir a nova revisão...`);
+    
+    // Salvar automaticamente para persistir a nova revisão
+    setHasUnsavedChanges(true);
+    setTimeout(() => {
+      handleSave(true); // true = salvamento silencioso
+    }, 500);
   };
 
   const handleRemoveRevisao = (etapa, revisao) => {
