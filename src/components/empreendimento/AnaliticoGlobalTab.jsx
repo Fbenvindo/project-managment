@@ -3585,6 +3585,71 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       return;
     }
 
+    if (!folhaSelecionada) {
+      // Excluir de TODAS as folhas do empreendimento
+      const confirmacao = window.confirm(
+        `Tem certeza que deseja excluir ${atividadesEncontradas.length} atividade(s) de TODAS as folhas deste empreendimento?`
+      );
+
+      if (!confirmacao) return;
+
+      setIsExcluindoMultiplasFolhas(true);
+
+      try {
+        let deletados = 0;
+
+        for (const ativ of atividadesEncontradas) {
+          const atividadeId = ativ.base_atividade_id || ativ.id;
+          
+          const atividadeOriginalArr = await retryWithBackoff(
+            () => Atividade.filter({ id: atividadeId }),
+            3, 500, `getActivityForGlobalDelete-${atividadeId}`
+          );
+
+          if (!atividadeOriginalArr || atividadeOriginalArr.length === 0) continue;
+
+          const atividadeOriginal = atividadeOriginalArr[0];
+          
+          const existingMarkers = await retryWithBackoff(
+            () => Atividade.filter({
+              empreendimento_id: empreendimentoId,
+              id_atividade: atividadeId,
+              tempo: -999,
+              documento_id: null
+            }),
+            3, 500, `checkGlobalMarker-${atividadeId}`
+          );
+
+          if (!existingMarkers || existingMarkers.length === 0) {
+            await retryWithBackoff(
+              () => Atividade.create({
+                ...atividadeOriginal,
+                id: undefined,
+                empreendimento_id: empreendimentoId,
+                id_atividade: atividadeId,
+                documento_id: null,
+                tempo: -999,
+                atividade: `(Excluída) ${atividadeOriginal.atividade}`
+              }),
+              3, 500, `createGlobalMarker-${atividadeId}`
+            );
+            deletados++;
+          }
+        }
+
+        alert(`✅ ${deletados} atividade(s) excluída(s) de todas as folhas do empreendimento`);
+        setAtividadesSelecionadasParaExcluir(new Set());
+        await fetchData();
+        if (onUpdate) onUpdate();
+      } catch (error) {
+        console.error("Erro ao excluir múltiplas atividades globalmente:", error);
+        alert("Erro ao excluir atividades: " + error.message);
+      } finally {
+        setIsExcluindoMultiplasFolhas(false);
+      }
+      return;
+    }
+
     if (folhaSelecionada) {
       // Excluir de uma folha específica
       const confirmacao = window.confirm(
