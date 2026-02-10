@@ -367,7 +367,6 @@ const EditarEtapaEmFolhasModal = ({ isOpen, onClose, atividade, documentos, empr
       // Recarregar alterações
       const alteracoes = await AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId });
       setAlteracoesEtapa(alteracoes || []);
-      await fetchData();
       onClose();
 
     } catch (error) {
@@ -605,7 +604,6 @@ const ExcluirDeFolhasModal = ({ isOpen, onClose, atividade, documentos, empreend
 
       alert(`✅ Atividade "${atividade.atividade}" foi excluída das seguintes folhas:\n${folhasNames}`);
       
-      await fetchData();
       onClose();
 
     } catch (error) {
