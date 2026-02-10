@@ -256,7 +256,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
 
 
-  const handleAddRevisao = async (etapa) => {
+  const handleAddRevisao = (etapa) => {
     const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
     let novaRevisao;
     
@@ -271,6 +271,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     }
 
     // Atualizar estado local
+    setHasUnsavedChanges(true);
     setRevisoesPorEtapa(prev => ({
       ...prev,
       [etapa]: [...(prev[etapa] || []), novaRevisao]
@@ -292,14 +293,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       return { ...linha, datas: novasDatas };
     }));
     
-    console.log(`✅ Revisão ${novaRevisao} marcada em todas as linhas`);
-    console.log(`💾 Salvando automaticamente para persistir a nova revisão...`);
-    
-    // Salvar automaticamente para persistir a nova revisão
-    setHasUnsavedChanges(true);
-    setTimeout(() => {
-      handleSave(true); // true = salvamento silencioso
-    }, 500);
+    console.log(`✅ Revisão ${novaRevisao} marcada em todas as linhas - SALVE PARA PERSISTIR`);
   };
 
   const handleRemoveRevisao = (etapa, revisao) => {
