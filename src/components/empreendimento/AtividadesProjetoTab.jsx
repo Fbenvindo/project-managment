@@ -451,23 +451,33 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
           </p>
         </div>
         <div className="flex gap-2">
-          {selectedAtividades.length > 0 && (
-            <Button 
-              onClick={handleMarcarComoConcluidas}
-              className="bg-green-600 hover:bg-green-700"
-            >
-              <Check className="w-4 h-4 mr-2" />
-              Marcar {selectedAtividades.length} como Concluída(s)
-            </Button>
-          )}
-          <Button onClick={() => { 
-            setEditingAtividade(null); 
-            setShowForm(true); 
-          }}>
-            <Plus className="w-4 h-4 mr-2" />
-            Nova Atividade
-          </Button>
-        </div>
+           {selectedAtividades.length > 0 && (
+             <>
+               <Button 
+                 onClick={handleMarcarComoConcluidas}
+                 className="bg-green-600 hover:bg-green-700"
+               >
+                 <Check className="w-4 h-4 mr-2" />
+                 Marcar {selectedAtividades.length} como Concluída(s)
+               </Button>
+               <Button 
+                 onClick={handleExcluirMultiplas}
+                 className="bg-red-600 hover:bg-red-700"
+                 disabled={isDeleting}
+               >
+                 <Trash2 className="w-4 h-4 mr-2" />
+                 Excluir {selectedAtividades.length}
+               </Button>
+             </>
+           )}
+           <Button onClick={() => { 
+             setEditingAtividade(null); 
+             setShowForm(true); 
+           }}>
+             <Plus className="w-4 h-4 mr-2" />
+             Nova Atividade
+           </Button>
+         </div>
       </div>
 
       <AtividadesProjetoFilters
