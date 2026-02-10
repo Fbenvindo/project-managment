@@ -1981,8 +1981,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                                   const tempo = novoTempo[key] ?? ativ.tempo ?? 0;
 
                                                   try {
-                                                    setEditandoTempo(prev => ({ ...prev, [key]: false }));
-
                                                     // Buscar atividade original
                                                     const atividadeOriginalArr = await retryWithBackoff(
                                                       () => Atividade.filter({ id: atividadeId }),
@@ -2048,15 +2046,27 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                                       );
                                                     }
 
-                                                    // Atualizar UI otimisticamente APÓS salvar
-                                                    setCombinedActivities(prev => prev.map(a => {
-                                                      if (a.base_atividade_id === atividadeId || a.id === atividadeId) {
-                                                        return { ...a, tempo };
-                                                      }
-                                                      return a;
-                                                    }));
-
-                                                    console.log(`✅ Tempo atualizado para ${tempo}h em ${planejamentosParaAtualizar?.length || 0} planejamento(s)`);
+                                                    console.log(`✅ Tempo atualizado para ${tempo}h`);
+                                                    
+                                                    // Fechar edição e recarregar dados
+                                                    setEditandoTempo(prev => ({ ...prev, [key]: false }));
+                                                    setNovoTempo(prev => ({ ...prev, [key]: undefined }));
+                                                    
+                                                    // Recarregar apenas projectActivities para manter consistência
+                                                    const updatedProjectActivities = await retryWithBackoff(
+                                                      () => Atividade.filter({ empreendimento_id: empreendimentoId }),
+                                                      3, 500, 'refreshAfterTempoUpdate'
+                                                    );
+                                                    
+                                                    // Reprocessar com dados atualizados
+                                                    processCombinedActivities(
+                                                      updatedProjectActivities,
+                                                      null,
+                                                      planejamentos,
+                                                      documentos,
+                                                      null,
+                                                      disciplinas
+                                                    );
                                                   } catch (error) {
                                                     console.error("Erro ao salvar tempo:", error);
                                                     alert("Erro ao salvar tempo: " + error.message);
