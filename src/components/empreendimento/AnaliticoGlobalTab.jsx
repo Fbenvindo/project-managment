@@ -1685,6 +1685,53 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           </div>
         )}
 
+        {atividadesSelecionadasParaExcluir.size > 0 && (
+          <div className="flex items-center justify-between p-4 border-2 border-red-500 rounded-lg bg-red-50 shadow-sm">
+            <div className="flex items-center gap-3">
+              <Badge className="bg-red-600 text-white">
+                {atividadesSelecionadasParaExcluir.size} atividade{atividadesSelecionadasParaExcluir.size > 1 ? 's' : ''} selecionada{atividadesSelecionadasParaExcluir.size > 1 ? 's' : ''}
+              </Badge>
+              <span className="text-sm text-gray-700">
+                Selecione a folha para excluir essas atividades
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button size="sm" className="bg-red-600 hover:bg-red-700">
+                    Excluir de Folha...
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80">
+                  <div className="space-y-3">
+                    <Label className="text-sm font-medium">Selecione a folha</Label>
+                    <div className="max-h-60 overflow-y-auto space-y-2">
+                      {documentos.map(doc => (
+                        <Button
+                          key={doc.id}
+                          variant="outline"
+                          className="w-full justify-start text-left"
+                          onClick={() => handleExcluirMultiplas(doc.id)}
+                          disabled={isExcluindoMultiplasFolhas}
+                        >
+                          {doc.numero} - {doc.arquivo}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setAtividadesSelecionadasParaExcluir(new Set())}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        )}
+
         {atividadesPorDisciplina.map(([disciplina, grupos]) => {
           const isDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina);
           const subdisciplinasMap = isDocumentacao ? grupos : null;
