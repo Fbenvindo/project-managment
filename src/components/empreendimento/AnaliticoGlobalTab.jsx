@@ -1949,15 +1949,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                                     const atividadeId = ativ.base_atividade_id || ativ.id;
                                                     const tempo = novoTempo[key] ?? ativ.tempo ?? 0;
 
-                                                    // Atualização otimista do UI - atualizar tempo base E recalcular folhas
+                                                    // Atualização otimista do UI
                                                     setCombinedActivities(prev => prev.map(a => {
                                                       if (a.base_atividade_id === atividadeId || a.id === atividadeId) {
-                                                        // Se for uma folha, recalcular com fator de dificuldade
-                                                        if (a.source_documento_id) {
-                                                          const fatorDificuldade = documentosMap.get(a.source_documento_id)?.fator_dificuldade || 1;
-                                                          return { ...a, tempo: tempo * fatorDificuldade };
-                                                        }
-                                                        // Se for atividade base, apenas atualizar o tempo
                                                         return { ...a, tempo };
                                                       }
                                                       return a;
@@ -2466,15 +2460,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                           const atividadeId = ativ.base_atividade_id || ativ.id;
                                           const tempo = novoTempo[key] ?? ativ.tempo ?? 0;
 
-                                          // Atualização otimista do UI - atualizar tempo base E recalcular folhas
+                                          // Atualização otimista do UI
                                           setCombinedActivities(prev => prev.map(a => {
                                             if (a.base_atividade_id === atividadeId || a.id === atividadeId) {
-                                              // Se for uma folha, recalcular com fator de dificuldade
-                                              if (a.source_documento_id) {
-                                                const fatorDificuldade = documentosMap.get(a.source_documento_id)?.fator_dificuldade || 1;
-                                                return { ...a, tempo: tempo * fatorDificuldade };
-                                              }
-                                              // Se for atividade base, apenas atualizar o tempo
                                               return { ...a, tempo };
                                             }
                                             return a;
