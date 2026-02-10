@@ -3483,14 +3483,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       
       console.log(`✅ Tempo padrão atualizado com sucesso`);
 
-      // Atualizar otimisticamente o estado
-      setCombinedActivities(prev => prev.map(ativ => {
-        if (ativ.base_atividade_id === atividadeId || ativ.id === atividadeId) {
-          return { ...ativ, tempo: novoTempo };
-        }
-        return ativ;
-      }));
-
       // Fechar edição
       setEditandoTempo(prev => ({ ...prev, [atividadeId]: false }));
       setNovosTempoPadrao(prev => {
@@ -3499,10 +3491,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         return newState;
       });
 
-      // Recarregar dados em background
-      setTimeout(() => {
-        fetchData();
-      }, 500);
+      // Recarregar dados completamente
+      await fetchData();
 
       alert(`✅ Tempo padrão de "${atividade.atividade}" atualizado para ${novoTempo}h neste empreendimento.`);
       
