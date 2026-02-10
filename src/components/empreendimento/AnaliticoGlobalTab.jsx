@@ -1755,6 +1755,23 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                         <TableHeader className="bg-white">
                           <TableRow>
                             {hasCheckboxColumn && <TableHead className="w-[50px]"></TableHead>}
+                            <TableHead className="w-[50px]">
+                              <Checkbox
+                                checked={atividadesSelecionadasParaExcluir.size > 0 && 
+                                         atividadesSubgrupo.every(grupo => atividadesSelecionadasParaExcluir.has(grupo.baseAtividade.base_atividade_id || grupo.baseAtividade.id))}
+                                onCheckedChange={(checked) => {
+                                  const ids = atividadesSubgrupo.map(g => g.baseAtividade.base_atividade_id || g.baseAtividade.id);
+                                  setAtividadesSelecionadasParaExcluir(prev => {
+                                    const newSet = new Set(prev);
+                                    ids.forEach(id => {
+                                      if (checked) newSet.add(id);
+                                      else newSet.delete(id);
+                                    });
+                                    return newSet;
+                                  });
+                                }}
+                              />
+                            </TableHead>
                             <TableHead className="w-[50px]"></TableHead>
                             <TableHead>Atividade</TableHead>
                             <TableHead>Folhas</TableHead>
