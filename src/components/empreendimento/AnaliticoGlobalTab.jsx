@@ -1320,6 +1320,15 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
             await retryWithBackoff(() => Atividade.create(overrideAtividade), 3, 500, 'createAtividadeOverride');
         }
+        
+        // Atualizar estado local para atividades sem folhas
+        const baseAtividadeId = selectedAtividade.base_atividade_id;
+        setCombinedActivities(prev => prev.map(ativ => {
+          if (ativ.base_atividade_id === baseAtividadeId || ativ.id === baseAtividadeId) {
+            return { ...ativ, etapa: newEtapa };
+          }
+          return ativ;
+        }));
 
       } else {
         const updatePromises = allPlanejamentos.map(plano => 
