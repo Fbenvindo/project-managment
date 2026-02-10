@@ -194,7 +194,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       
       ETAPAS.forEach(etapa => {
         // Usar APENAS as revisões mapeadas (dados + _revisoes_existentes)
-        // NÃO usar DEFAULT_REVISOES como fallback, pois pode sobrescrever revisões criadas
         const revisoesEtapaSet = revisoesMap[etapa];
         console.log(`\n🔎 Processando ${etapa}:`);
         console.log(`  revisoesMap[${etapa}]:`, revisoesEtapaSet);
@@ -214,8 +213,12 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         const filtradas = todasRevisoes.filter(rev => !revisoesExcluidas.has(rev));
         console.log(`  filtradas FINAL:`, filtradas);
         
-        revisoesCompletas[etapa] = filtradas;
-        console.log(`✅ Etapa ${etapa}: ${revisoesCompletas[etapa].join(', ')} (Total: ${revisoesCompletas[etapa].length})`);
+        // Se etapa não foi excluída mas ficou sem revisões, usar DEFAULT
+        const etapaExcluida = etapasExcluidasSet.has(etapa);
+        const revisoesFinais = (!etapaExcluida && filtradas.length === 0) ? DEFAULT_REVISOES : filtradas;
+        
+        revisoesCompletas[etapa] = revisoesFinais;
+        console.log(`✅ Etapa ${etapa}: ${revisoesCompletas[etapa].join(', ')} (Total: ${revisoesCompletas[etapa].length}) ${!etapaExcluida && filtradas.length === 0 ? '(DEFAULT)' : ''}`);
       });
       
       console.log('🎯 revisoesCompletas COMPLETO:', JSON.stringify(revisoesCompletas, null, 2));
