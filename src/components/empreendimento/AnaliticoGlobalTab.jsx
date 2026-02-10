@@ -1236,7 +1236,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         const alteracoes = await AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId });
         setAlteracoesEtapa(alteracoes || []);
         fetchData();
-        if(onUpdate) onUpdate();
         setIsEtapaModalOpen(false);
         return;
       }
@@ -1315,7 +1314,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       setAlteracoesEtapa(alteracoes || []);
   
       fetchData();
-      if(onUpdate) onUpdate();
   
     } catch (error) {
       console.error("Erro ao atualizar etapa:", error);
