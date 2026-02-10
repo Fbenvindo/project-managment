@@ -1977,92 +1977,90 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                                 variant="ghost"
                                                 className="h-6 w-6 p-0 text-green-600 hover:text-green-700"
                                                 onClick={async () => {
-                                                  try {
-                                                    const atividadeId = ativ.base_atividade_id || ativ.id;
-                                                    const tempo = novoTempo[key] ?? ativ.tempo ?? 0;
+                                                  const atividadeId = ativ.base_atividade_id || ativ.id;
+                                                  const tempo = novoTempo[key] ?? ativ.tempo ?? 0;
 
-                                                    // Atualização otimista do UI
+                                                  try {
+                                                    setEditandoTempo(prev => ({ ...prev, [key]: false }));
+
+                                                    // Buscar atividade original
+                                                    const atividadeOriginalArr = await retryWithBackoff(
+                                                      () => Atividade.filter({ id: atividadeId }),
+                                                      3, 500, `getOriginalActivityForTempoEdit-${atividadeId}`
+                                                    );
+
+                                                    if (!atividadeOriginalArr || atividadeOriginalArr.length === 0) {
+                                                      throw new Error("Atividade original não encontrada.");
+                                                    }
+
+                                                    const atividadeOriginal = atividadeOriginalArr[0];
+
+                                                    // Criar/atualizar override
+                                                    const existingOverrides = await retryWithBackoff(
+                                                      () => Atividade.filter({
+                                                        empreendimento_id: empreendimentoId,
+                                                        id_atividade: atividadeId,
+                                                        documento_id: null,
+                                                        tempo: { operator: '!=', value: -999 }
+                                                      }),
+                                                      3, 500, `checkExistingTempoOverride-${atividadeId}`
+                                                    );
+
+                                                    if (existingOverrides && existingOverrides.length > 0) {
+                                                      await retryWithBackoff(
+                                                        () => Atividade.update(existingOverrides[0].id, { tempo }),
+                                                        3, 500, `updateTempoOverride-${existingOverrides[0].id}`
+                                                      );
+                                                    } else {
+                                                      await retryWithBackoff(
+                                                        () => Atividade.create({
+                                                          ...atividadeOriginal,
+                                                          id: undefined,
+                                                          empreendimento_id: empreendimentoId,
+                                                          id_atividade: atividadeId,
+                                                          documento_id: null,
+                                                          tempo
+                                                        }),
+                                                        3, 500, `createTempoOverride-${atividadeId}`
+                                                      );
+                                                    }
+
+                                                    // Atualizar planejamentos de todas as folhas
+                                                    const planejamentosParaAtualizar = await retryWithBackoff(
+                                                      () => PlanejamentoAtividade.filter({
+                                                        empreendimento_id: empreendimentoId,
+                                                        atividade_id: atividadeId
+                                                      }),
+                                                      3, 500, `getPlanejamentosForTempoUpdate-${atividadeId}`
+                                                    );
+
+                                                    if (planejamentosParaAtualizar && planejamentosParaAtualizar.length > 0) {
+                                                      await Promise.all(
+                                                        planejamentosParaAtualizar.map(plano => {
+                                                          const fatorDificuldade = documentosMap.get(plano.documento_id)?.fator_dificuldade || 1;
+                                                          const novoTempoPlanejado = tempo * fatorDificuldade;
+
+                                                          return retryWithBackoff(
+                                                            () => PlanejamentoAtividade.update(plano.id, { tempo_planejado: novoTempoPlanejado }),
+                                                            3, 500, `updatePlanejamentoTempo-${plano.id}`
+                                                          );
+                                                        })
+                                                      );
+                                                    }
+
+                                                    // Atualizar UI otimisticamente APÓS salvar
                                                     setCombinedActivities(prev => prev.map(a => {
                                                       if (a.base_atividade_id === atividadeId || a.id === atividadeId) {
                                                         return { ...a, tempo };
                                                       }
                                                       return a;
                                                     }));
-                                                    setEditandoTempo(prev => ({ ...prev, [key]: false }));
 
-                                                    // Atualizar backend em background
-                                                    (async () => {
-                                                      const atividadeOriginalArr = await retryWithBackoff(
-                                                        () => Atividade.filter({ id: atividadeId }),
-                                                        3, 500, `getOriginalActivityForTempoEdit-${atividadeId}`
-                                                      );
-
-                                                      if (!atividadeOriginalArr || atividadeOriginalArr.length === 0) {
-                                                        throw new Error("Atividade original não encontrada.");
-                                                      }
-
-                                                      const atividadeOriginal = atividadeOriginalArr[0];
-
-                                                      // Criar/atualizar override
-                                                      const existingOverrides = await retryWithBackoff(
-                                                        () => Atividade.filter({
-                                                          empreendimento_id: empreendimentoId,
-                                                          id_atividade: atividadeId,
-                                                          documento_id: null,
-                                                          tempo: { operator: '!=', value: -999 }
-                                                        }),
-                                                        3, 500, `checkExistingTempoOverride-${atividadeId}`
-                                                      );
-
-                                                      if (existingOverrides && existingOverrides.length > 0) {
-                                                        await retryWithBackoff(
-                                                          () => Atividade.update(existingOverrides[0].id, { tempo }),
-                                                          3, 500, `updateTempoOverride-${existingOverrides[0].id}`
-                                                        );
-                                                      } else {
-                                                        await retryWithBackoff(
-                                                          () => Atividade.create({
-                                                            ...atividadeOriginal,
-                                                            id: undefined,
-                                                            empreendimento_id: empreendimentoId,
-                                                            id_atividade: atividadeId,
-                                                            documento_id: null,
-                                                            tempo
-                                                          }),
-                                                          3, 500, `createTempoOverride-${atividadeId}`
-                                                        );
-                                                      }
-
-                                                      // Atualizar planejamentos de todas as folhas
-                                                      const planejamentosParaAtualizar = await retryWithBackoff(
-                                                        () => PlanejamentoAtividade.filter({
-                                                          empreendimento_id: empreendimentoId,
-                                                          atividade_id: atividadeId
-                                                        }),
-                                                        3, 500, `getPlanejamentosForTempoUpdate-${atividadeId}`
-                                                      );
-
-                                                      if (planejamentosParaAtualizar && planejamentosParaAtualizar.length > 0) {
-                                                        await Promise.all(
-                                                          planejamentosParaAtualizar.map(plano => {
-                                                            const fatorDificuldade = documentosMap.get(plano.documento_id)?.fator_dificuldade || 1;
-                                                            const novoTempoPlanejado = tempo * fatorDificuldade;
-
-                                                            return retryWithBackoff(
-                                                              () => PlanejamentoAtividade.update(plano.id, { tempo_planejado: novoTempoPlanejado }),
-                                                              3, 500, `updatePlanejamentoTempo-${plano.id}`
-                                                            );
-                                                          })
-                                                        );
-                                                      }
-
-                                                      console.log(`✅ Tempo atualizado para ${tempo}h em ${planejamentosParaAtualizar?.length || 0} planejamento(s)`);
-                                                    })().catch(error => {
-                                                      console.error("Erro ao salvar tempo no backend:", error);
-                                                    });
+                                                    console.log(`✅ Tempo atualizado para ${tempo}h em ${planejamentosParaAtualizar?.length || 0} planejamento(s)`);
                                                   } catch (error) {
                                                     console.error("Erro ao salvar tempo:", error);
                                                     alert("Erro ao salvar tempo: " + error.message);
+                                                    setEditandoTempo(prev => ({ ...prev, [key]: false }));
                                                   }
                                                 }}
                                               >
