@@ -624,98 +624,112 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         datas: l.datas
       })));
 
-      // Processar em paralelo para performance
-      console.log('⚡ Iniciando salvamento paralelo...');
-      let successCount = 0;
-      let errorCount = 0;
-      const updatedLinhas = new Map();
+      // Processar em lotes sequenciais para evitar rate limit
+       console.log('⚡ Iniciando salvamento em lotes...');
+       let successCount = 0;
+       let errorCount = 0;
+       const updatedLinhas = new Map();
+       const BATCH_SIZE = 3; // Máximo de requisições paralelas por lote
+       const DELAY_ENTRE_LOTES = 500; // Delay entre lotes em ms
 
-      // Criar promises para todos os salvamentos
-      const savePromises = linhasParaSalvar.map((linha, i) => 
-        (async () => {
-          try {
-            console.log(`\n📨 [${i + 1}/${linhasParaSalvar.length}] Salvando linha: ${linha.id}`);
-            
-            // Preservar metadados
-            const datasComMetadados = {};
-            if (linha.datas) {
-              Object.entries(linha.datas).forEach(([etapa, etapaData]) => {
-                if (etapaData && typeof etapaData === 'object') {
-                  datasComMetadados[etapa] = {
-                    ...etapaData
-                  };
-                }
-              });
-            }
-            
-            const linhaData = {
-              empreendimento_id: empreendimento.id,
-              ordem: linha.ordem,
-              documento_id: linha.documento_id,
-              datas: datasComMetadados
-            };
-            
-            // GARANTIR que revisões criadas são salvas mesmo que vazias
-            const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
-            etapasVisiveis.forEach(etapa => {
-              const revisoesEtapa = revisoesPorEtapa[etapa];
-              if (revisoesEtapa && revisoesEtapa.length > 0) {
-                if (!datasComMetadados[etapa]) {
-                  datasComMetadados[etapa] = {};
-                }
-                // FORÇAR que _revisoes_existentes tem as revisões reais
-                datasComMetadados[etapa]._revisoes_existentes = revisoesEtapa;
-              }
-            });
-            
-            const linhaDataFinal = {
-              ...linhaData,
-              datas: datasComMetadados
-            };
-            
-            console.log(`  Dados FINAL a salvar:`, linhaDataFinal);
+       // Dividir em lotes
+       for (let batchIdx = 0; batchIdx < linhasParaSalvar.length; batchIdx += BATCH_SIZE) {
+         const batch = linhasParaSalvar.slice(batchIdx, batchIdx + BATCH_SIZE);
+         console.log(`\n📦 Lote ${Math.floor(batchIdx / BATCH_SIZE) + 1}: ${batch.length} linhas`);
 
-            let result;
-            let attempts = 0;
-            const maxAttempts = 3;
-            
-            while (attempts < maxAttempts) {
-              try {
-                const isNew = linha.isNew || linha.id.toString().startsWith('temp-');
-                console.log(`  🔄 Tentativa ${attempts + 1}/${maxAttempts} (${isNew ? 'CREATE' : 'UPDATE'})`);
-                
-                if (isNew) {
-                  result = await DataCadastro.create(linhaDataFinal);
-                } else {
-                  result = await DataCadastro.update(linha.id, linhaDataFinal);
-                }
-                console.log(`  ✅ Sucesso! ID: ${result.id}`);
-                break;
-              } catch (err) {
-                attempts++;
-                console.error(`  ❌ Tentativa ${attempts} falhou:`, err.message);
-                
-                if (attempts >= maxAttempts) {
-                  throw err;
-                }
-                
-                const waitTime = 1000 * attempts;
-                console.log(`  ⏳ Aguardando ${waitTime}ms...`);
-                await new Promise(resolve => setTimeout(resolve, waitTime));
-              }
-            }
+         const batchPromises = batch.map((linha, idxNoBatch) => 
+           (async () => {
+             const idxGlobal = batchIdx + idxNoBatch;
+             try {
+               console.log(`\n📨 [${idxGlobal + 1}/${linhasParaSalvar.length}] Salvando linha: ${linha.id}`);
 
-            successCount++;
-            updatedLinhas.set(linha.id, result);
-          } catch (error) {
-            errorCount++;
-            console.error(`❌ ERRO na linha ${linha.id}:`, error);
-          }
-        })()
-      );
+               // Preservar metadados
+               const datasComMetadados = {};
+               if (linha.datas) {
+                 Object.entries(linha.datas).forEach(([etapa, etapaData]) => {
+                   if (etapaData && typeof etapaData === 'object') {
+                     datasComMetadados[etapa] = {
+                       ...etapaData
+                     };
+                   }
+                 });
+               }
 
-      // Executar todos os salvamentos em paralelo
-      await Promise.all(savePromises);
+               const linhaData = {
+                 empreendimento_id: empreendimento.id,
+                 ordem: linha.ordem,
+                 documento_id: linha.documento_id,
+                 datas: datasComMetadados
+               };
+
+               // GARANTIR que revisões criadas são salvas mesmo que vazias
+               const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
+               etapasVisiveis.forEach(etapa => {
+                 const revisoesEtapa = revisoesPorEtapa[etapa];
+                 if (revisoesEtapa && revisoesEtapa.length > 0) {
+                   if (!datasComMetadados[etapa]) {
+                     datasComMetadados[etapa] = {};
+                   }
+                   // FORÇAR que _revisoes_existentes tem as revisões reais
+                   datasComMetadados[etapa]._revisoes_existentes = revisoesEtapa;
+                 }
+               });
+
+               const linhaDataFinal = {
+                 ...linhaData,
+                 datas: datasComMetadados
+               };
+
+               console.log(`  Dados FINAL a salvar:`, linhaDataFinal);
+
+               let result;
+               let attempts = 0;
+               const maxAttempts = 3;
+
+               while (attempts < maxAttempts) {
+                 try {
+                   const isNew = linha.isNew || linha.id.toString().startsWith('temp-');
+                   console.log(`  🔄 Tentativa ${attempts + 1}/${maxAttempts} (${isNew ? 'CREATE' : 'UPDATE'})`);
+
+                   if (isNew) {
+                     result = await DataCadastro.create(linhaDataFinal);
+                   } else {
+                     result = await DataCadastro.update(linha.id, linhaDataFinal);
+                   }
+                   console.log(`  ✅ Sucesso! ID: ${result.id}`);
+                   break;
+                 } catch (err) {
+                   attempts++;
+                   console.error(`  ❌ Tentativa ${attempts} falhou:`, err.message);
+
+                   if (attempts >= maxAttempts) {
+                     throw err;
+                   }
+
+                   const waitTime = 2000 * attempts;
+                   console.log(`  ⏳ Aguardando ${waitTime}ms...`);
+                   await new Promise(resolve => setTimeout(resolve, waitTime));
+                 }
+               }
+
+               successCount++;
+               updatedLinhas.set(linha.id, result);
+             } catch (error) {
+               errorCount++;
+               console.error(`❌ ERRO na linha ${linha.id}:`, error);
+             }
+           })()
+         );
+
+         // Executar lote em paralelo
+         await Promise.all(batchPromises);
+
+         // Delay entre lotes (exceto no último)
+         if (batchIdx + BATCH_SIZE < linhasParaSalvar.length) {
+           console.log(`⏳ Aguardando ${DELAY_ENTRE_LOTES}ms antes do próximo lote...`);
+           await new Promise(resolve => setTimeout(resolve, DELAY_ENTRE_LOTES));
+         }
+       }
 
       // Atualizar estado local com os IDs salvos
       console.log(`\n✨ Atualizando ${successCount} linhas salvas no estado local`);
