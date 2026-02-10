@@ -2131,16 +2131,32 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                       )}
                                     </TableCell>
                                     <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
-                                    <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell></TableCell>
-                                  </TableRow>
-                                ))}
-                              </>
-                            );
-                          })}
-                        </TableBody>
-                      </Table>
+                                      <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
+                                      <TableCell>
+                                        <Checkbox
+                                          checked={atividadesSelecionadasParaExcluir.has(folha.base_atividade_id || folha.id)}
+                                          onCheckedChange={(checked) => {
+                                            setAtividadesSelecionadasParaExcluir(prev => {
+                                              const newSet = new Set(prev);
+                                              const id = folha.base_atividade_id || folha.id;
+                                              if (checked) {
+                                                newSet.add(id);
+                                              } else {
+                                                newSet.delete(id);
+                                              }
+                                              return newSet;
+                                            });
+                                          }}
+                                        />
+                                      </TableCell>
+                                      <TableCell></TableCell>
+                                    </TableRow>
+                                    ))}
+                                    </>
+                                    );
+                                    })}
+                                    </TableBody>
+                                    </Table>
                       </div>
                       ))}
                       </div>
