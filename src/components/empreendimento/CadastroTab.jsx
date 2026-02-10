@@ -668,17 +668,16 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
               datas: datasComMetadados
             };
             
-            // GARANTIR que revisões criadas são salvas mesmo que vazias
+            // GARANTIR que revisões criadas são salvas SEMPRE
             const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
             etapasVisiveis.forEach(etapa => {
               const revisoesEtapa = revisoesPorEtapa[etapa];
-              if (revisoesEtapa && revisoesEtapa.length > 0) {
-                if (!datasComMetadados[etapa]) {
-                  datasComMetadados[etapa] = {};
-                }
-                // FORÇAR que _revisoes_existentes tem as revisões reais
-                datasComMetadados[etapa]._revisoes_existentes = revisoesEtapa;
+              // Salvar as revisões mesmo que estejam vazias (array vazio significa "etapa visível sem revisões customizadas")
+              if (!datasComMetadados[etapa]) {
+                datasComMetadados[etapa] = {};
               }
+              // SEMPRE salvar _revisoes_existentes, mesmo que seja array vazio ou tenha revisões
+              datasComMetadados[etapa]._revisoes_existentes = revisoesEtapa || [];
             });
             
             const linhaDataFinal = {
