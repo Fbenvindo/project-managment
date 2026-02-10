@@ -197,6 +197,7 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
   const [showPlanejamentoModal, setShowPlanejamentoModal] = useState(false);
   const [atividadeParaPlanejar, setAtividadeParaPlanejar] = useState(null);
   const [selectedAtividades, setSelectedAtividades] = useState([]);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleEdit = (atividade) => {
     setEditingAtividade(atividade);
