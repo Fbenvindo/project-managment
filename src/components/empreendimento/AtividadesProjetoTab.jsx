@@ -490,36 +490,7 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
         }}
       />
 
-      {selectedAtividades.length > 0 && (
-        <div className="flex items-center justify-between p-4 border-2 border-red-500 rounded-lg bg-red-50 shadow-lg">
-          <div className="flex items-center gap-3">
-            <Badge className="bg-red-600 text-white">
-              {selectedAtividades.length} atividade{selectedAtividades.length > 1 ? 's' : ''} selecionada{selectedAtividades.length > 1 ? 's' : ''}
-            </Badge>
-            <span className="text-sm text-gray-700">
-              Excluir selecionadas
-            </span>
-          </div>
-          <div className="flex gap-2">
-            <Button 
-              onClick={handleExcluirMultiplas}
-              className="bg-red-600 hover:bg-red-700"
-              disabled={isDeleting}
-              size="sm"
-            >
-              <Trash2 className="w-4 h-4 mr-2" />
-              Excluir
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setSelectedAtividades([])}
-            >
-              Cancelar
-            </Button>
-          </div>
-        </div>
-      )}
+
 
       {isLoading ? (
         <div className="rounded-lg border p-8 text-center">
