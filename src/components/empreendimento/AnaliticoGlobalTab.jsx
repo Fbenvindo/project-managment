@@ -3398,17 +3398,23 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         });
 
         // Buscar atividade original
-        const atividadeOriginalArr = await retryWithBackoff(
-          () => Atividade.filter({ id: atividadeId }),
-          3, 500, `getActivityForOverride-${atividadeId}`
-        );
+        let atividadeOriginal = null;
+        try {
+          const atividadeOriginalArr = await retryWithBackoff(
+            () => Atividade.filter({ id: atividadeId }),
+            3, 500, `getActivityForOverride-${atividadeId}`
+          );
 
-        if (!atividadeOriginalArr || atividadeOriginalArr.length === 0) {
-          console.warn(`⚠️ Atividade original ${atividadeId} não encontrada, pulando...`);
+          if (!atividadeOriginalArr || atividadeOriginalArr.length === 0) {
+            console.warn(`⚠️ Atividade original ${atividadeId} não encontrada, pulando...`);
+            continue;
+          }
+
+          atividadeOriginal = atividadeOriginalArr[0];
+        } catch (err) {
+          console.error(`❌ Erro ao buscar atividade ${atividadeId}:`, err);
           continue;
         }
-
-        const atividadeOriginal = atividadeOriginalArr[0];
 
         // Criar/atualizar override global PRIMEIRO
         const existingOverrides = await retryWithBackoff(
