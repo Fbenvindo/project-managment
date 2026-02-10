@@ -412,7 +412,9 @@ export default function ActivityItemCalendar({
           
           <div className="flex items-center gap-2">
             <div className="font-mono text-blue-600 flex flex-col items-end">
-              <span className="font-semibold text-sm">{horasExecutadasDia.toFixed(1)}/{horasAlocadasDia.toFixed(1)}h</span>
+              <span className="font-semibold text-sm" title={contemDiasFuturos ? "Planejado / Executado (continua nos próximos dias)" : "Planejado / Executado"}>
+                {horasAlocadasDia.toFixed(1)}/{horasExecutadasDia.toFixed(1)}h{contemDiasFuturos ? ' ...' : ''}
+              </span>
             </div>
             
             {realStatus === 'concluido' && (
