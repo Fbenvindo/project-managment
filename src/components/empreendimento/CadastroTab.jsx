@@ -630,8 +630,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       let errorCount = 0;
       const updatedLinhas = new Map();
 
-      const BATCH_SIZE = 5; // Processar 5 linhas por vez
-      const DELAY_BETWEEN_BATCHES = 1000; // 1 segundo entre lotes
+      const BATCH_SIZE = 3; // Processar 3 linhas por vez
+      const DELAY_BETWEEN_BATCHES = 2000; // 2 segundos entre lotes
 
       for (let i = 0; i < linhasParaSalvar.length; i += BATCH_SIZE) {
         const batch = linhasParaSalvar.slice(i, i + BATCH_SIZE);
@@ -682,12 +682,31 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
             let result;
             const isNew = linha.isNew || linha.id.toString().startsWith('temp-');
             
-            if (isNew) {
-              result = await DataCadastro.create(linhaDataFinal);
-            } else {
-              result = await DataCadastro.update(linha.id, linhaDataFinal);
+            // Retry com backoff exponencial
+            let attempts = 0;
+            const maxAttempts = 5;
+            
+            while (attempts < maxAttempts) {
+              try {
+                if (isNew) {
+                  result = await DataCadastro.create(linhaDataFinal);
+                } else {
+                  result = await DataCadastro.update(linha.id, linhaDataFinal);
+                }
+                console.log(`  ✅ Sucesso! ID: ${result.id}`);
+                break;
+              } catch (err) {
+                attempts++;
+                if (attempts >= maxAttempts) {
+                  throw err;
+                }
+                
+                // Backoff exponencial: 2s, 4s, 8s, 16s
+                const waitTime = 2000 * Math.pow(2, attempts - 1);
+                console.log(`  ⚠️ Tentativa ${attempts} falhou, aguardando ${waitTime}ms...`);
+                await new Promise(resolve => setTimeout(resolve, waitTime));
+              }
             }
-            console.log(`  ✅ Sucesso! ID: ${result.id}`);
 
             successCount++;
             updatedLinhas.set(linha.id, result);
