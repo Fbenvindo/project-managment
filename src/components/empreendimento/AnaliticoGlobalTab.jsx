@@ -1710,7 +1710,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             <TableHead>Etapa</TableHead>
                             <TableHead>Executor</TableHead>
                             <TableHead>Datas Planejadas</TableHead>
-                            <TableHead>Tempo Padrão</TableHead>
+                            <TableHead>Tempo</TableHead>
                             <TableHead>Tempo Total</TableHead>
                             <TableHead className="text-center w-[120px]">Ações</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
@@ -2133,6 +2133,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                           </>
                                         ) : (
                                           <>
+                                            <DropdownMenuItem onClick={() => handleOpenModal(ativ)}>
+                                              <Edit className="w-4 h-4 mr-2" /> Editar Atividade do Empreendimento
+                                            </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => handleOpenEtapaModal(ativ)}>
                                               <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
                                             </DropdownMenuItem>
@@ -2143,7 +2146,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                               <Edit2 className="w-4 h-4 mr-2" /> Editar Etapa em Folhas Específicas
                                             </DropdownMenuItem>
                                           </>
-                                        )}
+                                          )}
                                       </DropdownMenuContent>
                                     </DropdownMenu>
                                   </TableCell>
@@ -2220,7 +2223,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                      <TableHead>Etapa</TableHead>
                      <TableHead>Executor</TableHead>
                      <TableHead>Datas Planejadas</TableHead>
-                     <TableHead>Tempo Padrão</TableHead>
+                     <TableHead>Tempo</TableHead>
                      <TableHead>Tempo Total</TableHead>
                      <TableHead className="text-center w-[120px]">Ações</TableHead>
                      <TableHead className="w-[50px]"></TableHead>
@@ -2438,138 +2441,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                 <span className="text-xs text-gray-400">-</span>
                                 )}
                                 </TableCell>
-                                <TableCell>
-                                {editandoTempo[key] ? (
-                                  <div className="flex items-center gap-1">
-                                    <Input
-                                      type="number"
-                                      step="0.1"
-                                      min="0"
-                                      value={novoTempo[key] ?? ativ.tempo ?? 0}
-                                      onChange={(e) => setNovoTempo(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))}
-                                      className="w-20 h-7 text-xs"
-                                      autoFocus
-                                    />
-                                    <span className="text-xs">h</span>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-6 w-6 p-0 text-green-600 hover:text-green-700"
-                                      onClick={async () => {
-                                        try {
-                                          const atividadeId = ativ.base_atividade_id || ativ.id;
-                                          const tempo = novoTempo[key] ?? ativ.tempo ?? 0;
-
-                                          // Atualização otimista do UI
-                                          setCombinedActivities(prev => prev.map(a => {
-                                            if (a.base_atividade_id === atividadeId || a.id === atividadeId) {
-                                              return { ...a, tempo };
-                                            }
-                                            return a;
-                                          }));
-                                          setEditandoTempo(prev => ({ ...prev, [key]: false }));
-
-                                          // Atualizar backend em background
-                                          (async () => {
-                                            const atividadeOriginalArr = await retryWithBackoff(
-                                              () => Atividade.filter({ id: atividadeId }),
-                                              3, 500, `getOriginalActivityForTempoEdit-${atividadeId}`
-                                            );
-
-                                            if (!atividadeOriginalArr || atividadeOriginalArr.length === 0) {
-                                              throw new Error("Atividade original não encontrada.");
-                                            }
-
-                                            const atividadeOriginal = atividadeOriginalArr[0];
-
-                                            // Criar/atualizar override
-                                            const existingOverrides = await retryWithBackoff(
-                                              () => Atividade.filter({
-                                                empreendimento_id: empreendimentoId,
-                                                id_atividade: atividadeId,
-                                                documento_id: null,
-                                                tempo: { operator: '!=', value: -999 }
-                                              }),
-                                              3, 500, `checkExistingTempoOverride-${atividadeId}`
-                                            );
-
-                                            if (existingOverrides && existingOverrides.length > 0) {
-                                              await retryWithBackoff(
-                                                () => Atividade.update(existingOverrides[0].id, { tempo }),
-                                                3, 500, `updateTempoOverride-${existingOverrides[0].id}`
-                                              );
-                                            } else {
-                                              await retryWithBackoff(
-                                                () => Atividade.create({
-                                                  ...atividadeOriginal,
-                                                  id: undefined,
-                                                  empreendimento_id: empreendimentoId,
-                                                  id_atividade: atividadeId,
-                                                  documento_id: null,
-                                                  tempo
-                                                }),
-                                                3, 500, `createTempoOverride-${atividadeId}`
-                                              );
-                                            }
-
-                                            // Atualizar planejamentos de todas as folhas
-                                            const planejamentosParaAtualizar = await retryWithBackoff(
-                                              () => PlanejamentoAtividade.filter({
-                                                empreendimento_id: empreendimentoId,
-                                                atividade_id: atividadeId
-                                              }),
-                                              3, 500, `getPlanejamentosForTempoUpdate-${atividadeId}`
-                                            );
-
-                                            if (planejamentosParaAtualizar && planejamentosParaAtualizar.length > 0) {
-                                              await Promise.all(
-                                                planejamentosParaAtualizar.map(plano => {
-                                                  const fatorDificuldade = documentosMap.get(plano.documento_id)?.fator_dificuldade || 1;
-                                                  const novoTempoPlanejado = tempo * fatorDificuldade;
-
-                                                  return retryWithBackoff(
-                                                    () => PlanejamentoAtividade.update(plano.id, { tempo_planejado: novoTempoPlanejado }),
-                                                    3, 500, `updatePlanejamentoTempo-${plano.id}`
-                                                  );
-                                                })
-                                              );
-                                            }
-
-                                            console.log(`✅ Tempo atualizado para ${tempo}h em ${planejamentosParaAtualizar?.length || 0} planejamento(s)`);
-                                          })().catch(error => {
-                                            console.error("Erro ao salvar tempo no backend:", error);
-                                          });
-                                        } catch (error) {
-                                          console.error("Erro ao salvar tempo:", error);
-                                          alert("Erro ao salvar tempo: " + error.message);
-                                        }
-                                      }}
-                                    >
-                                      ✓
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
-                                      onClick={() => {
-                                        setEditandoTempo(prev => ({ ...prev, [key]: false }));
-                                        setNovoTempo(prev => ({ ...prev, [key]: undefined }));
-                                      }}
-                                    >
-                                      ✕
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <button
-                                    onClick={() => {
-                                      setEditandoTempo(prev => ({ ...prev, [key]: true }));
-                                      setNovoTempo(prev => ({ ...prev, [key]: ativ.tempo ?? 0 }));
-                                    }}
-                                    className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
-                                  >
-                                    {ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}
-                                  </button>
-                                )}
+                                <TableCell className="text-sm">
+                                  {ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}
                                 </TableCell>
                                 <TableCell className="font-semibold text-blue-600">
                             {grupo.folhas.length > 0 
