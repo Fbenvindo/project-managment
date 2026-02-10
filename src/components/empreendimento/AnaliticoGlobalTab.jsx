@@ -1796,18 +1796,34 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             return (
                               <>
                                 <TableRow key={key} className="hover:bg-gray-50">
-                                  {hasCheckboxColumn && (
-                                    <TableCell>
-                                      {ativ.isEditable && (
-                                        <Checkbox
-                                          checked={selectedIds.has(ativ.uniqueId)}
-                                          onCheckedChange={() => handleSelectItem(ativ.uniqueId)}
-                                          disabled={isDeletingMultiple}
-                                        />
-                                      )}
-                                    </TableCell>
-                                  )}
-                                  <TableCell>
+                                   {hasCheckboxColumn && (
+                                     <TableCell>
+                                       {ativ.isEditable && (
+                                         <Checkbox
+                                           checked={selectedIds.has(ativ.uniqueId)}
+                                           onCheckedChange={() => handleSelectItem(ativ.uniqueId)}
+                                           disabled={isDeletingMultiple}
+                                         />
+                                       )}
+                                     </TableCell>
+                                   )}
+                                   <TableCell>
+                                     {!ativ.isEditable && (
+                                       <Checkbox
+                                         checked={atividadesSelecionadasParaExcluir.has(ativ.base_atividade_id || ativ.id)}
+                                         onCheckedChange={(checked) => {
+                                           setAtividadesSelecionadasParaExcluir(prev => {
+                                             const newSet = new Set(prev);
+                                             const id = ativ.base_atividade_id || ativ.id;
+                                             if (checked) newSet.add(id);
+                                             else newSet.delete(id);
+                                             return newSet;
+                                           });
+                                         }}
+                                       />
+                                     )}
+                                   </TableCell>
+                                   <TableCell>
                                     {!ativ.isEditable && (
                                       <Checkbox
                                         checked={atividadesSelecionadasParaExcluir.has(ativ.base_atividade_id || ativ.id)}
