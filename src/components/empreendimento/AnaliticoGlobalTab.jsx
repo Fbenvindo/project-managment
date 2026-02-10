@@ -773,35 +773,48 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
+      // Primeira onda: dados críticos (menor payload)
       const [
         projectActivities, 
         planejamentosData,
-        allActivities,
         documentosData,
-        disciplinasData,
-        empreendimentoData,
-        alteracoesData,
-        usuariosData,
-        todosEmpreendimentos
+        disciplinasData
       ] = await Promise.all([
         retryWithBackoff(() => Atividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchProjectActivities'),
         retryWithBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchPlanejamentos'),
-        retryWithBackoff(() => Atividade.list(), 3, 500, 'fetchAllActivities'),
         retryWithBackoff(() => Documento.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchDocumentos'),
-        retryWithBackoff(() => Disciplina.list(), 3, 500, 'fetchDisciplinas'),
+        retryWithBackoff(() => Disciplina.list(), 3, 500, 'fetchDisciplinas')
+      ]);
+
+      // Segunda onda: dados complementares (async, sem bloquear renderização)
+      Promise.all([
+        retryWithBackoff(() => Atividade.list(), 3, 500, 'fetchAllActivities'),
         retryWithBackoff(() => Empreendimento.filter({ id: empreendimentoId }), 3, 500, 'fetchEmpreendimento'),
         retryWithBackoff(() => AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAlteracoes'),
         retryWithBackoff(() => Usuario.list(), 3, 500, 'fetchUsuarios'),
         retryWithBackoff(() => Empreendimento.list(), 3, 500, 'fetchAllEmpreendimentos')
-      ]);
+      ]).then(([allActivities, empreendimentoData, alteracoesData, usuariosData, todosEmpreendimentos]) => {
+        processSecondWaveData(allActivities, empreendimentoData, alteracoesData, usuariosData, todosEmpreendimentos, projectActivities, planejamentosData, documentosData, disciplinasData);
+      });
 
       setDocumentos(documentosData || []);
-      setEmpreendimentoNome((empreendimentoData && empreendimentoData[0]?.nome) || "");
-      setAlteracoesEtapa(alteracoesData || []);
-      setUsuarios(usuariosData || []);
       setPlanejamentos(planejamentosData || []);
-      setAllEmpreendimentos(todosEmpreendimentos || []);
+      
+      // Renderizar rapidamente com dados básicos
+      processCombinedActivities(projectActivities, null, planejamentosData, documentosData, null, null);
+      setIsLoading(false);
 
+    } catch (error) {
+      console.error("Erro ao buscar dados do catálogo:", error);
+      setCombinedActivities([]);
+      setDisciplinas([]);
+      setDocumentos([]);
+      setIsLoading(false);
+    }
+  }, [empreendimentoId]);
+
+  const processCombinedActivities = useCallback((projectActivities, allActivities, planejamentosData, documentosData, empreendimentoData, disciplinasData) => {
+    try {
       // MODIFICADO: Criar dois mapas - um global e um por documento
       const overrideActivitiesGlobalMap = new Map(); // Overrides sem documento_id específico
       const overrideActivitiesByDocMap = new Map(); // Overrides com documento_id específico (chave: "docId|atividadeId")
@@ -831,16 +844,33 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           }
       });
       
-      const allGenericActivitiesMap = new Map((allActivities || [])
-        .filter(a => !a.empreendimento_id)
-        .map(a => [a.id, a])
-      );
+      const allGenericActivitiesMap = allActivities 
+        ? new Map(allActivities.filter(a => !a.empreendimento_id).map(a => [a.id, a]))
+        : new Map();
       
       const planejamentosMap = new Map((planejamentosData || []).map(p => [`${p.documento_id}-${p.atividade_id}`, p]));
 
       // Buscar etapas cadastradas no empreendimento
       const empreendimento = (empreendimentoData && empreendimentoData[0]) || null;
       const etapasCadastradas = empreendimento?.etapas || [];
+      
+      // Se não temos allActivities ainda, processar apenas projectActivities
+      if (!allActivities) {
+        const normalizedProjectActivities = (projectActivities || [])
+          .filter(pa => !pa.id_atividade && pa.tempo !== -999)
+          .filter(pa => etapasCadastradas.length === 0 || etapasCadastradas.includes(pa.etapa))
+          .map(ativ => ({
+            ...ativ,
+            uniqueId: `proj-${ativ.id}`,
+            source: 'Projeto',
+            status: 'N/A',
+            isEditable: true,
+            base_atividade_id: ativ.id,
+          }));
+        
+        setCombinedActivities(normalizedProjectActivities);
+        return;
+      }
       
       const normalizedProjectActivities = (projectActivities || [])
         .filter(pa => !pa.id_atividade && pa.tempo !== -999)
@@ -1029,17 +1059,21 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       });
 
       setCombinedActivities([...normalizedProjectActivities, ...documentActivities, ...atividadesDocumentacao]);
-      setDisciplinas(disciplinasData || []);
-
+      if (disciplinasData) setDisciplinas(disciplinasData);
     } catch (error) {
-      console.error("Erro ao buscar dados do catálogo:", error);
-      setCombinedActivities([]);
-      setDisciplinas([]);
-      setDocumentos([]);
-    } finally {
-      setIsLoading(false);
+      console.error("Erro ao processar atividades:", error);
     }
-  }, [empreendimentoId]);
+  }, []);
+
+  const processSecondWaveData = useCallback((allActivities, empreendimentoData, alteracoesData, usuariosData, todosEmpreendimentos, projectActivities, planejamentosData, documentosData, disciplinasData) => {
+    setEmpreendimentoNome((empreendimentoData && empreendimentoData[0]?.nome) || "");
+    setAlteracoesEtapa(alteracoesData || []);
+    setUsuarios(usuariosData || []);
+    setAllEmpreendimentos(todosEmpreendimentos || []);
+    
+    // Reprocessar com todos os dados
+    processCombinedActivities(projectActivities, allActivities, planejamentosData, documentosData, empreendimentoData, disciplinasData);
+  }, [processCombinedActivities]);
 
   useEffect(() => {
     if (empreendimentoId) {
@@ -1051,8 +1085,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     setFilters(prev => ({ ...prev, search: value }));
   }, 300), []);
 
-  const atividadesAgrupadas = useMemo(() => {
-    const filtered = combinedActivities.filter(ativ => {
+  // Memoizar filtros para evitar recálculo
+  const filteredActivities = useMemo(() => {
+    return combinedActivities.filter(ativ => {
       const searchLower = filters.search.toLowerCase();
       const searchMatch = !filters.search ||
         String(ativ.atividade || '').toLowerCase().includes(searchLower) ||
@@ -1067,11 +1102,13 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
       return searchMatch && disciplinaMatch && etapaMatch;
     });
+  }, [combinedActivities, filters]);
 
+  const atividadesAgrupadas = useMemo(() => {
     // Agrupar por atividade base
     const grupos = new Map();
     
-    filtered.forEach(ativ => {
+    filteredActivities.forEach(ativ => {
       const key = `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.disciplina}-${ativ.subdisciplina}`;
       
       if (!grupos.has(key)) {
@@ -1087,7 +1124,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     });
 
     return Array.from(grupos.values());
-  }, [combinedActivities, filters]);
+  }, [filteredActivities]);
 
   const atividadesPorDisciplina = useMemo(() => {
     const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
@@ -1142,20 +1179,20 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     return [...new Set(combinedActivities.map(a => a.etapa).filter(Boolean))];
   }, [combinedActivities, empreendimentoId]);
 
-  const handleOpenModal = (atividade = null) => {
+  const handleOpenModal = useCallback((atividade = null) => {
     setSelectedAtividade(atividade);
     setIsModalOpen(true);
-  };
+  }, []);
   
-  const handleOpenEtapaModal = (atividade) => {
+  const handleOpenEtapaModal = useCallback((atividade) => {
     setSelectedAtividade(atividade);
     setIsEtapaModalOpen(true);
-  };
+  }, []);
 
-  const handleOpenEditarEtapaEmFolhasModal = (atividade) => {
+  const handleOpenEditarEtapaEmFolhasModal = useCallback((atividade) => {
     setSelectedAtividade(atividade);
     setIsEditarEtapaEmFolhasModalOpen(true);
-  };
+  }, []);
 
   const handleSaveEtapa = async (newEtapa, escopo = 'empreendimento', selectedFolhaId = '') => {
     if (!selectedAtividade || !selectedAtividade.base_atividade_id) {
@@ -1439,9 +1476,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     }
   };
 
-  const toggleAtividadeExpansion = (key) => {
+  const toggleAtividadeExpansion = useCallback((key) => {
     setExpandedAtividades(prev => ({ ...prev, [key]: !prev[key] }));
-  };
+  }, []);
 
   const handleDeleteSelected = async () => {
     const count = selectedIds.size;
