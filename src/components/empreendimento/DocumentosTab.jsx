@@ -596,7 +596,7 @@ export default function DocumentosTab({
   }, [allAtividades, empreendimento, handleLocalUpdate, localPlanejamentos, setLocalPlanejamentos, pavimentos, getCargaDiariaExecutor, handleCascadingUpdate, localDocumentos]);
 
   const handleSuccess = async (savedDoc) => {
-    handleLocalUpdate(savedDoc);
+    onUpdate();
     setShowForm(false);
     setEditingDocumento(null);
     setCargaDiariaCache({});
@@ -821,13 +821,7 @@ export default function DocumentosTab({
       alert(mensagem);
 
       if (sucessos > 0) {
-        // Recarregar documentos localmente em background
-        setTimeout(() => {
-          retryWithBackoff(
-            () => Documento.filter({ empreendimento_id: empreendimento.id }),
-            3, 500, 'refreshDocumentosSilent'
-          ).then(docs => setLocalDocumentos(docs || [])).catch(err => console.warn("Erro:", err));
-        }, 200);
+        await onUpdate();
         setShowImportModal(false);
         setImportFile(null);
       }
@@ -851,9 +845,19 @@ export default function DocumentosTab({
   };
 
   const handleAtividadeSuccess = async () => {
+    // Salvar estado de expansão antes de atualizar
+    const expandedState = { ...expandedRows };
+    
     setShowAtividadeForm(false);
     setEditingAtividade(null);
-    // Dados já atualizados - não precisa recarregar
+    
+    // Recarregar dados
+    await onUpdate();
+    
+    // Restaurar estado de expansão após atualização
+    setTimeout(() => {
+      setExpandedRows(expandedState);
+    }, 100);
   };
 
   const handleDelete = async (id) => {
@@ -862,6 +866,7 @@ export default function DocumentosTab({
         await retryWithExtendedBackoff(() => Documento.delete(id), `deleteDocument-${id}`);
         setLocalDocumentos(prevDocs => prevDocs.filter(d => d.id !== id));
         setCargaDiariaCache({});
+        onUpdate();
       } catch (error) {
         console.error("Erro ao excluir documento:", error);
         let errorMessage = "Ocorreu um erro ao excluir o documento.";
@@ -1476,13 +1481,11 @@ export default function DocumentosTab({
           );
         }
 
-        // Atualizar dados localmente em background
-        setTimeout(() => {
-          retryWithBackoff(
-            () => Atividade.filter({ empreendimento_id: empreendimento.id }),
-            3, 500, 'refreshAtividadesSilent'
-          ).catch(err => console.warn("Erro ao atualizar atividades:", err));
-        }, 200);
+        // Forçar re-render do componente sem chamar onUpdate
+        setIsUpdatingActivity(false);
+        setIsUpdatingActivity(true);
+        
+        // Dados já atualizados localmente - não precisa recarregar
       } catch (error) {
         console.error("❌ Erro ao marcar atividade como concluída:", error);
         alert("Erro ao atualizar o status da atividade: " + error.message);
@@ -1676,17 +1679,12 @@ export default function DocumentosTab({
           console.log(`✅ Marcador válido criado com sucesso!\n`);
         }
 
+        console.log(`🔄 PASSO 3: Recarregando dados da página...\n`);
+        await onUpdate();
+        
         console.log(`\n🎉 ========================================`);
         console.log(`🎉 PROCESSO CONCLUÍDO COM SUCESSO!`);
         console.log(`🎉 ========================================\n`);
-        
-        // Atualizar dados localmente em background
-        setTimeout(() => {
-          retryWithBackoff(
-            () => Atividade.filter({ empreendimento_id: empreendimento.id }),
-            3, 500, 'refreshAtividadesSilent'
-          ).catch(err => console.warn("Erro ao atualizar atividades:", err));
-        }, 200);
         
         alert(`✅ Atividade "${nomeAtividade}" removida APENAS da folha "${doc.numero}"!\n\nEla continuará disponível nas outras folhas.`);
         
@@ -2319,13 +2317,7 @@ export default function DocumentosTab({
                               );
                             }
                             alert(`✅ Todas as ${atividadesDaEtapa.length} atividades da etapa "${etapaParaPlanejamento}" foram concluídas!`);
-                            // Atualizar em background
-                            setTimeout(() => {
-                              retryWithBackoff(
-                                () => Atividade.filter({ empreendimento_id: empreendimento.id }),
-                                3, 500, 'refreshAtividadesSilent'
-                              ).catch(err => console.warn("Erro:", err));
-                            }, 200);
+                            await onUpdate();
                           } catch (error) {
                             console.error("Erro ao concluir etapa:", error);
                             alert("Erro ao concluir atividades: " + error.message);

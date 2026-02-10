@@ -366,7 +366,7 @@ const EditarEtapaEmFolhasModal = ({ isOpen, onClose, atividade, documentos, empr
       
       // Recarregar alterações
       const alteracoes = await AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId });
-      setAlteracoesEtapa(alteracoes || []);
+      if (onSuccess) onSuccess();
       onClose();
 
     } catch (error) {
@@ -604,6 +604,7 @@ const ExcluirDeFolhasModal = ({ isOpen, onClose, atividade, documentos, empreend
 
       alert(`✅ Atividade "${atividade.atividade}" foi excluída das seguintes folhas:\n${folhasNames}`);
       
+      if (onSuccess) onSuccess();
       onClose();
 
     } catch (error) {
@@ -759,66 +760,47 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const [etapaParaReverter, setEtapaParaReverter] = useState('');
   const [isMudandoEtapaGlobal, setIsMudandoEtapaGlobal] = useState(false);
   const [etapaMudancaGlobal, setEtapaMudancaGlobal] = useState('');
-  const [editandoTempo, setEditandoTempo] = useState({});
-  const [novoTempo, setNovoTempo] = useState({});
 
   const documentosMap = useMemo(() => {
     return new Map((documentos || []).map(doc => [doc.id, doc]));
   }, [documentos]);
 
   const [planejamentos, setPlanejamentos] = useState([]);
-  const [allActivities, setAllActivities] = useState([]);
-  const [empreendimentoData, setEmpreendimentoData] = useState(null);
 
   const [allEmpreendimentos, setAllEmpreendimentos] = useState([]);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      // Primeira onda: dados críticos (menor payload)
       const [
         projectActivities, 
         planejamentosData,
+        allActivities,
         documentosData,
-        disciplinasData
+        disciplinasData,
+        empreendimentoData,
+        alteracoesData,
+        usuariosData,
+        todosEmpreendimentos
       ] = await Promise.all([
         retryWithBackoff(() => Atividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchProjectActivities'),
         retryWithBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchPlanejamentos'),
-        retryWithBackoff(() => Documento.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchDocumentos'),
-        retryWithBackoff(() => Disciplina.list(), 3, 500, 'fetchDisciplinas')
-      ]);
-
-      // Segunda onda: dados complementares (async, sem bloquear renderização)
-      Promise.all([
         retryWithBackoff(() => Atividade.list(), 3, 500, 'fetchAllActivities'),
+        retryWithBackoff(() => Documento.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchDocumentos'),
+        retryWithBackoff(() => Disciplina.list(), 3, 500, 'fetchDisciplinas'),
         retryWithBackoff(() => Empreendimento.filter({ id: empreendimentoId }), 3, 500, 'fetchEmpreendimento'),
         retryWithBackoff(() => AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAlteracoes'),
         retryWithBackoff(() => Usuario.list(), 3, 500, 'fetchUsuarios'),
         retryWithBackoff(() => Empreendimento.list(), 3, 500, 'fetchAllEmpreendimentos')
-      ]).then(([allActivitiesData, empData, alteracoesData, usuariosData, todosEmpreendimentos]) => {
-        setAllActivities(allActivitiesData || []);
-        setEmpreendimentoData(empData || []);
-        processSecondWaveData(allActivitiesData, empData, alteracoesData, usuariosData, todosEmpreendimentos, projectActivities, planejamentosData, documentosData, disciplinasData);
-      });
+      ]);
 
       setDocumentos(documentosData || []);
+      setEmpreendimentoNome((empreendimentoData && empreendimentoData[0]?.nome) || "");
+      setAlteracoesEtapa(alteracoesData || []);
+      setUsuarios(usuariosData || []);
       setPlanejamentos(planejamentosData || []);
-      
-      // Renderizar rapidamente com dados básicos
-      processCombinedActivities(projectActivities, null, planejamentosData, documentosData, null, null);
-      setIsLoading(false);
+      setAllEmpreendimentos(todosEmpreendimentos || []);
 
-    } catch (error) {
-      console.error("Erro ao buscar dados do catálogo:", error);
-      setCombinedActivities([]);
-      setDisciplinas([]);
-      setDocumentos([]);
-      setIsLoading(false);
-    }
-  }, [empreendimentoId]);
-
-  const processCombinedActivities = useCallback((projectActivities, allActivities, planejamentosData, documentosData, empreendimentoData, disciplinasData) => {
-    try {
       // MODIFICADO: Criar dois mapas - um global e um por documento
       const overrideActivitiesGlobalMap = new Map(); // Overrides sem documento_id específico
       const overrideActivitiesByDocMap = new Map(); // Overrides com documento_id específico (chave: "docId|atividadeId")
@@ -848,33 +830,16 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           }
       });
       
-      const allGenericActivitiesMap = allActivities 
-        ? new Map(allActivities.filter(a => !a.empreendimento_id).map(a => [a.id, a]))
-        : new Map();
+      const allGenericActivitiesMap = new Map((allActivities || [])
+        .filter(a => !a.empreendimento_id)
+        .map(a => [a.id, a])
+      );
       
       const planejamentosMap = new Map((planejamentosData || []).map(p => [`${p.documento_id}-${p.atividade_id}`, p]));
 
       // Buscar etapas cadastradas no empreendimento
       const empreendimento = (empreendimentoData && empreendimentoData[0]) || null;
       const etapasCadastradas = empreendimento?.etapas || [];
-      
-      // Se não temos allActivities ainda, processar apenas projectActivities
-      if (!allActivities) {
-        const normalizedProjectActivities = (projectActivities || [])
-          .filter(pa => !pa.id_atividade && pa.tempo !== -999)
-          .filter(pa => etapasCadastradas.length === 0 || etapasCadastradas.includes(pa.etapa))
-          .map(ativ => ({
-            ...ativ,
-            uniqueId: `proj-${ativ.id}`,
-            source: 'Projeto',
-            status: 'N/A',
-            isEditable: true,
-            base_atividade_id: ativ.id,
-          }));
-        
-        setCombinedActivities(normalizedProjectActivities);
-        return;
-      }
       
       const normalizedProjectActivities = (projectActivities || [])
         .filter(pa => !pa.id_atividade && pa.tempo !== -999)
@@ -1063,21 +1028,17 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       });
 
       setCombinedActivities([...normalizedProjectActivities, ...documentActivities, ...atividadesDocumentacao]);
-      if (disciplinasData) setDisciplinas(disciplinasData);
-    } catch (error) {
-      console.error("Erro ao processar atividades:", error);
-    }
-  }, []);
+      setDisciplinas(disciplinasData || []);
 
-  const processSecondWaveData = useCallback((allActivities, empreendimentoData, alteracoesData, usuariosData, todosEmpreendimentos, projectActivities, planejamentosData, documentosData, disciplinasData) => {
-    setEmpreendimentoNome((empreendimentoData && empreendimentoData[0]?.nome) || "");
-    setAlteracoesEtapa(alteracoesData || []);
-    setUsuarios(usuariosData || []);
-    setAllEmpreendimentos(todosEmpreendimentos || []);
-    
-    // Reprocessar com todos os dados
-    processCombinedActivities(projectActivities, allActivities, planejamentosData, documentosData, empreendimentoData, disciplinasData);
-  }, [processCombinedActivities]);
+    } catch (error) {
+      console.error("Erro ao buscar dados do catálogo:", error);
+      setCombinedActivities([]);
+      setDisciplinas([]);
+      setDocumentos([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [empreendimentoId]);
 
   useEffect(() => {
     if (empreendimentoId) {
@@ -1089,9 +1050,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     setFilters(prev => ({ ...prev, search: value }));
   }, 300), []);
 
-  // Memoizar filtros para evitar recálculo
-  const filteredActivities = useMemo(() => {
-    return combinedActivities.filter(ativ => {
+  const atividadesAgrupadas = useMemo(() => {
+    const filtered = combinedActivities.filter(ativ => {
       const searchLower = filters.search.toLowerCase();
       const searchMatch = !filters.search ||
         String(ativ.atividade || '').toLowerCase().includes(searchLower) ||
@@ -1106,13 +1066,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
       return searchMatch && disciplinaMatch && etapaMatch;
     });
-  }, [combinedActivities, filters]);
 
-  const atividadesAgrupadas = useMemo(() => {
     // Agrupar por atividade base
     const grupos = new Map();
     
-    filteredActivities.forEach(ativ => {
+    filtered.forEach(ativ => {
       const key = `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.disciplina}-${ativ.subdisciplina}`;
       
       if (!grupos.has(key)) {
@@ -1128,7 +1086,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     });
 
     return Array.from(grupos.values());
-  }, [filteredActivities]);
+  }, [combinedActivities, filters]);
 
   const atividadesPorDisciplina = useMemo(() => {
     const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
@@ -1183,20 +1141,20 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     return [...new Set(combinedActivities.map(a => a.etapa).filter(Boolean))];
   }, [combinedActivities, empreendimentoId]);
 
-  const handleOpenModal = useCallback((atividade = null) => {
+  const handleOpenModal = (atividade = null) => {
     setSelectedAtividade(atividade);
     setIsModalOpen(true);
-  }, []);
+  };
   
-  const handleOpenEtapaModal = useCallback((atividade) => {
+  const handleOpenEtapaModal = (atividade) => {
     setSelectedAtividade(atividade);
     setIsEtapaModalOpen(true);
-  }, []);
+  };
 
-  const handleOpenEditarEtapaEmFolhasModal = useCallback((atividade) => {
+  const handleOpenEditarEtapaEmFolhasModal = (atividade) => {
     setSelectedAtividade(atividade);
     setIsEditarEtapaEmFolhasModalOpen(true);
-  }, []);
+  };
 
   const handleSaveEtapa = async (newEtapa, escopo = 'empreendimento', selectedFolhaId = '') => {
     if (!selectedAtividade || !selectedAtividade.base_atividade_id) {
@@ -1368,7 +1326,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     if (window.confirm("Tem certeza que deseja excluir esta atividade do projeto? Atividades de folhas não são afetadas.")) {
       try {
         await retryWithBackoff(() => Atividade.delete(id), 3, 500, 'deleteAtividade');
-        fetchData();
+        fetchData(); 
+        if(onUpdate) onUpdate();
       } catch (error) {
         console.error("Erro ao excluir atividade:", error);
         alert("Não foi possível excluir a atividade.");
@@ -1430,6 +1389,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`✅ Marcador de exclusão criado com sucesso para atividade genérica ${genericAtividadeIdToExclude}`);
       
       await fetchData();
+      if (onUpdate) onUpdate();
       
       alert(`Atividade "${atividade.atividade}" foi marcada como excluída de todas as folhas deste empreendimento.`);
 
@@ -1455,6 +1415,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     setIsPlanejamentoModalOpen(false);
     setAtividadeParaPlanejar(null);
     fetchData();
+    if (onUpdate) onUpdate();
   };
 
   const handleSelectItem = (uniqueId) => {
@@ -1480,9 +1441,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     }
   };
 
-  const toggleAtividadeExpansion = useCallback((key) => {
+  const toggleAtividadeExpansion = (key) => {
     setExpandedAtividades(prev => ({ ...prev, [key]: !prev[key] }));
-  }, []);
+  };
 
   const handleDeleteSelected = async () => {
     const count = selectedIds.size;
@@ -1529,6 +1490,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
       setSelectedIds(new Set());
       fetchData();
+      if (onUpdate) onUpdate();
 
       if (results.errors === 0) {
         if (results.notFound > 0) {
@@ -1602,6 +1564,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       }
 
       fetchData();
+      if (onUpdate) onUpdate();
 
     } catch (error) {
       console.error("❌ Erro ao restaurar exclusões globais:", error);
@@ -1746,7 +1709,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             <TableHead>Etapa</TableHead>
                             <TableHead>Executor</TableHead>
                             <TableHead>Datas Planejadas</TableHead>
-                            <TableHead>Tempo</TableHead>
+                            <TableHead>Tempo Padrão</TableHead>
                             <TableHead>Tempo Total</TableHead>
                             <TableHead className="text-center w-[120px]">Ações</TableHead>
                             <TableHead className="w-[50px]"></TableHead>
@@ -1961,150 +1924,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                           })()
                                         ) : (
                                           <span className="text-xs text-gray-400">-</span>
-                                          )}
-                                          </TableCell>
-                                          <TableCell className="text-sm">
-                                          {editandoTempo[key] ? (
-                                            <div className="flex items-center gap-1">
-                                              <Input
-                                                type="number"
-                                                step="0.1"
-                                                min="0"
-                                                value={novoTempo[key] ?? ativ.tempo ?? 0}
-                                                onChange={(e) => setNovoTempo(prev => ({ ...prev, [key]: parseFloat(e.target.value) || 0 }))}
-                                                className="w-20 h-7 text-xs"
-                                                autoFocus
-                                              />
-                                              <span className="text-xs">h</span>
-                                              <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                className="h-6 w-6 p-0 text-green-600 hover:text-green-700"
-                                                onClick={async () => {
-                                                  const atividadeId = ativ.base_atividade_id || ativ.id;
-                                                  const tempo = novoTempo[key] ?? ativ.tempo ?? 0;
-
-                                                  try {
-                                                    // Buscar atividade original
-                                                    const atividadeOriginalArr = await retryWithBackoff(
-                                                      () => Atividade.filter({ id: atividadeId }),
-                                                      3, 500, `getOriginalActivityForTempoEdit-${atividadeId}`
-                                                    );
-
-                                                    if (!atividadeOriginalArr || atividadeOriginalArr.length === 0) {
-                                                      throw new Error("Atividade original não encontrada.");
-                                                    }
-
-                                                    const atividadeOriginal = atividadeOriginalArr[0];
-
-                                                    // Criar/atualizar override
-                                                    const existingOverrides = await retryWithBackoff(
-                                                      () => Atividade.filter({
-                                                        empreendimento_id: empreendimentoId,
-                                                        id_atividade: atividadeId,
-                                                        documento_id: null,
-                                                        tempo: { operator: '!=', value: -999 }
-                                                      }),
-                                                      3, 500, `checkExistingTempoOverride-${atividadeId}`
-                                                    );
-
-                                                    if (existingOverrides && existingOverrides.length > 0) {
-                                                      await retryWithBackoff(
-                                                        () => Atividade.update(existingOverrides[0].id, { tempo }),
-                                                        3, 500, `updateTempoOverride-${existingOverrides[0].id}`
-                                                      );
-                                                    } else {
-                                                      await retryWithBackoff(
-                                                        () => Atividade.create({
-                                                          ...atividadeOriginal,
-                                                          id: undefined,
-                                                          empreendimento_id: empreendimentoId,
-                                                          id_atividade: atividadeId,
-                                                          documento_id: null,
-                                                          tempo
-                                                        }),
-                                                        3, 500, `createTempoOverride-${atividadeId}`
-                                                      );
-                                                    }
-
-                                                    // Atualizar planejamentos de todas as folhas
-                                                    const planejamentosParaAtualizar = await retryWithBackoff(
-                                                      () => PlanejamentoAtividade.filter({
-                                                        empreendimento_id: empreendimentoId,
-                                                        atividade_id: atividadeId
-                                                      }),
-                                                      3, 500, `getPlanejamentosForTempoUpdate-${atividadeId}`
-                                                    );
-
-                                                    if (planejamentosParaAtualizar && planejamentosParaAtualizar.length > 0) {
-                                                      await Promise.all(
-                                                        planejamentosParaAtualizar.map(plano => {
-                                                          const fatorDificuldade = documentosMap.get(plano.documento_id)?.fator_dificuldade || 1;
-                                                          const novoTempoPlanejado = tempo * fatorDificuldade;
-
-                                                          return retryWithBackoff(
-                                                            () => PlanejamentoAtividade.update(plano.id, { tempo_planejado: novoTempoPlanejado }),
-                                                            3, 500, `updatePlanejamentoTempo-${plano.id}`
-                                                          );
-                                                        })
-                                                      );
-                                                    }
-
-                                                    console.log(`✅ Tempo atualizado para ${tempo}h`);
-                                                    
-                                                    // Fechar edição e recarregar dados
-                                                    setEditandoTempo(prev => ({ ...prev, [key]: false }));
-                                                    setNovoTempo(prev => ({ ...prev, [key]: undefined }));
-                                                    
-                                                    // Recarregar apenas projectActivities para manter consistência
-                                                    const updatedProjectActivities = await retryWithBackoff(
-                                                      () => Atividade.filter({ empreendimento_id: empreendimentoId }),
-                                                      3, 500, 'refreshAfterTempoUpdate'
-                                                    );
-                                                    
-                                                    // Reprocessar com TODOS os dados (incluindo allActivities já carregadas)
-                                                    processCombinedActivities(
-                                                      updatedProjectActivities,
-                                                      allActivities,
-                                                      planejamentos,
-                                                      documentos,
-                                                      empreendimentoData,
-                                                      disciplinas
-                                                    );
-                                                  } catch (error) {
-                                                    console.error("Erro ao salvar tempo:", error);
-                                                    alert("Erro ao salvar tempo: " + error.message);
-                                                    setEditandoTempo(prev => ({ ...prev, [key]: false }));
-                                                  }
-                                                }}
-                                              >
-                                                ✓
-                                              </Button>
-                                              <Button
-                                                size="sm"
-                                                variant="ghost"
-                                                className="h-6 w-6 p-0 text-red-600 hover:text-red-700"
-                                                onClick={() => {
-                                                  setEditandoTempo(prev => ({ ...prev, [key]: false }));
-                                                  setNovoTempo(prev => ({ ...prev, [key]: undefined }));
-                                                }}
-                                              >
-                                                ✕
-                                              </Button>
-                                            </div>
-                                          ) : (
-                                            <button
-                                              onClick={() => {
-                                                setEditandoTempo(prev => ({ ...prev, [key]: true }));
-                                                setNovoTempo(prev => ({ ...prev, [key]: ativ.tempo ?? 0 }));
-                                              }}
-                                              className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
-                                            >
-                                              {ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}
-                                            </button>
-                                          )}
-                                          </TableCell>
-                                          <TableCell className="text-sm font-semibold text-blue-600">
+                                        )}
+                                      </TableCell>
+                                      <TableCell className="text-sm">{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
+                                      <TableCell className="text-sm font-semibold text-blue-600">
                                     {grupo.folhas.length > 0 
                                       ? `${grupo.folhas.reduce((sum, f) => sum + (Number(f.tempo) || 0), 0).toFixed(1)}h`
                                       : '-'}
@@ -2177,9 +2000,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                           </>
                                         ) : (
                                           <>
-                                            <DropdownMenuItem onClick={() => handleOpenModal(ativ)}>
-                                              <Edit className="w-4 h-4 mr-2" /> Editar Atividade do Empreendimento
-                                            </DropdownMenuItem>
                                             <DropdownMenuItem onClick={() => handleOpenEtapaModal(ativ)}>
                                               <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
                                             </DropdownMenuItem>
@@ -2190,7 +2010,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                               <Edit2 className="w-4 h-4 mr-2" /> Editar Etapa em Folhas Específicas
                                             </DropdownMenuItem>
                                           </>
-                                          )}
+                                        )}
                                       </DropdownMenuContent>
                                     </DropdownMenu>
                                   </TableCell>
@@ -2267,7 +2087,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                      <TableHead>Etapa</TableHead>
                      <TableHead>Executor</TableHead>
                      <TableHead>Datas Planejadas</TableHead>
-                     <TableHead>Tempo</TableHead>
+                     <TableHead>Tempo Padrão</TableHead>
                      <TableHead>Tempo Total</TableHead>
                      <TableHead className="text-center w-[120px]">Ações</TableHead>
                      <TableHead className="w-[50px]"></TableHead>
@@ -2483,12 +2303,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                 })()
                               ) : (
                                 <span className="text-xs text-gray-400">-</span>
-                                )}
-                                </TableCell>
-                                <TableCell className="text-sm">
-                                  {ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}
-                                </TableCell>
-                                <TableCell className="font-semibold text-blue-600">
+                              )}
+                            </TableCell>
+                            <TableCell>{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
+                            <TableCell className="font-semibold text-blue-600">
                             {grupo.folhas.length > 0 
                               ? `${grupo.folhas.reduce((sum, f) => sum + (Number(f.tempo) || 0), 0).toFixed(1)}h`
                               : '-'}
@@ -2561,9 +2379,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                   </>
                                 ) : (
                                   <>
-                                    <DropdownMenuItem onClick={() => handleOpenModal(ativ)}>
-                                      <Edit className="w-4 h-4 mr-2" /> Editar Atividade do Empreendimento
-                                    </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => handleOpenEtapaModal(ativ)}>
                                       <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
                                     </DropdownMenuItem>
@@ -2749,6 +2564,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`✅ ========================================\n`);
       
       await fetchData();
+      if (onUpdate) onUpdate();
       
       let mensagem = `✅ Atividade "${atividade.atividade}" concluída em todas as folhas!\n`;
       if (concluidos > 0) {
@@ -3416,6 +3232,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`✅ ========================================\n`);
 
       await fetchData();
+      if (onUpdate) onUpdate();
 
       let mensagem = `✅ Etapa "${etapa}" concluída em todas as folhas!`;
       if (totalPlanejamentosConcluidos > 0) {
@@ -3847,6 +3664,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           onSuccess={() => {
             setIsModalOpen(false);
             fetchData();
+            if(onUpdate) onUpdate();
           }}
         />
       )}
@@ -3868,6 +3686,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         atividade={selectedAtividade}
         documentos={documentos}
         empreendimentoId={empreendimentoId}
+        onSuccess={() => {
+          fetchData();
+          if (onUpdate) onUpdate();
+        }}
       />
 
       <ExcluirDeFolhasModal
@@ -3879,6 +3701,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         atividade={selectedAtividade}
         documentos={documentos}
         empreendimentoId={empreendimentoId}
+        onSuccess={() => {
+          fetchData();
+          if (onUpdate) onUpdate();
+        }}
       />
 
       {isPlanejamentoModalOpen && atividadeParaPlanejar && (

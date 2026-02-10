@@ -62,6 +62,7 @@ export default function PavimentosTab({ empreendimentoId, onUpdate }) {
       setEditingPavimento(null);
       setShowForm(false);
       fetchPavimentos();
+      if (onUpdate) onUpdate();
     } catch (error) {
       console.error("Erro ao salvar pavimento:", error);
       alert("Erro ao salvar pavimento. Tente novamente.");
@@ -74,6 +75,7 @@ export default function PavimentosTab({ empreendimentoId, onUpdate }) {
     try {
       await Pavimento.delete(id);
       fetchPavimentos();
+      if (onUpdate) onUpdate();
     } catch (error) {
       console.error("Erro ao excluir pavimento:", error);
       alert("Erro ao excluir pavimento. Tente novamente.");

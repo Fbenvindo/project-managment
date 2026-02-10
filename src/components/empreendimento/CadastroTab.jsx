@@ -188,47 +188,26 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       
       // Inicializar revisões para todas as etapas, removendo as excluídas
       const revisoesCompletas = {};
-      console.log('🔍 CONSTRUINDO revisoesCompletas A PARTIR DE revisoesMap');
-      console.log('📋 revisoesMap ANTES de processar:', revisoesMap);
-      console.log('📋 ETAPAS do empreendimento:', ETAPAS);
-      
       ETAPAS.forEach(etapa => {
         // Usar APENAS as revisões mapeadas (dados + _revisoes_existentes)
+        // NÃO usar DEFAULT_REVISOES como fallback, pois pode sobrescrever revisões criadas
         const revisoesEtapaSet = revisoesMap[etapa];
-        console.log(`\n🔎 Processando ${etapa}:`);
-        console.log(`  revisoesMap[${etapa}]:`, revisoesEtapaSet);
-        console.log(`  É Set?`, revisoesEtapaSet instanceof Set);
-        console.log(`  Tamanho:`, revisoesEtapaSet?.size);
-        console.log(`  Valores:`, revisoesEtapaSet ? Array.from(revisoesEtapaSet) : 'N/A');
+        console.log(`🔎 Buscando ${etapa}:`, {
+          existe: !!revisoesEtapaSet,
+          isSet: revisoesEtapaSet instanceof Set,
+          size: revisoesEtapaSet?.size,
+          values: revisoesEtapaSet ? Array.from(revisoesEtapaSet) : 'N/A'
+        });
         
         let todasRevisoes = revisoesEtapaSet && revisoesEtapaSet.size > 0
           ? Array.from(revisoesEtapaSet).sort()
           : [];
-        
-        console.log(`  todasRevisoes APÓS conversão:`, todasRevisoes);
 
         const revisoesExcluidas = revisoesExcluidasMap[etapa] || new Set();
-        console.log(`  revisoesExcluidas:`, Array.from(revisoesExcluidas));
-        
         const filtradas = todasRevisoes.filter(rev => !revisoesExcluidas.has(rev));
-        console.log(`  filtradas FINAL:`, filtradas);
-        
-        // Se etapa não foi excluída mas ficou sem revisões, usar DEFAULT
-        const etapaEstaVisivel = !etapasExcluidasSet.has(etapa);
-
-        if (etapaEstaVisivel && filtradas.length === 0) {
-          // Se a etapa está visível mas ficou sem NENHUMA revisão (ou porque nunca teve, ou porque todas foram excluídas), 
-          // então resetamos para o padrão para que o usuário possa interagir.
-          revisoesCompletas[etapa] = DEFAULT_REVISOES;
-          console.log(`✅ Etapa ${etapa}: [${DEFAULT_REVISOES.join(', ')}] (Total: ${DEFAULT_REVISOES.length}) - FALLBACK DEFAULT`);
-        } else {
-          // Se tem revisões filtradas, ou se a etapa toda foi escondida, usamos a lista filtrada.
-          revisoesCompletas[etapa] = filtradas;
-          console.log(`✅ Etapa ${etapa}: [${filtradas.join(', ')}] (Total: ${filtradas.length})`);
-        }
+        revisoesCompletas[etapa] = filtradas;
+        console.log(`✅ Etapa ${etapa}: ${revisoesCompletas[etapa].join(', ')} (Total: ${revisoesCompletas[etapa].length})`);
       });
-      
-      console.log('🎯 revisoesCompletas COMPLETO:', JSON.stringify(revisoesCompletas, null, 2));
       
       // Log com stringify para evitar problema de referência do console
       console.log('📋 Revisões finais para setar no estado:', JSON.stringify(revisoesCompletas, null, 2));
@@ -268,25 +247,40 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
   const handleAddRevisao = (etapa) => {
     const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
-    let novaRevisao;
-    
     if (revisoesEtapa.length === 0) {
-      novaRevisao = 'R00';
-      console.log(`➕ Adicionando primeira revisão (${novaRevisao}) em ${etapa}`);
-    } else {
-      const ultimaRevisao = revisoesEtapa[revisoesEtapa.length - 1];
-      const numero = parseInt(ultimaRevisao.substring(1)) + 1;
-      novaRevisao = `R${String(numero).padStart(2, '0')}`;
-      console.log(`➕ Adicionando revisão ${novaRevisao} em ${etapa} (antes: ${revisoesEtapa.join(', ')})`);
+      // Se não há revisões, começar com R00
+      console.log(`➕ Adicionando primeira revisão (R00) em ${etapa}`);
+      setHasUnsavedChanges(true);
+      setRevisoesPorEtapa(prev => ({
+        ...prev,
+        [etapa]: ['R00']
+      }));
+      // Marcar revisão como existente nas linhas mesmo sem dados
+      setLinhas(prev => prev.map(linha => {
+        const novasDatas = { ...linha.datas };
+        if (!novasDatas[etapa]) {
+          novasDatas[etapa] = {};
+        }
+        if (!novasDatas[etapa]._revisoes_existentes) {
+          novasDatas[etapa]._revisoes_existentes = [];
+        }
+        if (!novasDatas[etapa]._revisoes_existentes.includes('R00')) {
+          novasDatas[etapa]._revisoes_existentes.push('R00');
+        }
+        return { ...linha, datas: novasDatas };
+      }));
+      return;
     }
+    const ultimaRevisao = revisoesEtapa[revisoesEtapa.length - 1];
+    const numero = parseInt(ultimaRevisao.substring(1)) + 1;
+    const novaRevisao = `R${String(numero).padStart(2, '0')}`;
 
-    // Atualizar estado local
+    console.log(`➕ Adicionando revisão ${novaRevisao} em ${etapa} (antes: ${revisoesEtapa.join(', ')})`);
     setHasUnsavedChanges(true);
     setRevisoesPorEtapa(prev => ({
       ...prev,
       [etapa]: [...(prev[etapa] || []), novaRevisao]
     }));
-    
     // Marcar revisão como existente nas linhas mesmo sem dados
     setLinhas(prev => prev.map(linha => {
       const novasDatas = { ...linha.datas };
@@ -302,8 +296,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       }
       return { ...linha, datas: novasDatas };
     }));
-    
-    console.log(`✅ Revisão ${novaRevisao} marcada em todas as linhas - SALVE PARA PERSISTIR`);
+    console.log(`✅ Revisão ${novaRevisao} marcada em todas as ${linhas.length} linhas`);
   };
 
   const handleRemoveRevisao = (etapa, revisao) => {
@@ -631,23 +624,17 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         datas: l.datas
       })));
 
-      // Processar em LOTES para evitar rate limit
-      console.log('⚡ Iniciando salvamento em lotes...');
+      // Processar em paralelo para performance
+      console.log('⚡ Iniciando salvamento paralelo...');
       let successCount = 0;
       let errorCount = 0;
       const updatedLinhas = new Map();
 
-      const BATCH_SIZE = 3; // Processar 3 linhas por vez
-      const DELAY_BETWEEN_BATCHES = 2000; // 2 segundos entre lotes
-
-      for (let i = 0; i < linhasParaSalvar.length; i += BATCH_SIZE) {
-        const batch = linhasParaSalvar.slice(i, i + BATCH_SIZE);
-        console.log(`\n📦 Processando lote ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(linhasParaSalvar.length / BATCH_SIZE)} (${batch.length} linhas)`);
-
-        const batchPromises = batch.map(async (linha, batchIdx) => {
-          const globalIdx = i + batchIdx;
+      // Criar promises para todos os salvamentos
+      const savePromises = linhasParaSalvar.map((linha, i) => 
+        (async () => {
           try {
-            console.log(`\n📨 [${globalIdx + 1}/${linhasParaSalvar.length}] Salvando linha: ${linha.id}`);
+            console.log(`\n📨 [${i + 1}/${linhasParaSalvar.length}] Salvando linha: ${linha.id}`);
             
             // Preservar metadados
             const datasComMetadados = {};
@@ -668,32 +655,35 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
               datas: datasComMetadados
             };
             
-            // GARANTIR que revisões criadas são salvas SEMPRE
+            // GARANTIR que revisões criadas são salvas mesmo que vazias
             const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
             etapasVisiveis.forEach(etapa => {
               const revisoesEtapa = revisoesPorEtapa[etapa];
-              // Salvar as revisões mesmo que estejam vazias (array vazio significa "etapa visível sem revisões customizadas")
-              if (!datasComMetadados[etapa]) {
-                datasComMetadados[etapa] = {};
+              if (revisoesEtapa && revisoesEtapa.length > 0) {
+                if (!datasComMetadados[etapa]) {
+                  datasComMetadados[etapa] = {};
+                }
+                // FORÇAR que _revisoes_existentes tem as revisões reais
+                datasComMetadados[etapa]._revisoes_existentes = revisoesEtapa;
               }
-              // SEMPRE salvar _revisoes_existentes, mesmo que seja array vazio ou tenha revisões
-              datasComMetadados[etapa]._revisoes_existentes = revisoesEtapa || [];
             });
             
             const linhaDataFinal = {
               ...linhaData,
               datas: datasComMetadados
             };
+            
+            console.log(`  Dados FINAL a salvar:`, linhaDataFinal);
 
             let result;
-            const isNew = linha.isNew || linha.id.toString().startsWith('temp-');
-            
-            // Retry com backoff exponencial
             let attempts = 0;
-            const maxAttempts = 5;
+            const maxAttempts = 3;
             
             while (attempts < maxAttempts) {
               try {
+                const isNew = linha.isNew || linha.id.toString().startsWith('temp-');
+                console.log(`  🔄 Tentativa ${attempts + 1}/${maxAttempts} (${isNew ? 'CREATE' : 'UPDATE'})`);
+                
                 if (isNew) {
                   result = await DataCadastro.create(linhaDataFinal);
                 } else {
@@ -703,13 +693,14 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 break;
               } catch (err) {
                 attempts++;
+                console.error(`  ❌ Tentativa ${attempts} falhou:`, err.message);
+                
                 if (attempts >= maxAttempts) {
                   throw err;
                 }
                 
-                // Backoff exponencial: 2s, 4s, 8s, 16s
-                const waitTime = 2000 * Math.pow(2, attempts - 1);
-                console.log(`  ⚠️ Tentativa ${attempts} falhou, aguardando ${waitTime}ms...`);
+                const waitTime = 1000 * attempts;
+                console.log(`  ⏳ Aguardando ${waitTime}ms...`);
                 await new Promise(resolve => setTimeout(resolve, waitTime));
               }
             }
@@ -720,17 +711,11 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
             errorCount++;
             console.error(`❌ ERRO na linha ${linha.id}:`, error);
           }
-        });
+        })()
+      );
 
-        // Aguardar este lote completar
-        await Promise.all(batchPromises);
-
-        // Aguardar entre lotes (exceto no último)
-        if (i + BATCH_SIZE < linhasParaSalvar.length) {
-          console.log(`⏳ Aguardando ${DELAY_BETWEEN_BATCHES}ms antes do próximo lote...`);
-          await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
-        }
-      }
+      // Executar todos os salvamentos em paralelo
+      await Promise.all(savePromises);
 
       // Atualizar estado local com os IDs salvos
       console.log(`\n✨ Atualizando ${successCount} linhas salvas no estado local`);
@@ -988,14 +973,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       </div>
     );
   }
-
-  // 🔍 DEBUG: Verificar estado de revisões no momento da renderização
-  console.log('🎬 RENDERIZAÇÃO - Estado atual de revisoesPorEtapa:', JSON.stringify(revisoesPorEtapa, null, 2));
-  console.log('📊 ETAPAS para renderizar:', ETAPAS);
-  ETAPAS.forEach(etapa => {
-    const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
-    console.log(`  ${etapa}: ${revisoesEtapa.length} revisões ->`, revisoesEtapa);
-  });
 
   return (
     <div className="space-y-4 relative">
