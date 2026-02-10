@@ -129,36 +129,15 @@ export const distribuirHorasPorDias = (dataInicio, horasTotais, limiteDiario = 8
 
       console.log(`   📅 ${diaKey}: Carga atual ${cargaAtual.toFixed(1)}h, Espaço ${espacoDisponivel.toFixed(1)}h`);
 
-      // Se for data fixa (manual), SEMPRE alocar no dia escolhido, ignorando limite de 8h
-      if (isStrictStartDate && tentativas === 1) {
-        const horasParaAlocar = horasRestantes;
-        const novaCarga = cargaAtual + horasParaAlocar;
-        
-        distribuicao[diaKey] = horasParaAlocar;
-        novaCargaDiaria[diaKey] = novaCarga;
-        horasRestantes = 0;
-        
-        console.log(`   🎯 Data fixa (manual): Alocado ${horasParaAlocar.toFixed(1)}h → Nova carga: ${novaCarga.toFixed(1)}h (sem limite)`);
-      }
-      // Alocar o que couber no dia (modo automático)
-      else if (espacoDisponivel > 0.01) {
+      // Alocar o que couber no dia, respeitando sempre o limite de 8h
+      if (espacoDisponivel > 0.01) {
         const horasParaAlocar = Math.min(espacoDisponivel, horasRestantes);
         
-        // **CRÍTICO**: Validar antes de alocar
-        const novaCarga = cargaAtual + horasParaAlocar;
-        
-        if (novaCarga > limiteDiario + 0.01 && !isStrictStartDate) {
-          console.error(`   ❌ ERRO: Tentativa de alocar ${horasParaAlocar.toFixed(1)}h resultaria em ${novaCarga.toFixed(1)}h (limite: ${limiteDiario}h)`);
-          // Pula para o próximo dia sem alocar
-          dataAtual = addDays(dataAtual, 1);
-          continue;
-        }
-        
         distribuicao[diaKey] = horasParaAlocar;
-        novaCargaDiaria[diaKey] = novaCarga;
+        novaCargaDiaria[diaKey] = cargaAtual + horasParaAlocar;
         horasRestantes -= horasParaAlocar;
         
-        console.log(`   ✅ Alocado: ${horasParaAlocar.toFixed(1)}h → Nova carga: ${novaCarga.toFixed(1)}h → Restante: ${horasRestantes.toFixed(1)}h`);
+        console.log(`   ✅ Alocado: ${horasParaAlocar.toFixed(1)}h → Nova carga: ${(cargaAtual + horasParaAlocar).toFixed(1)}h → Restante: ${horasRestantes.toFixed(1)}h`);
       }
     }
     
