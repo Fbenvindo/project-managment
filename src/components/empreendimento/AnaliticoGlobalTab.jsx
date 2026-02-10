@@ -3460,7 +3460,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       
       // Recarregar dados
       await fetchData();
-      if (onUpdate) onUpdate();
       
       alert(`✅ Tempo padrão de "${atividade.atividade}" atualizado para ${novoTempo}h neste empreendimento.`);
       
