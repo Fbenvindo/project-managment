@@ -102,6 +102,14 @@ export default function ActivityItemCalendar({
   const horasAlocadasDia = Number(plano.horas_por_dia?.[dayKey]) || 0;
   const horasExecutadasDia = Number(plano.horas_executadas_por_dia?.[dayKey]) || 0;
   
+  // Verificar se a atividade continua em dias futuros
+  const contemDiasFuturos = useMemo(() => {
+    if (!plano.horas_por_dia || typeof plano.horas_por_dia !== 'object') return false;
+    const dias = Object.keys(plano.horas_por_dia).sort();
+    const indiceDiaAtual = dias.indexOf(dayKey);
+    return indiceDiaAtual >= 0 && indiceDiaAtual < dias.length - 1;
+  }, [plano.horas_por_dia, dayKey]);
+  
   const isNaPlaylist = playlist.includes(plano.id);
 
   const getDocumentoDisplay = () => {
