@@ -621,17 +621,23 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         datas: l.datas
       })));
 
-      // Processar em paralelo para performance
-      console.log('⚡ Iniciando salvamento paralelo...');
+      // Processar em LOTES para evitar rate limit
+      console.log('⚡ Iniciando salvamento em lotes...');
       let successCount = 0;
       let errorCount = 0;
       const updatedLinhas = new Map();
 
-      // Criar promises para todos os salvamentos
-      const savePromises = linhasParaSalvar.map((linha, i) => 
-        (async () => {
+      const BATCH_SIZE = 5; // Processar 5 linhas por vez
+      const DELAY_BETWEEN_BATCHES = 1000; // 1 segundo entre lotes
+
+      for (let i = 0; i < linhasParaSalvar.length; i += BATCH_SIZE) {
+        const batch = linhasParaSalvar.slice(i, i + BATCH_SIZE);
+        console.log(`\n📦 Processando lote ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(linhasParaSalvar.length / BATCH_SIZE)} (${batch.length} linhas)`);
+
+        const batchPromises = batch.map(async (linha, batchIdx) => {
+          const globalIdx = i + batchIdx;
           try {
-            console.log(`\n📨 [${i + 1}/${linhasParaSalvar.length}] Salvando linha: ${linha.id}`);
+            console.log(`\n📨 [${globalIdx + 1}/${linhasParaSalvar.length}] Salvando linha: ${linha.id}`);
             
             // Preservar metadados
             const datasComMetadados = {};
@@ -669,38 +675,16 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
               ...linhaData,
               datas: datasComMetadados
             };
-            
-            console.log(`  Dados FINAL a salvar:`, linhaDataFinal);
 
             let result;
-            let attempts = 0;
-            const maxAttempts = 3;
+            const isNew = linha.isNew || linha.id.toString().startsWith('temp-');
             
-            while (attempts < maxAttempts) {
-              try {
-                const isNew = linha.isNew || linha.id.toString().startsWith('temp-');
-                console.log(`  🔄 Tentativa ${attempts + 1}/${maxAttempts} (${isNew ? 'CREATE' : 'UPDATE'})`);
-                
-                if (isNew) {
-                  result = await DataCadastro.create(linhaDataFinal);
-                } else {
-                  result = await DataCadastro.update(linha.id, linhaDataFinal);
-                }
-                console.log(`  ✅ Sucesso! ID: ${result.id}`);
-                break;
-              } catch (err) {
-                attempts++;
-                console.error(`  ❌ Tentativa ${attempts} falhou:`, err.message);
-                
-                if (attempts >= maxAttempts) {
-                  throw err;
-                }
-                
-                const waitTime = 1000 * attempts;
-                console.log(`  ⏳ Aguardando ${waitTime}ms...`);
-                await new Promise(resolve => setTimeout(resolve, waitTime));
-              }
+            if (isNew) {
+              result = await DataCadastro.create(linhaDataFinal);
+            } else {
+              result = await DataCadastro.update(linha.id, linhaDataFinal);
             }
+            console.log(`  ✅ Sucesso! ID: ${result.id}`);
 
             successCount++;
             updatedLinhas.set(linha.id, result);
@@ -708,11 +692,17 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
             errorCount++;
             console.error(`❌ ERRO na linha ${linha.id}:`, error);
           }
-        })()
-      );
+        });
 
-      // Executar todos os salvamentos em paralelo
-      await Promise.all(savePromises);
+        // Aguardar este lote completar
+        await Promise.all(batchPromises);
+
+        // Aguardar entre lotes (exceto no último)
+        if (i + BATCH_SIZE < linhasParaSalvar.length) {
+          console.log(`⏳ Aguardando ${DELAY_BETWEEN_BATCHES}ms antes do próximo lote...`);
+          await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
+        }
+      }
 
       // Atualizar estado local com os IDs salvos
       console.log(`\n✨ Atualizando ${successCount} linhas salvas no estado local`);
