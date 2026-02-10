@@ -767,6 +767,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   }, [documentos]);
 
   const [planejamentos, setPlanejamentos] = useState([]);
+  const [allActivities, setAllActivities] = useState([]);
+  const [empreendimentoData, setEmpreendimentoData] = useState(null);
 
   const [allEmpreendimentos, setAllEmpreendimentos] = useState([]);
 
@@ -793,8 +795,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         retryWithBackoff(() => AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAlteracoes'),
         retryWithBackoff(() => Usuario.list(), 3, 500, 'fetchUsuarios'),
         retryWithBackoff(() => Empreendimento.list(), 3, 500, 'fetchAllEmpreendimentos')
-      ]).then(([allActivities, empreendimentoData, alteracoesData, usuariosData, todosEmpreendimentos]) => {
-        processSecondWaveData(allActivities, empreendimentoData, alteracoesData, usuariosData, todosEmpreendimentos, projectActivities, planejamentosData, documentosData, disciplinasData);
+      ]).then(([allActivitiesData, empData, alteracoesData, usuariosData, todosEmpreendimentos]) => {
+        setAllActivities(allActivitiesData || []);
+        setEmpreendimentoData(empData || []);
+        processSecondWaveData(allActivitiesData, empData, alteracoesData, usuariosData, todosEmpreendimentos, projectActivities, planejamentosData, documentosData, disciplinasData);
       });
 
       setDocumentos(documentosData || []);
@@ -2058,13 +2062,13 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                                       3, 500, 'refreshAfterTempoUpdate'
                                                     );
                                                     
-                                                    // Reprocessar com dados atualizados
+                                                    // Reprocessar com TODOS os dados (incluindo allActivities já carregadas)
                                                     processCombinedActivities(
                                                       updatedProjectActivities,
-                                                      null,
+                                                      allActivities,
                                                       planejamentos,
                                                       documentos,
-                                                      null,
+                                                      empreendimentoData,
                                                       disciplinas
                                                     );
                                                   } catch (error) {
