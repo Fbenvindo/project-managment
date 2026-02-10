@@ -1308,7 +1308,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
         if (foundOverride) {
             await retryWithBackoff(() => Atividade.update(foundOverride.id, { etapa: newEtapa }), 3, 500, 'updateAtividadeOverride');
-            alert(`A etapa para "${selectedAtividade.atividade}" foi atualizada para "${newEtapa}" para todo este empreendimento.`);
         } else {
             const overrideAtividade = {
                 ...atividadeOriginal,
@@ -1320,7 +1319,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             delete overrideAtividade.id;
 
             await retryWithBackoff(() => Atividade.create(overrideAtividade), 3, 500, 'createAtividadeOverride');
-            alert(`A etapa para "${selectedAtividade.atividade}" foi definida como "${newEtapa}" para todo este empreendimento. Futuros planejamentos e visualizações de atividades "Disponíveis" usarão esta nova etapa.`);
         }
 
       } else {
@@ -1329,13 +1327,29 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         );
         
         await Promise.all(updatePromises);
-        
-        alert(`${allPlanejamentos.length} ocorrência(s) da atividade foram atualizadas para a etapa "${newEtapa}".`);
       }
       
-      // Recarregar alterações
-      const alteracoes = await AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId });
+      // Atualizar estado local
+      const baseAtividadeId = selectedAtividade.base_atividade_id;
+      setCombinedActivities(prev => prev.map(ativ => {
+        if (ativ.base_atividade_id === baseAtividadeId || ativ.id === baseAtividadeId) {
+          return { ...ativ, etapa: newEtapa };
+        }
+        return ativ;
+      }));
+      
+      // Recarregar alterações e planejamentos
+      const [alteracoes, planejamentosAtualizados] = await Promise.all([
+        AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId }),
+        PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId })
+      ]);
       setAlteracoesEtapa(alteracoes || []);
+      setPlanejamentos(planejamentosAtualizados || []);
+      setIsEtapaModalOpen(false);
+      
+      alert(allPlanejamentos.length === 0 
+        ? `A etapa para "${selectedAtividade.atividade}" foi atualizada para "${newEtapa}" para todo este empreendimento.`
+        : `${allPlanejamentos.length} ocorrência(s) da atividade foram atualizadas para a etapa "${newEtapa}".`);
   
     } catch (error) {
       console.error("Erro ao atualizar etapa:", error);
