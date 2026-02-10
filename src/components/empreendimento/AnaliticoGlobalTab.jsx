@@ -2517,6 +2517,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                   </>
                                 ) : (
                                   <>
+                                    <DropdownMenuItem onClick={() => handleOpenModal(ativ)}>
+                                      <Edit className="w-4 h-4 mr-2" /> Editar Atividade do Empreendimento
+                                    </DropdownMenuItem>
                                     <DropdownMenuItem onClick={() => handleOpenEtapaModal(ativ)}>
                                       <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
                                     </DropdownMenuItem>
