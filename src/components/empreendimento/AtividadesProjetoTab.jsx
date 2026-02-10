@@ -60,10 +60,8 @@ const AtividadeFormDialog = ({ open, setOpen, empreendimentoId, disciplinas, onU
           empreendimento_id: empreendimentoId,
           documento_id: selectedDocumentoId || atividade.documento_id
         };
-        const atividadeAtualizada = await Atividade.update(atividade.id, payload);
-        
-        // Chamar onUpdate com a atividade atualizada para atualização local
-        if (onUpdate) onUpdate(atividadeAtualizada);
+        await Atividade.update(atividade.id, payload);
+        onUpdate();
         setOpen(false);
       } else {
         // CRIAÇÃO: Cria atividade vinculada à folha selecionada
@@ -73,10 +71,8 @@ const AtividadeFormDialog = ({ open, setOpen, empreendimentoId, disciplinas, onU
           empreendimento_id: empreendimentoId,
           documento_id: selectedDocumentoId || null
         };
-        const novaAtividade = await Atividade.create(payload);
-        
-        // Chamar onUpdate com a nova atividade para atualização local
-        if (onUpdate) onUpdate(novaAtividade);
+        await Atividade.create(payload);
+        onUpdate();
         setOpen(false);
       }
     } catch (error) {
@@ -201,57 +197,17 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
   const [showPlanejamentoModal, setShowPlanejamentoModal] = useState(false);
   const [atividadeParaPlanejar, setAtividadeParaPlanejar] = useState(null);
   const [selectedAtividades, setSelectedAtividades] = useState([]);
-  
-  // Estado local para atividades
-  const [localAtividades, setLocalAtividades] = useState(atividades);
-  
-  // Sincronizar estado local com props
-  React.useEffect(() => {
-    setLocalAtividades(atividades);
-  }, [atividades]);
 
   const handleEdit = (atividade) => {
     setEditingAtividade(atividade);
     setShowForm(true);
-  };
-  
-  const handleUpdateLocal = (atividadeAtualizada) => {
-    if (Array.isArray(atividadeAtualizada)) {
-      // Múltiplas atividades
-      setLocalAtividades(prev => {
-        const updated = [...prev];
-        atividadeAtualizada.forEach(ativ => {
-          const index = updated.findIndex(a => a.id === ativ.id);
-          if (index !== -1) {
-            updated[index] = ativ;
-          } else {
-            updated.push(ativ);
-          }
-        });
-        return updated;
-      });
-    } else if (atividadeAtualizada?.id) {
-      // Single atividade - atualizar ou adicionar
-      setLocalAtividades(prev => {
-        const index = prev.findIndex(a => a.id === atividadeAtualizada.id);
-        if (index !== -1) {
-          const updated = [...prev];
-          updated[index] = atividadeAtualizada;
-          return updated;
-        } else {
-          return [...prev, atividadeAtualizada];
-        }
-      });
-    }
   };
 
   const handleDelete = async (id) => {
     if (window.confirm("Tem certeza que deseja excluir esta atividade específica do projeto?")) {
       try {
         await Atividade.delete(id);
-        
-        // Remover do estado local sem reload
-        setLocalAtividades(prev => prev.filter(a => a.id !== id));
+        onUpdate();
       } catch (error) {
         console.error("Erro ao excluir atividade:", error);
         alert("Erro ao excluir atividade");
@@ -344,7 +300,7 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
   const filteredAtividades = useMemo(() => {
     const disciplinasEspecificas = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
     
-    const todasAtividades = (localAtividades || [])
+    const todasAtividades = (atividades || [])
       .filter(a => {
         const ehDisciplinaEspecifica = a.disciplina && disciplinasEspecificas.includes(a.disciplina);
         
@@ -389,7 +345,7 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
       });
     console.log("🔍 Total de atividades filtradas:", todasAtividades.length);
     return todasAtividades;
-  }, [localAtividades, empreendimentoId, documentoIdsDoEmpreendimento, searchTerm, etapaFilter, disciplinaFilter, subdisciplinaFilter]);
+  }, [atividades, empreendimentoId, documentoIdsDoEmpreendimento, searchTerm, etapaFilter, disciplinaFilter, subdisciplinaFilter]);
 
   // Agrupar atividades por disciplina
   const atividadesPorDisciplina = useMemo(() => {
@@ -422,7 +378,7 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
         setOpen={setShowForm}
         empreendimentoId={empreendimentoId}
         disciplinas={disciplinas}
-        onUpdate={handleUpdateLocal}
+        onUpdate={onUpdate}
         atividadeToEdit={editingAtividade}
         documentos={documentos}
       />
