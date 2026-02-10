@@ -361,18 +361,17 @@ const EditarEtapaEmFolhasModal = ({ isOpen, onClose, atividade, documentos, empr
       mensagem += `\n\nFolhas: ${folhasNames}`;
 
       // Atualizar estado local
-      const baseAtividadeId = atividade.base_atividade_id || atividade.id;
       if (onSuccess) {
         onSuccess(); // Chamar callback para atualizar no componente pai
       }
       
       // Recarregar alterações e planejamentos
-      const [alteracoes, planejamentosAtualizados] = await Promise.all([
+      const [alteracoes, planejamentosAtuais] = await Promise.all([
         AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId }),
         PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId })
       ]);
       setAlteracoesEtapa(alteracoes || []);
-      setPlanejamentos(planejamentosAtualizados || []);
+      setPlanejamentos(planejamentosAtuais || []);
       
       onClose();
       alert(mensagem);
