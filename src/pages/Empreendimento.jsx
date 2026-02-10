@@ -261,18 +261,10 @@ export default function EmpreendimentoPage() {
 
   }, [sharedData.loaded, sharedData.loading, tabData, loadSharedData, loadTabData]);
 
-  const forceFullReload = useCallback(() => {
-    setTabData({
-      documentos: { data: [], loaded: false, loading: false },
-      pavimentos: { data: [], loaded: false, loading: false },
-      atividades_projeto: { data: [], loaded: false, loading: false },
-      gestao: { data: [], loaded: false, loading: false },
-      controle_os: { data: [], loaded: false, loading: false }
-    });
-    setSharedData(prev => ({ ...prev, loaded: false }));
-    loadEmpreendimento();
-    handleTabChange(activeTab || 'documentos');
-  }, [activeTab, loadEmpreendimento, handleTabChange]);
+  const handleOptimisticUpdate = useCallback(() => {
+    // Função vazia - as abas devem se auto-gerenciar sem forçar reload
+    console.log('Update otimista - abas gerenciando seus próprios dados');
+  }, []);
 
   useEffect(() => {
     loadEmpreendimento();
@@ -348,7 +340,7 @@ export default function EmpreendimentoPage() {
                 planejamentos={tabData.documentos.data.planejamentos || []}
                 usuarios={sharedData.usuarios}
                 pavimentos={tabData.pavimentos.data || []}
-                onUpdate={forceFullReload}
+                onUpdate={handleOptimisticUpdate}
                 isLoading={false}
                 etapaParaPlanejamento={etapaParaPlanejamento}
                 onEtapaChange={setEtapaParaPlanejamento}
@@ -373,10 +365,7 @@ export default function EmpreendimentoPage() {
               <PavimentosTab
                 empreendimentoId={empreendimento?.id}
                 pavimentosIniciais={tabData.pavimentos.data}
-                onUpdate={() => {
-                   setTabData(prev => ({ ...prev, pavimentos: { ...prev.pavimentos, loaded: false } }));
-                   loadTabData('pavimentos');
-                }}
+                onUpdate={handleOptimisticUpdate}
                 isLoading={false}
               />
             ) : null}
@@ -391,7 +380,7 @@ export default function EmpreendimentoPage() {
             ) : tabData.atividades_projeto.loaded && sharedData.loaded && tabData.documentos.loaded && tabData.pavimentos.loaded ? (
               <AnaliticoGlobalTab
                 empreendimentoId={empreendimento?.id}
-                onUpdate={forceFullReload}
+                onUpdate={handleOptimisticUpdate}
               />
             ) : null}
           </TabsContent>
@@ -436,7 +425,7 @@ export default function EmpreendimentoPage() {
                   usuarios={sharedData.usuarios}
                   execucoes={sharedData.execucoes || []}
                   pavimentos={tabData.pavimentos.data || []}
-                  onUpdate={forceFullReload}
+                  onUpdate={handleOptimisticUpdate}
                 />
               ) : null}
             </TabsContent>
