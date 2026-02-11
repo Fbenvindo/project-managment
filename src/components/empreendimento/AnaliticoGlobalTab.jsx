@@ -865,7 +865,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       }));
 
       // Adicionar atividades de Documentação (sempre visíveis)
-      const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
+      const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação', 'Qualidade'];
       const atividadesDocumentacao = [];
       
       allGenericActivitiesMap.forEach(baseAtividade => {
@@ -1155,7 +1155,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   }, [combinedActivities, filters]);
 
   const atividadesPorDisciplina = useMemo(() => {
-    const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
+    const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação', 'Qualidade'];
     const grupos = {};
     const gruposDocumentacao = {};
     
@@ -1761,7 +1761,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
          )}
 
         {atividadesPorDisciplina.map(([disciplina, grupos]) => {
-          const isDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina);
+          const isDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação', 'Qualidade'].includes(disciplina);
           const subdisciplinasMap = isDocumentacao ? grupos : null;
           const atividadesList = isDocumentacao ? null : grupos;
           
