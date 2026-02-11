@@ -866,61 +866,94 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           base_atividade_id: ativ.id,
       }));
 
+      // Listas de atividades que devem se multiplicar por pavimento
+      const atividadesPorPavimento = [
+        "Confecção de P- (Paisagismo)",
+        "Confecção de P- (Pontos)",
+        "Confecção AC-",
+        "Confecção F-",
+        "Confecção de L-",
+        "Confecção de E-",
+        "Confecção de A-",
+        "Confecção de D- (Decoração)",
+        "Markup",
+        "Preparação de modelo inicial"
+      ];
+
       // Adicionar atividades de Documentação (sempre visíveis)
       const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
       const atividadesDocumentacao = [];
-      
+
       allGenericActivitiesMap.forEach(baseAtividade => {
         if (disciplinasDocumentacao.includes(baseAtividade.disciplina)) {
           const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
           const etapaValida = etapasCadastradas.length === 0 || etapasCadastradas.includes(baseAtividade.etapa);
-          
+
           if (!isExcludedFromProject && etapaValida) {
             const override = overrideActivitiesGlobalMap.get(baseAtividade.id);
             const etapaCorreta = override ? override.etapa : baseAtividade.etapa;
-            
-            // Verificar se existe planejamento geral (sem documento_id) para esta atividade
-            const planKey = `null-${baseAtividade.id}`;
-            const existingPlan = planejamentosMap.get(planKey);
-            
-            if (existingPlan) {
-              // Se há planejamento geral, mostrar como "Planejada"
-              atividadesDocumentacao.push({
-                ...baseAtividade,
-                id: existingPlan.id,
-                uniqueId: `plano-${existingPlan.id}`,
-                atividade: existingPlan.descritivo || baseAtividade.atividade,
-                tempo: existingPlan.tempo_planejado,
-                source: 'Catálogo',
-                source_documento_id: null,
-                status: 'Planejada',
-                isEditable: false,
-                etapa: existingPlan.etapa || etapaCorreta,
-                executor_principal: existingPlan.executor_principal,
-                base_atividade_id: baseAtividade.id,
+            const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
+            const tempoBase = override?.tempo !== undefined && override?.tempo !== null 
+              ? override.tempo 
+              : (baseAtividade.tempo || 0);
+
+            const nomeAtividade = baseAtividade.atividade || '';
+            const isPavimentoActivity = atividadesPorPavimento.some(nome => nomeAtividade.includes(nome));
+
+            // Se é atividade de pavimento, criar uma entrada para cada pavimento
+            if (isPavimentoActivity && (pavimentosData || []).length > 0) {
+              (pavimentosData || []).forEach((pav, index) => {
+                atividadesDocumentacao.push({
+                  ...baseAtividade,
+                  id: baseAtividade.id,
+                  uniqueId: `doc-${baseAtividade.id}-pav-${index}`,
+                  atividade: `${baseAtividade.atividade} (${pav.nome})`,
+                  tempo: tempoBase,
+                  source: 'Catálogo',
+                  source_documento_id: null,
+                  source_pavimento_id: pav.id,
+                  status: 'Disponível',
+                  isEditable: false,
+                  etapa: etapaCorreta,
+                  executor_principal: executorPrincipal,
+                  base_atividade_id: baseAtividade.id,
+                });
               });
             } else {
-              // Se não há planejamento, mostrar como "Disponível"
-               const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
+              // Atividades normais
+              const planKey = `null-${baseAtividade.id}`;
+              const existingPlan = planejamentosMap.get(planKey);
 
-               // Aplicar override de tempo se existir
-               const tempoFinal = override?.tempo !== undefined && override?.tempo !== null 
-                 ? override.tempo 
-                 : (baseAtividade.tempo || 0);
-
-               atividadesDocumentacao.push({
-                 ...baseAtividade,
-                 uniqueId: `doc-${baseAtividade.id}`,
-                 id: baseAtividade.id,
-                 tempo: tempoFinal,
-                 source: 'Catálogo',
-                 source_documento_id: null,
-                 status: 'Disponível',
-                 isEditable: false,
-                 etapa: etapaCorreta,
-                 executor_principal: executorPrincipal,
-                 base_atividade_id: baseAtividade.id,
-               });
+              if (existingPlan) {
+                atividadesDocumentacao.push({
+                  ...baseAtividade,
+                  id: existingPlan.id,
+                  uniqueId: `plano-${existingPlan.id}`,
+                  atividade: existingPlan.descritivo || baseAtividade.atividade,
+                  tempo: existingPlan.tempo_planejado,
+                  source: 'Catálogo',
+                  source_documento_id: null,
+                  status: 'Planejada',
+                  isEditable: false,
+                  etapa: existingPlan.etapa || etapaCorreta,
+                  executor_principal: existingPlan.executor_principal,
+                  base_atividade_id: baseAtividade.id,
+                });
+              } else {
+                atividadesDocumentacao.push({
+                  ...baseAtividade,
+                  uniqueId: `doc-${baseAtividade.id}`,
+                  id: baseAtividade.id,
+                  tempo: tempoBase,
+                  source: 'Catálogo',
+                  source_documento_id: null,
+                  status: 'Disponível',
+                  isEditable: false,
+                  etapa: etapaCorreta,
+                  executor_principal: executorPrincipal,
+                  base_atividade_id: baseAtividade.id,
+                });
+              }
             }
           }
         }
