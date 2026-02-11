@@ -1003,12 +1003,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           // Verificar tipo de contagem
           const tipoContagem = baseAtividade.tipo_contagem || 'normal';
           
-          // Para atividades normais, verificar correspondência exata
-          const disciplinaMatch = baseAtividade.disciplina === disciplinaDoc;
-          const subdisciplinaMatch = subdisciplinasDoc.includes(baseAtividade.subdisciplina);
+          let disciplinaMatch, subdisciplinaMatch;
           
           if (tipoContagem === 'por_disciplina') {
-            // Para atividades "por_disciplina", verificar se já processamos para esta disciplina
+            // Para atividades "por_disciplina", aparecer para TODAS as disciplinas dos documentos
+            // Verificar se já processamos para esta disciplina
             const disciplinaKey = `${baseAtividade.id}-${baseAtividade.etapa}-${baseAtividade.subdisciplina}-${disciplinaDoc}`;
             
             // Se já processamos esta atividade+etapa+subdisciplina para esta disciplina, pular
@@ -1016,6 +1015,14 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
               return;
             }
             disciplinaEtapaCombinacoes.set(disciplinaKey, true);
+            
+            // Não filtrar por disciplina para atividades "por_disciplina"
+            disciplinaMatch = true;
+            subdisciplinaMatch = subdisciplinasDoc.includes(baseAtividade.subdisciplina);
+          } else {
+            // Para atividades normais, verificar correspondência exata
+            disciplinaMatch = baseAtividade.disciplina === disciplinaDoc;
+            subdisciplinaMatch = subdisciplinasDoc.includes(baseAtividade.subdisciplina);
           }
 
           if (disciplinaMatch && subdisciplinaMatch) {
