@@ -1063,28 +1063,36 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                   base_atividade_id: baseAtividade.id,
                 });
               } else {
-                // Aplicar override de tempo se existir
-                const tempoComOverride = override?.tempo !== undefined && override?.tempo !== null
-                  ? override.tempo
-                  : (baseAtividade.tempo || 0);
-                const tempoFinal = tempoComOverride * fatorDificuldade;
+                 // Aplicar override de tempo se existir
+                 const tempoComOverride = override?.tempo !== undefined && override?.tempo !== null
+                   ? override.tempo
+                   : (baseAtividade.tempo || 0);
+                 let tempoFinal = tempoComOverride * fatorDificuldade;
 
-                documentActivities.push({
-                    ...baseAtividade,
-                    uniqueId: `avail-${doc.id}-${baseAtividade.id}`,
-                    id: baseAtividade.id,
-                    tempo: tempoFinal,
-                    source: sourceDisplay,
-                    source_documento_id: doc.id,
-                    source_documento_numero: doc.numero,
-                    source_documento_arquivo: doc.arquivo,
-                    status: 'Disponível',
-                    isEditable: false,
-                    etapa: etapaCorreta,
-                    executor_principal: executorPrincipal,
-                    base_atividade_id: baseAtividade.id,
-                  });
-              }
+                 // Multiplicar tempo se for atividade especial
+                 const nomeAtividade = baseAtividade.atividade || '';
+                 if (atividadesPorPavimento.some(nome => nomeAtividade.includes(nome))) {
+                   tempoFinal = tempoFinal * numPavimentos;
+                 } else if (atividadesPorFolha.some(nome => nomeAtividade.includes(nome))) {
+                   tempoFinal = tempoFinal * numFolhas;
+                 }
+
+                 documentActivities.push({
+                     ...baseAtividade,
+                     uniqueId: `avail-${doc.id}-${baseAtividade.id}`,
+                     id: baseAtividade.id,
+                     tempo: tempoFinal,
+                     source: sourceDisplay,
+                     source_documento_id: doc.id,
+                     source_documento_numero: doc.numero,
+                     source_documento_arquivo: doc.arquivo,
+                     status: 'Disponível',
+                     isEditable: false,
+                     etapa: etapaCorreta,
+                     executor_principal: executorPrincipal,
+                     base_atividade_id: baseAtividade.id,
+                   });
+               }
           }
         });
       });
