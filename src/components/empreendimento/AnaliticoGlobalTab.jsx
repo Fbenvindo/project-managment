@@ -864,9 +864,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           base_atividade_id: ativ.id,
       }));
 
-      // Adicionar atividades de Documentação (sempre visíveis)
+      // Adicionar atividades das subdisciplinas de Documentação (aparecem para cada disciplina dos documentos)
       const subdisciplinasDocumentacao = ['Apoio', 'BIM', 'Coordenação', 'Qualidade'];
       const atividadesDocumentacao = [];
+      
+      // Mapa para rastrear combinações já processadas
+      const combinacoesDocumentacao = new Map();
       
       allGenericActivitiesMap.forEach(baseAtividade => {
         if (subdisciplinasDocumentacao.includes(baseAtividade.subdisciplina)) {
@@ -876,50 +879,62 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           if (!isExcludedFromProject && etapaValida) {
             const override = overrideActivitiesGlobalMap.get(baseAtividade.id);
             const etapaCorreta = override ? override.etapa : baseAtividade.etapa;
+            const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
+            const tempoFinal = override?.tempo !== undefined && override?.tempo !== null 
+              ? override.tempo 
+              : (baseAtividade.tempo || 0);
             
-            // Verificar se existe planejamento geral (sem documento_id) para esta atividade
-            const planKey = `null-${baseAtividade.id}`;
-            const existingPlan = planejamentosMap.get(planKey);
-            
-            if (existingPlan) {
-              // Se há planejamento geral, mostrar como "Planejada"
-              atividadesDocumentacao.push({
-                ...baseAtividade,
-                id: existingPlan.id,
-                uniqueId: `plano-${existingPlan.id}`,
-                atividade: existingPlan.descritivo || baseAtividade.atividade,
-                tempo: existingPlan.tempo_planejado,
-                source: 'Catálogo',
-                source_documento_id: null,
-                status: 'Planejada',
-                isEditable: false,
-                etapa: existingPlan.etapa || etapaCorreta,
-                executor_principal: existingPlan.executor_principal,
-                base_atividade_id: baseAtividade.id,
-              });
-            } else {
-              // Se não há planejamento, mostrar como "Disponível"
-               const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
-
-               // Aplicar override de tempo se existir
-               const tempoFinal = override?.tempo !== undefined && override?.tempo !== null 
-                 ? override.tempo 
-                 : (baseAtividade.tempo || 0);
-
-               atividadesDocumentacao.push({
-                 ...baseAtividade,
-                 uniqueId: `doc-${baseAtividade.id}`,
-                 id: baseAtividade.id,
-                 tempo: tempoFinal,
-                 source: 'Catálogo',
-                 source_documento_id: null,
-                 status: 'Disponível',
-                 isEditable: false,
-                 etapa: etapaCorreta,
-                 executor_principal: executorPrincipal,
-                 base_atividade_id: baseAtividade.id,
-               });
-            }
+            // Para cada disciplina presente nos documentos, criar uma entrada
+            disciplinasNosDocumentos.forEach(disciplinaDoc => {
+              const disciplinaKey = `${baseAtividade.id}-${baseAtividade.etapa}-${baseAtividade.subdisciplina}-${disciplinaDoc}`;
+              
+              // Evitar duplicatas
+              if (combinacoesDocumentacao.has(disciplinaKey)) {
+                return;
+              }
+              combinacoesDocumentacao.set(disciplinaKey, true);
+              
+              // Verificar se existe planejamento para esta combinação
+              const planKey = `null-${baseAtividade.id}`;
+              const existingPlan = planejamentosMap.get(planKey);
+              
+              if (existingPlan) {
+                // Se há planejamento geral, mostrar como "Planejada"
+                atividadesDocumentacao.push({
+                  ...baseAtividade,
+                  id: existingPlan.id,
+                  uniqueId: `plano-${existingPlan.id}-${disciplinaDoc}`,
+                  atividade: existingPlan.descritivo || baseAtividade.atividade,
+                  tempo: existingPlan.tempo_planejado,
+                  source: 'Catálogo',
+                  source_documento_id: null,
+                  source_disciplina: disciplinaDoc,
+                  status: 'Planejada',
+                  isEditable: false,
+                  etapa: existingPlan.etapa || etapaCorreta,
+                  executor_principal: existingPlan.executor_principal,
+                  base_atividade_id: baseAtividade.id,
+                  tipo_contagem: 'por_disciplina',
+                });
+              } else {
+                // Se não há planejamento, mostrar como "Disponível"
+                atividadesDocumentacao.push({
+                  ...baseAtividade,
+                  uniqueId: `doc-${baseAtividade.id}-${disciplinaDoc}`,
+                  id: baseAtividade.id,
+                  tempo: tempoFinal,
+                  source: 'Catálogo',
+                  source_documento_id: null,
+                  source_disciplina: disciplinaDoc,
+                  status: 'Disponível',
+                  isEditable: false,
+                  etapa: etapaCorreta,
+                  executor_principal: executorPrincipal,
+                  base_atividade_id: baseAtividade.id,
+                  tipo_contagem: 'por_disciplina',
+                });
+              }
+            });
           }
         }
       });
