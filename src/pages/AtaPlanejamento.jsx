@@ -47,6 +47,47 @@ const AutoResizeTextarea = ({ value, onChange, className, ...props }) => {
   );
 };
 
+// Componente para input de resposta com debounce
+const RespostaInput = ({ value, onChange, onRemove }) => {
+  const [localValue, setLocalValue] = useState(value || '');
+  const timeoutRef = useRef(null);
+  
+  useEffect(() => {
+    setLocalValue(value || '');
+  }, [value]);
+  
+  const handleChange = (e) => {
+    const newValue = e.target.value;
+    setLocalValue(newValue);
+    
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+    
+    timeoutRef.current = setTimeout(() => {
+      onChange(newValue);
+    }, 300);
+  };
+  
+  return (
+    <div className="flex gap-1 items-start print:hidden">
+      <AutoResizeTextarea
+        value={localValue}
+        onChange={handleChange}
+        className="text-sm flex-1 resize-none overflow-hidden min-h-[40px]"
+        placeholder="Digite a resposta..."
+      />
+      <button
+        onClick={onRemove}
+        className="text-red-500 hover:text-red-700 p-1"
+        title="Remover resposta"
+      >
+        <Trash2 className="w-3 h-3" />
+      </button>
+    </div>
+  );
+};
+
 const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/577f93874_logo_Interativa_versao_final_sem_fundo_0002.png";
 
 const STATUS_OPTIONS = [
@@ -1192,49 +1233,23 @@ export default function AtaPlanejamento() {
                         <div className="flex gap-2">
                           <label className="text-xs font-medium text-gray-600 min-w-[80px] pt-1">Respostas:</label>
                           <div className="flex-1 space-y-2">
-                            {(prov.respostas || []).map((resp, rIdx) => {
-                              const [localValue, setLocalValue] = React.useState(resp || '');
-                              const timeoutRef = React.useRef(null);
-                              
-                              React.useEffect(() => {
-                                setLocalValue(resp || '');
-                              }, [resp]);
-                              
-                              return (
-                              <div key={rIdx} className="flex gap-1 items-start print:hidden">
-                                <AutoResizeTextarea
-                                  value={localValue}
-                                  onChange={(e) => {
-                                    setLocalValue(e.target.value);
-                                    
-                                    if (timeoutRef.current) {
-                                      clearTimeout(timeoutRef.current);
-                                    }
-                                    
-                                    timeoutRef.current = setTimeout(() => {
-                                      setHasUnsavedChanges(true);
-                                      const novasRespostas = [...(prov.respostas || [])];
-                                      novasRespostas[rIdx] = e.target.value;
-                                      handleUpdateProvidencia(prov.id, 'respostas', novasRespostas);
-                                    }, 300);
-                                  }}
-                                  className="text-sm flex-1 resize-none overflow-hidden min-h-[40px]"
-                                  placeholder="Digite a resposta..."
-                                />
-                                <button
-                                  onClick={() => {
-                                    setHasUnsavedChanges(true);
-                                    const novasRespostas = (prov.respostas || []).filter((_, i) => i !== rIdx);
-                                    handleUpdateProvidencia(prov.id, 'respostas', novasRespostas);
-                                  }}
-                                  className="text-red-500 hover:text-red-700 p-1"
-                                  title="Remover resposta"
-                                >
-                                  <Trash2 className="w-3 h-3" />
-                                </button>
-                              </div>
-                            );
-                            })}
+                            {(prov.respostas || []).map((resp, rIdx) => (
+                              <RespostaInput
+                                key={rIdx}
+                                value={resp}
+                                onChange={(newValue) => {
+                                  setHasUnsavedChanges(true);
+                                  const novasRespostas = [...(prov.respostas || [])];
+                                  novasRespostas[rIdx] = newValue;
+                                  handleUpdateProvidencia(prov.id, 'respostas', novasRespostas);
+                                }}
+                                onRemove={() => {
+                                  setHasUnsavedChanges(true);
+                                  const novasRespostas = (prov.respostas || []).filter((_, i) => i !== rIdx);
+                                  handleUpdateProvidencia(prov.id, 'respostas', novasRespostas);
+                                }}
+                              />
+                            ))}
                             <div className="hidden print:block text-[6px] whitespace-pre-wrap">
                               {(prov.respostas || []).map((resp, rIdx) => (
                                 <div key={rIdx} className="mb-1">• {resp}</div>
