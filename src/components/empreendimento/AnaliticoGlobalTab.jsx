@@ -924,13 +924,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         }
       });
 
-      // Criar mapa de disciplinas presentes nos documentos
-      const disciplinasPorDoc = new Map();
-      (documentosData || []).forEach(doc => {
-        if (!disciplinasPorDoc.has(doc.disciplina)) {
-          disciplinasPorDoc.set(doc.disciplina, new Set());
-        }
-      });
+      // Criar mapa de combinações disciplina+etapa presentes nos documentos
+      const disciplinaEtapaCombinacoes = new Map();
 
       let documentActivities = [];
       (documentosData || []).forEach(doc => {
@@ -1002,15 +997,16 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             // Verificar tipo de contagem
             const tipoContagem = baseAtividade.tipo_contagem || 'normal';
             
-            // Se for "por_disciplina", adicionar apenas uma vez por disciplina
+            // Se for "por_disciplina", adicionar apenas uma vez por combinação disciplina+etapa
             if (tipoContagem === 'por_disciplina') {
-              const disciplinaKey = `${baseAtividade.id}-${disciplinaDoc}`;
+              const etapaAtividade = override?.etapa || baseAtividade.etapa;
+              const disciplinaEtapaKey = `${baseAtividade.id}-${disciplinaDoc}-${etapaAtividade}`;
               
-              // Se já processamos esta atividade para esta disciplina, pular
-              if (disciplinasPorDoc.get(disciplinaDoc)?.has(baseAtividade.id)) {
+              // Se já processamos esta atividade para esta disciplina+etapa, pular
+              if (disciplinaEtapaCombinacoes.has(disciplinaEtapaKey)) {
                 return;
               }
-              disciplinasPorDoc.get(disciplinaDoc).add(baseAtividade.id);
+              disciplinaEtapaCombinacoes.set(disciplinaEtapaKey, true);
             }
             
             const planKey = `${doc.id}-${baseAtividade.id}`;
