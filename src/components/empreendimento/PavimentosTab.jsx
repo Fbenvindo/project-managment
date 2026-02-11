@@ -3,8 +3,23 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Pavimento } from "@/entities/all";
+import { Pavimento, Atividade } from "@/entities/all";
 import { Plus, Edit, Trash2 } from "lucide-react";
+import { retryWithBackoff } from '../utils/apiUtils';
+
+// Atividades que devem ser automaticamente vinculadas a cada novo pavimento
+const ATIVIDADES_PADRAO_PAVIMENTO = [
+  "Confecção de P- (Paisagismo)",
+  "Confecção de P- (Pontos)",
+  "Confecção AC-",
+  "Confecção F-",
+  "Confecção de L-",
+  "Confecção de E-",
+  "Confecção de A-",
+  "Confecção de D- (Decoração)",
+  "Markup",
+  "Preparação de modelo inicial"
+];
 
 export default function PavimentosTab({ empreendimentoId, onUpdate }) {
   const [pavimentos, setPavimentos] = useState([]);
