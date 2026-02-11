@@ -1110,7 +1110,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         String(ativ.etapa || '').toLowerCase().includes(searchLower) ||
         String(ativ.source || '').toLowerCase().includes(searchLower) ||
         String(ativ.status || '').toLowerCase().includes(searchLower);
-      
+
       const disciplinaMatch = filters.disciplina === 'all' || ativ.disciplina === filters.disciplina;
       const etapaMatch = filters.etapa === 'all' || ativ.etapa === 'all' || ativ.etapa === filters.etapa;
 
@@ -1119,18 +1119,21 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
     // Agrupar por atividade base
     const grupos = new Map();
-    
+
     filtered.forEach(ativ => {
-      const key = `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.disciplina}-${ativ.subdisciplina}`;
-      
+      const tipoContagem = ativ.tipo_contagem || 'normal';
+      const key = tipoContagem === 'por_disciplina'
+        ? `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.disciplina}-${ativ.subdisciplina}-${ativ.source_disciplina || ativ.disciplina}`
+        : `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.disciplina}-${ativ.subdisciplina}`;
+
       if (!grupos.has(key)) {
         grupos.set(key, {
           baseAtividade: ativ,
           folhas: []
         });
       }
-      
-      if (ativ.source_documento_id) {
+
+      if (ativ.source_documento_id || (tipoContagem === 'por_folha' && !ativ.source_disciplina)) {
         grupos.get(key).folhas.push(ativ);
       }
     });
