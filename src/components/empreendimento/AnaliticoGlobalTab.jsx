@@ -902,63 +902,83 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         if (disciplinasDocumentacao.includes(baseAtividade.disciplina)) {
           const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
           const etapaValida = etapasCadastradas.length === 0 || etapasCadastradas.includes(baseAtividade.etapa);
-          
+
           if (!isExcludedFromProject && etapaValida) {
             const override = overrideActivitiesGlobalMap.get(baseAtividade.id);
             const etapaCorreta = override ? override.etapa : baseAtividade.etapa;
-            
-            // Verificar se existe planejamento geral (sem documento_id) para esta atividade
-            const planKey = `null-${baseAtividade.id}`;
-            const existingPlan = planejamentosMap.get(planKey);
-            
-            if (existingPlan) {
-              // Se há planejamento geral, mostrar como "Planejada"
+            const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
+            const tempoBase = override?.tempo !== undefined && override?.tempo !== null 
+              ? override.tempo 
+              : (baseAtividade.tempo || 0);
+
+            const nomeAtividade = baseAtividade.atividade || '';
+            const isPavimentoActivity = atividadesPorPavimento.some(nome => nomeAtividade.includes(nome));
+            const IsFolhaActivity = atividadesPorFolha.some(nome => nomeAtividade.includes(nome));
+
+            // Se é atividade de pavimento, criar uma entrada para cada pavimento
+            if (isPavimentoActivity && numPavimentos > 0) {
+              pavimentosData.forEach((pav, index) => {
+                const planKey = `null-${baseAtividade.id}-pav-${index}`;
+                const existingPlan = planejamentosMap.get(planKey);
+
+                atividadesDocumentacao.push({
+                  ...baseAtividade,
+                  id: baseAtividade.id,
+                  uniqueId: `doc-${baseAtividade.id}-pav-${index}`,
+                  atividade: `${baseAtividade.atividade} (${pav.nome})`,
+                  tempo: tempoBase,
+                  source: 'Catálogo',
+                  source_documento_id: null,
+                  source_pavimento_id: pav.id,
+                  status: 'Disponível',
+                  isEditable: false,
+                  etapa: etapaCorreta,
+                  executor_principal: executorPrincipal,
+                  base_atividade_id: baseAtividade.id,
+                });
+              });
+            } 
+            // Se é atividade de folha, criar uma entrada para cada folha
+            else if (IsFolhaActivity && numFolhas > 0) {
+              documentosData.forEach((doc, index) => {
+                const planKey = `null-${baseAtividade.id}-doc-${index}`;
+                const existingPlan = planejamentosMap.get(planKey);
+
+                atividadesDocumentacao.push({
+                  ...baseAtividade,
+                  id: baseAtividade.id,
+                  uniqueId: `doc-${baseAtividade.id}-doc-${index}`,
+                  atividade: `${baseAtividade.atividade} (${doc.numero})`,
+                  tempo: tempoBase,
+                  source: 'Catálogo',
+                  source_documento_id: null,
+                  source_documento_id: doc.id,
+                  status: 'Disponível',
+                  isEditable: false,
+                  etapa: etapaCorreta,
+                  executor_principal: executorPrincipal,
+                  base_atividade_id: baseAtividade.id,
+                });
+              });
+            }
+            // Atividades normais
+            else {
+              const planKey = `null-${baseAtividade.id}`;
+              const existingPlan = planejamentosMap.get(planKey);
+
               atividadesDocumentacao.push({
                 ...baseAtividade,
-                id: existingPlan.id,
-                uniqueId: `plano-${existingPlan.id}`,
-                atividade: existingPlan.descritivo || baseAtividade.atividade,
-                tempo: existingPlan.tempo_planejado,
+                uniqueId: `doc-${baseAtividade.id}`,
+                id: baseAtividade.id,
+                tempo: tempoBase,
                 source: 'Catálogo',
                 source_documento_id: null,
-                status: 'Planejada',
+                status: 'Disponível',
                 isEditable: false,
-                etapa: existingPlan.etapa || etapaCorreta,
-                executor_principal: existingPlan.executor_principal,
+                etapa: etapaCorreta,
+                executor_principal: executorPrincipal,
                 base_atividade_id: baseAtividade.id,
               });
-            } else {
-              // Se não há planejamento, mostrar como "Disponível"
-               const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
-
-               // Aplicar override de tempo se existir
-               let tempoBase = override?.tempo !== undefined && override?.tempo !== null 
-                 ? override.tempo 
-                 : (baseAtividade.tempo || 0);
-
-               // Multiplicar tempo se for atividade especial
-               let tempoFinal = tempoBase;
-               const nomeAtividade = baseAtividade.atividade || '';
-               
-               if (atividadesPorPavimento.some(nome => nomeAtividade.includes(nome))) {
-                 tempoFinal = tempoBase * numPavimentos;
-               } else if (atividadesPorFolha.some(nome => nomeAtividade.includes(nome))) {
-                 tempoFinal = tempoBase * numFolhas;
-               }
-
-               atividadesDocumentacao.push({
-                 ...baseAtividade,
-                 uniqueId: `doc-${baseAtividade.id}`,
-                 id: baseAtividade.id,
-                 tempo: tempoFinal,
-                 source: 'Catálogo',
-                 source_documento_id: null,
-                 status: 'Disponível',
-                 isEditable: false,
-                 etapa: etapaCorreta,
-                 executor_principal: executorPrincipal,
-                 base_atividade_id: baseAtividade.id,
-               });
             }
           }
         }
