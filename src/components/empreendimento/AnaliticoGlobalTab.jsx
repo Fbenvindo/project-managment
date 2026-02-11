@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Atividade, Disciplina, PlanejamentoAtividade, Documento, AlteracaoEtapa, Empreendimento, Usuario, AtividadesDoProjeto } from '@/entities/all';
+import { Atividade, Disciplina, PlanejamentoAtividade, Documento, AlteracaoEtapa, Empreendimento, Usuario, AtividadesDoProjeto, Pavimento } from '@/entities/all';
 
 const PlanejamentoDocumento = base44.entities.PlanejamentoDocumento;
 import { Button } from '@/components/ui/button';
