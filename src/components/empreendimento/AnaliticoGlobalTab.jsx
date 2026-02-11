@@ -1771,7 +1771,23 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                 }}
                               />
                             </TableHead>
-                            <TableHead className="w-[50px]"></TableHead>
+                            <TableHead className="w-[50px]">
+                              <Checkbox
+                                checked={atividadesSelecionadasParaPlanejar.size > 0 && 
+                                         atividadesSubgrupo.filter(g => !g.baseAtividade.executor_principal).every(grupo => atividadesSelecionadasParaPlanejar.has(grupo.baseAtividade.base_atividade_id || grupo.baseAtividade.id))}
+                                onCheckedChange={(checked) => {
+                                  const ids = atividadesSubgrupo.filter(g => !g.baseAtividade.executor_principal).map(g => g.baseAtividade.base_atividade_id || g.baseAtividade.id);
+                                  setAtividadesSelecionadasParaPlanejar(prev => {
+                                    const newSet = new Set(prev);
+                                    ids.forEach(id => {
+                                      if (checked) newSet.add(id);
+                                      else newSet.delete(id);
+                                    });
+                                    return newSet;
+                                  });
+                                }}
+                              />
+                            </TableHead>
                             <TableHead>Atividade</TableHead>
                             <TableHead>Folhas</TableHead>
                             <TableHead>Status</TableHead>
@@ -1906,7 +1922,13 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                     ) : (
                                       <div className="flex gap-1">
                                         <Select
-                                          onValueChange={(value) => handleSaveExecutor(ativ, value, datasInicio[genericAtividadeIdToExclude])}
+                                          onValueChange={(value) => {
+                                            if (atividadesSelecionadasParaPlanejar.size > 0 && atividadesSelecionadasParaPlanejar.has(genericAtividadeIdToExclude)) {
+                                              handlePlanejarMultiplas(value, datasInicio[genericAtividadeIdToExclude]);
+                                            } else {
+                                              handleSaveExecutor(ativ, value, datasInicio[genericAtividadeIdToExclude]);
+                                            }
+                                          }}
                                           disabled={isSavingExecutor[genericAtividadeIdToExclude]}
                                         >
                                           <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
@@ -2063,6 +2085,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                 </TableRow>
                                 {isExpanded && grupo.folhas.map(folha => (
                                   <TableRow key={folha.uniqueId} className="bg-blue-50/50">
+                                    {hasCheckboxColumn && <TableCell></TableCell>}
+                                    <TableCell></TableCell>
                                     <TableCell></TableCell>
                                     <TableCell className="pl-12">
                                       <ChevronRight className="w-3 h-3 text-gray-400 inline mr-1" />
@@ -2140,7 +2164,23 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                }}
                              />
                            </TableHead>
-                           <TableHead className="w-[50px]"></TableHead>
+                           <TableHead className="w-[50px]">
+                             <Checkbox
+                               checked={atividadesSelecionadasParaPlanejar.size > 0 && 
+                                        grupos.filter(g => !g.baseAtividade.executor_principal).every(grupo => atividadesSelecionadasParaPlanejar.has(grupo.baseAtividade.base_atividade_id || grupo.baseAtividade.id))}
+                               onCheckedChange={(checked) => {
+                                 const ids = grupos.filter(g => !g.baseAtividade.executor_principal).map(g => g.baseAtividade.base_atividade_id || g.baseAtividade.id);
+                                 setAtividadesSelecionadasParaPlanejar(prev => {
+                                   const newSet = new Set(prev);
+                                   ids.forEach(id => {
+                                     if (checked) newSet.add(id);
+                                     else newSet.delete(id);
+                                   });
+                                   return newSet;
+                                 });
+                               }}
+                             />
+                           </TableHead>
                            <TableHead>Atividade</TableHead>
                      <TableHead>Folhas</TableHead>
                      <TableHead>Status</TableHead>
@@ -2164,20 +2204,46 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                     return (
                       <>
                         <TableRow key={key} className="hover:bg-gray-50">
-                          <TableCell>
-                            <Checkbox
-                              checked={atividadesSelecionadasParaExcluir.has(ativ.base_atividade_id || ativ.id)}
-                              onCheckedChange={(checked) => {
-                                setAtividadesSelecionadasParaExcluir(prev => {
-                                  const newSet = new Set(prev);
-                                  const id = ativ.base_atividade_id || ativ.id;
-                                  if (checked) newSet.add(id);
-                                  else newSet.delete(id);
-                                  return newSet;
-                                });
-                              }}
-                            />
-                          </TableCell>
+                           {hasCheckboxColumn && (
+                             <TableCell>
+                               {ativ.isEditable && (
+                                 <Checkbox
+                                   checked={selectedIds.has(ativ.uniqueId)}
+                                   onCheckedChange={() => handleSelectItem(ativ.uniqueId)}
+                                   disabled={isDeletingMultiple}
+                                 />
+                               )}
+                             </TableCell>
+                           )}
+                           <TableCell>
+                             <Checkbox
+                               checked={atividadesSelecionadasParaExcluir.has(ativ.base_atividade_id || ativ.id)}
+                               onCheckedChange={(checked) => {
+                                 setAtividadesSelecionadasParaExcluir(prev => {
+                                   const newSet = new Set(prev);
+                                   const id = ativ.base_atividade_id || ativ.id;
+                                   if (checked) newSet.add(id);
+                                   else newSet.delete(id);
+                                   return newSet;
+                                 });
+                               }}
+                             />
+                           </TableCell>
+                           <TableCell>
+                             <Checkbox
+                               checked={atividadesSelecionadasParaPlanejar.has(ativ.base_atividade_id || ativ.id)}
+                               onCheckedChange={(checked) => {
+                                 setAtividadesSelecionadasParaPlanejar(prev => {
+                                   const newSet = new Set(prev);
+                                   const id = ativ.base_atividade_id || ativ.id;
+                                   if (checked) newSet.add(id);
+                                   else newSet.delete(id);
+                                   return newSet;
+                                 });
+                               }}
+                               disabled={ativ.executor_principal || isSavingExecutor[genericAtividadeIdToExclude]}
+                             />
+                           </TableCell>
                           <TableCell>
                             {grupo.folhas.length > 0 && (
                               <Button 
@@ -2453,6 +2519,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
                         {isExpanded && grupo.folhas.map(folha => (
                           <TableRow key={folha.uniqueId} className="bg-blue-50/50">
+                            {hasCheckboxColumn && <TableCell></TableCell>}
+                            <TableCell></TableCell>
                             <TableCell></TableCell>
                             <TableCell className="pl-12">
                               <ChevronRight className="w-3 h-3 text-gray-400 inline mr-1" />
