@@ -1192,15 +1192,31 @@ export default function AtaPlanejamento() {
                         <div className="flex gap-2">
                           <label className="text-xs font-medium text-gray-600 min-w-[80px] pt-1">Respostas:</label>
                           <div className="flex-1 space-y-2">
-                            {(prov.respostas || []).map((resp, rIdx) => (
+                            {(prov.respostas || []).map((resp, rIdx) => {
+                              const [localValue, setLocalValue] = React.useState(resp || '');
+                              const timeoutRef = React.useRef(null);
+                              
+                              React.useEffect(() => {
+                                setLocalValue(resp || '');
+                              }, [resp]);
+                              
+                              return (
                               <div key={rIdx} className="flex gap-1 items-start print:hidden">
                                 <AutoResizeTextarea
-                                  value={resp || ''}
+                                  value={localValue}
                                   onChange={(e) => {
-                                    setHasUnsavedChanges(true);
-                                    const novasRespostas = [...(prov.respostas || [])];
-                                    novasRespostas[rIdx] = e.target.value;
-                                    handleUpdateProvidencia(prov.id, 'respostas', novasRespostas);
+                                    setLocalValue(e.target.value);
+                                    
+                                    if (timeoutRef.current) {
+                                      clearTimeout(timeoutRef.current);
+                                    }
+                                    
+                                    timeoutRef.current = setTimeout(() => {
+                                      setHasUnsavedChanges(true);
+                                      const novasRespostas = [...(prov.respostas || [])];
+                                      novasRespostas[rIdx] = e.target.value;
+                                      handleUpdateProvidencia(prov.id, 'respostas', novasRespostas);
+                                    }, 300);
                                   }}
                                   className="text-sm flex-1 resize-none overflow-hidden min-h-[40px]"
                                   placeholder="Digite a resposta..."
@@ -1217,7 +1233,8 @@ export default function AtaPlanejamento() {
                                   <Trash2 className="w-3 h-3" />
                                 </button>
                               </div>
-                            ))}
+                            );
+                            })}
                             <div className="hidden print:block text-[6px] whitespace-pre-wrap">
                               {(prov.respostas || []).map((resp, rIdx) => (
                                 <div key={rIdx} className="mb-1">• {resp}</div>
