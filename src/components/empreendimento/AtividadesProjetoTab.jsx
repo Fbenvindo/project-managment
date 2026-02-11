@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit, Trash2, Search, Calendar, Check, CheckCircle2 } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Calendar } from "lucide-react";
 import { Atividade } from "@/entities/all";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -247,44 +247,6 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
     );
   };
 
-  const handleMarcarComoConcluidas = async () => {
-    if (selectedAtividades.length === 0) {
-      alert("Selecione pelo menos uma atividade");
-      return;
-    }
-
-    if (!window.confirm(`Tem certeza que deseja marcar ${selectedAtividades.length} atividade(s) como concluída(s)?`)) {
-      return;
-    }
-
-    try {
-      // Buscar os planejamentos das atividades selecionadas
-      const PlanejamentoAtividade = await import('@/entities/all').then(m => m.PlanejamentoAtividade);
-      
-      for (const atividadeId of selectedAtividades) {
-        // Buscar planejamentos dessa atividade que não estão concluídos
-        const planejamentosAtividade = planejamentos.filter(p => 
-          p.atividade_id === atividadeId && p.status !== 'concluido'
-        );
-
-        // Marcar todos como concluídos
-        for (const plan of planejamentosAtividade) {
-          await PlanejamentoAtividade.update(plan.id, { 
-            status: 'concluido',
-            termino_real: new Date().toISOString()
-          });
-        }
-      }
-
-      setSelectedAtividades([]);
-      onUpdate();
-      alert("Atividades marcadas como concluídas com sucesso!");
-    } catch (error) {
-      console.error("Erro ao marcar atividades como concluídas:", error);
-      alert("Erro ao marcar atividades como concluídas");
-    }
-  };
-
   const handleExcluirMultiplas = async () => {
     if (selectedAtividades.length === 0) {
       alert("Selecione pelo menos uma atividade");
@@ -452,15 +414,6 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
           </p>
         </div>
         <div className="flex gap-2">
-           {selectedAtividades.length > 0 && (
-             <Button 
-               onClick={handleMarcarComoConcluidas}
-               className="bg-green-600 hover:bg-green-700"
-             >
-               <Check className="w-4 h-4 mr-2" />
-               Marcar {selectedAtividades.length} como Concluída(s)
-             </Button>
-           )}
            <Button onClick={() => { 
              setEditingAtividade(null); 
              setShowForm(true); 
@@ -577,14 +530,9 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
                             )}
                           </TableCell>
                           <TableCell>
-                            {atividade.status_planejamento === 'planejada' ? (
-                              <Badge className="bg-green-600 text-white font-semibold shadow-md flex items-center gap-1 w-fit">
-                                <CheckCircle2 className="w-4 h-4" />
-                                Planejada
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="text-gray-600">Disponível</Badge>
-                            )}
+                            <Badge variant="outline" className="text-gray-600">
+                              {atividade.status_planejamento === 'planejada' ? 'Planejada' : 'Disponível'}
+                            </Badge>
                           </TableCell>
                           <TableCell>{atividade.etapa}</TableCell>
                           <TableCell>{atividade.tempo}h</TableCell>
