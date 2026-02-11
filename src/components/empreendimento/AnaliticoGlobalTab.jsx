@@ -924,7 +924,15 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         }
       });
 
-      // Criar mapa de combinações disciplina+etapa presentes nos documentos
+      // Criar mapa de disciplinas presentes nos documentos
+      const disciplinasNosDocumentos = new Set();
+      (documentosData || []).forEach(doc => {
+        if (doc.disciplina) {
+          disciplinasNosDocumentos.add(doc.disciplina);
+        }
+      });
+
+      // Criar mapa de combinações para atividades "por_disciplina"
       const disciplinaEtapaCombinacoes = new Map();
 
       let documentActivities = [];
@@ -990,23 +998,31 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             return;
           }
 
-          const disciplinaMatch = baseAtividade.disciplina === disciplinaDoc;
-          const subdisciplinaMatch = subdisciplinasDoc.includes(baseAtividade.subdisciplina);
+          // Verificar tipo de contagem
+          const tipoContagem = baseAtividade.tipo_contagem || 'normal';
+          
+          let disciplinaMatch, subdisciplinaMatch;
+          
+          if (tipoContagem === 'por_disciplina') {
+            // Para atividades "por_disciplina", aparecer uma vez para CADA disciplina dos documentos
+            const disciplinaKey = `${baseAtividade.id}-${disciplinaDoc}`;
+            
+            // Se já processamos esta atividade para esta disciplina, pular
+            if (disciplinaEtapaCombinacoes.has(disciplinaKey)) {
+              return;
+            }
+            disciplinaEtapaCombinacoes.set(disciplinaKey, true);
+            
+            // Para atividades "por_disciplina", não verificar correspondência de disciplina
+            disciplinaMatch = true;
+            subdisciplinaMatch = true;
+          } else {
+            // Para atividades normais, verificar correspondência exata
+            disciplinaMatch = baseAtividade.disciplina === disciplinaDoc;
+            subdisciplinaMatch = subdisciplinasDoc.includes(baseAtividade.subdisciplina);
+          }
 
           if (disciplinaMatch && subdisciplinaMatch) {
-            // Verificar tipo de contagem
-            const tipoContagem = baseAtividade.tipo_contagem || 'normal';
-            
-            // Se for "por_disciplina", adicionar apenas uma vez por disciplina (independente de etapa e documento)
-            if (tipoContagem === 'por_disciplina') {
-              const disciplinaKey = `${baseAtividade.id}-${disciplinaDoc}`;
-              
-              // Se já processamos esta atividade para esta disciplina, pular (não criar duplicatas)
-              if (disciplinaEtapaCombinacoes.has(disciplinaKey)) {
-                return;
-              }
-              disciplinaEtapaCombinacoes.set(disciplinaKey, true);
-            }
             
             const planKey = `${doc.id}-${baseAtividade.id}`;
             const existingPlan = planejamentosMap.get(planKey);
