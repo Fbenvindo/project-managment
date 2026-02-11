@@ -454,11 +454,12 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
         <div className="flex gap-2">
            {selectedAtividades.length > 0 && (
              <Button 
-               onClick={handleMarcarComoConcluidas}
-               className="bg-green-600 hover:bg-green-700"
+               onClick={handleExcluirMultiplas}
+               disabled={isDeleting}
+               variant="destructive"
              >
-               <Check className="w-4 h-4 mr-2" />
-               Marcar {selectedAtividades.length} como Concluída(s)
+               <Trash2 className="w-4 h-4 mr-2" />
+               {isDeleting ? 'Excluindo...' : `Excluir ${selectedAtividades.length} selecionada(s)`}
              </Button>
            )}
            <Button onClick={() => { 
