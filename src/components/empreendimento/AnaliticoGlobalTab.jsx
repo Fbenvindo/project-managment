@@ -1823,22 +1823,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                        />
                                      )}
                                    </TableCell>
-                                   <TableCell>
-                                    {!ativ.isEditable && (
-                                      <Checkbox
-                                        checked={atividadesSelecionadasParaExcluir.has(ativ.base_atividade_id || ativ.id)}
-                                        onCheckedChange={(checked) => {
-                                          setAtividadesSelecionadasParaExcluir(prev => {
-                                            const newSet = new Set(prev);
-                                            const id = ativ.base_atividade_id || ativ.id;
-                                            if (checked) newSet.add(id);
-                                            else newSet.delete(id);
-                                            return newSet;
-                                          });
-                                        }}
-                                      />
-                                    )}
-                                  </TableCell>
+                                   
                                   <TableCell>
                                     {grupo.folhas.length > 0 && (
                                       <Button 
