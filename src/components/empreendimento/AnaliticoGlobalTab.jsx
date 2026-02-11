@@ -997,11 +997,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             // Verificar tipo de contagem
             const tipoContagem = baseAtividade.tipo_contagem || 'normal';
             
-            // Se for "por_disciplina", adicionar apenas uma vez por disciplina (independente de etapa)
+            // Se for "por_disciplina", adicionar apenas uma vez por disciplina (independente de etapa e documento)
             if (tipoContagem === 'por_disciplina') {
               const disciplinaKey = `${baseAtividade.id}-${disciplinaDoc}`;
               
-              // Se já processamos esta atividade para esta disciplina, pular
+              // Se já processamos esta atividade para esta disciplina, pular (não criar duplicatas)
               if (disciplinaEtapaCombinacoes.has(disciplinaKey)) {
                 return;
               }
