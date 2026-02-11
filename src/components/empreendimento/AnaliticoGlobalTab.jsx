@@ -1844,9 +1844,15 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                           </TableCell>
                           <TableCell className="font-medium">{String(ativ.atividade || '')}</TableCell>
                           <TableCell>
-                            <Badge variant="outline">
-                              {grupo.folhas.length} {grupo.folhas.length === 1 ? 'folha' : 'folhas'}
-                            </Badge>
+                            {ativ.tipo_contagem === 'por_disciplina' && ativ.source_disciplina ? (
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-300">
+                                {ativ.source_disciplina}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline">
+                                {grupo.folhas.length} {grupo.folhas.length === 1 ? 'folha' : 'folhas'}
+                              </Badge>
+                            )}
                           </TableCell>
                           <TableCell>
                             {grupo.folhas.length === 0 ? (
