@@ -924,6 +924,14 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         }
       });
 
+      // Criar mapa de disciplinas presentes nos documentos
+      const disciplinasPorDoc = new Map();
+      (documentosData || []).forEach(doc => {
+        if (!disciplinasPorDoc.has(doc.disciplina)) {
+          disciplinasPorDoc.set(doc.disciplina, new Set());
+        }
+      });
+
       let documentActivities = [];
       (documentosData || []).forEach(doc => {
         const subdisciplinasDoc = doc.subdisciplinas || [];
@@ -991,6 +999,20 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           const subdisciplinaMatch = subdisciplinasDoc.includes(baseAtividade.subdisciplina);
 
           if (disciplinaMatch && subdisciplinaMatch) {
+            // Verificar tipo de contagem
+            const tipoContagem = baseAtividade.tipo_contagem || 'normal';
+            
+            // Se for "por_disciplina", adicionar apenas uma vez por disciplina
+            if (tipoContagem === 'por_disciplina') {
+              const disciplinaKey = `${baseAtividade.id}-${disciplinaDoc}`;
+              
+              // Se já processamos esta atividade para esta disciplina, pular
+              if (disciplinasPorDoc.get(disciplinaDoc)?.has(baseAtividade.id)) {
+                return;
+              }
+              disciplinasPorDoc.get(disciplinaDoc).add(baseAtividade.id);
+            }
+            
             const planKey = `${doc.id}-${baseAtividade.id}`;
             const existingPlan = planejamentosMap.get(planKey);
             
@@ -1003,7 +1025,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             const etapaCorreta = override ? override.etapa : baseAtividade.etapa;
             const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
 
-            const sourceDisplay = `Folha: ${doc.numero} - ${doc.arquivo || 'Sem Nome'}`;
+            const sourceDisplay = tipoContagem === 'por_disciplina' 
+              ? `Disciplina: ${disciplinaDoc}` 
+              : `Folha: ${doc.numero} - ${doc.arquivo || 'Sem Nome'}`;
 
             if (existingPlan) {
                 documentActivities.push({
@@ -1013,36 +1037,40 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                   atividade: existingPlan.descritivo || baseAtividade.atividade,
                   tempo: existingPlan.tempo_planejado,
                   source: sourceDisplay,
-                  source_documento_id: doc.id,
+                  source_documento_id: tipoContagem === 'por_disciplina' ? null : doc.id,
                   source_documento_numero: doc.numero,
                   source_documento_arquivo: doc.arquivo,
+                  source_disciplina: tipoContagem === 'por_disciplina' ? disciplinaDoc : null,
                   status: 'Planejada',
                   isEditable: false,
                   etapa: existingPlan.etapa || etapaCorreta,
                   executor_principal: existingPlan.executor_principal || executorPrincipal,
                   base_atividade_id: baseAtividade.id,
+                  tipo_contagem: tipoContagem,
                 });
               } else {
                 // Aplicar override de tempo se existir
                 const tempoComOverride = override?.tempo !== undefined && override?.tempo !== null
                   ? override.tempo
                   : (baseAtividade.tempo || 0);
-                const tempoFinal = tempoComOverride * fatorDificuldade;
+                const tempoFinal = tipoContagem === 'por_disciplina' ? tempoComOverride : (tempoComOverride * fatorDificuldade);
 
                 documentActivities.push({
                     ...baseAtividade,
-                    uniqueId: `avail-${doc.id}-${baseAtividade.id}`,
+                    uniqueId: `avail-${tipoContagem === 'por_disciplina' ? disciplinaDoc : doc.id}-${baseAtividade.id}`,
                     id: baseAtividade.id,
                     tempo: tempoFinal,
                     source: sourceDisplay,
-                    source_documento_id: doc.id,
+                    source_documento_id: tipoContagem === 'por_disciplina' ? null : doc.id,
                     source_documento_numero: doc.numero,
                     source_documento_arquivo: doc.arquivo,
+                    source_disciplina: tipoContagem === 'por_disciplina' ? disciplinaDoc : null,
                     status: 'Disponível',
                     isEditable: false,
                     etapa: etapaCorreta,
                     executor_principal: executorPrincipal,
                     base_atividade_id: baseAtividade.id,
+                    tipo_contagem: tipoContagem,
                   });
               }
           }
