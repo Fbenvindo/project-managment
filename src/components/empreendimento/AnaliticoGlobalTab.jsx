@@ -997,16 +997,15 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             // Verificar tipo de contagem
             const tipoContagem = baseAtividade.tipo_contagem || 'normal';
             
-            // Se for "por_disciplina", adicionar apenas uma vez por combinação disciplina+etapa
+            // Se for "por_disciplina", adicionar apenas uma vez por disciplina (independente de etapa)
             if (tipoContagem === 'por_disciplina') {
-              const etapaAtividade = override?.etapa || baseAtividade.etapa;
-              const disciplinaEtapaKey = `${baseAtividade.id}-${disciplinaDoc}-${etapaAtividade}`;
+              const disciplinaKey = `${baseAtividade.id}-${disciplinaDoc}`;
               
-              // Se já processamos esta atividade para esta disciplina+etapa, pular
-              if (disciplinaEtapaCombinacoes.has(disciplinaEtapaKey)) {
+              // Se já processamos esta atividade para esta disciplina, pular
+              if (disciplinaEtapaCombinacoes.has(disciplinaKey)) {
                 return;
               }
-              disciplinaEtapaCombinacoes.set(disciplinaEtapaKey, true);
+              disciplinaEtapaCombinacoes.set(disciplinaKey, true);
             }
             
             const planKey = `${doc.id}-${baseAtividade.id}`;
@@ -1118,9 +1117,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
     filtered.forEach(ativ => {
       const tipoContagem = ativ.tipo_contagem || 'normal';
-      // Para atividades por_disciplina, agrupar por disciplina do documento (source_disciplina)
+      // Para atividades por_disciplina, agrupar apenas por disciplina (sem etapa)
       const key = tipoContagem === 'por_disciplina'
-        ? `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.source_disciplina || ativ.disciplina}`
+        ? `${ativ.base_atividade_id}-${ativ.source_disciplina || ativ.disciplina}`
         : `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.disciplina}-${ativ.subdisciplina}`;
 
       if (!grupos.has(key)) {
