@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Atividade, Disciplina, PlanejamentoAtividade, Documento, AlteracaoEtapa, Empreendimento, Usuario, AtividadesDoProjeto, Pavimento } from '@/entities/all';
+import { Atividade, Disciplina, PlanejamentoAtividade, Documento, AlteracaoEtapa, Empreendimento, Usuario, AtividadesDoProjeto } from '@/entities/all';
 
 const PlanejamentoDocumento = base44.entities.PlanejamentoDocumento;
 import { Button } from '@/components/ui/button';
@@ -786,8 +786,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         alteracoesData,
         usuariosData,
         todosEmpreendimentos,
-        atividadesDoProjetoData,
-        pavimentosData
+        atividadesDoProjetoData
       ] = await Promise.all([
         retryWithBackoff(() => Atividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchProjectActivities'),
         retryWithBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchPlanejamentos'),
@@ -798,8 +797,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         retryWithBackoff(() => AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAlteracoes'),
         retryWithBackoff(() => Usuario.list(), 3, 500, 'fetchUsuarios'),
         retryWithBackoff(() => Empreendimento.list(), 3, 500, 'fetchAllEmpreendimentos'),
-        retryWithBackoff(() => AtividadesDoProjeto.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAtividadesDoProjeto'),
-        retryWithBackoff(() => base44.entities.Pavimento.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchPavimentos')
+        retryWithBackoff(() => AtividadesDoProjeto.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAtividadesDoProjeto')
       ]);
 
       setDocumentos(documentosData || []);
@@ -850,34 +848,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       
       const planejamentosMap = new Map((planejamentosData || []).map(p => [`${p.documento_id}-${p.atividade_id}`, p]));
 
-      // Listas de atividades que devem se multiplicar
-      const atividadesPorPavimento = [
-        "Confecção de P- (Paisagismo)",
-        "Confecção de P- (Pontos)",
-        "Confecção AC-",
-        "Confecção F-",
-        "Confecção de L-",
-        "Confecção de E-",
-        "Confecção de A-",
-        "Confecção de D- (Decoração)",
-        "Markup",
-        "Preparação de modelo inicial"
-      ];
-
-      const atividadesPorFolha = [
-        "Carimbo, nota e legenda",
-        "Cadastro de projeto",
-        "Validação do cadastro de PB de arquitetura, estrutura, fundações e terceiros",
-        "Check-List - EP",
-        "Check-List - AP",
-        "Check-List - PB",
-        "Check-List - PE",
-        "Check-List - LO"
-      ];
-
-      const numPavimentos = (pavimentosData || []).length;
-      const numFolhas = (documentosData || []).length;
-
       // Buscar etapas cadastradas no empreendimento
       const empreendimento = (empreendimentoData && empreendimentoData[0]) || null;
       const etapasCadastradas = empreendimento?.etapas || [];
@@ -902,85 +872,63 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         if (disciplinasDocumentacao.includes(baseAtividade.disciplina)) {
           const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
           const etapaValida = etapasCadastradas.length === 0 || etapasCadastradas.includes(baseAtividade.etapa);
-
+          
           if (!isExcludedFromProject && etapaValida) {
             const override = overrideActivitiesGlobalMap.get(baseAtividade.id);
             const etapaCorreta = override ? override.etapa : baseAtividade.etapa;
-            const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
-            const tempoBase = override?.tempo !== undefined && override?.tempo !== null 
-              ? override.tempo 
-              : (baseAtividade.tempo || 0);
-
-            const nomeAtividade = baseAtividade.atividade || '';
-            const isPavimentoActivity = atividadesPorPavimento.some(nome => nomeAtividade.includes(nome));
-            const IsFolhaActivity = atividadesPorFolha.some(nome => nomeAtividade.includes(nome));
-
-            // Se é atividade de pavimento, criar uma entrada para cada pavimento
-            if (isPavimentoActivity && numPavimentos > 0) {
-              pavimentosData.forEach((pav, index) => {
-                const planKey = `null-${baseAtividade.id}-pav-${index}`;
-                const existingPlan = planejamentosMap.get(planKey);
-
-                atividadesDocumentacao.push({
-                  ...baseAtividade,
-                  id: baseAtividade.id,
-                  uniqueId: `doc-${baseAtividade.id}-pav-${index}`,
-                  atividade: `${baseAtividade.atividade} (${pav.nome})`,
-                  tempo: tempoBase,
-                  source: 'Catálogo',
-                  source_documento_id: null,
-                  source_pavimento_id: pav.id,
-                  status: 'Disponível',
-                  isEditable: false,
-                  etapa: etapaCorreta,
-                  executor_principal: executorPrincipal,
-                  base_atividade_id: baseAtividade.id,
-                });
-              });
-            } 
-            // Se é atividade de folha, criar uma entrada para cada folha
-            else if (IsFolhaActivity && numFolhas > 0) {
-              documentosData.forEach((doc, index) => {
-                const planKey = `null-${baseAtividade.id}-doc-${index}`;
-                const existingPlan = planejamentosMap.get(planKey);
-
-                atividadesDocumentacao.push({
-                  ...baseAtividade,
-                  id: baseAtividade.id,
-                  uniqueId: `doc-${baseAtividade.id}-doc-${index}`,
-                  atividade: `${baseAtividade.atividade} (${doc.numero})`,
-                  tempo: tempoBase,
-                  source: 'Catálogo',
-                  source_documento_id: null,
-                  source_documento_id: doc.id,
-                  status: 'Disponível',
-                  isEditable: false,
-                  etapa: etapaCorreta,
-                  executor_principal: executorPrincipal,
-                  base_atividade_id: baseAtividade.id,
-                });
-              });
-            }
-            // Atividades normais
-            else {
-              const planKey = `null-${baseAtividade.id}`;
-              const existingPlan = planejamentosMap.get(planKey);
-
+            
+            // Verificar se existe planejamento geral (sem documento_id) para esta atividade
+            const planKey = `null-${baseAtividade.id}`;
+            const existingPlan = planejamentosMap.get(planKey);
+            
+            if (existingPlan) {
+              // Se há planejamento geral, mostrar como "Planejada"
               atividadesDocumentacao.push({
                 ...baseAtividade,
-                uniqueId: `doc-${baseAtividade.id}`,
-                id: baseAtividade.id,
-                tempo: tempoBase,
+                id: existingPlan.id,
+                uniqueId: `plano-${existingPlan.id}`,
+                atividade: existingPlan.descritivo || baseAtividade.atividade,
+                tempo: existingPlan.tempo_planejado,
                 source: 'Catálogo',
                 source_documento_id: null,
-                status: 'Disponível',
+                status: 'Planejada',
                 isEditable: false,
-                etapa: etapaCorreta,
-                executor_principal: executorPrincipal,
+                etapa: existingPlan.etapa || etapaCorreta,
+                executor_principal: existingPlan.executor_principal,
                 base_atividade_id: baseAtividade.id,
               });
+            } else {
+              // Se não há planejamento, mostrar como "Disponível"
+               const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
+
+               // Aplicar override de tempo se existir
+               const tempoFinal = override?.tempo !== undefined && override?.tempo !== null 
+                 ? override.tempo 
+                 : (baseAtividade.tempo || 0);
+
+               atividadesDocumentacao.push({
+                 ...baseAtividade,
+                 uniqueId: `doc-${baseAtividade.id}`,
+                 id: baseAtividade.id,
+                 tempo: tempoFinal,
+                 source: 'Catálogo',
+                 source_documento_id: null,
+                 status: 'Disponível',
+                 isEditable: false,
+                 etapa: etapaCorreta,
+                 executor_principal: executorPrincipal,
+                 base_atividade_id: baseAtividade.id,
+               });
             }
           }
+        }
+      });
+
+      // Criar mapa de disciplinas presentes nos documentos
+      const disciplinasPorDoc = new Map();
+      (documentosData || []).forEach(doc => {
+        if (!disciplinasPorDoc.has(doc.disciplina)) {
+          disciplinasPorDoc.set(doc.disciplina, new Set());
         }
       });
 
@@ -1051,6 +999,20 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           const subdisciplinaMatch = subdisciplinasDoc.includes(baseAtividade.subdisciplina);
 
           if (disciplinaMatch && subdisciplinaMatch) {
+            // Verificar tipo de contagem
+            const tipoContagem = baseAtividade.tipo_contagem || 'normal';
+            
+            // Se for "por_disciplina", adicionar apenas uma vez por disciplina
+            if (tipoContagem === 'por_disciplina') {
+              const disciplinaKey = `${baseAtividade.id}-${disciplinaDoc}`;
+              
+              // Se já processamos esta atividade para esta disciplina, pular
+              if (disciplinasPorDoc.get(disciplinaDoc)?.has(baseAtividade.id)) {
+                return;
+              }
+              disciplinasPorDoc.get(disciplinaDoc).add(baseAtividade.id);
+            }
+            
             const planKey = `${doc.id}-${baseAtividade.id}`;
             const existingPlan = planejamentosMap.get(planKey);
             
@@ -1063,7 +1025,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             const etapaCorreta = override ? override.etapa : baseAtividade.etapa;
             const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
 
-            const sourceDisplay = `Folha: ${doc.numero} - ${doc.arquivo || 'Sem Nome'}`;
+            const sourceDisplay = tipoContagem === 'por_disciplina' 
+              ? `Disciplina: ${disciplinaDoc}` 
+              : `Folha: ${doc.numero} - ${doc.arquivo || 'Sem Nome'}`;
 
             if (existingPlan) {
                 documentActivities.push({
@@ -1073,46 +1037,42 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                   atividade: existingPlan.descritivo || baseAtividade.atividade,
                   tempo: existingPlan.tempo_planejado,
                   source: sourceDisplay,
-                  source_documento_id: doc.id,
+                  source_documento_id: tipoContagem === 'por_disciplina' ? null : doc.id,
                   source_documento_numero: doc.numero,
                   source_documento_arquivo: doc.arquivo,
+                  source_disciplina: tipoContagem === 'por_disciplina' ? disciplinaDoc : null,
                   status: 'Planejada',
                   isEditable: false,
                   etapa: existingPlan.etapa || etapaCorreta,
                   executor_principal: existingPlan.executor_principal || executorPrincipal,
                   base_atividade_id: baseAtividade.id,
+                  tipo_contagem: tipoContagem,
                 });
               } else {
-                 // Aplicar override de tempo se existir
-                 const tempoComOverride = override?.tempo !== undefined && override?.tempo !== null
-                   ? override.tempo
-                   : (baseAtividade.tempo || 0);
-                 let tempoFinal = tempoComOverride * fatorDificuldade;
+                // Aplicar override de tempo se existir
+                const tempoComOverride = override?.tempo !== undefined && override?.tempo !== null
+                  ? override.tempo
+                  : (baseAtividade.tempo || 0);
+                const tempoFinal = tipoContagem === 'por_disciplina' ? tempoComOverride : (tempoComOverride * fatorDificuldade);
 
-                 // Multiplicar tempo se for atividade especial
-                 const nomeAtividade = baseAtividade.atividade || '';
-                 if (atividadesPorPavimento.some(nome => nomeAtividade.includes(nome))) {
-                   tempoFinal = tempoFinal * numPavimentos;
-                 } else if (atividadesPorFolha.some(nome => nomeAtividade.includes(nome))) {
-                   tempoFinal = tempoFinal * numFolhas;
-                 }
-
-                 documentActivities.push({
-                     ...baseAtividade,
-                     uniqueId: `avail-${doc.id}-${baseAtividade.id}`,
-                     id: baseAtividade.id,
-                     tempo: tempoFinal,
-                     source: sourceDisplay,
-                     source_documento_id: doc.id,
-                     source_documento_numero: doc.numero,
-                     source_documento_arquivo: doc.arquivo,
-                     status: 'Disponível',
-                     isEditable: false,
-                     etapa: etapaCorreta,
-                     executor_principal: executorPrincipal,
-                     base_atividade_id: baseAtividade.id,
-                   });
-               }
+                documentActivities.push({
+                    ...baseAtividade,
+                    uniqueId: `avail-${tipoContagem === 'por_disciplina' ? disciplinaDoc : doc.id}-${baseAtividade.id}`,
+                    id: baseAtividade.id,
+                    tempo: tempoFinal,
+                    source: sourceDisplay,
+                    source_documento_id: tipoContagem === 'por_disciplina' ? null : doc.id,
+                    source_documento_numero: doc.numero,
+                    source_documento_arquivo: doc.arquivo,
+                    source_disciplina: tipoContagem === 'por_disciplina' ? disciplinaDoc : null,
+                    status: 'Disponível',
+                    isEditable: false,
+                    etapa: etapaCorreta,
+                    executor_principal: executorPrincipal,
+                    base_atividade_id: baseAtividade.id,
+                    tipo_contagem: tipoContagem,
+                  });
+              }
           }
         });
       });
@@ -1150,7 +1110,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         String(ativ.etapa || '').toLowerCase().includes(searchLower) ||
         String(ativ.source || '').toLowerCase().includes(searchLower) ||
         String(ativ.status || '').toLowerCase().includes(searchLower);
-      
+
       const disciplinaMatch = filters.disciplina === 'all' || ativ.disciplina === filters.disciplina;
       const etapaMatch = filters.etapa === 'all' || ativ.etapa === 'all' || ativ.etapa === filters.etapa;
 
@@ -1159,18 +1119,23 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
     // Agrupar por atividade base
     const grupos = new Map();
-    
+
     filtered.forEach(ativ => {
-      const key = `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.disciplina}-${ativ.subdisciplina}`;
-      
+      const tipoContagem = ativ.tipo_contagem || 'normal';
+      // Para atividades por_disciplina, agrupar por disciplina do documento (source_disciplina)
+      const key = tipoContagem === 'por_disciplina'
+        ? `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.source_disciplina || ativ.disciplina}`
+        : `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.disciplina}-${ativ.subdisciplina}`;
+
       if (!grupos.has(key)) {
         grupos.set(key, {
           baseAtividade: ativ,
           folhas: []
         });
       }
-      
-      if (ativ.source_documento_id) {
+
+      // Não adicionar às folhas se for por_disciplina, pois já é a representação consolidada
+      if (tipoContagem !== 'por_disciplina' && ativ.source_documento_id) {
         grupos.get(key).folhas.push(ativ);
       }
     });
@@ -1891,22 +1856,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                        />
                                      )}
                                    </TableCell>
-                                   <TableCell>
-                                    {!ativ.isEditable && (
-                                      <Checkbox
-                                        checked={atividadesSelecionadasParaExcluir.has(ativ.base_atividade_id || ativ.id)}
-                                        onCheckedChange={(checked) => {
-                                          setAtividadesSelecionadasParaExcluir(prev => {
-                                            const newSet = new Set(prev);
-                                            const id = ativ.base_atividade_id || ativ.id;
-                                            if (checked) newSet.add(id);
-                                            else newSet.delete(id);
-                                            return newSet;
-                                          });
-                                        }}
-                                      />
-                                    )}
-                                  </TableCell>
+                                   
                                   <TableCell>
                                     {grupo.folhas.length > 0 && (
                                       <Button 
@@ -1919,12 +1869,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                       </Button>
                                     )}
                                   </TableCell>
-                                  <TableCell className="font-medium text-sm">{String(ativ.atividade || '')}</TableCell>
-                                  <TableCell>
-                                    <Badge variant="outline">
-                                      {grupo.folhas.length} {grupo.folhas.length === 1 ? 'folha' : 'folhas'}
-                                    </Badge>
-                                  </TableCell>
+                                
                                   <TableCell>
                                     {grupo.folhas.length === 0 ? (
                                       <Badge variant={ativ.source === 'Projeto' ? 'default' : 'secondary'}>
