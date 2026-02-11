@@ -1122,8 +1122,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
     filtered.forEach(ativ => {
       const tipoContagem = ativ.tipo_contagem || 'normal';
+      // Para atividades por_disciplina, agrupar por disciplina do documento (source_disciplina)
       const key = tipoContagem === 'por_disciplina'
-        ? `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.disciplina}-${ativ.subdisciplina}-${ativ.source_disciplina || ativ.disciplina}`
+        ? `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.source_disciplina || ativ.disciplina}`
         : `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.disciplina}-${ativ.subdisciplina}`;
 
       if (!grupos.has(key)) {
@@ -1133,7 +1134,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         });
       }
 
-      if (ativ.source_documento_id || (tipoContagem === 'por_folha' && !ativ.source_disciplina)) {
+      // Não adicionar às folhas se for por_disciplina, pois já é a representação consolidada
+      if (tipoContagem !== 'por_disciplina' && ativ.source_documento_id) {
         grupos.get(key).folhas.push(ativ);
       }
     });
