@@ -1754,7 +1754,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                       <Table className="text-sm">
                         <TableHeader className="bg-white">
                           <TableRow>
-                            {hasCheckboxColumn && <TableHead className="w-[50px]"></TableHead>}
                             <TableHead className="w-[50px]">
                               <Checkbox
                                 checked={atividadesSelecionadasParaExcluir.size > 0 && 
@@ -1782,7 +1781,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             <TableHead>Tempo Padrão</TableHead>
                             <TableHead>Tempo Total</TableHead>
                             <TableHead className="text-center w-[120px]">Ações</TableHead>
-                            <TableHead className="w-[50px]"></TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -1907,29 +1905,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                       </div>
                                     ) : (
                                       <div className="flex gap-1">
-                                        <Checkbox
-                                          checked={atividadesSelecionadasParaPlanejar.has(genericAtividadeIdToExclude)}
-                                          onCheckedChange={(checked) => {
-                                            setAtividadesSelecionadasParaPlanejar(prev => {
-                                              const newSet = new Set(prev);
-                                              if (checked) {
-                                                newSet.add(genericAtividadeIdToExclude);
-                                              } else {
-                                                newSet.delete(genericAtividadeIdToExclude);
-                                              }
-                                              return newSet;
-                                            });
-                                          }}
-                                          disabled={isSavingExecutor[genericAtividadeIdToExclude]}
-                                        />
                                         <Select
-                                          onValueChange={(value) => {
-                                            if (atividadesSelecionadasParaPlanejar.size > 0 && atividadesSelecionadasParaPlanejar.has(genericAtividadeIdToExclude)) {
-                                              handlePlanejarMultiplas(value, datasInicio[genericAtividadeIdToExclude]);
-                                            } else {
-                                              handleSaveExecutor(ativ, value, datasInicio[genericAtividadeIdToExclude]);
-                                            }
-                                          }}
+                                          onValueChange={(value) => handleSaveExecutor(ativ, value, datasInicio[genericAtividadeIdToExclude])}
                                           disabled={isSavingExecutor[genericAtividadeIdToExclude]}
                                         >
                                           <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
@@ -2083,43 +2060,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                       </div>
                                     )}
                                   </TableCell>
-                                  <TableCell>
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" disabled={isDeleting || isDeletingMultiple}>
-                                          {isDeleting || isDeletingMultiple ? <Loader2 className="w-4 h-4 animate-spin" /> : <MoreHorizontal className="w-4 h-4" />}
-                                        </Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent>
-                                        {ativ.isEditable ? (
-                                          <>
-                                            <DropdownMenuItem onClick={() => handleOpenModal(ativ)}>
-                                              <Edit className="w-4 h-4 mr-2" /> Editar Atividade
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleDelete(ativ.id)} className="text-red-600">
-                                              <Trash2 className="w-4 h-4 mr-2" /> Excluir Atividade de Projeto
-                                            </DropdownMenuItem>
-                                          </>
-                                        ) : (
-                                          <>
-                                            <DropdownMenuItem onClick={() => handleOpenEtapaModal(ativ)}>
-                                              <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem 
-                                              onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)} 
-                                              className="text-blue-600"
-                                            >
-                                              <Edit2 className="w-4 h-4 mr-2" /> Editar Etapa em Folhas Específicas
-                                            </DropdownMenuItem>
-                                          </>
-                                        )}
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
-                                  </TableCell>
                                 </TableRow>
                                 {isExpanded && grupo.folhas.map(folha => (
                                   <TableRow key={folha.uniqueId} className="bg-blue-50/50">
-                                    {hasCheckboxColumn && <TableCell></TableCell>}
+                                    <TableCell></TableCell>
                                     <TableCell className="pl-12">
                                       <ChevronRight className="w-3 h-3 text-gray-400 inline mr-1" />
                                     </TableCell>
@@ -2164,27 +2108,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                       )}
                                     </TableCell>
                                     <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
-                                      <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
-                                      <TableCell>
-                                        <Checkbox
-                                          checked={atividadesSelecionadasParaExcluir.has(folha.base_atividade_id || folha.id)}
-                                          onCheckedChange={(checked) => {
-                                            setAtividadesSelecionadasParaExcluir(prev => {
-                                              const newSet = new Set(prev);
-                                              const id = folha.base_atividade_id || folha.id;
-                                              if (checked) {
-                                                newSet.add(id);
-                                              } else {
-                                                newSet.delete(id);
-                                              }
-                                              return newSet;
-                                            });
-                                          }}
-                                        />
-                                      </TableCell>
-                                      <TableCell></TableCell>
-                                    </TableRow>
-                                    ))}
+                                    <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
+                                  </TableRow>
+                                  ))}
                                     </>
                                     );
                                     })}
@@ -2197,7 +2123,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                       <Table>
                       <TableHeader className="bg-gray-50">
                         <TableRow>
-                           {hasCheckboxColumn && <TableHead className="w-[50px]"></TableHead>}
                            <TableHead className="w-[50px]">
                              <Checkbox
                                checked={atividadesSelecionadasParaExcluir.size > 0 && 
@@ -2225,7 +2150,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                      <TableHead>Tempo Padrão</TableHead>
                      <TableHead>Tempo Total</TableHead>
                      <TableHead className="text-center w-[120px]">Ações</TableHead>
-                     <TableHead className="w-[50px]"></TableHead>
                    </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -2240,17 +2164,20 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                     return (
                       <>
                         <TableRow key={key} className="hover:bg-gray-50">
-                          {hasCheckboxColumn && (
-                            <TableCell>
-                              {ativ.isEditable && (
-                                <Checkbox
-                                  checked={selectedIds.has(ativ.uniqueId)}
-                                  onCheckedChange={() => handleSelectItem(ativ.uniqueId)}
-                                  disabled={isDeletingMultiple}
-                                />
-                              )}
-                            </TableCell>
-                          )}
+                          <TableCell>
+                            <Checkbox
+                              checked={atividadesSelecionadasParaExcluir.has(ativ.base_atividade_id || ativ.id)}
+                              onCheckedChange={(checked) => {
+                                setAtividadesSelecionadasParaExcluir(prev => {
+                                  const newSet = new Set(prev);
+                                  const id = ativ.base_atividade_id || ativ.id;
+                                  if (checked) newSet.add(id);
+                                  else newSet.delete(id);
+                                  return newSet;
+                                });
+                              }}
+                            />
+                          </TableCell>
                           <TableCell>
                             {grupo.folhas.length > 0 && (
                               <Button 
@@ -2319,29 +2246,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                 </div>
                               ) : (
                                 <div className="flex gap-1">
-                                  <Checkbox
-                                    checked={atividadesSelecionadasParaPlanejar.has(genericAtividadeIdToExclude)}
-                                    onCheckedChange={(checked) => {
-                                      setAtividadesSelecionadasParaPlanejar(prev => {
-                                        const newSet = new Set(prev);
-                                        if (checked) {
-                                          newSet.add(genericAtividadeIdToExclude);
-                                        } else {
-                                          newSet.delete(genericAtividadeIdToExclude);
-                                        }
-                                        return newSet;
-                                      });
-                                    }}
-                                    disabled={isSavingExecutor[genericAtividadeIdToExclude]}
-                                  />
                                   <Select
-                                    onValueChange={(value) => {
-                                      if (atividadesSelecionadasParaPlanejar.size > 0 && atividadesSelecionadasParaPlanejar.has(genericAtividadeIdToExclude)) {
-                                        handlePlanejarMultiplas(value, datasInicio[genericAtividadeIdToExclude]);
-                                      } else {
-                                        handleSaveExecutor(ativ, value, datasInicio[genericAtividadeIdToExclude]);
-                                      }
-                                    }}
+                                    onValueChange={(value) => handleSaveExecutor(ativ, value, datasInicio[genericAtividadeIdToExclude])}
                                     disabled={isSavingExecutor[genericAtividadeIdToExclude]}
                                   >
                                     <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
@@ -2543,44 +2449,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                               </div>
                             )}
                           </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon" disabled={isDeleting || isDeletingMultiple}>
-                                  {isDeleting || isDeletingMultiple ? <Loader2 className="w-4 h-4 animate-spin" /> : <MoreHorizontal className="w-4 h-4" />}
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent>
-                                {ativ.isEditable ? (
-                                  <>
-                                    <DropdownMenuItem onClick={() => handleOpenModal(ativ)}>
-                                      <Edit className="w-4 h-4 mr-2" /> Editar Atividade
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem onClick={() => handleDelete(ativ.id)} className="text-red-600">
-                                      <Trash2 className="w-4 h-4 mr-2" /> Excluir Atividade de Projeto
-                                    </DropdownMenuItem>
-                                  </>
-                                ) : (
-                                  <>
-                                    <DropdownMenuItem onClick={() => handleOpenEtapaModal(ativ)}>
-                                      <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
-                                    </DropdownMenuItem>
-                                    <DropdownMenuItem 
-                                      onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)} 
-                                      className="text-blue-600"
-                                    >
-                                      <Edit2 className="w-4 h-4 mr-2" /> Editar Etapa em Folhas Específicas
-                                    </DropdownMenuItem>
-                                  </>
-                                  )}
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
                         </TableRow>
 
                         {isExpanded && grupo.folhas.map(folha => (
                           <TableRow key={folha.uniqueId} className="bg-blue-50/50">
-                            {hasCheckboxColumn && <TableCell></TableCell>}
+                            <TableCell></TableCell>
                             <TableCell className="pl-12">
                               <ChevronRight className="w-3 h-3 text-gray-400 inline mr-1" />
                             </TableCell>
@@ -2626,8 +2499,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                             </TableCell>
                             <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
                             <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
-                            <TableCell></TableCell>
-                            <TableCell></TableCell>
                           </TableRow>
                         ))}
                         </>
