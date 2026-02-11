@@ -629,8 +629,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
        let successCount = 0;
        let errorCount = 0;
        const updatedLinhas = new Map();
-       const BATCH_SIZE = 3; // Máximo de requisições paralelas por lote
-       const DELAY_ENTRE_LOTES = 500; // Delay entre lotes em ms
+       const BATCH_SIZE = 2; // Máximo de requisições paralelas por lote
+       const DELAY_ENTRE_LOTES = 1500; // Delay entre lotes em ms
 
        // Dividir em lotes
        for (let batchIdx = 0; batchIdx < linhasParaSalvar.length; batchIdx += BATCH_SIZE) {
@@ -706,7 +706,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                      throw err;
                    }
 
-                   const waitTime = 2000 * attempts;
+                   const waitTime = 3000 * attempts;
                    console.log(`  ⏳ Aguardando ${waitTime}ms...`);
                    await new Promise(resolve => setTimeout(resolve, waitTime));
                  }
