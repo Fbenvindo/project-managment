@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { Atividade, Disciplina, PlanejamentoAtividade, Documento, AlteracaoEtapa, Empreendimento, Usuario, AtividadesDoProjeto } from '@/entities/all';
+import { Atividade, Disciplina, PlanejamentoAtividade, Documento, AlteracaoEtapa, Empreendimento, Usuario, AtividadesDoProjeto, Pavimento } from '@/entities/all';
 
 const PlanejamentoDocumento = base44.entities.PlanejamentoDocumento;
 import { Button } from '@/components/ui/button';
@@ -786,7 +786,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         alteracoesData,
         usuariosData,
         todosEmpreendimentos,
-        atividadesDoProjetoData
+        atividadesDoProjetoData,
+        pavimentosData
       ] = await Promise.all([
         retryWithBackoff(() => Atividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchProjectActivities'),
         retryWithBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchPlanejamentos'),
@@ -797,7 +798,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         retryWithBackoff(() => AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAlteracoes'),
         retryWithBackoff(() => Usuario.list(), 3, 500, 'fetchUsuarios'),
         retryWithBackoff(() => Empreendimento.list(), 3, 500, 'fetchAllEmpreendimentos'),
-        retryWithBackoff(() => AtividadesDoProjeto.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAtividadesDoProjeto')
+        retryWithBackoff(() => AtividadesDoProjeto.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAtividadesDoProjeto'),
+        retryWithBackoff(() => base44.entities.Pavimento.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchPavimentos')
       ]);
 
       setDocumentos(documentosData || []);
@@ -847,6 +849,34 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       );
       
       const planejamentosMap = new Map((planejamentosData || []).map(p => [`${p.documento_id}-${p.atividade_id}`, p]));
+
+      // Listas de atividades que devem se multiplicar
+      const atividadesPorPavimento = [
+        "Confecção de P- (Paisagismo)",
+        "Confecção de P- (Pontos)",
+        "Confecção AC-",
+        "Confecção F-",
+        "Confecção de L-",
+        "Confecção de E-",
+        "Confecção de A-",
+        "Confecção de D- (Decoração)",
+        "Markup",
+        "Preparação de modelo inicial"
+      ];
+
+      const atividadesPorFolha = [
+        "Carimbo, nota e legenda",
+        "Cadastro de projeto",
+        "Validação do cadastro de PB de arquitetura, estrutura, fundações e terceiros",
+        "Check-List - EP",
+        "Check-List - AP",
+        "Check-List - PB",
+        "Check-List - PE",
+        "Check-List - LO"
+      ];
+
+      const numPavimentos = (pavimentosData || []).length;
+      const numFolhas = (documentosData || []).length;
 
       // Buscar etapas cadastradas no empreendimento
       const empreendimento = (empreendimentoData && empreendimentoData[0]) || null;
@@ -902,9 +932,19 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
 
                // Aplicar override de tempo se existir
-               const tempoFinal = override?.tempo !== undefined && override?.tempo !== null 
+               let tempoBase = override?.tempo !== undefined && override?.tempo !== null 
                  ? override.tempo 
                  : (baseAtividade.tempo || 0);
+
+               // Multiplicar tempo se for atividade especial
+               let tempoFinal = tempoBase;
+               const nomeAtividade = baseAtividade.atividade || '';
+               
+               if (atividadesPorPavimento.some(nome => nomeAtividade.includes(nome))) {
+                 tempoFinal = tempoBase * numPavimentos;
+               } else if (atividadesPorFolha.some(nome => nomeAtividade.includes(nome))) {
+                 tempoFinal = tempoBase * numFolhas;
+               }
 
                atividadesDocumentacao.push({
                  ...baseAtividade,
