@@ -1195,8 +1195,9 @@ export default function AtaPlanejamento() {
                             {(prov.respostas || []).map((resp, rIdx) => (
                               <div key={rIdx} className="flex gap-1 items-start print:hidden">
                                 <AutoResizeTextarea
-                                  value={resp}
+                                  value={resp || ''}
                                   onChange={(e) => {
+                                    setHasUnsavedChanges(true);
                                     const novasRespostas = [...(prov.respostas || [])];
                                     novasRespostas[rIdx] = e.target.value;
                                     handleUpdateProvidencia(prov.id, 'respostas', novasRespostas);
@@ -1206,6 +1207,7 @@ export default function AtaPlanejamento() {
                                 />
                                 <button
                                   onClick={() => {
+                                    setHasUnsavedChanges(true);
                                     const novasRespostas = (prov.respostas || []).filter((_, i) => i !== rIdx);
                                     handleUpdateProvidencia(prov.id, 'respostas', novasRespostas);
                                   }}
@@ -1223,6 +1225,7 @@ export default function AtaPlanejamento() {
                             </div>
                             <button
                               onClick={() => {
+                                setHasUnsavedChanges(true);
                                 const novasRespostas = [...(prov.respostas || []), ''];
                                 handleUpdateProvidencia(prov.id, 'respostas', novasRespostas);
                               }}
