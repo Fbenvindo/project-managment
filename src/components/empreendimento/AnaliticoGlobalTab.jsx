@@ -865,11 +865,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       }));
 
       // Adicionar atividades de Documentação (sempre visíveis)
-      const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação', 'Qualidade'];
+      const subdisciplinasDocumentacao = ['Apoio', 'BIM', 'Coordenação', 'Qualidade'];
       const atividadesDocumentacao = [];
       
       allGenericActivitiesMap.forEach(baseAtividade => {
-        if (disciplinasDocumentacao.includes(baseAtividade.disciplina)) {
+        if (subdisciplinasDocumentacao.includes(baseAtividade.subdisciplina)) {
           const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
           const etapaValida = etapasCadastradas.length === 0 || etapasCadastradas.includes(baseAtividade.etapa);
           
@@ -1156,25 +1156,20 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   }, [combinedActivities, filters]);
 
   const atividadesPorDisciplina = useMemo(() => {
-    const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação', 'Qualidade'];
+    const subdisciplinasDocumentacao = ['Apoio', 'BIM', 'Coordenação', 'Qualidade'];
     const grupos = {};
     const gruposDocumentacao = {};
     
-    // Inicializar todas as disciplinas de Documentação com objetos de subdisciplinas
-    disciplinasDocumentacao.forEach(disc => {
-      gruposDocumentacao[disc] = {};
-    });
-    
     atividadesAgrupadas.forEach(grupo => {
       const disciplina = grupo.baseAtividade.disciplina || 'Sem Disciplina';
+      const subdisciplina = grupo.baseAtividade.subdisciplina || 'Sem Subdisciplina';
       
-      if (disciplinasDocumentacao.includes(disciplina)) {
-        // Agrupar Documentação por subdisciplina dentro da disciplina
-        const subdisciplina = grupo.baseAtividade.subdisciplina || 'Sem Subdisciplina';
-        if (!gruposDocumentacao[disciplina][subdisciplina]) {
-          gruposDocumentacao[disciplina][subdisciplina] = [];
+      if (subdisciplinasDocumentacao.includes(subdisciplina)) {
+        // Agrupar por subdisciplina (Apoio, BIM, Coordenação, Qualidade)
+        if (!gruposDocumentacao[subdisciplina]) {
+          gruposDocumentacao[subdisciplina] = [];
         }
-        gruposDocumentacao[disciplina][subdisciplina].push(grupo);
+        gruposDocumentacao[subdisciplina].push(grupo);
       } else {
         if (!grupos[disciplina]) {
           grupos[disciplina] = [];
@@ -1185,13 +1180,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
     const result = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
     
-    // Adicionar apenas disciplinas de Documentação que têm atividades
+    // Adicionar subdisciplinas de Documentação que têm atividades
     Object.entries(gruposDocumentacao)
       .sort((a, b) => a[0].localeCompare(b[0]))
-      .forEach(([disciplina, subdisciplinas]) => {
-        const temAtividades = Object.values(subdisciplinas).flat().length > 0;
-        if (temAtividades) {
-          result.push([disciplina, subdisciplinas]);
+      .forEach(([subdisciplina, atividadesGrupo]) => {
+        if (atividadesGrupo.length > 0) {
+          result.push([subdisciplina, atividadesGrupo]);
         }
       });
     
@@ -1762,9 +1756,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
          )}
 
         {atividadesPorDisciplina.map(([disciplina, grupos]) => {
-          const isDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação', 'Qualidade'].includes(disciplina);
-          const subdisciplinasMap = isDocumentacao ? grupos : null;
-          const atividadesList = isDocumentacao ? null : grupos;
+          const subdisciplinasDocumentacao = ['Apoio', 'BIM', 'Coordenação', 'Qualidade'];
+          const isDocumentacao = subdisciplinasDocumentacao.includes(disciplina);
+          const subdisciplinasMap = null;
+          const atividadesList = grupos;
           
           return (
           <div key={disciplina} className="border rounded-lg overflow-hidden">
@@ -1773,480 +1768,34 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                 <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
                 {disciplina}
                 <Badge variant="secondary" className="ml-2">
-                  {isDocumentacao 
-                    ? Object.values(subdisciplinasMap).flat().length 
-                    : atividadesList.length
-                  } {isDocumentacao 
-                    ? Object.values(subdisciplinasMap).flat().length === 1 ? 'atividade' : 'atividades'
-                    : atividadesList.length === 1 ? 'atividade' : 'atividades'
-                  }
+                  {atividadesList.length} {atividadesList.length === 1 ? 'atividade' : 'atividades'}
                 </Badge>
               </h3>
             </div>
             <div className="overflow-x-auto">
-              {isDocumentacao ? (
-                // Mostrar subdisciplinas para disciplinas de documentação
-                <div className="space-y-4 p-4">
-                  {Object.entries(subdisciplinasMap)
-                    .sort((a, b) => a[0].localeCompare(b[0]))
-                    .map(([subdisciplina, atividadesSubgrupo]) => (
-                    <div key={subdisciplina} className="border rounded-lg overflow-hidden">
-                      <div className="bg-gray-50 px-3 py-2 border-b">
-                        <h4 className="font-medium text-sm text-gray-700">
-                          {subdisciplina} ({atividadesSubgrupo.length})
-                        </h4>
-                      </div>
-                      <Table className="text-sm">
-                        <TableHeader className="bg-white">
-                          <TableRow>
-                            {hasCheckboxColumn && <TableHead className="w-[50px]"></TableHead>}
-                            <TableHead className="w-[50px]">
-                              <Checkbox
-                                checked={atividadesSelecionadasParaExcluir.size > 0 && 
-                                         atividadesSubgrupo.every(grupo => atividadesSelecionadasParaExcluir.has(grupo.baseAtividade.base_atividade_id || grupo.baseAtividade.id))}
-                                onCheckedChange={(checked) => {
-                                  const ids = atividadesSubgrupo.map(g => g.baseAtividade.base_atividade_id || g.baseAtividade.id);
-                                  setAtividadesSelecionadasParaExcluir(prev => {
-                                    const newSet = new Set(prev);
-                                    ids.forEach(id => {
-                                      if (checked) newSet.add(id);
-                                      else newSet.delete(id);
-                                    });
-                                    return newSet;
-                                  });
-                                }}
-                              />
-                            </TableHead>
-                            <TableHead className="w-[50px]"></TableHead>
-                            <TableHead>Atividade</TableHead>
-                            <TableHead>Folhas</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Etapa</TableHead>
-                            <TableHead>Executor</TableHead>
-                            <TableHead>Datas Planejadas</TableHead>
-                            <TableHead>Tempo Padrão</TableHead>
-                            <TableHead>Tempo Total</TableHead>
-                            <TableHead className="text-center w-[120px]">Ações</TableHead>
-                            <TableHead className="w-[50px]"></TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {atividadesSubgrupo.map(grupo => {
-                            const ativ = grupo.baseAtividade;
-                            const key = `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.disciplina}-${ativ.subdisciplina}`;
-                            const isExpanded = expandedAtividades[key];
-                            const genericAtividadeIdToExclude = ativ.base_atividade_id || ativ.id;
-                            const isDeleting = isDeletingActivity[genericAtividadeIdToExclude];
-
-                            return (
-                              <>
-                                <TableRow key={key} className="hover:bg-gray-50">
-                                   {hasCheckboxColumn && (
-                                     <TableCell>
-                                       {ativ.isEditable && (
-                                         <Checkbox
-                                           checked={selectedIds.has(ativ.uniqueId)}
-                                           onCheckedChange={() => handleSelectItem(ativ.uniqueId)}
-                                           disabled={isDeletingMultiple}
-                                         />
-                                       )}
-                                     </TableCell>
-                                   )}
-                                   <TableCell>
-                                     {!ativ.isEditable && (
-                                       <Checkbox
-                                         checked={atividadesSelecionadasParaExcluir.has(ativ.base_atividade_id || ativ.id)}
-                                         onCheckedChange={(checked) => {
-                                           setAtividadesSelecionadasParaExcluir(prev => {
-                                             const newSet = new Set(prev);
-                                             const id = ativ.base_atividade_id || ativ.id;
-                                             if (checked) newSet.add(id);
-                                             else newSet.delete(id);
-                                             return newSet;
-                                           });
-                                         }}
-                                       />
-                                     )}
-                                   </TableCell>
-                                   
-                                  <TableCell>
-                                    {grupo.folhas.length > 0 && (
-                                      <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        onClick={() => toggleAtividadeExpansion(key)}
-                                        className="h-8 w-8"
-                                      >
-                                        {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                                      </Button>
-                                    )}
-                                  </TableCell>
-                                  <TableCell className="font-medium text-sm">{String(ativ.atividade || '')}</TableCell>
-                                  <TableCell>
-                                    <Badge variant="outline">
-                                      {grupo.folhas.length} {grupo.folhas.length === 1 ? 'folha' : 'folhas'}
-                                    </Badge>
-                                  </TableCell>
-                                  <TableCell>
-                                    {grupo.folhas.length === 0 ? (
-                                      <Badge variant={ativ.source === 'Projeto' ? 'default' : 'secondary'}>
-                                        {ativ.source === 'Projeto' ? 'Projeto' : 'Disponível'}
-                                      </Badge>
-                                    ) : (
-                                     <div className="flex gap-1">
-                                       {grupo.folhas.some(f => f.status === 'Planejada') && (
-                                         <Badge className="bg-green-600 text-white font-semibold shadow-md flex items-center gap-1 w-fit">
-                                           <CheckCircle2 className="w-4 h-4" />
-                                           Planejada
-                                         </Badge>
-                                       )}
-                                       {grupo.folhas.some(f => f.status === 'Disponível') && (
-                                         <Badge variant="outline" className="text-gray-600">Disponível</Badge>
-                                       )}
-                                     </div>
-                                    )}
-                                  </TableCell>
-                                  <TableCell className="text-sm">
-                                    <button
-                                      onClick={() => handleOpenEtapaModal(ativ)}
-                                      className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
-                                      title="Clique para editar a etapa"
-                                    >
-                                      {ativ.etapa}
-                                    </button>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="w-[210px]">
-                                    {ativ.executor_principal ? (
-                                      <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
-                                        <div className="flex items-center gap-1">
-                                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                          <span className="text-xs font-medium text-green-800">
-                                            {usuarios.find(u => u.email === ativ.executor_principal)?.nome || ativ.executor_principal}
-                                          </span>
-                                        </div>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => handleSaveExecutor(ativ, "")}
-                                          className="text-xs text-red-600 hover:text-red-700 h-6"
-                                          disabled={isSavingExecutor[genericAtividadeIdToExclude]}
-                                        >
-                                          Remover
-                                        </Button>
-                                      </div>
-                                    ) : (
-                                      <div className="flex gap-1">
-                                        <Checkbox
-                                          checked={atividadesSelecionadasParaPlanejar.has(genericAtividadeIdToExclude)}
-                                          onCheckedChange={(checked) => {
-                                            setAtividadesSelecionadasParaPlanejar(prev => {
-                                              const newSet = new Set(prev);
-                                              if (checked) {
-                                                newSet.add(genericAtividadeIdToExclude);
-                                              } else {
-                                                newSet.delete(genericAtividadeIdToExclude);
-                                              }
-                                              return newSet;
-                                            });
-                                          }}
-                                          disabled={isSavingExecutor[genericAtividadeIdToExclude]}
-                                        />
-                                        <Select
-                                          onValueChange={(value) => {
-                                            if (atividadesSelecionadasParaPlanejar.size > 0 && atividadesSelecionadasParaPlanejar.has(genericAtividadeIdToExclude)) {
-                                              handlePlanejarMultiplas(value, datasInicio[genericAtividadeIdToExclude]);
-                                            } else {
-                                              handleSaveExecutor(ativ, value, datasInicio[genericAtividadeIdToExclude]);
-                                            }
-                                          }}
-                                          disabled={isSavingExecutor[genericAtividadeIdToExclude]}
-                                        >
-                                          <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
-                                            <Users2 className="w-3 h-3 mr-1" />
-                                            <SelectValue placeholder="Selecionar Executor" />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            {usuarios
-                                              .filter(u => u.status === 'ativo')
-                                              .sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))
-                                              .map(u => (
-                                                <SelectItem key={u.email} value={u.email} className="text-xs">
-                                                  {u.nome || u.email}
-                                                </SelectItem>
-                                              ))}
-                                          </SelectContent>
-                                        </Select>
-                                        <Popover>
-                                          <PopoverTrigger asChild>
-                                            <Button
-                                              variant="outline"
-                                              size="icon"
-                                              className={`h-7 w-7 ${datasInicio[genericAtividadeIdToExclude] ? 'border-green-500 text-green-600' : ''}`}
-                                              disabled={isSavingExecutor[genericAtividadeIdToExclude]}
-                                            >
-                                              <Calendar className="w-3 h-3" />
-                                            </Button>
-                                          </PopoverTrigger>
-                                          <PopoverContent className="w-auto p-0" align="start">
-                                            <CalendarComponent
-                                              mode="single"
-                                              selected={datasInicio[genericAtividadeIdToExclude]}
-                                              onSelect={(date) => setDatasInicio(prev => ({ ...prev, [genericAtividadeIdToExclude]: date }))}
-                                              disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                                              locale={ptBR}
-                                            />
-                                            {datasInicio[genericAtividadeIdToExclude] && (
-                                              <div className="p-2 border-t">
-                                                <Button
-                                                  variant="ghost"
-                                                  size="sm"
-                                                  onClick={() => setDatasInicio(prev => ({ ...prev, [genericAtividadeIdToExclude]: null }))}
-                                                  className="w-full text-xs"
-                                                >
-                                                  Limpar Data
-                                                </Button>
-                                              </div>
-                                            )}
-                                          </PopoverContent>
-                                        </Popover>
-                                      </div>
-                                    )}
-                                    {isSavingExecutor[genericAtividadeIdToExclude] && (
-                                      <div className="flex items-center gap-1 text-xs text-blue-600 mt-1">
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                        Planejando...
-                                      </div>
-                                    )}
-                                    </div>
-                                    </TableCell>
-                                      <TableCell>
-                                        {datasInicio[genericAtividadeIdToExclude] ? (
-                                          <div className="flex items-center gap-1 text-blue-600 text-xs">
-                                            <Calendar className="w-3 h-3" />
-                                            <span>Início: {format(datasInicio[genericAtividadeIdToExclude], 'dd/MM/yyyy')}</span>
-                                          </div>
-                                        ) : grupo.folhas.some(f => f.status === 'Planejada') ? (
-                                          (() => {
-                                            const folhasPlanejadas = grupo.folhas.filter(f => f.status === 'Planejada');
-                                            const planejamentosComDatas = folhasPlanejadas
-                                              .map(f => planejamentos?.find(p => 
-                                                p.documento_id === f.source_documento_id && 
-                                                p.atividade_id === f.base_atividade_id
-                                              ))
-                                              .filter(p => p?.inicio_planejado && p?.termino_planejado);
-
-                                            if (planejamentosComDatas.length > 0) {
-                                              const datas = planejamentosComDatas.map(p => ({
-                                                inicio: parseISO(p.inicio_planejado),
-                                                termino: parseISO(p.termino_planejado)
-                                              }));
-
-                                              const dataInicio = datas.reduce((min, d) => d.inicio < min ? d.inicio : min, datas[0].inicio);
-                                              const dataTermino = datas.reduce((max, d) => d.termino > max ? d.termino : max, datas[0].termino);
-
-                                              return (
-                                                <div className="flex items-center gap-1 text-gray-600 text-xs">
-                                                  <Calendar className="w-3 h-3" />
-                                                  <span>{format(dataInicio, 'dd/MM')} - {format(dataTermino, 'dd/MM')}</span>
-                                                </div>
-                                              );
-                                            }
-                                            return <span className="text-xs text-gray-400">-</span>;
-                                          })()
-                                        ) : (
-                                          <span className="text-xs text-gray-400">-</span>
-                                        )}
-                                      </TableCell>
-                                      <TableCell className="text-sm">{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
-                                      <TableCell className="text-sm font-semibold text-blue-600">
-                                    {grupo.folhas.length > 0 
-                                      ? `${grupo.folhas.reduce((sum, f) => sum + (Number(f.tempo) || 0), 0).toFixed(1)}h`
-                                      : '-'}
-                                  </TableCell>
-                                  <TableCell className="text-center">
-                                    {!ativ.isEditable && (
-                                      <div className="flex items-center gap-2 justify-center">
-                                        <Button 
-                                          size="icon" 
-                                          onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)}
-                                          variant="outline"
-                                          className="border-blue-500 text-blue-600 hover:bg-blue-50"
-                                          title="Editar Etapa"
-                                        >
-                                          <Edit2 className="w-4 h-4" />
-                                        </Button>
-                                        <Button 
-                                          size="icon" 
-                                          onClick={() => handleConcluirEmTodasFolhas(ativ)}
-                                          variant="outline"
-                                          className="border-green-500 text-green-600 hover:bg-green-50"
-                                          disabled={isConcluindo[genericAtividadeIdToExclude]}
-                                          title="Concluir em Todas as Folhas"
-                                        >
-                                          {isConcluindo[genericAtividadeIdToExclude] ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                          ) : (
-                                            <CheckCircle className="w-4 h-4" />
-                                          )}
-                                        </Button>
-                                        <Button 
-                                          size="icon" 
-                                          onClick={() => handleOpenExcluirDeFolhasModal(ativ)}
-                                          variant="outline"
-                                          className="border-orange-500 text-orange-600 hover:bg-orange-50"
-                                          disabled={isDeleting}
-                                          title="Excluir de Folhas Específicas"
-                                        >
-                                          {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileX className="w-4 h-4" />}
-                                        </Button>
-                                        <Button 
-                                          size="icon" 
-                                          onClick={() => handleExcluirAtividade(ativ)}
-                                          variant="outline"
-                                          className="border-red-500 text-red-600 hover:bg-red-50"
-                                          disabled={isDeleting}
-                                          title="Excluir de Todas as Folhas"
-                                        >
-                                          {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
-                                        </Button>
-                                      </div>
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" disabled={isDeleting || isDeletingMultiple}>
-                                          {isDeleting || isDeletingMultiple ? <Loader2 className="w-4 h-4 animate-spin" /> : <MoreHorizontal className="w-4 h-4" />}
-                                        </Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent>
-                                        {ativ.isEditable ? (
-                                          <>
-                                            <DropdownMenuItem onClick={() => handleOpenModal(ativ)}>
-                                              <Edit className="w-4 h-4 mr-2" /> Editar Atividade
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleDelete(ativ.id)} className="text-red-600">
-                                              <Trash2 className="w-4 h-4 mr-2" /> Excluir Atividade de Projeto
-                                            </DropdownMenuItem>
-                                          </>
-                                        ) : (
-                                          <>
-                                            <DropdownMenuItem onClick={() => handleOpenEtapaModal(ativ)}>
-                                              <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem 
-                                              onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)} 
-                                              className="text-blue-600"
-                                            >
-                                              <Edit2 className="w-4 h-4 mr-2" /> Editar Etapa em Folhas Específicas
-                                            </DropdownMenuItem>
-                                          </>
-                                        )}
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
-                                  </TableCell>
-                                </TableRow>
-                                {isExpanded && grupo.folhas.map(folha => (
-                                  <TableRow key={folha.uniqueId} className="bg-blue-50/50">
-                                    {hasCheckboxColumn && <TableCell></TableCell>}
-                                    <TableCell className="pl-12">
-                                      <ChevronRight className="w-3 h-3 text-gray-400 inline mr-1" />
-                                    </TableCell>
-                                    <TableCell className="text-sm text-gray-600">
-                                      {folha.source_documento_numero} - {folha.source_documento_arquivo}
-                                    </TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell>
-                                      {folha.status === 'Planejada' ? (
-                                        <Badge className="bg-green-600 text-white font-semibold shadow-md flex items-center gap-1 w-fit text-xs">
-                                          <CheckCircle2 className="w-3 h-3" />
-                                          Planejada
-                                        </Badge>
-                                      ) : (
-                                        <Badge variant="outline" className="text-xs text-gray-600">
-                                          {folha.status}
-                                        </Badge>
-                                      )}
-                                    </TableCell>
-                                    <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell>
-                                      {folha.status === 'Planejada' ? (
-                                        (() => {
-                                          const planejamento = planejamentos?.find(p => 
-                                            p.documento_id === folha.source_documento_id && 
-                                            p.atividade_id === folha.base_atividade_id
-                                          );
-
-                                          if (planejamento?.inicio_planejado && planejamento?.termino_planejado) {
-                                            return (
-                                              <div className="flex items-center gap-1 text-gray-600 text-xs">
-                                                <Calendar className="w-3 h-3" />
-                                                <span>{format(parseISO(planejamento.inicio_planejado), 'dd/MM')} - {format(parseISO(planejamento.termino_planejado), 'dd/MM')}</span>
-                                              </div>
-                                            );
-                                          }
-                                          return <span className="text-xs text-gray-400">-</span>;
-                                        })()
-                                      ) : (
-                                        <span className="text-xs text-gray-400">-</span>
-                                      )}
-                                    </TableCell>
-                                    <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
-                                      <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
-                                      <TableCell>
-                                        <Checkbox
-                                          checked={atividadesSelecionadasParaExcluir.has(folha.base_atividade_id || folha.id)}
-                                          onCheckedChange={(checked) => {
-                                            setAtividadesSelecionadasParaExcluir(prev => {
-                                              const newSet = new Set(prev);
-                                              const id = folha.base_atividade_id || folha.id;
-                                              if (checked) {
-                                                newSet.add(id);
-                                              } else {
-                                                newSet.delete(id);
-                                              }
-                                              return newSet;
-                                            });
-                                          }}
-                                        />
-                                      </TableCell>
-                                      <TableCell></TableCell>
-                                    </TableRow>
-                                    ))}
-                                    </>
-                                    );
-                                    })}
-                                    </TableBody>
-                                    </Table>
-                      </div>
-                      ))}
-                      </div>
-                      ) : (
                       <Table>
                       <TableHeader className="bg-gray-50">
                         <TableRow>
-                           {hasCheckboxColumn && <TableHead className="w-[50px]"></TableHead>}
-                           <TableHead className="w-[50px]">
-                             <Checkbox
-                               checked={atividadesSelecionadasParaExcluir.size > 0 && 
-                                        grupos.every(grupo => atividadesSelecionadasParaExcluir.has(grupo.baseAtividade.base_atividade_id || grupo.baseAtividade.id))}
-                               onCheckedChange={(checked) => {
-                                 const ids = grupos.map(g => g.baseAtividade.base_atividade_id || g.baseAtividade.id);
-                                 setAtividadesSelecionadasParaExcluir(prev => {
-                                   const newSet = new Set(prev);
-                                   ids.forEach(id => {
-                                     if (checked) newSet.add(id);
-                                     else newSet.delete(id);
-                                   });
-                                   return newSet;
-                                 });
-                               }}
-                             />
-                           </TableHead>
-                           <TableHead className="w-[50px]"></TableHead>
-                           <TableHead>Atividade</TableHead>
+                          {hasCheckboxColumn && <TableHead className="w-[50px]"></TableHead>}
+                          <TableHead className="w-[50px]">
+                            <Checkbox
+                              checked={atividadesSelecionadasParaExcluir.size > 0 && 
+                                       atividadesList.every(grupo => atividadesSelecionadasParaExcluir.has(grupo.baseAtividade.base_atividade_id || grupo.baseAtividade.id))}
+                              onCheckedChange={(checked) => {
+                                const ids = atividadesList.map(g => g.baseAtividade.base_atividade_id || g.baseAtividade.id);
+                                setAtividadesSelecionadasParaExcluir(prev => {
+                                  const newSet = new Set(prev);
+                                  ids.forEach(id => {
+                                    if (checked) newSet.add(id);
+                                    else newSet.delete(id);
+                                  });
+                                  return newSet;
+                                });
+                              }}
+                            />
+                          </TableHead>
+                          <TableHead className="w-[50px]"></TableHead>
+                          <TableHead>Atividade</TableHead>
                      <TableHead>Folhas</TableHead>
                      <TableHead>Status</TableHead>
                      <TableHead>Etapa</TableHead>
@@ -2259,7 +1808,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                    </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {grupos.map(grupo => {
+                  {atividadesList.map(grupo => {
                     const ativ = grupo.baseAtividade;
                     const key = `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.disciplina}-${ativ.subdisciplina}`;
                     const isExpanded = expandedAtividades[key];
@@ -2665,7 +2214,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                         })}
                         </TableBody>
                         </Table>
-                        )}
                         </div>
                         </div>
                         );
