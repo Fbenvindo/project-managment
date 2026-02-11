@@ -729,16 +729,7 @@ export default function PlanejamentoAtividadeModal({
 
 
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="permite_multiplas_execucoes"
-                checked={formData.permite_multiplas_execucoes}
-                onCheckedChange={handlePermiteMultiplasExecucoesChange}
-              />
-              <Label htmlFor="permite_multiplas_execucoes" className="cursor-pointer">
-                Múltiplas execuções (no mesmo dia)
-              </Label>
-            </div>
+
 
             {formData.permite_multiplas_execucoes && (
               <div className="space-y-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
@@ -808,16 +799,7 @@ export default function PlanejamentoAtividadeModal({
               </div>
             )}
 
-            <div className="flex items-center space-x-2">
-              <Checkbox
-                id="recorrencia"
-                checked={formData.recorrencia_ativada}
-                onCheckedChange={handleRecorrenciaChange}
-              />
-              <Label htmlFor="recorrencia" className="cursor-pointer">
-                Criar em múltiplas datas (recorrência)
-              </Label>
-            </div>
+
 
             {formData.recorrencia_ativada && (
               <div className="p-4 bg-purple-50 rounded-lg border border-purple-200 space-y-4">
