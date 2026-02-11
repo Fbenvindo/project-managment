@@ -334,6 +334,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       
       return { ...linha, datas: novasDatas };
     }));
+    setLinhasModificadas(new Set(linhas.map(l => l.id)));
   };
 
   const handleExcluirEtapa = (etapa) => {
@@ -351,6 +352,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       novasDatas[etapa]._excluida = true;
       return { ...linha, datas: novasDatas };
     }));
+    setLinhasModificadas(new Set(linhas.map(l => l.id)));
   };
 
   const handleRestaurarEtapa = (etapa) => {
@@ -365,6 +367,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       }
       return { ...linha, datas: novasDatas };
     }));
+    setLinhasModificadas(new Set(linhas.map(l => l.id)));
   };
 
   const handleUpdateData = (linhaId, etapa, revisao, valor) => {
