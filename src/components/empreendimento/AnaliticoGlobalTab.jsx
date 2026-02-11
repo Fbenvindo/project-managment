@@ -1005,9 +1005,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           
           if (tipoContagem === 'por_disciplina') {
             // Para atividades "por_disciplina", aparecer uma vez para CADA disciplina dos documentos
-            const disciplinaKey = `${baseAtividade.id}-${disciplinaDoc}`;
+            // Mas considerar etapa e subdisciplina para ter registros separados
+            const disciplinaKey = `${baseAtividade.id}-${baseAtividade.etapa}-${baseAtividade.subdisciplina}-${disciplinaDoc}`;
             
-            // Se já processamos esta atividade para esta disciplina, pular
+            // Se já processamos esta atividade+etapa+subdisciplina para esta disciplina, pular
             if (disciplinaEtapaCombinacoes.has(disciplinaKey)) {
               return;
             }
