@@ -872,8 +872,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         if (subdisciplinasDocumentacao.includes(baseAtividade.subdisciplina)) {
           const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
           const etapaValida = etapasCadastradas.length === 0 || etapasCadastradas.includes(baseAtividade.etapa);
+          const tipoContagem = baseAtividade.tipo_contagem || 'normal';
           
-          if (!isExcludedFromProject && etapaValida) {
+          // IMPORTANTE: Pular atividades "por_disciplina" aqui, elas serão processadas no loop de documentos
+          if (!isExcludedFromProject && etapaValida && tipoContagem !== 'por_disciplina') {
             const override = overrideActivitiesGlobalMap.get(baseAtividade.id);
             const etapaCorreta = override ? override.etapa : baseAtividade.etapa;
             
