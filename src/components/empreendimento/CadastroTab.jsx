@@ -45,6 +45,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   const [massEditRevisao, setMassEditRevisao] = useState('');
   const [massEditData, setMassEditData] = useState('');
   const [etapasMinimizadas, setEtapasMinimizadas] = useState({});
+  const [linhasModificadas, setLinhasModificadas] = useState(new Set());
   
   const folhasScrollRef = useRef(null);
   const dataScrollRef = useRef(null);
@@ -233,6 +234,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       setEtapasExcluidas(Array.from(etapasExcluidasSet));
       setLinhas(novasLinhas);
       setLoadedEmpreendimentoId(empreendimento.id);
+      setLinhasModificadas(new Set());
       
       // Log final para confirmar que revisões foram setadas
       console.log('🎬 FINAL DO LOADDATA - Revisões devem estar em revisoesPorEtapa agora');
@@ -269,6 +271,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         }
         return { ...linha, datas: novasDatas };
       }));
+      setLinhasModificadas(new Set(linhas.map(l => l.id)));
       return;
     }
     const ultimaRevisao = revisoesEtapa[revisoesEtapa.length - 1];
@@ -296,6 +299,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       }
       return { ...linha, datas: novasDatas };
     }));
+    setLinhasModificadas(new Set(linhas.map(l => l.id)));
     console.log(`✅ Revisão ${novaRevisao} marcada em todas as ${linhas.length} linhas`);
   };
 
@@ -365,6 +369,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
   const handleUpdateData = (linhaId, etapa, revisao, valor) => {
     console.log('📝 handleUpdateData:', { linhaId, etapa, revisao, valor });
+    setLinhasModificadas(prev => new Set([...prev, linhaId]));
     setLinhas(prev => {
       const updated = prev.map(linha => {
         if (linha.id !== linhaId) return linha;
@@ -406,6 +411,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     if (!confirm(`Copiar a data ${format(new Date(valorOriginal), 'dd/MM/yyyy')} para todas as células abaixo nesta coluna?`)) return;
     
     setHasUnsavedChanges(true);
+    const linhasAfetadas = linhas.slice(linhaIndex + 1).map(l => l.id);
+    setLinhasModificadas(prev => new Set([...prev, ...linhasAfetadas]));
     setLinhas(prev => prev.map((linha, idx) => {
       if (idx <= linhaIndex) return linha;
       
@@ -432,6 +439,10 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     if (!confirm('Copiar todas as datas desta linha para a próxima linha?')) return;
     
     setHasUnsavedChanges(true);
+    const proxLinha = linhas[linhaIndex + 1];
+    if (proxLinha) {
+      setLinhasModificadas(prev => new Set([...prev, proxLinha.id]));
+    }
     setLinhas(prev => prev.map((linha, idx) => {
       if (idx !== linhaIndex + 1) return linha;
       
@@ -456,6 +467,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     const revisaoIndex = revisoesEtapa.indexOf(revisao);
     
     setHasUnsavedChanges(true);
+    setLinhasModificadas(prev => new Set([...prev, linhaId]));
     setLinhas(prev => prev.map(l => {
       if (l.id !== linhaId) return l;
       
@@ -515,6 +527,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     }
 
     setHasUnsavedChanges(true);
+    setLinhasModificadas(prev => new Set([...prev, ...Array.from(selectedFolhas)]));
     setLinhas(prev => prev.map(linha => {
       if (!selectedFolhas.has(linha.id)) return linha;
       
@@ -559,6 +572,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     if (!confirm(`Copiar a data ${format(new Date(valorOriginal), 'dd/MM/yyyy')} para todas as células à direita nesta linha?`)) return;
     
     setHasUnsavedChanges(true);
+    setLinhasModificadas(prev => new Set([...prev, linhaId]));
     setLinhas(prev => prev.map(l => {
       if (l.id !== linhaId) return l;
       
@@ -597,12 +611,18 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     try {
       console.log('📋 Estado atual hasUnsavedChanges:', hasUnsavedChanges);
       console.log('📋 Total de linhas:', linhas.length);
+      console.log('📋 Linhas modificadas:', linhasModificadas.size);
       
-      // SALVAR TODAS as linhas que têm documento_id PARA PRESERVAR METADADOS DE REVISÃO
-      // Mesmo linhas sem dados precisam ser salvas se tiverem _revisoes_existentes
+      // SALVAR APENAS linhas modificadas OU todas se não há rastreamento
       const linhasParaSalvar = linhas.filter(linha => {
         if (!linha.documento_id) {
           console.log(`  ⏭️ Linha ${linha.id} ignorada (sem documento_id)`);
+          return false;
+        }
+        
+        // Se há rastreamento de modificações, salvar apenas modificadas
+        if (linhasModificadas.size > 0 && !linhasModificadas.has(linha.id)) {
+          console.log(`  ⏭️ Linha ${linha.id} não modificada`);
           return false;
         }
         
@@ -745,6 +765,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       console.log(`\n🎉 SALVAMENTO COMPLETO - Sucesso: ${successCount}, Erros: ${errorCount}`);
       console.log('🔄 Setando hasUnsavedChanges = false');
       setHasUnsavedChanges(false);
+      setLinhasModificadas(new Set());
 
       if (!silent) {
         if (errorCount > 0) {
