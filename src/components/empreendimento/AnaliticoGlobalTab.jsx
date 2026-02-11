@@ -786,7 +786,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         alteracoesData,
         usuariosData,
         todosEmpreendimentos,
-        atividadesDoProjetoData
+        atividadesDoProjetoData,
+        pavimentosData
       ] = await Promise.all([
         retryWithBackoff(() => Atividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchProjectActivities'),
         retryWithBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchPlanejamentos'),
@@ -797,7 +798,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         retryWithBackoff(() => AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAlteracoes'),
         retryWithBackoff(() => Usuario.list(), 3, 500, 'fetchUsuarios'),
         retryWithBackoff(() => Empreendimento.list(), 3, 500, 'fetchAllEmpreendimentos'),
-        retryWithBackoff(() => AtividadesDoProjeto.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAtividadesDoProjeto')
+        retryWithBackoff(() => AtividadesDoProjeto.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAtividadesDoProjeto'),
+        retryWithBackoff(() => Pavimento.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchPavimentos')
       ]);
 
       setDocumentos(documentosData || []);
