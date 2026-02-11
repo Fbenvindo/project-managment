@@ -67,10 +67,18 @@ export default function PavimentosTab({ empreendimentoId, onUpdate }) {
         empreendimento_id: empreendimentoId
       };
 
+      let novoPavimentoId = null;
+
       if (editingPavimento) {
         await Pavimento.update(editingPavimento.id, pavimentoData);
       } else {
-        await Pavimento.create(pavimentoData);
+        const resultado = await Pavimento.create(pavimentoData);
+        novoPavimentoId = resultado.id;
+        
+        // Criar atividades padrão para o novo pavimento
+        if (novoPavimentoId) {
+          await criarAtividadesPadraoParaPavimento(novoPavimentoId, formData.nome);
+        }
       }
 
       setFormData({ nome: '', area: '', escala: '' });
@@ -81,6 +89,50 @@ export default function PavimentosTab({ empreendimentoId, onUpdate }) {
     } catch (error) {
       console.error("Erro ao salvar pavimento:", error);
       alert("Erro ao salvar pavimento. Tente novamente.");
+    }
+  };
+
+  const criarAtividadesPadraoParaPavimento = async (pavimentoId, nomePavimento) => {
+    try {
+      console.log(`📋 Criando atividades padrão para o pavimento ${nomePavimento}...`);
+      
+      // Buscar atividades genéricas que combinam com os nomes
+      const todasAsAtividades = await retryWithBackoff(
+        () => Atividade.list(),
+        3, 500, 'fetchAllActivitiesForPavimento'
+      );
+
+      const atividadesGenéricas = (todasAsAtividades || []).filter(a => 
+        !a.empreendimento_id && 
+        ATIVIDADES_PADRAO_PAVIMENTO.some(nome => a.atividade && a.atividade.includes(nome.split(' (')[0]))
+      );
+
+      console.log(`✅ Encontradas ${atividadesGenéricas.length} atividades genéricas para vincular`);
+
+      // Criar uma atividade específica do empreendimento para cada atividade genérica
+      const promessas = atividadesGenéricas.map(atividadeGen =>
+        retryWithBackoff(
+          () => Atividade.create({
+            id_atividade: atividadeGen.id,
+            atividade: atividadeGen.atividade,
+            etapa: atividadeGen.etapa,
+            disciplina: atividadeGen.disciplina,
+            subdisciplina: atividadeGen.subdisciplina || '',
+            tempo: atividadeGen.tempo || 0,
+            funcao: atividadeGen.funcao,
+            empreendimento_id: empreendimentoId,
+            documento_id: null,
+            status_planejamento: 'nao_planejada'
+          }),
+          3, 500, `createAtividadeForPavimento-${pavimentoId}-${atividadeGen.id}`
+        )
+      );
+
+      await Promise.all(promessas);
+      console.log(`✅ Atividades criadas com sucesso para o pavimento ${nomePavimento}`);
+    } catch (error) {
+      console.warn(`⚠️ Erro ao criar atividades padrão para pavimento: ${error.message}`);
+      // Não lançar erro, apenas avisar no console para não bloquear a criação do pavimento
     }
   };
 
