@@ -1003,12 +1003,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           // Verificar tipo de contagem
           const tipoContagem = baseAtividade.tipo_contagem || 'normal';
           
-          // Para atividades normais, verificar correspondência exata
-          const disciplinaMatch = baseAtividade.disciplina === disciplinaDoc;
-          const subdisciplinaMatch = subdisciplinasDoc.includes(baseAtividade.subdisciplina);
-          
           if (tipoContagem === 'por_disciplina') {
-            // Para atividades "por_disciplina", verificar se já processamos para esta disciplina
+            // Para atividades "por_disciplina", aparecer uma vez para CADA disciplina dos documentos
             const disciplinaKey = `${baseAtividade.id}-${baseAtividade.etapa}-${baseAtividade.subdisciplina}-${disciplinaDoc}`;
             
             // Se já processamos esta atividade+etapa+subdisciplina para esta disciplina, pular
@@ -1016,9 +1012,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
               return;
             }
             disciplinaEtapaCombinacoes.set(disciplinaKey, true);
-          }
-
-          if (disciplinaMatch && subdisciplinaMatch) {
+            
+            // Para "por_disciplina", não verificar correspondência de disciplina (aparece em todas)
+            const subdisciplinaMatch = subdisciplinasDoc.includes(baseAtividade.subdisciplina);
+            
+            if (subdisciplinaMatch) {
             
             const planKey = `${doc.id}-${baseAtividade.id}`;
             const existingPlan = planejamentosMap.get(planKey);
@@ -1079,12 +1077,79 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                     base_atividade_id: baseAtividade.id,
                     tipo_contagem: tipoContagem,
                   });
-              }
-          }
-        });
-      });
+                  }
+                  }
+                  } else {
+                  // Para atividades normais, verificar correspondência exata de disciplina e subdisciplina
+                  const disciplinaMatch = baseAtividade.disciplina === disciplinaDoc;
+                  const subdisciplinaMatch = subdisciplinasDoc.includes(baseAtividade.subdisciplina);
 
-      setCombinedActivities([...normalizedProjectActivities, ...documentActivities, ...atividadesDocumentacao]);
+                  if (disciplinaMatch && subdisciplinaMatch) {
+
+                  const planKey = `${doc.id}-${baseAtividade.id}`;
+                  const existingPlan = planejamentosMap.get(planKey);
+
+                  // MODIFICADO: Buscar override específico do documento primeiro, depois global
+                  const overrideKey = `${doc.id}|${baseAtividade.id}`;
+                  const overrideEspecifico = overrideActivitiesByDocMap.get(overrideKey);
+                  const overrideGlobal = overrideActivitiesGlobalMap.get(baseAtividade.id);
+                  const override = overrideEspecifico || overrideGlobal;
+
+                  const etapaCorreta = override ? override.etapa : baseAtividade.etapa;
+                  const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
+
+                  const sourceDisplay = `Folha: ${doc.numero} - ${doc.arquivo || 'Sem Nome'}`;
+
+                  if (existingPlan) {
+                  documentActivities.push({
+                    ...baseAtividade,
+                    id: existingPlan.id,
+                    uniqueId: `plano-${existingPlan.id}`,
+                    atividade: existingPlan.descritivo || baseAtividade.atividade,
+                    tempo: existingPlan.tempo_planejado,
+                    source: sourceDisplay,
+                    source_documento_id: doc.id,
+                    source_documento_numero: doc.numero,
+                    source_documento_arquivo: doc.arquivo,
+                    source_disciplina: null,
+                    status: 'Planejada',
+                    isEditable: false,
+                    etapa: existingPlan.etapa || etapaCorreta,
+                    executor_principal: existingPlan.executor_principal || executorPrincipal,
+                    base_atividade_id: baseAtividade.id,
+                    tipo_contagem: tipoContagem,
+                  });
+                  } else {
+                  // Aplicar override de tempo se existir
+                  const tempoComOverride = override?.tempo !== undefined && override?.tempo !== null
+                    ? override.tempo
+                    : (baseAtividade.tempo || 0);
+                  const tempoFinal = tempoComOverride * fatorDificuldade;
+
+                  documentActivities.push({
+                      ...baseAtividade,
+                      uniqueId: `avail-${doc.id}-${baseAtividade.id}`,
+                      id: baseAtividade.id,
+                      tempo: tempoFinal,
+                      source: sourceDisplay,
+                      source_documento_id: doc.id,
+                      source_documento_numero: doc.numero,
+                      source_documento_arquivo: doc.arquivo,
+                      source_disciplina: null,
+                      status: 'Disponível',
+                      isEditable: false,
+                      etapa: etapaCorreta,
+                      executor_principal: executorPrincipal,
+                      base_atividade_id: baseAtividade.id,
+                      tipo_contagem: tipoContagem,
+                    });
+                  }
+                  }
+                  }
+                  });
+                  });
+
+                  setCombinedActivities([...normalizedProjectActivities, ...documentActivities, ...atividadesDocumentacao]);
       setDisciplinas(disciplinasData || []);
 
     } catch (error) {
