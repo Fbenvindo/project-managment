@@ -1858,24 +1858,29 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                    </TableCell>
                                    
                                   <TableCell>
-                                    {grupo.folhas.length > 0 && (
-                                      <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        onClick={() => toggleAtividadeExpansion(key)}
-                                        className="h-8 w-8"
-                                      >
-                                        {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                                      </Button>
-                                    )}
+                                   {grupo.folhas.length > 0 && (
+                                     <Button 
+                                       variant="ghost" 
+                                       size="icon" 
+                                       onClick={() => toggleAtividadeExpansion(key)}
+                                       className="h-8 w-8"
+                                     >
+                                       {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                     </Button>
+                                   )}
                                   </TableCell>
-                                
+                                  <TableCell className="font-medium text-sm">{String(ativ.atividade || '')}</TableCell>
                                   <TableCell>
-                                    {grupo.folhas.length === 0 ? (
-                                      <Badge variant={ativ.source === 'Projeto' ? 'default' : 'secondary'}>
-                                        {ativ.source === 'Projeto' ? 'Projeto' : 'Disponível'}
-                                      </Badge>
-                                    ) : (
+                                   <Badge variant="outline">
+                                     {grupo.folhas.length} {grupo.folhas.length === 1 ? 'folha' : 'folhas'}
+                                   </Badge>
+                                  </TableCell>
+                                  <TableCell>
+                                   {grupo.folhas.length === 0 ? (
+                                     <Badge variant={ativ.source === 'Projeto' ? 'default' : 'secondary'}>
+                                       {ativ.source === 'Projeto' ? 'Projeto' : 'Disponível'}
+                                     </Badge>
+                                   ) : (
                                      <div className="flex gap-1">
                                        {grupo.folhas.some(f => f.status === 'Planejada') && (
                                          <Badge className="bg-green-600 text-white font-semibold shadow-md flex items-center gap-1 w-fit">
