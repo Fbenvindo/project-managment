@@ -934,6 +934,91 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
       // Criar mapa de combinações para atividades "por_disciplina"
       const disciplinaEtapaCombinacoes = new Map();
+      
+      // Primeiro, adicionar atividades "por_disciplina" uma vez por disciplina
+      const atividadesPorDisciplinaProcessadas = new Set();
+      
+      allGenericActivitiesMap.forEach(baseAtividade => {
+        const tipoContagem = baseAtividade.tipo_contagem || 'normal';
+        
+        if (tipoContagem === 'por_disciplina') {
+          const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
+          const etapaValida = etapasCadastradas.length === 0 || etapasCadastradas.includes(baseAtividade.etapa);
+          
+          if (isExcludedFromProject || !etapaValida) {
+            return;
+          }
+          
+          // Para cada disciplina nos documentos, criar uma entrada
+          disciplinasNosDocumentos.forEach(disciplinaDoc => {
+            const disciplinaKey = `${baseAtividade.id}-${disciplinaDoc}`;
+            
+            if (atividadesPorDisciplinaProcessadas.has(disciplinaKey)) {
+              return;
+            }
+            atividadesPorDisciplinaProcessadas.add(disciplinaKey);
+            
+            // Buscar um documento qualquer desta disciplina para pegar o fator de dificuldade
+            const docExemplo = documentosData.find(d => d.disciplina === disciplinaDoc);
+            if (!docExemplo) return;
+            
+            const planKey = `${docExemplo.id}-${baseAtividade.id}`;
+            const existingPlan = planejamentosMap.get(planKey);
+            
+            const overrideKey = `${docExemplo.id}|${baseAtividade.id}`;
+            const overrideEspecifico = overrideActivitiesByDocMap.get(overrideKey);
+            const overrideGlobal = overrideActivitiesGlobalMap.get(baseAtividade.id);
+            const override = overrideEspecifico || overrideGlobal;
+            
+            const etapaCorreta = override ? override.etapa : baseAtividade.etapa;
+            const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
+            const sourceDisplay = `Disciplina: ${disciplinaDoc}`;
+
+            if (existingPlan) {
+              documentActivities.push({
+                ...baseAtividade,
+                id: existingPlan.id,
+                uniqueId: `plano-${existingPlan.id}`,
+                atividade: existingPlan.descritivo || baseAtividade.atividade,
+                tempo: existingPlan.tempo_planejado,
+                source: sourceDisplay,
+                source_documento_id: null,
+                source_documento_numero: docExemplo.numero,
+                source_documento_arquivo: docExemplo.arquivo,
+                source_disciplina: disciplinaDoc,
+                status: 'Planejada',
+                isEditable: false,
+                etapa: existingPlan.etapa || etapaCorreta,
+                executor_principal: existingPlan.executor_principal || executorPrincipal,
+                base_atividade_id: baseAtividade.id,
+                tipo_contagem: tipoContagem,
+              });
+            } else {
+              const tempoComOverride = override?.tempo !== undefined && override?.tempo !== null
+                ? override.tempo
+                : (baseAtividade.tempo || 0);
+
+              documentActivities.push({
+                ...baseAtividade,
+                uniqueId: `avail-${disciplinaDoc}-${baseAtividade.id}`,
+                id: baseAtividade.id,
+                tempo: tempoComOverride,
+                source: sourceDisplay,
+                source_documento_id: null,
+                source_documento_numero: docExemplo.numero,
+                source_documento_arquivo: docExemplo.arquivo,
+                source_disciplina: disciplinaDoc,
+                status: 'Disponível',
+                isEditable: false,
+                etapa: etapaCorreta,
+                executor_principal: executorPrincipal,
+                base_atividade_id: baseAtividade.id,
+                tipo_contagem: tipoContagem,
+              });
+            }
+          });
+        }
+      });
 
       let documentActivities = [];
       (documentosData || []).forEach(doc => {
@@ -998,29 +1083,15 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             return;
           }
 
-          // Verificar tipo de contagem
+          // Verificar tipo de contagem - pular atividades "por_disciplina" pois já foram processadas acima
           const tipoContagem = baseAtividade.tipo_contagem || 'normal';
           
-          let disciplinaMatch, subdisciplinaMatch;
-          
           if (tipoContagem === 'por_disciplina') {
-            // Para atividades "por_disciplina", aparecer uma vez para CADA disciplina dos documentos
-            const disciplinaKey = `${baseAtividade.id}-${disciplinaDoc}`;
-            
-            // Se já processamos esta atividade para esta disciplina, pular
-            if (disciplinaEtapaCombinacoes.has(disciplinaKey)) {
-              return;
-            }
-            disciplinaEtapaCombinacoes.set(disciplinaKey, true);
-            
-            // Para atividades "por_disciplina", não verificar correspondência de disciplina
-            disciplinaMatch = true;
-            subdisciplinaMatch = true;
-          } else {
-            // Para atividades normais, verificar correspondência exata
-            disciplinaMatch = baseAtividade.disciplina === disciplinaDoc;
-            subdisciplinaMatch = subdisciplinasDoc.includes(baseAtividade.subdisciplina);
+            return; // Já processadas no bloco anterior
           }
+
+          const disciplinaMatch = baseAtividade.disciplina === disciplinaDoc;
+          const subdisciplinaMatch = subdisciplinasDoc.includes(baseAtividade.subdisciplina);
 
           if (disciplinaMatch && subdisciplinaMatch) {
             
