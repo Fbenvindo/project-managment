@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Documento, Disciplina, Atividade, Execucao, Usuario, PlanejamentoAtividade, PlanejamentoDocumento, DataCadastro } from "@/entities/all";
+import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -863,6 +864,29 @@ export default function DocumentosTab({
   const handleDelete = async (id) => {
     if (window.confirm("Tem certeza que deseja excluir este documento?")) {
       try {
+        // Remover registros de AtividadesEmpreendimento antes de excluir o documento
+        try {
+          const atividadesEmp = await retryWithBackoff(
+            () => base44.entities.AtividadesEmpreendimento.filter({
+              documento_id: id
+            }),
+            3, 500, `getAtividadesEmpParaExcluir-${id}`
+          );
+          
+          console.log(`🗑️ Removendo ${atividadesEmp.length} registro(s) de AtividadesEmpreendimento...`);
+          
+          for (const atividadeEmp of atividadesEmp) {
+            await retryWithBackoff(
+              () => base44.entities.AtividadesEmpreendimento.delete(atividadeEmp.id),
+              3, 500, `deleteAtividadeEmp-${atividadeEmp.id}`
+            );
+          }
+          
+          console.log(`✅ Registros removidos de AtividadesEmpreendimento`);
+        } catch (error) {
+          console.warn(`⚠️ Erro ao remover registros de AtividadesEmpreendimento:`, error);
+        }
+        
         await retryWithExtendedBackoff(() => Documento.delete(id), `deleteDocument-${id}`);
         setLocalDocumentos(prevDocs => prevDocs.filter(d => d.id !== id));
         setCargaDiariaCache({});
