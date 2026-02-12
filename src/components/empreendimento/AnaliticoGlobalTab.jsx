@@ -786,7 +786,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         alteracoesData,
         usuariosData,
         todosEmpreendimentos,
-        atividadesDoProjetoData
+        atividadesDoProjetoData,
+        atividadesEmpreendimentoData,
+        pavimentosData
       ] = await Promise.all([
         retryWithBackoff(() => Atividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchProjectActivities'),
         retryWithBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchPlanejamentos'),
@@ -797,7 +799,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         retryWithBackoff(() => AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAlteracoes'),
         retryWithBackoff(() => Usuario.list(), 3, 500, 'fetchUsuarios'),
         retryWithBackoff(() => Empreendimento.list(), 3, 500, 'fetchAllEmpreendimentos'),
-        retryWithBackoff(() => AtividadesDoProjeto.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAtividadesDoProjeto')
+        retryWithBackoff(() => AtividadesDoProjeto.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAtividadesDoProjeto'),
+        retryWithBackoff(() => base44.entities.AtividadesEmpreendimento.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAtividadesEmpreendimento'),
+        retryWithBackoff(() => base44.entities.Pavimento.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchPavimentos')
       ]);
 
       setDocumentos(documentosData || []);
@@ -1049,6 +1053,125 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         });
       });
 
+      // Sincronizar AtividadesEmpreendimento com as atividades que deveriam estar lá
+      try {
+        console.log(`\n🔄 Sincronizando AtividadesEmpreendimento...`);
+        
+        const atividadesPorPavimento = [
+          'Confecção de P- (Paisagismo)',
+          'Confecção de P- (Pontos)',
+          'Confecção AC-',
+          'Confecção F-',
+          'Confecção de L-',
+          'Confecção de E-',
+          'Confecção de A-',
+          'Confecção de D- (Decoração)',
+          'Markup',
+          'Preparação de modelo inicial'
+        ];
+        
+        const atividadesPorFolha = [
+          'Carimbo, nota e legenda',
+          'Cadastro de projeto',
+          'Validação do cadastro de PB de arquitetura, estrutura, fundações e terceiros',
+          'Check-List - EP',
+          'Check-List - AP',
+          'Check-List - PB',
+          'Check-List - PE',
+          'Check-List - LO'
+        ];
+        
+        const atividadesJaRegistradas = new Set(
+          (atividadesEmpreendimentoData || []).map(a => `${a.id_atividade}-${a.documento_id || 'null'}-${a.pavimento_id || 'null'}`)
+        );
+        
+        const atividadesParaCriar = [];
+        
+        // Processar atividades por pavimento
+        (allActivities || []).filter(a => !a.empreendimento_id).forEach(ativ => {
+          const nomeAtividade = String(ativ.atividade || '').trim();
+          const ehAtividadePorPavimento = atividadesPorPavimento.some(padrao => nomeAtividade.includes(padrao));
+          
+          if (ehAtividadePorPavimento && pavimentosData && pavimentosData.length > 0) {
+            // Criar uma entrada para cada pavimento
+            pavimentosData.forEach(pav => {
+              const chave = `${ativ.id}-null-${pav.id}`;
+              if (!atividadesJaRegistradas.has(chave)) {
+                atividadesParaCriar.push({
+                  id_atividade: ativ.id_atividade || ativ.id,
+                  empreendimento_id: empreendimentoId,
+                  pavimento_id: pav.id,
+                  etapa: ativ.etapa,
+                  disciplina: ativ.disciplina,
+                  subdisciplina: ativ.subdisciplina,
+                  atividade: `${ativ.atividade} (Pavimento ${pav.nome})`,
+                  predecessora: ativ.predecessora,
+                  tempo: ativ.tempo,
+                  funcao: ativ.funcao,
+                  status_planejamento: 'nao_planejada'
+                });
+              }
+            });
+          }
+        });
+        
+        // Processar atividades por folha (documento)
+        (documentosData || []).forEach(doc => {
+          const subdisciplinasDoc = doc.subdisciplinas || [];
+          const disciplinaDoc = doc.disciplina;
+          
+          (allActivities || []).filter(a => !a.empreendimento_id).forEach(ativ => {
+            const disciplinaMatch = ativ.disciplina === disciplinaDoc;
+            const subdisciplinaMatch = subdisciplinasDoc.includes(ativ.subdisciplina);
+            
+            if (disciplinaMatch && subdisciplinaMatch) {
+              const nomeAtividade = String(ativ.atividade || '').trim();
+              const ehAtividadePorFolha = atividadesPorFolha.some(padrao => nomeAtividade.includes(padrao));
+              
+              const chave = ehAtividadePorFolha 
+                ? `${ativ.id}-${doc.id}-null`
+                : `${ativ.id}-${doc.id}-null`;
+              
+              if (!atividadesJaRegistradas.has(chave)) {
+                atividadesParaCriar.push({
+                  id_atividade: ativ.id_atividade || ativ.id,
+                  empreendimento_id: empreendimentoId,
+                  documento_id: doc.id,
+                  etapa: ativ.etapa,
+                  disciplina: ativ.disciplina,
+                  subdisciplina: ativ.subdisciplina,
+                  atividade: ehAtividadePorFolha ? `${ativ.atividade} (Folha ${doc.numero})` : ativ.atividade,
+                  predecessora: ativ.predecessora,
+                  tempo: ativ.tempo,
+                  funcao: ativ.funcao,
+                  documento_ids: [doc.id],
+                  status_planejamento: 'nao_planejada'
+                });
+              }
+            }
+          });
+        });
+        
+        if (atividadesParaCriar.length > 0) {
+          console.log(`📋 Criando ${atividadesParaCriar.length} registro(s) em AtividadesEmpreendimento...`);
+          for (const atividadeData of atividadesParaCriar) {
+            try {
+              await retryWithBackoff(
+                () => base44.entities.AtividadesEmpreendimento.create(atividadeData),
+                3, 500, `syncAtividadeEmp-${atividadeData.id_atividade}`
+              );
+            } catch (error) {
+              console.warn(`⚠️ Erro ao criar registro:`, error);
+            }
+          }
+          console.log(`✅ Sincronização concluída`);
+        } else {
+          console.log(`✅ AtividadesEmpreendimento já está sincronizado`);
+        }
+      } catch (error) {
+        console.warn(`⚠️ Erro ao sincronizar AtividadesEmpreendimento:`, error);
+      }
+      
       setCombinedActivities([...normalizedProjectActivities, ...documentActivities, ...atividadesDocumentacao]);
       setDisciplinas(disciplinasData || []);
 
