@@ -2335,16 +2335,16 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
                             }
                         });
                     } else if (plano.termino_real) {
-                        // Caso 2: Concluída manualmente - mostrar apenas no dia de término real
+                        // Caso 2: Concluída manualmente - mostrar no dia de término real
                         diasParaExibir.add(plano.termino_real);
-                    } else {
-                        // Caso 3: Concluída mas sem data de término - mostrar no último dia planejado
-                        if (plano.horas_por_dia && typeof plano.horas_por_dia === 'object') {
-                            const diasPlanejados = Object.keys(plano.horas_por_dia).sort();
-                            if (diasPlanejados.length > 0) {
-                                diasParaExibir.add(diasPlanejados[diasPlanejados.length - 1]);
+                    } else if (plano.horas_por_dia && typeof plano.horas_por_dia === 'object') {
+                        // Caso 3: Concluída mas sem data de término - mostrar nos dias planejados
+                        Object.keys(plano.horas_por_dia).forEach(dayKey => {
+                            const horas = Number(plano.horas_por_dia[dayKey]) || 0;
+                            if (horas >= 0.05) {
+                                diasParaExibir.add(dayKey);
                             }
-                        }
+                        });
                     }
                 } else {
                     // Atividade não concluída: mostrar nos dias planejados e executados
