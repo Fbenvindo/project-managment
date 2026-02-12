@@ -1410,6 +1410,32 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
       console.log(`✅ Marcador de exclusão criado com sucesso para atividade genérica ${genericAtividadeIdToExclude}`);
       
+      // Registrar exclusão em AtividadesEmpreendimento
+      try {
+        const atividadesEmp = await retryWithBackoff(
+          () => base44.entities.AtividadesEmpreendimento.filter({
+            empreendimento_id: empreendimentoId,
+            id_atividade: atividadeOriginal.id_atividade || genericAtividadeIdToExclude
+          }),
+          3, 500, `getAtividadesEmpExcluir-${genericAtividadeIdToExclude}`
+        );
+        
+        const agora = new Date().toISOString();
+        for (const atividadeEmp of atividadesEmp) {
+          await retryWithBackoff(
+            () => base44.entities.AtividadesEmpreendimento.update(atividadeEmp.id, {
+              status_planejamento: 'nao_planejada',
+              data_exclusao: agora,
+              motivo_exclusao: 'Excluída globalmente do empreendimento'
+            }),
+            3, 500, `updateAtividadeEmpExclusao-${atividadeEmp.id}`
+          );
+        }
+        console.log(`   📋 ${atividadesEmp.length} registro(s) marcado(s) como excluído(s) em AtividadesEmpreendimento`);
+      } catch (error) {
+        console.warn(`   ⚠️ Erro ao atualizar AtividadesEmpreendimento:`, error);
+      }
+      
       await fetchData();
       if (onUpdate) onUpdate();
       
@@ -2731,6 +2757,38 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`   Já finalizados: ${jaFinalizados}`);
       console.log(`✅ ========================================\n`);
       
+      // Registrar conclusão em AtividadesEmpreendimento
+      try {
+        const atividadeOriginalArr = await retryWithBackoff(
+          () => Atividade.filter({ id: atividadeId }),
+          3, 500, `getOriginalActivityConclusao-${atividadeId}`
+        );
+        
+        if (atividadeOriginalArr && atividadeOriginalArr.length > 0) {
+          const atividadeOriginal = atividadeOriginalArr[0];
+          
+          const atividadesEmp = await retryWithBackoff(
+            () => base44.entities.AtividadesEmpreendimento.filter({
+              empreendimento_id: empreendimentoId,
+              id_atividade: atividadeOriginal.id_atividade || atividadeId
+            }),
+            3, 500, `getAtividadesEmpConcluir-${atividadeId}`
+          );
+          
+          for (const atividadeEmp of atividadesEmp) {
+            await retryWithBackoff(
+              () => base44.entities.AtividadesEmpreendimento.update(atividadeEmp.id, {
+                data_conclusao: hoje
+              }),
+              3, 500, `updateAtividadeEmpConclusao-${atividadeEmp.id}`
+            );
+          }
+          console.log(`   📋 ${atividadesEmp.length} registro(s) atualizado(s) em AtividadesEmpreendimento`);
+        }
+      } catch (error) {
+        console.warn(`   ⚠️ Erro ao atualizar AtividadesEmpreendimento:`, error);
+      }
+      
       await fetchData();
       if (onUpdate) onUpdate();
       
@@ -3154,6 +3212,41 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           );
           console.log(`   ✅ Planejamento criado com ID: ${planejamentoCriado.id}`);
           planejamentosCriados++;
+          
+          // Registrar em AtividadesEmpreendimento
+          try {
+            const atividadeEmpExistente = await retryWithBackoff(
+              () => base44.entities.AtividadesEmpreendimento.filter({
+                empreendimento_id: empreendimentoId,
+                id_atividade: atividadeOriginal.id_atividade || atividadeId,
+                documento_id: doc.id
+              }),
+              3, 500, `checkAtividadeEmp-${doc.id}-${atividadeId}`
+            );
+            
+            if (!atividadeEmpExistente || atividadeEmpExistente.length === 0) {
+              await retryWithBackoff(
+                () => base44.entities.AtividadesEmpreendimento.create({
+                  id_atividade: atividadeOriginal.id_atividade || atividadeId,
+                  empreendimento_id: empreendimentoId,
+                  documento_id: doc.id,
+                  etapa: atividadeOriginal.etapa,
+                  disciplina: atividadeOriginal.disciplina,
+                  subdisciplina: atividadeOriginal.subdisciplina,
+                  atividade: atividadeOriginal.atividade,
+                  predecessora: atividadeOriginal.predecessora,
+                  tempo: atividadeOriginal.tempo,
+                  funcao: atividadeOriginal.funcao,
+                  documento_ids: [doc.id],
+                  status_planejamento: 'planejada'
+                }),
+                3, 500, `createAtividadeEmp-${doc.id}-${atividadeId}`
+              );
+              console.log(`   📋 Atividade registrada em AtividadesEmpreendimento`);
+            }
+          } catch (error) {
+            console.warn(`   ⚠️ Erro ao registrar em AtividadesEmpreendimento:`, error);
+          }
           
           // Atualizar carga diária para próximos planejamentos
           Object.assign(cargaDiaria, novaCargaDiaria);
