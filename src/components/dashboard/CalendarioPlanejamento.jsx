@@ -2325,23 +2325,21 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
                                     Object.keys(plano.horas_executadas_por_dia).length > 0;
                 
                 if (realStatus === 'concluido') {
-                    // Atividade concluída
-                    if (foiExecutada) {
-                        // Caso 1: Tem execuções registradas - mostrar APENAS nos dias executados
-                        Object.keys(plano.horas_executadas_por_dia).forEach(dayKey => {
-                            const horasExec = Number(plano.horas_executadas_por_dia[dayKey]) || 0;
-                            if (horasExec >= 0.05) {
-                                diasParaExibir.add(dayKey);
-                            }
-                        });
-                    } else if (plano.termino_real) {
-                        // Caso 2: Concluída manualmente - mostrar no dia de término real
-                        diasParaExibir.add(plano.termino_real);
-                    } else if (plano.horas_por_dia && typeof plano.horas_por_dia === 'object') {
-                        // Caso 3: Concluída mas sem data de término - mostrar nos dias planejados
+                    // Atividade concluída - SEMPRE mostrar nos dias planejados para não "sumir" do calendário
+                    if (plano.horas_por_dia && typeof plano.horas_por_dia === 'object') {
                         Object.keys(plano.horas_por_dia).forEach(dayKey => {
                             const horas = Number(plano.horas_por_dia[dayKey]) || 0;
                             if (horas >= 0.05) {
+                                diasParaExibir.add(dayKey);
+                            }
+                        });
+                    }
+                    
+                    // Adicionar também os dias executados (caso tenha execuções fora do planejado)
+                    if (foiExecutada) {
+                        Object.keys(plano.horas_executadas_por_dia).forEach(dayKey => {
+                            const horasExec = Number(plano.horas_executadas_por_dia[dayKey]) || 0;
+                            if (horasExec >= 0.05) {
                                 diasParaExibir.add(dayKey);
                             }
                         });
