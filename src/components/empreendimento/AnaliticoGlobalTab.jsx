@@ -1056,13 +1056,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       setCombinedActivities([...normalizedProjectActivities, ...documentActivities, ...atividadesDocumentacao]);
       setDisciplinas(disciplinasData || []);
       
-      // Sincronizar AtividadesEmpreendimento EM BACKGROUND (não bloqueia o carregamento)
+      // Sincronizar AtividadesEmpreendimento EM BACKGROUND
       setTimeout(async () => {
         try {
-          console.log(`\n🔄 ========================================`);
-          console.log(`🔄 SINCRONIZANDO AtividadesEmpreendimento`);
-          console.log(`🔄 ========================================`);
-          console.log(`   Empreendimento: ${empreendimentoId}`);
+          console.log(`\n🔄 Sincronizando AtividadesEmpreendimento...`);
           
           const atividadesPorPavimento = [
             'Confecção de P- (Paisagismo)',
@@ -1088,17 +1085,33 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             'Check-List - LO'
           ];
           
-          const atividadesGenericas = (allActivities || []).filter(a => !a.empreendimento_id);
-          console.log(`   📊 Atividades genéricas: ${atividadesGenericas.length}`);
-          console.log(`   📊 Documentos: ${documentosData?.length || 0}`);
-          console.log(`   📊 Pavimentos: ${pavimentosData?.length || 0}`);
-          console.log(`   📊 Já registradas: ${atividadesEmpreendimentoData?.length || 0}`);
+          const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
           
           const atividadesJaRegistradas = new Set(
             (atividadesEmpreendimentoData || []).map(a => `${a.id_atividade}-${a.documento_id || 'null'}-${a.pavimento_id || 'null'}`)
           );
           
           const atividadesParaCriar = [];
+          
+          // Filtrar apenas atividades que aparecem no AnaliticoGlobalTab
+          const atividadesGenericas = (allActivities || []).filter(a => {
+            if (a.empreendimento_id) return false;
+            
+            // Incluir atividades de Documentação
+            if (disciplinasDocumentacao.includes(a.disciplina)) return true;
+            
+            // Incluir atividades que têm documentos compatíveis
+            const temDocumentoCompativel = (documentosData || []).some(doc => {
+              const subdisciplinasDoc = doc.subdisciplinas || [];
+              const disciplinaMatch = a.disciplina === doc.disciplina;
+              const subdisciplinaMatch = subdisciplinasDoc.includes(a.subdisciplina);
+              return disciplinaMatch && subdisciplinaMatch;
+            });
+            
+            return temDocumentoCompativel;
+          });
+          
+          console.log(`   📊 Atividades relevantes: ${atividadesGenericas.length}`);
           
           for (const ativ of atividadesGenericas) {
             const nomeAtividade = String(ativ.atividade || '').trim();
@@ -1127,8 +1140,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             } else if (ehAtividadePorFolha && documentosData?.length > 0) {
               documentosData.forEach(doc => {
                 const subdisciplinasDoc = doc.subdisciplinas || [];
-                const disciplinaDoc = doc.disciplina;
-                const disciplinaMatch = ativ.disciplina === disciplinaDoc;
+                const disciplinaMatch = ativ.disciplina === doc.disciplina;
                 const subdisciplinaMatch = subdisciplinasDoc.includes(ativ.subdisciplina);
                 
                 if (disciplinaMatch && subdisciplinaMatch) {
@@ -1151,7 +1163,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                   }
                 }
               });
-            } else {
+            } else if (disciplinasDocumentacao.includes(ativ.disciplina)) {
               const chave = `${ativ.id}-null-null`;
               if (!atividadesJaRegistradas.has(chave)) {
                 atividadesParaCriar.push({
@@ -1178,13 +1190,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
               try {
                 await base44.entities.AtividadesEmpreendimento.create(atividadeData);
                 criados++;
+                await new Promise(resolve => setTimeout(resolve, 100));
               } catch (error) {
                 console.warn(`   ⚠️ Erro ao criar: ${atividadeData.atividade}`);
               }
             }
-            console.log(`✅ Sincronização concluída: ${criados}/${atividadesParaCriar.length} criados\n`);
-          } else {
-            console.log(`✅ Nada para sincronizar\n`);
+            console.log(`✅ Sincronizado: ${criados}/${atividadesParaCriar.length}\n`);
           }
         } catch (error) {
           console.error(`❌ Erro na sincronização:`, error);
