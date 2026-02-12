@@ -55,53 +55,7 @@ export default function PavimentosTab({ empreendimentoId, onUpdate }) {
       if (editingPavimento) {
         await Pavimento.update(editingPavimento.id, pavimentoData);
       } else {
-        const novoPavimento = await Pavimento.create(pavimentoData);
-        
-        // Criar atividades por pavimento em AtividadesEmpreendimento
-        try {
-          const { base44 } = await import('@/api/base44Client');
-          const { Atividade } = await import('@/entities/all');
-          
-          const atividadesPorPavimento = [
-            'Confecção de P- (Paisagismo)',
-            'Confecção de P- (Pontos)',
-            'Confecção AC-',
-            'Confecção F-',
-            'Confecção de L-',
-            'Confecção de E-',
-            'Confecção de A-',
-            'Confecção de D- (Decoração)',
-            'Markup',
-            'Preparação de modelo inicial'
-          ];
-          
-          const atividadesGenericas = await Atividade.filter({ empreendimento_id: null });
-          
-          for (const ativ of atividadesGenericas) {
-            const nomeAtividade = String(ativ.atividade || '').trim();
-            const ehAtividadePorPavimento = atividadesPorPavimento.some(padrao => nomeAtividade.includes(padrao));
-            
-            if (ehAtividadePorPavimento) {
-              await base44.entities.AtividadesEmpreendimento.create({
-                id_atividade: ativ.id_atividade || ativ.id,
-                empreendimento_id: empreendimentoId,
-                pavimento_id: novoPavimento.id,
-                etapa: ativ.etapa,
-                disciplina: ativ.disciplina,
-                subdisciplina: ativ.subdisciplina,
-                atividade: `${ativ.atividade} (Pavimento ${novoPavimento.nome})`,
-                predecessora: ativ.predecessora,
-                tempo: ativ.tempo,
-                funcao: ativ.funcao,
-                status_planejamento: 'nao_planejada'
-              });
-            }
-          }
-          
-          console.log(`✅ Atividades por pavimento registradas para: ${novoPavimento.nome}`);
-        } catch (error) {
-          console.warn('⚠️ Erro ao registrar atividades por pavimento:', error);
-        }
+        await Pavimento.create(pavimentoData);
       }
 
       setFormData({ nome: '', area: '', escala: '' });
