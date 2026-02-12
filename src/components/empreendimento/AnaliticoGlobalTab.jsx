@@ -1087,13 +1087,16 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         
         const atividadesParaCriar = [];
         
-        // Processar atividades por pavimento
-        (allActivities || []).filter(a => !a.empreendimento_id).forEach(ativ => {
+        // Processar TODAS as atividades padrão (genéricas)
+        const atividadesGenericas = (allActivities || []).filter(a => !a.empreendimento_id);
+        
+        for (const ativ of atividadesGenericas) {
           const nomeAtividade = String(ativ.atividade || '').trim();
           const ehAtividadePorPavimento = atividadesPorPavimento.some(padrao => nomeAtividade.includes(padrao));
+          const ehAtividadePorFolha = atividadesPorFolha.some(padrao => nomeAtividade.includes(padrao));
           
+          // 1. Atividades por PAVIMENTO
           if (ehAtividadePorPavimento && pavimentosData && pavimentosData.length > 0) {
-            // Criar uma entrada para cada pavimento
             pavimentosData.forEach(pav => {
               const chave = `${ativ.id}-null-${pav.id}`;
               if (!atividadesJaRegistradas.has(chave)) {
@@ -1113,44 +1116,55 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
               }
             });
           }
-        });
-        
-        // Processar atividades por folha (documento)
-        (documentosData || []).forEach(doc => {
-          const subdisciplinasDoc = doc.subdisciplinas || [];
-          const disciplinaDoc = doc.disciplina;
-          
-          (allActivities || []).filter(a => !a.empreendimento_id).forEach(ativ => {
-            const disciplinaMatch = ativ.disciplina === disciplinaDoc;
-            const subdisciplinaMatch = subdisciplinasDoc.includes(ativ.subdisciplina);
-            
-            if (disciplinaMatch && subdisciplinaMatch) {
-              const nomeAtividade = String(ativ.atividade || '').trim();
-              const ehAtividadePorFolha = atividadesPorFolha.some(padrao => nomeAtividade.includes(padrao));
+          // 2. Atividades por FOLHA
+          else if (ehAtividadePorFolha && documentosData && documentosData.length > 0) {
+            documentosData.forEach(doc => {
+              const subdisciplinasDoc = doc.subdisciplinas || [];
+              const disciplinaDoc = doc.disciplina;
+              const disciplinaMatch = ativ.disciplina === disciplinaDoc;
+              const subdisciplinaMatch = subdisciplinasDoc.includes(ativ.subdisciplina);
               
-              const chave = ehAtividadePorFolha 
-                ? `${ativ.id}-${doc.id}-null`
-                : `${ativ.id}-${doc.id}-null`;
-              
-              if (!atividadesJaRegistradas.has(chave)) {
-                atividadesParaCriar.push({
-                  id_atividade: ativ.id_atividade || ativ.id,
-                  empreendimento_id: empreendimentoId,
-                  documento_id: doc.id,
-                  etapa: ativ.etapa,
-                  disciplina: ativ.disciplina,
-                  subdisciplina: ativ.subdisciplina,
-                  atividade: ehAtividadePorFolha ? `${ativ.atividade} (Folha ${doc.numero})` : ativ.atividade,
-                  predecessora: ativ.predecessora,
-                  tempo: ativ.tempo,
-                  funcao: ativ.funcao,
-                  documento_ids: [doc.id],
-                  status_planejamento: 'nao_planejada'
-                });
+              if (disciplinaMatch && subdisciplinaMatch) {
+                const chave = `${ativ.id}-${doc.id}-null`;
+                if (!atividadesJaRegistradas.has(chave)) {
+                  atividadesParaCriar.push({
+                    id_atividade: ativ.id_atividade || ativ.id,
+                    empreendimento_id: empreendimentoId,
+                    documento_id: doc.id,
+                    etapa: ativ.etapa,
+                    disciplina: ativ.disciplina,
+                    subdisciplina: ativ.subdisciplina,
+                    atividade: `${ativ.atividade} (Folha ${doc.numero})`,
+                    predecessora: ativ.predecessora,
+                    tempo: ativ.tempo,
+                    funcao: ativ.funcao,
+                    documento_ids: [doc.id],
+                    status_planejamento: 'nao_planejada'
+                  });
+                }
               }
+            });
+          }
+          // 3. TODAS as outras atividades (comportamento normal)
+          else {
+            // Registrar UMA VEZ no empreendimento (sem documento ou pavimento)
+            const chave = `${ativ.id}-null-null`;
+            if (!atividadesJaRegistradas.has(chave)) {
+              atividadesParaCriar.push({
+                id_atividade: ativ.id_atividade || ativ.id,
+                empreendimento_id: empreendimentoId,
+                etapa: ativ.etapa,
+                disciplina: ativ.disciplina,
+                subdisciplina: ativ.subdisciplina,
+                atividade: ativ.atividade,
+                predecessora: ativ.predecessora,
+                tempo: ativ.tempo,
+                funcao: ativ.funcao,
+                status_planejamento: 'nao_planejada'
+              });
             }
-          });
-        });
+          }
+        }
         
         if (atividadesParaCriar.length > 0) {
           console.log(`📋 Criando ${atividadesParaCriar.length} registro(s) em AtividadesEmpreendimento...`);
@@ -1164,7 +1178,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
               console.warn(`⚠️ Erro ao criar registro:`, error);
             }
           }
-          console.log(`✅ Sincronização concluída`);
+          console.log(`✅ Sincronização concluída: ${atividadesParaCriar.length} registros criados`);
         } else {
           console.log(`✅ AtividadesEmpreendimento já está sincronizado`);
         }
