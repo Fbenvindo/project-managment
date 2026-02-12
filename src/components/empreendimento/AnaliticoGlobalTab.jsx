@@ -1053,57 +1053,59 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         });
       });
 
-      // Sincronizar AtividadesEmpreendimento com as atividades que deveriam estar lá
-      try {
-        console.log(`\n🔄 ========================================`);
-        console.log(`🔄 SINCRONIZANDO AtividadesEmpreendimento`);
-        console.log(`🔄 ========================================`);
-        console.log(`   Empreendimento: ${empreendimentoId}`);
-        
-        const atividadesPorPavimento = [
-          'Confecção de P- (Paisagismo)',
-          'Confecção de P- (Pontos)',
-          'Confecção AC-',
-          'Confecção F-',
-          'Confecção de L-',
-          'Confecção de E-',
-          'Confecção de A-',
-          'Confecção de D- (Decoração)',
-          'Markup',
-          'Preparação de modelo inicial'
-        ];
-        
-        const atividadesPorFolha = [
-          'Carimbo, nota e legenda',
-          'Cadastro de projeto',
-          'Validação do cadastro de PB de arquitetura, estrutura, fundações e terceiros',
-          'Check-List - EP',
-          'Check-List - AP',
-          'Check-List - PB',
-          'Check-List - PE',
-          'Check-List - LO'
-        ];
-        
-        const atividadesGenericas = (allActivities || []).filter(a => !a.empreendimento_id);
-        console.log(`   📊 Total de atividades genéricas encontradas: ${atividadesGenericas.length}`);
-        console.log(`   📊 Documentos: ${documentosData?.length || 0}`);
-        console.log(`   📊 Pavimentos: ${pavimentosData?.length || 0}`);
-        console.log(`   📊 Já registradas: ${atividadesEmpreendimentoData?.length || 0}`);
-        
-        const atividadesJaRegistradas = new Set(
-          (atividadesEmpreendimentoData || []).map(a => `${a.id_atividade}-${a.documento_id || 'null'}-${a.pavimento_id || 'null'}`)
-        );
-        
-        const atividadesParaCriar = [];
-        
-        for (const ativ of atividadesGenericas) {
-          const nomeAtividade = String(ativ.atividade || '').trim();
-          const ehAtividadePorPavimento = atividadesPorPavimento.some(padrao => nomeAtividade.includes(padrao));
-          const ehAtividadePorFolha = atividadesPorFolha.some(padrao => nomeAtividade.includes(padrao));
+      setCombinedActivities([...normalizedProjectActivities, ...documentActivities, ...atividadesDocumentacao]);
+      setDisciplinas(disciplinasData || []);
+      
+      // Sincronizar AtividadesEmpreendimento EM BACKGROUND (não bloqueia o carregamento)
+      setTimeout(async () => {
+        try {
+          console.log(`\n🔄 ========================================`);
+          console.log(`🔄 SINCRONIZANDO AtividadesEmpreendimento`);
+          console.log(`🔄 ========================================`);
+          console.log(`   Empreendimento: ${empreendimentoId}`);
           
-          // 1. Atividades por PAVIMENTO
-          if (ehAtividadePorPavimento) {
-            if (pavimentosData && pavimentosData.length > 0) {
+          const atividadesPorPavimento = [
+            'Confecção de P- (Paisagismo)',
+            'Confecção de P- (Pontos)',
+            'Confecção AC-',
+            'Confecção F-',
+            'Confecção de L-',
+            'Confecção de E-',
+            'Confecção de A-',
+            'Confecção de D- (Decoração)',
+            'Markup',
+            'Preparação de modelo inicial'
+          ];
+          
+          const atividadesPorFolha = [
+            'Carimbo, nota e legenda',
+            'Cadastro de projeto',
+            'Validação do cadastro de PB de arquitetura, estrutura, fundações e terceiros',
+            'Check-List - EP',
+            'Check-List - AP',
+            'Check-List - PB',
+            'Check-List - PE',
+            'Check-List - LO'
+          ];
+          
+          const atividadesGenericas = (allActivities || []).filter(a => !a.empreendimento_id);
+          console.log(`   📊 Atividades genéricas: ${atividadesGenericas.length}`);
+          console.log(`   📊 Documentos: ${documentosData?.length || 0}`);
+          console.log(`   📊 Pavimentos: ${pavimentosData?.length || 0}`);
+          console.log(`   📊 Já registradas: ${atividadesEmpreendimentoData?.length || 0}`);
+          
+          const atividadesJaRegistradas = new Set(
+            (atividadesEmpreendimentoData || []).map(a => `${a.id_atividade}-${a.documento_id || 'null'}-${a.pavimento_id || 'null'}`)
+          );
+          
+          const atividadesParaCriar = [];
+          
+          for (const ativ of atividadesGenericas) {
+            const nomeAtividade = String(ativ.atividade || '').trim();
+            const ehAtividadePorPavimento = atividadesPorPavimento.some(padrao => nomeAtividade.includes(padrao));
+            const ehAtividadePorFolha = atividadesPorFolha.some(padrao => nomeAtividade.includes(padrao));
+            
+            if (ehAtividadePorPavimento && pavimentosData?.length > 0) {
               pavimentosData.forEach(pav => {
                 const chave = `${ativ.id}-null-${pav.id}`;
                 if (!atividadesJaRegistradas.has(chave)) {
@@ -1120,16 +1122,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                     funcao: ativ.funcao,
                     status_planejamento: 'nao_planejada'
                   });
-                  console.log(`   ➕ Por Pavimento: ${nomeAtividade} -> ${pav.nome}`);
                 }
               });
-            } else {
-              console.log(`   ⚠️ Atividade por pavimento sem pavimentos cadastrados: ${nomeAtividade}`);
-            }
-          }
-          // 2. Atividades por FOLHA
-          else if (ehAtividadePorFolha) {
-            if (documentosData && documentosData.length > 0) {
+            } else if (ehAtividadePorFolha && documentosData?.length > 0) {
               documentosData.forEach(doc => {
                 const subdisciplinasDoc = doc.subdisciplinas || [];
                 const disciplinaDoc = doc.disciplina;
@@ -1153,64 +1148,48 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                       documento_ids: [doc.id],
                       status_planejamento: 'nao_planejada'
                     });
-                    console.log(`   ➕ Por Folha: ${nomeAtividade} -> ${doc.numero}`);
                   }
                 }
               });
             } else {
-              console.log(`   ⚠️ Atividade por folha sem documentos cadastrados: ${nomeAtividade}`);
+              const chave = `${ativ.id}-null-null`;
+              if (!atividadesJaRegistradas.has(chave)) {
+                atividadesParaCriar.push({
+                  id_atividade: ativ.id_atividade || ativ.id,
+                  empreendimento_id: empreendimentoId,
+                  etapa: ativ.etapa,
+                  disciplina: ativ.disciplina,
+                  subdisciplina: ativ.subdisciplina,
+                  atividade: ativ.atividade,
+                  predecessora: ativ.predecessora,
+                  tempo: ativ.tempo,
+                  funcao: ativ.funcao,
+                  status_planejamento: 'nao_planejada'
+                });
+              }
             }
           }
-          // 3. TODAS as outras atividades (comportamento normal)
-          else {
-            const chave = `${ativ.id}-null-null`;
-            if (!atividadesJaRegistradas.has(chave)) {
-              atividadesParaCriar.push({
-                id_atividade: ativ.id_atividade || ativ.id,
-                empreendimento_id: empreendimentoId,
-                etapa: ativ.etapa,
-                disciplina: ativ.disciplina,
-                subdisciplina: ativ.subdisciplina,
-                atividade: ativ.atividade,
-                predecessora: ativ.predecessora,
-                tempo: ativ.tempo,
-                funcao: ativ.funcao,
-                status_planejamento: 'nao_planejada'
-              });
-              console.log(`   ➕ Normal: ${nomeAtividade}`);
+          
+          console.log(`   📋 Total para criar: ${atividadesParaCriar.length}`);
+          
+          if (atividadesParaCriar.length > 0) {
+            let criados = 0;
+            for (const atividadeData of atividadesParaCriar) {
+              try {
+                await base44.entities.AtividadesEmpreendimento.create(atividadeData);
+                criados++;
+              } catch (error) {
+                console.warn(`   ⚠️ Erro ao criar: ${atividadeData.atividade}`);
+              }
             }
+            console.log(`✅ Sincronização concluída: ${criados}/${atividadesParaCriar.length} criados\n`);
+          } else {
+            console.log(`✅ Nada para sincronizar\n`);
           }
+        } catch (error) {
+          console.error(`❌ Erro na sincronização:`, error);
         }
-        
-        console.log(`\n   📋 Total para criar: ${atividadesParaCriar.length}`);
-        
-        if (atividadesParaCriar.length > 0) {
-          let criados = 0;
-          for (const atividadeData of atividadesParaCriar) {
-            try {
-              await retryWithBackoff(
-                () => base44.entities.AtividadesEmpreendimento.create(atividadeData),
-                3, 500, `syncAtividadeEmp-${atividadeData.id_atividade}`
-              );
-              criados++;
-            } catch (error) {
-              console.error(`   ❌ Erro ao criar registro ${atividadeData.atividade}:`, error);
-            }
-          }
-          console.log(`\n✅ ========================================`);
-          console.log(`✅ SINCRONIZAÇÃO CONCLUÍDA`);
-          console.log(`   Criados: ${criados}/${atividadesParaCriar.length}`);
-          console.log(`✅ ========================================\n`);
-        } else {
-          console.log(`\n✅ AtividadesEmpreendimento já está sincronizado`);
-          console.log(`✅ ========================================\n`);
-        }
-      } catch (error) {
-        console.error(`❌ Erro ao sincronizar AtividadesEmpreendimento:`, error);
-      }
-      
-      setCombinedActivities([...normalizedProjectActivities, ...documentActivities, ...atividadesDocumentacao]);
-      setDisciplinas(disciplinasData || []);
+      }, 100);
 
     } catch (error) {
       console.error("Erro ao buscar dados do catálogo:", error);
