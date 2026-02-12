@@ -1677,6 +1677,33 @@ export default function DocumentosTab({
           }
           
           console.log(`✅ Marcador válido criado com sucesso!\n`);
+          
+          // Registrar exclusão em AtividadesEmpreendimento
+          try {
+            const atividadesEmp = await retryWithBackoff(
+              () => base44.entities.AtividadesEmpreendimento.filter({
+                empreendimento_id: empreendimento.id,
+                id_atividade: activityObj.id,
+                documento_id: doc.id
+              }),
+              3, 500, `getAtividadesEmpExcluir-${activityObj.id}`
+            );
+            
+            const agora = new Date().toISOString();
+            for (const atividadeEmp of atividadesEmp) {
+              await retryWithBackoff(
+                () => base44.entities.AtividadesEmpreendimento.update(atividadeEmp.id, {
+                  status_planejamento: 'nao_planejada',
+                  data_exclusao: agora,
+                  motivo_exclusao: `Excluída da folha ${doc.numero}`
+                }),
+                3, 500, `updateAtividadeEmpExclusao-${atividadeEmp.id}`
+              );
+            }
+            console.log(`   📋 ${atividadesEmp.length} registro(s) marcado(s) como excluído(s) em AtividadesEmpreendimento`);
+          } catch (error) {
+            console.warn(`   ⚠️ Erro ao atualizar AtividadesEmpreendimento:`, error);
+          }
         }
 
         console.log(`🔄 PASSO 3: Recarregando dados da página...\n`);
