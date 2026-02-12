@@ -463,25 +463,65 @@ export default function DocumentoForm({
           
           console.log(`📋 Registrando ${atividadesParaRegistrar.length} atividades em AtividadesEmpreendimento...`);
           
+          // Padrões de atividades que se repetem
+          const atividadesPorFolha = [
+            'Carimbo, nota e legenda',
+            'Cadastro de projeto',
+            'Validação do cadastro de PB de arquitetura, estrutura, fundações e terceiros',
+            'Check-List - EP',
+            'Check-List - AP',
+            'Check-List - PB',
+            'Check-List - PE',
+            'Check-List - LO'
+          ];
+          
           for (const ativ of atividadesParaRegistrar) {
             try {
-              await retryWithBackoff(
-                () => base44.entities.AtividadesEmpreendimento.create({
-                  id_atividade: ativ.id_atividade || ativ.id,
-                  empreendimento_id: empreendimentoId,
-                  documento_id: savedDoc.id,
-                  etapa: ativ.etapa,
-                  disciplina: ativ.disciplina,
-                  subdisciplina: ativ.subdisciplina,
-                  atividade: ativ.atividade,
-                  predecessora: ativ.predecessora,
-                  tempo: ativ.tempo,
-                  funcao: ativ.funcao,
-                  documento_ids: [savedDoc.id],
-                  status_planejamento: 'nao_planejada'
-                }),
-                3, 500, `createAtividadeEmp-${ativ.id}-${savedDoc.id}`
-              );
+              const nomeAtividade = String(ativ.atividade || '').trim();
+              
+              // Verificar se a atividade deve se repetir POR FOLHA (apenas uma vez para este documento)
+              const ehAtividadePorFolha = atividadesPorFolha.some(padrao => nomeAtividade.includes(padrao));
+              
+              if (ehAtividadePorFolha) {
+                // Registrar apenas UMA VEZ para este documento
+                await retryWithBackoff(
+                  () => base44.entities.AtividadesEmpreendimento.create({
+                    id_atividade: ativ.id_atividade || ativ.id,
+                    empreendimento_id: empreendimentoId,
+                    documento_id: savedDoc.id,
+                    etapa: ativ.etapa,
+                    disciplina: ativ.disciplina,
+                    subdisciplina: ativ.subdisciplina,
+                    atividade: `${ativ.atividade} (Folha ${savedDoc.numero})`,
+                    predecessora: ativ.predecessora,
+                    tempo: ativ.tempo,
+                    funcao: ativ.funcao,
+                    documento_ids: [savedDoc.id],
+                    status_planejamento: 'nao_planejada'
+                  }),
+                  3, 500, `createAtividadeEmp-${ativ.id}-${savedDoc.id}`
+                );
+                console.log(`   ✅ Atividade por folha registrada: ${nomeAtividade}`);
+              } else {
+                // Atividade normal - registrar uma vez
+                await retryWithBackoff(
+                  () => base44.entities.AtividadesEmpreendimento.create({
+                    id_atividade: ativ.id_atividade || ativ.id,
+                    empreendimento_id: empreendimentoId,
+                    documento_id: savedDoc.id,
+                    etapa: ativ.etapa,
+                    disciplina: ativ.disciplina,
+                    subdisciplina: ativ.subdisciplina,
+                    atividade: ativ.atividade,
+                    predecessora: ativ.predecessora,
+                    tempo: ativ.tempo,
+                    funcao: ativ.funcao,
+                    documento_ids: [savedDoc.id],
+                    status_planejamento: 'nao_planejada'
+                  }),
+                  3, 500, `createAtividadeEmp-${ativ.id}-${savedDoc.id}`
+                );
+              }
             } catch (error) {
               console.warn(`⚠️ Erro ao registrar atividade ${ativ.atividade}:`, error);
             }
