@@ -10,6 +10,7 @@ import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
 import { retryWithBackoff } from '../utils/apiUtils';
+import { base44 } from '@/api/base44Client';
 
 export default function DocumentoForm({
   doc,
@@ -446,6 +447,50 @@ export default function DocumentoForm({
       } else {
         savedDoc = await retryWithBackoff(() => Documento.create(docData), 3, 500, 'createDocumento');
         console.log('✅ [DocumentoForm] Documento criado:', savedDoc);
+        
+        // Registrar atividades em AtividadesEmpreendimento quando documento é criado
+        try {
+          const subdisciplinasDoc = savedDoc.subdisciplinas || [];
+          const disciplinaDoc = savedDoc.disciplina;
+          
+          const atividadesParaRegistrar = allAtividades.filter(ativ => {
+            if (ativ.empreendimento_id) return false;
+            
+            const disciplinaMatch = ativ.disciplina === disciplinaDoc;
+            const subdisciplinaMatch = subdisciplinasDoc.includes(ativ.subdisciplina);
+            return disciplinaMatch && subdisciplinaMatch;
+          });
+          
+          console.log(`📋 Registrando ${atividadesParaRegistrar.length} atividades em AtividadesEmpreendimento...`);
+          
+          for (const ativ of atividadesParaRegistrar) {
+            try {
+              await retryWithBackoff(
+                () => base44.entities.AtividadesEmpreendimento.create({
+                  id_atividade: ativ.id_atividade || ativ.id,
+                  empreendimento_id: empreendimentoId,
+                  documento_id: savedDoc.id,
+                  etapa: ativ.etapa,
+                  disciplina: ativ.disciplina,
+                  subdisciplina: ativ.subdisciplina,
+                  atividade: ativ.atividade,
+                  predecessora: ativ.predecessora,
+                  tempo: ativ.tempo,
+                  funcao: ativ.funcao,
+                  documento_ids: [savedDoc.id],
+                  status_planejamento: 'nao_planejada'
+                }),
+                3, 500, `createAtividadeEmp-${ativ.id}-${savedDoc.id}`
+              );
+            } catch (error) {
+              console.warn(`⚠️ Erro ao registrar atividade ${ativ.atividade}:`, error);
+            }
+          }
+          
+          console.log(`✅ Atividades registradas em AtividadesEmpreendimento`);
+        } catch (error) {
+          console.warn(`⚠️ Erro ao registrar atividades no empreendimento:`, error);
+        }
       }
 
       console.log('🎉 [DocumentoForm] Salvamento bem-sucedido! Verificando campos:', {
