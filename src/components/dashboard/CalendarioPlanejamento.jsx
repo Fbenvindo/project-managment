@@ -1585,7 +1585,7 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
                                 if (diasPlanejados.length > 0 && diasPlanejados.includes(dayKey)) {
                                   horasDia = tempoExecutado / diasPlanejados.length;
                                 } else {
-                                  horasDia = tempoExecutado;
+                                  horasDia = 0; // Não contar se não está planejada para este dia
                                 }
                               }
                               // Prioridade 3: Usar horas planejadas
