@@ -2528,7 +2528,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           if (diasPlanejados.length > 0 && diasPlanejados.includes(dayKey)) {
             horasDia = tempoExecutado / diasPlanejados.length;
           } else {
-            horasDia = tempoExecutado;
+            horasDia = 0; // Não contar se não está planejada para este dia
           }
         }
         // Prioridade 3: Usar horas planejadas
