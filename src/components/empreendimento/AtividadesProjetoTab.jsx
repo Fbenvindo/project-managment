@@ -54,14 +54,77 @@ const AtividadeFormDialog = ({ open, setOpen, empreendimentoId, disciplinas, onU
     
     try {
       if (atividade.id) {
-        // EDIÇÃO: Apenas atualiza a atividade existente
+        // EDIÇÃO: Atualiza a atividade e recalcula documentos se o tempo mudou
+        const tempoAntigo = atividadeToEdit?.tempo;
+        const tempoNovo = Number(atividade.tempo) || 0;
+        
         const payload = { 
           ...atividade, 
-          tempo: Number(atividade.tempo) || 0, 
+          tempo: tempoNovo, 
           empreendimento_id: empreendimentoId,
           documento_id: selectedDocumentoId || atividade.documento_id
         };
         await Atividade.update(atividade.id, payload);
+        
+        // Se o tempo mudou E a atividade é um override (tem id_atividade), recalcular documentos
+        if (tempoAntigo !== tempoNovo && atividade.id_atividade) {
+          console.log(`🔄 Tempo mudou de ${tempoAntigo}h para ${tempoNovo}h, recalculando documentos...`);
+          
+          try {
+            const { Documento } = await import('@/entities/all');
+            
+            // Buscar todos os documentos deste empreendimento
+            const docsDoEmp = documentos.filter(d => d.empreendimento_id === empreendimentoId);
+            console.log(`   📊 Encontrados ${docsDoEmp.length} documentos para verificar`);
+            
+            // Para cada documento, verificar se usa esta atividade e recalcular
+            for (const doc of docsDoEmp) {
+              // Verificar se o documento tem as mesmas disciplinas e subdisciplinas da atividade
+              const disciplinaMatch = doc.disciplinas?.includes(atividade.disciplina) || doc.disciplina === atividade.disciplina;
+              const subdisciplinaMatch = doc.subdisciplinas?.includes(atividade.subdisciplina);
+              
+              if (disciplinaMatch && subdisciplinaMatch) {
+                console.log(`   🔢 Recalculando documento ${doc.numero}...`);
+                
+                // Buscar o campo de tempo da etapa correspondente
+                const etapaMap = {
+                  'Concepção': 'tempo_concepcao',
+                  'Planejamento': 'tempo_planejamento',
+                  'Estudo Preliminar': 'tempo_estudo_preliminar',
+                  'Ante-Projeto': 'tempo_ante_projeto',
+                  'Projeto Básico': 'tempo_projeto_basico',
+                  'Projeto Executivo': 'tempo_projeto_executivo',
+                  'Liberado para Obra': 'tempo_liberado_obra'
+                };
+                
+                const campoTempo = etapaMap[atividade.etapa];
+                if (campoTempo) {
+                  const fatorDificuldade = doc.fator_dificuldade || 1;
+                  const diferenca = (tempoNovo - tempoAntigo) * fatorDificuldade;
+                  const tempoAtual = doc[campoTempo] || 0;
+                  const novoTempo = Math.max(0, tempoAtual + diferenca);
+                  
+                  // Atualizar também o tempo total se não for Concepção/Planejamento
+                  const atualizarTotal = !['Concepção', 'Planejamento'].includes(atividade.etapa);
+                  const tempoTotal = atualizarTotal ? Math.max(0, (doc.tempo_total || 0) + diferenca) : doc.tempo_total;
+                  
+                  await Documento.update(doc.id, {
+                    [campoTempo]: Number(novoTempo.toFixed(2)),
+                    ...(atualizarTotal ? { tempo_total: Number(tempoTotal.toFixed(2)) } : {})
+                  });
+                  
+                  console.log(`      ✅ ${doc.numero}: ${campoTempo} ${tempoAtual}h → ${novoTempo.toFixed(2)}h`);
+                }
+              }
+            }
+            
+            console.log(`   ✅ Documentos recalculados com sucesso`);
+          } catch (error) {
+            console.error('❌ Erro ao recalcular documentos:', error);
+            // Não bloquear a atualização da atividade
+          }
+        }
+        
         onUpdate();
         setOpen(false);
       } else {
