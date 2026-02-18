@@ -238,7 +238,8 @@ export default function DocumentoForm({
            s_ativ.id_atividade === ativ.id && 
            s_ativ.documento_id === doc.id &&
            s_ativ.tempo === -999 &&
-           s_ativ.atividade?.includes('Excluída da folha')
+           typeof s_ativ.atividade === 'string' &&
+           s_ativ.atividade.includes('Excluída da folha')
          );
 
          if (exclusaoEspecifica) {
