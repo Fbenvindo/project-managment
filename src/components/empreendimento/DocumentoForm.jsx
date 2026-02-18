@@ -223,7 +223,8 @@ export default function DocumentoForm({
            s_ativ.id_atividade === ativ.id && 
            s_ativ.documento_id === doc.id &&
            s_ativ.tempo === 0 &&
-           s_ativ.atividade?.includes('Concluída na folha')
+           typeof s_ativ.atividade === 'string' &&
+           s_ativ.atividade.includes('Concluída na folha')
          );
 
          if (conclusaoEspecifica) {
