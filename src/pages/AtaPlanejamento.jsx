@@ -713,21 +713,27 @@ export default function AtaPlanejamento() {
     }
     
     // Filtro por data
-    if (filtroDataInicio) {
+    if (filtroDataInicio || filtroDataFim) {
       providenciasFiltradas = providenciasFiltradas.filter(p => {
         const dataReuniao = p.dataReuniao;
         const dataRetorno = p.dataRetorno;
-        return (dataReuniao && dataReuniao >= filtroDataInicio) || 
-               (dataRetorno && dataRetorno >= filtroDataInicio);
-      });
-    }
-    
-    if (filtroDataFim) {
-      providenciasFiltradas = providenciasFiltradas.filter(p => {
-        const dataReuniao = p.dataReuniao;
-        const dataRetorno = p.dataRetorno;
-        return (dataReuniao && dataReuniao <= filtroDataFim) || 
-               (dataRetorno && dataRetorno <= filtroDataFim);
+        
+        // Considerar qualquer uma das datas que existir
+        const datasParaFiltrar = [dataReuniao, dataRetorno].filter(Boolean);
+        
+        if (datasParaFiltrar.length === 0) return false;
+        
+        // Verificar se alguma data está no range
+        return datasParaFiltrar.some(data => {
+          if (filtroDataInicio && filtroDataFim) {
+            return data >= filtroDataInicio && data <= filtroDataFim;
+          } else if (filtroDataInicio) {
+            return data >= filtroDataInicio;
+          } else if (filtroDataFim) {
+            return data <= filtroDataFim;
+          }
+          return true;
+        });
       });
     }
     
