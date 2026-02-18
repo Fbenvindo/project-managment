@@ -1809,6 +1809,8 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         const execFilter = userFilter !== 'all' ? { usuario: userFilter } : {};
         const execs = await retryWithBackoff(() => Execucao.filter(execFilter), 3, 1500, 'calendar.loadExecs');
         
+        console.log(`📦 Execuções carregadas para ${userFilter}: ${execs?.length || 0} total`);
+        
         const planosAtividadeComTipo = (planosAtividade || []).map(p => ({ ...p, tipo_planejamento: 'atividade' }));
         const planosDocumentoComTipo = (planosDocumento || []).map(p => ({ ...p, tipo_planejamento: 'documento' }));
         const todosPlanejamentos = [...planosAtividadeComTipo, ...planosDocumentoComTipo];
