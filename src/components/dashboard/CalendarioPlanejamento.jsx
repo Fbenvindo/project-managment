@@ -2389,8 +2389,12 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
 
     // 2. Processar execuções muito antigas (sem planejamento associado ou não encontradas em planejamentos)
     (execucoes || []).forEach(exec => {
-        if (exec.planejamento_id && processedPlanIds.has(exec.planejamento_id)) {
-            return;
+        // Incluir execuções SEM planejamento_id OU que não foram encontradas no processedPlanIds
+        const isSemPlanejamento = !exec.planejamento_id;
+        const planejamentoNaoEncontrado = exec.planejamento_id && !processedPlanIds.has(exec.planejamento_id);
+        
+        if (!isSemPlanejamento && !planejamentoNaoEncontrado) {
+            return; // Já foi processada como planejamento, pular
         }
 
         const diaExecucao = exec.inicio ? startOfDay(parseLocalDate(exec.inicio)) : null;
@@ -2404,7 +2408,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
                 descritivo: exec.descritivo || 'Atividade rápida antiga', // Specific description
                 tempo_executado: exec.tempo_total || 0,
                 tempo_planejado: exec.tempo_total || 0, // Considera o tempo executado como o planejado
-                status: exec.status === 'Finalizado' ? 'concluido' : 'pausado',
+                status: exec.status === 'Finalizado' ? 'concluido' : exec.status === 'Em andamento' ? 'em_andamento' : 'pausado',
                 executor_principal: exec.usuario,
                 inicio_planejado: dayKey, // Apenas para este dia
                 termino_planejado: dayKey,
@@ -2414,6 +2418,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
             };
             
             if (!grouped[dayKey].some(item => item.id === legacyExecPlano.id)) {
+                console.log(`➕ Adicionando execução legada no calendário: ${exec.descritivo} (${exec.tempo_total}h) no dia ${dayKey}`);
                 grouped[dayKey].push(legacyExecPlano);
             }
         }
