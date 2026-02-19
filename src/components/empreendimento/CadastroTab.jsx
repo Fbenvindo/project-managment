@@ -35,7 +35,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [loadedEmpreendimentoId, setLoadedEmpreendimentoId] = useState(null);
-  const autoSaveTimeoutRef = useRef(null);
+
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFile, setImportFile] = useState(null);
   const [isImporting, setIsImporting] = useState(false);
