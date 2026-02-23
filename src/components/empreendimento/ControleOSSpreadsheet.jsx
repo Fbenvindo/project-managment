@@ -211,16 +211,16 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
           projeto: emp.nome || 'N/A',
           planejamento_hidraulica_concepcao: controle.planejamento?.hidraulica?.concepcao || 'NA',
           planejamento_hidraulica_calculo: controle.planejamento?.hidraulica?.calculo || 'NA',
-          
+          planejamento_hidraulica_diagrama: controle.planejamento?.hidraulica?.diagrama || 'NA',
           planejamento_eletrica_concepcao: controle.planejamento?.eletrica?.concepcao || 'NA',
           planejamento_eletrica_calculo: controle.planejamento?.eletrica?.calculo || 'NA',
           planejamento_eletrica_diagrama: controle.planejamento?.eletrica?.diagrama || 'NA',
           planejamento_incendio_concepcao: controle.planejamento?.incendio?.concepcao || 'NA',
           planejamento_incendio_calculo: controle.planejamento?.incendio?.calculo || 'NA',
-          
+          planejamento_incendio_diagrama: controle.planejamento?.incendio?.diagrama || 'NA',
           planejamento_sistemas_eletronicos_concepcao: controle.planejamento?.sistemas_eletronicos?.concepcao || 'NA',
           planejamento_sistemas_eletronicos_calculo: controle.planejamento?.sistemas_eletronicos?.calculo || 'NA',
-          
+          planejamento_sistemas_eletronicos_diagrama: controle.planejamento?.sistemas_eletronicos?.diagrama || 'NA',
           planejamento_ar_condicionado_concepcao: controle.planejamento?.ar_condicionado?.concepcao || 'NA',
           planejamento_ar_condicionado_calculo: controle.planejamento?.ar_condicionado?.calculo || 'NA',
           planejamento_ar_condicionado_diagrama: controle.planejamento?.ar_condicionado?.diagrama || 'NA',
@@ -257,16 +257,16 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
           conc_incendio: 'NA',
           planejamento_hidraulica_concepcao: 'NA',
           planejamento_hidraulica_calculo: 'NA',
-          
+          planejamento_hidraulica_diagrama: 'NA',
           planejamento_eletrica_concepcao: 'NA',
           planejamento_eletrica_calculo: 'NA',
-         
+          planejamento_eletrica_diagrama: 'NA',
           planejamento_incendio_concepcao: 'NA',
           planejamento_incendio_calculo: 'NA',
-         
+          planejamento_incendio_diagrama: 'NA',
           planejamento_sistemas_eletronicos_concepcao: 'NA',
           planejamento_sistemas_eletronicos_calculo: 'NA',
-          
+          planejamento_sistemas_eletronicos_diagrama: 'NA',
           planejamento_ar_condicionado_concepcao: 'NA',
           planejamento_ar_condicionado_calculo: 'NA',
           planejamento_ar_condicionado_diagrama: 'NA',
@@ -394,7 +394,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
         { key: 'projeto', label: 'PROJETO', width: '200px' },
         { key: 'planejamento_hidraulica_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
         { key: 'planejamento_hidraulica_calculo', label: 'CÁLCULO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
-        
+        { key: 'planejamento_hidraulica_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
       ]
     },
     eletrica: {
@@ -412,7 +412,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
         { key: 'projeto', label: 'PROJETO', width: '200px' },
         { key: 'planejamento_incendio_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
         { key: 'planejamento_incendio_calculo', label: 'CÁLCULO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
-       
+        { key: 'planejamento_incendio_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
       ]
     },
     sistemas: {
@@ -421,7 +421,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
         { key: 'projeto', label: 'PROJETO', width: '200px' },
         { key: 'planejamento_sistemas_eletronicos_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
         { key: 'planejamento_sistemas_eletronicos_calculo', label: 'CÁLCULO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
-       
+        { key: 'planejamento_sistemas_eletronicos_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
       ]
     },
     ar: {
