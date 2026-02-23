@@ -24,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { ChevronsUpDown } from 'lucide-react';
 import { isActivityOverdue as isOverdueShared, distribuirHorasPorDias } from '../utils/DateCalculator';
 import { retryWithBackoff } from '../utils/apiUtils';
+import DailyActivityGroup from './DailyActivityGroup';
 // Removed: import { useUserProfile } from '../hooks/useUserProfile'; // This hook is no longer used here
 
 // Função para converter string de data para Date local corretamente
@@ -609,6 +610,51 @@ const ActivityItem = ({
     </div>
   );
 };
+
+// ...existing code...
+
+// Componente básico para evitar erro de referência
+const DailyActivityGroup = ({
+  empreendimento,
+  executor,
+  atividades,
+  isExpanded,
+  onToggle,
+  disciplinas,
+  dayKey,
+  onActivityDelete,
+  onShowPrevisao,
+  executorMap,
+  allPlanejamentos,
+  isReprogramando,
+  canReprogram,
+  selectedActivities,
+  onToggleSelect,
+  hasSelections,
+  groupKey,
+  provided,
+  isDragging
+}) => {
+  // Exemplo: renderiza um grupo de atividades
+  return (
+    <div>
+      <div onClick={onToggle}>
+        <strong>{empreendimento?.nome || 'Grupo'}</strong> - {executor?.email || 'Executor'}
+      </div>
+      {isExpanded && (
+        <div>
+          {atividades.map((atividade, idx) => (
+            <div key={atividade.id || idx}>
+              {atividade.descritivo || atividade.atividade?.atividade || 'Atividade'}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+};
+
+// ...existing code...
 
 // --- Sub-componente para Container de Atividades (reutilizável) ---
 const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections }) => {
