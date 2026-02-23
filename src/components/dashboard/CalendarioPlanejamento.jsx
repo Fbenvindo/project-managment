@@ -284,6 +284,8 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   const [editTempo, setEditTempo] = useState(plano.tempo_executado || "");
   const [editOs, setEditOs] = useState(plano.os || "");
   const [isEditLoading, setIsEditLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
 
   const realStatus = calculateActivityStatus(plano, allPlanejamentos);
 
