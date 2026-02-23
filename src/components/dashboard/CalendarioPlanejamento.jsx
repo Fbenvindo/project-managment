@@ -24,7 +24,6 @@ import { Input } from "@/components/ui/input";
 import { ChevronsUpDown } from 'lucide-react';
 import { isActivityOverdue as isOverdueShared, distribuirHorasPorDias } from '../utils/DateCalculator';
 import { retryWithBackoff } from '../utils/apiUtils';
-import DailyActivityGroup from './DailyActivityGroup';
 // Removed: import { useUserProfile } from '../hooks/useUserProfile'; // This hook is no longer used here
 
 // Função para converter string de data para Date local corretamente
