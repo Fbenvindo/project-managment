@@ -279,14 +279,13 @@ const CalendarFilters = ({
 const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlanejamentos, provided, isDragging, isReprogramando, isSelected, onToggleSelect, hasSelections }) => {
   const { activeExecution, startExecution, user, playlist, addToPlaylist, removeFromPlaylist, triggerUpdate, hasPermission } = useContext(ActivityTimerContext);
   
-  const [isStarting, setIsStarting] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [showTimeAdjustModal, setShowTimeAdjustModal] = useState(false);
-  const [adjustedTime, setAdjustedTime] = useState('');
-  const [showObservacoes, setShowObservacoes] = useState(false);
-  const [showEditDescricaoModal, setShowEditDescricaoModal] = useState(false);
-  const [editDescricao, setEditDescricao] = useState('');
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editDescricao, setEditDescricao] = useState(plano.descritivo || "");
+  const [editTempo, setEditTempo] = useState(plano.tempo_executado || "");
+  const [editOs, setEditOs] = useState(plano.os || "");
   const [isEditLoading, setIsEditLoading] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isStarting, setIsStarting] = useState(false);
 
   const realStatus = calculateActivityStatus(plano, allPlanejamentos);
 
@@ -565,45 +564,41 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
     return (hasPermission('admin') || hasPermission('lider') || hasPermission('direcao')) && (plano.status === 'concluido' || plano.status === 'nao_iniciado');
   };
 
-  const handleOpenEditDescricao = () => {
-    setEditDescricao(plano.descritivo || '');
-    setShowEditDescricaoModal(true);
+  const handleOpenEditModal = () => {
+  setEditDescricao(plano.descritivo || "");
+  setEditTempo(plano.tempo_executado || "");
+  setEditOs(plano.os || "");
+  setShowEditModal(true);
   };
 
-  const handleSaveDescricao = async () => {
-    if (!editDescricao.trim()) {
-      alert('Descrição não pode estar vazia');
+  const handleSaveAll = async () => {
+  setIsEditLoading(true);
+  try {
+    // Validação do tempo
+    const tempo = parseFloat(editTempo);
+    if (isNaN(tempo) || tempo < 0) {
+      alert("Informe um tempo executado válido (número maior ou igual a zero).");
+      setIsEditLoading(false);
       return;
     }
 
-    setIsEditLoading(true);
-    try {
-      // Se for execução legada, extrair o ID real e atualizar Execucao
-      if (plano.isLegacyExecution) {
-        const execId = plano.id.split('-')[1]; // Extrair ID original do ID virtual "exec-{id}"
-        await Execucao.update(execId, {
-          descritivo: editDescricao.trim()
-        });
-      } else {
-        // Para atividades normais, usar a entidade correta
-        const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
-        await entityToUpdate.update(plano.id, {
-          descritivo: editDescricao.trim()
-        });
-      }
-      
-      alert('✅ Descrição atualizada com sucesso!');
-      setShowEditDescricaoModal(false);
-      if (onDelete) {
-        onDelete();
-      }
-    } catch (error) {
-      console.error('Erro ao salvar descrição:', error);
-      alert('Erro ao atualizar descrição: ' + (error.message || 'Tente novamente.'));
-    } finally {
-      setIsEditLoading(false);
-    }
-  };
+    const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
+    await retryWithBackoff(() => entityToUpdate.update(plano.id, {
+      descritivo: editDescricao,
+      tempo_executado: tempo,
+      tempo_planejado: tempo,
+      os: editOs,
+      status: 'concluido',
+      termino_real: format(new Date(), 'yyyy-MM-dd')
+    }), 3, 1000, 'editAll');
+    setShowEditModal(false);
+    if (onDelete) onDelete();
+  } catch (e) {
+    alert("Erro ao salvar alterações. Tente novamente.");
+  } finally {
+    setIsEditLoading(false);
+  }
+};
 
   // **NOVO**: Buscar observação do planejamento ou das execuções
   const observacao = useMemo(() => {
@@ -795,9 +790,9 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
             </button>
             
             <button
-              onClick={handleOpenEditDescricao}
+              onClick={handleOpenEditModal}
               className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-100 transition-colors"
-              title="Editar descrição da atividade"
+              title="Editar"
             >
               <Edit2 className="w-3.5 h-3.5 text-gray-600" />
             </button>
@@ -830,69 +825,28 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
       </div>
 
       {/* Modal para ajustar tempo */}
-      <Dialog open={showTimeAdjustModal} onOpenChange={setShowTimeAdjustModal}>
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Ajustar Tempo Executado</DialogTitle>
+            <DialogTitle>Editar Atividade</DialogTitle>
           </DialogHeader>
-          <div className="py-4 space-y-4">
+          <div className="flex flex-col gap-4 mt-2">
             <div>
-              <p className="text-sm text-gray-600 mb-2"><strong>Atividade:</strong> {displayName}</p>
-              <p className="text-sm text-gray-600 mb-4">Tempo atual: {tempoExecutado.toFixed(1)}h executadas</p>
+              <Label>Descrição</Label>
+              <Textarea value={editDescricao} onChange={e => setEditDescricao(e.target.value)} rows={3} />
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="adjustedTime">Novo Tempo Executado (horas)</Label>
-              <Input
-                id="adjustedTime"
-                type="number"
-                step="0.1"
-                min="0"
-                value={adjustedTime}
-                onChange={(e) => setAdjustedTime(e.target.value)}
-                placeholder="Ex: 2.5"
-              />
+            <div>
+              <Label>Tempo Executado (horas)</Label>
+              <Input type="number" min="0" step="0.1" value={editTempo} onChange={e => setEditTempo(e.target.value)} />
             </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-blue-700 text-sm font-medium">ℹ️ A atividade será automaticamente marcada como <strong>concluída</strong> após o ajuste.</p>
+            <div>
+              <Label>OS</Label>
+              <Input value={editOs} onChange={e => setEditOs(e.target.value)} placeholder="Informe a OS" />
             </div>
           </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowTimeAdjustModal(false)}>Cancelar</Button>
-            <Button onClick={handleAdjustTime} className="bg-blue-600 hover:bg-blue-700">Ajustar e Finalizar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Modal para editar descrição */}
-      <Dialog open={showEditDescricaoModal} onOpenChange={setShowEditDescricaoModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Descrição da Atividade</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div>
-              <p className="text-sm text-gray-600 mb-2"><strong>Atividade:</strong> {displayName}</p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="editDescricao">Descrição</Label>
-              <Textarea
-                id="editDescricao"
-                value={editDescricao}
-                onChange={(e) => setEditDescricao(e.target.value)}
-                placeholder="Digite a descrição da atividade"
-                className="min-h-24"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDescricaoModal(false)}>Cancelar</Button>
-            <Button 
-              onClick={handleSaveDescricao} 
-              disabled={isEditLoading}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {isEditLoading ? 'Salvando...' : 'Salvar'}
-            </Button>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setShowEditModal(false)} disabled={isEditLoading}>Cancelar</Button>
+            <Button onClick={handleSaveAll} loading={isEditLoading}>Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
