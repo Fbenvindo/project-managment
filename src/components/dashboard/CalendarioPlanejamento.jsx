@@ -634,11 +634,18 @@ const DailyActivityGroup = ({
   provided,
   isDragging
 }) => {
-  // Exemplo: renderiza um grupo de atividades
+  // Calcula horas totais
+  const totalHoras = atividades.reduce((acc, a) => acc + (a.tempo_planejado || 0), 0);
+
   return (
-    <div>
-      <div onClick={onToggle}>
-        <strong>{empreendimento?.nome || 'Grupo'}</strong> - {executor?.email || 'Executor'}
+    <div
+      ref={provided?.innerRef}
+      {...(provided?.draggableProps || {})}
+      {...(provided?.dragHandleProps || {})}
+      className="mb-1 p-2 rounded border bg-white"
+    >
+      <div onClick={onToggle} style={{ fontWeight: 'bold', cursor: 'pointer' }}>
+        {empreendimento?.nome || 'Grupo'} - {executor?.email || 'Executor'}
       </div>
       {isExpanded && (
         <div>
@@ -649,11 +656,12 @@ const DailyActivityGroup = ({
           ))}
         </div>
       )}
+      <div style={{ fontSize: '12px', color: '#666' }}>
+        Total de horas: {totalHoras}
+      </div>
     </div>
   );
 };
-
-// ...existing code...
 
 // --- Sub-componente para Container de Atividades (reutilizável) ---
 const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections }) => {
