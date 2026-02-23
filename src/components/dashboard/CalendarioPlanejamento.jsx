@@ -20,7 +20,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
-import { PlanejamentoAtividade, Atividade, Documento, Empreendimento, Execucao, PlanejamentoDocumento } from '@/api/entities';
+import { PlanejamentoAtividade, Documento, Empreendimento, Execucao, PlanejamentoDocumento } from '@/api/entities';
 import { ChevronsUpDown } from 'lucide-react';
 import { isActivityOverdue as isOverdueShared, distribuirHorasPorDias } from '../utils/DateCalculator';
 import { retryWithBackoff } from '../utils/apiUtils';
