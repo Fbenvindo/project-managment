@@ -402,105 +402,116 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
   // ...existing code...
   const handleSave = async (silent = false) => {
-    if (isSaving) return;
-    setIsSaving(true);
-    try {
-      const linhasParaSalvar = linhas.filter(linha => {
-        if (!linha.documento_id) return false;
-        if (linhasModificadas.size > 0 && !linhasModificadas.has(linha.id)) return false;
-        if (linha.datas && Object.keys(linha.datas).length > 0) return true;
-        return false;
-      });
+  if (isSaving) return;
+  setIsSaving(true);
+  try {
+    const linhasParaSalvar = linhas.filter(linha => {
+      if (!linha.documento_id) return false;
+      if (linhasModificadas.size > 0 && !linhasModificadas.has(linha.id)) return false;
+      return linha.datas && Object.keys(linha.datas).length > 0;
+    });
 
-      // Parâmetros ajustáveis
-      const CONCURRENCY = 6; // aumentar para maior paralelismo (teste)
-      const MAX_ATTEMPTS = 2; // reduzir tentativas para acelerar falhas
-
-      let successCount = 0;
-      let errorCount = 0;
-      const updatedLinhas = new Map();
-
-      // worker que salva uma linha (com retries simples)
-      const saveWorker = async (linha) => {
-        let attempts = 0;
-        while (attempts < MAX_ATTEMPTS) {
-          attempts++;
-          try {
-            const datasComMetadados = {};
-            if (linha.datas) {
-              Object.entries(linha.datas).forEach(([etapa, etapaData]) => {
-                if (etapaData && typeof etapaData === 'object') {
-                  datasComMetadados[etapa] = { ...etapaData };
-                }
-              });
-            }
-            const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
-            etapasVisiveis.forEach(etapa => {
-              const revisoesEtapa = revisoesPorEtapa[etapa];
-              if (revisoesEtapa && revisoesEtapa.length > 0) {
-                if (!datasComMetadados[etapa]) datasComMetadados[etapa] = {};
-                datasComMetadados[etapa]._revisoes_existentes = revisoesEtapa;
-              }
-            });
-
-            const payload = {
-              empreendimento_id: empreendimento.id,
-              ordem: linha.ordem,
-              documento_id: linha.documento_id,
-              datas: datasComMetadados
-            };
-
-            const isNew = linha.isNew || String(linha.id).startsWith('temp-');
-            let result;
-            if (isNew) result = await DataCadastro.create(payload);
-            else result = await DataCadastro.update(linha.id, payload);
-
-            successCount++;
-            updatedLinhas.set(linha.id, result);
-            return;
-          } catch (err) {
-            if (attempts >= MAX_ATTEMPTS) {
-              errorCount++;
-              console.error(`Erro salvando linha ${linha.id}:`, err);
-              return;
-            }
-            // pequeno wait antes de retry
-            await new Promise(r => setTimeout(r, 500 * attempts));
-          }
-        }
-      };
-
-      // pool de concorrência
-      let idx = 0;
-      const runners = Array.from({ length: Math.min(CONCURRENCY, linhasParaSalvar.length) }, async () => {
-        while (true) {
-          const i = idx++;
-          if (i >= linhasParaSalvar.length) break;
-          await saveWorker(linhasParaSalvar[i]);
-        }
-      });
-      await Promise.all(runners);
-
-      // atualizar state com IDs
-      setLinhas(prev => prev.map(linha => {
-        const saved = updatedLinhas.get(linha.id);
-        if (saved) return { ...linha, id: saved.id, isNew: false };
-        return linha;
-      }));
-
-      setHasUnsavedChanges(false);
-      setLinhasModificadas(new Set());
-
-      if (!silent) {
-        if (errorCount > 0) alert(`Salvamento parcial: ${successCount} sucesso, ${errorCount} erros.`);
-        else alert(`Dados salvos com sucesso! ${successCount} linhas atualizadas.`);
-      }
-    } catch (error) {
-      if (!silent) alert(`Erro ao salvar dados: ${error.message || 'Erro desconhecido'}`);
-    } finally {
+    if (linhasParaSalvar.length === 0) {
       setIsSaving(false);
+      if (!silent) alert('Nenhuma alteração para salvar');
+      return;
     }
-  };
+
+    const CONCURRENCY = 4;            // reduzir para evitar rate limit
+    const MAX_ATTEMPTS = 4;           // tentativas com backoff
+    const BASE_DELAY = 700;          // ms
+    const updatedLinhas = new Map();
+    let successCount = 0;
+    let errorCount = 0;
+
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    const jitter = (n) => Math.floor(Math.random() * n);
+
+    const saveOne = async (linha) => {
+      let attempts = 0;
+      while (attempts < MAX_ATTEMPTS) {
+        attempts++;
+        try {
+          const datasComMetadados = {};
+          if (linha.datas) {
+            Object.entries(linha.datas).forEach(([etapa, etapaData]) => {
+              if (etapaData && typeof etapaData === 'object') datasComMetadados[etapa] = { ...etapaData };
+            });
+          }
+          ETAPAS.filter(e => !etapasExcluidas.includes(e)).forEach(etapa => {
+            const revs = revisoesPorEtapa[etapa];
+            if (revs && revs.length) {
+              if (!datasComMetadados[etapa]) datasComMetadados[etapa] = {};
+              datasComMetadados[etapa]._revisoes_existentes = revs;
+            }
+          });
+
+          const payload = {
+            empreendimento_id: empreendimento.id,
+            ordem: linha.ordem,
+            documento_id: linha.documento_id,
+            datas: datasComMetadados
+          };
+
+          const isNew = linha.isNew || String(linha.id).startsWith('temp-');
+          const result = isNew ? await DataCadastro.create(payload) : await DataCadastro.update(linha.id, payload);
+
+          updatedLinhas.set(linha.id, result);
+          successCount++;
+          return;
+        } catch (err) {
+          // detectar 429 / Retry-After se disponível
+          const status = err?.status || err?.response?.status;
+          const retryAfterHeader = err?.response?.headers?.['retry-after'] || err?.response?.headers?.['Retry-After'];
+          if (status === 429 && retryAfterHeader) {
+            const waitMs = (parseInt(retryAfterHeader, 10) || 1) * 1000;
+            await sleep(waitMs + jitter(300));
+            continue;
+          }
+          if (attempts >= MAX_ATTEMPTS) {
+            errorCount++;
+            console.error(`Erro salvando linha ${linha.id}:`, err);
+            return;
+          }
+          // exponential backoff com jitter
+          const backoff = BASE_DELAY * Math.pow(2, attempts - 1) + jitter(300);
+          await sleep(backoff);
+        }
+      }
+    };
+
+    // pool de concorrência (workers)
+    let idx = 0;
+    const workers = Array.from({ length: Math.min(CONCURRENCY, linhasParaSalvar.length) }).map(async () => {
+      while (true) {
+        const i = idx++;
+        if (i >= linhasParaSalvar.length) break;
+        await saveOne(linhasParaSalvar[i]);
+      }
+    });
+
+    await Promise.all(workers);
+
+    // atualizar estado local
+    setLinhas(prev => prev.map(linha => {
+      const saved = updatedLinhas.get(linha.id);
+      if (saved) return { ...linha, id: saved.id, isNew: false };
+      return linha;
+    }));
+
+    setHasUnsavedChanges(false);
+    setLinhasModificadas(new Set());
+
+    if (!silent) {
+      if (errorCount > 0) alert(`Salvamento parcial: ${successCount} sucesso, ${errorCount} erros.`);
+      else alert(`Dados salvos com sucesso! ${successCount} linhas atualizadas.`);
+    }
+  } catch (error) {
+    if (!silent) alert(`Erro ao salvar: ${error?.message || error}`);
+  } finally {
+    setIsSaving(false);
+  }
+};
 
   const linhasPorDisciplina = useMemo(() => {
     const grupos = {};
