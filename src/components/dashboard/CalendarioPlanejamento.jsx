@@ -574,11 +574,19 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   const handleSaveAll = async () => {
   setIsEditLoading(true);
   try {
+    // Validação do tempo
+    const tempo = parseFloat(editTempo);
+    if (isNaN(tempo) || tempo < 0) {
+      alert("Informe um tempo executado válido (número maior ou igual a zero).");
+      setIsEditLoading(false);
+      return;
+    }
+
     const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
     await retryWithBackoff(() => entityToUpdate.update(plano.id, {
       descritivo: editDescricao,
-      tempo_executado: parseFloat(editTempo),
-      tempo_planejado: parseFloat(editTempo),
+      tempo_executado: tempo,
+      tempo_planejado: tempo,
       os: editOs,
       status: 'concluido',
       termino_real: format(new Date(), 'yyyy-MM-dd')
