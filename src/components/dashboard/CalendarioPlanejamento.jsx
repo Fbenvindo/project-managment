@@ -581,27 +581,27 @@ const ActivityItem = ({
           >
             {atividades.map((atividade, index) => (
               <Draggable
-                key={atividade.id}
-                draggableId={atividade.id}
-                index={index}
-                isDragDisabled={!canReprogram || atividade.status === 'concluido' || atividade.isLegacyExecution || isReprogramando === atividade.id}
-              >
-                {(provided, snapshot) => (
-                  <ActivityItem
-                    plano={atividade}
-                    dayKey={dayKey}
-                    onDelete={onActivityDelete}
-                    executorMap={executorMap}
-                    allPlanejamentos={allPlanejamentos}
-                    provided={provided}
-                    isDragging={snapshot.isDragging}
-                    isReprogramando={isReprogramando === atividade.id}
-                    isSelected={selectedActivities.has(atividade.id)}
-                    onToggleSelect={onToggleSelect}
-                    hasSelections={hasSelections}
-                  />
-                )}
-              </Draggable>
+  key={atividade.id}
+  draggableId={atividade.id}
+  index={index}
+  isDragDisabled={!canReprogram || atividade.status === 'concluido' || atividade.isLegacyExecution || isReprogramando === atividade.id}
+>
+  {(provided, snapshot) => (
+    <ActivityItem
+      plano={atividade}
+      dayKey={dayKey}
+      onDelete={onActivityDelete}
+      executorMap={executorMap}
+      allPlanejamentos={allPlanejamentos}
+      provided={provided}
+      isDragging={snapshot.isDragging}
+      isReprogramando={isReprogramando === atividade.id}
+      isSelected={selectedActivities.has(atividade.id)}
+      onToggleSelect={onToggleSelect}
+      hasSelections={hasSelections}
+    />
+  )}
+</Draggable>
             ))}
           </motion.div>
         )}
