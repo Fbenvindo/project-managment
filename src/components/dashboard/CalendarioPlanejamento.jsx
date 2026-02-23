@@ -279,11 +279,6 @@ const CalendarFilters = ({
 const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlanejamentos, provided, isDragging, isReprogramando, isSelected, onToggleSelect, hasSelections }) => {
   const { activeExecution, startExecution, user, playlist, addToPlaylist, removeFromPlaylist, triggerUpdate, hasPermission } = useContext(ActivityTimerContext);
   
-  const [isStarting, setIsStarting] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [showTimeAdjustModal, setShowTimeAdjustModal] = useState(false);
-  const [adjustedTime, setAdjustedTime] = useState('');
-  const [editDescricao, setEditDescricao] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
   const [editDescricao, setEditDescricao] = useState(plano.descritivo || "");
   const [editTempo, setEditTempo] = useState(plano.tempo_executado || "");
