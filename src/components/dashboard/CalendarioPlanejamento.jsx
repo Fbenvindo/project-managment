@@ -284,7 +284,6 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   const [showTimeAdjustModal, setShowTimeAdjustModal] = useState(false);
   const [adjustedTime, setAdjustedTime] = useState('');
   const [editDescricao, setEditDescricao] = useState('');
-  const [isEditLoading, setIsEditLoading] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editDescricao, setEditDescricao] = useState(plano.descritivo || "");
   const [editTempo, setEditTempo] = useState(plano.tempo_executado || "");
