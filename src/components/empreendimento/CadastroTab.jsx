@@ -400,6 +400,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     }));
   };
 
+  // ...existing code...
   const handleSave = async (silent = false) => {
     if (isSaving) return;
     setIsSaving(true);
@@ -411,15 +412,19 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         return false;
       });
 
+      // Parâmetros ajustáveis
+      const CONCURRENCY = 6; // aumentar para maior paralelismo (teste)
+      const MAX_ATTEMPTS = 2; // reduzir tentativas para acelerar falhas
+
       let successCount = 0;
       let errorCount = 0;
       const updatedLinhas = new Map();
-      const BATCH_SIZE = 2;
-      const DELAY_ENTRE_LOTES = 1500;
 
-      for (let batchIdx = 0; batchIdx < linhasParaSalvar.length; batchIdx += BATCH_SIZE) {
-        const batch = linhasParaSalvar.slice(batchIdx, batchIdx + BATCH_SIZE);
-        const batchPromises = batch.map((linha) => (async () => {
+      // worker que salva uma linha (com retries simples)
+      const saveWorker = async (linha) => {
+        let attempts = 0;
+        while (attempts < MAX_ATTEMPTS) {
+          attempts++;
           try {
             const datasComMetadados = {};
             if (linha.datas) {
@@ -429,7 +434,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 }
               });
             }
-
             const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
             etapasVisiveis.forEach(etapa => {
               const revisoesEtapa = revisoesPorEtapa[etapa];
@@ -439,44 +443,48 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
               }
             });
 
-            const linhaDataFinal = {
+            const payload = {
               empreendimento_id: empreendimento.id,
               ordem: linha.ordem,
               documento_id: linha.documento_id,
               datas: datasComMetadados
             };
 
+            const isNew = linha.isNew || String(linha.id).startsWith('temp-');
             let result;
-            let attempts = 0;
-            const maxAttempts = 3;
-            while (attempts < maxAttempts) {
-              try {
-                const isNew = linha.isNew || String(linha.id).startsWith('temp-');
-                if (isNew) result = await DataCadastro.create(linhaDataFinal);
-                else result = await DataCadastro.update(linha.id, linhaDataFinal);
-                break;
-              } catch (err) {
-                attempts++;
-                if (attempts >= maxAttempts) throw err;
-                await new Promise(r => setTimeout(r, 3000 * attempts));
-              }
-            }
+            if (isNew) result = await DataCadastro.create(payload);
+            else result = await DataCadastro.update(linha.id, payload);
 
             successCount++;
             updatedLinhas.set(linha.id, result);
-          } catch (error) {
-            errorCount++;
-            console.error('Erro na linha', linha.id, error);
+            return;
+          } catch (err) {
+            if (attempts >= MAX_ATTEMPTS) {
+              errorCount++;
+              console.error(`Erro salvando linha ${linha.id}:`, err);
+              return;
+            }
+            // pequeno wait antes de retry
+            await new Promise(r => setTimeout(r, 500 * attempts));
           }
-        })());
+        }
+      };
 
-        await Promise.all(batchPromises);
-        if (batchIdx + BATCH_SIZE < linhasParaSalvar.length) await new Promise(r => setTimeout(r, DELAY_ENTRE_LOTES));
-      }
+      // pool de concorrência
+      let idx = 0;
+      const runners = Array.from({ length: Math.min(CONCURRENCY, linhasParaSalvar.length) }, async () => {
+        while (true) {
+          const i = idx++;
+          if (i >= linhasParaSalvar.length) break;
+          await saveWorker(linhasParaSalvar[i]);
+        }
+      });
+      await Promise.all(runners);
 
+      // atualizar state com IDs
       setLinhas(prev => prev.map(linha => {
-        const savedData = updatedLinhas.get(linha.id);
-        if (savedData) return { ...linha, id: savedData.id, isNew: false };
+        const saved = updatedLinhas.get(linha.id);
+        if (saved) return { ...linha, id: saved.id, isNew: false };
         return linha;
       }));
 
