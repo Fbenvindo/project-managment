@@ -419,9 +419,9 @@ const handleSave = async (silent = false) => {
       return;
     }
 
-    const CONCURRENCY = 2;        // reduzir concorrência para evitar 429
-    const MAX_ATTEMPTS = 6;
-    const BASE_BACKOFF = 600;     // ms
+    const CHUNK_SIZE = 3;       // quantas requisições simultâneas por chunk
+    const MAX_ATTEMPTS = 8;
+    const BASE_BACKOFF = 1000;  // ms
     const updatedLinhas = new Map();
     let successCount = 0;
     let errorCount = 0;
@@ -431,14 +431,20 @@ const handleSave = async (silent = false) => {
     const sleep = ms => new Promise(r => setTimeout(r, ms));
     const jitter = (n) => Math.floor(Math.random() * n);
 
-    // worker que salva uma linha com retries e respeita nextAvailableAt
+    const parseRetryAfter = (err) => {
+      const headers = err?.response?.headers || err?.headers || {};
+      let ra = headers['retry-after'] || headers['Retry-After'] || headers['Retry-After'.toLowerCase()];
+      if (typeof ra === 'string') ra = parseInt(ra, 10);
+      if (!ra) ra = 0;
+      return isNaN(ra) ? 0 : ra;
+    };
+
     const saveOne = async (linha) => {
       let attempts = 0;
       while (attempts < MAX_ATTEMPTS) {
-        // aguarda se servidor pediu pausa
         const now = Date.now();
         if (now < nextAvailableAt) {
-          await sleep(nextAvailableAt - now + jitter(200));
+          await sleep(nextAvailableAt - now + jitter(300));
         }
 
         attempts++;
@@ -471,17 +477,16 @@ const handleSave = async (silent = false) => {
           successCount++;
           return;
         } catch (err) {
-          // tenta obter status e headers
           const status = err?.status || err?.response?.status;
-          const headers = err?.response?.headers || {};
-          // se 429 e Retry-After, respeitar
+          // tenta obter Retry-After (segundos)
+          const ra = parseRetryAfter(err);
+
           if (status === 429) {
-            const ra = parseInt(headers['retry-after'] || headers['Retry-After'] || 0, 10);
-            const waitMs = (isNaN(ra) ? (BASE_BACKOFF * Math.pow(2, attempts)) : (ra * 1000)) + jitter(600);
-            // definir pausa global pequena para evitar novas 429 simultâneas
+            const waitMs = (ra ? ra * 1000 : BASE_BACKOFF * Math.pow(2, attempts - 1)) + jitter(800);
             nextAvailableAt = Math.max(nextAvailableAt, Date.now() + waitMs);
+            console.warn(`429 recebido para linha ${linha.id}, aguardando ${Math.round(waitMs)}ms (attempt ${attempts})`);
             await sleep(waitMs);
-            continue;
+            continue; // tentar novamente após espera global
           }
 
           if (attempts >= MAX_ATTEMPTS) {
@@ -490,24 +495,19 @@ const handleSave = async (silent = false) => {
             return;
           }
 
-          // backoff exponencial com jitter
-          const backoff = BASE_BACKOFF * Math.pow(2, attempts - 1) + jitter(400);
+          const backoff = BASE_BACKOFF * Math.pow(2, attempts - 1) + jitter(500);
           await sleep(backoff);
         }
       }
     };
 
-    // pool de workers sequenciais (concurrency control)
-    let idx = 0;
-    const workers = Array.from({ length: Math.min(CONCURRENCY, linhasParaSalvar.length) }).map(async () => {
-      while (true) {
-        const i = idx++;
-        if (i >= linhasParaSalvar.length) break;
-        await saveOne(linhasParaSalvar[i]);
-      }
-    });
-
-    await Promise.all(workers);
+    // processa em chunks pequenos para reduzir bursts
+    for (let i = 0; i < linhasParaSalvar.length; i += CHUNK_SIZE) {
+      const chunk = linhasParaSalvar.slice(i, i + CHUNK_SIZE);
+      await Promise.all(chunk.map(saveOne));
+      // pequena pausa entre chunks para reduzir probabilidade de 429 em bursts
+      await sleep(300 + jitter(300));
+    }
 
     // aplicar IDs salvos no state
     setLinhas(prev => prev.map(linha => {
