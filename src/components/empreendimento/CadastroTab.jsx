@@ -154,6 +154,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       setLinhas(novasLinhas);
       setLoadedEmpreendimentoId(empreendimento.id);
       setLinhasModificadas(new Set());
+      setHasUnsavedChanges(false);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
@@ -402,134 +403,142 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
   // ...existing code...
   // ...existing code...
-const handleSave = async (silent = false) => {
-  if (isSaving) return;
-  setIsSaving(true);
+  const handleSave = async (silent = false) => {
+    if (isSaving) return;
+    setIsSaving(true);
 
-  try {
-    const linhasParaSalvar = linhas.filter(linha => {
-      if (!linha.documento_id) return false;
-      if (linhasModificadas.size > 0 && !linhasModificadas.has(linha.id)) return false;
-      return linha.datas && Object.keys(linha.datas).length > 0;
-    });
+    try {
+      const linhasParaSalvar = linhas.filter(linha => {
+        if (!linha.documento_id) return false;
+        if (linhasModificadas.size > 0 && !linhasModificadas.has(linha.id)) return false;
+        return linha.datas && Object.keys(linha.datas).length > 0;
+      });
 
-    if (linhasParaSalvar.length === 0) {
-      setIsSaving(false);
-      if (!silent) alert('Nenhuma alteração para salvar');
-      return;
-    }
-
-    const CHUNK_SIZE = 1;       // serializar (reduz 429)
-    const MAX_ATTEMPTS = 10;
-    const BASE_BACKOFF = 2000;  // ms, mais conservador
-    const updatedLinhas = new Map();
-    let successCount = 0;
-    let errorCount = 0;
-
-    let nextAvailableAt = 0; // timestamp para pausa global (ms)
-
-    const sleep = ms => new Promise(r => setTimeout(r, ms));
-    const jitter = (n) => Math.floor(Math.random() * n);
-
-    const parseRetryAfter = (err) => {
-      const headers = err?.response?.headers || err?.headers || {};
-      let ra = headers['retry-after'] || headers['Retry-After'] || headers['Retry-After'.toLowerCase()];
-      if (typeof ra === 'string') ra = parseInt(ra, 10);
-      if (!ra) ra = 0;
-      return isNaN(ra) ? 0 : ra;
-    };
-
-    const saveOne = async (linha) => {
-      let attempts = 0;
-      while (attempts < MAX_ATTEMPTS) {
-        const now = Date.now();
-        if (now < nextAvailableAt) {
-          await sleep(nextAvailableAt - now + jitter(300));
-        }
-
-        attempts++;
-        try {
-          const datasComMetadados = {};
-          if (linha.datas) {
-            Object.entries(linha.datas).forEach(([etapa, etapaData]) => {
-              if (etapaData && typeof etapaData === 'object') datasComMetadados[etapa] = { ...etapaData };
-            });
-          }
-          ETAPAS.filter(e => !etapasExcluidas.includes(e)).forEach(etapa => {
-            const revs = revisoesPorEtapa[etapa];
-            if (revs && revs.length) {
-              if (!datasComMetadados[etapa]) datasComMetadados[etapa] = {};
-              datasComMetadados[etapa]._revisoes_existentes = revs;
-            }
-          });
-
-          const payload = {
-            empreendimento_id: empreendimento.id,
-            ordem: linha.ordem,
-            documento_id: linha.documento_id,
-            datas: datasComMetadados
-          };
-
-          const isNew = linha.isNew || String(linha.id).startsWith('temp-');
-          const result = isNew ? await DataCadastro.create(payload) : await DataCadastro.update(linha.id, payload);
-
-          updatedLinhas.set(linha.id, result);
-          successCount++;
-          return;
-        } catch (err) {
-          const status = err?.status || err?.response?.status;
-          // tenta obter Retry-After (segundos)
-          const ra = parseRetryAfter(err);
-
-          if (status === 429) {
-            const waitMs = (ra ? ra * 1000 : BASE_BACKOFF * Math.pow(2, attempts - 1)) + jitter(800);
-            nextAvailableAt = Math.max(nextAvailableAt, Date.now() + waitMs);
-            console.warn(`429 recebido para linha ${linha.id}, aguardando ${Math.round(waitMs)}ms (attempt ${attempts})`);
-            await sleep(waitMs);
-            continue; // tentar novamente após espera global
-          }
-
-          if (attempts >= MAX_ATTEMPTS) {
-            errorCount++;
-            console.error(`Erro salvando linha ${linha.id}:`, err);
-            return;
-          }
-
-          const backoff = BASE_BACKOFF * Math.pow(2, attempts - 1) + jitter(500);
-          await sleep(backoff);
-        }
+      if (linhasParaSalvar.length === 0) {
+        setIsSaving(false);
+        if (!silent) alert('Nenhuma alteração para salvar');
+        return;
       }
-    };
 
-    // processa em chunks pequenos para reduzir bursts
-    for (let i = 0; i < linhasParaSalvar.length; i += CHUNK_SIZE) {
-      const chunk = linhasParaSalvar.slice(i, i + CHUNK_SIZE);
-      await Promise.all(chunk.map(saveOne));
-      // pequena pausa entre chunks para reduzir probabilidade de 429 em bursts
-      await sleep(300 + jitter(300));
+      const CHUNK_SIZE = 1;       // serializar (reduz 429)
+      const MAX_ATTEMPTS = 10;
+      const BASE_BACKOFF = 2000;  // ms, mais conservador
+      const updatedLinhas = new Map();
+      let successCount = 0;
+      let errorCount = 0;
+
+      let nextAvailableAt = 0; // timestamp para pausa global (ms)
+
+      const sleep = ms => new Promise(r => setTimeout(r, ms));
+      const jitter = (n) => Math.floor(Math.random() * n);
+
+      const parseRetryAfter = (err) => {
+        const headers = err?.response?.headers || err?.headers || {};
+        // normaliza chaves possíveis
+        const raHeader = headers['retry-after'] ?? headers['Retry-After'] ?? headers['Retry-After'.toLowerCase?.()] ?? headers['retry-after'.toLowerCase?.()];
+        let ra = typeof raHeader === 'string' ? parseInt(raHeader, 10) : (Number.isFinite(raHeader) ? raHeader : 0);
+        return isNaN(ra) ? 0 : ra;
+      };
+
+      const saveOne = async (linha) => {
+        let attempts = 0;
+        while (attempts < MAX_ATTEMPTS) {
+          const now = Date.now();
+          if (now < nextAvailableAt) {
+            await sleep(nextAvailableAt - now + jitter(300));
+          }
+
+          attempts++;
+          try {
+            const datasComMetadados = {};
+            if (linha.datas) {
+              Object.entries(linha.datas).forEach(([etapa, etapaData]) => {
+                if (etapaData && typeof etapaData === 'object') datasComMetadados[etapa] = { ...etapaData };
+              });
+            }
+            // só incluir _revisoes_existentes se houver revisões explícitas no state (evita persistir fallback DEFAULT_REVISOES)
+            ETAPAS.filter(e => !etapasExcluidas.includes(e)).forEach(etapa => {
+              if (revisoesPorEtapa && Object.prototype.hasOwnProperty.call(revisoesPorEtapa, etapa)) {
+                const revs = revisoesPorEtapa[etapa];
+                if (Array.isArray(revs) && revs.length) {
+                  if (!datasComMetadados[etapa]) datasComMetadados[etapa] = {};
+                  datasComMetadados[etapa]._revisoes_existentes = revs;
+                }
+              }
+            });
+
+            const payload = {
+              empreendimento_id: empreendimento.id,
+              ordem: linha.ordem,
+              documento_id: linha.documento_id,
+              datas: datasComMetadados
+            };
+
+            const isNew = linha.isNew || String(linha.id).startsWith('temp-');
+            const result = isNew ? await DataCadastro.create(payload) : await DataCadastro.update(linha.id, payload);
+
+            updatedLinhas.set(linha.id, result);
+            successCount++;
+            return;
+          } catch (err) {
+            const status = err?.status || err?.response?.status;
+            const ra = parseRetryAfter(err);
+
+            if (status === 429) {
+              const waitMs = (ra ? ra * 1000 : BASE_BACKOFF * Math.pow(2, attempts - 1)) + jitter(800);
+              nextAvailableAt = Math.max(nextAvailableAt, Date.now() + waitMs);
+              console.warn(`429 recebido para linha ${linha.id}, aguardando ${Math.round(waitMs)}ms (attempt ${attempts})`);
+              await sleep(waitMs);
+              continue; // tentar novamente após espera global
+            }
+
+            if (attempts >= MAX_ATTEMPTS) {
+              errorCount++;
+              console.error(`Erro salvando linha ${linha.id}:`, err);
+              return;
+            }
+
+            const backoff = BASE_BACKOFF * Math.pow(2, attempts - 1) + jitter(500);
+            await sleep(backoff);
+          }
+        }
+      };
+
+      // enviar serialmente por chunk (CHUNK_SIZE normalmente 1) para evitar bursts
+      for (let i = 0; i < linhasParaSalvar.length; i += CHUNK_SIZE) {
+        const chunk = linhasParaSalvar.slice(i, i + CHUNK_SIZE);
+        for (const linha of chunk) {
+          await saveOne(linha);
+        }
+        await sleep(300 + jitter(300));
+      }
+
+      // aplicar IDs salvos no state
+      setLinhas(prev => prev.map(linha => {
+        const saved = updatedLinhas.get(linha.id);
+        if (saved) return { ...linha, id: saved.id, isNew: false };
+        return linha;
+      }));
+
+      setHasUnsavedChanges(false);
+      setLinhasModificadas(new Set());
+
+      // recarregar dados do backend para refletir o que foi persistido
+      if (successCount > 0) {
+        try { await loadData(); } catch (e) { console.warn('Erro ao recarregar após salvar', e); }
+      }
+
+      if (!silent) {
+        if (errorCount > 0) alert(`Salvamento parcial: ${successCount} sucesso, ${errorCount} erros.`);
+        else alert(`Dados salvos com sucesso! ${successCount} linhas atualizadas.`);
+      }
+    } catch (error) {
+      if (!silent) alert(`Erro ao salvar: ${error?.message || error}`);
+    } finally {
+      setIsSaving(false);
     }
-
-    // aplicar IDs salvos no state
-    setLinhas(prev => prev.map(linha => {
-      const saved = updatedLinhas.get(linha.id);
-      if (saved) return { ...linha, id: saved.id, isNew: false };
-      return linha;
-    }));
-
-    setHasUnsavedChanges(false);
-    setLinhasModificadas(new Set());
-
-    if (!silent) {
-      if (errorCount > 0) alert(`Salvamento parcial: ${successCount} sucesso, ${errorCount} erros.`);
-      else alert(`Dados salvos com sucesso! ${successCount} linhas atualizadas.`);
-    }
-  } catch (error) {
-    if (!silent) alert(`Erro ao salvar: ${error?.message || error}`);
-  } finally {
-    setIsSaving(false);
-  }
-};
-// ...existing code...
+  };
+  // ...existing code...
 
   const linhasPorDisciplina = useMemo(() => {
     const grupos = {};
