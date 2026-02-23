@@ -431,13 +431,6 @@ const handleSave = async (silent = false) => {
     const sleep = ms => new Promise(r => setTimeout(r, ms));
     const jitter = (n) => Math.floor(Math.random() * n);
 
-    for (let i = 0; i < linhasParaSalvar.length; i += CHUNK_SIZE) {
-      const chunk = linhasParaSalvar.slice(i, i + CHUNK_SIZE);
-      await Promise.all(chunk.map(saveOne));
-      // pausa maior entre chunks
-      await sleep(1000 + jitter(500));
-    }
-
     const parseRetryAfter = (err) => {
       const headers = err?.response?.headers || err?.headers || {};
       let ra = headers['retry-after'] || headers['Retry-After'] || headers['Retry-After'.toLowerCase()];
