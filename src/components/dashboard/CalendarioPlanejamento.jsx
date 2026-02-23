@@ -16,7 +16,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 import PrevisaoEntregaModal from './PrevisaoEntregaModal';
 
-import { PlanejamentoAtividade, PlanejamentoDocumento, Execucao, Empreendimento, Atividade, Documento } from '../../api/entities';
+import { PlanejamentoAtividade, PlanejamentoDocumento, Execucao, Empreendimento, Atividade, Documento } from '@/entities/all'';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
