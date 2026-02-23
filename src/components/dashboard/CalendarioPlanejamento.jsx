@@ -829,71 +829,76 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
         </div>
       </div>
 
-      // ...existing code...
-<Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-  <DialogContent>
-    <DialogHeader>
-      <DialogTitle>Editar Atividade</DialogTitle>
-    </DialogHeader>
-    <div className="py-4 space-y-4">
-      <div>
-        <p className="text-sm text-gray-600 mb-2">
-          <strong>Atividade:</strong> {displayName}
-        </p>
-        <p className="text-sm text-gray-600 mb-4">
-          Tempo atual: {tempoExecutado.toFixed(1)}h executadas
-        </p>
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="adjustedTime">Novo Tempo Executado (horas)</Label>
-        <Input
-          id="adjustedTime"
-          type="number"
-          step="0.1"
-          min="0"
-          value={adjustedTime}
-          onChange={(e) => setAdjustedTime(e.target.value)}
-          placeholder="Ex: 2.5"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="editDescricao">Descrição</Label>
-        <Textarea
-          id="editDescricao"
-          value={editDescricao}
-          onChange={(e) => setEditDescricao(e.target.value)}
-          placeholder="Digite a descrição da atividade"
-          className="min-h-24"
-        />
-      </div>
-      <div className="space-y-2">
-        <Label htmlFor="editOs">Ordem de Serviço (OS)</Label>
-        <Input
-          id="editOs"
-          value={editOs}
-          onChange={(e) => setEditOs(e.target.value)}
-          placeholder="Digite o número da OS"
-        />
-      </div>
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-        <p className="text-blue-700 text-sm font-medium">
-          ℹ️ A atividade será automaticamente marcada como <strong>concluída</strong> após o ajuste.
-        </p>
-      </div>
-    </div>
-    <DialogFooter>
-      <Button variant="outline" onClick={() => setShowEditModal(false)}>Cancelar</Button>
-      <Button
-        onClick={handleSaveAll}
-        disabled={isEditLoading}
-        className="bg-blue-600 hover:bg-blue-700"
-      >
-        {isEditLoading ? 'Salvando...' : 'Salvar Alterações'}
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
-// ...existing code...
+      {/* Modal para ajustar tempo */}
+      <Dialog open={showTimeAdjustModal} onOpenChange={setShowTimeAdjustModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Ajustar Tempo Executado</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <p className="text-sm text-gray-600 mb-2"><strong>Atividade:</strong> {displayName}</p>
+              <p className="text-sm text-gray-600 mb-4">Tempo atual: {tempoExecutado.toFixed(1)}h executadas</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="adjustedTime">Novo Tempo Executado (horas)</Label>
+              <Input
+                id="adjustedTime"
+                type="number"
+                step="0.1"
+                min="0"
+                value={adjustedTime}
+                onChange={(e) => setAdjustedTime(e.target.value)}
+                placeholder="Ex: 2.5"
+              />
+            </div>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-blue-700 text-sm font-medium">ℹ️ A atividade será automaticamente marcada como <strong>concluída</strong> após o ajuste.</p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowTimeAdjustModal(false)}>Cancelar</Button>
+            <Button onClick={handleAdjustTime} className="bg-blue-600 hover:bg-blue-700">Ajustar e Finalizar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal para editar descrição */}
+      <Dialog open={showEditDescricaoModal} onOpenChange={setShowEditDescricaoModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Editar Descrição da Atividade</DialogTitle>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <p className="text-sm text-gray-600 mb-2"><strong>Atividade:</strong> {displayName}</p>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="editDescricao">Descrição</Label>
+              <Textarea
+                id="editDescricao"
+                value={editDescricao}
+                onChange={(e) => setEditDescricao(e.target.value)}
+                placeholder="Digite a descrição da atividade"
+                className="min-h-24"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditDescricaoModal(false)}>Cancelar</Button>
+            <Button 
+              onClick={handleSaveDescricao} 
+              disabled={isEditLoading}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {isEditLoading ? 'Salvando...' : 'Salvar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
 
 // --- Sub-componente de Grupo de Atividades Diárias ---
 const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, onToggle, disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, groupKey, provided, isDragging }) => {
