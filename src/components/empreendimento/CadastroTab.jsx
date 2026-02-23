@@ -401,9 +401,11 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   };
 
   // ...existing code...
-  const handleSave = async (silent = false) => {
+  // ...existing code...
+const handleSave = async (silent = false) => {
   if (isSaving) return;
   setIsSaving(true);
+
   try {
     const linhasParaSalvar = linhas.filter(linha => {
       if (!linha.documento_id) return false;
@@ -417,19 +419,28 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       return;
     }
 
-    const CONCURRENCY = 4;            // reduzir para evitar rate limit
-    const MAX_ATTEMPTS = 4;           // tentativas com backoff
-    const BASE_DELAY = 700;          // ms
+    const CONCURRENCY = 2;        // reduzir concorrência para evitar 429
+    const MAX_ATTEMPTS = 6;
+    const BASE_BACKOFF = 600;     // ms
     const updatedLinhas = new Map();
     let successCount = 0;
     let errorCount = 0;
 
-    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+    let nextAvailableAt = 0; // timestamp para pausa global (ms)
+
+    const sleep = ms => new Promise(r => setTimeout(r, ms));
     const jitter = (n) => Math.floor(Math.random() * n);
 
+    // worker que salva uma linha com retries e respeita nextAvailableAt
     const saveOne = async (linha) => {
       let attempts = 0;
       while (attempts < MAX_ATTEMPTS) {
+        // aguarda se servidor pediu pausa
+        const now = Date.now();
+        if (now < nextAvailableAt) {
+          await sleep(nextAvailableAt - now + jitter(200));
+        }
+
         attempts++;
         try {
           const datasComMetadados = {};
@@ -460,27 +471,33 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           successCount++;
           return;
         } catch (err) {
-          // detectar 429 / Retry-After se disponível
+          // tenta obter status e headers
           const status = err?.status || err?.response?.status;
-          const retryAfterHeader = err?.response?.headers?.['retry-after'] || err?.response?.headers?.['Retry-After'];
-          if (status === 429 && retryAfterHeader) {
-            const waitMs = (parseInt(retryAfterHeader, 10) || 1) * 1000;
-            await sleep(waitMs + jitter(300));
+          const headers = err?.response?.headers || {};
+          // se 429 e Retry-After, respeitar
+          if (status === 429) {
+            const ra = parseInt(headers['retry-after'] || headers['Retry-After'] || 0, 10);
+            const waitMs = (isNaN(ra) ? (BASE_BACKOFF * Math.pow(2, attempts)) : (ra * 1000)) + jitter(600);
+            // definir pausa global pequena para evitar novas 429 simultâneas
+            nextAvailableAt = Math.max(nextAvailableAt, Date.now() + waitMs);
+            await sleep(waitMs);
             continue;
           }
+
           if (attempts >= MAX_ATTEMPTS) {
             errorCount++;
             console.error(`Erro salvando linha ${linha.id}:`, err);
             return;
           }
-          // exponential backoff com jitter
-          const backoff = BASE_DELAY * Math.pow(2, attempts - 1) + jitter(300);
+
+          // backoff exponencial com jitter
+          const backoff = BASE_BACKOFF * Math.pow(2, attempts - 1) + jitter(400);
           await sleep(backoff);
         }
       }
     };
 
-    // pool de concorrência (workers)
+    // pool de workers sequenciais (concurrency control)
     let idx = 0;
     const workers = Array.from({ length: Math.min(CONCURRENCY, linhasParaSalvar.length) }).map(async () => {
       while (true) {
@@ -492,7 +509,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
     await Promise.all(workers);
 
-    // atualizar estado local
+    // aplicar IDs salvos no state
     setLinhas(prev => prev.map(linha => {
       const saved = updatedLinhas.get(linha.id);
       if (saved) return { ...linha, id: saved.id, isNew: false };
@@ -512,6 +529,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     setIsSaving(false);
   }
 };
+// ...existing code...
 
   const linhasPorDisciplina = useMemo(() => {
     const grupos = {};
