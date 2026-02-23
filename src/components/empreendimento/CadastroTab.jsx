@@ -419,9 +419,9 @@ const handleSave = async (silent = false) => {
       return;
     }
 
-    const CHUNK_SIZE = 3;       // quantas requisições simultâneas por chunk
-    const MAX_ATTEMPTS = 8;
-    const BASE_BACKOFF = 1000;  // ms
+    const CHUNK_SIZE = 1;       // serializar (reduz 429)
+    const MAX_ATTEMPTS = 10;
+    const BASE_BACKOFF = 2000;  // ms, mais conservador
     const updatedLinhas = new Map();
     let successCount = 0;
     let errorCount = 0;
@@ -430,6 +430,13 @@ const handleSave = async (silent = false) => {
 
     const sleep = ms => new Promise(r => setTimeout(r, ms));
     const jitter = (n) => Math.floor(Math.random() * n);
+
+    for (let i = 0; i < linhasParaSalvar.length; i += CHUNK_SIZE) {
+      const chunk = linhasParaSalvar.slice(i, i + CHUNK_SIZE);
+      await Promise.all(chunk.map(saveOne));
+      // pausa maior entre chunks
+      await sleep(1000 + jitter(500));
+    }
 
     const parseRetryAfter = (err) => {
       const headers = err?.response?.headers || err?.headers || {};
