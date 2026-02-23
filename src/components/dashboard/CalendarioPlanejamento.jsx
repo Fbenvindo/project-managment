@@ -642,27 +642,31 @@ const DailyActivityGroup = ({
       ref={provided?.innerRef}
       {...(provided?.draggableProps || {})}
       {...(provided?.dragHandleProps || {})}
-      className="mb-1 p-2 rounded border bg-white"
+      className={`mb-2 p-3 rounded-lg border bg-white shadow-sm transition-all ${isDragging ? 'ring-2 ring-indigo-300 scale-105' : ''}`}
+      style={{ cursor: canReprogram ? 'move' : 'default' }}
     >
-      <div onClick={onToggle} style={{ fontWeight: 'bold', cursor: 'pointer' }}>
-        {empreendimento?.nome || 'Grupo'} - {executor?.email || 'Executor'}
+      <div className="flex items-center justify-between mb-1">
+        <div>
+          <strong className="text-sm">
+            {empreendimento?.nome || 'Grupo'}
+          </strong>
+          {' - '}
+          <span className="text-xs text-gray-600">{executor?.email || 'Executor'}</span>
+        </div>
+        <div className="text-xs text-gray-500">Total de horas: {totalHoras.toFixed(2)}</div>
       </div>
       {isExpanded && (
-        <div>
+        <div className="mt-2 space-y-1">
           {atividades.map((atividade, idx) => (
-            <div key={atividade.id || idx}>
+            <div key={atividade.id || idx} className="bg-gray-50 rounded px-2 py-1 text-xs border">
               {atividade.descritivo || atividade.atividade?.atividade || 'Atividade'}
             </div>
           ))}
         </div>
       )}
-      <div style={{ fontSize: '12px', color: '#666' }}>
-        Total de horas: {totalHoras}
-      </div>
     </div>
   );
 };
-
 // --- Sub-componente para Container de Atividades (reutilizável) ---
 const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections }) => {
   const [expandedGroups, setExpandedGroups] = useState(new Set());
