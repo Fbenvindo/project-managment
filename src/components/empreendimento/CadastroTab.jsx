@@ -95,8 +95,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       if (!q || q.length === 0) return;
 
       running = true;
-      const batch = q.slice(0, 2); // salvar 2 em 2
-      console.log(`🔁 Processando batch de ${batch.length} itens (2x)`);
+      const batch = q.slice(0, 10); // salvar 10 em 10
+      console.log(`🔁 Processando batch de ${batch.length} itens (10x)`);
 
       const results = await Promise.all(batch.map(async (item) => {
         const maxAttempts = 4;
@@ -154,8 +154,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       stop: () => clearInterval(iv),
       processNow: processBatch
     };
-
-    console.log('🔁 Global cadastro processor registrado (batch=2, interval=3s)');
+    console.log('🔁 Global cadastro processor registrado (batch=10, interval=3s)');
   }, []);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFile, setImportFile] = useState(null);
