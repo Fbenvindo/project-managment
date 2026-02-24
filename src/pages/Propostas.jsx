@@ -48,14 +48,19 @@ const renderStatusLabel = (status) => {
 };
 
 const normalizeStatus = (raw) => {
-  if (!raw && raw !== '') return 'solicitado';
-  const s = String(raw).toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+  if (raw === undefined || raw === null) return 'solicitado';
+  let s = String(raw).toLowerCase().trim();
+  // remove accents (more compatible than \p{Diacritic})
+  s = s.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   const key = s.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+
   if (['aprovado', 'aprovada'].includes(key)) return 'aprovado';
-  if (['reprovado', 'nao_aprovado', 'nao_aprovada', 'naoaprovado', 'nao aprovado', 'nao-aprovado'].includes(key)) return 'reprovado';
-  if (['em_analise', 'em_analise', 'emanalise', 'aguardando_aprovacao', 'aguardando_aprovacao', 'aguardando_aprovacao'].includes(key) || key.includes('analise') || key.includes('aguardando')) return 'em_analise';
-  if (['solicitado', 'solicitacao', 'solicitada'].includes(key)) return 'solicitado';
-  // fallback: if matches one of known keys
+  if (['reprovado', 'nao_aprovado', 'naoaprovado', 'nao_aprovada', 'naoaprovado', 'nao_aprovado'].includes(key)) return 'reprovado';
+  if (key.includes('nao') && (key.includes('aprov') || key.includes('reprov'))) return 'reprovado';
+  if (key.includes('analise') || key.includes('aguard') || key.includes('em_analise') || key.includes('emanalise')) return 'em_analise';
+  if (key.includes('solicit')) return 'solicitado';
+
+  // final fallback to canonical keys if already one
   if (['aprovado', 'reprovado', 'em_analise', 'solicitado'].includes(key)) return key;
   return 'solicitado';
 };
