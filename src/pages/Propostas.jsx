@@ -253,11 +253,28 @@ export default function PropostasPage() {
                 <p className="text-gray-600">Apresentação de propostas comerciais ({propostas.length})</p>
               </div>
             </div>
-            <Button onClick={handleOpenModal} className="bg-blue-600 hover:bg-blue-700">
+            <Button onClick={handleOpenModal} className="bg-blue-600 hover:bg-blue-700" disabled={!apiAvailable}>
               <Plus className="w-4 h-4 mr-2" />
               Nova Proposta
             </Button>
           </div>
+
+          {!apiAvailable && (
+            <div className="mt-4 p-4 rounded-md bg-yellow-50 border border-yellow-200 flex items-center justify-between">
+              <div className="text-sm text-yellow-800">API indisponível: autentique o client Base44 ou recarregue para habilitar operações reais.</div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" onClick={loadPropostas}>Tentar novamente</Button>
+                <Button onClick={() => {
+                  // carregar dados mock para permitir visualização da UI
+                  const mock = [
+                    { id: 'm1', numero: 'MOCK-001', cliente: 'Cliente Mock', empreendimento: 'Empreendimento A', status: 'solicitado', valor_bim: 10000, valor_cad: 0, data_solicitacao: new Date().toISOString() },
+                    { id: 'm2', numero: 'MOCK-002', cliente: 'Cliente Mock B', empreendimento: 'Empreendimento B', status: 'aprovado', valor_bim: 25000, valor_cad: 5000, data_solicitacao: new Date().toISOString() }
+                  ];
+                  setPropostas(mock);
+                }} className="bg-blue-600 hover:bg-blue-700">Usar dados de exemplo</Button>
+              </div>
+            </div>
+          )}
 
           <div className="mt-4">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
