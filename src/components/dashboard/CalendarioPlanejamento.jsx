@@ -287,6 +287,9 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   const [showEditDescricaoModal, setShowEditDescricaoModal] = useState(false);
   const [editDescricao, setEditDescricao] = useState('');
   const [isEditLoading, setIsEditLoading] = useState(false);
+  // Estados para lista de empreendimentos e seleção no modal
+  const [empreendimentosList, setEmpreendimentosList] = useState([]);
+  const [editEmpreendimento, setEditEmpreendimento] = useState('');
 
   const realStatus = calculateActivityStatus(plano, allPlanejamentos);
 
@@ -569,7 +572,23 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
     setEditDescricao(plano.descritivo || '');
     setShowEditDescricaoModal(true);
   };
+  const handleOpenEditDescricao = async () => {
+    setEditDescricao(plano.descritivo || '');
+    // carregar empreendimentos sob demanda
+    try {
+      if (empreendimentosList.length === 0) {
+        const fetched = await retryWithBackoff(() => Empreendimento.list(), 3, 1000, 'fetchEmpreendimentos');
+       setEmpreendimentosList(fetched || []);
+     }
+    } catch (e) {
+      console.error('Erro ao carregar empreendimentos para edição:', e);
+    }
+    setEditEmpreendimento(plano.empreendimento_id ? String(plano.empreendimento_id) : '');
+    setShowEditDescricaoModal(true);
+  };
+// ...existing code...
 
+// ...existing code...
   const handleSaveDescricao = async () => {
     if (!editDescricao.trim()) {
       alert('Descrição não pode estar vazia');
@@ -589,6 +608,12 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
         const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
         await entityToUpdate.update(plano.id, {
           descritivo: editDescricao.trim()
+         });
+       // Para atividades normais, usar a entidade correta e permitir atualizar empreendimento
+        const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
+        await entityToUpdate.update(plano.id, {
+          descritivo: editDescricao.trim(),
+          empreendimento_id: editEmpreendimento ? Number(editEmpreendimento) : null
         });
       }
       
@@ -863,26 +888,40 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
         </DialogContent>
       </Dialog>
 
-      {/* Modal para editar descrição */}
-      <Dialog open={showEditDescricaoModal} onOpenChange={setShowEditDescricaoModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Descrição da Atividade</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div>
-              <p className="text-sm text-gray-600 mb-2"><strong>Atividade:</strong> {displayName}</p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="editDescricao">Descrição</Label>
-              <Textarea
-                id="editDescricao"
-                value={editDescricao}
-                onChange={(e) => setEditDescricao(e.target.value)}
-                placeholder="Digite a descrição da atividade"
-                className="min-h-24"
-              />
-            </div>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Editar Descrição da Atividade</DialogTitle>
+        </DialogHeader>
+        <div className="py-4 space-y-4">
+          <div>
+            <p className="text-sm text-gray-600 mb-2"><strong>Atividade:</strong> {displayName}</p>
+          </div>
+         <div className="space-y-2">
+           <Label>Empreendimento</Label>
+           <Select value={editEmpreendimento} onValueChange={(val) => setEditEmpreendimento(val)}>
+             <SelectTrigger className="w-full bg-white">
+               <SelectValue placeholder={plano.empreendimento ? (plano.empreendimento.nome || plano.empreendimento.nome_fantasia) : "Nenhum"} />
+             </SelectTrigger>
+             <SelectContent>
+               <SelectItem value="">Nenhum</SelectItem>
+               {empreendimentosList.map(emp => (
+                 <SelectItem key={emp.id} value={String(emp.id)}>
+                   {emp.nome || emp.nome_fantasia || `#${emp.id}`}
+                 </SelectItem>
+               ))}
+             </SelectContent>
+           </Select>
+         </div>
+          <div className="space-y-2">
+            <Label htmlFor="editDescricao">Descrição</Label>
+            <Textarea
+              id="editDescricao"
+              value={editDescricao}
+              onChange={(e) => setEditDescricao(e.target.value)}
+              placeholder="Digite a descrição da atividade"
+              className="min-h-24"
+            />
+          </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditDescricaoModal(false)}>Cancelar</Button>
@@ -895,7 +934,6 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
             </Button>
           </DialogFooter>
         </DialogContent>
-      </Dialog>
     </>
   );
 };
