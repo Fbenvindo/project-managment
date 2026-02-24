@@ -1,15 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo, useContext } from "react";
 import { useLocation } from "react-router-dom";
-import {
-  Comercial,
-  Documento,
-  Disciplina,
-  Atividade,
-  PlanejamentoAtividade,
-  Usuario,
-  Pavimento,
-  Execucao
-} from "@/entities/all";
+import * as Entities from "@/api/entities";
+const { Comercial, Documento, Disciplina, Atividade, PlanejamentoAtividade, Usuario, Pavimento, Execucao } = Entities;
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -138,7 +130,7 @@ export default function ComercialDetalhesPage() {
             retryWithExtendedBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: comercialId }), 'loadPlanejamentosAtividade'),
             (async () => {
               try {
-                const { PlanejamentoDocumento } = await import('@/entities/all');
+                const { PlanejamentoDocumento } = await import('@/api/entities');
                 return await retryWithExtendedBackoff(() => PlanejamentoDocumento.filter({ empreendimento_id: comercialId }), 'loadPlanejamentosDocumento');
               } catch {
                 return [];
@@ -164,15 +156,15 @@ export default function ComercialDetalhesPage() {
           break;
 
         case 'catalogo_atividades':
-            data = {};
-            break;
+          data = {};
+          break;
 
         case 'documentacao':
           const [planejamentosAtiv, planejamentosDoc] = await Promise.all([
             retryWithExtendedBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: comercialId }), `load${tabName}Atividade`),
             (async () => {
               try {
-                const { PlanejamentoDocumento } = await import('@/entities/all');
+                const { PlanejamentoDocumento } = await import('@/api/entities');
                 return await retryWithExtendedBackoff(() => PlanejamentoDocumento.filter({ empreendimento_id: comercialId }), `load${tabName}Documento`);
               } catch {
                 return [];
@@ -184,11 +176,11 @@ export default function ComercialDetalhesPage() {
           break;
 
         case 'gestao':
-            data = {};
-            break;
+          data = {};
+          break;
         default:
-            console.warn(`Aba desconhecida: ${tabName}`);
-            break;
+          console.warn(`Aba desconhecida: ${tabName}`);
+          break;
       }
 
       setTabData(prev => ({
@@ -198,7 +190,7 @@ export default function ComercialDetalhesPage() {
 
     } catch (err) {
       console.error(`Erro ao carregar ${tabName}:`, err);
-      
+
       let errorMessage = `Erro ao carregar dados. `;
       if (err.message?.includes('Network Error')) {
         errorMessage += 'Verifique sua conexão.';
@@ -253,10 +245,10 @@ export default function ComercialDetalhesPage() {
         loadTabData('pavimentos');
       }
       if (!tabData.gestao.loaded) {
-          setTabData(prev => ({
-              ...prev,
-              gestao: { ...prev.gestao, loaded: true }
-          }));
+        setTabData(prev => ({
+          ...prev,
+          gestao: { ...prev.gestao, loaded: true }
+        }));
       }
     }
 
@@ -284,7 +276,7 @@ export default function ComercialDetalhesPage() {
 
   useEffect(() => {
     if (comercial) {
-        handleTabChange(activeTab);
+      handleTabChange(activeTab);
     }
   }, [comercial, activeTab, handleTabChange]);
 
@@ -352,10 +344,10 @@ export default function ComercialDetalhesPage() {
           </TabsList>
 
           <TabsContent value="catalogo_atividades">
-             <AnaliticoGlobalTab
-                empreendimentoId={comercial?.id}
-                onUpdate={forceFullReload}
-              />
+            <AnaliticoGlobalTab
+              empreendimentoId={comercial?.id}
+              onUpdate={forceFullReload}
+            />
           </TabsContent>
 
           <TabsContent value="documentos">
@@ -398,8 +390,8 @@ export default function ComercialDetalhesPage() {
                 empreendimentoId={comercial?.id}
                 pavimentosIniciais={tabData.pavimentos.data}
                 onUpdate={() => {
-                   setTabData(prev => ({ ...prev, pavimentos: { ...prev.pavimentos, loaded: false } }));
-                   loadTabData('pavimentos');
+                  setTabData(prev => ({ ...prev, pavimentos: { ...prev.pavimentos, loaded: false } }));
+                  loadTabData('pavimentos');
                 }}
                 isLoading={false}
               />
