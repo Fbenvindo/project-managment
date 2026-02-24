@@ -263,14 +263,32 @@ export default function PropostasPage() {
           </div>
 
           <div className="mt-4">
-            <div className="bg-white p-4 rounded-lg shadow flex justify-between items-center">
-              <div>
+            <div className="bg-white p-4 rounded-lg shadow flex items-center justify-between">
+              <div className="w-1/3">
                 <div className="text-sm text-gray-500">Resumo (mês mais recente)</div>
                 <div className="text-xl font-semibold">{resumoMensal[0] ? (resumoMensal[0].month === 'Sem Data' ? 'Sem Data' : format(parseISO(resumoMensal[0].month + '-01'), 'MMMM yyyy')) : '—'}</div>
               </div>
-              <div className="text-right">
+
+              <div className="w-1/3 px-4">
+                <div className="text-sm text-gray-600 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="text-left">Aprovados: {resumoMensal[0]?.byStatus?.aprovado?.count || 0}</div>
+                    <div className="text-left">Valor BIM: R$ {formatCurrency(resumoMensal[0]?.byStatus?.aprovado?.bim || 0)}</div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="text-left">Não aprovados: {resumoMensal[0]?.byStatus?.reprovado?.count || 0}</div>
+                    <div className="text-left">Valor CAD: R$ {formatCurrency(resumoMensal[0]?.byStatus?.reprovado?.cad || 0)}</div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className="text-left">Aguardando aprovação: {resumoMensal[0]?.byStatus?.em_analise?.count || 0}</div>
+                    <div className="text-left">BIM: R$ {formatCurrency(resumoMensal[0]?.byStatus?.em_analise?.bim || 0)} • CAD: R$ {formatCurrency(resumoMensal[0]?.byStatus?.em_analise?.cad || 0)}</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="w-1/3 text-right">
                 <div className="text-lg font-bold">{resumoMensal[0] ? `${resumoMensal[0].items.length} propostas` : '0 propostas'}</div>
-                <div className="text-sm text-gray-500 space-y-1 text-right">
+                <div className="text-sm text-gray-500">
                   <div>Valor BIM: R$ {resumoMensal[0] ? formatCurrency(resumoMensal[0].totalBim) : '0,00'}</div>
                   <div>Valor CAD: R$ {resumoMensal[0] ? formatCurrency(resumoMensal[0].totalCad) : '0,00'}</div>
                 </div>
