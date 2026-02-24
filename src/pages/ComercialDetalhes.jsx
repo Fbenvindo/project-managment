@@ -220,6 +220,18 @@ export default function ComercialDetalhesPage() {
       loadTabData(newTab);
     }
 
+    if (newTab === 'resumo') {
+      if (!tabData.documentos.loaded && !tabData.documentos.loading) {
+        loadTabData('documentos');
+      }
+      if (!tabData.pavimentos.loaded && !tabData.pavimentos.loading) {
+        loadTabData('pavimentos');
+      }
+      if (!tabData.atividades_projeto.loaded && !tabData.atividades_projeto.loading) {
+        loadTabData('atividades_projeto');
+      }
+    }
+
     if (newTab === 'atividades_projeto' && !tabData.documentos.loaded && !tabData.documentos.loading) {
       loadTabData('documentos');
     }
@@ -334,6 +346,7 @@ export default function ComercialDetalhesPage() {
             <TabsTrigger value="documentos">Documentos</TabsTrigger>
             <TabsTrigger value="pavimentos">Pavimentos</TabsTrigger>
             <TabsTrigger value="atividades_projeto">Atividades do Projeto</TabsTrigger>
+            <TabsTrigger value="resumo">Resumo</TabsTrigger>
             <TabsTrigger value="catalogo_atividades">
               <ListChecks className="w-4 h-4 mr-2" /> Catálogo
             </TabsTrigger>
@@ -348,6 +361,40 @@ export default function ComercialDetalhesPage() {
               empreendimentoId={comercial?.id}
               onUpdate={forceFullReload}
             />
+          </TabsContent>
+
+          <TabsContent value="resumo">
+            <div className="bg-white p-6 rounded-lg shadow">
+              <h3 className="text-lg font-bold mb-4">Resumo do Empreendimento</h3>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="p-4 bg-gray-50 rounded">
+                  <div className="text-sm text-gray-500">Documentos</div>
+                  <div className="text-2xl font-semibold">{(tabData.documentos?.data?.documentos?.length) ?? 0}</div>
+                </div>
+
+                <div className="p-4 bg-gray-50 rounded">
+                  <div className="text-sm text-gray-500">Pavimentos</div>
+                  <div className="text-2xl font-semibold">{(tabData.pavimentos?.data?.length) ?? 0}</div>
+                </div>
+
+                <div className="p-4 bg-gray-50 rounded">
+                  <div className="text-sm text-gray-500">Atividades do Projeto</div>
+                  <div className="text-2xl font-semibold">{(tabData.atividades_projeto?.data?.length) ?? 0}</div>
+                </div>
+              </div>
+
+              <div className="mt-6">
+                <p className="text-sm text-gray-600">Use os botões abaixo para recarregar dados caso alguma contagem esteja desatualizada.</p>
+                <div className="mt-3 flex space-x-2">
+                  <Button variant="outline" onClick={() => { setTabData(prev => ({ ...prev, documentos: { ...prev.documentos, loaded: false } })); loadTabData('documentos'); }}>
+                    Recarregar Documentos
+                  </Button>
+                  <Button variant="outline" onClick={() => { setTabData(prev => ({ ...prev, pavimentos: { ...prev.pavimentos, loaded: false } })); loadTabData('pavimentos'); }}>
+                    Recarregar Pavimentos
+                  </Button>
+                </div>
+              </div>
+            </div>
           </TabsContent>
 
           <TabsContent value="documentos">
