@@ -59,13 +59,23 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     setPendingQueue(q.concat(toEnqueue));
   };
 
-  // Processador de fila: executa 1 item por execução; pausa em 429
+  // Registrar processador global em window para rodar em background (salva 2 por vez)
   useEffect(() => {
-    let stopped = false;
-    let pauseUntil = 0;
+    if (typeof window === 'undefined') return;
+
+    if (window.__cadastroGlobalProcessor) {
+      console.log('🔁 Global cadastro processor já registrado');
+      return;
+    }
+
+    // Implementar processor global que funciona mesmo se o componente for desmontado
+    const QUEUE_KEY_G = '__cadastro_pending_queue';
+    const getQ = () => {
+      try { return JSON.parse(localStorage.getItem(QUEUE_KEY_G) || '[]'); } catch (e) { return []; }
+    };
+    const setQ = (q) => { try { localStorage.setItem(QUEUE_KEY_G, JSON.stringify(q || [])); window.__cadastroQueue = q || []; } catch (e) { /* ignore */ } };
 
     const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-
     const isRateLimitError = (err) => {
       try {
         const status = err?.response?.status || err?.status;
@@ -74,48 +84,79 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       } catch (e) { return false; }
     };
 
-    const processor = async () => {
-      if (stopped) return;
+    let running = false;
+    let pauseUntil = 0;
+
+    const processBatch = async () => {
+      if (running) return;
       const now = Date.now();
       if (now < pauseUntil) return;
-      const q = getPendingQueue();
+      const q = getQ();
       if (!q || q.length === 0) return;
-      const item = q[0];
+
+      running = true;
+      const batch = q.slice(0, 2); // salvar 2 em 2
+      console.log(`🔁 Processando batch de ${batch.length} itens (2x)`);
+
+      const results = await Promise.all(batch.map(async (item) => {
+        const maxAttempts = 4;
+        let attempts = 0;
+        while (attempts < maxAttempts) {
+          try {
+            if (item.isNew) {
+              const res = await DataCadastro.create(item.payload);
+              return { ok: true, res, item };
+            } else {
+              const res = await DataCadastro.update(item.id, item.payload);
+              return { ok: true, res, item };
+            }
+          } catch (err) {
+            attempts++;
+            if (isRateLimitError(err)) {
+              // pausa maior e interrompe tentativas deste batch
+              pauseUntil = Date.now() + 15000;
+              console.warn('⏸️ Rate limit detectado pelo processador global — pausando 15s');
+              return { ok: false, err, item, rateLimit: true };
+            }
+            // pequeno backoff e tentar de novo
+            await sleep(500 * attempts);
+            if (attempts >= maxAttempts) return { ok: false, err, item };
+          }
+        }
+        return { ok: false, err: new Error('Max attempts exceeded'), item };
+      }));
+
+      // Remover do queue os itens bem-sucedidos
       try {
-        console.log('🔁 Processando item da fila:', item.documento_id, item.id);
-        let res;
-        if (item.isNew) {
-          res = await DataCadastro.create(item.payload);
-        } else {
-          res = await DataCadastro.update(item.id, item.payload);
-        }
-        console.log('✅ Item da fila salvo:', item.documento_id, res.id);
-        // remover do início da fila
-        const newQ = getPendingQueue();
-        newQ.shift();
-        setPendingQueue(newQ);
-      } catch (err) {
-        console.warn('⚠️ Falha ao processar item da fila:', err?.message || err);
-        if (isRateLimitError(err)) {
-          // pausa longa
-          pauseUntil = Date.now() + 15000; // 15s
-          console.warn('⏸️ Rate limit detectado — pausando processamento da fila por 15s');
-        } else {
-          // backoff curto antes de tentar próximo
-          pauseUntil = Date.now() + 2000;
-        }
+        const current = getQ();
+        // remover os primeiros N (batch.length) se corresponderem
+        const remaining = current.slice(batch.length);
+        setQ(remaining);
+      } catch (e) {
+        console.warn('Erro ao atualizar fila após processamento', e);
       }
+
+      // Log de resultados
+      results.forEach(r => {
+        if (r.ok) console.log('✅ Salvou (global):', r.item.documento_id, r.res.id);
+        else console.warn('❌ Falha no item (global):', r.item.documento_id, r.err?.message || r.err);
+      });
+
+      running = false;
     };
 
-    const iv = setInterval(processor, 2000);
-    // Processar imediatamente uma vez ao montar
-    processor();
+    // Intervalo de processamento (rodar a cada 3s)
+    const iv = setInterval(processBatch, 3000);
+    // rodar imediatamente
+    processBatch();
 
-    return () => {
-      stopped = true;
-      clearInterval(iv);
+    window.__cadastroGlobalProcessor = {
+      stop: () => clearInterval(iv),
+      processNow: processBatch
     };
-  }, [empreendimento?.id]);
+
+    console.log('🔁 Global cadastro processor registrado (batch=2, interval=3s)');
+  }, []);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFile, setImportFile] = useState(null);
   const [isImporting, setIsImporting] = useState(false);
