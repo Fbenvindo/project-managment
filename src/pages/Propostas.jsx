@@ -462,7 +462,11 @@ export default function PropostasPage() {
                               <div className="text-xs text-gray-500">{(item.data_solicitacao || item.data_proposta || item.created_at || item.updated_date) ? (format(parseISO((item.data_solicitacao || item.data_proposta || item.created_at || item.updated_date).slice(0, 10)), 'dd/MM/yyyy')) : ''}</div>
                             </div>
                           </div>
-                          <div className="mt-2 text-sm text-gray-600">Status: {item.status || '—'}</div>
+                          <div className="mt-2 text-sm">
+                            <Badge className={statusColors[item.status] || 'bg-gray-100 text-gray-800'}>
+                              {statusLabels[item.status] || item.status || '—'}
+                            </Badge>
+                          </div>
                         </div>
                       ))}
                     </div>
