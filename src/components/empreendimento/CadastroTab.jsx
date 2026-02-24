@@ -859,7 +859,25 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
               });
 
               console.log('🔄 revisoesPorEtapa recalculado após bulk:', novasRevisoesPorEtapa);
-              setRevisoesPorEtapa(novasRevisoesPorEtapa);
+              // Mesclar com o estado atual para garantir que colunas recém-criadas não sejam perdidas
+              setRevisoesPorEtapa(prev => {
+                const merged = {};
+                ETAPAS.forEach(etapa => {
+                  const prevArr = Array.isArray(prev?.[etapa]) ? prev[etapa] : [];
+                  const newArr = Array.isArray(novasRevisoesPorEtapa?.[etapa]) ? novasRevisoesPorEtapa[etapa] : [];
+                  const s = Array.from(new Set([...(prevArr || []), ...(newArr || [])]));
+                  const norm = s
+                    .map(r => {
+                      const m = String(r).match(/^R(\d+)$/i);
+                      if (!m) return null;
+                      return `R${String(parseInt(m[1], 10)).padStart(2, '0')}`;
+                    })
+                    .filter(Boolean)
+                    .sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
+                  merged[etapa] = norm;
+                });
+                return merged;
+              });
             } catch (err) {
               console.error('Erro ao recalcular revisoesPorEtapa após bulk:', err);
             }
@@ -1069,7 +1087,25 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           });
 
           console.log('🔄 revisoesPorEtapa recalculado após salvamento (novo estado):', novasRevisoesPorEtapa);
-          setRevisoesPorEtapa(novasRevisoesPorEtapa);
+          // Mesclar com o estado atual para evitar perder revisões que não retornaram do servidor
+          setRevisoesPorEtapa(prev => {
+            const merged = {};
+            ETAPAS.forEach(etapa => {
+              const prevArr = Array.isArray(prev?.[etapa]) ? prev[etapa] : [];
+              const newArr = Array.isArray(novasRevisoesPorEtapa?.[etapa]) ? novasRevisoesPorEtapa[etapa] : [];
+              const s = Array.from(new Set([...(prevArr || []), ...(newArr || [])]));
+              const norm = s
+                .map(r => {
+                  const m = String(r).match(/^R(\d+)$/i);
+                  if (!m) return null;
+                  return `R${String(parseInt(m[1], 10)).padStart(2, '0')}`;
+                })
+                .filter(Boolean)
+                .sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
+              merged[etapa] = norm;
+            });
+            return merged;
+          });
         } catch (err) {
           console.error('Erro ao recalcular revisoesPorEtapa após salvamento:', err);
         }
