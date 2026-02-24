@@ -272,25 +272,6 @@ export default function PropostasPage() {
     return ordered;
   }, [propostas]);
 
-  const totalsByStatus = useMemo(() => {
-    const totals = {
-      aprovado: { count: 0, bim: 0, cad: 0 },
-      reprovado: { count: 0, bim: 0, cad: 0 },
-      em_analise: { count: 0, bim: 0, cad: 0 },
-      solicitado: { count: 0, bim: 0, cad: 0 }
-    };
-    (propostas || []).forEach(p => {
-      const s = normalizeStatus(p.status || 'solicitado');
-      const bim = Number(p.valor_bim || 0);
-      const cad = Number(p.valor_cad || 0);
-      if (!totals[s]) totals[s] = { count: 0, bim: 0, cad: 0 };
-      totals[s].count += 1;
-      totals[s].bim += isNaN(bim) ? 0 : bim;
-      totals[s].cad += isNaN(cad) ? 0 : cad;
-    });
-    return totals;
-  }, [propostas]);
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
@@ -364,12 +345,6 @@ export default function PropostasPage() {
                 <div className="text-sm text-gray-500">
                   <div>Valor BIM: R$ {resumoMensal[0] ? formatCurrency(resumoMensal[0].totalBim) : '0,00'}</div>
                   <div>Valor CAD: R$ {resumoMensal[0] ? formatCurrency(resumoMensal[0].totalCad) : '0,00'}</div>
-                </div>
-                <div className="text-sm text-gray-600 mt-2">
-                  <div className="font-medium">Totais (todas propostas)</div>
-                  <div className="text-sm">Aprovados: {totalsByStatus.aprovado.count} — BIM: R$ {formatCurrency(totalsByStatus.aprovado.bim)} • CAD: R$ {formatCurrency(totalsByStatus.aprovado.cad)}</div>
-                  <div className="text-sm">Não aprovados: {totalsByStatus.reprovado.count} — BIM: R$ {formatCurrency(totalsByStatus.reprovado.bim)} • CAD: R$ {formatCurrency(totalsByStatus.reprovado.cad)}</div>
-                  <div className="text-sm">Aguardando aprovação: {totalsByStatus.em_analise.count} — BIM: R$ {formatCurrency(totalsByStatus.em_analise.bim)} • CAD: R$ {formatCurrency(totalsByStatus.em_analise.cad)}</div>
                 </div>
                 <div className="mt-2">
                   <Button onClick={() => setActiveTab('summary')} variant="outline">Abrir Resumo</Button>
@@ -556,14 +531,8 @@ export default function PropostasPage() {
                       <div className="text-lg font-medium">{group.month === 'Sem Data' ? 'Sem Data' : format(parseISO(group.month + '-01'), 'MMMM yyyy')}</div>
                       <div className="text-sm text-gray-600 space-y-1 text-right">
                         <div>Total: {group.items.length} propostas</div>
-                        <div>
-                          {['aprovado', 'reprovado', 'em_analise', 'solicitado'].map(s => (
-                            <div key={s} className="flex justify-between whitespace-nowrap">
-                              <div className="mr-2">{renderStatusLabel(s)}:</div>
-                              <div>{group.byStatus?.[s]?.count || 0} — BIM: R$ {formatCurrency(group.byStatus?.[s]?.bim || 0)} • CAD: R$ {formatCurrency(group.byStatus?.[s]?.cad || 0)}</div>
-                            </div>
-                          ))}
-                        </div>
+                        <div>Valor BIM: R$ {formatCurrency(group.totalBim)}</div>
+                        <div>Valor CAD: R$ {formatCurrency(group.totalCad)}</div>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
