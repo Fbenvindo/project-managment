@@ -34,6 +34,19 @@ const statusLabels = {
   reprovado: "Não Aprovado"
 };
 
+const renderStatusLabel = (status) => {
+  if (status === 'em_analise') {
+    return (
+      <span className="leading-tight">
+        <span>Aguardando</span>
+        <br />
+        <span>Aprovação</span>
+      </span>
+    );
+  }
+  return statusLabels[status] || status;
+};
+
 export default function PropostasPage() {
   const [propostas, setPropostas] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -297,7 +310,11 @@ export default function PropostasPage() {
                     <div className="text-left">Valor CAD: R$ {formatCurrency(resumoMensal[0]?.byStatus?.reprovado?.cad || 0)}</div>
                   </div>
                   <div className="flex justify-between items-center">
-                    <div className="text-left">Aguardando aprovação: {resumoMensal[0]?.byStatus?.em_analise?.count || 0}</div>
+                    <div className="text-left">
+                      <span>Aguardando</span>
+                      <br />
+                      <span>Aprovação: {resumoMensal[0]?.byStatus?.em_analise?.count || 0}</span>
+                    </div>
                     <div className="text-left">BIM: R$ {formatCurrency(resumoMensal[0]?.byStatus?.em_analise?.bim || 0)} • CAD: R$ {formatCurrency(resumoMensal[0]?.byStatus?.em_analise?.cad || 0)}</div>
                   </div>
                 </div>
@@ -354,7 +371,7 @@ export default function PropostasPage() {
                               <div className="flex items-center gap-3">
                                 <h3 className="font-bold text-lg text-gray-900">{proposta.numero || '-'}</h3>
                                 <Badge className={statusColors[proposta.status]}>
-                                  {statusLabels[proposta.status]}
+                                  {renderStatusLabel(proposta.status)}
                                 </Badge>
                                 {proposta.tipo_empreendimento && (
                                   <Badge variant="outline" className="text-xs">
@@ -520,7 +537,7 @@ export default function PropostasPage() {
                           </div>
                           <div className="mt-2 text-sm">
                             <Badge className={statusColors[item.status] || 'bg-gray-100 text-gray-800'}>
-                              {statusLabels[item.status] || item.status || '—'}
+                              {renderStatusLabel(item.status) || item.status || '—'}
                             </Badge>
                           </div>
                         </div>
