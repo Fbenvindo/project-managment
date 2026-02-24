@@ -272,6 +272,39 @@ export default function PropostasPage() {
     return ordered;
   }, [propostas]);
 
+  const monthTotalsByStatus = useMemo(() => {
+    const res = {
+      aprovado: { count: 0, bim: 0, cad: 0 },
+      reprovado: { count: 0, bim: 0, cad: 0 },
+      em_analise: { count: 0, bim: 0, cad: 0 },
+      solicitado: { count: 0, bim: 0, cad: 0 }
+    };
+    if (!resumoMensal || resumoMensal.length === 0) return res;
+    const targetMonth = resumoMensal[0].month; // e.g. '2026-02' or 'Sem Data'
+    const getDateForGrouping = (p) => p.data_proposta || p.data_solicitacao || p.created_at || p.updated_date || p.updated_at || null;
+    (propostas || []).forEach(p => {
+      let raw = getDateForGrouping(p);
+      let monthKey = 'Sem Data';
+      if (raw) {
+        try {
+          const dateObj = typeof raw === 'string' ? parseISO(raw) : new Date(raw);
+          if (!isNaN(dateObj.getTime())) monthKey = format(dateObj, 'yyyy-MM');
+        } catch {
+          monthKey = 'Sem Data';
+        }
+      }
+      if (monthKey !== targetMonth) return;
+      const s = normalizeStatus(p.status || 'solicitado');
+      const bim = Number(p.valor_bim || 0);
+      const cad = Number(p.valor_cad || 0);
+      if (!res[s]) res[s] = { count: 0, bim: 0, cad: 0 };
+      res[s].count += 1;
+      res[s].bim += isNaN(bim) ? 0 : bim;
+      res[s].cad += isNaN(cad) ? 0 : cad;
+    });
+    return res;
+  }, [propostas, resumoMensal]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
@@ -320,22 +353,22 @@ export default function PropostasPage() {
               <div className="w-1/3 px-4">
                 <div className="text-sm text-gray-600 space-y-2">
                   <div className="flex justify-between items-center">
-                    <div className="text-left">Aprovados: {resumoMensal[0]?.byStatus?.aprovado?.count || 0}</div>
-                    <div className="text-left">Valor BIM: R$ {formatCurrency(resumoMensal[0]?.byStatus?.aprovado?.bim || 0)}</div>
-                    <div className="text-left">Valor CAD: R$ {formatCurrency(resumoMensal[0]?.byStatus?.aprovado?.cad || 0)}</div>
+                    <div className="text-left">Aprovados: {monthTotalsByStatus.aprovado.count || 0}</div>
+                    <div className="text-left">Valor BIM: R$ {formatCurrency(monthTotalsByStatus.aprovado.bim || 0)}</div>
+                    <div className="text-left">Valor CAD: R$ {formatCurrency(monthTotalsByStatus.aprovado.cad || 0)}</div>
                   </div>
                   <div className="flex justify-between items-center">
-                    <div className="text-left">Não aprovados: {resumoMensal[0]?.byStatus?.reprovado?.count || 0}</div>
-                    <div className="text-left">Valor BIM: R$ {formatCurrency(resumoMensal[0]?.byStatus?.reprovado?.bim || 0)}</div>
-                    <div className="text-left">Valor CAD: R$ {formatCurrency(resumoMensal[0]?.byStatus?.reprovado?.cad || 0)}</div>
+                    <div className="text-left">Não aprovados: {monthTotalsByStatus.reprovado.count || 0}</div>
+                    <div className="text-left">Valor BIM: R$ {formatCurrency(monthTotalsByStatus.reprovado.bim || 0)}</div>
+                    <div className="text-left">Valor CAD: R$ {formatCurrency(monthTotalsByStatus.reprovado.cad || 0)}</div>
                   </div>
                   <div className="flex justify-between items-center">
                     <div className="text-left">
                       <span>Aguardando</span>
                       <br />
-                      <span>Aprovação: {resumoMensal[0]?.byStatus?.em_analise?.count || 0}</span>
+                      <span>Aprovação: {monthTotalsByStatus.em_analise.count || 0}</span>
                     </div>
-                    <div className="text-left">BIM: R$ {formatCurrency(resumoMensal[0]?.byStatus?.em_analise?.bim || 0)} • CAD: R$ {formatCurrency(resumoMensal[0]?.byStatus?.em_analise?.cad || 0)}</div>
+                    <div className="text-left">BIM: R$ {formatCurrency(monthTotalsByStatus.em_analise.bim || 0)} • CAD: R$ {formatCurrency(monthTotalsByStatus.em_analise.cad || 0)}</div>
                   </div>
                 </div>
               </div>
