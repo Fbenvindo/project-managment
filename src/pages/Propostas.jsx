@@ -54,6 +54,13 @@ const statusCardStyles = {
   reprovado: 'bg-red-50 border-red-200 text-red-800'
 };
 
+const statusDotStyles = {
+  solicitado: 'bg-gray-400',
+  em_analise: 'bg-yellow-400',
+  aprovado: 'bg-green-500',
+  reprovado: 'bg-red-500'
+};
+
 const normalizeStatus = (raw) => {
   if (raw === undefined || raw === null) return 'solicitado';
   let s = String(raw).toLowerCase().trim();
@@ -631,7 +638,7 @@ export default function PropostasPage() {
                                     statusLabels[key]
                                   )}
                                 </div>
-                                <div className={`px-2 py-0.5 text-xs rounded-full ${pillStyle}`}>{statusLabels[key]}</div>
+                                <div className={`w-3 h-3 rounded-full ${statusDotStyles[key]}`} title={statusLabels[key]} />
                               </div>
 
                               <div className="mt-3">
