@@ -27,165 +27,152 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     return empreendimento.etapas.map(e => e.toUpperCase());
   }, [empreendimento?.etapas]);
 
-  const [revisoesPorEtapa, setRevisoesPorEtapa] = useState({});
-  const [etapasExcluidas, setEtapasExcluidas] = useState([]);
-  const [linhas, setLinhas] = useState([]);
-  const [documentos, setDocumentos] = useState([]);
-  const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [loadedEmpreendimentoId, setLoadedEmpreendimentoId] = useState(null);
-  const autoSaveTimeoutRef = useRef(null);
-  const [showImportModal, setShowImportModal] = useState(false);
-  const [importFile, setImportFile] = useState(null);
-  const [isImporting, setIsImporting] = useState(false);
-  const [selectedFolhas, setSelectedFolhas] = useState(new Set());
-  const [showMassEditModal, setShowMassEditModal] = useState(false);
-  const [massEditEtapa, setMassEditEtapa] = useState('');
-  const [massEditRevisao, setMassEditRevisao] = useState('');
-  const [massEditData, setMassEditData] = useState('');
-  const [etapasMinimizadas, setEtapasMinimizadas] = useState({});
-  const [linhasModificadas, setLinhasModificadas] = useState(new Set());
-
-  const folhasScrollRef = useRef(null);
-  const dataScrollRef = useRef(null);
-
-  useEffect(() => {
-    if (!empreendimento?.id) return;
-
-    // Se mudou de empreendimento, reseta e carrega dados do novo
-    if (empreendimento.id !== loadedEmpreendimentoId) {
-      console.log(`🔄 Mudança de empreendimento: ${loadedEmpreendimentoId} -> ${empreendimento.id}`);
-      setLoadedEmpreendimentoId(empreendimento.id);
-      setIsLoading(true);
-      // Carrega dados imediatamente
-      loadData();
-    }
-  }, [empreendimento?.id]);
-
-  // Auto-save desabilitado - causava conflitos de rate limit
-  // useEffect(() => {
-  //   if (hasUnsavedChanges && !isLoading && !isSaving) {
-  //     console.log('Auto-save agendado - mudanças detectadas');
-  //     if (autoSaveTimeoutRef.current) {
-  //       clearTimeout(autoSaveTimeoutRef.current);
-  //     }
-  //     
-  //     autoSaveTimeoutRef.current = setTimeout(() => {
-  //       console.log('Executando auto-save');
-  //       handleSave(true); // true = silent save
-  //     }, 5000); // salva após 5 segundos de inatividade
-  //   }
-  //   
-  //   return () => {
-  //     if (autoSaveTimeoutRef.current) {
-  //       clearTimeout(autoSaveTimeoutRef.current);
-  //     }
-  //   };
-  // }, [hasUnsavedChanges, linhas, isSaving]);
-
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [data, docs] = await Promise.all([
-        retryWithBackoff(
-          () => DataCadastro.filter({ empreendimento_id: empreendimento.id }),
-          3, 2000,
-          'loadDataCadastro'
-        ),
-        retryWithBackoff(
-          () => Documento.filter({ empreendimento_id: empreendimento.id }),
-          3, 2000,
-          'loadDocumentos'
-        )
-      ]);
+      // Salvar usando concorrência controlada (pool) para acelerar
+      console.log('⚡ Iniciando salvamento com pool de concorrência...');
+      let successCount = 0;
+      let errorCount = 0;
+      const updatedLinhas = new Map();
 
-      // Ordenar por disciplina e depois por arquivo (mesma ordem do DocumentosTab)
-      const sortedDocs = (docs || []).sort((a, b) => {
-        // Primeiro por disciplina
-        const discA = (a.disciplina || 'Sem Disciplina').toLowerCase();
-        const discB = (b.disciplina || 'Sem Disciplina').toLowerCase();
-        const discCompare = discA.localeCompare(discB, 'pt-BR', { sensitivity: 'base' });
-
-        if (discCompare !== 0) return discCompare;
-
-        // Depois por arquivo (alfabético natural)
-        const arquivoA = (a.arquivo || '').trim().toLowerCase();
-        const arquivoB = (b.arquivo || '').trim().toLowerCase();
-        return arquivoA.localeCompare(arquivoB, 'pt-BR', {
-          numeric: true,
-          sensitivity: 'base',
-          ignorePunctuation: false
-        });
-      });
-      setDocumentos(sortedDocs);
-
-      // Criar um mapa de dados existentes por documento_id
-      const dataMap = new Map();
-      const revisoesMap = {};
-      const revisoesExcluidasMap = {};
-      const etapasExcluidasSet = new Set();
-
-      if (data && data.length > 0) {
-        console.log('📊 Processando dados carregados do banco:', data.length, 'registros');
-        data.forEach((item, itemIdx) => {
-          console.log(`\n[${itemIdx}] Processando item ID: ${item.id}, documento_id: ${item.documento_id}`);
-          if (item.documento_id) {
-            dataMap.set(item.documento_id, item);
+      // Helper simples para executar tasks com limite de concorrência
+      async function runWithConcurrency(tasks, concurrency = 8) {
+        const results = new Array(tasks.length);
+        let i = 0;
+        const workers = new Array(concurrency).fill(null).map(async () => {
+          while (true) {
+            const idx = i++;
+            if (idx >= tasks.length) break;
+            try {
+              results[idx] = await tasks[idx]();
+            } catch (err) {
+              results[idx] = { error: err };
+            }
           }
+        });
+        await Promise.all(workers);
+        return results;
+      }
 
-          // Detectar revisões existentes e excluídas por etapa
-          if (item.datas) {
-            console.log(`  Datas para este item:`, Object.keys(item.datas));
-            Object.entries(item.datas).forEach(([etapa, etapaData]) => {
-              console.log(`  📌 Processando etapa: ${etapa}`, etapaData);
+      const tasks = linhasParaSalvar.map((linha, idxGlobal) => async () => {
+        try {
+          console.log(`\n📨 [${idxGlobal + 1}/${linhasParaSalvar.length}] Salvando linha: ${linha.id}`);
+
+          // Preservar metadados
+          const datasComMetadados = {};
+          if (linha.datas) {
+            Object.entries(linha.datas).forEach(([etapa, etapaData]) => {
               if (etapaData && typeof etapaData === 'object') {
-                if (!revisoesMap[etapa]) {
-                  revisoesMap[etapa] = new Set();
-                }
-                if (!revisoesExcluidasMap[etapa]) {
-                  revisoesExcluidasMap[etapa] = new Set();
-                }
-
-                // Adicionar revisões que têm dados preenchidos
-                Object.keys(etapaData).forEach(rev => {
-                  // Ignorar chaves metadata com ou sem underscore
-                  const metaKeys = ['_excluida', 'excluida', '_revisoes_excluidas', 'revisoes_excluidas', '_revisoes_existentes', 'revisoes_existentes', 'meta'];
-                  if (!metaKeys.includes(rev)) {
-                    const valor = etapaData[rev];
-                    console.log(`    📝 Revisão com dados: ${rev} = ${valor}`);
-                    revisoesMap[etapa].add(rev);
-                  }
-                });
-
-                // Carregar revisões que foram criadas (usar apenas meta.revisoes_existentes)
-                if (etapaData.meta && Array.isArray(etapaData.meta.revisoes_existentes)) {
-                  console.log(`    📋 meta.revisoes_existentes encontrado:`, etapaData.meta.revisoes_existentes);
-                  etapaData.meta.revisoes_existentes.forEach(rev => revisoesMap[etapa].add(rev));
-                }
-
-                // Detectar revisões excluídas (usar apenas meta.revisoes_excluidas)
-                if (etapaData.meta && Array.isArray(etapaData.meta.revisoes_excluidas)) {
-                  etapaData.meta.revisoes_excluidas.forEach(rev => revisoesExcluidasMap[etapa].add(rev));
-                }
-
-                // Detectar etapas excluídas (usar apenas meta.excluida)
-                if (etapaData.meta && etapaData.meta.excluida) {
-                  etapasExcluidasSet.add(etapa);
-                }
+                datasComMetadados[etapa] = {
+                  ...etapaData
+                };
               }
             });
           }
-        });
-        console.log('🎯 Resumo de revisões carregadas:', revisoesMap);
-      }
+
+          const linhaData = {
+            empreendimento_id: empreendimento.id,
+            ordem: linha.ordem,
+            documento_id: linha.documento_id,
+            datas: datasComMetadados
+          };
+
+          // GARANTIR que revisões criadas são salvas mesmo que vazias (usar apenas meta)
+          const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
+          etapasVisiveis.forEach(etapa => {
+            const revisoesEtapa = revisoesPorEtapa[etapa] || [];
+            if (!datasComMetadados[etapa]) {
+              datasComMetadados[etapa] = {};
+            }
+
+            const revisoesFromLinha = Array.isArray(datasComMetadados[etapa].meta?.revisoes_existentes)
+              ? datasComMetadados[etapa].meta.revisoes_existentes
+              : [];
+
+            const unionRevisoes = Array.from(new Set([...(revisoesFromLinha || []), ...(revisoesEtapa || [])]));
+
+            if (unionRevisoes.length > 0) {
+              const normalized = Array.from(new Set(unionRevisoes))
+                .map(r => {
+                  const m = String(r).match(/^R(\d+)$/i);
+                  if (!m) return null;
+                  const num = parseInt(m[1], 10);
+                  return `R${String(num).padStart(2, '0')}`;
+                })
+                .filter(Boolean)
+                .sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
+
+              if (!datasComMetadados[etapa].meta || typeof datasComMetadados[etapa].meta !== 'object') {
+                datasComMetadados[etapa].meta = {};
+              }
+              datasComMetadados[etapa].meta.revisoes_existentes = normalized;
+              normalized.forEach(rev => {
+                if (!(rev in datasComMetadados[etapa])) {
+                  datasComMetadados[etapa][rev] = '';
+                }
+              });
+            }
+          });
+
+          const linhaDataFinal = {
+            ...linhaData,
+            datas: datasComMetadados
+          };
+
+          console.log(`  Dados FINAL a salvar:`, linhaDataFinal);
+
+          let result;
+          let attempts = 0;
+          const maxAttempts = 2; // reduzir tentativas para acelerar
+
+          while (attempts < maxAttempts) {
+            try {
+              const isNew = linha.isNew || linha.id.toString().startsWith('temp-');
+              console.log(`  🔄 Tentativa ${attempts + 1}/${maxAttempts} (${isNew ? 'CREATE' : 'UPDATE'})`);
+
+              if (isNew) {
+                result = await DataCadastro.create(linhaDataFinal);
+              } else {
+                result = await DataCadastro.update(linha.id, linhaDataFinal);
+              }
+              console.log(`  ✅ Sucesso! ID: ${result.id}`);
+              break;
+            } catch (err) {
+              attempts++;
+              console.error(`  ❌ Tentativa ${attempts} falhou:`, err.message);
+
+              if (attempts >= maxAttempts) {
+                throw err;
+              }
+
+              const waitTime = 1000 * attempts; // backoff menor
+              console.log(`  ⏳ Aguardando ${waitTime}ms...`);
+              await new Promise(resolve => setTimeout(resolve, waitTime));
+            }
+          }
+
+          successCount++;
+          updatedLinhas.set(linha.id, result);
+          return result;
+        } catch (error) {
+          errorCount++;
+          console.error(`❌ ERRO na linha ${linha.id}:`, error);
+          return { error };
+        }
+      });
+
+      // Executar todas as tasks com concorrência controlada
+      await runWithConcurrency(tasks, 8);
+
+      console.log('🎯 Resumo de revisões carregadas');
 
       // Inicializar revisões para todas as etapas, removendo as excluídas
       const revisoesCompletas = {};
       ETAPAS.forEach(etapa => {
         // Usar APENAS as revisões mapeadas (dados + _revisoes_existentes)
         // NÃO usar DEFAULT_REVISOES como fallback, pois pode sobrescrever revisões criadas
-        const revisoesEtapaSet = revisoesMap[etapa];
+        const revisoesEtapaSet = new Set();
         console.log(`🔎 Buscando ${etapa}:`, {
           existe: !!revisoesEtapaSet,
           isSet: revisoesEtapaSet instanceof Set,
@@ -197,7 +184,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           ? Array.from(revisoesEtapaSet)
           : [];
 
-        const revisoesExcluidas = revisoesExcluidasMap[etapa] || new Set();
+        const revisoesExcluidas = new Set();
         // Filtrar apenas nomes válidos do tipo RNN, remover excluídas e ordenar numericamente
         const filtradas = todasRevisoes
           .filter(rev => !!rev && !revisoesExcluidas.has(rev))
@@ -217,12 +204,11 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       // Log com stringify para evitar problema de referência do console
       console.log('📋 Revisões finais para setar no estado:', JSON.stringify(revisoesCompletas, null, 2));
       console.log('📋 ETAPAS para debug:', ETAPAS);
-      console.log('📋 revisoesMap para debug:', revisoesMap);
       console.log('🔴 ANTES DE SETAR STATE - revisoesCompletas:', JSON.stringify(revisoesCompletas, null, 2));
 
       // Criar uma linha para cada documento
-      const novasLinhas = sortedDocs.map((doc, idx) => {
-        const existingData = dataMap.get(doc.id);
+      const novasLinhas = (documentos || []).map((doc, idx) => {
+        const existingData = linhas.find(l => l.documento_id === doc.id);
         return existingData || {
           id: `temp-${doc.id}`,
           empreendimento_id: empreendimento.id,
@@ -235,7 +221,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
       // Setar tudo junto de uma vez
       setRevisoesPorEtapa(revisoesCompletas);
-      setEtapasExcluidas(Array.from(etapasExcluidasSet));
+      setEtapasExcluidas([]);
       setLinhas(novasLinhas);
       setLoadedEmpreendimentoId(empreendimento.id);
       setLinhasModificadas(new Set());
@@ -1623,4 +1609,4 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       </Dialog>
     </div>
   );
-}
+};
