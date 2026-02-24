@@ -150,7 +150,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 // Adicionar revisões que têm dados preenchidos
                 Object.keys(etapaData).forEach(rev => {
                   // Ignorar chaves metadata com ou sem underscore
-                  const metaKeys = ['_excluida', 'excluida', '_revisoes_excluidas', 'revisoes_excluidas', '_revisoes_existentes', 'revisoes_existentes'];
+                  const metaKeys = ['_excluida', 'excluida', '_revisoes_excluidas', 'revisoes_excluidas', '_revisoes_existentes', 'revisoes_existentes', 'meta'];
                   if (!metaKeys.includes(rev)) {
                     const valor = etapaData[rev];
                     console.log(`    📝 Revisão com dados: ${rev} = ${valor}`);
@@ -159,29 +159,38 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 });
 
                 // Carregar revisões que foram criadas (mesmo sem dados)
-                const createdKey = '_revisoes_existentes' in etapaData ? '_revisoes_existentes' : ('revisoes_existentes' in etapaData ? 'revisoes_existentes' : null);
-                if (createdKey) {
-                  console.log(`    📋 ${createdKey} encontrado:`, etapaData[createdKey]);
-                  if (Array.isArray(etapaData[createdKey])) {
-                    etapaData[createdKey].forEach(rev => {
-                      console.log(`      ➕ Adicionando revisão criada: ${rev}`);
-                      revisoesMap[etapa].add(rev);
-                    });
-                  } else {
-                    console.log(`      ❌ ${createdKey} NÃO é array!`);
-                  }
+                let createdArray = null;
+                if (Array.isArray(etapaData._revisoes_existentes)) {
+                  createdArray = etapaData._revisoes_existentes;
+                } else if (Array.isArray(etapaData.revisoes_existentes)) {
+                  createdArray = etapaData.revisoes_existentes;
+                } else if (etapaData.meta && Array.isArray(etapaData.meta.revisoes_existentes)) {
+                  createdArray = etapaData.meta.revisoes_existentes;
                 }
 
-                // Detectar revisões excluídas (aceitar versão com ou sem underscore)
-                const excluidasKey = '_revisoes_excluidas' in etapaData ? '_revisoes_excluidas' : ('revisoes_excluidas' in etapaData ? 'revisoes_excluidas' : null);
-                if (excluidasKey && Array.isArray(etapaData[excluidasKey])) {
-                  etapaData[excluidasKey].forEach(rev => {
-                    revisoesExcluidasMap[etapa].add(rev);
+                if (createdArray) {
+                  console.log(`    📋 revisoes_existentes encontrado (via _ / plain / meta):`, createdArray);
+                  createdArray.forEach(rev => {
+                    console.log(`      ➕ Adicionando revisão criada: ${rev}`);
+                    revisoesMap[etapa].add(rev);
                   });
                 }
 
-                // Detectar etapas excluídas (aceitar _excluida ou excluida)
-                if (etapaData._excluida || etapaData.excluida) {
+                // Detectar revisões excluídas (aceitar versão com ou sem underscore ou em meta)
+                let excluidasArray = null;
+                if (Array.isArray(etapaData._revisoes_excluidas)) {
+                  excluidasArray = etapaData._revisoes_excluidas;
+                } else if (Array.isArray(etapaData.revisoes_excluidas)) {
+                  excluidasArray = etapaData.revisoes_excluidas;
+                } else if (etapaData.meta && Array.isArray(etapaData.meta.revisoes_excluidas)) {
+                  excluidasArray = etapaData.meta.revisoes_excluidas;
+                }
+                if (excluidasArray) {
+                  excluidasArray.forEach(rev => revisoesExcluidasMap[etapa].add(rev));
+                }
+
+                // Detectar etapas excluídas (aceitar _excluida, excluida ou meta.excluida)
+                if (etapaData._excluida || etapaData.excluida || (etapaData.meta && etapaData.meta.excluida)) {
                   etapasExcluidasSet.add(etapa);
                 }
               }
@@ -284,11 +293,20 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         if (!novasDatas[etapa].revisoes_existentes) {
           novasDatas[etapa].revisoes_existentes = [];
         }
+        if (!novasDatas[etapa].meta) {
+          novasDatas[etapa].meta = {};
+        }
+        if (!Array.isArray(novasDatas[etapa].meta.revisoes_existentes)) {
+          novasDatas[etapa].meta.revisoes_existentes = [];
+        }
         if (!novasDatas[etapa]._revisoes_existentes.includes('R00')) {
           novasDatas[etapa]._revisoes_existentes.push('R00');
         }
         if (!novasDatas[etapa].revisoes_existentes.includes('R00')) {
           novasDatas[etapa].revisoes_existentes.push('R00');
+        }
+        if (!novasDatas[etapa].meta.revisoes_existentes.includes('R00')) {
+          novasDatas[etapa].meta.revisoes_existentes.push('R00');
         }
         return { ...linha, datas: novasDatas };
       }));
@@ -309,7 +327,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     setLinhas(prev => prev.map(linha => {
       const novasDatas = { ...linha.datas };
       if (!novasDatas[etapa]) {
-        novasDatas[etapa] = { _revisoes_existentes: [novaRevisao], revisoes_existentes: [novaRevisao] };
+        novasDatas[etapa] = { _revisoes_existentes: [novaRevisao], revisoes_existentes: [novaRevisao], meta: { revisoes_existentes: [novaRevisao] } };
       } else {
         if (!novasDatas[etapa]._revisoes_existentes) {
           novasDatas[etapa]._revisoes_existentes = [];
@@ -317,11 +335,20 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         if (!novasDatas[etapa].revisoes_existentes) {
           novasDatas[etapa].revisoes_existentes = [];
         }
+        if (!novasDatas[etapa].meta) {
+          novasDatas[etapa].meta = {};
+        }
+        if (!Array.isArray(novasDatas[etapa].meta.revisoes_existentes)) {
+          novasDatas[etapa].meta.revisoes_existentes = [];
+        }
         if (!novasDatas[etapa]._revisoes_existentes.includes(novaRevisao)) {
           novasDatas[etapa]._revisoes_existentes.push(novaRevisao);
         }
         if (!novasDatas[etapa].revisoes_existentes.includes(novaRevisao)) {
           novasDatas[etapa].revisoes_existentes.push(novaRevisao);
+        }
+        if (!novasDatas[etapa].meta.revisoes_existentes.includes(novaRevisao)) {
+          novasDatas[etapa].meta.revisoes_existentes.push(novaRevisao);
         }
       }
       return { ...linha, datas: novasDatas };
@@ -358,11 +385,20 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       if (!novasDatas[etapa].revisoes_excluidas) {
         novasDatas[etapa].revisoes_excluidas = [];
       }
+      if (!novasDatas[etapa].meta) {
+        novasDatas[etapa].meta = {};
+      }
+      if (!Array.isArray(novasDatas[etapa].meta.revisoes_excluidas)) {
+        novasDatas[etapa].meta.revisoes_excluidas = [];
+      }
       if (!novasDatas[etapa]._revisoes_excluidas.includes(revisao)) {
         novasDatas[etapa]._revisoes_excluidas.push(revisao);
       }
       if (!novasDatas[etapa].revisoes_excluidas.includes(revisao)) {
         novasDatas[etapa].revisoes_excluidas.push(revisao);
+      }
+      if (!novasDatas[etapa].meta.revisoes_excluidas.includes(revisao)) {
+        novasDatas[etapa].meta.revisoes_excluidas.push(revisao);
       }
 
       return { ...linha, datas: novasDatas };
@@ -384,6 +420,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       }
       novasDatas[etapa]._excluida = true;
       novasDatas[etapa].excluida = true;
+      if (!novasDatas[etapa].meta) novasDatas[etapa].meta = {};
+      novasDatas[etapa].meta.excluida = true;
       return { ...linha, datas: novasDatas };
     }));
     setLinhasModificadas(new Set(linhas.map(l => l.id)));
@@ -401,6 +439,9 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       }
       if (novasDatas[etapa] && novasDatas[etapa].excluida) {
         delete novasDatas[etapa].excluida;
+      }
+      if (novasDatas[etapa] && novasDatas[etapa].meta && novasDatas[etapa].meta.excluida) {
+        delete novasDatas[etapa].meta.excluida;
       }
       return { ...linha, datas: novasDatas };
     }));
@@ -752,6 +793,11 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
                   datasComMetadados[etapa]._revisoes_existentes = normalized;
                   datasComMetadados[etapa].revisoes_existentes = normalized;
+                  // Também persistir em `meta` (evita perda se backend filtrar chaves de topo)
+                  if (!datasComMetadados[etapa].meta || typeof datasComMetadados[etapa].meta !== 'object') {
+                    datasComMetadados[etapa].meta = {};
+                  }
+                  datasComMetadados[etapa].meta.revisoes_existentes = normalized;
                   // Garantir que cada revisão exista como chave real (mesmo vazia) para sobreviver a filtros do backend
                   normalized.forEach(rev => {
                     if (!(rev in datasComMetadados[etapa])) {
@@ -842,15 +888,20 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
               // coletar revisões com dados
               Object.keys(etapaData).forEach(k => {
-                const metaKeys = ['_excluida', 'excluida', '_revisoes_excluidas', 'revisoes_excluidas', '_revisoes_existentes', 'revisoes_existentes'];
+                const metaKeys = ['_excluida', 'excluida', '_revisoes_excluidas', 'revisoes_excluidas', '_revisoes_existentes', 'revisoes_existentes', 'meta'];
                 if (metaKeys.includes(k)) return;
                 novoMap[etapa].add(k);
               });
 
-              // coletar revisoes_existentes (aceitar ambas variantes)
-              const createdKey = '_revisoes_existentes' in etapaData ? '_revisoes_existentes' : ('revisoes_existentes' in etapaData ? 'revisoes_existentes' : null);
-              if (createdKey && Array.isArray(etapaData[createdKey])) {
-                etapaData[createdKey].forEach(r => novoMap[etapa].add(r));
+              // coletar revisoes_existentes (aceitar _ / plain / meta)
+              if (Array.isArray(etapaData._revisoes_existentes)) {
+                etapaData._revisoes_existentes.forEach(r => novoMap[etapa].add(r));
+              }
+              if (Array.isArray(etapaData.revisoes_existentes)) {
+                etapaData.revisoes_existentes.forEach(r => novoMap[etapa].add(r));
+              }
+              if (etapaData.meta && Array.isArray(etapaData.meta.revisoes_existentes)) {
+                etapaData.meta.revisoes_existentes.forEach(r => novoMap[etapa].add(r));
               }
             });
           });
