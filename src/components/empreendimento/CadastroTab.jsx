@@ -47,6 +47,18 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   const [etapasMinimizadas, setEtapasMinimizadas] = useState({});
   const [linhasModificadas, setLinhasModificadas] = useState(new Set());
 
+  const saveRevisoesCache = (obj) => {
+    try {
+      if (!empreendimento?.id) return;
+      const cacheKey = `__cadastro_revisoes_${empreendimento.id}`;
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(cacheKey, JSON.stringify(obj || {}));
+      }
+    } catch (e) {
+      console.warn('Falha ao salvar cache de revisoes:', e);
+    }
+  };
+
   const folhasScrollRef = useRef(null);
   const dataScrollRef = useRef(null);
 
@@ -234,12 +246,18 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       });
 
       // Setar tudo junto de uma vez — mesclar com estado anterior para não perder colunas
+      // Também mesclar com cache local (se existir) para sobreviver a reloads quando backend não persistir meta
+      const cacheKey = `__cadastro_revisoes_${empreendimento.id}`;
+      const cachedRaw = typeof localStorage !== 'undefined' ? localStorage.getItem(cacheKey) : null;
+      const cachedObj = cachedRaw ? JSON.parse(cachedRaw) : null;
+
       setRevisoesPorEtapa(prev => {
         const merged = {};
         ETAPAS.forEach(etapa => {
           const prevArr = Array.isArray(prev?.[etapa]) ? prev[etapa] : [];
           const newArr = Array.isArray(revisoesCompletas?.[etapa]) ? revisoesCompletas[etapa] : [];
-          const s = Array.from(new Set([...(prevArr || []), ...(newArr || [])]));
+          const cachedArr = Array.isArray(cachedObj?.[etapa]) ? cachedObj[etapa] : [];
+          const s = Array.from(new Set([...(prevArr || []), ...(newArr || []), ...(cachedArr || [])]));
           const norm = s
             .map(r => {
               const m = String(r).match(/^R(\d+)$/i);
@@ -274,10 +292,9 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       // Se não há revisões, começar com R00
       console.log(`➕ Adicionando primeira revisão (R00) em ${etapa}`);
       setHasUnsavedChanges(true);
-      setRevisoesPorEtapa(prev => ({
-        ...prev,
-        [etapa]: ['R00']
-      }));
+      const newRevisoes = { ...(revisoesPorEtapa || {}), [etapa]: ['R00'] };
+      setRevisoesPorEtapa(newRevisoes);
+      saveRevisoesCache(newRevisoes);
       // Marcar revisão como existente nas linhas mesmo sem dados (apenas em meta)
       setLinhas(prev => prev.map(linha => {
         const novasDatas = { ...linha.datas };
@@ -300,10 +317,9 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
     console.log(`➕ Adicionando revisão ${novaRevisao} em ${etapa} (antes: ${revisoesEtapa.join(', ')})`);
     setHasUnsavedChanges(true);
-    setRevisoesPorEtapa(prev => ({
-      ...prev,
-      [etapa]: [...(prev[etapa] || []), novaRevisao]
-    }));
+    const newRevisoes = { ...(revisoesPorEtapa || {}), [etapa]: [...(revisoesPorEtapa[etapa] || []), novaRevisao] };
+    setRevisoesPorEtapa(newRevisoes);
+    saveRevisoesCache(newRevisoes);
     // Marcar revisão como existente nas linhas mesmo sem dados (apenas em meta)
     setLinhas(prev => prev.map(linha => {
       const novasDatas = { ...linha.datas };
@@ -325,10 +341,10 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     if (!confirm(`Deseja excluir a revisão ${revisao} da etapa ${etapa}? Os dados desta revisão serão perdidos.`)) return;
 
     setHasUnsavedChanges(true);
-    setRevisoesPorEtapa(prev => ({
-      ...prev,
-      [etapa]: prev[etapa].filter(r => r !== revisao)
-    }));
+    const newRevisoes = { ...(revisoesPorEtapa || {}) };
+    newRevisoes[etapa] = (newRevisoes[etapa] || []).filter(r => r !== revisao);
+    setRevisoesPorEtapa(newRevisoes);
+    saveRevisoesCache(newRevisoes);
 
     // Limpar dados e marcar revisão como excluída
     setLinhas(prev => prev.map(linha => {
@@ -360,7 +376,12 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     if (!confirm(`Deseja excluir a etapa ${etapa}? Você poderá restaurá-la depois se necessário.`)) return;
 
     setHasUnsavedChanges(true);
-    setEtapasExcluidas(prev => [...prev, etapa]);
+    setEtapasExcluidas(prev => {
+      const next = [...prev, etapa];
+      // salvar cache atual para persistir qualquer revisao existente
+      saveRevisoesCache(revisoesPorEtapa);
+      return next;
+    });
 
     // Marcar etapa como excluída nas linhas
     setLinhas(prev => prev.map(linha => {
@@ -378,7 +399,11 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
   const handleRestaurarEtapa = (etapa) => {
     setHasUnsavedChanges(true);
-    setEtapasExcluidas(prev => prev.filter(e => e !== etapa));
+    setEtapasExcluidas(prev => {
+      const next = prev.filter(e => e !== etapa);
+      saveRevisoesCache(revisoesPorEtapa);
+      return next;
+    });
 
     // Remover marcador de exclusão
     setLinhas(prev => prev.map(linha => {
@@ -916,7 +941,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       console.log('⚡ Iniciando salvamento em lotes...');
       let successCount = 0;
       let errorCount = 0;
-      const BASE_BATCH_SIZE = 4; // Máximo inicial de requisições paralelas por lote
+      const BASE_BATCH_SIZE = 3; // Máximo inicial de requisições paralelas por lote
       let currentBatchSize = BASE_BATCH_SIZE;
       const BASE_DELAY = 1500; // Delay entre lotes em ms
       let currentDelay = BASE_DELAY;
@@ -1176,6 +1201,16 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       if (successCount > 0) {
         try {
           console.log('🔁 Recarregando dados do servidor após salvamento...');
+          // Persistir revisoesPorEtapa no cache local antes do reload para sobreviver caso o backend não persista meta
+          try {
+            const cacheKey = `__cadastro_revisoes_${empreendimento.id}`;
+            if (typeof localStorage !== 'undefined') {
+              localStorage.setItem(cacheKey, JSON.stringify(revisoesPorEtapa || {}));
+              console.log('💾 revisoesPorEtapa salvo em cache local:', cacheKey);
+            }
+          } catch (e) {
+            console.warn('Não foi possível salvar cache local de revisoesPorEtapa', e);
+          }
           await loadData();
           console.log('🔁 Recarregamento completo');
         } catch (err) {
