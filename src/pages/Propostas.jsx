@@ -272,6 +272,25 @@ export default function PropostasPage() {
     return ordered;
   }, [propostas]);
 
+  const totalsByStatus = useMemo(() => {
+    const totals = {
+      aprovado: { count: 0, bim: 0, cad: 0 },
+      reprovado: { count: 0, bim: 0, cad: 0 },
+      em_analise: { count: 0, bim: 0, cad: 0 },
+      solicitado: { count: 0, bim: 0, cad: 0 }
+    };
+    (propostas || []).forEach(p => {
+      const s = normalizeStatus(p.status || 'solicitado');
+      const bim = Number(p.valor_bim || 0);
+      const cad = Number(p.valor_cad || 0);
+      if (!totals[s]) totals[s] = { count: 0, bim: 0, cad: 0 };
+      totals[s].count += 1;
+      totals[s].bim += isNaN(bim) ? 0 : bim;
+      totals[s].cad += isNaN(cad) ? 0 : cad;
+    });
+    return totals;
+  }, [propostas]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
@@ -345,6 +364,12 @@ export default function PropostasPage() {
                 <div className="text-sm text-gray-500">
                   <div>Valor BIM: R$ {resumoMensal[0] ? formatCurrency(resumoMensal[0].totalBim) : '0,00'}</div>
                   <div>Valor CAD: R$ {resumoMensal[0] ? formatCurrency(resumoMensal[0].totalCad) : '0,00'}</div>
+                </div>
+                <div className="text-sm text-gray-600 mt-2">
+                  <div className="font-medium">Totais (todas propostas)</div>
+                  <div className="text-sm">Aprovados: {totalsByStatus.aprovado.count} — BIM: R$ {formatCurrency(totalsByStatus.aprovado.bim)} • CAD: R$ {formatCurrency(totalsByStatus.aprovado.cad)}</div>
+                  <div className="text-sm">Não aprovados: {totalsByStatus.reprovado.count} — BIM: R$ {formatCurrency(totalsByStatus.reprovado.bim)} • CAD: R$ {formatCurrency(totalsByStatus.reprovado.cad)}</div>
+                  <div className="text-sm">Aguardando aprovação: {totalsByStatus.em_analise.count} — BIM: R$ {formatCurrency(totalsByStatus.em_analise.bim)} • CAD: R$ {formatCurrency(totalsByStatus.em_analise.cad)}</div>
                 </div>
                 <div className="mt-2">
                   <Button onClick={() => setActiveTab('summary')} variant="outline">Abrir Resumo</Button>
