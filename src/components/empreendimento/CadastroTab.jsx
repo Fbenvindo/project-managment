@@ -694,10 +694,17 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
               .filter(Boolean)
               .sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
 
+            // Escrever tanto em meta.revisoes_existentes quanto nas chaves legadas
             if (!datasComMetadados[etapa].meta || typeof datasComMetadados[etapa].meta !== 'object') {
               datasComMetadados[etapa].meta = {};
             }
             datasComMetadados[etapa].meta.revisoes_existentes = normalized;
+
+            // Compatibilidade: algumas versões do backend esperam chaves no nível da etapa
+            datasComMetadados[etapa]._revisoes_existentes = normalized;
+            datasComMetadados[etapa].revisoes_existentes = normalized;
+
+            // Garantir chaves de revisão vazias para sobreviver a filtros do backend
             normalized.forEach(rev => {
               if (!(rev in datasComMetadados[etapa])) {
                 datasComMetadados[etapa][rev] = '';
@@ -798,12 +805,65 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           // Se bulk produziu resultados para todas linhas, podemos reconciliar e terminar
           if (updatedLinhas.size >= linhasParaSalvar.length) {
             console.log('🔁 Reconciliando estado local a partir de resultados bulk...');
-            setLinhas(prev => prev.map(linha => {
+            // Construir novo array de linhas aplicando respostas do bulk
+            const newArr = linhas.map(linha => {
               const saved = updatedLinhas.get(linha.id) || updatedLinhas.get(linha.documento_id);
               if (saved) return { ...linha, id: saved.id || linha.id, isNew: false, datas: { ...linha.datas, ...(saved.datas || {}) } };
               return linha;
-            }));
-            // Atualizar revisoesPorEtapa será feito adiante pelo fluxo existente
+            });
+
+            // Atualizar estado de linhas
+            setLinhas(newArr);
+
+            // Recalcular revisoesPorEtapa a partir do novo array de linhas
+            try {
+              const novoMap = {};
+              newArr.forEach(l => {
+                if (!l || !l.datas) return;
+                Object.entries(l.datas).forEach(([etapa, etapaData]) => {
+                  if (!etapaData || typeof etapaData !== 'object') return;
+                  if (!novoMap[etapa]) novoMap[etapa] = new Set();
+
+                  // coletar revisões com dados
+                  Object.keys(etapaData).forEach(k => {
+                    const metaKeys = ['_excluida', 'excluida', '_revisoes_excluidas', 'revisoes_excluidas', '_revisoes_existentes', 'revisoes_existentes', 'meta'];
+                    if (metaKeys.includes(k)) return;
+                    novoMap[etapa].add(k);
+                  });
+
+                  // coletar revisoes_existentes (aceitar ambas variantes e meta)
+                  if (etapaData.meta && Array.isArray(etapaData.meta.revisoes_existentes)) {
+                    etapaData.meta.revisoes_existentes.forEach(r => novoMap[etapa].add(r));
+                  }
+                  if (Array.isArray(etapaData._revisoes_existentes)) {
+                    etapaData._revisoes_existentes.forEach(r => novoMap[etapa].add(r));
+                  }
+                  if (Array.isArray(etapaData.revisoes_existentes)) {
+                    etapaData.revisoes_existentes.forEach(r => novoMap[etapa].add(r));
+                  }
+                });
+              });
+
+              const novasRevisoesPorEtapa = {};
+              ETAPAS.forEach(etapa => {
+                const s = novoMap[etapa] || new Set();
+                const arr = Array.from(s)
+                  .map(r => {
+                    const m = String(r).match(/^R(\d+)$/i);
+                    if (!m) return null;
+                    return `R${String(parseInt(m[1], 10)).padStart(2, '0')}`;
+                  })
+                  .filter(Boolean)
+                  .sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
+                novasRevisoesPorEtapa[etapa] = arr;
+              });
+
+              console.log('🔄 revisoesPorEtapa recalculado após bulk:', novasRevisoesPorEtapa);
+              setRevisoesPorEtapa(novasRevisoesPorEtapa);
+            } catch (err) {
+              console.error('Erro ao recalcular revisoesPorEtapa após bulk:', err);
+            }
+
             console.log('🎉 Salvamento em lote concluído com sucesso');
             setHasUnsavedChanges(false);
             setLinhasModificadas(new Set());
