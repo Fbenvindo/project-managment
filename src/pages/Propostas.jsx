@@ -384,14 +384,6 @@ export default function PropostasPage() {
                 <div className="text-xl font-semibold">{resumoMensal[0] ? (resumoMensal[0].month === 'Sem Data' ? 'Sem Data' : format(parseISO(resumoMensal[0].month + '-01'), 'MMMM yyyy')) : '—'}</div>
               </div>
 
-              <div className="w-1/3 px-4">
-                <div className="text-sm text-gray-600 space-y-2">
-                  <div className="text-left">Aprovados: {monthTotalsByStatus.aprovado.count || 0}</div>
-                  <div className="text-left">Não aprovados: {monthTotalsByStatus.reprovado.count || 0}</div>
-                  <div className="text-left">Aguardando Aprovação: {monthTotalsByStatus.em_analise.count || 0}</div>
-                </div>
-              </div>
-
               <div className="w-1/3 text-right">
                 <div className="text-lg font-bold">{resumoMensal[0] ? `${resumoMensal[0].items.length} propostas` : '0 propostas'}</div>
                 <div className="text-sm text-gray-500">
