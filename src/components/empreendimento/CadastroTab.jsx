@@ -883,6 +883,17 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       setHasUnsavedChanges(false);
       setLinhasModificadas(new Set());
 
+      // Recarregar do servidor para garantir que a UI reflita exatamente o que foi persistido
+      if (successCount > 0) {
+        try {
+          console.log('🔁 Recarregando dados do servidor após salvamento...');
+          await loadData();
+          console.log('🔁 Recarregamento completo');
+        } catch (err) {
+          console.error('Erro ao recarregar dados após salvamento:', err);
+        }
+      }
+
       if (!silent) {
         if (errorCount > 0) {
           alert(`Salvamento parcial: ${successCount} sucesso, ${errorCount} erros.`);
