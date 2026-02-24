@@ -150,7 +150,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 // Adicionar revisões que têm dados preenchidos
                 Object.keys(etapaData).forEach(rev => {
                   // Ignorar chaves metadata com ou sem underscore
-                  const metaKeys = ['_excluida', 'excluida', '_revisoes_excluidas', 'revisoes_excluidas', '_revisoes_existentes', 'revisoes_existentes', 'meta'];
+                  const metaKeys = ['_excluida', 'excluida', '_revisoes_excluidas', 'revisoes_excluidas', '_revisoes_existentes', 'revisoes_existentes'];
                   if (!metaKeys.includes(rev)) {
                     const valor = etapaData[rev];
                     console.log(`    📝 Revisão com dados: ${rev} = ${valor}`);
@@ -158,19 +158,30 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                   }
                 });
 
-                // Carregar revisões que foram criadas (usar apenas meta.revisoes_existentes)
-                if (etapaData.meta && Array.isArray(etapaData.meta.revisoes_existentes)) {
-                  console.log(`    📋 meta.revisoes_existentes encontrado:`, etapaData.meta.revisoes_existentes);
-                  etapaData.meta.revisoes_existentes.forEach(rev => revisoesMap[etapa].add(rev));
+                // Carregar revisões que foram criadas (mesmo sem dados)
+                const createdKey = '_revisoes_existentes' in etapaData ? '_revisoes_existentes' : ('revisoes_existentes' in etapaData ? 'revisoes_existentes' : null);
+                if (createdKey) {
+                  console.log(`    📋 ${createdKey} encontrado:`, etapaData[createdKey]);
+                  if (Array.isArray(etapaData[createdKey])) {
+                    etapaData[createdKey].forEach(rev => {
+                      console.log(`      ➕ Adicionando revisão criada: ${rev}`);
+                      revisoesMap[etapa].add(rev);
+                    });
+                  } else {
+                    console.log(`      ❌ ${createdKey} NÃO é array!`);
+                  }
                 }
 
-                // Detectar revisões excluídas (usar apenas meta.revisoes_excluidas)
-                if (etapaData.meta && Array.isArray(etapaData.meta.revisoes_excluidas)) {
-                  etapaData.meta.revisoes_excluidas.forEach(rev => revisoesExcluidasMap[etapa].add(rev));
+                // Detectar revisões excluídas (aceitar versão com ou sem underscore)
+                const excluidasKey = '_revisoes_excluidas' in etapaData ? '_revisoes_excluidas' : ('revisoes_excluidas' in etapaData ? 'revisoes_excluidas' : null);
+                if (excluidasKey && Array.isArray(etapaData[excluidasKey])) {
+                  etapaData[excluidasKey].forEach(rev => {
+                    revisoesExcluidasMap[etapa].add(rev);
+                  });
                 }
 
-                // Detectar etapas excluídas (usar apenas meta.excluida)
-                if (etapaData.meta && etapaData.meta.excluida) {
+                // Detectar etapas excluídas (aceitar _excluida ou excluida)
+                if (etapaData._excluida || etapaData.excluida) {
                   etapasExcluidasSet.add(etapa);
                 }
               }
@@ -261,16 +272,23 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         ...prev,
         [etapa]: ['R00']
       }));
-      // Marcar revisão como existente nas linhas mesmo sem dados (apenas em meta)
+      // Marcar revisão como existente nas linhas mesmo sem dados
       setLinhas(prev => prev.map(linha => {
         const novasDatas = { ...linha.datas };
-        if (!novasDatas[etapa]) novasDatas[etapa] = {};
-        if (!novasDatas[etapa].meta) novasDatas[etapa].meta = {};
-        if (!Array.isArray(novasDatas[etapa].meta.revisoes_existentes)) {
-          novasDatas[etapa].meta.revisoes_existentes = [];
+        if (!novasDatas[etapa]) {
+          novasDatas[etapa] = {};
         }
-        if (!novasDatas[etapa].meta.revisoes_existentes.includes('R00')) {
-          novasDatas[etapa].meta.revisoes_existentes.push('R00');
+        if (!novasDatas[etapa]._revisoes_existentes) {
+          novasDatas[etapa]._revisoes_existentes = [];
+        }
+        if (!novasDatas[etapa].revisoes_existentes) {
+          novasDatas[etapa].revisoes_existentes = [];
+        }
+        if (!novasDatas[etapa]._revisoes_existentes.includes('R00')) {
+          novasDatas[etapa]._revisoes_existentes.push('R00');
+        }
+        if (!novasDatas[etapa].revisoes_existentes.includes('R00')) {
+          novasDatas[etapa].revisoes_existentes.push('R00');
         }
         return { ...linha, datas: novasDatas };
       }));
@@ -287,16 +305,24 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       ...prev,
       [etapa]: [...(prev[etapa] || []), novaRevisao]
     }));
-    // Marcar revisão como existente nas linhas mesmo sem dados (apenas em meta)
+    // Marcar revisão como existente nas linhas mesmo sem dados
     setLinhas(prev => prev.map(linha => {
       const novasDatas = { ...linha.datas };
-      if (!novasDatas[etapa]) novasDatas[etapa] = {};
-      if (!novasDatas[etapa].meta) novasDatas[etapa].meta = {};
-      if (!Array.isArray(novasDatas[etapa].meta.revisoes_existentes)) {
-        novasDatas[etapa].meta.revisoes_existentes = [];
-      }
-      if (!novasDatas[etapa].meta.revisoes_existentes.includes(novaRevisao)) {
-        novasDatas[etapa].meta.revisoes_existentes.push(novaRevisao);
+      if (!novasDatas[etapa]) {
+        novasDatas[etapa] = { _revisoes_existentes: [novaRevisao], revisoes_existentes: [novaRevisao] };
+      } else {
+        if (!novasDatas[etapa]._revisoes_existentes) {
+          novasDatas[etapa]._revisoes_existentes = [];
+        }
+        if (!novasDatas[etapa].revisoes_existentes) {
+          novasDatas[etapa].revisoes_existentes = [];
+        }
+        if (!novasDatas[etapa]._revisoes_existentes.includes(novaRevisao)) {
+          novasDatas[etapa]._revisoes_existentes.push(novaRevisao);
+        }
+        if (!novasDatas[etapa].revisoes_existentes.includes(novaRevisao)) {
+          novasDatas[etapa].revisoes_existentes.push(novaRevisao);
+        }
       }
       return { ...linha, datas: novasDatas };
     }));
@@ -325,13 +351,18 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         delete novasDatas[etapa][revisao];
       }
 
-      // Adicionar à lista de revisões excluídas (apenas em meta)
-      if (!novasDatas[etapa].meta) novasDatas[etapa].meta = {};
-      if (!Array.isArray(novasDatas[etapa].meta.revisoes_excluidas)) {
-        novasDatas[etapa].meta.revisoes_excluidas = [];
+      // Adicionar à lista de revisões excluídas
+      if (!novasDatas[etapa]._revisoes_excluidas) {
+        novasDatas[etapa]._revisoes_excluidas = [];
       }
-      if (!novasDatas[etapa].meta.revisoes_excluidas.includes(revisao)) {
-        novasDatas[etapa].meta.revisoes_excluidas.push(revisao);
+      if (!novasDatas[etapa].revisoes_excluidas) {
+        novasDatas[etapa].revisoes_excluidas = [];
+      }
+      if (!novasDatas[etapa]._revisoes_excluidas.includes(revisao)) {
+        novasDatas[etapa]._revisoes_excluidas.push(revisao);
+      }
+      if (!novasDatas[etapa].revisoes_excluidas.includes(revisao)) {
+        novasDatas[etapa].revisoes_excluidas.push(revisao);
       }
 
       return { ...linha, datas: novasDatas };
@@ -351,9 +382,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       if (!novasDatas[etapa]) {
         novasDatas[etapa] = {};
       }
-      // Marcar etapa como excluída apenas em meta
-      if (!novasDatas[etapa].meta) novasDatas[etapa].meta = {};
-      novasDatas[etapa].meta.excluida = true;
+      novasDatas[etapa]._excluida = true;
+      novasDatas[etapa].excluida = true;
       return { ...linha, datas: novasDatas };
     }));
     setLinhasModificadas(new Set(linhas.map(l => l.id)));
@@ -371,9 +401,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       }
       if (novasDatas[etapa] && novasDatas[etapa].excluida) {
         delete novasDatas[etapa].excluida;
-      }
-      if (novasDatas[etapa] && novasDatas[etapa].meta && novasDatas[etapa].meta.excluida) {
-        delete novasDatas[etapa].meta.excluida;
       }
       return { ...linha, datas: novasDatas };
     }));
@@ -662,8 +689,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       let successCount = 0;
       let errorCount = 0;
       const updatedLinhas = new Map();
-      const BATCH_SIZE = 2; // Máximo de requisições paralelas por lote
-      const DELAY_ENTRE_LOTES = 1500; // Delay entre lotes em ms
+      const BATCH_SIZE = 10; // Máximo de requisições paralelas por lote (aumentado)
+      const DELAY_ENTRE_LOTES = 800; // Delay entre lotes em ms (reduzido)
 
       // Dividir em lotes
       for (let batchIdx = 0; batchIdx < linhasParaSalvar.length; batchIdx += BATCH_SIZE) {
@@ -704,11 +731,11 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                   datasComMetadados[etapa] = {};
                 }
 
-                const revisoesFromLinha = Array.isArray(datasComMetadados[etapa].meta?.revisoes_existentes)
-                  ? datasComMetadados[etapa].meta.revisoes_existentes
+                const revisoesFromLinha = Array.isArray(datasComMetadados[etapa]._revisoes_existentes)
+                  ? datasComMetadados[etapa]._revisoes_existentes
                   : [];
 
-                // União entre revisões detectadas no estado da etapa e as marcadas na própria linha (usar apenas meta)
+                // União entre revisões detectadas no estado da etapa e as marcadas na própria linha
                 const unionRevisoes = Array.from(new Set([...(revisoesFromLinha || []), ...(revisoesEtapa || [])]));
 
                 if (unionRevisoes.length > 0) {
@@ -723,17 +750,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                     .filter(Boolean)
                     .sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
 
-                  // Persistir APENAS em `meta.revisoes_existentes`
-                  if (!datasComMetadados[etapa].meta || typeof datasComMetadados[etapa].meta !== 'object') {
-                    datasComMetadados[etapa].meta = {};
-                  }
-                  datasComMetadados[etapa].meta.revisoes_existentes = normalized;
-                  // Garantir que cada revisão exista como chave real (mesmo vazia) para sobreviver a filtros do backend
-                  normalized.forEach(rev => {
-                    if (!(rev in datasComMetadados[etapa])) {
-                      datasComMetadados[etapa][rev] = '';
-                    }
-                  });
+                  datasComMetadados[etapa]._revisoes_existentes = normalized;
+                  datasComMetadados[etapa].revisoes_existentes = normalized;
                 }
               });
 
@@ -768,7 +786,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                     throw err;
                   }
 
-                  const waitTime = 3000 * attempts;
+                  const waitTime = 1000 * attempts; // backoff menor para tentativas mais rápidas
                   console.log(`  ⏳ Aguardando ${waitTime}ms...`);
                   await new Promise(resolve => setTimeout(resolve, waitTime));
                 }
@@ -793,81 +811,75 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         }
       }
 
-      // Atualizar estado local com os IDs salvos e recalcular revisoesPorEtapa com base no novo estado
-      console.log(`\n✨ Atualizando ${successCount} linhas salvas no estado local (mesclando datas retornadas)`);
-      setLinhas(prev => {
-        const newArr = prev.map(linha => {
-          const savedData = updatedLinhas.get(linha.id);
-          if (savedData) {
-            console.log(`  ✅ ${linha.id} -> ${savedData.id}`);
-            console.log('  🔎 Datas retornadas pelo servidor:', savedData.datas);
-            const mergedDatas = { ...linha.datas, ...(savedData.datas || {}) };
-            return { ...linha, id: savedData.id, isNew: false, datas: mergedDatas };
-          }
-          return linha;
+      // Atualizar estado local com os IDs salvos
+      console.log(`\n✨ Atualizando ${successCount} linhas salvas no estado local`);
+      setLinhas(prev => prev.map(linha => {
+        const savedData = updatedLinhas.get(linha.id);
+        if (savedData) {
+          console.log(`  ✅ ${linha.id} -> ${savedData.id}`);
+          console.log('  🔎 Datas retornadas pelo servidor:', savedData.datas);
+          // Mesclar datas retornadas para manter estado consistente com o backend
+          const mergedDatas = { ...linha.datas, ...(savedData.datas || {}) };
+          return { ...linha, id: savedData.id, isNew: false, datas: mergedDatas };
+        }
+        return linha;
+      }));
+
+      // Recalcular revisoesPorEtapa a partir das linhas atuais (garantir consistência)
+      try {
+        const novoMap = {};
+        const linhasAtuais = (Array.from(updatedLinhas.keys()).length > 0)
+          ? (Array.from(updatedLinhas.values()).map(r => ({ id: r.id, datas: r.datas })))
+          : null;
+
+        // Se temos dados atualizados do servidor, use-os; senão use o estado atual
+        const sourceLinhas = linhasAtuais || linhas;
+
+        sourceLinhas.forEach(l => {
+          if (!l || !l.datas) return;
+          Object.entries(l.datas).forEach(([etapa, etapaData]) => {
+            if (!etapaData || typeof etapaData !== 'object') return;
+            if (!novoMap[etapa]) novoMap[etapa] = new Set();
+
+            // coletar revisões com dados
+            Object.keys(etapaData).forEach(k => {
+              const metaKeys = ['_excluida', 'excluida', '_revisoes_excluidas', 'revisoes_excluidas', '_revisoes_existentes', 'revisoes_existentes'];
+              if (metaKeys.includes(k)) return;
+              novoMap[etapa].add(k);
+            });
+
+            // coletar revisoes_existentes (aceitar ambas variantes)
+            const createdKey = '_revisoes_existentes' in etapaData ? '_revisoes_existentes' : ('revisoes_existentes' in etapaData ? 'revisoes_existentes' : null);
+            if (createdKey && Array.isArray(etapaData[createdKey])) {
+              etapaData[createdKey].forEach(r => novoMap[etapa].add(r));
+            }
+          });
         });
 
-        // Recalcular revisoesPorEtapa a partir do novo array de linhas
-        try {
-          const novoMap = {};
-          newArr.forEach(l => {
-            if (!l || !l.datas) return;
-            Object.entries(l.datas).forEach(([etapa, etapaData]) => {
-              if (!etapaData || typeof etapaData !== 'object') return;
-              if (!novoMap[etapa]) novoMap[etapa] = new Set();
+        const novasRevisoesPorEtapa = {};
+        ETAPAS.forEach(etapa => {
+          const s = novoMap[etapa] || new Set();
+          const arr = Array.from(s)
+            .map(r => {
+              const m = String(r).match(/^R(\d+)$/i);
+              if (!m) return null;
+              return `R${String(parseInt(m[1], 10)).padStart(2, '0')}`;
+            })
+            .filter(Boolean)
+            .sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
+          novasRevisoesPorEtapa[etapa] = arr;
+        });
 
-              // coletar revisões com dados
-              Object.keys(etapaData).forEach(k => {
-                const metaKeys = ['_excluida', 'excluida', '_revisoes_excluidas', 'revisoes_excluidas', '_revisoes_existentes', 'revisoes_existentes', 'meta'];
-                if (metaKeys.includes(k)) return;
-                novoMap[etapa].add(k);
-              });
-
-              // coletar revisoes_existentes APENAS de meta
-              if (etapaData.meta && Array.isArray(etapaData.meta.revisoes_existentes)) {
-                etapaData.meta.revisoes_existentes.forEach(r => novoMap[etapa].add(r));
-              }
-            });
-          });
-
-          const novasRevisoesPorEtapa = {};
-          ETAPAS.forEach(etapa => {
-            const s = novoMap[etapa] || new Set();
-            const arr = Array.from(s)
-              .map(r => {
-                const m = String(r).match(/^R(\d+)$/i);
-                if (!m) return null;
-                return `R${String(parseInt(m[1], 10)).padStart(2, '0')}`;
-              })
-              .filter(Boolean)
-              .sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
-            novasRevisoesPorEtapa[etapa] = arr;
-          });
-
-          console.log('🔄 revisoesPorEtapa recalculado após salvamento (novo estado):', novasRevisoesPorEtapa);
-          setRevisoesPorEtapa(novasRevisoesPorEtapa);
-        } catch (err) {
-          console.error('Erro ao recalcular revisoesPorEtapa após salvamento:', err);
-        }
-
-        return newArr;
-      });
+        console.log('🔄 revisoesPorEtapa recalculado após salvamento:', novasRevisoesPorEtapa);
+        setRevisoesPorEtapa(novasRevisoesPorEtapa);
+      } catch (err) {
+        console.error('Erro ao recalcular revisoesPorEtapa após salvamento:', err);
+      }
 
       console.log(`\n🎉 SALVAMENTO COMPLETO - Sucesso: ${successCount}, Erros: ${errorCount}`);
       console.log('🔄 Setando hasUnsavedChanges = false');
       setHasUnsavedChanges(false);
       setLinhasModificadas(new Set());
-
-      // Recarregar do servidor para garantir que a UI reflita exatamente o que foi persistido
-      if (successCount > 0) {
-        try {
-          console.log('🔁 Recarregando dados do servidor após salvamento...');
-          await loadData();
-          console.log('🔁 Recarregamento completo');
-        } catch (err) {
-          console.error('Erro ao recarregar dados após salvamento:', err);
-        }
-      }
 
       if (!silent) {
         if (errorCount > 0) {
