@@ -386,24 +386,9 @@ export default function PropostasPage() {
 
               <div className="w-1/3 px-4">
                 <div className="text-sm text-gray-600 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div className="text-left">Aprovados: {monthTotalsByStatus.aprovado.count || 0}</div>
-                    <div className="text-left">Valor BIM: R$ {formatCurrency(monthTotalsByStatus.aprovado.bim || 0)}</div>
-                    <div className="text-left">Valor CAD: R$ {formatCurrency(monthTotalsByStatus.aprovado.cad || 0)}</div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="text-left">Não aprovados: {monthTotalsByStatus.reprovado.count || 0}</div>
-                    <div className="text-left">Valor BIM: R$ {formatCurrency(monthTotalsByStatus.reprovado.bim || 0)}</div>
-                    <div className="text-left">Valor CAD: R$ {formatCurrency(monthTotalsByStatus.reprovado.cad || 0)}</div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="text-left">
-                      <span>Aguardando</span>
-                      <br />
-                      <span>Aprovação: {monthTotalsByStatus.em_analise.count || 0}</span>
-                    </div>
-                    <div className="text-left">BIM: R$ {formatCurrency(monthTotalsByStatus.em_analise.bim || 0)} • CAD: R$ {formatCurrency(monthTotalsByStatus.em_analise.cad || 0)}</div>
-                  </div>
+                  <div className="text-left">Aprovados: {monthTotalsByStatus.aprovado.count || 0}</div>
+                  <div className="text-left">Não aprovados: {monthTotalsByStatus.reprovado.count || 0}</div>
+                  <div className="text-left">Aguardando Aprovação: {monthTotalsByStatus.em_analise.count || 0}</div>
                 </div>
               </div>
 
