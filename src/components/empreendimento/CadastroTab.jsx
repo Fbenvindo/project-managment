@@ -205,11 +205,22 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         });
 
         let todasRevisoes = revisoesEtapaSet && revisoesEtapaSet.size > 0
-          ? Array.from(revisoesEtapaSet).sort()
+          ? Array.from(revisoesEtapaSet)
           : [];
 
         const revisoesExcluidas = revisoesExcluidasMap[etapa] || new Set();
-        const filtradas = todasRevisoes.filter(rev => !revisoesExcluidas.has(rev));
+        // Filtrar apenas nomes válidos do tipo RNN, remover excluídas e ordenar numericamente
+        const filtradas = todasRevisoes
+          .filter(rev => !!rev && !revisoesExcluidas.has(rev))
+          .map(r => {
+            const m = String(r).match(/^R(\d+)$/i);
+            if (!m) return null;
+            const num = parseInt(m[1], 10);
+            return `R${String(num).padStart(2, '0')}`;
+          })
+          .filter(Boolean)
+          .sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
+
         revisoesCompletas[etapa] = filtradas;
         console.log(`✅ Etapa ${etapa}: ${revisoesCompletas[etapa].join(', ')} (Total: ${revisoesCompletas[etapa].length})`);
       });
@@ -728,9 +739,19 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 const unionRevisoes = Array.from(new Set([...(revisoesFromLinha || []), ...(revisoesEtapa || [])]));
 
                 if (unionRevisoes.length > 0) {
-                  unionRevisoes.sort();
-                  datasComMetadados[etapa]._revisoes_existentes = unionRevisoes;
-                  datasComMetadados[etapa].revisoes_existentes = unionRevisoes;
+                  // Normalizar: aceitar apenas revisões no formato RNN e ordenar por número
+                  const normalized = Array.from(new Set(unionRevisoes))
+                    .map(r => {
+                      const m = String(r).match(/^R(\d+)$/i);
+                      if (!m) return null;
+                      const num = parseInt(m[1], 10);
+                      return `R${String(num).padStart(2, '0')}`;
+                    })
+                    .filter(Boolean)
+                    .sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
+
+                  datasComMetadados[etapa]._revisoes_existentes = normalized;
+                  datasComMetadados[etapa].revisoes_existentes = normalized;
                 }
               });
 
