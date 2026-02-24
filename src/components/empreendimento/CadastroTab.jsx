@@ -916,7 +916,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       console.log('⚡ Iniciando salvamento em lotes...');
       let successCount = 0;
       let errorCount = 0;
-      const BASE_BATCH_SIZE = 5; // Máximo inicial de requisições paralelas por lote
+      const BASE_BATCH_SIZE = 4; // Máximo inicial de requisições paralelas por lote
       let currentBatchSize = BASE_BATCH_SIZE;
       const BASE_DELAY = 1500; // Delay entre lotes em ms
       let currentDelay = BASE_DELAY;
