@@ -67,6 +67,10 @@ export default function PropostasPage() {
   const loadPropostas = async () => {
     setIsLoading(true);
     try {
+      if (!Entities || !Entities.Comercial || typeof Entities.Comercial.list !== 'function') {
+        throw new Error('Entidade Comercial não está disponível no client API');
+      }
+
       const data = await retryWithBackoff(
         () => Entities.Comercial.list('-updated_date'),
         3, 2000, 'loadPropostas'
@@ -155,12 +159,18 @@ export default function PropostasPage() {
         valor_cad: formData.valor_cad ? Number(formData.valor_cad) : undefined
       };
 
+      if (!Entities || !Entities.Comercial) {
+        throw new Error('Entidade Comercial não está disponível no client API');
+      }
+
       if (editingId) {
+        if (typeof Entities.Comercial.update !== 'function') throw new Error('Comercial.update não disponível');
         await retryWithBackoff(
           () => Entities.Comercial.update(editingId, dataToSave),
           3, 2000, 'updateProposta'
         );
       } else {
+        if (typeof Entities.Comercial.create !== 'function') throw new Error('Comercial.create não disponível');
         await retryWithBackoff(
           () => Entities.Comercial.create(dataToSave),
           3, 2000, 'createProposta'
