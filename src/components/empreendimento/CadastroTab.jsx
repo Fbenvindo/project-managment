@@ -667,124 +667,171 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       });
 
       console.log(`📤 ${linhasParaSalvar.length} linhas para salvar (de ${linhas.length} total)`);
-      console.log('📤 Primeiras 3 linhas para debug:', linhasParaSalvar.slice(0, 3).map(l => ({
-        id: l.id,
-        documento_id: l.documento_id,
-        datas: l.datas
-      })));
+      console.log('📤 Primeiras 3 linhas para debug:', linhasParaSalvar.slice(0, 3).map(l => ({ id: l.id, documento_id: l.documento_id })));
 
-      // Salvar com concorrência controlada (pool) para reduzir tempo total
-      console.log('⚡ Iniciando salvamento com pool de concorrência...');
-      let successCount = 0;
-      let errorCount = 0;
-      const updatedLinhas = new Map();
-      const CONCURRENCY = 12; // aumentar para acelerar, ajustar conforme servidor
-
-      async function runWithConcurrency(tasks, concurrency = 8) {
-        const results = new Array(tasks.length);
-        let i = 0;
-        const workers = new Array(Math.max(1, concurrency)).fill(null).map(async () => {
-          while (true) {
-            const idx = i++;
-            if (idx >= tasks.length) break;
-            try {
-              results[idx] = await tasks[idx]();
-            } catch (err) {
-              results[idx] = { error: err };
-            }
-          }
-        });
-        await Promise.all(workers);
-        return results;
-      }
-
-      const tasks = linhasParaSalvar.map((linha, idxGlobal) => async () => {
-        try {
-          console.log(`\n📨 [${idxGlobal + 1}/${linhasParaSalvar.length}] Salvando linha: ${linha.id}`);
-
-          // Preservar metadados
-          const datasComMetadados = {};
-          if (linha.datas) {
-            Object.entries(linha.datas).forEach(([etapa, etapaData]) => {
-              if (etapaData && typeof etapaData === 'object') {
-                datasComMetadados[etapa] = { ...etapaData };
-              }
-            });
-          }
-
-          const linhaData = {
-            empreendimento_id: empreendimento.id,
-            ordem: linha.ordem,
-            documento_id: linha.documento_id,
-            datas: datasComMetadados
-          };
-
-          // Garantir revisões salvas em meta
-          const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
-          etapasVisiveis.forEach(etapa => {
-            const revisoesEtapa = revisoesPorEtapa[etapa] || [];
-            if (!datasComMetadados[etapa]) datasComMetadados[etapa] = {};
-
-            const revisoesFromLinha = Array.isArray(datasComMetadados[etapa].meta?.revisoes_existentes)
-              ? datasComMetadados[etapa].meta.revisoes_existentes
-              : [];
-
-            const unionRevisoes = Array.from(new Set([...(revisoesFromLinha || []), ...(revisoesEtapa || [])]));
-            if (unionRevisoes.length > 0) {
-              const normalized = Array.from(new Set(unionRevisoes))
-                .map(r => {
-                  const m = String(r).match(/^R(\d+)$/i);
-                  if (!m) return null;
-                  const num = parseInt(m[1], 10);
-                  return `R${String(num).padStart(2, '0')}`;
-                })
-                .filter(Boolean)
-                .sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
-
-              if (!datasComMetadados[etapa].meta || typeof datasComMetadados[etapa].meta !== 'object') {
-                datasComMetadados[etapa].meta = {};
-              }
-              datasComMetadados[etapa].meta.revisoes_existentes = normalized;
-              normalized.forEach(rev => { if (!(rev in datasComMetadados[etapa])) datasComMetadados[etapa][rev] = ''; });
+      // Preparar helper para construir payload final por linha
+      const buildLinhaPayload = (linha) => {
+        const datasComMetadados = {};
+        if (linha.datas) {
+          Object.entries(linha.datas).forEach(([etapa, etapaData]) => {
+            if (etapaData && typeof etapaData === 'object') {
+              datasComMetadados[etapa] = { ...etapaData };
             }
           });
-
-          const linhaDataFinal = { ...linhaData, datas: datasComMetadados };
-          console.log('  Dados FINAL a salvar:', linhaDataFinal);
-
-          let result;
-          let attempts = 0;
-          const maxAttempts = 2; // reduzir tentativas
-
-          while (attempts < maxAttempts) {
-            try {
-              const isNew = linha.isNew || String(linha.id).startsWith('temp-');
-              if (isNew) result = await DataCadastro.create(linhaDataFinal);
-              else result = await DataCadastro.update(linha.id, linhaDataFinal);
-              console.log('  ✅ Sucesso! ID:', result.id);
-              successCount++;
-              updatedLinhas.set(linha.id, result);
-              return result;
-            } catch (err) {
-              attempts++;
-              console.error(`  ❌ Tentativa ${attempts} falhou:`, err.message || err);
-              if (attempts >= maxAttempts) {
-                errorCount++;
-                return { error: err };
-              }
-              const waitTime = 1000 * attempts;
-              await new Promise(r => setTimeout(r, waitTime));
-            }
-          }
-        } catch (error) {
-          console.error('❌ ERRO na linha', linha.id, error);
-          errorCount++;
-          return { error };
         }
-      });
 
-      // Executar tasks com pool
-      await runWithConcurrency(tasks, CONCURRENCY);
+        const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
+        etapasVisiveis.forEach(etapa => {
+          const revisoesEtapa = revisoesPorEtapa[etapa] || [];
+          if (!datasComMetadados[etapa]) datasComMetadados[etapa] = {};
+          const revisoesFromLinha = Array.isArray(datasComMetadados[etapa].meta?.revisoes_existentes)
+            ? datasComMetadados[etapa].meta.revisoes_existentes
+            : [];
+          const unionRevisoes = Array.from(new Set([...(revisoesFromLinha || []), ...(revisoesEtapa || [])]));
+          if (unionRevisoes.length > 0) {
+            const normalized = Array.from(new Set(unionRevisoes))
+              .map(r => {
+                const m = String(r).match(/^R(\d+)$/i);
+                if (!m) return null;
+                const num = parseInt(m[1], 10);
+                return `R${String(num).padStart(2, '0')}`;
+              })
+              .filter(Boolean)
+              .sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
+            if (!datasComMetadados[etapa].meta || typeof datasComMetadados[etapa].meta !== 'object') datasComMetadados[etapa].meta = {};
+            datasComMetadados[etapa].meta.revisoes_existentes = normalized;
+            normalized.forEach(rev => { if (!(rev in datasComMetadados[etapa])) datasComMetadados[etapa][rev] = ''; });
+          }
+        });
+
+        return {
+          empreendimento_id: empreendimento.id,
+          ordem: linha.ordem,
+          documento_id: linha.documento_id,
+          datas: datasComMetadados
+        };
+      };
+
+      // Tentar operações bulk quando disponíveis
+      const updatedLinhas = new Map();
+      let successCount = 0;
+      let errorCount = 0;
+
+      const novos = linhasParaSalvar.filter(l => l.isNew || String(l.id).startsWith('temp-'));
+      const existentes = linhasParaSalvar.filter(l => !(l.isNew || String(l.id).startsWith('temp-')));
+
+      // preparar payloads
+      const novosPayloads = novos.map(buildLinhaPayload);
+      const updatesPayloads = existentes.map(l => ({ id: l.id, ...buildLinhaPayload(l) }));
+
+      // Bulk create
+      if (novosPayloads.length > 0 && typeof DataCadastro.bulkCreate === 'function') {
+        try {
+          console.log(`🚀 Tentando bulkCreate de ${novosPayloads.length} linhas`);
+          const created = await retryWithBackoff(() => DataCadastro.bulkCreate(novosPayloads), 3, 2000, 'bulkCreateDataCadastro');
+          if (Array.isArray(created)) {
+            created.forEach((c, idx) => {
+              const tempId = novos[idx].id;
+              updatedLinhas.set(tempId, c);
+              successCount++;
+            });
+          }
+        } catch (err) {
+          console.warn('bulkCreate falhou, fallback para envio individual:', err.message || err);
+        }
+      }
+
+      // Bulk update / upsert
+      if (updatesPayloads.length > 0) {
+        if (typeof DataCadastro.bulkUpdate === 'function') {
+          try {
+            console.log(`🚀 Tentando bulkUpdate de ${updatesPayloads.length} linhas`);
+            const updated = await retryWithBackoff(() => DataCadastro.bulkUpdate(updatesPayloads), 3, 2000, 'bulkUpdateDataCadastro');
+            if (Array.isArray(updated)) {
+              updated.forEach((u) => {
+                // tentar encontrar matching local id via documento_id
+                const local = linhasParaSalvar.find(l => l.documento_id === u.documento_id);
+                if (local) updatedLinhas.set(local.id, u);
+                successCount++;
+              });
+            }
+          } catch (err) {
+            console.warn('bulkUpdate falhou, fallback para envio individual:', err.message || err);
+          }
+        } else if (typeof DataCadastro.bulkUpsert === 'function') {
+          try {
+            console.log(`🚀 Tentando bulkUpsert de ${updatesPayloads.length} linhas`);
+            const upserted = await retryWithBackoff(() => DataCadastro.bulkUpsert(updatesPayloads), 3, 2000, 'bulkUpsertDataCadastro');
+            if (Array.isArray(upserted)) {
+              upserted.forEach(u => {
+                const local = linhasParaSalvar.find(l => l.documento_id === u.documento_id);
+                if (local) updatedLinhas.set(local.id, u);
+                successCount++;
+              });
+            }
+          } catch (err) {
+            console.warn('bulkUpsert falhou, fallback para envio individual:', err.message || err);
+          }
+        }
+      }
+
+      // Filtrar os que já foram atualizados pelo bulk
+      const pending = linhasParaSalvar.filter(l => !updatedLinhas.has(l.id));
+
+      // Se restarem pendentes, enviar com pool concorrente (mais seguro)
+      if (pending.length > 0) {
+        console.log(`⚡ Enviando ${pending.length} linhas restantes com pool concorrente`);
+        const CONCURRENCY = 8;
+        async function runWithConcurrency(tasks, concurrency = 8) {
+          const results = new Array(tasks.length);
+          let i = 0;
+          const workers = new Array(Math.max(1, concurrency)).fill(null).map(async () => {
+            while (true) {
+              const idx = i++;
+              if (idx >= tasks.length) break;
+              try {
+                results[idx] = await tasks[idx]();
+              } catch (err) {
+                results[idx] = { error: err };
+              }
+            }
+          });
+          await Promise.all(workers);
+          return results;
+        }
+
+        const tasks = pending.map((linha, idxGlobal) => async () => {
+          try {
+            const payload = buildLinhaPayload(linha);
+            let result;
+            let attempts = 0;
+            const maxAttempts = 3;
+            while (attempts < maxAttempts) {
+              try {
+                const isNew = linha.isNew || String(linha.id).startsWith('temp-');
+                result = isNew ? await DataCadastro.create(payload) : await DataCadastro.update(linha.id, payload);
+                updatedLinhas.set(linha.id, result);
+                successCount++;
+                return result;
+              } catch (err) {
+                attempts++;
+                if (attempts >= maxAttempts) {
+                  errorCount++;
+                  console.error('Erro ao salvar linha', linha.id, err);
+                  return { error: err };
+                }
+                await new Promise(r => setTimeout(r, 1000 * attempts));
+              }
+            }
+          } catch (err) {
+            errorCount++;
+            console.error('Erro inesperado ao salvar linha', linha.id, err);
+            return { error: err };
+          }
+        });
+
+        await runWithConcurrency(tasks, CONCURRENCY);
+      }
 
       // Atualizar estado local com os IDs salvos e recalcular revisoesPorEtapa com base no novo estado
       console.log(`\n✨ Atualizando ${successCount} linhas salvas no estado local (mesclando datas retornadas)`);
