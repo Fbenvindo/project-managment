@@ -657,6 +657,164 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         datas: l.datas
       })));
 
+      // Primeiro: tentar usar operações em lote se disponíveis para reduzir RPS
+      console.log('⚡ Tentando rota em lote (bulk) antes de salvar por item...');
+      const hasBulkUpsert = typeof DataCadastro.bulkUpsert === 'function';
+      const hasBulkCreate = typeof DataCadastro.bulkCreate === 'function';
+      const hasBulkUpdate = typeof DataCadastro.bulkUpdate === 'function';
+
+      const buildPayload = (linha) => {
+        const datasComMetadados = {};
+        if (linha.datas) {
+          Object.entries(linha.datas).forEach(([etapa, etapaData]) => {
+            if (etapaData && typeof etapaData === 'object') {
+              datasComMetadados[etapa] = { ...etapaData };
+            }
+          });
+        }
+
+        const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
+        etapasVisiveis.forEach(etapa => {
+          const revisoesEtapa = revisoesPorEtapa[etapa] || [];
+          if (!datasComMetadados[etapa]) datasComMetadados[etapa] = {};
+
+          const revisoesFromLinha = Array.isArray(datasComMetadados[etapa]._revisoes_existentes)
+            ? datasComMetadados[etapa]._revisoes_existentes
+            : (Array.isArray(datasComMetadados[etapa].revisoes_existentes) ? datasComMetadados[etapa].revisoes_existentes : []);
+
+          const unionRevisoes = Array.from(new Set([...(revisoesFromLinha || []), ...(revisoesEtapa || [])]));
+          if (unionRevisoes.length > 0) {
+            const normalized = Array.from(new Set(unionRevisoes))
+              .map(r => {
+                const m = String(r).match(/^R(\d+)$/i);
+                if (!m) return null;
+                const num = parseInt(m[1], 10);
+                return `R${String(num).padStart(2, '0')}`;
+              })
+              .filter(Boolean)
+              .sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
+
+            if (!datasComMetadados[etapa].meta || typeof datasComMetadados[etapa].meta !== 'object') {
+              datasComMetadados[etapa].meta = {};
+            }
+            datasComMetadados[etapa].meta.revisoes_existentes = normalized;
+            normalized.forEach(rev => {
+              if (!(rev in datasComMetadados[etapa])) {
+                datasComMetadados[etapa][rev] = '';
+              }
+            });
+          }
+        });
+
+        return {
+          empreendimento_id: empreendimento.id,
+          ordem: linha.ordem,
+          documento_id: linha.documento_id,
+          datas: datasComMetadados,
+          // manter referência local para reconciliar (temp id)
+          __localId: linha.id
+        };
+      };
+
+      if (hasBulkUpsert || hasBulkCreate || hasBulkUpdate) {
+        try {
+          console.log('🔎 SDK bulk detection:', { hasBulkUpsert, hasBulkCreate, hasBulkUpdate });
+          const novos = [];
+          const existentes = [];
+          linhasParaSalvar.forEach(l => {
+            const payload = buildPayload(l);
+            if (l.isNew || String(l.id).startsWith('temp-')) {
+              novos.push(payload);
+            } else {
+              existentes.push({ id: l.id, ...payload });
+            }
+          });
+
+          // tentar bulkUpsert primeiro (unifica create/update)
+          if (hasBulkUpsert) {
+            try {
+              console.log('⬆️ Usando DataCadastro.bulkUpsert — itens:', linhasParaSalvar.length);
+              const allPayload = linhasParaSalvar.map(l => buildPayload(l));
+              const res = await retryWithBackoff(() => DataCadastro.bulkUpsert(allPayload), 3, 2000, 'bulkUpsertDataCadastro');
+              if (Array.isArray(res)) {
+                res.forEach(item => {
+                  // mapear por documento_id quando possível, fallback por id
+                  const keyLocal = linhasParaSalvar.find(l => l.documento_id === item.documento_id)?.id;
+                  if (keyLocal) updatedLinhas.set(keyLocal, item);
+                  else if (item.id) updatedLinhas.set(item.id, item);
+                });
+                console.log('✅ bulkUpsert teve sucesso, pulando salvamento por item');
+                // pular o fluxo por item
+              }
+            } catch (err) {
+              console.warn('⚠️ bulkUpsert falhou, fallback para bulkCreate/bulkUpdate ou salvamento por item', err.message || err);
+            }
+          }
+
+          // se bulkUpsert não populou updatedLinhas, tentar bulkCreate/bulkUpdate separadamente
+          if (updatedLinhas.size === 0) {
+            let created = [];
+            let updated = [];
+
+            if (hasBulkCreate && novos.length > 0) {
+              try {
+                console.log('🟢 Usando DataCadastro.bulkCreate — novos:', novos.length);
+                created = await retryWithBackoff(() => DataCadastro.bulkCreate(novos.map(n => ({ ...n }))), 3, 2000, 'bulkCreateDataCadastro');
+                if (Array.isArray(created)) {
+                  created.forEach(item => {
+                    const localId = novos.find(n => n.documento_id === item.documento_id)?.__localId;
+                    if (localId) updatedLinhas.set(localId, item);
+                    else if (item.id) updatedLinhas.set(item.id, item);
+                  });
+                }
+              } catch (err) {
+                console.warn('⚠️ bulkCreate falhou, will fallback to per-item:', err.message || err);
+              }
+            }
+
+            if (hasBulkUpdate && existentes.length > 0) {
+              try {
+                console.log('🟠 Usando DataCadastro.bulkUpdate — existentes:', existentes.length);
+                updated = await retryWithBackoff(() => DataCadastro.bulkUpdate(existentes.map(u => ({ id: u.id, empreendimento_id: u.empreendimento_id, ordem: u.ordem, documento_id: u.documento_id, datas: u.datas }))), 3, 2000, 'bulkUpdateDataCadastro');
+                if (Array.isArray(updated)) {
+                  updated.forEach(item => {
+                    if (item.id) updatedLinhas.set(item.id, item);
+                    else if (item.documento_id) {
+                      const localId = existentes.find(e => e.documento_id === item.documento_id)?.id;
+                      if (localId) updatedLinhas.set(localId, item);
+                    }
+                  });
+                }
+              } catch (err) {
+                console.warn('⚠️ bulkUpdate falhou, will fallback to per-item:', err.message || err);
+              }
+            }
+
+            if (updatedLinhas.size > 0) {
+              console.log(`✅ Bulk path retornou ${updatedLinhas.size} registros atualizados/created`);
+            }
+          }
+
+          // Se bulk produziu resultados para todas linhas, podemos reconciliar e terminar
+          if (updatedLinhas.size >= linhasParaSalvar.length) {
+            console.log('🔁 Reconciliando estado local a partir de resultados bulk...');
+            setLinhas(prev => prev.map(linha => {
+              const saved = updatedLinhas.get(linha.id) || updatedLinhas.get(linha.documento_id);
+              if (saved) return { ...linha, id: saved.id || linha.id, isNew: false, datas: { ...linha.datas, ...(saved.datas || {}) } };
+              return linha;
+            }));
+            // Atualizar revisoesPorEtapa será feito adiante pelo fluxo existente
+            console.log('🎉 Salvamento em lote concluído com sucesso');
+            setHasUnsavedChanges(false);
+            setLinhasModificadas(new Set());
+            setIsSaving(false);
+            return; // já finalizamos o handleSave
+          }
+        } catch (err) {
+          console.warn('⚠️ Erro no caminho bulk, continuando com salvamento por item:', err.message || err);
+        }
+      }
+
       // Processar em lotes sequenciais para evitar rate limit
       console.log('⚡ Iniciando salvamento em lotes...');
       let successCount = 0;
