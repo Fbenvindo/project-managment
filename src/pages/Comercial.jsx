@@ -41,7 +41,7 @@ const useComercialData = () => {
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       const usuariosData = await retryWithBackoff(
-        () => Usuario.list(),
+        () => Entities.Usuario.list(),
         3, 2000, 'Usuarios'
       );
 
