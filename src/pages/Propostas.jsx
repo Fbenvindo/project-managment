@@ -656,6 +656,8 @@ export default function PropostasPage() {
                       </div>
                     </div>
 
+                    <div className="mt-4 mb-2 border-t border-gray-100" />
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {group.items.map(item => (
                         <div key={item.id} className="p-3 border rounded">
