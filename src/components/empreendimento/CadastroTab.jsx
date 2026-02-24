@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
@@ -36,126 +36,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [loadedEmpreendimentoId, setLoadedEmpreendimentoId] = useState(null);
   const autoSaveTimeoutRef = useRef(null);
-  // Fila persistente para mitigar rate limit: usa localStorage
-  const QUEUE_KEY = '__cadastro_pending_queue';
-  const getPendingQueue = () => {
-    try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch (e) { return []; }
-  };
-  const setPendingQueue = (q) => {
-    try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q || [])); window.__cadastroQueue = q || []; } catch (e) { console.warn('Não foi possível setar fila no localStorage', e); }
-  };
-
-  const enqueuePending = (items) => {
-    const q = getPendingQueue();
-    const now = Date.now();
-    const toEnqueue = items.map(it => ({
-      id: it.id || (`temp-${it.documento_id}`),
-      documento_id: it.documento_id,
-      payload: it.payload || it,
-      isNew: !!(it.isNew || String(it.id || '').startsWith('temp-')),
-      empreendimento_id: empreendimento?.id,
-      ts: now
-    }));
-    setPendingQueue(q.concat(toEnqueue));
-  };
-
-  // Registrar processador global em window para rodar em background (salva 2 por vez)
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-
-    if (window.__cadastroGlobalProcessor) {
-      console.log('🔁 Global cadastro processor já registrado');
-      return;
-    }
-
-    // Implementar processor global que funciona mesmo se o componente for desmontado
-    const QUEUE_KEY_G = '__cadastro_pending_queue';
-    const getQ = () => {
-      try { return JSON.parse(localStorage.getItem(QUEUE_KEY_G) || '[]'); } catch (e) { return []; }
-    };
-    const setQ = (q) => { try { localStorage.setItem(QUEUE_KEY_G, JSON.stringify(q || [])); window.__cadastroQueue = q || []; } catch (e) { /* ignore */ } };
-
-    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-    const isRateLimitError = (err) => {
-      try {
-        const status = err?.response?.status || err?.status;
-        const msg = String(err?.message || err?.error || '');
-        return status === 429 || /rate limit/i.test(msg) || /too many requests/i.test(msg);
-      } catch (e) { return false; }
-    };
-
-    let running = false;
-    let pauseUntil = 0;
-
-    const processBatch = async () => {
-      if (running) return;
-      const now = Date.now();
-      if (now < pauseUntil) return;
-      const q = getQ();
-      if (!q || q.length === 0) return;
-
-      running = true;
-      const batch = q.slice(0, 10); // salvar 10 em 10
-      console.log(`🔁 Processando batch de ${batch.length} itens (10x)`);
-
-      const results = await Promise.all(batch.map(async (item) => {
-        const maxAttempts = 4;
-        let attempts = 0;
-        while (attempts < maxAttempts) {
-          try {
-            if (item.isNew) {
-              const res = await DataCadastro.create(item.payload);
-              return { ok: true, res, item };
-            } else {
-              const res = await DataCadastro.update(item.id, item.payload);
-              return { ok: true, res, item };
-            }
-          } catch (err) {
-            attempts++;
-            if (isRateLimitError(err)) {
-              // pausa maior e interrompe tentativas deste batch
-              pauseUntil = Date.now() + 15000;
-              console.warn('⏸️ Rate limit detectado pelo processador global — pausando 15s');
-              return { ok: false, err, item, rateLimit: true };
-            }
-            // pequeno backoff e tentar de novo
-            await sleep(500 * attempts);
-            if (attempts >= maxAttempts) return { ok: false, err, item };
-          }
-        }
-        return { ok: false, err: new Error('Max attempts exceeded'), item };
-      }));
-
-      // Remover do queue os itens bem-sucedidos
-      try {
-        const current = getQ();
-        // remover os primeiros N (batch.length) se corresponderem
-        const remaining = current.slice(batch.length);
-        setQ(remaining);
-      } catch (e) {
-        console.warn('Erro ao atualizar fila após processamento', e);
-      }
-
-      // Log de resultados
-      results.forEach(r => {
-        if (r.ok) console.log('✅ Salvou (global):', r.item.documento_id, r.res.id);
-        else console.warn('❌ Falha no item (global):', r.item.documento_id, r.err?.message || r.err);
-      });
-
-      running = false;
-    };
-
-    // Intervalo de processamento (rodar a cada 3s)
-    const iv = setInterval(processBatch, 3000);
-    // rodar imediatamente
-    processBatch();
-
-    window.__cadastroGlobalProcessor = {
-      stop: () => clearInterval(iv),
-      processNow: processBatch
-    };
-    console.log('🔁 Global cadastro processor registrado (batch=10, interval=3s)');
-  }, []);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFile, setImportFile] = useState(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -206,22 +86,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
   const loadData = async () => {
     setIsLoading(true);
-    // Verificação rápida se o SDK/entidade expõe métodos em lote (bulk)
-    try {
-      console.log('🔍 DataCadastro.bulkCreate ->', typeof DataCadastro.bulkCreate);
-      console.log('🔍 DataCadastro.bulkUpdate ->', typeof DataCadastro.bulkUpdate);
-      console.log('🔍 DataCadastro.createMany ->', typeof DataCadastro.createMany);
-      console.log('🔍 DataCadastro.updateMany ->', typeof DataCadastro.updateMany);
-      console.log('🔍 DataCadastro.bulkUpsert ->', typeof DataCadastro.bulkUpsert);
-      if (typeof window !== 'undefined') {
-        // expor temporariamente para inspeção manual no console do navegador
-        // remova esta exposição após verificação
-        window.__DataCadastro = DataCadastro;
-        console.log('🔎 DataCadastro exposto em window.__DataCadastro (remova após verificação)');
-      }
-    } catch (e) {
-      console.warn('Erro ao verificar DataCadastro.bulk*:', e);
-    }
     try {
       const [data, docs] = await Promise.all([
         retryWithBackoff(
@@ -286,7 +150,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 // Adicionar revisões que têm dados preenchidos
                 Object.keys(etapaData).forEach(rev => {
                   // Ignorar chaves metadata com ou sem underscore
-                  const metaKeys = ['_excluida', 'excluida', '_revisoes_excluidas', 'revisoes_excluidas', '_revisoes_existentes', 'revisoes_existentes', 'meta'];
+                  const metaKeys = ['_excluida', 'excluida', '_revisoes_excluidas', 'revisoes_excluidas', '_revisoes_existentes', 'revisoes_existentes'];
                   if (!metaKeys.includes(rev)) {
                     const valor = etapaData[rev];
                     console.log(`    📝 Revisão com dados: ${rev} = ${valor}`);
@@ -294,19 +158,30 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                   }
                 });
 
-                // Carregar revisões que foram criadas (usar apenas meta.revisoes_existentes)
-                if (etapaData.meta && Array.isArray(etapaData.meta.revisoes_existentes)) {
-                  console.log(`    📋 meta.revisoes_existentes encontrado:`, etapaData.meta.revisoes_existentes);
-                  etapaData.meta.revisoes_existentes.forEach(rev => revisoesMap[etapa].add(rev));
+                // Carregar revisões que foram criadas (mesmo sem dados)
+                const createdKey = '_revisoes_existentes' in etapaData ? '_revisoes_existentes' : ('revisoes_existentes' in etapaData ? 'revisoes_existentes' : null);
+                if (createdKey) {
+                  console.log(`    📋 ${createdKey} encontrado:`, etapaData[createdKey]);
+                  if (Array.isArray(etapaData[createdKey])) {
+                    etapaData[createdKey].forEach(rev => {
+                      console.log(`      ➕ Adicionando revisão criada: ${rev}`);
+                      revisoesMap[etapa].add(rev);
+                    });
+                  } else {
+                    console.log(`      ❌ ${createdKey} NÃO é array!`);
+                  }
                 }
 
-                // Detectar revisões excluídas (usar apenas meta.revisoes_excluidas)
-                if (etapaData.meta && Array.isArray(etapaData.meta.revisoes_excluidas)) {
-                  etapaData.meta.revisoes_excluidas.forEach(rev => revisoesExcluidasMap[etapa].add(rev));
+                // Detectar revisões excluídas (aceitar versão com ou sem underscore)
+                const excluidasKey = '_revisoes_excluidas' in etapaData ? '_revisoes_excluidas' : ('revisoes_excluidas' in etapaData ? 'revisoes_excluidas' : null);
+                if (excluidasKey && Array.isArray(etapaData[excluidasKey])) {
+                  etapaData[excluidasKey].forEach(rev => {
+                    revisoesExcluidasMap[etapa].add(rev);
+                  });
                 }
 
-                // Detectar etapas excluídas (usar apenas meta.excluida)
-                if (etapaData.meta && etapaData.meta.excluida) {
+                // Detectar etapas excluídas (aceitar _excluida ou excluida)
+                if (etapaData._excluida || etapaData.excluida) {
                   etapasExcluidasSet.add(etapa);
                 }
               }
@@ -397,16 +272,23 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         ...prev,
         [etapa]: ['R00']
       }));
-      // Marcar revisão como existente nas linhas mesmo sem dados (apenas em meta)
+      // Marcar revisão como existente nas linhas mesmo sem dados
       setLinhas(prev => prev.map(linha => {
         const novasDatas = { ...linha.datas };
-        if (!novasDatas[etapa]) novasDatas[etapa] = {};
-        if (!novasDatas[etapa].meta) novasDatas[etapa].meta = {};
-        if (!Array.isArray(novasDatas[etapa].meta.revisoes_existentes)) {
-          novasDatas[etapa].meta.revisoes_existentes = [];
+        if (!novasDatas[etapa]) {
+          novasDatas[etapa] = {};
         }
-        if (!novasDatas[etapa].meta.revisoes_existentes.includes('R00')) {
-          novasDatas[etapa].meta.revisoes_existentes.push('R00');
+        if (!novasDatas[etapa]._revisoes_existentes) {
+          novasDatas[etapa]._revisoes_existentes = [];
+        }
+        if (!novasDatas[etapa].revisoes_existentes) {
+          novasDatas[etapa].revisoes_existentes = [];
+        }
+        if (!novasDatas[etapa]._revisoes_existentes.includes('R00')) {
+          novasDatas[etapa]._revisoes_existentes.push('R00');
+        }
+        if (!novasDatas[etapa].revisoes_existentes.includes('R00')) {
+          novasDatas[etapa].revisoes_existentes.push('R00');
         }
         return { ...linha, datas: novasDatas };
       }));
@@ -423,16 +305,24 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       ...prev,
       [etapa]: [...(prev[etapa] || []), novaRevisao]
     }));
-    // Marcar revisão como existente nas linhas mesmo sem dados (apenas em meta)
+    // Marcar revisão como existente nas linhas mesmo sem dados
     setLinhas(prev => prev.map(linha => {
       const novasDatas = { ...linha.datas };
-      if (!novasDatas[etapa]) novasDatas[etapa] = {};
-      if (!novasDatas[etapa].meta) novasDatas[etapa].meta = {};
-      if (!Array.isArray(novasDatas[etapa].meta.revisoes_existentes)) {
-        novasDatas[etapa].meta.revisoes_existentes = [];
-      }
-      if (!novasDatas[etapa].meta.revisoes_existentes.includes(novaRevisao)) {
-        novasDatas[etapa].meta.revisoes_existentes.push(novaRevisao);
+      if (!novasDatas[etapa]) {
+        novasDatas[etapa] = { _revisoes_existentes: [novaRevisao], revisoes_existentes: [novaRevisao] };
+      } else {
+        if (!novasDatas[etapa]._revisoes_existentes) {
+          novasDatas[etapa]._revisoes_existentes = [];
+        }
+        if (!novasDatas[etapa].revisoes_existentes) {
+          novasDatas[etapa].revisoes_existentes = [];
+        }
+        if (!novasDatas[etapa]._revisoes_existentes.includes(novaRevisao)) {
+          novasDatas[etapa]._revisoes_existentes.push(novaRevisao);
+        }
+        if (!novasDatas[etapa].revisoes_existentes.includes(novaRevisao)) {
+          novasDatas[etapa].revisoes_existentes.push(novaRevisao);
+        }
       }
       return { ...linha, datas: novasDatas };
     }));
@@ -461,13 +351,18 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         delete novasDatas[etapa][revisao];
       }
 
-      // Adicionar à lista de revisões excluídas (apenas em meta)
-      if (!novasDatas[etapa].meta) novasDatas[etapa].meta = {};
-      if (!Array.isArray(novasDatas[etapa].meta.revisoes_excluidas)) {
-        novasDatas[etapa].meta.revisoes_excluidas = [];
+      // Adicionar à lista de revisões excluídas
+      if (!novasDatas[etapa]._revisoes_excluidas) {
+        novasDatas[etapa]._revisoes_excluidas = [];
       }
-      if (!novasDatas[etapa].meta.revisoes_excluidas.includes(revisao)) {
-        novasDatas[etapa].meta.revisoes_excluidas.push(revisao);
+      if (!novasDatas[etapa].revisoes_excluidas) {
+        novasDatas[etapa].revisoes_excluidas = [];
+      }
+      if (!novasDatas[etapa]._revisoes_excluidas.includes(revisao)) {
+        novasDatas[etapa]._revisoes_excluidas.push(revisao);
+      }
+      if (!novasDatas[etapa].revisoes_excluidas.includes(revisao)) {
+        novasDatas[etapa].revisoes_excluidas.push(revisao);
       }
 
       return { ...linha, datas: novasDatas };
@@ -487,9 +382,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       if (!novasDatas[etapa]) {
         novasDatas[etapa] = {};
       }
-      // Marcar etapa como excluída apenas em meta
-      if (!novasDatas[etapa].meta) novasDatas[etapa].meta = {};
-      novasDatas[etapa].meta.excluida = true;
+      novasDatas[etapa]._excluida = true;
+      novasDatas[etapa].excluida = true;
       return { ...linha, datas: novasDatas };
     }));
     setLinhasModificadas(new Set(linhas.map(l => l.id)));
@@ -507,9 +401,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       }
       if (novasDatas[etapa] && novasDatas[etapa].excluida) {
         delete novasDatas[etapa].excluida;
-      }
-      if (novasDatas[etapa] && novasDatas[etapa].meta && novasDatas[etapa].meta.excluida) {
-        delete novasDatas[etapa].meta.excluida;
       }
       return { ...linha, datas: novasDatas };
     }));
@@ -787,213 +678,208 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       });
 
       console.log(`📤 ${linhasParaSalvar.length} linhas para salvar (de ${linhas.length} total)`);
-      console.log('📤 Primeiras 3 linhas para debug:', linhasParaSalvar.slice(0, 3).map(l => ({ id: l.id, documento_id: l.documento_id })));
+      console.log('📤 Primeiras 3 linhas para debug:', linhasParaSalvar.slice(0, 3).map(l => ({
+        id: l.id,
+        documento_id: l.documento_id,
+        datas: l.datas
+      })));
 
-      // Preparar helper para construir payload final por linha
-      const buildLinhaPayload = (linha) => {
-        const datasComMetadados = {};
-        if (linha.datas) {
-          Object.entries(linha.datas).forEach(([etapa, etapaData]) => {
-            if (etapaData && typeof etapaData === 'object') {
-              datasComMetadados[etapa] = { ...etapaData };
-            }
-          });
-        }
-
-        const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
-        etapasVisiveis.forEach(etapa => {
-          const revisoesEtapa = revisoesPorEtapa[etapa] || [];
-          if (!datasComMetadados[etapa]) datasComMetadados[etapa] = {};
-          const revisoesFromLinha = Array.isArray(datasComMetadados[etapa].meta?.revisoes_existentes)
-            ? datasComMetadados[etapa].meta.revisoes_existentes
-            : [];
-          const unionRevisoes = Array.from(new Set([...(revisoesFromLinha || []), ...(revisoesEtapa || [])]));
-          if (unionRevisoes.length > 0) {
-            const normalized = Array.from(new Set(unionRevisoes))
-              .map(r => {
-                const m = String(r).match(/^R(\d+)$/i);
-                if (!m) return null;
-                const num = parseInt(m[1], 10);
-                return `R${String(num).padStart(2, '0')}`;
-              })
-              .filter(Boolean)
-              .sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
-            if (!datasComMetadados[etapa].meta || typeof datasComMetadados[etapa].meta !== 'object') datasComMetadados[etapa].meta = {};
-            datasComMetadados[etapa].meta.revisoes_existentes = normalized;
-            normalized.forEach(rev => { if (!(rev in datasComMetadados[etapa])) datasComMetadados[etapa][rev] = ''; });
-          }
-        });
-
-        return {
-          empreendimento_id: empreendimento.id,
-          ordem: linha.ordem,
-          documento_id: linha.documento_id,
-          datas: datasComMetadados
-        };
-      };
-
-      // Tentar operações bulk quando disponíveis
-      const updatedLinhas = new Map();
+      // Processar em lotes sequenciais para evitar rate limit
+      console.log('⚡ Iniciando salvamento em lotes...');
       let successCount = 0;
       let errorCount = 0;
+      const updatedLinhas = new Map();
+      const BATCH_SIZE = 2; // Máximo de requisições paralelas por lote
+      const DELAY_ENTRE_LOTES = 1500; // Delay entre lotes em ms
 
-      const novos = linhasParaSalvar.filter(l => l.isNew || String(l.id).startsWith('temp-'));
-      const existentes = linhasParaSalvar.filter(l => !(l.isNew || String(l.id).startsWith('temp-')));
+      // Dividir em lotes
+      for (let batchIdx = 0; batchIdx < linhasParaSalvar.length; batchIdx += BATCH_SIZE) {
+        const batch = linhasParaSalvar.slice(batchIdx, batchIdx + BATCH_SIZE);
+        console.log(`\n📦 Lote ${Math.floor(batchIdx / BATCH_SIZE) + 1}: ${batch.length} linhas`);
 
-      // preparar payloads
-      const novosPayloads = novos.map(buildLinhaPayload);
-      const updatesPayloads = existentes.map(l => ({ id: l.id, ...buildLinhaPayload(l) }));
+        const batchPromises = batch.map((linha, idxNoBatch) =>
+          (async () => {
+            const idxGlobal = batchIdx + idxNoBatch;
+            try {
+              console.log(`\n📨 [${idxGlobal + 1}/${linhasParaSalvar.length}] Salvando linha: ${linha.id}`);
 
-      // Bulk create
-      if (novosPayloads.length > 0 && typeof DataCadastro.bulkCreate === 'function') {
-        try {
-          console.log(`🚀 Tentando bulkCreate de ${novosPayloads.length} linhas`);
-          const created = await retryWithBackoff(() => DataCadastro.bulkCreate(novosPayloads), 3, 2000, 'bulkCreateDataCadastro');
-          if (Array.isArray(created)) {
-            created.forEach((c, idx) => {
-              const tempId = novos[idx].id;
-              updatedLinhas.set(tempId, c);
+              // Preservar metadados
+              const datasComMetadados = {};
+              if (linha.datas) {
+                Object.entries(linha.datas).forEach(([etapa, etapaData]) => {
+                  if (etapaData && typeof etapaData === 'object') {
+                    datasComMetadados[etapa] = {
+                      ...etapaData
+                    };
+                  }
+                });
+              }
+
+              const linhaData = {
+                empreendimento_id: empreendimento.id,
+                ordem: linha.ordem,
+                documento_id: linha.documento_id,
+                datas: datasComMetadados
+              };
+
+              // GARANTIR que revisões criadas são salvas mesmo que vazias
+              // Preservar revisões que já estão em linha.datas e unir com o estado
+              const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
+              etapasVisiveis.forEach(etapa => {
+                const revisoesEtapa = revisoesPorEtapa[etapa] || [];
+                if (!datasComMetadados[etapa]) {
+                  datasComMetadados[etapa] = {};
+                }
+
+                const revisoesFromLinha = Array.isArray(datasComMetadados[etapa]._revisoes_existentes)
+                  ? datasComMetadados[etapa]._revisoes_existentes
+                  : [];
+
+                // União entre revisões detectadas no estado da etapa e as marcadas na própria linha
+                const unionRevisoes = Array.from(new Set([...(revisoesFromLinha || []), ...(revisoesEtapa || [])]));
+
+                if (unionRevisoes.length > 0) {
+                  // Normalizar: aceitar apenas revisões no formato RNN e ordenar por número
+                  const normalized = Array.from(new Set(unionRevisoes))
+                    .map(r => {
+                      const m = String(r).match(/^R(\d+)$/i);
+                      if (!m) return null;
+                      const num = parseInt(m[1], 10);
+                      return `R${String(num).padStart(2, '0')}`;
+                    })
+                    .filter(Boolean)
+                    .sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
+
+                  datasComMetadados[etapa]._revisoes_existentes = normalized;
+                  datasComMetadados[etapa].revisoes_existentes = normalized;
+                }
+              });
+
+              const linhaDataFinal = {
+                ...linhaData,
+                datas: datasComMetadados
+              };
+
+              console.log(`  Dados FINAL a salvar:`, linhaDataFinal);
+
+              let result;
+              let attempts = 0;
+              const maxAttempts = 3;
+
+              while (attempts < maxAttempts) {
+                try {
+                  const isNew = linha.isNew || linha.id.toString().startsWith('temp-');
+                  console.log(`  🔄 Tentativa ${attempts + 1}/${maxAttempts} (${isNew ? 'CREATE' : 'UPDATE'})`);
+
+                  if (isNew) {
+                    result = await DataCadastro.create(linhaDataFinal);
+                  } else {
+                    result = await DataCadastro.update(linha.id, linhaDataFinal);
+                  }
+                  console.log(`  ✅ Sucesso! ID: ${result.id}`);
+                  break;
+                } catch (err) {
+                  attempts++;
+                  console.error(`  ❌ Tentativa ${attempts} falhou:`, err.message);
+
+                  if (attempts >= maxAttempts) {
+                    throw err;
+                  }
+
+                  const waitTime = 3000 * attempts;
+                  console.log(`  ⏳ Aguardando ${waitTime}ms...`);
+                  await new Promise(resolve => setTimeout(resolve, waitTime));
+                }
+              }
+
               successCount++;
+              updatedLinhas.set(linha.id, result);
+            } catch (error) {
+              errorCount++;
+              console.error(`❌ ERRO na linha ${linha.id}:`, error);
+            }
+          })()
+        );
+
+        // Executar lote em paralelo
+        await Promise.all(batchPromises);
+
+        // Delay entre lotes (exceto no último)
+        if (batchIdx + BATCH_SIZE < linhasParaSalvar.length) {
+          console.log(`⏳ Aguardando ${DELAY_ENTRE_LOTES}ms antes do próximo lote...`);
+          await new Promise(resolve => setTimeout(resolve, DELAY_ENTRE_LOTES));
+        }
+      }
+
+      // Atualizar estado local com os IDs salvos
+      console.log(`\n✨ Atualizando ${successCount} linhas salvas no estado local`);
+      setLinhas(prev => prev.map(linha => {
+        const savedData = updatedLinhas.get(linha.id);
+        if (savedData) {
+          console.log(`  ✅ ${linha.id} -> ${savedData.id}`);
+          console.log('  🔎 Datas retornadas pelo servidor:', savedData.datas);
+          // Mesclar datas retornadas para manter estado consistente com o backend
+          const mergedDatas = { ...linha.datas, ...(savedData.datas || {}) };
+          return { ...linha, id: savedData.id, isNew: false, datas: mergedDatas };
+        }
+        return linha;
+      }));
+
+      // Recalcular revisoesPorEtapa a partir das linhas atuais (garantir consistência)
+      try {
+        const novoMap = {};
+        const linhasAtuais = (Array.from(updatedLinhas.keys()).length > 0)
+          ? (Array.from(updatedLinhas.values()).map(r => ({ id: r.id, datas: r.datas })) )
+          : null;
+
+        // Se temos dados atualizados do servidor, use-os; senão use o estado atual
+        const sourceLinhas = linhasAtuais || linhas;
+
+        sourceLinhas.forEach(l => {
+          if (!l || !l.datas) return;
+          Object.entries(l.datas).forEach(([etapa, etapaData]) => {
+            if (!etapaData || typeof etapaData !== 'object') return;
+            if (!novoMap[etapa]) novoMap[etapa] = new Set();
+
+            // coletar revisões com dados
+            Object.keys(etapaData).forEach(k => {
+              const metaKeys = ['_excluida', 'excluida', '_revisoes_excluidas', 'revisoes_excluidas', '_revisoes_existentes', 'revisoes_existentes'];
+              if (metaKeys.includes(k)) return;
+              novoMap[etapa].add(k);
             });
-          }
-        } catch (err) {
-          console.warn('bulkCreate falhou, fallback para envio individual:', err.message || err);
-        }
-      }
 
-      // Bulk update / upsert
-      if (updatesPayloads.length > 0) {
-        if (typeof DataCadastro.bulkUpdate === 'function') {
-          try {
-            console.log(`🚀 Tentando bulkUpdate de ${updatesPayloads.length} linhas`);
-            const updated = await retryWithBackoff(() => DataCadastro.bulkUpdate(updatesPayloads), 3, 2000, 'bulkUpdateDataCadastro');
-            if (Array.isArray(updated)) {
-              updated.forEach((u) => {
-                // tentar encontrar matching local id via documento_id
-                const local = linhasParaSalvar.find(l => l.documento_id === u.documento_id);
-                if (local) updatedLinhas.set(local.id, u);
-                successCount++;
-              });
+            // coletar revisoes_existentes (aceitar ambas variantes)
+            const createdKey = '_revisoes_existentes' in etapaData ? '_revisoes_existentes' : ('revisoes_existentes' in etapaData ? 'revisoes_existentes' : null);
+            if (createdKey && Array.isArray(etapaData[createdKey])) {
+              etapaData[createdKey].forEach(r => novoMap[etapa].add(r));
             }
-          } catch (err) {
-            console.warn('bulkUpdate falhou, fallback para envio individual:', err.message || err);
-          }
-        } else if (typeof DataCadastro.bulkUpsert === 'function') {
-          try {
-            console.log(`🚀 Tentando bulkUpsert de ${updatesPayloads.length} linhas`);
-            const upserted = await retryWithBackoff(() => DataCadastro.bulkUpsert(updatesPayloads), 3, 2000, 'bulkUpsertDataCadastro');
-            if (Array.isArray(upserted)) {
-              upserted.forEach(u => {
-                const local = linhasParaSalvar.find(l => l.documento_id === u.documento_id);
-                if (local) updatedLinhas.set(local.id, u);
-                successCount++;
-              });
-            }
-          } catch (err) {
-            console.warn('bulkUpsert falhou, fallback para envio individual:', err.message || err);
-          }
-        }
-      }
-
-      // Filtrar os que já foram atualizados pelo bulk
-      const pending = linhasParaSalvar.filter(l => !updatedLinhas.has(l.id));
-
-      // Se restarem pendentes, enfileirar para processamento lento e persistente
-      if (pending.length > 0) {
-        console.log(`📥 ${pending.length} linhas pendentes — enfileirando para processamento em background (localStorage)`);
-        // Enfileirar payloads simplificados
-        const itemsToEnqueue = pending.map(linha => ({
-          id: linha.id,
-          documento_id: linha.documento_id,
-          isNew: !!(linha.isNew || String(linha.id).startsWith('temp-')),
-          payload: buildLinhaPayload(linha)
-        }));
-        enqueuePending(itemsToEnqueue);
-        // Informar ao usuário que salvamento será tentado em background
-        console.warn(`As alterações foram enfileiradas e serão aplicadas em background. Verifique o console para o estado da fila.`);
-      }
-
-      // Atualizar estado local com os IDs salvos e recalcular revisoesPorEtapa com base no novo estado
-      console.log(`\n✨ Atualizando ${successCount} linhas salvas no estado local (mesclando datas retornadas)`);
-      setLinhas(prev => {
-        const newArr = prev.map(linha => {
-          const savedData = updatedLinhas.get(linha.id);
-          if (savedData) {
-            console.log(`  ✅ ${linha.id} -> ${savedData.id}`);
-            console.log('  🔎 Datas retornadas pelo servidor:', savedData.datas);
-            const mergedDatas = { ...linha.datas, ...(savedData.datas || {}) };
-            return { ...linha, id: savedData.id, isNew: false, datas: mergedDatas };
-          }
-          return linha;
+          });
         });
 
-        // Recalcular revisoesPorEtapa a partir do novo array de linhas
-        try {
-          const novoMap = {};
-          newArr.forEach(l => {
-            if (!l || !l.datas) return;
-            Object.entries(l.datas).forEach(([etapa, etapaData]) => {
-              if (!etapaData || typeof etapaData !== 'object') return;
-              if (!novoMap[etapa]) novoMap[etapa] = new Set();
+        const novasRevisoesPorEtapa = {};
+        ETAPAS.forEach(etapa => {
+          const s = novoMap[etapa] || new Set();
+          const arr = Array.from(s)
+            .map(r => {
+              const m = String(r).match(/^R(\d+)$/i);
+              if (!m) return null;
+              return `R${String(parseInt(m[1], 10)).padStart(2, '0')}`;
+            })
+            .filter(Boolean)
+            .sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
+          novasRevisoesPorEtapa[etapa] = arr;
+        });
 
-              // coletar revisões com dados
-              Object.keys(etapaData).forEach(k => {
-                const metaKeys = ['_excluida', 'excluida', '_revisoes_excluidas', 'revisoes_excluidas', '_revisoes_existentes', 'revisoes_existentes', 'meta'];
-                if (metaKeys.includes(k)) return;
-                novoMap[etapa].add(k);
-              });
-
-              // coletar revisoes_existentes (aceitar _ / plain / meta)
-              if (Array.isArray(etapaData._revisoes_existentes)) {
-                etapaData._revisoes_existentes.forEach(r => novoMap[etapa].add(r));
-              }
-              if (Array.isArray(etapaData.revisoes_existentes)) {
-                etapaData.revisoes_existentes.forEach(r => novoMap[etapa].add(r));
-              }
-              if (etapaData.meta && Array.isArray(etapaData.meta.revisoes_existentes)) {
-                etapaData.meta.revisoes_existentes.forEach(r => novoMap[etapa].add(r));
-              }
-            });
-          });
-
-          const novasRevisoesPorEtapa = {};
-          ETAPAS.forEach(etapa => {
-            const s = novoMap[etapa] || new Set();
-            const arr = Array.from(s)
-              .map(r => {
-                const m = String(r).match(/^R(\d+)$/i);
-                if (!m) return null;
-                return `R${String(parseInt(m[1], 10)).padStart(2, '0')}`;
-              })
-              .filter(Boolean)
-              .sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
-            novasRevisoesPorEtapa[etapa] = arr;
-          });
-
-          console.log('🔄 revisoesPorEtapa recalculado após salvamento (novo estado):', novasRevisoesPorEtapa);
-          setRevisoesPorEtapa(novasRevisoesPorEtapa);
-        } catch (err) {
-          console.error('Erro ao recalcular revisoesPorEtapa após salvamento:', err);
-        }
-
-        return newArr;
-      });
+        console.log('🔄 revisoesPorEtapa recalculado após salvamento:', novasRevisoesPorEtapa);
+        setRevisoesPorEtapa(novasRevisoesPorEtapa);
+      } catch (err) {
+        console.error('Erro ao recalcular revisoesPorEtapa após salvamento:', err);
+      }
 
       console.log(`\n🎉 SALVAMENTO COMPLETO - Sucesso: ${successCount}, Erros: ${errorCount}`);
       console.log('🔄 Setando hasUnsavedChanges = false');
       setHasUnsavedChanges(false);
       setLinhasModificadas(new Set());
-
-      // Recarregar do servidor para garantir que a UI reflita exatamente o que foi persistido
-      if (successCount > 0) {
-        try {
-          console.log('🔁 Recarregando dados do servidor após salvamento...');
-          await loadData();
-          console.log('🔁 Recarregamento completo');
-        } catch (err) {
-          console.error('Erro ao recarregar dados após salvamento:', err);
-        }
-      }
 
       if (!silent) {
         if (errorCount > 0) {
