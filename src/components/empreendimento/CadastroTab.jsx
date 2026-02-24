@@ -1610,3 +1610,4 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     </div>
   );
 };
+
