@@ -288,7 +288,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   const [editDescricao, setEditDescricao] = useState('');
   const [isEditLoading, setIsEditLoading] = useState(false);
   const [empreendimentosList, setEmpreendimentosList] = useState([]);
-  const [selectedEmpreendimento, setSelectedEmpreendimento] = useState('');
+  const [selectedEmpreendimento, setSelectedEmpreendimento] = useState('none');
 
   const realStatus = calculateActivityStatus(plano, allPlanejamentos);
 
@@ -569,7 +569,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
 
   const handleOpenEditDescricao = () => {
     setEditDescricao(plano.descritivo || '');
-    setSelectedEmpreendimento(plano.empreendimento_id || '');
+    setSelectedEmpreendimento(plano.empreendimento_id ? plano.empreendimento_id.toString() : 'none');
 
     // Carregar empreendimentos sob demanda se ainda não carregados
     if ((!empreendimentosList || empreendimentosList.length === 0) && typeof Empreendimento !== 'undefined') {
@@ -599,14 +599,14 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
         const execId = plano.id.split('-')[1]; // Extrair ID original do ID virtual "exec-{id}"
         await Execucao.update(execId, {
           descritivo: editDescricao.trim(),
-          empreendimento_id: selectedEmpreendimento ? (isNaN(Number(selectedEmpreendimento)) ? selectedEmpreendimento : Number(selectedEmpreendimento)) : null
+          empreendimento_id: selectedEmpreendimento && selectedEmpreendimento !== 'none' ? (isNaN(Number(selectedEmpreendimento)) ? selectedEmpreendimento : Number(selectedEmpreendimento)) : null
         });
       } else {
         // Para atividades normais, usar a entidade correta
         const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
         await entityToUpdate.update(plano.id, {
           descritivo: editDescricao.trim(),
-          empreendimento_id: selectedEmpreendimento ? (isNaN(Number(selectedEmpreendimento)) ? selectedEmpreendimento : Number(selectedEmpreendimento)) : null
+          empreendimento_id: selectedEmpreendimento && selectedEmpreendimento !== 'none' ? (isNaN(Number(selectedEmpreendimento)) ? selectedEmpreendimento : Number(selectedEmpreendimento)) : null
         });
       }
 
@@ -890,12 +890,12 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
             </div>
             <div className="space-y-2">
               <Label htmlFor="selectEmpreendimento">Empreendimento</Label>
-              <Select value={selectedEmpreendimento?.toString() || ''} onValueChange={(val) => setSelectedEmpreendimento(val)}>
+              <Select value={selectedEmpreendimento || 'none'} onValueChange={(val) => setSelectedEmpreendimento(val)}>
                 <SelectTrigger className="w-full bg-white">
                   <SelectValue placeholder="Selecione um empreendimento (opcional)" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Nenhum</SelectItem>
+                  <SelectItem value="none">Nenhum</SelectItem>
                   {(empreendimentosList || []).map(emp => (
                     <SelectItem key={emp.id} value={emp.id?.toString() || emp.id}>
                       {emp.nome || emp.nome_fantasia || `#${emp.id}`}
