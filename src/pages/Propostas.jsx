@@ -35,6 +35,7 @@ export default function PropostasPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [apiAvailable, setApiAvailable] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('list');
   const [formData, setFormData] = useState({
@@ -68,9 +69,11 @@ export default function PropostasPage() {
     setIsLoading(true);
     try {
       if (!Entities || !Entities.Comercial || typeof Entities.Comercial.list !== 'function') {
+        setApiAvailable(false);
         throw new Error('Entidade Comercial não está disponível no client API');
       }
 
+      setApiAvailable(true);
       const data = await retryWithBackoff(
         () => Entities.Comercial.list('-updated_date'),
         3, 2000, 'loadPropostas'
@@ -159,8 +162,9 @@ export default function PropostasPage() {
         valor_cad: formData.valor_cad ? Number(formData.valor_cad) : undefined
       };
 
-      if (!Entities || !Entities.Comercial) {
-        throw new Error('Entidade Comercial não está disponível no client API');
+      if (!apiAvailable) {
+        alert('API indisponível no momento. Tente novamente após autenticar o client.');
+        return;
       }
 
       if (editingId) {
