@@ -97,6 +97,7 @@ export default function PropostasPage() {
     telefone: '',
     observacao: ''
   });
+  const [showDebug, setShowDebug] = useState(false);
 
   useEffect(() => { loadPropostas(); }, []);
 
@@ -305,6 +306,25 @@ export default function PropostasPage() {
     return res;
   }, [propostas, resumoMensal]);
 
+  const reprovadoCandidates = useMemo(() => {
+    if (!resumoMensal || resumoMensal.length === 0) return [];
+    const target = resumoMensal[0].month;
+    const getDateForGrouping = (p) => p.data_proposta || p.data_solicitacao || p.created_at || p.updated_date || p.updated_at || null;
+    return (propostas || []).filter(p => {
+      const raw = getDateForGrouping(p);
+      let monthKey = 'Sem Data';
+      if (raw) {
+        try {
+          const dateObj = typeof raw === 'string' ? parseISO(raw) : new Date(raw);
+          if (!isNaN(dateObj.getTime())) monthKey = format(dateObj, 'yyyy-MM');
+        } catch {
+          monthKey = 'Sem Data';
+        }
+      }
+      return monthKey === target && normalizeStatus(p.status || 'solicitado') === 'reprovado';
+    }).map(p => ({ id: p.id, numero: p.numero, statusRaw: p.status, normalized: normalizeStatus(p.status), date: (p.data_solicitacao || p.data_proposta || p.created_at || p.updated_date || p.updated_at) }));
+  }, [propostas, resumoMensal]);
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
@@ -379,12 +399,32 @@ export default function PropostasPage() {
                   <div>Valor BIM: R$ {resumoMensal[0] ? formatCurrency(resumoMensal[0].totalBim) : '0,00'}</div>
                   <div>Valor CAD: R$ {resumoMensal[0] ? formatCurrency(resumoMensal[0].totalCad) : '0,00'}</div>
                 </div>
-                <div className="mt-2">
+                <div className="mt-2 flex flex-col items-end gap-2">
                   <Button onClick={() => setActiveTab('summary')} variant="outline">Abrir Resumo</Button>
+                  <Button size="sm" variant="ghost" onClick={() => setShowDebug(s => !s)}>{showDebug ? 'Ocultar Debug' : 'Mostrar Debug'}</Button>
                 </div>
               </div>
             </div>
           </div>
+
+          {showDebug && (
+            <div className="bg-white border rounded-lg p-4 mt-4">
+              <div className="text-sm font-medium mb-2">Debug: propostas reprovadas no mês atual ({resumoMensal[0]?.month || '—'})</div>
+              {reprovadoCandidates.length === 0 ? (
+                <div className="text-sm text-gray-500">Nenhuma proposta encontrada com status normalizado para 'reprovado' neste mês.</div>
+              ) : (
+                <div className="text-sm text-gray-700 space-y-2">
+                  {reprovadoCandidates.map(r => (
+                    <div key={r.id} className="flex justify-between">
+                      <div className="truncate mr-4">{r.numero || r.id}</div>
+                      <div className="text-gray-500 mr-4">raw: {String(r.statusRaw)}</div>
+                      <div className="text-gray-500">normalized: {r.normalized} — date: {String(r.date)}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
 
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-4">
             <TabsContent value="list">
