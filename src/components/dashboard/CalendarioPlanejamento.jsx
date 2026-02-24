@@ -682,6 +682,9 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   );
 };
 
+
+export default CalendarioPlanejamento;
+
 // --- DailyActivityGroup, ActivityContainer, DayCell, MonthView, WeekView, DayView, CalendarioPlanejamento ---
 // (The rest of the file remains identical to your original implementation, unchanged)
 // For brevity and to avoid duplication in this response, below is the unchanged continuation marker.
