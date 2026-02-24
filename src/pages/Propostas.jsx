@@ -212,17 +212,12 @@ export default function PropostasPage() {
           monthKey = 'Sem Data';
         }
       }
-      if (!groups[monthKey]) groups[monthKey] = { items: [], totalBim: 0, totalCad: 0, byStatus: {} };
+      if (!groups[monthKey]) groups[monthKey] = { items: [], totalBim: 0, totalCad: 0 };
       groups[monthKey].items.push(p);
       const bim = Number(p.valor_bim || 0);
       const cad = Number(p.valor_cad || 0);
       groups[monthKey].totalBim += isNaN(bim) ? 0 : bim;
       groups[monthKey].totalCad += isNaN(cad) ? 0 : cad;
-      const st = p.status || 'solicitado';
-      if (!groups[monthKey].byStatus[st]) groups[monthKey].byStatus[st] = { count: 0, bim: 0, cad: 0 };
-      groups[monthKey].byStatus[st].count += 1;
-      groups[monthKey].byStatus[st].bim += isNaN(bim) ? 0 : bim;
-      groups[monthKey].byStatus[st].cad += isNaN(cad) ? 0 : cad;
     });
 
     const ordered = Object.keys(groups).sort((a, b) => a < b ? 1 : -1).map(k => ({ month: k, ...groups[k] }));
@@ -275,19 +270,9 @@ export default function PropostasPage() {
               </div>
               <div className="text-right">
                 <div className="text-lg font-bold">{resumoMensal[0] ? `${resumoMensal[0].items.length} propostas` : '0 propostas'}</div>
-                <div className="mt-2 text-sm text-gray-600 space-y-2">
-                  <div className="flex justify-between items-center">
-                    <div className="text-left">Aprovados: {resumoMensal[0]?.byStatus?.aprovado?.count || 0}</div>
-                    <div className="text-right">Valor BIM: R$ {formatCurrency(resumoMensal[0]?.byStatus?.aprovado?.bim || 0)}</div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="text-left">Não aprovados: {resumoMensal[0]?.byStatus?.reprovado?.count || 0}</div>
-                    <div className="text-right">Valor CAD: R$ {formatCurrency(resumoMensal[0]?.byStatus?.reprovado?.cad || 0)}</div>
-                  </div>
-                  <div className="flex justify-between items-center">
-                    <div className="text-left">Aguardando aprovação: {resumoMensal[0]?.byStatus?.em_analise?.count || 0}</div>
-                    <div className="text-right">BIM: R$ {formatCurrency(resumoMensal[0]?.byStatus?.em_analise?.bim || 0)} • CAD: R$ {formatCurrency(resumoMensal[0]?.byStatus?.em_analise?.cad || 0)}</div>
-                  </div>
+                <div className="text-sm text-gray-500 space-y-1 text-right">
+                  <div>Valor BIM: R$ {resumoMensal[0] ? formatCurrency(resumoMensal[0].totalBim) : '0,00'}</div>
+                  <div>Valor CAD: R$ {resumoMensal[0] ? formatCurrency(resumoMensal[0].totalCad) : '0,00'}</div>
                 </div>
                 <div className="mt-2">
                   <Button onClick={() => setActiveTab('summary')} variant="outline">Abrir Resumo</Button>
