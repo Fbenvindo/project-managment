@@ -212,10 +212,12 @@ export default function PropostasPage() {
           monthKey = 'Sem Data';
         }
       }
-      if (!groups[monthKey]) groups[monthKey] = { items: [], totalValue: 0 };
+      if (!groups[monthKey]) groups[monthKey] = { items: [], totalBim: 0, totalCad: 0 };
       groups[monthKey].items.push(p);
-      const valor = Number(p.valor_bim || p.valor_cad || 0);
-      groups[monthKey].totalValue += isNaN(valor) ? 0 : valor;
+      const bim = Number(p.valor_bim || 0);
+      const cad = Number(p.valor_cad || 0);
+      groups[monthKey].totalBim += isNaN(bim) ? 0 : bim;
+      groups[monthKey].totalCad += isNaN(cad) ? 0 : cad;
     });
 
     const ordered = Object.keys(groups).sort((a, b) => a < b ? 1 : -1).map(k => ({ month: k, ...groups[k] }));
@@ -268,7 +270,7 @@ export default function PropostasPage() {
               </div>
               <div className="text-right">
                 <div className="text-lg font-bold">{resumoMensal[0] ? `${resumoMensal[0].items.length} propostas` : '0 propostas'}</div>
-                <div className="text-sm text-gray-500">Valor: R$ {resumoMensal[0] ? formatCurrency(resumoMensal[0].totalValue) : '0,00'}</div>
+                <div className="text-sm text-gray-500">Valor BIM: R$ {resumoMensal[0] ? formatCurrency(resumoMensal[0].totalBim) : '0,00'} • Valor CAD: R$ {resumoMensal[0] ? formatCurrency(resumoMensal[0].totalCad) : '0,00'}</div>
                 <div className="mt-2">
                   <Button onClick={() => setActiveTab('summary')} variant="outline">Abrir Resumo</Button>
                 </div>
@@ -452,7 +454,7 @@ export default function PropostasPage() {
                   <div key={group.month} className="mb-6">
                     <div className="flex items-center justify-between mb-2">
                       <div className="text-lg font-medium">{group.month === 'Sem Data' ? 'Sem Data' : format(parseISO(group.month + '-01'), 'MMMM yyyy')}</div>
-                      <div className="text-sm text-gray-600">Total: {group.items.length} propostas • Valor: R$ {formatCurrency(group.totalValue)}</div>
+                      <div className="text-sm text-gray-600">Total: {group.items.length} propostas • Valor BIM: R$ {formatCurrency(group.totalBim)} • Valor CAD: R$ {formatCurrency(group.totalCad)}</div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {group.items.map(item => (
@@ -463,7 +465,8 @@ export default function PropostasPage() {
                               <div className="text-sm text-gray-500">{item.cliente || item.contato || ''}</div>
                             </div>
                             <div className="text-right">
-                              <div className="font-bold">R$ {formatCurrency(item.valor_bim || item.valor_cad || 0)}</div>
+                              <div className="font-bold">BIM: R$ {formatCurrency(item.valor_bim || 0)}</div>
+                              <div className="font-bold">CAD: R$ {formatCurrency(item.valor_cad || 0)}</div>
                               <div className="text-xs text-gray-500">{(item.data_solicitacao || item.data_proposta || item.created_at || item.updated_date) ? (format(parseISO((item.data_solicitacao || item.data_proposta || item.created_at || item.updated_date).slice(0, 10)), 'dd/MM/yyyy')) : ''}</div>
                             </div>
                           </div>
