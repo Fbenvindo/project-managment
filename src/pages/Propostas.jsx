@@ -47,6 +47,13 @@ const renderStatusLabel = (status) => {
   return statusLabels[status] || status;
 };
 
+const statusCardStyles = {
+  solicitado: 'bg-gray-50 border-gray-200 text-gray-800',
+  em_analise: 'bg-yellow-50 border-yellow-200 text-yellow-800',
+  aprovado: 'bg-green-50 border-green-200 text-green-800',
+  reprovado: 'bg-red-50 border-red-200 text-red-800'
+};
+
 const normalizeStatus = (raw) => {
   if (raw === undefined || raw === null) return 'solicitado';
   let s = String(raw).toLowerCase().trim();
@@ -612,24 +619,30 @@ export default function PropostasPage() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
                         {['aprovado', 'reprovado', 'em_analise', 'solicitado'].map(key => {
                           const s = group.byStatus && group.byStatus[key] ? group.byStatus[key] : { count: 0, bim: 0, cad: 0 };
+                          const cardStyle = statusCardStyles[key] || 'bg-gray-50 border-gray-200 text-gray-800';
+                          const pillStyle = statusColors[key] || 'bg-gray-100 text-gray-800';
                           return (
-                            <div key={key} className="p-3 border rounded bg-gray-50">
-                              <div className="text-sm font-medium mb-1">
-                                <span className={typeof renderStatusLabel === 'function' ? '' : ''}>
+                            <div key={key} className={`p-4 border rounded-lg ${cardStyle} shadow-sm`}>
+                              <div className="flex items-center justify-between">
+                                <div className="text-sm font-semibold">
                                   {key === 'em_analise' ? (
-                                    <>
-                                      <span>Aguardando</span>
-                                      <br />
-                                      <span>Aprovação</span>
-                                    </>
+                                    <span className="leading-tight">Aguardando<br />Aprovação</span>
                                   ) : (
                                     statusLabels[key]
                                   )}
-                                </span>
+                                </div>
+                                <div className={`px-2 py-0.5 text-xs rounded-full ${pillStyle}`}>{statusLabels[key]}</div>
                               </div>
-                              <div className="text-lg font-bold">{s.count} {s.count === 1 ? 'proposta' : 'propostas'}</div>
-                              <div className="text-sm text-gray-600 mt-1">BIM: R$ {formatCurrency(s.bim || 0)}</div>
-                              <div className="text-sm text-gray-600">CAD: R$ {formatCurrency(s.cad || 0)}</div>
+
+                              <div className="mt-3">
+                                <div className="text-2xl font-bold">{s.count}</div>
+                                <div className="text-xs text-gray-600">{s.count === 1 ? 'proposta' : 'propostas'}</div>
+                              </div>
+
+                              <div className="mt-3 grid grid-cols-1 gap-1 text-sm">
+                                <div className="text-gray-700">BIM <span className="font-semibold">R$ {formatCurrency(s.bim || 0)}</span></div>
+                                <div className="text-gray-700">CAD <span className="font-semibold">R$ {formatCurrency(s.cad || 0)}</span></div>
+                              </div>
                             </div>
                           );
                         })}
