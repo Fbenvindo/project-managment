@@ -47,6 +47,19 @@ const renderStatusLabel = (status) => {
   return statusLabels[status] || status;
 };
 
+const normalizeStatus = (raw) => {
+  if (!raw && raw !== '') return 'solicitado';
+  const s = String(raw).toLowerCase().normalize('NFD').replace(/\p{Diacritic}/gu, '');
+  const key = s.replace(/[^a-z0-9]+/g, '_').replace(/^_+|_+$/g, '');
+  if (['aprovado', 'aprovada'].includes(key)) return 'aprovado';
+  if (['reprovado', 'nao_aprovado', 'nao_aprovada', 'naoaprovado', 'nao aprovado', 'nao-aprovado'].includes(key)) return 'reprovado';
+  if (['em_analise', 'em_analise', 'emanalise', 'aguardando_aprovacao', 'aguardando_aprovacao', 'aguardando_aprovacao'].includes(key) || key.includes('analise') || key.includes('aguardando')) return 'em_analise';
+  if (['solicitado', 'solicitacao', 'solicitada'].includes(key)) return 'solicitado';
+  // fallback: if matches one of known keys
+  if (['aprovado', 'reprovado', 'em_analise', 'solicitado'].includes(key)) return key;
+  return 'solicitado';
+};
+
 export default function PropostasPage() {
   const [propostas, setPropostas] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -241,7 +254,7 @@ export default function PropostasPage() {
       const cad = Number(p.valor_cad || 0);
       groups[monthKey].totalBim += isNaN(bim) ? 0 : bim;
       groups[monthKey].totalCad += isNaN(cad) ? 0 : cad;
-      const status = p.status || 'solicitado';
+      const status = normalizeStatus(p.status || 'solicitado');
       if (!groups[monthKey].byStatus[status]) {
         groups[monthKey].byStatus[status] = { count: 0, bim: 0, cad: 0 };
       }
@@ -304,9 +317,11 @@ export default function PropostasPage() {
                   <div className="flex justify-between items-center">
                     <div className="text-left">Aprovados: {resumoMensal[0]?.byStatus?.aprovado?.count || 0}</div>
                     <div className="text-left">Valor BIM: R$ {formatCurrency(resumoMensal[0]?.byStatus?.aprovado?.bim || 0)}</div>
+                    <div className="text-left">Valor CAD: R$ {formatCurrency(resumoMensal[0]?.byStatus?.aprovado?.cad || 0)}</div>
                   </div>
                   <div className="flex justify-between items-center">
                     <div className="text-left">Não aprovados: {resumoMensal[0]?.byStatus?.reprovado?.count || 0}</div>
+                    <div className="text-left">Valor BIM: R$ {formatCurrency(resumoMensal[0]?.byStatus?.reprovado?.bim || 0)}</div>
                     <div className="text-left">Valor CAD: R$ {formatCurrency(resumoMensal[0]?.byStatus?.reprovado?.cad || 0)}</div>
                   </div>
                   <div className="flex justify-between items-center">
@@ -370,8 +385,8 @@ export default function PropostasPage() {
                             <div className="flex items-start justify-between mb-3">
                               <div className="flex items-center gap-3">
                                 <h3 className="font-bold text-lg text-gray-900">{proposta.numero || '-'}</h3>
-                                <Badge className={statusColors[proposta.status]}>
-                                  {renderStatusLabel(proposta.status)}
+                                <Badge className={statusColors[normalizeStatus(proposta.status)]}>
+                                  {renderStatusLabel(normalizeStatus(proposta.status))}
                                 </Badge>
                                 {proposta.tipo_empreendimento && (
                                   <Badge variant="outline" className="text-xs">
@@ -514,7 +529,7 @@ export default function PropostasPage() {
                         <div>
                           {['aprovado', 'reprovado', 'em_analise', 'solicitado'].map(s => (
                             <div key={s} className="flex justify-between whitespace-nowrap">
-                              <div className="mr-2">{statusLabels[s] || s}:</div>
+                              <div className="mr-2">{renderStatusLabel(s)}:</div>
                               <div>{group.byStatus?.[s]?.count || 0} — BIM: R$ {formatCurrency(group.byStatus?.[s]?.bim || 0)} • CAD: R$ {formatCurrency(group.byStatus?.[s]?.cad || 0)}</div>
                             </div>
                           ))}
@@ -536,8 +551,8 @@ export default function PropostasPage() {
                             </div>
                           </div>
                           <div className="mt-2 text-sm">
-                            <Badge className={statusColors[item.status] || 'bg-gray-100 text-gray-800'}>
-                              {renderStatusLabel(item.status) || item.status || '—'}
+                            <Badge className={statusColors[normalizeStatus(item.status)] || 'bg-gray-100 text-gray-800'}>
+                              {renderStatusLabel(normalizeStatus(item.status)) || item.status || '—'}
                             </Badge>
                           </div>
                         </div>
