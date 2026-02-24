@@ -36,6 +36,86 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [loadedEmpreendimentoId, setLoadedEmpreendimentoId] = useState(null);
   const autoSaveTimeoutRef = useRef(null);
+  // Fila persistente para mitigar rate limit: usa localStorage
+  const QUEUE_KEY = '__cadastro_pending_queue';
+  const getPendingQueue = () => {
+    try { return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]'); } catch (e) { return []; }
+  };
+  const setPendingQueue = (q) => {
+    try { localStorage.setItem(QUEUE_KEY, JSON.stringify(q || [])); window.__cadastroQueue = q || []; } catch (e) { console.warn('Não foi possível setar fila no localStorage', e); }
+  };
+
+  const enqueuePending = (items) => {
+    const q = getPendingQueue();
+    const now = Date.now();
+    const toEnqueue = items.map(it => ({
+      id: it.id || (`temp-${it.documento_id}`),
+      documento_id: it.documento_id,
+      payload: it.payload || it,
+      isNew: !!(it.isNew || String(it.id || '').startsWith('temp-')),
+      empreendimento_id: empreendimento?.id,
+      ts: now
+    }));
+    setPendingQueue(q.concat(toEnqueue));
+  };
+
+  // Processador de fila: executa 1 item por execução; pausa em 429
+  useEffect(() => {
+    let stopped = false;
+    let pauseUntil = 0;
+
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+    const isRateLimitError = (err) => {
+      try {
+        const status = err?.response?.status || err?.status;
+        const msg = String(err?.message || err?.error || '');
+        return status === 429 || /rate limit/i.test(msg) || /too many requests/i.test(msg);
+      } catch (e) { return false; }
+    };
+
+    const processor = async () => {
+      if (stopped) return;
+      const now = Date.now();
+      if (now < pauseUntil) return;
+      const q = getPendingQueue();
+      if (!q || q.length === 0) return;
+      const item = q[0];
+      try {
+        console.log('🔁 Processando item da fila:', item.documento_id, item.id);
+        let res;
+        if (item.isNew) {
+          res = await DataCadastro.create(item.payload);
+        } else {
+          res = await DataCadastro.update(item.id, item.payload);
+        }
+        console.log('✅ Item da fila salvo:', item.documento_id, res.id);
+        // remover do início da fila
+        const newQ = getPendingQueue();
+        newQ.shift();
+        setPendingQueue(newQ);
+      } catch (err) {
+        console.warn('⚠️ Falha ao processar item da fila:', err?.message || err);
+        if (isRateLimitError(err)) {
+          // pausa longa
+          pauseUntil = Date.now() + 15000; // 15s
+          console.warn('⏸️ Rate limit detectado — pausando processamento da fila por 15s');
+        } else {
+          // backoff curto antes de tentar próximo
+          pauseUntil = Date.now() + 2000;
+        }
+      }
+    };
+
+    const iv = setInterval(processor, 2000);
+    // Processar imediatamente uma vez ao montar
+    processor();
+
+    return () => {
+      stopped = true;
+      clearInterval(iv);
+    };
+  }, [empreendimento?.id]);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFile, setImportFile] = useState(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -778,59 +858,19 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       // Filtrar os que já foram atualizados pelo bulk
       const pending = linhasParaSalvar.filter(l => !updatedLinhas.has(l.id));
 
-      // Se restarem pendentes, enviar com pool concorrente (mais seguro)
+      // Se restarem pendentes, enfileirar para processamento lento e persistente
       if (pending.length > 0) {
-        console.log(`⚡ Enviando ${pending.length} linhas restantes com pool concorrente`);
-        const CONCURRENCY = 8;
-        async function runWithConcurrency(tasks, concurrency = 8) {
-          const results = new Array(tasks.length);
-          let i = 0;
-          const workers = new Array(Math.max(1, concurrency)).fill(null).map(async () => {
-            while (true) {
-              const idx = i++;
-              if (idx >= tasks.length) break;
-              try {
-                results[idx] = await tasks[idx]();
-              } catch (err) {
-                results[idx] = { error: err };
-              }
-            }
-          });
-          await Promise.all(workers);
-          return results;
-        }
-
-        const tasks = pending.map((linha, idxGlobal) => async () => {
-          try {
-            const payload = buildLinhaPayload(linha);
-            let result;
-            let attempts = 0;
-            const maxAttempts = 3;
-            while (attempts < maxAttempts) {
-              try {
-                const isNew = linha.isNew || String(linha.id).startsWith('temp-');
-                result = isNew ? await DataCadastro.create(payload) : await DataCadastro.update(linha.id, payload);
-                updatedLinhas.set(linha.id, result);
-                successCount++;
-                return result;
-              } catch (err) {
-                attempts++;
-                if (attempts >= maxAttempts) {
-                  errorCount++;
-                  console.error('Erro ao salvar linha', linha.id, err);
-                  return { error: err };
-                }
-                await new Promise(r => setTimeout(r, 1000 * attempts));
-              }
-            }
-          } catch (err) {
-            errorCount++;
-            console.error('Erro inesperado ao salvar linha', linha.id, err);
-            return { error: err };
-          }
-        });
-
-        await runWithConcurrency(tasks, CONCURRENCY);
+        console.log(`📥 ${pending.length} linhas pendentes — enfileirando para processamento em background (localStorage)`);
+        // Enfileirar payloads simplificados
+        const itemsToEnqueue = pending.map(linha => ({
+          id: linha.id,
+          documento_id: linha.documento_id,
+          isNew: !!(linha.isNew || String(linha.id).startsWith('temp-')),
+          payload: buildLinhaPayload(linha)
+        }));
+        enqueuePending(itemsToEnqueue);
+        // Informar ao usuário que salvamento será tentado em background
+        console.warn(`As alterações foram enfileiradas e serão aplicadas em background. Verifique o console para o estado da fila.`);
       }
 
       // Atualizar estado local com os IDs salvos e recalcular revisoesPorEtapa com base no novo estado
