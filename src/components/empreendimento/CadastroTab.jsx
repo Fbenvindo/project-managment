@@ -916,13 +916,20 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       console.log('⚡ Iniciando salvamento em lotes...');
       let successCount = 0;
       let errorCount = 0;
-      const BATCH_SIZE = 5; // Máximo de requisições paralelas por lote
-      const DELAY_ENTRE_LOTES = 1500; // Delay entre lotes em ms
+      const BASE_BATCH_SIZE = 5; // Máximo inicial de requisições paralelas por lote
+      let currentBatchSize = BASE_BATCH_SIZE;
+      const BASE_DELAY = 1500; // Delay entre lotes em ms
+      let currentDelay = BASE_DELAY;
 
-      // Dividir em lotes
-      for (let batchIdx = 0; batchIdx < linhasParaSalvar.length; batchIdx += BATCH_SIZE) {
-        const batch = linhasParaSalvar.slice(batchIdx, batchIdx + BATCH_SIZE);
-        console.log(`\n📦 Lote ${Math.floor(batchIdx / BATCH_SIZE) + 1}: ${batch.length} linhas`);
+      const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+      // Dividir em lotes adaptativos (reduz batch e aumenta delay ao detectar 429)
+      let batchIdx = 0;
+      let loteNum = 0;
+      while (batchIdx < linhasParaSalvar.length) {
+        const batch = linhasParaSalvar.slice(batchIdx, batchIdx + currentBatchSize);
+        loteNum++;
+        console.log(`\n📦 Lote ${loteNum}: ${batch.length} linhas (batchSize=${currentBatchSize})`);
 
         const batchPromises = batch.map((linha, idxNoBatch) =>
           (async () => {
@@ -1016,15 +1023,42 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                   break;
                 } catch (err) {
                   attempts++;
-                  console.error(`  ❌ Tentativa ${attempts} falhou:`, err.message);
+                  console.error(`  ❌ Tentativa ${attempts} falhou:`, err && err.message ? err.message : err);
+
+                  // Detectar 429/Retry-After
+                  let status = null;
+                  try {
+                    status = err?.status || err?.statusCode || (err?.response && (err.response.status || err.response.statusCode)) || null;
+                  } catch (e) {
+                    status = null;
+                  }
+                  if (!status && err && err.message && String(err.message).includes('429')) status = 429;
+
+                  // Se 429, reduzir batch e pausar com base em Retry-After quando disponível
+                  if (status === 429) {
+                    let retryAfterSec = null;
+                    try {
+                      retryAfterSec = err?.response?.headers?.get ? err.response.headers.get('retry-after') : (err?.headers?.get ? err.headers.get('retry-after') : null);
+                    } catch (e) {
+                      retryAfterSec = null;
+                    }
+                    const pauseMs = retryAfterSec ? (Number(retryAfterSec) * 1000) : 15000;
+                    console.warn(`  ⚠️ Recebido 429 - reduzindo batch para ${Math.max(1, Math.floor(currentBatchSize / 2))} e pausando por ${pauseMs}ms`);
+                    currentBatchSize = Math.max(1, Math.floor(currentBatchSize / 2));
+                    currentDelay = Math.max(currentDelay * 2, pauseMs);
+                    // esperar antes da próxima tentativa
+                    await sleep(pauseMs);
+                  }
 
                   if (attempts >= maxAttempts) {
                     throw err;
                   }
 
-                  const waitTime = 3000 * attempts;
-                  console.log(`  ⏳ Aguardando ${waitTime}ms...`);
-                  await new Promise(resolve => setTimeout(resolve, waitTime));
+                  // Exponential backoff com jitter
+                  const backoffBase = 500; // ms
+                  const waitTime = Math.min(30000, backoffBase * Math.pow(2, attempts)) + Math.floor(Math.random() * 500);
+                  console.log(`  ⏳ Aguardando ${waitTime}ms antes da próxima tentativa...`);
+                  await sleep(waitTime);
                 }
               }
 
@@ -1041,10 +1075,12 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         await Promise.all(batchPromises);
 
         // Delay entre lotes (exceto no último)
-        if (batchIdx + BATCH_SIZE < linhasParaSalvar.length) {
-          console.log(`⏳ Aguardando ${DELAY_ENTRE_LOTES}ms antes do próximo lote...`);
-          await new Promise(resolve => setTimeout(resolve, DELAY_ENTRE_LOTES));
+        if (batchIdx + currentBatchSize < linhasParaSalvar.length) {
+          console.log(`⏳ Aguardando ${currentDelay}ms antes do próximo lote...`);
+          await sleep(currentDelay);
         }
+
+        batchIdx += currentBatchSize;
       }
 
       // Atualizar estado local com os IDs salvos e recalcular revisoesPorEtapa com base no novo estado
