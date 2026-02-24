@@ -1,300 +1,222 @@
 import React, { useState, useEffect, useCallback, useMemo, useContext } from "react";
-import { useLocation } from "react-router-dom";
-import {
-  Comercial,
-  Documento,
-  Disciplina,
-  Atividade,
-  PlanejamentoAtividade,
-  Usuario,
-  Pavimento,
-  Execucao
-} from "@/entities/all";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { format, parseISO } from 'date-fns';
+import * as Entities from "@/api/entities";
 import { Button } from "@/components/ui/button";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, Briefcase, AlertTriangle, RefreshCw } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
-import { RefreshCw, AlertCircle, ListChecks, ArrowLeft } from "lucide-react";
-import { Link } from "react-router-dom";
-import { createPageUrl } from "@/utils";
-import { retryWithBackoff, retryWithExtendedBackoff } from "../components/utils/apiUtils";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
-import EmpreendimentoHeader from "../components/empreendimento/EmpreendimentoHeader";
-import DocumentosTab from "../components/empreendimento/DocumentosTab";
-import PavimentosTab from "../components/empreendimento/PavimentosTab";
-import AtividadesProjetoTab from "../components/empreendimento/AtividadesProjetoTab";
-import AnaliticoGlobalTab from "../components/empreendimento/AnaliticoGlobalTab";
-import AnaliseConcepcaoPlanejamentoTab from "../components/empreendimento/AnaliseConcepcaoPlanejamentoTab";
-import GestaoTab from "../components/empreendimento/GestaoTab";
-import { ActivityTimerContext } from "../components/contexts/ActivityTimerContext";
+import ComercialCard from "../components/comercial/ComercialCard";
+import ComercialForm from "../components/comercial/ComercialForm";
+import ComercialFilters from "../components/comercial/ComercialFilters";
+import { retryWithBackoff } from "../components/utils/apiUtils";
+import { ActivityTimerContext } from '../components/contexts/ActivityTimerContext';
 
-export default function ComercialDetalhesPage() {
-  const location = useLocation();
-  const [comercial, setComercial] = useState(null);
-  const [isLoadingComercial, setIsLoadingComercial] = useState(true);
-  const [error, setError] = useState(null);
-
-  const [tabData, setTabData] = useState({
-    documentos: { data: [], loaded: false, loading: false },
-    pavimentos: { data: [], loaded: false, loading: false },
-    atividades_projeto: { data: [], loaded: false, loading: false },
-    catalogo_atividades: { data: [], loaded: false, loading: false },
-    documentacao: { data: [], loaded: false, loading: false },
-    gestao: { data: [], loaded: false, loading: false }
-  });
-
-  const [sharedData, setSharedData] = useState({
-    disciplinas: [],
+const useComercialData = () => {
+  const [data, setData] = useState({
+    comerciais: [],
     usuarios: [],
-    atividades: [],
-    execucoes: [],
-    loaded: false,
-    loading: false
+    isLoading: true,
+    error: null,
+    lastUpdate: null,
   });
 
-  const [activeTab, setActiveTab] = useState('documentos');
-  const [etapaParaPlanejamento, setEtapaParaPlanejamento] = useState('todas');
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
-  const comercialId = useMemo(() =>
-    new URLSearchParams(location.search).get("id"), [location.search]
-  );
-
-  const { user } = useContext(ActivityTimerContext);
-  const hasAccessToGestao = user && (
-    user.role === 'admin' ||
-    user.perfil === 'lider' ||
-    user.perfil === 'direcao'
-  );
-
-  const loadComercial = useCallback(async () => {
-    if (!comercialId) return;
-
-    setIsLoadingComercial(true);
-    setError(null);
+  const loadData = useCallback(async (isRefresh = false) => {
+    if (isRefresh) {
+      setIsRefreshing(true);
+    } else {
+      setData(prev => ({ ...prev, isLoading: true, error: null }));
+    }
 
     try {
-      const com = await retryWithBackoff(
-        () => Comercial.filter({ id: comercialId }),
-        3, 1000, 'loadComercial'
+      if (!Entities || !Entities.Comercial || typeof Entities.Comercial.list !== 'function') {
+        throw new Error('API client not initialized: Entities.Comercial.list is not available');
+      }
+
+      const comerciaisData = await retryWithBackoff(
+        () => Entities.Comercial.list('-updated_date'),
+        5, 3000, 'Comerciais'
       );
 
-      if (!com || com.length === 0) {
-        setError("Projeto comercial não encontrado");
-        return;
-      }
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-      setComercial(com[0]);
+      const usuariosData = await retryWithBackoff(
+        () => Entities.Usuario.list(),
+        3, 2000, 'Usuarios'
+      );
 
-    } catch (err) {
-      console.error("Erro ao carregar projeto comercial:", err);
-      setError("Erro ao carregar projeto comercial");
-    } finally {
-      setIsLoadingComercial(false);
-    }
-  }, [comercialId]);
-
-  const loadSharedData = useCallback(async () => {
-    if (sharedData.loading || sharedData.loaded || !comercialId) return;
-
-    setSharedData(prev => ({ ...prev, loading: true }));
-
-    try {
-      const [disciplinasData, usuariosData, atividadesData, execucoesData] = await Promise.all([
-        retryWithBackoff(() => Disciplina.list(), 3, 1000, 'loadDisciplinas'),
-        retryWithBackoff(() => Usuario.list(), 3, 1000, 'loadUsuarios'),
-        retryWithExtendedBackoff(() => Atividade.list(), 'loadAtividadesGlobais'),
-        retryWithExtendedBackoff(() => Execucao.filter({ empreendimento_id: comercialId }), 'loadExecucoes')
-      ]);
-
-      setSharedData({
-        disciplinas: disciplinasData || [],
+      setData({
+        comerciais: comerciaisData || [],
         usuarios: usuariosData || [],
-        atividades: atividadesData || [],
-        execucoes: execucoesData || [],
-        loaded: true,
-        loading: false
+        isLoading: false,
+        error: null,
+        lastUpdate: new Date(),
       });
 
-    } catch (err) {
-      console.error("Erro ao carregar dados compartilhados:", err);
-      setSharedData(prev => ({ ...prev, loading: false }));
+    } catch (error) {
+      console.error('❌ Erro ao carregar dados:', error);
+
+      let errorMessage = 'Falha ao carregar os dados.';
+      const errorMsg = error.message || '';
+
+      if (errorMsg.includes('Network Error') || errorMsg.includes('Failed to fetch')) {
+        errorMessage = 'Problema de conexão com o servidor.';
+      } else if (errorMsg.includes('429') || errorMsg.includes('Rate limit')) {
+        errorMessage = 'Muitas requisições. Aguarde 30 segundos.';
+      }
+
+      setData(prev => ({ ...prev, isLoading: false, error: errorMessage }));
+    } finally {
+      if (isRefresh) setIsRefreshing(false);
     }
-  }, [comercialId, sharedData.loading, sharedData.loaded]);
+  }, []);
 
-  const loadTabData = useCallback(async (tabName) => {
-    if (!comercialId || tabData[tabName]?.loading || tabData[tabName]?.loaded) return;
+  const refresh = useCallback(() => loadData(true), [loadData]);
 
-    setTabData(prev => ({
-      ...prev,
-      [tabName]: { ...prev[tabName], loading: true }
-    }));
+  useEffect(() => {
+    const timer = setTimeout(() => loadData(), 500);
+    return () => clearTimeout(timer);
+  }, [loadData]);
+
+  return { ...data, refresh, isRefreshing, loadData };
+};
+
+export default function ComercialPage() {
+  const { comerciais, usuarios, isLoading, error, lastUpdate, refresh, isRefreshing, loadData } = useComercialData();
+  const [activeTab, setActiveTab] = useState('list'); // 'list' | 'summary'
+  const { user, hasPermission } = useContext(ActivityTimerContext);
+
+  const [showForm, setShowForm] = useState(false);
+  const [editingComercial, setEditingComercial] = useState(null);
+  const [filters, setFilters] = useState({ status: 'todos', search: '' });
+
+  const dadosFiltrados = useMemo(() => {
+    let filtered = [...comerciais];
+
+    if (filters.status !== 'todos') {
+      filtered = filtered.filter(e => e.status === filters.status);
+    }
+
+    if (filters.search) {
+      const searchTerm = filters.search.toLowerCase();
+      filtered = filtered.filter(e =>
+        e.nome?.toLowerCase().includes(searchTerm) ||
+        e.cliente?.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    return filtered;
+  }, [comerciais, filters]);
+
+  // Agrupar por mês para o Resumo Mensal
+  const resumoMensal = useMemo(() => {
+    const groups = {};
+
+    const getDateForGrouping = (c) => c.data_proposta || c.created_at || c.updated_date || c.updated_at || c.data || null;
+
+    comerciais.forEach(c => {
+      const rawDate = getDateForGrouping(c);
+      let monthKey = 'Sem Data';
+      let dateObj = null;
+      if (rawDate) {
+        try {
+          dateObj = typeof rawDate === 'string' ? parseISO(rawDate) : new Date(rawDate);
+          if (!isNaN(dateObj.getTime())) {
+            monthKey = format(dateObj, 'yyyy-MM');
+          }
+        } catch (e) {
+          monthKey = 'Sem Data';
+        }
+      }
+
+      if (!groups[monthKey]) groups[monthKey] = { items: [], totalValue: 0 };
+      groups[monthKey].items.push(c);
+      const valor = Number(c.valor_proposta || c.valor || 0);
+      groups[monthKey].totalValue += isNaN(valor) ? 0 : valor;
+    });
+
+    // Ordenar por mês decrescente
+    const ordered = Object.keys(groups).sort((a, b) => (a < b ? 1 : -1)).map(key => ({ month: key, ...groups[key] }));
+    return ordered;
+  }, [comerciais]);
+
+  const handleCreate = useCallback(() => {
+    setEditingComercial(null);
+    setShowForm(true);
+  }, []);
+
+  const handleEdit = useCallback((comercial) => {
+    setEditingComercial(comercial);
+    setShowForm(true);
+  }, []);
+
+  const handleSubmit = useCallback(async (comercialData) => {
+    try {
+      if (editingComercial) {
+        await retryWithBackoff(() => Entities.Comercial.update(editingComercial.id, comercialData), 3, 3000, 'Update Comercial');
+      } else {
+        await retryWithBackoff(() => Entities.Comercial.create(comercialData), 3, 3000, 'Create Comercial');
+      }
+
+      setShowForm(false);
+      setEditingComercial(null);
+      await loadData(true);
+    } catch (error) {
+      console.error('❌ Erro ao salvar:', error);
+      alert('Erro ao salvar projeto comercial.');
+    }
+  }, [editingComercial, loadData]);
+
+  const handleFormSuccess = useCallback(async () => {
+    setShowForm(false);
+    setEditingComercial(null);
+    await loadData(true);
+  }, [loadData]);
+
+  const handleDelete = useCallback(async (id) => {
+    if (!window.confirm("Tem certeza que deseja excluir este projeto?")) return;
 
     try {
-      let data = [];
-
-      switch (tabName) {
-        case 'documentos':
-          const [documentosData, planejamentosAtividadeData, planejamentosDocumentoData] = await Promise.all([
-            retryWithExtendedBackoff(() => Documento.filter({ empreendimento_id: comercialId }), 'loadDocumentos'),
-            retryWithExtendedBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: comercialId }), 'loadPlanejamentosAtividade'),
-            (async () => {
-              try {
-                const { PlanejamentoDocumento } = await import('@/entities/all');
-                return await retryWithExtendedBackoff(() => PlanejamentoDocumento.filter({ empreendimento_id: comercialId }), 'loadPlanejamentosDocumento');
-              } catch {
-                return [];
-              }
-            })()
-          ]);
-
-          data = {
-            documentos: documentosData || [],
-            planejamentos: [...(planejamentosAtividadeData || []), ...(planejamentosDocumentoData || [])].map(p => ({
-              ...p,
-              tipo_plano: p.documento_id && !p.atividade_id ? 'documento' : 'atividade'
-            })),
-          };
-          break;
-
-        case 'pavimentos':
-          data = await retryWithExtendedBackoff(() => Pavimento.filter({ empreendimento_id: comercialId }), 'loadPavimentos');
-          break;
-
-        case 'atividades_projeto':
-          data = await retryWithExtendedBackoff(() => Atividade.filter({ empreendimento_id: comercialId }), 'loadAtividadesProjeto');
-          break;
-
-        case 'catalogo_atividades':
-            data = {};
-            break;
-
-        case 'documentacao':
-          const [planejamentosAtiv, planejamentosDoc] = await Promise.all([
-            retryWithExtendedBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: comercialId }), `load${tabName}Atividade`),
-            (async () => {
-              try {
-                const { PlanejamentoDocumento } = await import('@/entities/all');
-                return await retryWithExtendedBackoff(() => PlanejamentoDocumento.filter({ empreendimento_id: comercialId }), `load${tabName}Documento`);
-              } catch {
-                return [];
-              }
-            })()
-          ]);
-
-          data = [...(planejamentosAtiv || []), ...(planejamentosDoc || [])];
-          break;
-
-        case 'gestao':
-            data = {};
-            break;
-        default:
-            console.warn(`Aba desconhecida: ${tabName}`);
-            break;
-      }
-
-      setTabData(prev => ({
-        ...prev,
-        [tabName]: { data, loaded: true, loading: false }
-      }));
-
-    } catch (err) {
-      console.error(`Erro ao carregar ${tabName}:`, err);
-      
-      let errorMessage = `Erro ao carregar dados. `;
-      if (err.message?.includes('Network Error')) {
-        errorMessage += 'Verifique sua conexão.';
-      } else if (err.message?.includes('429')) {
-        errorMessage += 'Aguarde 30 segundos.';
-      } else {
-        errorMessage += 'Tente recarregar.';
-      }
-
-      alert(errorMessage);
-
-      setTabData(prev => ({
-        ...prev,
-        [tabName]: { ...prev[tabName], loading: false }
-      }));
+      await retryWithBackoff(() => Entities.Comercial.delete(id), 3, 2000, 'Delete Comercial');
+      await loadData(true);
+    } catch (error) {
+      console.error('❌ Erro ao excluir:', error);
+      alert('Erro ao excluir projeto comercial.');
     }
-  }, [comercialId, tabData]);
+  }, [loadData]);
 
-  const handleTabChange = useCallback((newTab) => {
-    setActiveTab(newTab);
+  const canEdit = hasPermission('gestao');
 
-    if (!sharedData.loaded && !sharedData.loading) {
-      loadSharedData();
-    }
-
-    if (newTab !== 'gestao' && !tabData[newTab]?.loaded && !tabData[newTab]?.loading) {
-      loadTabData(newTab);
-    }
-
-    if (newTab === 'atividades_projeto' && !tabData.documentos.loaded && !tabData.documentos.loading) {
-      loadTabData('documentos');
-    }
-
-    if (newTab === 'documentos' && !tabData.pavimentos.loaded && !tabData.pavimentos.loading) {
-      loadTabData('pavimentos');
-    }
-
-    if (newTab === 'documentacao') {
-      if (!tabData.documentos.loaded && !tabData.documentos.loading) {
-        loadTabData('documentos');
-      }
-      if (!tabData.pavimentos.loaded && !tabData.pavimentos.loading) {
-        loadTabData('pavimentos');
-      }
-    }
-
-    if (newTab === 'gestao') {
-      if (!tabData.documentos.loaded && !tabData.documentos.loading) {
-        loadTabData('documentos');
-      }
-      if (!tabData.pavimentos.loaded && !tabData.pavimentos.loading) {
-        loadTabData('pavimentos');
-      }
-      if (!tabData.gestao.loaded) {
-          setTabData(prev => ({
-              ...prev,
-              gestao: { ...prev.gestao, loaded: true }
-          }));
-      }
-    }
-
-
-
-  }, [sharedData.loaded, sharedData.loading, tabData, loadSharedData, loadTabData]);
-
-  const forceFullReload = useCallback(() => {
-    setTabData({
-      documentos: { data: [], loaded: false, loading: false },
-      pavimentos: { data: [], loaded: false, loading: false },
-      atividades_projeto: { data: [], loaded: false, loading: false },
-      catalogo_atividades: { data: [], loaded: false, loading: false },
-      documentacao: { data: [], loaded: false, loading: false },
-      gestao: { data: [], loaded: false, loading: false }
-    });
-    setSharedData(prev => ({ ...prev, loaded: false }));
-    loadComercial();
-    handleTabChange(activeTab || 'documentos');
-  }, [activeTab, loadComercial, handleTabChange]);
-
-  useEffect(() => {
-    loadComercial();
-  }, [loadComercial]);
-
-  useEffect(() => {
-    if (comercial) {
-        handleTabChange(activeTab);
-    }
-  }, [comercial, activeTab, handleTabChange]);
-
-  if (isLoadingComercial) {
+  if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="p-6 md:p-8 space-y-6">
-          <Skeleton className="h-32 w-full" />
-          <Skeleton className="h-12 w-full" />
-          <Skeleton className="h-64 w-full" />
+        <div className="p-6 md:p-8">
+          <div className="max-w-6xl mx-auto space-y-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <Skeleton className="h-10 w-64 mb-2" />
+                <Skeleton className="h-6 w-96" />
+              </div>
+              <Skeleton className="h-10 w-40" />
+            </div>
+            <div className="flex gap-4">
+              <Skeleton className="h-10 w-48" />
+              <Skeleton className="h-10 w-64" />
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[...Array(6)].map((_, i) => (
+                <div key={i} className="bg-white rounded-xl shadow-sm p-6 space-y-4">
+                  <Skeleton className="h-6 w-3/4" />
+                  <Skeleton className="h-4 w-1/2" />
+                  <Skeleton className="h-32 w-full rounded-lg" />
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -302,187 +224,213 @@ export default function ComercialDetalhesPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
-        <div className="text-center p-8 bg-white rounded-lg shadow-lg">
-          <AlertCircle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Erro ao Carregar</h2>
-          <p className="text-gray-600 mb-4">{error}</p>
-          <Link to={createPageUrl("Comercial")}>
-            <Button variant="outline" className="mr-2">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Voltar para Comercial
-            </Button>
-          </Link>
-          <Button onClick={() => window.location.reload()}>
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Tentar Novamente
-          </Button>
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="p-6 md:p-8">
+          <div className="max-w-4xl mx-auto">
+            <Alert className="border-red-200 bg-red-50">
+              <AlertTriangle className="h-4 w-4 text-red-600" />
+              <AlertDescription className="text-red-800">
+                <strong>Erro:</strong> {error}
+              </AlertDescription>
+            </Alert>
+            <div className="text-center mt-8">
+              <Button onClick={() => loadData()} variant="outline" size="lg">
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Tentar Novamente
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
     );
   }
 
-  const isGestaoLoading = sharedData.loading || tabData.documentos.loading || tabData.pavimentos.loading;
-  const isGestaoLoaded = sharedData.loaded && tabData.documentos.loaded && tabData.pavimentos.loaded;
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      <div className="p-6 md:p-8 space-y-6">
-        <Link to={createPageUrl("Comercial")}>
-          <Button variant="ghost" className="mb-4">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar para Comercial
-          </Button>
-        </Link>
-
-        <EmpreendimentoHeader empreendimento={comercial} />
-
-        <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className={`grid w-full ${hasAccessToGestao ? 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6' : 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5'} bg-white shadow-sm`}>
-            <TabsTrigger value="documentos">Documentos</TabsTrigger>
-            <TabsTrigger value="pavimentos">Pavimentos</TabsTrigger>
-            <TabsTrigger value="atividades_projeto">Atividades do Projeto</TabsTrigger>
-            <TabsTrigger value="catalogo_atividades">
-              <ListChecks className="w-4 h-4 mr-2" /> Catálogo
-            </TabsTrigger>
-            <TabsTrigger value="documentacao">Documentação</TabsTrigger>
-            {hasAccessToGestao && (
-              <TabsTrigger value="gestao">Gestão</TabsTrigger>
-            )}
-          </TabsList>
-
-          <TabsContent value="catalogo_atividades">
-             <AnaliticoGlobalTab
-                empreendimentoId={comercial?.id}
-                onUpdate={forceFullReload}
-              />
-          </TabsContent>
-
-          <TabsContent value="documentos">
-            {tabData.documentos.loading || sharedData.loading || tabData.pavimentos.loading ? (
-              <div className="flex flex-col items-center justify-center h-96">
-                <RefreshCw className="w-8 h-8 animate-spin text-blue-500 mb-4" />
-                <p className="text-gray-600">Carregando documentos...</p>
-              </div>
-            ) : tabData.documentos.loaded && sharedData.loaded && tabData.pavimentos.loaded ? (
-              <DocumentosTab
-                empreendimento={comercial}
-                documentos={tabData.documentos.data.documentos || []}
-                disciplinas={sharedData.disciplinas}
-                atividades={sharedData.atividades || []}
-                planejamentos={tabData.documentos.data.planejamentos || []}
-                usuarios={sharedData.usuarios}
-                pavimentos={tabData.pavimentos.data || []}
-                onUpdate={forceFullReload}
-                isLoading={false}
-                etapaParaPlanejamento={etapaParaPlanejamento}
-                onEtapaChange={setEtapaParaPlanejamento}
-              />
-            ) : (
-              <div className="flex justify-center items-center h-64">
-                <Button onClick={() => handleTabChange('documentos')}>
-                  Carregar Documentos
-                </Button>
-              </div>
-            )}
-          </TabsContent>
-
-          <TabsContent value="pavimentos">
-            {tabData.pavimentos.loading ? (
-              <div className="flex flex-col items-center justify-center h-96">
-                <RefreshCw className="w-8 h-8 animate-spin text-blue-500 mb-4" />
-                <p className="text-gray-600">Carregando pavimentos...</p>
-              </div>
-            ) : tabData.pavimentos.loaded ? (
-              <PavimentosTab
-                empreendimentoId={comercial?.id}
-                pavimentosIniciais={tabData.pavimentos.data}
-                onUpdate={() => {
-                   setTabData(prev => ({ ...prev, pavimentos: { ...prev.pavimentos, loaded: false } }));
-                   loadTabData('pavimentos');
-                }}
-                isLoading={false}
-              />
-            ) : null}
-          </TabsContent>
-
-          <TabsContent value="atividades_projeto">
-            {tabData.atividades_projeto.loading || sharedData.loading || tabData.documentos.loading ? (
-              <div className="flex flex-col items-center justify-center h-96">
-                <RefreshCw className="w-8 h-8 animate-spin text-blue-500 mb-4" />
-                <p className="text-gray-600">Carregando atividades...</p>
-              </div>
-            ) : tabData.atividades_projeto.loaded && sharedData.loaded && tabData.documentos.loaded ? (
-              <AtividadesProjetoTab
-                empreendimentoId={comercial?.id}
-                atividades={tabData.atividades_projeto.data}
-                disciplinas={sharedData.disciplinas}
-                documentos={tabData.documentos.data.documentos || []}
-                usuarios={sharedData.usuarios}
-                planejamentos={tabData.documentos.data.planejamentos || []}
-                onUpdate={() => {
-                  setTabData(prev => ({
-                    ...prev,
-                    atividades_projeto: { ...prev.atividades_projeto, loaded: false },
-                    documentos: { ...prev.documentos, loaded: false }
-                  }));
-                  loadTabData('atividades_projeto');
-                  loadTabData('documentos');
-                }}
-                isLoading={false}
-              />
-            ) : null}
-          </TabsContent>
-
-          <TabsContent value="documentacao">
-            {tabData.documentacao.loading || sharedData.loading || tabData.documentos.loading || tabData.pavimentos.loading ? (
-              <div className="flex flex-col items-center justify-center h-96">
-                <RefreshCw className="w-8 h-8 animate-spin text-blue-500 mb-4" />
-                <p className="text-gray-600">Carregando documentação...</p>
-              </div>
-            ) : tabData.documentacao.loaded && sharedData.loaded && tabData.documentos.loaded && tabData.pavimentos.loaded ? (
-              <AnaliseConcepcaoPlanejamentoTab
-                empreendimentoId={comercial?.id}
-                planejamentos={tabData.documentacao.data}
-                atividades={sharedData.atividades || []}
-                usuarios={sharedData.usuarios}
-                documentos={tabData.documentos.data.documentos || []}
-                pavimentos={tabData.pavimentos.data || []}
-                onUpdate={() => {
-                  setTabData(prev => ({
-                    ...prev,
-                    documentacao: { ...prev.documentacao, loaded: false }
-                  }));
-                  loadTabData('documentacao');
-                }}
-              />
-            ) : null}
-          </TabsContent>
-
-          {hasAccessToGestao && (
-            <TabsContent value="gestao">
-              {isGestaoLoading ? (
-                <div className="flex flex-col items-center justify-center h-96">
-                  <RefreshCw className="w-8 h-8 animate-spin text-blue-500 mb-4" />
-                  <p className="text-gray-600">Carregando gestão...</p>
+      <div className="p-6 md:p-8">
+        <div className="max-w-6xl mx-auto space-y-6">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4"
+          >
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
+                <div className="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
+                  <Briefcase className="w-5 h-5 text-purple-600" />
                 </div>
-              ) : isGestaoLoaded ? (
-                <GestaoTab
-                  empreendimento={comercial}
-                  documentos={tabData.documentos.data.documentos || []}
-                  planejamentos={[
-                    ...(tabData.documentos.data.planejamentos || [])
-                  ]}
-                  atividades={sharedData.atividades || []}
-                  usuarios={sharedData.usuarios}
-                  execucoes={sharedData.execucoes || []}
-                  pavimentos={tabData.pavimentos.data || []}
-                  onUpdate={forceFullReload}
-                />
-              ) : null}
+                Comercial
+                {dadosFiltrados.length > 0 && (
+                  <span className="text-lg text-gray-500">({dadosFiltrados.length})</span>
+                )}
+              </h1>
+              <p className="text-gray-600 mt-1">
+                Gerencie empreendimentos e projetos comerciais
+                {lastUpdate && (
+                  <span className="text-sm text-gray-400 block md:inline md:ml-2">
+                    • Última atualização: {lastUpdate.toLocaleTimeString()}
+                  </span>
+                )}
+              </p>
+              <div className="mt-3">
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                  <TabsList className="inline-flex rounded-md bg-white p-1 shadow-sm">
+                    <TabsTrigger value="list" className="px-3 py-1">Lista</TabsTrigger>
+                    <TabsTrigger value="summary" className="px-3 py-1">Resumo Mensal</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button variant="outline" onClick={refresh} disabled={isRefreshing}>
+                <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+                {isRefreshing ? 'Atualizando...' : 'Atualizar'}
+              </Button>
+
+              {canEdit && (
+                <Button onClick={handleCreate} className="bg-purple-600 hover:bg-purple-700">
+                  <Plus className="w-4 h-4 mr-2" />
+                  Novo Projeto
+                </Button>
+              )}
+            </div>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}>
+            <ComercialFilters
+              filters={filters}
+              onFiltersChange={setFilters}
+              totalCount={comerciais.length}
+              filteredCount={dadosFiltrados.length}
+            />
+          </motion.div>
+
+          <div className="mb-4">
+            <div className="bg-white p-4 rounded-lg shadow flex justify-between items-center">
+              <div>
+                <div className="text-sm text-gray-500">Resumo (mês mais recente)</div>
+                <div className="text-xl font-semibold">{resumoMensal[0] ? (resumoMensal[0].month === 'Sem Data' ? 'Sem Data' : format(parseISO(resumoMensal[0].month + '-01'), 'MMMM yyyy')) : '—'}</div>
+              </div>
+              <div className="text-right">
+                <div className="text-lg font-bold">{resumoMensal[0] ? `${resumoMensal[0].items.length} propostas` : '0 propostas'}</div>
+                <div className="text-sm text-gray-500">Valor: R$ {resumoMensal[0] ? (Math.round(resumoMensal[0].totalValue * 100) / 100) : '0.00'}</div>
+                <div className="mt-2">
+                  <Button onClick={() => setActiveTab('summary')} variant="outline">Abrir Resumo</Button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+            <TabsContent value="list">
+              <AnimatePresence mode="wait">
+                {dadosFiltrados.length > 0 ? (
+                  <motion.div
+                    key="comercial-grid"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                  >
+                    {dadosFiltrados.map((comercial, index) => (
+                      <motion.div
+                        key={comercial.id}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: index * 0.05 }}
+                      >
+                        <ComercialCard
+                          empreendimento={comercial}
+                          canEdit={canEdit}
+                          onEdit={handleEdit}
+                          onDelete={handleDelete}
+                        />
+                      </motion.div>
+                    ))}
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="empty-state"
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-center py-16"
+                  >
+                    <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Briefcase className="w-12 h-12 text-gray-400" />
+                    </div>
+                    <h3 className="text-xl font-medium text-gray-900 mb-2">
+                      {filters.search || filters.status !== 'todos'
+                        ? 'Nenhum projeto encontrado'
+                        : 'Nenhum projeto comercial cadastrado'
+                      }
+                    </h3>
+                    <p className="text-gray-500 mb-6">
+                      {filters.search || filters.status !== 'todos'
+                        ? 'Tente ajustar os filtros de busca'
+                        : 'Comece criando seu primeiro projeto comercial'
+                      }
+                    </p>
+                    {(!filters.search && filters.status === 'todos' && canEdit) && (
+                      <Button onClick={handleCreate} size="lg" className="bg-purple-600 hover:bg-purple-700">
+                        <Plus className="w-4 h-4 mr-2" />
+                        Criar Primeiro Projeto
+                      </Button>
+                    )}
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </TabsContent>
-          )}
-        </Tabs>
+
+            <TabsContent value="summary">
+              <div className="bg-white border rounded-lg p-6">
+                <h2 className="text-xl font-semibold mb-4">Resumo Mensal de Propostas</h2>
+                {resumoMensal.length === 0 && (
+                  <p className="text-gray-500">Nenhuma proposta disponível para resumo.</p>
+                )}
+                {resumoMensal.map(group => (
+                  <div key={group.month} className="mb-6">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="text-lg font-medium">{group.month === 'Sem Data' ? 'Sem Data' : format(parseISO(group.month + '-01'), 'MMMM yyyy')}</div>
+                      <div className="text-sm text-gray-600">Total: {group.items.length} propostas • Valor: R$ {Math.round(group.totalValue * 100) / 100}</div>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {group.items.map(item => (
+                        <div key={item.id} className="p-3 border rounded">
+                          <div className="flex justify-between items-start">
+                            <div>
+                              <div className="font-semibold">{item.nome || item.titulo || 'Sem Nome'}</div>
+                              <div className="text-sm text-gray-500">{item.cliente || item.contato || ''}</div>
+                            </div>
+                            <div className="text-right">
+                              <div className="font-bold">R$ {item.valor_proposta || item.valor || 0}</div>
+                              <div className="text-xs text-gray-500">{(item.data_proposta || item.created_at || item.updated_date) ? (format(parseISO((item.data_proposta || item.created_at || item.updated_date).slice(0, 10)), 'dd/MM/yyyy')) : ''}</div>
+                            </div>
+                          </div>
+                          <div className="mt-2 text-sm text-gray-600">Status: {item.status || '—'}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
+
+          <AnimatePresence>
+            {showForm && (
+              <ComercialForm
+                empreendimento={editingComercial}
+                onClose={() => {
+                  setShowForm(false);
+                  setEditingComercial(null);
+                }}
+                onSubmit={handleSubmit}
+                onSuccess={handleFormSuccess}
+              />
+            )}
+          </AnimatePresence>
+        </div>
       </div>
     </div>
   );
