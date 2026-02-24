@@ -275,15 +275,18 @@ export default function PropostasPage() {
               </div>
               <div className="text-right">
                 <div className="text-lg font-bold">{resumoMensal[0] ? `${resumoMensal[0].items.length} propostas` : '0 propostas'}</div>
-                <div className="text-sm text-gray-500 space-y-1 text-right">
-                  <div>
-                    Aprovados: {resumoMensal[0]?.byStatus?.aprovado?.count || 0} — Valor BIM: R$ {formatCurrency(resumoMensal[0]?.byStatus?.aprovado?.bim || 0)}
+                <div className="mt-2 text-sm text-gray-600 space-y-2">
+                  <div className="flex justify-between items-center">
+                    <div className="text-left">Aprovados: {resumoMensal[0]?.byStatus?.aprovado?.count || 0}</div>
+                    <div className="text-right">Valor BIM: R$ {formatCurrency(resumoMensal[0]?.byStatus?.aprovado?.bim || 0)}</div>
                   </div>
-                  <div>
-                    Não aprovados: {resumoMensal[0]?.byStatus?.reprovado?.count || 0} — Valor CAD: R$ {formatCurrency(resumoMensal[0]?.byStatus?.reprovado?.cad || 0)}
+                  <div className="flex justify-between items-center">
+                    <div className="text-left">Não aprovados: {resumoMensal[0]?.byStatus?.reprovado?.count || 0}</div>
+                    <div className="text-right">Valor CAD: R$ {formatCurrency(resumoMensal[0]?.byStatus?.reprovado?.cad || 0)}</div>
                   </div>
-                  <div>
-                    Aguardando aprovação: {resumoMensal[0]?.byStatus?.em_analise?.count || 0} — BIM: R$ {formatCurrency(resumoMensal[0]?.byStatus?.em_analise?.bim || 0)} • CAD: R$ {formatCurrency(resumoMensal[0]?.byStatus?.em_analise?.cad || 0)}
+                  <div className="flex justify-between items-center">
+                    <div className="text-left">Aguardando aprovação: {resumoMensal[0]?.byStatus?.em_analise?.count || 0}</div>
+                    <div className="text-right">BIM: R$ {formatCurrency(resumoMensal[0]?.byStatus?.em_analise?.bim || 0)} • CAD: R$ {formatCurrency(resumoMensal[0]?.byStatus?.em_analise?.cad || 0)}</div>
                   </div>
                 </div>
                 <div className="mt-2">
