@@ -780,9 +780,19 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
       // Se restarem pendentes, enviar com pool concorrente (mais seguro)
       if (pending.length > 0) {
-        console.log(`⚡ Enviando ${pending.length} linhas restantes com pool concorrente`);
-        const CONCURRENCY = 8;
-        async function runWithConcurrency(tasks, concurrency = 8) {
+        console.log(`⚡ Enviando ${pending.length} linhas restantes com pool concorrente (throttled)`);
+        const CONCURRENCY = 1; // reduzir para 1 para evitar rate limits
+        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+        const isRateLimitError = (err) => {
+          try {
+            const status = err?.response?.status || err?.status;
+            const msg = String(err?.message || err?.error || '');
+            return status === 429 || /rate limit/i.test(msg) || /too many requests/i.test(msg);
+          } catch (e) { return false; }
+        };
+
+        async function runWithConcurrency(tasks, concurrency = 1) {
           const results = new Array(tasks.length);
           let i = 0;
           const workers = new Array(Math.max(1, concurrency)).fill(null).map(async () => {
@@ -800,33 +810,33 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           return results;
         }
 
-        const tasks = pending.map((linha, idxGlobal) => async () => {
-          try {
-            const payload = buildLinhaPayload(linha);
-            let result;
-            let attempts = 0;
-            const maxAttempts = 3;
-            while (attempts < maxAttempts) {
-              try {
-                const isNew = linha.isNew || String(linha.id).startsWith('temp-');
-                result = isNew ? await DataCadastro.create(payload) : await DataCadastro.update(linha.id, payload);
-                updatedLinhas.set(linha.id, result);
-                successCount++;
-                return result;
-              } catch (err) {
-                attempts++;
-                if (attempts >= maxAttempts) {
-                  errorCount++;
-                  console.error('Erro ao salvar linha', linha.id, err);
-                  return { error: err };
-                }
-                await new Promise(r => setTimeout(r, 1000 * attempts));
+        const tasks = pending.map((linha) => async () => {
+          const payload = buildLinhaPayload(linha);
+          const maxAttempts = 6;
+          let attempts = 0;
+          while (attempts < maxAttempts) {
+            try {
+              const isNew = linha.isNew || String(linha.id).startsWith('temp-');
+              const result = isNew ? await DataCadastro.create(payload) : await DataCadastro.update(linha.id, payload);
+              updatedLinhas.set(linha.id, result);
+              successCount++;
+              return result;
+            } catch (err) {
+              attempts++;
+              if (isRateLimitError(err)) {
+                const pauseMs = 10000; // pause global 10s on rate limit
+                console.warn(`429 detectado ao salvar linha ${linha.id} — pausando ${pauseMs / 1000}s antes de tentar novamente.`);
+                await sleep(pauseMs);
+              } else {
+                const wait = 500 * attempts; // backoff linear small
+                await sleep(wait);
+              }
+              if (attempts >= maxAttempts) {
+                errorCount++;
+                console.error('Erro ao salvar (máx tentativas) linha', linha.id, err);
+                return { error: err };
               }
             }
-          } catch (err) {
-            errorCount++;
-            console.error('Erro inesperado ao salvar linha', linha.id, err);
-            return { error: err };
           }
         });
 
