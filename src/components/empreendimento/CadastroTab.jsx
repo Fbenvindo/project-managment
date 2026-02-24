@@ -811,70 +811,66 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         }
       }
 
-      // Atualizar estado local com os IDs salvos
-      console.log(`\n✨ Atualizando ${successCount} linhas salvas no estado local`);
-      setLinhas(prev => prev.map(linha => {
-        const savedData = updatedLinhas.get(linha.id);
-        if (savedData) {
-          console.log(`  ✅ ${linha.id} -> ${savedData.id}`);
-          console.log('  🔎 Datas retornadas pelo servidor:', savedData.datas);
-          // Mesclar datas retornadas para manter estado consistente com o backend
-          const mergedDatas = { ...linha.datas, ...(savedData.datas || {}) };
-          return { ...linha, id: savedData.id, isNew: false, datas: mergedDatas };
-        }
-        return linha;
-      }));
+      // Atualizar estado local com os IDs salvos e recalcular revisoesPorEtapa com base no novo estado
+      console.log(`\n✨ Atualizando ${successCount} linhas salvas no estado local (mesclando datas retornadas)`);
+      setLinhas(prev => {
+        const newArr = prev.map(linha => {
+          const savedData = updatedLinhas.get(linha.id);
+          if (savedData) {
+            console.log(`  ✅ ${linha.id} -> ${savedData.id}`);
+            console.log('  🔎 Datas retornadas pelo servidor:', savedData.datas);
+            const mergedDatas = { ...linha.datas, ...(savedData.datas || {}) };
+            return { ...linha, id: savedData.id, isNew: false, datas: mergedDatas };
+          }
+          return linha;
+        });
 
-      // Recalcular revisoesPorEtapa a partir das linhas atuais (garantir consistência)
-      try {
-        const novoMap = {};
-        const linhasAtuais = (Array.from(updatedLinhas.keys()).length > 0)
-          ? (Array.from(updatedLinhas.values()).map(r => ({ id: r.id, datas: r.datas })))
-          : null;
+        // Recalcular revisoesPorEtapa a partir do novo array de linhas
+        try {
+          const novoMap = {};
+          newArr.forEach(l => {
+            if (!l || !l.datas) return;
+            Object.entries(l.datas).forEach(([etapa, etapaData]) => {
+              if (!etapaData || typeof etapaData !== 'object') return;
+              if (!novoMap[etapa]) novoMap[etapa] = new Set();
 
-        // Se temos dados atualizados do servidor, use-os; senão use o estado atual
-        const sourceLinhas = linhasAtuais || linhas;
+              // coletar revisões com dados
+              Object.keys(etapaData).forEach(k => {
+                const metaKeys = ['_excluida', 'excluida', '_revisoes_excluidas', 'revisoes_excluidas', '_revisoes_existentes', 'revisoes_existentes'];
+                if (metaKeys.includes(k)) return;
+                novoMap[etapa].add(k);
+              });
 
-        sourceLinhas.forEach(l => {
-          if (!l || !l.datas) return;
-          Object.entries(l.datas).forEach(([etapa, etapaData]) => {
-            if (!etapaData || typeof etapaData !== 'object') return;
-            if (!novoMap[etapa]) novoMap[etapa] = new Set();
-
-            // coletar revisões com dados
-            Object.keys(etapaData).forEach(k => {
-              const metaKeys = ['_excluida', 'excluida', '_revisoes_excluidas', 'revisoes_excluidas', '_revisoes_existentes', 'revisoes_existentes'];
-              if (metaKeys.includes(k)) return;
-              novoMap[etapa].add(k);
+              // coletar revisoes_existentes (aceitar ambas variantes)
+              const createdKey = '_revisoes_existentes' in etapaData ? '_revisoes_existentes' : ('revisoes_existentes' in etapaData ? 'revisoes_existentes' : null);
+              if (createdKey && Array.isArray(etapaData[createdKey])) {
+                etapaData[createdKey].forEach(r => novoMap[etapa].add(r));
+              }
             });
-
-            // coletar revisoes_existentes (aceitar ambas variantes)
-            const createdKey = '_revisoes_existentes' in etapaData ? '_revisoes_existentes' : ('revisoes_existentes' in etapaData ? 'revisoes_existentes' : null);
-            if (createdKey && Array.isArray(etapaData[createdKey])) {
-              etapaData[createdKey].forEach(r => novoMap[etapa].add(r));
-            }
           });
-        });
 
-        const novasRevisoesPorEtapa = {};
-        ETAPAS.forEach(etapa => {
-          const s = novoMap[etapa] || new Set();
-          const arr = Array.from(s)
-            .map(r => {
-              const m = String(r).match(/^R(\d+)$/i);
-              if (!m) return null;
-              return `R${String(parseInt(m[1], 10)).padStart(2, '0')}`;
-            })
-            .filter(Boolean)
-            .sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
-          novasRevisoesPorEtapa[etapa] = arr;
-        });
+          const novasRevisoesPorEtapa = {};
+          ETAPAS.forEach(etapa => {
+            const s = novoMap[etapa] || new Set();
+            const arr = Array.from(s)
+              .map(r => {
+                const m = String(r).match(/^R(\d+)$/i);
+                if (!m) return null;
+                return `R${String(parseInt(m[1], 10)).padStart(2, '0')}`;
+              })
+              .filter(Boolean)
+              .sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
+            novasRevisoesPorEtapa[etapa] = arr;
+          });
 
-        console.log('🔄 revisoesPorEtapa recalculado após salvamento:', novasRevisoesPorEtapa);
-        setRevisoesPorEtapa(novasRevisoesPorEtapa);
-      } catch (err) {
-        console.error('Erro ao recalcular revisoesPorEtapa após salvamento:', err);
-      }
+          console.log('🔄 revisoesPorEtapa recalculado após salvamento (novo estado):', novasRevisoesPorEtapa);
+          setRevisoesPorEtapa(novasRevisoesPorEtapa);
+        } catch (err) {
+          console.error('Erro ao recalcular revisoesPorEtapa após salvamento:', err);
+        }
+
+        return newArr;
+      });
 
       console.log(`\n🎉 SALVAMENTO COMPLETO - Sucesso: ${successCount}, Erros: ${errorCount}`);
       console.log('🔄 Setando hasUnsavedChanges = false');
