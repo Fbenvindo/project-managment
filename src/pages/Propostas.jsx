@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { FileText, Loader2, Plus, Pencil, Search } from "lucide-react";
-import * as Entities from "@/api/entities";
+import { Comercial } from "@/entities/all";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -35,7 +35,6 @@ export default function PropostasPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [apiAvailable, setApiAvailable] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('list');
   const [formData, setFormData] = useState({
@@ -68,14 +67,8 @@ export default function PropostasPage() {
   const loadPropostas = async () => {
     setIsLoading(true);
     try {
-      if (!Entities || !Entities.Comercial || typeof Entities.Comercial.list !== 'function') {
-        setApiAvailable(false);
-        throw new Error('Entidade Comercial não está disponível no client API');
-      }
-
-      setApiAvailable(true);
       const data = await retryWithBackoff(
-        () => Entities.Comercial.list('-updated_date'),
+        () => Comercial.list('-updated_date'),
         3, 2000, 'loadPropostas'
       );
       const sorted = (data || []).reverse().sort((a, b) =>
@@ -162,21 +155,14 @@ export default function PropostasPage() {
         valor_cad: formData.valor_cad ? Number(formData.valor_cad) : undefined
       };
 
-      if (!apiAvailable) {
-        alert('API indisponível no momento. Tente novamente após autenticar o client.');
-        return;
-      }
-
       if (editingId) {
-        if (typeof Entities.Comercial.update !== 'function') throw new Error('Comercial.update não disponível');
         await retryWithBackoff(
-          () => Entities.Comercial.update(editingId, dataToSave),
+          () => Comercial.update(editingId, dataToSave),
           3, 2000, 'updateProposta'
         );
       } else {
-        if (typeof Entities.Comercial.create !== 'function') throw new Error('Comercial.create não disponível');
         await retryWithBackoff(
-          () => Entities.Comercial.create(dataToSave),
+          () => Comercial.create(dataToSave),
           3, 2000, 'createProposta'
         );
       }
@@ -253,28 +239,12 @@ export default function PropostasPage() {
                 <p className="text-gray-600">Apresentação de propostas comerciais ({propostas.length})</p>
               </div>
             </div>
-            <Button onClick={handleOpenModal} className="bg-blue-600 hover:bg-blue-700" disabled={!apiAvailable}>
+            <Button onClick={handleOpenModal} className="bg-blue-600 hover:bg-blue-700">
               <Plus className="w-4 h-4 mr-2" />
               Nova Proposta
             </Button>
           </div>
 
-          {!apiAvailable && (
-            <div className="mt-4 p-4 rounded-md bg-yellow-50 border border-yellow-200 flex items-center justify-between">
-              <div className="text-sm text-yellow-800">API indisponível: autentique o client Base44 ou recarregue para habilitar operações reais.</div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={loadPropostas}>Tentar novamente</Button>
-                <Button onClick={() => {
-                  // carregar dados mock para permitir visualização da UI
-                  const mock = [
-                    { id: 'm1', numero: 'MOCK-001', cliente: 'Cliente Mock', empreendimento: 'Empreendimento A', status: 'solicitado', valor_bim: 10000, valor_cad: 0, data_solicitacao: new Date().toISOString() },
-                    { id: 'm2', numero: 'MOCK-002', cliente: 'Cliente Mock B', empreendimento: 'Empreendimento B', status: 'aprovado', valor_bim: 25000, valor_cad: 5000, data_solicitacao: new Date().toISOString() }
-                  ];
-                  setPropostas(mock);
-                }} className="bg-blue-600 hover:bg-blue-700">Usar dados de exemplo</Button>
-              </div>
-            </div>
-          )}
 
           <div className="mt-4">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
