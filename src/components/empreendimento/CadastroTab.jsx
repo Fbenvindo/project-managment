@@ -752,6 +752,12 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
                   datasComMetadados[etapa]._revisoes_existentes = normalized;
                   datasComMetadados[etapa].revisoes_existentes = normalized;
+                  // Garantir que cada revisão exista como chave real (mesmo vazia) para sobreviver a filtros do backend
+                  normalized.forEach(rev => {
+                    if (!(rev in datasComMetadados[etapa])) {
+                      datasComMetadados[etapa][rev] = '';
+                    }
+                  });
                 }
               });
 
