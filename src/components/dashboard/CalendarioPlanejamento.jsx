@@ -568,10 +568,6 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
     return (hasPermission('admin') || hasPermission('lider') || hasPermission('direcao')) && (plano.status === 'concluido' || plano.status === 'nao_iniciado');
   };
 
-  const handleOpenEditDescricao = () => {
-      setEditDescricao(plano.descritivo || '');
-      setShowEditDescricaoModal(true);
-    };
   const handleOpenEditDescricao = async () => {
     setEditDescricao(plano.descritivo || '');
     // carregar empreendimentos sob demanda
