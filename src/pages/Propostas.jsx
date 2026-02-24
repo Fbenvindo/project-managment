@@ -12,6 +12,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { format, parseISO } from "date-fns";
+
+const formatCurrency = (value) => {
+  const n = Number(value || 0);
+  return n.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+};
 import EscopoForm from "@/components/comercial/EscopoForm";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -263,7 +268,7 @@ export default function PropostasPage() {
               </div>
               <div className="text-right">
                 <div className="text-lg font-bold">{resumoMensal[0] ? `${resumoMensal[0].items.length} propostas` : '0 propostas'}</div>
-                <div className="text-sm text-gray-500">Valor: R$ {resumoMensal[0] ? (Math.round(resumoMensal[0].totalValue * 100) / 100) : '0.00'}</div>
+                <div className="text-sm text-gray-500">Valor: R$ {resumoMensal[0] ? formatCurrency(resumoMensal[0].totalValue) : '0,00'}</div>
                 <div className="mt-2">
                   <Button onClick={() => setActiveTab('summary')} variant="outline">Abrir Resumo</Button>
                 </div>
@@ -447,7 +452,7 @@ export default function PropostasPage() {
                   <div key={group.month} className="mb-6">
                     <div className="flex items-center justify-between mb-2">
                       <div className="text-lg font-medium">{group.month === 'Sem Data' ? 'Sem Data' : format(parseISO(group.month + '-01'), 'MMMM yyyy')}</div>
-                      <div className="text-sm text-gray-600">Total: {group.items.length} propostas • Valor: R$ {Math.round(group.totalValue * 100) / 100}</div>
+                      <div className="text-sm text-gray-600">Total: {group.items.length} propostas • Valor: R$ {formatCurrency(group.totalValue)}</div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {group.items.map(item => (
@@ -458,7 +463,7 @@ export default function PropostasPage() {
                               <div className="text-sm text-gray-500">{item.cliente || item.contato || ''}</div>
                             </div>
                             <div className="text-right">
-                              <div className="font-bold">R$ {item.valor_bim || item.valor_cad || 0}</div>
+                              <div className="font-bold">R$ {formatCurrency(item.valor_bim || item.valor_cad || 0)}</div>
                               <div className="text-xs text-gray-500">{(item.data_solicitacao || item.data_proposta || item.created_at || item.updated_date) ? (format(parseISO((item.data_solicitacao || item.data_proposta || item.created_at || item.updated_date).slice(0, 10)), 'dd/MM/yyyy')) : ''}</div>
                             </div>
                           </div>
