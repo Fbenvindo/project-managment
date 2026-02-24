@@ -569,22 +569,23 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   };
 
   const handleOpenEditDescricao = () => {
-    setEditDescricao(plano.descritivo || '');
-    setShowEditDescricaoModal(true);
-  };
+      setEditDescricao(plano.descritivo || '');
+      setShowEditDescricaoModal(true);
+    };
   const handleOpenEditDescricao = async () => {
     setEditDescricao(plano.descritivo || '');
     // carregar empreendimentos sob demanda
     try {
       if (empreendimentosList.length === 0) {
         const fetched = await retryWithBackoff(() => Empreendimento.list(), 3, 1000, 'fetchEmpreendimentos');
-       setEmpreendimentosList(fetched || []);
-     }
+        setEmpreendimentosList(fetched || []);
+      }
     } catch (e) {
       console.error('Erro ao carregar empreendimentos para edição:', e);
     }
     setEditEmpreendimento(plano.empreendimento_id ? String(plano.empreendimento_id) : '');
     setShowEditDescricaoModal(true);
+  };
   };
 // ...existing code...
 
