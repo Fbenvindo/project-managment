@@ -27,6 +27,28 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     return empreendimento.etapas.map(e => e.toUpperCase());
   }, [empreendimento?.etapas]);
 
+  const [revisoesPorEtapa, setRevisoesPorEtapa] = useState({});
+  const [etapasExcluidas, setEtapasExcluidas] = useState([]);
+  const [linhas, setLinhas] = useState([]);
+  const [documentos, setDocumentos] = useState([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  const [loadedEmpreendimentoId, setLoadedEmpreendimentoId] = useState(null);
+  const autoSaveTimeoutRef = useRef(null);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const [selectedFolhas, setSelectedFolhas] = useState(new Set());
+  const [showMassEditModal, setShowMassEditModal] = useState(false);
+  const [massEditEtapa, setMassEditEtapa] = useState('');
+  const [massEditRevisao, setMassEditRevisao] = useState('');
+  const [massEditData, setMassEditData] = useState('');
+  const [etapasMinimizadas, setEtapasMinimizadas] = useState({});
+  const [linhasModificadas, setLinhasModificadas] = useState(new Set());
+  const folhasScrollRef = useRef(null);
+  const dataScrollRef = useRef(null);
+
   const loadData = async () => {
     setIsLoading(true);
     try {
