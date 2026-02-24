@@ -149,7 +149,9 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
                 // Adicionar revisões que têm dados preenchidos
                 Object.keys(etapaData).forEach(rev => {
-                  if (rev !== '_excluida' && rev !== '_revisoes_excluidas' && rev !== '_revisoes_existentes') {
+                  // Ignorar chaves metadata com ou sem underscore
+                  const metaKeys = ['_excluida', 'excluida', '_revisoes_excluidas', 'revisoes_excluidas', '_revisoes_existentes', 'revisoes_existentes'];
+                  if (!metaKeys.includes(rev)) {
                     const valor = etapaData[rev];
                     console.log(`    📝 Revisão com dados: ${rev} = ${valor}`);
                     revisoesMap[etapa].add(rev);
