@@ -608,6 +608,34 @@ export default function PropostasPage() {
                         <div>Valor CAD: R$ {formatCurrency(group.totalCad)}</div>
                       </div>
                     </div>
+                    <div className="mt-3 grid grid-cols-1 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+                        {['aprovado', 'reprovado', 'em_analise', 'solicitado'].map(key => {
+                          const s = group.byStatus && group.byStatus[key] ? group.byStatus[key] : { count: 0, bim: 0, cad: 0 };
+                          return (
+                            <div key={key} className="p-3 border rounded bg-gray-50">
+                              <div className="text-sm font-medium mb-1">
+                                <span className={typeof renderStatusLabel === 'function' ? '' : ''}>
+                                  {key === 'em_analise' ? (
+                                    <>
+                                      <span>Aguardando</span>
+                                      <br />
+                                      <span>Aprovação</span>
+                                    </>
+                                  ) : (
+                                    statusLabels[key]
+                                  )}
+                                </span>
+                              </div>
+                              <div className="text-lg font-bold">{s.count} {s.count === 1 ? 'proposta' : 'propostas'}</div>
+                              <div className="text-sm text-gray-600 mt-1">BIM: R$ {formatCurrency(s.bim || 0)}</div>
+                              <div className="text-sm text-gray-600">CAD: R$ {formatCurrency(s.cad || 0)}</div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {group.items.map(item => (
                         <div key={item.id} className="p-3 border rounded">
