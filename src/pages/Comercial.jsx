@@ -33,6 +33,10 @@ const useComercialData = () => {
     }
 
     try {
+      if (!Entities || !Entities.Comercial || typeof Entities.Comercial.list !== 'function') {
+        throw new Error('API client not initialized: Entities.Comercial.list is not available');
+      }
+
       const comerciaisData = await retryWithBackoff(
         () => Entities.Comercial.list('-updated_date'),
         5, 3000, 'Comerciais'
