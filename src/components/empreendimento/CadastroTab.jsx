@@ -233,8 +233,25 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         };
       });
 
-      // Setar tudo junto de uma vez
-      setRevisoesPorEtapa(revisoesCompletas);
+      // Setar tudo junto de uma vez — mesclar com estado anterior para não perder colunas
+      setRevisoesPorEtapa(prev => {
+        const merged = {};
+        ETAPAS.forEach(etapa => {
+          const prevArr = Array.isArray(prev?.[etapa]) ? prev[etapa] : [];
+          const newArr = Array.isArray(revisoesCompletas?.[etapa]) ? revisoesCompletas[etapa] : [];
+          const s = Array.from(new Set([...(prevArr || []), ...(newArr || [])]));
+          const norm = s
+            .map(r => {
+              const m = String(r).match(/^R(\d+)$/i);
+              if (!m) return null;
+              return `R${String(parseInt(m[1], 10)).padStart(2, '0')}`;
+            })
+            .filter(Boolean)
+            .sort((a, b) => parseInt(a.slice(1), 10) - parseInt(b.slice(1), 10));
+          merged[etapa] = norm;
+        });
+        return merged;
+      });
       setEtapasExcluidas(Array.from(etapasExcluidasSet));
       setLinhas(novasLinhas);
       setLoadedEmpreendimentoId(empreendimento.id);
