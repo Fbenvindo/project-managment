@@ -212,12 +212,29 @@ export default function PropostasPage() {
           monthKey = 'Sem Data';
         }
       }
-      if (!groups[monthKey]) groups[monthKey] = { items: [], totalBim: 0, totalCad: 0 };
+      if (!groups[monthKey]) groups[monthKey] = {
+        items: [],
+        totalBim: 0,
+        totalCad: 0,
+        byStatus: {
+          solicitado: { count: 0, bim: 0, cad: 0 },
+          em_analise: { count: 0, bim: 0, cad: 0 },
+          aprovado: { count: 0, bim: 0, cad: 0 },
+          reprovado: { count: 0, bim: 0, cad: 0 }
+        }
+      };
       groups[monthKey].items.push(p);
       const bim = Number(p.valor_bim || 0);
       const cad = Number(p.valor_cad || 0);
       groups[monthKey].totalBim += isNaN(bim) ? 0 : bim;
       groups[monthKey].totalCad += isNaN(cad) ? 0 : cad;
+      const status = p.status || 'solicitado';
+      if (!groups[monthKey].byStatus[status]) {
+        groups[monthKey].byStatus[status] = { count: 0, bim: 0, cad: 0 };
+      }
+      groups[monthKey].byStatus[status].count += 1;
+      groups[monthKey].byStatus[status].bim += isNaN(bim) ? 0 : bim;
+      groups[monthKey].byStatus[status].cad += isNaN(cad) ? 0 : cad;
     });
 
     const ordered = Object.keys(groups).sort((a, b) => a < b ? 1 : -1).map(k => ({ month: k, ...groups[k] }));
@@ -477,8 +494,14 @@ export default function PropostasPage() {
                       <div className="text-lg font-medium">{group.month === 'Sem Data' ? 'Sem Data' : format(parseISO(group.month + '-01'), 'MMMM yyyy')}</div>
                       <div className="text-sm text-gray-600 space-y-1 text-right">
                         <div>Total: {group.items.length} propostas</div>
-                        <div>Valor BIM: R$ {formatCurrency(group.totalBim)}</div>
-                        <div>Valor CAD: R$ {formatCurrency(group.totalCad)}</div>
+                        <div>
+                          {['aprovado', 'reprovado', 'em_analise', 'solicitado'].map(s => (
+                            <div key={s} className="flex justify-between whitespace-nowrap">
+                              <div className="mr-2">{statusLabels[s] || s}:</div>
+                              <div>{group.byStatus?.[s]?.count || 0} — BIM: R$ {formatCurrency(group.byStatus?.[s]?.bim || 0)} • CAD: R$ {formatCurrency(group.byStatus?.[s]?.cad || 0)}</div>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     </div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
