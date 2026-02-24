@@ -86,6 +86,22 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
   const loadData = async () => {
     setIsLoading(true);
+    // Verificação rápida se o SDK/entidade expõe métodos em lote (bulk)
+    try {
+      console.log('🔍 DataCadastro.bulkCreate ->', typeof DataCadastro.bulkCreate);
+      console.log('🔍 DataCadastro.bulkUpdate ->', typeof DataCadastro.bulkUpdate);
+      console.log('🔍 DataCadastro.createMany ->', typeof DataCadastro.createMany);
+      console.log('🔍 DataCadastro.updateMany ->', typeof DataCadastro.updateMany);
+      console.log('🔍 DataCadastro.bulkUpsert ->', typeof DataCadastro.bulkUpsert);
+      if (typeof window !== 'undefined') {
+        // expor temporariamente para inspeção manual no console do navegador
+        // remova esta exposição após verificação
+        window.__DataCadastro = DataCadastro;
+        console.log('🔎 DataCadastro exposto em window.__DataCadastro (remova após verificação)');
+      }
+    } catch (e) {
+      console.warn('Erro ao verificar DataCadastro.bulk*:', e);
+    }
     try {
       const [data, docs] = await Promise.all([
         retryWithBackoff(
