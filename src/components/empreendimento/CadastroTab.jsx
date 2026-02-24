@@ -679,6 +679,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       const hasBulkUpsert = typeof DataCadastro.bulkUpsert === 'function';
       const hasBulkCreate = typeof DataCadastro.bulkCreate === 'function';
       const hasBulkUpdate = typeof DataCadastro.bulkUpdate === 'function';
+      // Map para reconciliar resultados (declarada antes para uso no caminho bulk)
+      const updatedLinhas = new Map();
 
       const buildPayload = (linha) => {
         const datasComMetadados = {};
@@ -914,8 +916,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       console.log('⚡ Iniciando salvamento em lotes...');
       let successCount = 0;
       let errorCount = 0;
-      const updatedLinhas = new Map();
-      const BATCH_SIZE = 2; // Máximo de requisições paralelas por lote
+      const BATCH_SIZE = 5; // Máximo de requisições paralelas por lote
       const DELAY_ENTRE_LOTES = 1500; // Delay entre lotes em ms
 
       // Dividir em lotes
