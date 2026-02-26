@@ -9,7 +9,7 @@ import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, FileText, Download, Printer, Save, Loader2, Check, FolderOpen, FilePlus, ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { Empreendimento, Usuario, Documento, AtaReuniao } from '@/entities/all';
+import * as Entities from "@/api/entities";
 
 const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/577f93874_logo_Interativa_versao_final_sem_fundo_0002.png";
 
@@ -236,10 +236,10 @@ export default function AtaPlanejamento() {
     setIsLoading(true);
     try {
       const [emps, users, docs, atas] = await Promise.all([
-        retryWithBackoff(() => Empreendimento.list(), 3, 2000, 'AtaPlanejamento-Empreendimentos'),
-        retryWithBackoff(() => Usuario.list(), 3, 2000, 'AtaPlanejamento-Usuarios'),
-        retryWithBackoff(() => Documento.list(), 3, 2000, 'AtaPlanejamento-Documentos'),
-        retryWithBackoff(() => AtaReuniao.list('-created_date'), 3, 2000, 'AtaPlanejamento-Atas'),
+        retryWithBackoff(() => Entities.Empreendimento.list(), 3, 2000, 'AtaPlanejamento-Empreendimentos'),
+        retryWithBackoff(() => Entities.Usuario.list(), 3, 2000, 'AtaPlanejamento-Usuarios'),
+        retryWithBackoff(() => Entities.Documento.list(), 3, 2000, 'AtaPlanejamento-Documentos'),
+        retryWithBackoff(() => Entities.AtaReuniao.list('-created_date'), 3, 2000, 'AtaPlanejamento-Atas'),
       ]);
       setEmpreendimentos(emps || []);
       setUsuarios(users || []);
@@ -271,9 +271,9 @@ export default function AtaPlanejamento() {
       };
 
       if (currentAtaId) {
-        await AtaReuniao.update(currentAtaId, ataToSave);
+        await Entities.AtaReuniao.update(currentAtaId, ataToSave);
       } else {
-        const newAta = await AtaReuniao.create(ataToSave);
+        const newAta = await Entities.AtaReuniao.create(ataToSave);
         setCurrentAtaId(newAta.id);
       }
 
@@ -326,7 +326,7 @@ export default function AtaPlanejamento() {
   const handleDeleteAta = async (ataId) => {
     if (!confirm('Deseja excluir esta ATA?')) return;
     try {
-      await AtaReuniao.delete(ataId);
+      await Entities.AtaReuniao.delete(ataId);
       await loadData();
     } catch (error) {
       console.error('Erro ao excluir ATA:', error);
