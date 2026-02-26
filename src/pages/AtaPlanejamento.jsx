@@ -762,7 +762,9 @@ export default function AtaPlanejamento() {
       if (na !== null && nb !== null) return na - nb;
       if (na !== null) return -1;
       if (nb !== null) return 1;
-      return String(a.os || '').localeCompare(String(b.os || ''), 'pt-BR', { numeric: true });
+      const va = String(a.os || a.projeto || '');
+      const vb = String(b.os || b.projeto || '');
+      return va.localeCompare(vb, 'pt-BR', { numeric: true });
     });
   }, [providencias]);
         });
