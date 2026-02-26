@@ -734,6 +734,21 @@ export default function AtaPlanejamento() {
             return data <= filtroDataFim;
           }
           // Ordenar os grupos por número de OS quando possível (fallback para alfanumérico)
+          Object.values(grupos).forEach(grp => {
+      grp.items.sort((a, b) => {
+        const ta = String(a?.providencias || '');
+        const tb = String(b?.providencias || '');
+        const ma = ta.match(/^\s*(\d+)/);
+        const mb = tb.match(/^\s*(\d+)/);
+        const na = ma ? parseInt(ma[1], 10) : null;
+        const nb = mb ? parseInt(mb[1], 10) : null;
+        if (na !== null && nb !== null) return na - nb;
+        if (na !== null) return -1;
+        if (nb !== null) return 1;
+        return ta.localeCompare(tb, 'pt-BR', { numeric: true });
+      });
+    });
+
     const extractNumber = (v) => {
       if (!v && v !== 0) return null;
       const s = String(v);
