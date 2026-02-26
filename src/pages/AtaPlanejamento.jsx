@@ -711,6 +711,7 @@ export default function AtaPlanejamento() {
         p.responsaveis?.includes(filtroUsuario)
       );
     }
+  
     
     // Filtro por data
     if (filtroDataInicio || filtroDataFim) {
@@ -732,9 +733,24 @@ export default function AtaPlanejamento() {
           } else if (filtroDataFim) {
             return data <= filtroDataFim;
           }
-          return true;
+          // Ordenar os grupos por número de OS quando possível (fallback para alfanumérico)
+    const extractNumber = (v) => {
+      if (!v && v !== 0) return null;
+      const s = String(v);
+      const m = s.match(/^\s*(\d+)/);
+      return m ? parseInt(m[1], 10) : null;
+    };
+
+    return Object.values(grupos).sort((a, b) => {
+      const na = extractNumber(a.os);
+      const nb = extractNumber(b.os);
+      if (na !== null && nb !== null) return na - nb;
+      if (na !== null) return -1;
+      if (nb !== null) return 1;
+      return String(a.os || '').localeCompare(String(b.os || ''), 'pt-BR', { numeric: true });
+    });
+  }, [providencias]);
         });
-      });
     }
     
     // Filtro para ocultar concluídos
