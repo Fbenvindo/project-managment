@@ -738,8 +738,8 @@ export default function AtaPlanejamento() {
       grp.items.sort((a, b) => {
         const ta = String(a?.providencias || '');
         const tb = String(b?.providencias || '');
-        const ma = ta.match(/^\s*(\d+)/);
-        const mb = tb.match(/^\s*(\d+)/);
+        const ma = ta.match(/(\d+)/);
+        const mb = tb.match(/(\d+)/);
         const na = ma ? parseInt(ma[1], 10) : null;
         const nb = mb ? parseInt(mb[1], 10) : null;
         if (na !== null && nb !== null) return na - nb;
@@ -752,7 +752,7 @@ export default function AtaPlanejamento() {
     const extractNumber = (v) => {
       if (!v && v !== 0) return null;
       const s = String(v);
-      const m = s.match(/^\s*(\d+)/);
+      const m = s.match(/(\d+)/);
       return m ? parseInt(m[1], 10) : null;
     };
 
