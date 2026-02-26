@@ -10,6 +10,7 @@ import { Plus, Trash2, FileText, Download, Printer, Save, Loader2, Check, Folder
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import * as Entities from "@/api/entities";
+import { retryWithBackoff } from "@/lib/apiUtils";
 
 const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/577f93874_logo_Interativa_versao_final_sem_fundo_0002.png";
 
