@@ -1215,23 +1215,23 @@ export default function DocumentosTab({
       const atividadesConcluidasPorDoc = new Set();
       
       allAtividades.forEach(ativ => {
-        if (ativ.empreendimento_id === empreendimento.id && ativ.id_atividade) {
-          if (ativ.tempo === -999) {
-            // Exclusões
-            if (ativ.documento_id === doc.id) {
-              console.log(`   ❌ Exclusão da folha ${doc.numero}: atividade ${ativ.id_atividade}`);
-              atividadesExcluidasPorDoc.add(ativ.id_atividade);
-            } else if (!ativ.documento_id) {
-              console.log(`   ❌ Exclusão global: atividade ${ativ.id_atividade}`);
-              atividadesExcluidasGlobal.add(ativ.id_atividade);
-            }
-          } else if (ativ.tempo === 0 && ativ.documento_id === doc.id && String(ativ.atividade || '').includes('Concluída na folha')) {
-            // Conclusões (identificadas por tempo 0 e texto "Concluída na folha")
-            console.log(`   ✅ Concluída na folha ${doc.numero}: atividade ${ativ.id_atividade}`);
-            atividadesConcluidasPorDoc.add(ativ.id_atividade);
-          }
-        }
-      });
+         if (ativ.empreendimento_id === empreendimento.id && ativ.id_atividade) {
+           if (ativ.tempo === -999) {
+             // Exclusões
+             if (ativ.documento_id === doc.id) {
+               console.log(`   ❌ Exclusão da folha ${doc.numero}: atividade ${ativ.id_atividade}`);
+               atividadesExcluidasPorDoc.add(ativ.id_atividade);
+             } else if (!ativ.documento_id) {
+               console.log(`   ❌ Exclusão global: atividade ${ativ.id_atividade}`);
+               atividadesExcluidasGlobal.add(ativ.id_atividade);
+             }
+           } else if (ativ.status_planejamento === 'concluida' && ativ.documento_id === doc.id) {
+             // Conclusões (marcadas via status_planejamento em AtividadesEmpreendimento)
+             console.log(`   ✅ Concluída na folha ${doc.numero}: atividade ${ativ.id_atividade}`);
+             atividadesConcluidasPorDoc.add(ativ.id_atividade);
+           }
+         }
+       });
 
       console.log(`   Excluídas globalmente: ${atividadesExcluidasGlobal.size}`);
       console.log(`   Excluídas desta folha: ${atividadesExcluidasPorDoc.size}`);
