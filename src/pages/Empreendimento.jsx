@@ -10,7 +10,6 @@ import {
   Pavimento,
   Execucao
 } from "@/entities/all";
-import { base44 } from "@/api/base44Client";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -46,8 +45,7 @@ export default function EmpreendimentoPage() {
   const [sharedData, setSharedData] = useState({
     disciplinas: [],
     usuarios: [],
-    atividades: [],        // apenas atividades modelo (sem empreendimento_id)
-    atividadesEmp: [],     // registros específicos do empreendimento (overrides, exclusões)
+    atividades: [],
     execucoes: [],
     loaded: false,
     loading: false
@@ -116,24 +114,17 @@ export default function EmpreendimentoPage() {
     setSharedData(prev => ({ ...prev, loading: true }));
 
     try {
-      const [disciplinasData, usuariosData, atividadesModeloData, atividadesEmpData, execucoesData] = await Promise.all([
+      const [disciplinasData, usuariosData, atividadesData, execucoesData] = await Promise.all([
         retryWithBackoff(() => Disciplina.list(), 3, 1000, 'loadDisciplinas'),
         retryWithBackoff(() => Usuario.list(), 3, 1000, 'loadUsuarios'),
-        // Apenas atividades modelo (sem empreendimento_id = atividades do catálogo)
-        retryWithExtendedBackoff(() => Atividade.filter({}), 'loadAtividadesModelo'),
-        // Registros específicos do empreendimento (overrides, exclusões, conclusões)
-        retryWithExtendedBackoff(() => base44.entities.AtividadesEmpreendimento.filter({ empreendimento_id: empreendimentoId }), 'loadAtividadesEmpreendimento'),
+        retryWithExtendedBackoff(() => Atividade.list(), 'loadAtividadesGlobais'),
         retryWithExtendedBackoff(() => Execucao.filter({ empreendimento_id: empreendimentoId }), 'loadExecucoes')
       ]);
-
-      // Filtrar apenas atividades modelo (sem empreendimento_id)
-      const apenasModelo = (atividadesModeloData || []).filter(a => !a.empreendimento_id);
 
       setSharedData({
         disciplinas: disciplinasData || [],
         usuarios: usuariosData || [],
-        atividades: apenasModelo,
-        atividadesEmp: atividadesEmpData || [],
+        atividades: atividadesData || [],
         execucoes: execucoesData || [],
         loaded: true,
         loading: false
@@ -293,17 +284,6 @@ export default function EmpreendimentoPage() {
     }
   }, [empreendimento, activeTab, handleTabChange]);
 
-  // Array combinado: atividades modelo + registros do empreendimento (overrides/exclusões/conclusões)
-  const atividadesCombinadas = useMemo(() => {
-    return [
-      ...sharedData.atividades,
-      ...sharedData.atividadesEmp
-    ];
-  }, [sharedData.atividades, sharedData.atividadesEmp]);
-
-  const isGestaoLoading = sharedData.loading || tabData.documentos.loading || tabData.pavimentos.loading;
-  const isGestaoLoaded = sharedData.loaded && tabData.documentos.loaded && tabData.pavimentos.loaded;
-
   if (isLoadingEmpreendimento) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -331,6 +311,9 @@ export default function EmpreendimentoPage() {
       </div>
     );
   }
+
+  const isGestaoLoading = sharedData.loading || tabData.documentos.loading || tabData.pavimentos.loading;
+  const isGestaoLoaded = sharedData.loaded && tabData.documentos.loaded && tabData.pavimentos.loaded;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -361,7 +344,7 @@ export default function EmpreendimentoPage() {
                 empreendimento={empreendimento}
                 documentos={tabData.documentos.data.documentos || []}
                 disciplinas={sharedData.disciplinas}
-                atividades={atividadesCombinadas}
+                atividades={sharedData.atividades || []}
                 planejamentos={tabData.documentos.data.planejamentos || []}
                 usuarios={sharedData.usuarios}
                 pavimentos={tabData.pavimentos.data || []}
@@ -430,7 +413,7 @@ export default function EmpreendimentoPage() {
             ) : sharedData.loaded ? (
               <ControleOSTab 
                 empreendimento={empreendimento}
-                atividades={atividadesCombinadas}
+                atividades={sharedData.atividades || []}
               />
             ) : null}
           </TabsContent>
@@ -449,7 +432,7 @@ export default function EmpreendimentoPage() {
                   planejamentos={[
                     ...(tabData.documentos.data.planejamentos || [])
                   ]}
-                  atividades={atividadesCombinadas}
+                  atividades={sharedData.atividades || []}
                   usuarios={sharedData.usuarios}
                   execucoes={sharedData.execucoes || []}
                   pavimentos={tabData.pavimentos.data || []}

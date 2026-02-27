@@ -541,33 +541,27 @@ export default function AtaPlanejamento() {
       emissao: ata.emissao || '/ /',
       status: ata.status || 'rascunho'
     });
-    // Ordenar providências já existentes antes de setar no estado
-    const loaded = (ata.providencias || []).map((p, idx) => ({ ...p, id: Date.now() + idx }));
-    const extractNum = (v) => {
-      if (v === null || v === undefined) return null;
-      const m = String(v).match(/(\d+)/);
-      return m ? parseInt(m[1], 10) : null;
-    };
-    const sorted = loaded.sort((a, b) => {
-      const ga = extractNum(a.os) ?? extractNum(a.projeto);
-      const gb = extractNum(b.os) ?? extractNum(b.projeto);
-      if (ga !== null && gb !== null && ga !== gb) return ga - gb;
-      if (ga !== null && gb === null) return -1;
-      if (gb !== null && ga === null) return 1;
-      // Mesma OS/projeto ou sem número; comparar pelo número dentro do título da providência
-      const ma = String(a.providencias || '').match(/(\d+)/);
-      const mb = String(b.providencias || '').match(/(\d+)/);
-      const na = ma ? parseInt(ma[1], 10) : null;
-      const nb = mb ? parseInt(mb[1], 10) : null;
-      if (na !== null && nb !== null) return na - nb;
-      if (na !== null) return -1;
-      if (nb !== null) return 1;
-      return String(a.providencias || '').localeCompare(String(b.providencias || ''), 'pt-BR', { numeric: true });
-    });
-    setProvidencias(sorted);
+    setProvidencias((ata.providencias || []).map((p, idx) => {
+      // Migrar campo "resposta" legado para "respostas" array
+      let respostas = p.respostas || [];
+      if (p.resposta && !respostas.length) {
+        respostas = [p.resposta];
+      }
+      
+      return { 
+        ...p, 
+        id: Date.now() + idx,
+        respostas,
+        projeto: p.projeto || '',
+        providencias: p.providencias || '',
+        responsaveis: p.responsaveis || [],
+        dataReuniao: p.dataReuniao || '',
+        dataRetorno: p.dataRetorno || '',
+        status: p.status || 'pendente'
+      };
+    }));
     setViewMode('edit');
   };
-
 
   const handleDeleteAta = async (ataId) => {
     if (!confirm('Deseja excluir esta ATA?')) return;
@@ -717,7 +711,6 @@ export default function AtaPlanejamento() {
         p.responsaveis?.includes(filtroUsuario)
       );
     }
-  
     
     // Filtro por data
     if (filtroDataInicio || filtroDataFim) {
@@ -739,41 +732,9 @@ export default function AtaPlanejamento() {
           } else if (filtroDataFim) {
             return data <= filtroDataFim;
           }
-          // Ordenar os grupos por número de OS quando possível (fallback para alfanumérico)
-          Object.values(grupos).forEach(grp => {
-      grp.items.sort((a, b) => {
-        const ta = String(a?.providencias || '');
-        const tb = String(b?.providencias || '');
-        const ma = ta.match(/(\d+)/);
-        const mb = tb.match(/(\d+)/);
-        const na = ma ? parseInt(ma[1], 10) : null;
-        const nb = mb ? parseInt(mb[1], 10) : null;
-        if (na !== null && nb !== null) return na - nb;
-        if (na !== null) return -1;
-        if (nb !== null) return 1;
-        return ta.localeCompare(tb, 'pt-BR', { numeric: true });
-      });
-    });
-
-    const extractNumber = (v) => {
-      if (!v && v !== 0) return null;
-      const s = String(v);
-      const m = s.match(/(\d+)/);
-      return m ? parseInt(m[1], 10) : null;
-    };
-
-    return Object.values(grupos).sort((a, b) => {
-      const na = extractNumber(a.os);
-      const nb = extractNumber(b.os);
-      if (na !== null && nb !== null) return na - nb;
-      if (na !== null) return -1;
-      if (nb !== null) return 1;
-      const va = String(a.os || a.projeto || '');
-      const vb = String(b.os || b.projeto || '');
-      return va.localeCompare(vb, 'pt-BR', { numeric: true });
-    });
-  }, [providencias]);
+          return true;
         });
+      });
     }
     
     // Filtro para ocultar concluídos
