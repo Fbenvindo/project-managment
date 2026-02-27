@@ -2398,124 +2398,16 @@ export default function DocumentosTab({
                   </div>
                 </div>
                 <div className="space-y-2">
-                  {atividadesDisponiveis.length > 0 ? atividadesDisponiveis.map(atividade => {
-                    const subdisciplina = atividade.subdisciplina || 'N/A';
-
-                    return (
-                      <div
-                        key={atividade.id}
-                        className={`flex justify-between items-center p-3 rounded border ${
-                          atividade.estaConcluida
-                            ? 'bg-blue-50 border-blue-200'
-                            : atividade.jaFoiPlanejada
-                            ? 'bg-green-50 border-green-200'
-                            : 'bg-white border-gray-200'
-                        }`}
-                      >
-                        <div className="flex items-center gap-3 flex-1 pr-2">
-                          <Checkbox
-                            checked={selectedAtividades.includes(atividade.id)}
-                            onCheckedChange={() => handleToggleAtividade(atividade.id)}
-                            disabled={isUpdatingActivity}
-                          />
-                          <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <span className={`font-medium ${atividade.estaConcluida || atividade.statusPlanejamento === 'concluido' ? 'line-through text-gray-500' : ''}`}>
-                              {String(atividade.atividade || '').replace(/^\(Concluída na folha \d+\)\s*/, '').trim() || 'Atividade'}
-                            </span>
-                            {atividade.statusPlanejamento === 'concluido' && (
-                              <Badge className="bg-green-600 text-white text-xs">
-                                Finalizado
-                              </Badge>
-                            )}
-                            {atividade.estaConcluida && atividade.statusPlanejamento !== 'concluido' && (
-                              <Badge className="bg-blue-100 text-blue-800 text-xs">
-                                Concluída Manualmente
-                              </Badge>
-                            )}
-                            {atividade.statusPlanejamento === 'em_andamento' && (
-                              <Badge className="bg-yellow-100 text-yellow-800 text-xs">
-                                Em Andamento
-                              </Badge>
-                            )}
-                            {atividade.statusPlanejamento === 'nao_iniciado' && (
-                              <Badge className="bg-blue-100 text-blue-800 text-xs">
-                                Planejado
-                              </Badge>
-                            )}
-                            {!atividade.statusPlanejamento && !atividade.estaConcluida && (
-                              <Badge className="bg-gray-100 text-gray-600 text-xs">
-                                Disponível para planejamento
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="text-sm text-gray-500 mt-1">
-                            {atividade.etapa} • {subdisciplina}
-                            {atividade.area && (
-                                <span className={`ml-2 ${atividade.estaConcluida ? 'line-through text-gray-400' : 'text-blue-600'}`}>
-                                  • {atividade.tempoBaseParaExibicao.toFixed(2)}h/m² × {atividade.area}m²
-                                </span>
-                              )}
-                              </div>
-                              </div>
-                              </div>
-                              <div className="flex items-center gap-3">
-                          <div className="text-right">
-                            <div className={`text-sm font-medium ${atividade.estaConcluida || atividade.statusPlanejamento === 'concluido' ? 'line-through text-gray-400' : ''}`}>
-                              {atividade.estaConcluida || atividade.statusPlanejamento === 'concluido'
-                                ? `${((atividade.area || 1) * atividade.tempoBaseParaExibicao * (doc.fator_dificuldade || 1)).toFixed(1)}h`
-                                : `${atividade.tempoComFator.toFixed(1)}h`
-                              }
-                            </div>
-                            {atividade.statusPlanejamento === 'concluido' && (
-                              <div className="text-xs text-green-600">
-                                Finalizado no planejamento
-                              </div>
-                            )}
-                            {atividade.estaConcluida && atividade.statusPlanejamento !== 'concluido' && (
-                              <div className="text-xs text-gray-500">
-                                Tempo zerado (concluída manualmente)
-                              </div>
-                            )}
-                            {atividade.statusPlanejamento && atividade.statusPlanejamento !== 'concluido' && !atividade.estaConcluida && (
-                              <div className="text-xs text-blue-600">
-                                {atividade.statusPlanejamento === 'em_andamento' ? 'Em execução' : 'Planejado'}
-                              </div>
-                            )}
-                            {!atividade.estaConcluida && !atividade.statusPlanejamento && (
-                              <div className="text-xs text-gray-500">
-                                Disponível para planejamento
-                              </div>
-                            )}
-                          </div>
-                          <Button
-                           variant="ghost"
-                           size="icon"
-                           onClick={() => handleMarcarComoConcluida(atividade)}
-                           className={`${
-                             atividade.estaConcluida 
-                               ? 'text-blue-600 hover:text-blue-800 hover:bg-blue-50' 
-                               : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'
-                           }`}
-                           title={atividade.estaConcluida ? "Desmarcar como concluída" : "Marcar como concluída"}
-                           disabled={isUpdatingActivity}
-                          >
-                           {isUpdatingActivity ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
-                          </Button>
-                          <Button
-                           variant="ghost"
-                           size="icon"
-                           onClick={() => handleExcluirAtividade(atividade)}
-                           className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                           title="Excluir atividade SOMENTE desta folha"
-                           disabled={isUpdatingActivity}
-                          >
-                           {isUpdatingActivity ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                          </Button>
-                          </div>
-                          </div>
-                    );
-                  }) : (
+                  {atividadesDisponiveis.length > 0 ? atividadesDisponiveis.map(atividade => (
+                    <ActivityListItem
+                      key={atividade.id}
+                      atividade={atividade}
+                      doc={doc}
+                      empreendimento={empreendimento}
+                      onUpdate={onUpdate}
+                      onExcluir={handleExcluirAtividade}
+                    />
+                  )) : (
                     <div className="text-center text-gray-500 p-4">
                       <div className="flex flex-col items-center gap-2">
                         <FileText className="w-16 h-16 text-gray-300" />
