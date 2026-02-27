@@ -15,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { RefreshCw, AlertCircle, ListChecks } from "lucide-react";
+import { useMemo } from "react";
 import { retryWithBackoff, retryWithExtendedBackoff } from "../components/utils/apiUtils";
 
 import EmpreendimentoHeader from "../components/empreendimento/EmpreendimentoHeader";
