@@ -1168,16 +1168,7 @@ export default function DocumentosTab({
     });
   }, [usuarios]);
 
-  const DocumentoItem = ({ doc, planejamentos, allAtividades, handleEdit, handleDelete, handleOpenDocEtapaModal, handlePredecessoraChange, handleDataInicioChange, etapaParaPlanejamento, loadingDocs, empreendimento, onUpdate, readOnly }) => {
-    const [isUpdatingActivity, setIsUpdatingActivity] = useState(false);
-    const [isUpdating, setIsUpdating] = useState(false);
-    const isDocLoading = loadingDocs[doc.id] || false;
-    
-    const [searchPredecessor, setSearchPredecessor] = useState('');
-    const [selectedAtividades, setSelectedAtividades] = useState([]);
-    
-    const [showExecutorDialog, setShowExecutorDialog] = useState(false);
-    const [pendingExecutor, setPendingExecutor] = useState(null);
+  // DocumentoItem component moved to DocumentoItemRow.jsx for better code organization
 
     const planejamentosDoDocumento = useMemo(() => {
         return planejamentos.filter(p => p.documento_id === doc.id);
