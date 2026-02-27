@@ -115,13 +115,19 @@ export default function PropostasPage() {
 
   useEffect(() => { loadPropostas(); }, []);
 
+  // debug: indicate that the effect ran
+  useEffect(() => { console.debug('[Propostas] useEffect inicializado'); }, []);
+
   const loadPropostas = async () => {
     setIsLoading(true);
+    console.debug('[Propostas] loadPropostas: iniciando (setIsLoading true)');
     try {
+      console.debug('[Propostas] loadPropostas: chamando Comercial.list via retryWithBackoff');
       const data = await retryWithBackoff(
         () => Comercial.list('-updated_date'),
         3, 2000, 'loadPropostas'
       );
+      console.debug('[Propostas] loadPropostas: recebido data length=', data?.length);
       const sorted = (data || []).reverse().sort((a, b) =>
         (b.numero || '').localeCompare(a.numero || '', 'pt-BR')
       );
@@ -256,7 +262,8 @@ export default function PropostasPage() {
         );
       }
 
-      closeModal();
+      setIsModalOpen(false);
+      setEditingId(null);
       loadPropostas();
     } catch (error) {
       console.error('Erro ao salvar proposta:', error);
@@ -920,27 +927,19 @@ export default function PropostasPage() {
               </div>
 
               <DialogFooter>
-                {isViewMode ? (
-                  <Button variant="outline" onClick={closeModal}>
-                    Fechar
-                  </Button>
-                ) : (
-                  <>
-                    <Button variant="outline" onClick={closeModal} disabled={isSaving}>
-                      Cancelar
-                    </Button>
-                    <Button onClick={handleSave} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
-                      {isSaving ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Salvando...
-                        </>
-                      ) : (
-                        editingId ? 'Atualizar Proposta' : 'Salvar Proposta'
-                      )}
-                    </Button>
-                  </>
-                )}
+                <Button variant="outline" onClick={() => setIsModalOpen(false)} disabled={isSaving}>
+                  Cancelar
+                </Button>
+                <Button onClick={handleSave} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
+                  {isSaving ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Salvando...
+                    </>
+                  ) : (
+                    editingId ? 'Atualizar Proposta' : 'Salvar Proposta'
+                  )}
+                </Button>
               </DialogFooter>
             </DialogContent>
           </Dialog>
