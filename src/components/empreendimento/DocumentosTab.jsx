@@ -1169,9 +1169,6 @@ export default function DocumentosTab({
   }, [usuarios]);
 
   // DocumentoItem component moved to DocumentoItemRow.jsx
-
-  // Placeholder for removed DocumentoItem component logic
-      const subdisciplinasDoc = doc.subdisciplinas || [];
       const disciplinaDoc = doc.disciplina;
 
       const etapaOverrides = new Map();
