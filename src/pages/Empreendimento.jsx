@@ -45,7 +45,8 @@ export default function EmpreendimentoPage() {
   const [sharedData, setSharedData] = useState({
     disciplinas: [],
     usuarios: [],
-    atividades: [],
+    atividades: [],        // apenas atividades modelo (sem empreendimento_id)
+    atividadesEmp: [],     // registros específicos do empreendimento (overrides, exclusões)
     execucoes: [],
     loaded: false,
     loading: false
