@@ -1168,11 +1168,7 @@ export default function DocumentosTab({
     });
   }, [usuarios]);
 
-  // DocumentoItem component moved to DocumentoItemRow.jsx for better code organization
-
-    const planejamentosDoDocumento = useMemo(() => {
-        return planejamentos.filter(p => p.documento_id === doc.id);
-    }, [planejamentos, doc.id]);
+  // DocumentoItem component moved to DocumentoItemRow.jsx
 
     const atividadesDisponiveis = useMemo(() => {
       const subdisciplinasDoc = doc.subdisciplinas || [];
