@@ -324,6 +324,16 @@ export default function EmpreendimentoPage() {
   const isGestaoLoading = sharedData.loading || tabData.documentos.loading || tabData.pavimentos.loading;
   const isGestaoLoaded = sharedData.loaded && tabData.documentos.loaded && tabData.pavimentos.loaded;
 
+  // Array combinado: atividades modelo + registros do empreendimento (overrides/exclusões/conclusões)
+  // Os registros de AtividadesEmpreendimento possuem empreendimento_id, então os componentes
+  // conseguem distingui-los das atividades modelo.
+  const atividadesCombinadas = useMemo(() => {
+    return [
+      ...sharedData.atividades,
+      ...sharedData.atividadesEmp
+    ];
+  }, [sharedData.atividades, sharedData.atividadesEmp]);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <div className="p-6 md:p-8 space-y-6">
