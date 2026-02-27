@@ -257,8 +257,7 @@ export default function PropostasPage() {
         );
       }
 
-      setIsModalOpen(false);
-      setEditingId(null);
+      closeModal();
       loadPropostas();
     } catch (error) {
       console.error('Erro ao salvar proposta:', error);
