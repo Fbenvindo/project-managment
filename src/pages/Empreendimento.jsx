@@ -433,7 +433,7 @@ export default function EmpreendimentoPage() {
             ) : sharedData.loaded ? (
               <ControleOSTab 
                 empreendimento={empreendimento}
-                atividades={sharedData.atividades || []}
+                atividades={atividadesCombinadas}
               />
             ) : null}
           </TabsContent>
