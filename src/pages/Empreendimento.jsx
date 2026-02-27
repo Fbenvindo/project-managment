@@ -115,17 +115,24 @@ export default function EmpreendimentoPage() {
     setSharedData(prev => ({ ...prev, loading: true }));
 
     try {
-      const [disciplinasData, usuariosData, atividadesData, execucoesData] = await Promise.all([
+      const [disciplinasData, usuariosData, atividadesModeloData, atividadesEmpData, execucoesData] = await Promise.all([
         retryWithBackoff(() => Disciplina.list(), 3, 1000, 'loadDisciplinas'),
         retryWithBackoff(() => Usuario.list(), 3, 1000, 'loadUsuarios'),
-        retryWithExtendedBackoff(() => Atividade.list(), 'loadAtividadesGlobais'),
+        // Apenas atividades modelo (sem empreendimento_id = atividades do catálogo)
+        retryWithExtendedBackoff(() => Atividade.filter({}), 'loadAtividadesModelo'),
+        // Registros específicos do empreendimento (overrides, exclusões, conclusões)
+        retryWithExtendedBackoff(() => base44.entities.AtividadesEmpreendimento.filter({ empreendimento_id: empreendimentoId }), 'loadAtividadesEmpreendimento'),
         retryWithExtendedBackoff(() => Execucao.filter({ empreendimento_id: empreendimentoId }), 'loadExecucoes')
       ]);
+
+      // Filtrar apenas atividades modelo (sem empreendimento_id)
+      const apenasModelo = (atividadesModeloData || []).filter(a => !a.empreendimento_id);
 
       setSharedData({
         disciplinas: disciplinasData || [],
         usuarios: usuariosData || [],
-        atividades: atividadesData || [],
+        atividades: apenasModelo,
+        atividadesEmp: atividadesEmpData || [],
         execucoes: execucoesData || [],
         loaded: true,
         loading: false
