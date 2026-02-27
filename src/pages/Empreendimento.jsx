@@ -364,7 +364,7 @@ export default function EmpreendimentoPage() {
                 empreendimento={empreendimento}
                 documentos={tabData.documentos.data.documentos || []}
                 disciplinas={sharedData.disciplinas}
-                atividades={sharedData.atividades || []}
+                atividades={atividadesCombinadas}
                 planejamentos={tabData.documentos.data.planejamentos || []}
                 usuarios={sharedData.usuarios}
                 pavimentos={tabData.pavimentos.data || []}
