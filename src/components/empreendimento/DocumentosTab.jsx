@@ -2641,7 +2641,7 @@ export default function DocumentosTab({
                       </TableHeader>
                       <TableBody>
                         {docs.map(doc => (
-                          <DocumentoItem
+                          <DocumentoItemRow
                             key={doc.id}
                             doc={doc}
                             planejamentos={localPlanejamentos}
