@@ -1483,7 +1483,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                   disabled={!massEditEtapa}
                 >
                   <option value="">Selecione a revisão</option>
-                  {massEditEtapa && (revisoesPorEtapa[massEditEtapa] || DEFAULT_REVISOES).map(rev => (
+                  {massEditEtapa && Array.isArray(revisoesPorEtapa[massEditEtapa] || DEFAULT_REVISOES) && (revisoesPorEtapa[massEditEtapa] || DEFAULT_REVISOES).map(rev => (
                     <option key={rev} value={rev}>{rev}</option>
                   ))}
                 </select>
