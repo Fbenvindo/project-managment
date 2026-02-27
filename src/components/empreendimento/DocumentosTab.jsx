@@ -1170,7 +1170,7 @@ export default function DocumentosTab({
 
   // DocumentoItem component moved to DocumentoItemRow.jsx
 
-    const atividadesDisponiveis = useMemo(() => {
+  // Placeholder for removed DocumentoItem component logic
       const subdisciplinasDoc = doc.subdisciplinas || [];
       const disciplinaDoc = doc.disciplina;
 
