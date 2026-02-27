@@ -1440,72 +1440,68 @@ export default function DocumentosTab({
     };
 
     const handleMarcarComoConcluida = async (activityObj) => {
-      console.log(`\n✅ ========================================`);
-      console.log(`✅ MARCAR COMO CONCLUÍDA`);
-      console.log(`✅ ========================================`);
-      console.log(`   Atividade: "${activityObj.atividade}"`);
-      console.log(`   Folha: ${doc.numero}`);
-      console.log(`✅ ========================================\n`);
+       console.log(`\n✅ ========================================`);
+       console.log(`✅ MARCAR COMO CONCLUÍDA`);
+       console.log(`✅ ========================================`);
+       console.log(`   Atividade: "${activityObj.atividade}"`);
+       console.log(`   Folha: ${doc.numero}`);
+       console.log(`✅ ========================================\n`);
 
-      setIsUpdatingActivity(true);
-      try {
-        // Verificar se já existe marcador de conclusão
-        const existingMarkers = await retryWithBackoff(
-          () => Atividade.filter({
-            empreendimento_id: empreendimento.id,
-            id_atividade: activityObj.id,
-            documento_id: doc.id,
-            tempo: 0 // Marcador de conclusão
-          }),
-          3, 1000, `checkConclusionMarker-${activityObj.id}-${doc.id}`
-        );
+       setIsUpdatingActivity(true);
+       try {
+         // Verificar se já existe marcador de conclusão
+         const existingMarkers = await retryWithBackoff(
+           () => Atividade.filter({
+             empreendimento_id: empreendimento.id,
+             id_atividade: activityObj.id,
+             documento_id: doc.id,
+             tempo: 0 // Marcador de conclusão
+           }),
+           3, 1000, `checkConclusionMarker-${activityObj.id}-${doc.id}`
+         );
 
-        if (existingMarkers && existingMarkers.length > 0) {
-          // Já está marcada como concluída, então vamos desmarcar
-          console.log(`   Desmarcando como concluída (removendo ${existingMarkers.length} marcador(es))...`);
-          
-          // Remover TODOS os marcadores de conclusão (caso haja duplicatas)
-          for (const marker of existingMarkers) {
-            await retryWithBackoff(
-              () => Atividade.delete(marker.id),
-              3, 1000, `removeConclusionMarker-${marker.id}`
-            );
-          }
-        } else {
-          // Criar marcador de conclusão (usando tempo 0 em vez de -888)
-          const novoMarcador = {
-            etapa: activityObj.etapa,
-            disciplina: activityObj.disciplina,
-            subdisciplina: activityObj.subdisciplina,
-            atividade: `(Concluída na folha ${doc.numero}) ${String(activityObj.atividade || '')}`,
-            funcao: activityObj.funcao,
-            empreendimento_id: empreendimento.id,
-            id_atividade: activityObj.id,
-            documento_id: doc.id,
-            tempo: 0 // Atividade concluída tem tempo zero
-          };
+         if (existingMarkers && existingMarkers.length > 0) {
+           // Já está marcada como concluída, então vamos desmarcar
+           console.log(`   Desmarcando como concluída (removendo ${existingMarkers.length} marcador(es))...`);
 
-          console.log(`   Criando marcador de conclusão...`);
-          await retryWithBackoff(
-            () => Atividade.create(novoMarcador),
-            3, 1000, `createConclusionMarker-${activityObj.id}-${doc.id}`
-          );
-        }
+           // Remover TODOS os marcadores de conclusão (caso haja duplicatas)
+           for (const marker of existingMarkers) {
+             await retryWithBackoff(
+               () => Atividade.delete(marker.id),
+               3, 1000, `removeConclusionMarker-${marker.id}`
+             );
+           }
+         } else {
+           // Criar marcador de conclusão (usando tempo 0 em vez de -888)
+           const novoMarcador = {
+             etapa: activityObj.etapa,
+             disciplina: activityObj.disciplina,
+             subdisciplina: activityObj.subdisciplina,
+             atividade: `(Concluída na folha ${doc.numero}) ${String(activityObj.atividade || '')}`,
+             funcao: activityObj.funcao,
+             empreendimento_id: empreendimento.id,
+             id_atividade: activityObj.id,
+             documento_id: doc.id,
+             tempo: 0 // Atividade concluída tem tempo zero
+           };
 
-        // Forçar re-render do componente sem chamar onUpdate
-        setIsUpdatingActivity(false);
-        setIsUpdatingActivity(true);
-        
-        // Dados já atualizados localmente - não precisa recarregar
-      } catch (error) {
-        console.error("❌ Erro ao marcar atividade como concluída:", error);
-        alert("Erro ao atualizar o status da atividade: " + error.message);
-      } finally {
-        setTimeout(() => {
-          setIsUpdatingActivity(false);
-        }, 500);
-      }
-    };
+           console.log(`   Criando marcador de conclusão...`);
+           await retryWithBackoff(
+             () => Atividade.create(novoMarcador),
+             3, 1000, `createConclusionMarker-${activityObj.id}-${doc.id}`
+           );
+         }
+
+         // Recarregar dados para atualizar status visual
+         await onUpdate();
+
+       } catch (error) {
+         console.error("❌ Erro ao marcar atividade como concluída:", error);
+         alert("Erro ao atualizar o status da atividade: " + error.message);
+       } finally {
+         setIsUpdatingActivity(false);
+       }
+     };
 
     const handleExcluirAtividade = async (activityObj) => {
       // **LOG IMEDIATO**: Verificar se a função está sendo chamada
