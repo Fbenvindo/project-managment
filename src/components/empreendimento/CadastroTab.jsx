@@ -791,10 +791,10 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   const getDataValue = (linha, etapa, revisao) => {
   const data = linha.datas?.[etapa]?.[revisao] || '';
   // Não exibir datas inválidas (01/01/0001 ou dd/mm/aaaa)
-  if (!data || data === '0001-01-01' || data.includes('dd/mm/aaaa')) {
+  if (!data || data === '0001-01-01' || (typeof data === 'string' && data.includes('dd/mm/aaaa'))) {
     return '';
   }
-  return data;
+  return typeof data === 'string' ? data : '';
   };
 
   const linhasPorDisciplina = useMemo(() => {
