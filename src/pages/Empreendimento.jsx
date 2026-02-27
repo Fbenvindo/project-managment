@@ -452,7 +452,7 @@ export default function EmpreendimentoPage() {
                   planejamentos={[
                     ...(tabData.documentos.data.planejamentos || [])
                   ]}
-                  atividades={sharedData.atividades || []}
+                  atividades={atividadesCombinadas}
                   usuarios={sharedData.usuarios}
                   execucoes={sharedData.execucoes || []}
                   pavimentos={tabData.pavimentos.data || []}
