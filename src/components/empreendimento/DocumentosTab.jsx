@@ -1197,26 +1197,13 @@ export default function DocumentosTab({
         }
       });
 
-      // Incluir tanto atividades gerais quanto atividades específicas vinculadas a esta folha
+      // Incluir apenas atividades modelo (sem empreendimento_id) que batem com disciplina/subdisciplina
+      // Atividades com empreendimento_id são registros de override/exclusão/conclusão — NÃO devem aparecer como itens separados
       let atividadesGerais = allAtividades.filter(ativ => {
-        // Atividades gerais (sem empreendimento_id)
-        if (!ativ.empreendimento_id) {
-          const disciplinaMatch = ativ.disciplina === disciplinaDoc;
-          const subdisciplinaMatch = Array.isArray(subdisciplinasDoc) && subdisciplinasDoc.includes(ativ.subdisciplina);
-          return disciplinaMatch && subdisciplinaMatch;
-        }
-        
-        // Atividades específicas DESTA folha (com documento_id igual ao documento atual)
-        // IMPORTANTE: Excluir marcadores de conclusão (tempo: 0 com texto "Concluída na folha")
-        if (ativ.empreendimento_id === empreendimento.id && ativ.documento_id === doc.id && ativ.tempo !== -999) {
-          // Não incluir marcadores de conclusão na lista
-          if (ativ.tempo === 0 && String(ativ.atividade || '').includes('Concluída na folha')) {
-            return false;
-          }
-          return true;
-        }
-        
-        return false;
+        if (ativ.empreendimento_id) return false; // Nunca incluir registros específicos do empreendimento como atividades
+        const disciplinaMatch = ativ.disciplina === disciplinaDoc;
+        const subdisciplinaMatch = Array.isArray(subdisciplinasDoc) && subdisciplinasDoc.includes(ativ.subdisciplina);
+        return disciplinaMatch && subdisciplinaMatch;
       });
 
       console.log(`\n🔍 [Doc ${doc.numero}] Filtrando exclusões:`);
