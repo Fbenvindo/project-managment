@@ -882,4 +882,77 @@ export default function DocumentosTab({
             </DialogHeader>
             
             <div className="space-y-4">
-              <div className="bg-blue-50 border
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+                <h3 className="font-semibold text-blue-900 mb-2">📋 Instruções</h3>
+                <ul className="text-sm text-blue-800 space-y-1">
+                  <li>• Envie um arquivo CSV com os documentos</li>
+                  <li>• Colunas obrigatórias: <code className="bg-white px-1 rounded">numero</code>, <code className="bg-white px-1 rounded">arquivo</code></li>
+                  <li>• Colunas opcionais: <code className="bg-white px-1 rounded">descritivo</code>, <code className="bg-white px-1 rounded">pavimento_nome</code>, <code className="bg-white px-1 rounded">disciplinas</code>, <code className="bg-white px-1 rounded">subdisciplinas</code>, <code className="bg-white px-1 rounded">escala</code>, <code className="bg-white px-1 rounded">fator_dificuldade</code></li>
+                  <li>• Múltiplas disciplinas/subdisciplinas devem ser separadas por <code className="bg-white px-1 rounded">,</code> ou <code className="bg-white px-1 rounded">;</code> (ex: Arquitetura,Hidráulica)</li>
+                  <li>• Máximo de 2 disciplinas por documento</li>
+                  <li>• Colunas de datas no formato <code className="bg-white px-1 rounded">ETAPA_REVISAO</code> (ex: ESTUDO PRELIMINAR_R00)</li>
+                  <li>• Formato de data: <code className="bg-white px-1 rounded">DD/MM/AAAA</code> (ex: 15/01/2025)</li>
+                  <li>• O pavimento_nome deve corresponder ao nome exato de um pavimento já cadastrado</li>
+                  <li>• Baixe o template para ver exemplos completos</li>
+                </ul>
+              </div>
+
+              <Button
+                variant="outline"
+                onClick={handleExportTemplate}
+                className="w-full"
+              >
+                <Download className="w-4 h-4 mr-2" />
+                Baixar Template CSV
+              </Button>
+
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
+                <input
+                  type="file"
+                  accept=".csv"
+                  onChange={(e) => setImportFile(e.target.files?.[0] || null)}
+                  className="w-full"
+                />
+                {importFile && (
+                  <p className="text-sm text-green-600 mt-2">
+                    ✓ Arquivo selecionado: {importFile.name}
+                  </p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowImportModal(false);
+                    setImportFile(null);
+                  }}
+                  disabled={isImporting}
+                >
+                  Cancelar
+                </Button>
+                <Button
+                  onClick={handleImport}
+                  disabled={!importFile || isImporting}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {isImporting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Importando...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Importar
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+    </div>
+  );
+}
