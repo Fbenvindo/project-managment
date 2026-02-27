@@ -10,6 +10,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+// Local fallback retry helper to avoid import/runtime issues
+const delay = (ms) => new Promise(res => setTimeout(res, ms));
+async function localRetry(fn, retries = 3, delayMs = 2000, context = 'propostas') {
+  for (let i = 0; i < retries; i++) {
+    try {
+      return await fn();
+    } catch (err) {
+      const isLast = i === retries - 1;
+      console.warn(`[${context}] tentativa ${i + 1} falhou: ${err?.message || err}`);
+      if (isLast) throw err;
+      await delay(delayMs * Math.pow(2, i));
+    }
+  }
+}
 import { format, parseISO } from "date-fns";
 
 const formatCurrency = (value) => {
@@ -122,8 +136,8 @@ export default function PropostasPage() {
     setIsLoading(true);
     console.debug('[Propostas] loadPropostas: iniciando (setIsLoading true)');
     try {
-      console.debug('[Propostas] loadPropostas: chamando Comercial.list via retryWithBackoff');
-      const data = await ApiUtils.retryWithBackoff(
+      console.debug('[Propostas] loadPropostas: chamando Comercial.list via localRetry');
+      const data = await localRetry(
         () => Comercial.list('-updated_date'),
         3, 2000, 'loadPropostas'
       );
@@ -251,12 +265,12 @@ export default function PropostasPage() {
       };
 
       if (editingId) {
-        await ApiUtils.retryWithBackoff(
+        await localRetry(
           () => Comercial.update(editingId, dataToSave),
           3, 2000, 'updateProposta'
         );
       } else {
-        await ApiUtils.retryWithBackoff(
+        await localRetry(
           () => Comercial.create(dataToSave),
           3, 2000, 'createProposta'
         );
