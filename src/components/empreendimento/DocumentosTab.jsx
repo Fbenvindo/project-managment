@@ -1169,9 +1169,6 @@ export default function DocumentosTab({
   }, [usuarios]);
 
   // DocumentoItem component moved to DocumentoItemRow.jsx
-      const disciplinaDoc = doc.disciplina;
-
-      const etapaOverrides = new Map();
       const tempoOverrides = new Map();
       
       allAtividades.forEach(ativ => {
