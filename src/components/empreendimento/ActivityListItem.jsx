@@ -59,7 +59,7 @@ export default function ActivityListItem({
       }
 
       console.log(`✅ Marcador atualizado. Recarregando...`);
-      await new Promise(resolve => setTimeout(resolve, 300));
+      await new Promise(resolve => setTimeout(resolve, 500));
       await onUpdate();
     } catch (error) {
       console.error("❌ Erro ao marcar atividade como concluída:", error);
