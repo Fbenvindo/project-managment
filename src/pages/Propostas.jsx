@@ -10,6 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import * as ApiUtils from "@/lib/apiUtils";
 import { format, parseISO } from "date-fns";
 
 const formatCurrency = (value) => {
@@ -123,7 +124,7 @@ export default function PropostasPage() {
     console.debug('[Propostas] loadPropostas: iniciando (setIsLoading true)');
     try {
       console.debug('[Propostas] loadPropostas: chamando Comercial.list via retryWithBackoff');
-      const data = await retryWithBackoff(
+      const data = await ApiUtils.retryWithBackoff(
         () => Comercial.list('-updated_date'),
         3, 2000, 'loadPropostas'
       );
@@ -251,12 +252,12 @@ export default function PropostasPage() {
       };
 
       if (editingId) {
-        await retryWithBackoff(
+        await ApiUtils.retryWithBackoff(
           () => Comercial.update(editingId, dataToSave),
           3, 2000, 'updateProposta'
         );
       } else {
-        await retryWithBackoff(
+        await ApiUtils.retryWithBackoff(
           () => Comercial.create(dataToSave),
           3, 2000, 'createProposta'
         );
