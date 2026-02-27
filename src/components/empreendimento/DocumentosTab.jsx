@@ -1449,47 +1449,36 @@ export default function DocumentosTab({
 
        setIsUpdatingActivity(true);
        try {
-         // Verificar se já existe marcador de conclusão
-         const existingMarkers = await retryWithBackoff(
-           () => Atividade.filter({
+         const agora = new Date().toISOString();
+
+         // Verificar registros em AtividadesEmpreendimento para esta atividade neste documento
+         const atividadesEmp = await retryWithBackoff(
+           () => base44.entities.AtividadesEmpreendimento.filter({
              empreendimento_id: empreendimento.id,
              id_atividade: activityObj.id,
-             documento_id: doc.id,
-             tempo: 0 // Marcador de conclusão
+             documento_id: doc.id
            }),
-           3, 1000, `checkConclusionMarker-${activityObj.id}-${doc.id}`
+           3, 1000, `checkAtividadeEmpStatus-${activityObj.id}-${doc.id}`
          );
 
-         if (existingMarkers && existingMarkers.length > 0) {
-           // Já está marcada como concluída, então vamos desmarcar
-           console.log(`   Desmarcando como concluída (removendo ${existingMarkers.length} marcador(es))...`);
+         if (atividadesEmp && atividadesEmp.length > 0) {
+           // Atualizar status em AtividadesEmpreendimento
+           for (const atividadeEmp of atividadesEmp) {
+             const isConcluida = atividadeEmp.status_planejamento === 'concluida';
 
-           // Remover TODOS os marcadores de conclusão (caso haja duplicatas)
-           for (const marker of existingMarkers) {
+             const novoStatus = isConcluida ? 'nao_planejada' : 'concluida';
+             const novaDataConclusao = isConcluida ? null : agora;
+
+             console.log(`   Atualizando status em AtividadesEmpreendimento: ${isConcluida ? 'desmarcando' : 'marcando'} como concluída...`);
+
              await retryWithBackoff(
-               () => Atividade.delete(marker.id),
-               3, 1000, `removeConclusionMarker-${marker.id}`
+               () => base44.entities.AtividadesEmpreendimento.update(atividadeEmp.id, {
+                 status_planejamento: novoStatus,
+                 data_conclusao: novaDataConclusao
+               }),
+               3, 1000, `updateAtividadeEmpStatus-${atividadeEmp.id}`
              );
            }
-         } else {
-           // Criar marcador de conclusão (usando tempo 0 em vez de -888)
-           const novoMarcador = {
-             etapa: activityObj.etapa,
-             disciplina: activityObj.disciplina,
-             subdisciplina: activityObj.subdisciplina,
-             atividade: `(Concluída na folha ${doc.numero}) ${String(activityObj.atividade || '')}`,
-             funcao: activityObj.funcao,
-             empreendimento_id: empreendimento.id,
-             id_atividade: activityObj.id,
-             documento_id: doc.id,
-             tempo: 0 // Atividade concluída tem tempo zero
-           };
-
-           console.log(`   Criando marcador de conclusão...`);
-           await retryWithBackoff(
-             () => Atividade.create(novoMarcador),
-             3, 1000, `createConclusionMarker-${activityObj.id}-${doc.id}`
-           );
          }
 
          // Recarregar dados para atualizar status visual
