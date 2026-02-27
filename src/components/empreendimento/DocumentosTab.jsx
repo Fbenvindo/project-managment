@@ -1455,7 +1455,7 @@ export default function DocumentosTab({
          const atividadesEmp = await retryWithBackoff(
            () => base44.entities.AtividadesEmpreendimento.filter({
              empreendimento_id: empreendimento.id,
-             id_atividade: activityObj.id,
+             id_atividade: activityObj.id_atividade || activityObj.id,
              documento_id: doc.id
            }),
            3, 1000, `checkAtividadeEmpStatus-${activityObj.id}-${doc.id}`
