@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { retryWithBackoff } from "@/components/utils/apiUtils";
+import { retryWithBackoff } from "@/lib/apiUtils";
 import { format, parseISO } from "date-fns";
 
 const formatCurrency = (value) => {
@@ -85,6 +85,7 @@ export default function PropostasPage() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [isViewMode, setIsViewMode] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTab, setActiveTab] = useState('list');
   const [formData, setFormData] = useState({
@@ -135,6 +136,7 @@ export default function PropostasPage() {
 
   const handleOpenModal = () => {
     setEditingId(null);
+    setIsViewMode(false);
     setFormData({
       numero: '',
       data_solicitacao: format(new Date(), 'yyyy-MM-dd'),
@@ -164,6 +166,7 @@ export default function PropostasPage() {
 
   const handleEditProposta = (proposta) => {
     setEditingId(proposta.id);
+    setIsViewMode(false);
     setFormData({
       numero: proposta.numero || '',
       data_solicitacao: proposta.data_solicitacao || '',
@@ -189,6 +192,42 @@ export default function PropostasPage() {
       observacao: proposta.observacao || ''
     });
     setIsModalOpen(true);
+  };
+
+  const handleViewProposta = (proposta) => {
+    setEditingId(proposta.id);
+    setIsViewMode(true);
+    setFormData({
+      numero: proposta.numero || '',
+      data_solicitacao: proposta.data_solicitacao || '',
+      solicitante: proposta.solicitante || '',
+      cliente: proposta.cliente || '',
+      empreendimento: proposta.empreendimento || '',
+      tipo_empreendimento: proposta.tipo_empreendimento || '',
+      tipo_obra: proposta.tipo_obra || '',
+      utilizacao: proposta.utilizacao || '',
+      parceiros: proposta.parceiros || [],
+      disciplinas: proposta.disciplinas || [],
+      codisciplinas: proposta.codisciplinas || [],
+      pavimentos: proposta.pavimentos || [],
+      escopo: proposta.escopo || '',
+      area: proposta.area?.toString() || '',
+      estado: proposta.estado || '',
+      valor_bim: proposta.valor_bim?.toString() || '',
+      valor_cad: proposta.valor_cad?.toString() || '',
+      data_aprovacao: proposta.data_aprovacao || '',
+      status: proposta.status || 'solicitado',
+      email: proposta.email || '',
+      telefone: proposta.telefone || '',
+      observacao: proposta.observacao || ''
+    });
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setEditingId(null);
+    setIsViewMode(false);
   };
 
   const handleSave = async () => {
@@ -218,8 +257,7 @@ export default function PropostasPage() {
         );
       }
 
-      setIsModalOpen(false);
-      setEditingId(null);
+      closeModal();
       loadPropostas();
     } catch (error) {
       console.error('Erro ao salvar proposta:', error);
@@ -637,7 +675,14 @@ export default function PropostasPage() {
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                       {group.items.map(item => (
-                        <div key={item.id} className="p-3 border rounded">
+                        <div
+                          key={item.id}
+                          role="button"
+                          tabIndex={0}
+                          onClick={() => handleViewProposta(item)}
+                          onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleViewProposta(item); } }}
+                          className="p-3 border rounded cursor-pointer focus:outline-none focus:ring-2 focus:ring-primary"
+                        >
                           <div className="flex justify-between items-start">
                             <div>
                               <div className="font-semibold">{item.numero || item.nome || item.titulo || 'Sem Nome'}</div>
@@ -663,10 +708,10 @@ export default function PropostasPage() {
             </TabsContent>
           </Tabs>
 
-          <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+          <Dialog open={isModalOpen} onOpenChange={(open) => { setIsModalOpen(open); if (!open) { setEditingId(null); setIsViewMode(false); } }}>
             <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>{editingId ? 'Editar Proposta' : 'Nova Proposta'}</DialogTitle>
+                <DialogTitle>{isViewMode ? 'Visualizar Proposta' : (editingId ? 'Editar Proposta' : 'Nova Proposta')}</DialogTitle>
               </DialogHeader>
 
               <div className="grid grid-cols-2 gap-4 py-4">
@@ -676,6 +721,7 @@ export default function PropostasPage() {
                     id="numero"
                     value={formData.numero}
                     onChange={(e) => setFormData({ ...formData, numero: e.target.value })}
+                    disabled={isViewMode}
                     placeholder="Ex: 2024-001"
                   />
                 </div>
@@ -687,6 +733,7 @@ export default function PropostasPage() {
                     type="date"
                     value={formData.data_solicitacao}
                     onChange={(e) => setFormData({ ...formData, data_solicitacao: e.target.value })}
+                    disabled={isViewMode}
                   />
                 </div>
 
@@ -696,6 +743,7 @@ export default function PropostasPage() {
                     id="cliente"
                     value={formData.cliente}
                     onChange={(e) => setFormData({ ...formData, cliente: e.target.value })}
+                    disabled={isViewMode}
                     placeholder="Nome do cliente"
                   />
                 </div>
@@ -706,6 +754,7 @@ export default function PropostasPage() {
                     id="empreendimento"
                     value={formData.empreendimento}
                     onChange={(e) => setFormData({ ...formData, empreendimento: e.target.value })}
+                    disabled={isViewMode}
                     placeholder="Nome do empreendimento"
                   />
                 </div>
@@ -716,13 +765,14 @@ export default function PropostasPage() {
                     id="solicitante"
                     value={formData.solicitante}
                     onChange={(e) => setFormData({ ...formData, solicitante: e.target.value })}
+                    disabled={isViewMode}
                     placeholder="Nome do solicitante"
                   />
                 </div>
 
                 <div>
                   <Label htmlFor="tipo_empreendimento">Tipo de Empreendimento</Label>
-                  <Select value={formData.tipo_empreendimento} onValueChange={(value) => setFormData({ ...formData, tipo_empreendimento: value })}>
+                  <Select value={formData.tipo_empreendimento} onValueChange={(value) => setFormData({ ...formData, tipo_empreendimento: value })} disabled={isViewMode}>
                     <SelectTrigger>
                       <SelectValue placeholder="Selecione o tipo" />
                     </SelectTrigger>
@@ -742,7 +792,7 @@ export default function PropostasPage() {
                 </div>
 
                 <div className="col-span-2">
-                  <EscopoForm formData={formData} setFormData={setFormData} />
+                  <EscopoForm formData={formData} setFormData={setFormData} readOnly={isViewMode} />
                 </div>
 
                 <div className="col-span-2">
@@ -753,6 +803,7 @@ export default function PropostasPage() {
                     onChange={(e) => setFormData({ ...formData, escopo: e.target.value })}
                     placeholder="Descrição adicional do escopo do projeto"
                     rows={3}
+                    disabled={isViewMode}
                   />
                 </div>
 
@@ -764,6 +815,7 @@ export default function PropostasPage() {
                     step="0.01"
                     value={formData.area}
                     onChange={(e) => setFormData({ ...formData, area: e.target.value })}
+                    disabled={isViewMode}
                     placeholder="0.00"
                   />
                 </div>
@@ -774,6 +826,7 @@ export default function PropostasPage() {
                     id="estado"
                     value={formData.estado}
                     onChange={(e) => setFormData({ ...formData, estado: e.target.value })}
+                    disabled={isViewMode}
                     placeholder="Ex: SP"
                     maxLength={2}
                   />
@@ -787,6 +840,7 @@ export default function PropostasPage() {
                     step="0.01"
                     value={formData.valor_bim}
                     onChange={(e) => setFormData({ ...formData, valor_bim: e.target.value })}
+                    disabled={isViewMode}
                     placeholder="0.00"
                   />
                 </div>
@@ -799,6 +853,7 @@ export default function PropostasPage() {
                     step="0.01"
                     value={formData.valor_cad}
                     onChange={(e) => setFormData({ ...formData, valor_cad: e.target.value })}
+                    disabled={isViewMode}
                     placeholder="0.00"
                   />
                 </div>
@@ -810,6 +865,7 @@ export default function PropostasPage() {
                     type="email"
                     value={formData.email}
                     onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                    disabled={isViewMode}
                     placeholder="contato@exemplo.com"
                   />
                 </div>
@@ -820,13 +876,14 @@ export default function PropostasPage() {
                     id="telefone"
                     value={formData.telefone}
                     onChange={(e) => setFormData({ ...formData, telefone: e.target.value })}
+                    disabled={isViewMode}
                     placeholder="(11) 99999-9999"
                   />
                 </div>
 
                 <div>
                   <Label htmlFor="status">Status</Label>
-                  <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })}>
+                  <Select value={formData.status} onValueChange={(value) => setFormData({ ...formData, status: value })} disabled={isViewMode}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
@@ -846,6 +903,7 @@ export default function PropostasPage() {
                     type="date"
                     value={formData.data_aprovacao}
                     onChange={(e) => setFormData({ ...formData, data_aprovacao: e.target.value })}
+                    disabled={isViewMode}
                   />
                 </div>
 
@@ -855,6 +913,7 @@ export default function PropostasPage() {
                     id="observacao"
                     value={formData.observacao}
                     onChange={(e) => setFormData({ ...formData, observacao: e.target.value })}
+                    disabled={isViewMode}
                     placeholder="Observações adicionais"
                     rows={3}
                   />
@@ -862,19 +921,27 @@ export default function PropostasPage() {
               </div>
 
               <DialogFooter>
-                <Button variant="outline" onClick={() => setIsModalOpen(false)} disabled={isSaving}>
-                  Cancelar
-                </Button>
-                <Button onClick={handleSave} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
-                  {isSaving ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Salvando...
-                    </>
-                  ) : (
-                    editingId ? 'Atualizar Proposta' : 'Salvar Proposta'
-                  )}
-                </Button>
+                {isViewMode ? (
+                  <Button variant="outline" onClick={closeModal}>
+                    Fechar
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="outline" onClick={closeModal} disabled={isSaving}>
+                      Cancelar
+                    </Button>
+                    <Button onClick={handleSave} disabled={isSaving} className="bg-blue-600 hover:bg-blue-700">
+                      {isSaving ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Salvando...
+                        </>
+                      ) : (
+                        editingId ? 'Atualizar Proposta' : 'Salvar Proposta'
+                      )}
+                    </Button>
+                  </>
+                )}
               </DialogFooter>
             </DialogContent>
           </Dialog>
