@@ -1440,57 +1440,16 @@ export default function DocumentosTab({
     };
 
     const handleMarcarComoConcluida = async (activityObj) => {
-       console.log(`\n✅ ========================================`);
-       console.log(`✅ MARCAR COMO CONCLUÍDA`);
-       console.log(`✅ ========================================`);
-       console.log(`   Atividade: "${activityObj.atividade}"`);
-       console.log(`   Folha: ${doc.numero}`);
-       console.log(`✅ ========================================\n`);
-
-       setIsUpdatingActivity(true);
-       try {
-         const agora = new Date().toISOString();
-
-         // Verificar registros em AtividadesEmpreendimento para esta atividade neste documento
-         const atividadesEmp = await retryWithBackoff(
-           () => base44.entities.AtividadesEmpreendimento.filter({
-             empreendimento_id: empreendimento.id,
-             id_atividade: activityObj.id_atividade || activityObj.id,
-             documento_id: doc.id
-           }),
-           3, 1000, `checkAtividadeEmpStatus-${activityObj.id}-${doc.id}`
-         );
-
-         if (atividadesEmp && atividadesEmp.length > 0) {
-           // Atualizar status em AtividadesEmpreendimento
-           for (const atividadeEmp of atividadesEmp) {
-             const isConcluida = atividadeEmp.status_planejamento === 'concluida';
-
-             const novoStatus = isConcluida ? 'nao_planejada' : 'concluida';
-             const novaDataConclusao = isConcluida ? null : agora;
-
-             console.log(`   Atualizando status em AtividadesEmpreendimento: ${isConcluida ? 'desmarcando' : 'marcando'} como concluída...`);
-
-             await retryWithBackoff(
-               () => base44.entities.AtividadesEmpreendimento.update(atividadeEmp.id, {
-                 status_planejamento: novoStatus,
-                 data_conclusao: novaDataConclusao
-               }),
-               3, 1000, `updateAtividadeEmpStatus-${atividadeEmp.id}`
-             );
-           }
-         }
-
-         // Recarregar dados para atualizar status visual
-         await onUpdate();
-
-       } catch (error) {
-         console.error("❌ Erro ao marcar atividade como concluída:", error);
-         alert("Erro ao atualizar o status da atividade: " + error.message);
-       } finally {
-         setIsUpdatingActivity(false);
-       }
-     };
+      setIsUpdatingActivity(true);
+      try {
+        await createActivityCompletionHandler(empreendimento, doc, onUpdate)(activityObj);
+      } catch (error) {
+        console.error("❌ Erro ao marcar atividade como concluída:", error);
+        alert("Erro ao atualizar o status da atividade: " + error.message);
+      } finally {
+        setIsUpdatingActivity(false);
+      }
+    };
 
     const handleExcluirAtividade = async (activityObj) => {
       // **LOG IMEDIATO**: Verificar se a função está sendo chamada
