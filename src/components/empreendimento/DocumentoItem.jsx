@@ -83,6 +83,7 @@ export default function DocumentoItem({
 
   const [showExecutorDialog, setShowExecutorDialog] = useState(false);
   const [pendingExecutor, setPendingExecutor] = useState(null);
+  const [showReplanejamentoSelect, setShowReplanejamentoSelect] = useState(false);
 
   const planejamentosDoDocumento = useMemo(() => {
     return localPlanejamentos.filter(p => p.documento_id === doc.id);
