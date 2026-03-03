@@ -445,15 +445,15 @@ export default function PRETab({ empreendimento, readOnly = false }) {
           </div>
 
           <div className="space-y-4 p-4">
-            {items.length === 0 ? (
+            {filteredItems.length === 0 ? (
               <Card>
                 <CardContent className="p-8 text-center">
                   <FileText className="w-12 h-12 mx-auto text-gray-300 mb-3" />
-                  <p className="text-gray-500">Nenhum item cadastrado. Clique em "Adicionar Item" para começar.</p>
+                  <p className="text-gray-500">{items.length === 0 ? 'Nenhum item cadastrado. Clique em "Adicionar Item" para começar.' : 'Nenhum item encontrado para a disciplina selecionada.'}</p>
                 </CardContent>
               </Card>
             ) : (
-              items.map((item) => (
+              filteredItems.map((item) => (
                 <div key={item.id} className="flex gap-4 border border-gray-300 rounded-lg overflow-hidden bg-white">
                   {/* Container Principal (80%) */}
                   <div className="w-4/5 p-4 space-y-4 border-r border-gray-300">
