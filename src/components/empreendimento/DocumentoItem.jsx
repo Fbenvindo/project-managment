@@ -481,38 +481,35 @@ export default function DocumentoItem({
         <TableCell className="text-sm text-gray-600">{doc.escala ? `1:${doc.escala}` : '-'}</TableCell>
 
         {!readOnly && (
-          <TableCell className="w-[180px]">
+          <TableCell className="w-[200px]">
             <div className="space-y-1">
               {(() => {
-                // Verificar se a etapa selecionada já tem planejamento nesta folha
                 const etapaSelecionada = etapaParaPlanejamento !== 'todas' ? etapaParaPlanejamento : null;
-                const planejamentoDaEtapa = etapaSelecionada
-                  ? planejamentosDoDocumento.find(p => p.etapa === etapaSelecionada && p.executor_principal)
-                  : null;
-                const executorDaEtapa = planejamentoDaEtapa?.executor_principal || null;
 
-                // Se tem etapa selecionada e tem planejamento para essa etapa: mostrar executor do planejamento
-                if (etapaSelecionada && planejamentoDaEtapa && executorDaEtapa) {
-                  return (
-                    <div className="space-y-1">
-                      <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
-                        <div className="flex items-center gap-1">
-                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                          <span className="text-xs font-medium text-green-800">
-                            {usuariosOrdenados.find(u => u.email === executorDaEtapa)?.nome || executorDaEtapa}
-                          </span>
+                // Quando uma etapa específica está selecionada
+                if (etapaSelecionada) {
+                  const planejamentoDaEtapa = planejamentosDoDocumento.find(p => p.etapa === etapaSelecionada && p.executor_principal);
+                  const executorDaEtapa = planejamentoDaEtapa?.executor_principal || null;
+
+                  if (planejamentoDaEtapa && executorDaEtapa) {
+                    return (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
+                          <div className="flex items-center gap-1 min-w-0">
+                            <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+                            <span className="text-xs font-medium text-green-800 truncate">
+                              {usuariosOrdenados.find(u => u.email === executorDaEtapa)?.nome || executorDaEtapa}
+                            </span>
+                          </div>
+                          <Button variant="ghost" size="sm" onClick={() => handleExecutorChange('executor_principal', null)} className="text-xs text-red-600 hover:text-red-700 h-6 flex-shrink-0" disabled={isUpdating || isDocLoading}>
+                            Remover
+                          </Button>
                         </div>
-                        <Button variant="ghost" size="sm" onClick={() => handleExecutorChange('executor_principal', null)} className="text-xs text-red-600 hover:text-red-700 h-6" disabled={isUpdating || isDocLoading}>
-                          Remover
-                        </Button>
+                        <div className="text-xs text-gray-500 italic">{etapaSelecionada}</div>
                       </div>
-                      <div className="text-xs text-gray-500 italic">{etapaSelecionada}</div>
-                    </div>
-                  );
-                }
+                    );
+                  }
 
-                // Se tem etapa selecionada mas sem planejamento: mostrar select vazio SEMPRE
-                if (etapaSelecionada && !planejamentoDaEtapa) {
                   return (
                     <Select onValueChange={(value) => handleExecutorSelectChange(value)} disabled={isUpdating || isDocLoading}>
                       <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
@@ -526,7 +523,29 @@ export default function DocumentoItem({
                   );
                 }
 
-                // Sem etapa selecionada ("todas"): mostrar executor global do documento
+                // "Todas as etapas": mostrar todos os planejamentos existentes agrupados por etapa
+                const planejamentosComExecutor = planejamentosDoDocumento.filter(p => p.executor_principal && p.etapa);
+
+                if (planejamentosComExecutor.length > 0) {
+                  return (
+                    <div className="space-y-1">
+                      {planejamentosComExecutor.map((p) => (
+                        <div key={p.id} className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded gap-1">
+                          <div className="flex flex-col min-w-0">
+                            <div className="flex items-center gap-1">
+                              <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+                              <span className="text-xs font-medium text-green-800 truncate">
+                                {usuariosOrdenados.find(u => u.email === p.executor_principal)?.nome || p.executor_principal}
+                              </span>
+                            </div>
+                            <span className="text-xs text-gray-500 italic pl-3">{p.etapa}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }
+
                 if (doc.executor_principal) {
                   return (
                     <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
