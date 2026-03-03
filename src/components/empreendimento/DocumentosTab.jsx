@@ -677,6 +677,7 @@ export default function DocumentosTab({
     usuariosOrdenados,
     pavimentos,
     handleEditAtividade,
+    atividadesEmpCache,
   };
 
   return (
