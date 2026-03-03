@@ -415,29 +415,7 @@ export default function PRE() {
               </Button>
             </div>
           </div>
-          {selectedEmp && (
-            <div className="flex items-center gap-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <label className="text-sm font-semibold text-gray-700 whitespace-nowrap">Filtrar por Disciplina:</label>
-              <Select value={filtroDispline} onValueChange={setFiltroDispline}>
-                <SelectTrigger className="w-[300px]">
-                  <SelectValue placeholder="Todas as disciplinas" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="todas">Todas as disciplinas</SelectItem>
-                  {disciplinas.map(disc => (
-                    <SelectItem key={disc.id} value={disc.nome}>
-                      {disc.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {filtroDispline !== 'todas' && (
-                <span className="text-sm text-blue-700 font-medium">
-                  Mostrando: <strong>{filteredItems.length}</strong> item(ns)
-                </span>
-              )}
-            </div>
-          )}
+
         </div>
 
         {!selectedEmp ? (
