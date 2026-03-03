@@ -182,6 +182,7 @@ export default function PRE() {
       localizacao: '',
       assunto: '',
       comentario: '',
+      disciplina: '',
       status: 'Em andamento',
       resposta: '',
       imagens: [],
