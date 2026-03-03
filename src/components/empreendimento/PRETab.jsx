@@ -557,11 +557,23 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                         <div className="grid grid-cols-2 gap-3">
                           {(item.imagens || []).map((imgUrl, idx) => (
                             <div key={idx} className="relative group">
-                              <img
-                                src={imgUrl}
-                                alt={`Imagem ${idx + 1}`}
-                                className="w-full rounded border cursor-pointer hover:opacity-80 transition-all"
-                              />
+                              {imgUrl.toLowerCase().endsWith('.pdf') ? (
+                                <a
+                                  href={imgUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="w-full rounded border cursor-pointer hover:opacity-80 transition-all flex items-center justify-center p-4 bg-gray-50 text-sm font-medium text-blue-600 hover:bg-blue-50"
+                                >
+                                  <File className="w-4 h-4 mr-2" />
+                                  PDF
+                                </a>
+                              ) : (
+                                <img
+                                  src={imgUrl}
+                                  alt={`Imagem ${idx + 1}`}
+                                  className="w-full rounded border cursor-pointer hover:opacity-80 transition-all"
+                                />
+                              )}
                               <button
                                 type="button"
                                 onClick={() => handleRemoveImage(item.id, imgUrl)}
