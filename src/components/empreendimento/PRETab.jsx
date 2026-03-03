@@ -328,8 +328,8 @@ export default function PRETab({ empreendimento, readOnly = false }) {
 
   const filteredItems = useMemo(() => {
     if (filtroDispline === 'todas') return items;
-    // Verifica tanto no campo 'disciplina' novo quanto em 'descritiva' (dados legados)
-    return items.filter(item => (item.disciplina || item.descritiva) === filtroDispline);
+    // Filtra pelo campo 'disciplina' (novo) ou 'descritiva' (dados legados)
+    return items.filter(item => item.disciplina === filtroDispline || item.descritiva === filtroDispline);
   }, [items, filtroDispline]);
 
   return (
