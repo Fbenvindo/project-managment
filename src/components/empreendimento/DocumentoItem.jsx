@@ -465,9 +465,9 @@ export default function DocumentoItem({
             ? <span className="line-clamp-2" title={doc.descritivo}>{doc.descritivo}</span>
             : <span className="text-gray-400 italic">Sem descrição</span>}
         </TableCell>
-        <TableCell>
+        <TableCell className="text-left">
           {doc.subdisciplinas && doc.subdisciplinas.length > 0
-            ? <div className="flex flex-wrap gap-1">{doc.subdisciplinas.map((sub, idx) => <Badge key={idx} variant="secondary" className="text-xs">{sub}</Badge>)}</div>
+            ? <div className="flex flex-wrap gap-1 justify-start">{doc.subdisciplinas.map((sub, idx) => <Badge key={idx} variant="secondary" className="text-xs">{sub}</Badge>)}</div>
             : <span className="text-gray-400 italic text-xs">-</span>}
         </TableCell>
         <TableCell className="text-sm text-gray-600">{doc.escala ? `1:${doc.escala}` : '-'}</TableCell>
