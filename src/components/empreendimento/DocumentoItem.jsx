@@ -516,7 +516,7 @@ export default function DocumentoItem({
                 }
 
                 // "Todas as etapas": mostrar todos os planejamentos existentes agrupados por etapa
-                const planejamentosComExecutor = planejamentosDoDocumento.filter(p => p.executor_principal && p.etapa);
+                const planejamentosComExecutor = planejamentosDoDocumento.filter(p => p.executor_principal && (p.etapa || p.tipo_plano === 'documento'));
 
                 if (planejamentosComExecutor.length > 0) {
                   return (
@@ -530,7 +530,7 @@ export default function DocumentoItem({
                                 {usuariosOrdenados.find(u => u.email === p.executor_principal)?.nome || p.executor_principal}
                               </span>
                             </div>
-                            <span className="text-xs text-gray-500 italic pl-3">{p.etapa}</span>
+                            <span className="text-xs text-gray-500 italic pl-3">{p.etapa || 'Múltiplas etapas'}</span>
                           </div>
                           <Button variant="ghost" size="sm" onClick={() => handleExecutorChange('executor_principal', null)} className="text-xs text-red-600 hover:text-red-700 h-6 flex-shrink-0" disabled={isUpdating || isDocLoading}>
                             Remover
