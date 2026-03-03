@@ -487,9 +487,9 @@ export default function DocumentoItem({
                 // Verificar se a etapa selecionada já tem planejamento nesta folha
                 const etapaSelecionada = etapaParaPlanejamento !== 'todas' ? etapaParaPlanejamento : null;
                 const planejamentoDaEtapa = etapaSelecionada
-                  ? planejamentosDoDocumento.find(p => p.etapa === etapaSelecionada)
+                  ? planejamentosDoDocumento.find(p => p.etapa === etapaSelecionada && p.executor_principal)
                   : null;
-                const executorDaEtapa = planejamentoDaEtapa?.executor_principal;
+                const executorDaEtapa = planejamentoDaEtapa?.executor_principal || null;
 
                 // Se tem etapa selecionada e tem planejamento para essa etapa: mostrar executor do planejamento
                 if (etapaSelecionada && planejamentoDaEtapa && executorDaEtapa) {
