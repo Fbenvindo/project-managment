@@ -135,14 +135,17 @@ export default function DocumentosTab({
   const getCargaDiariaExecutor = useCallback(async (executorEmail, forceRefresh = false) => {
     if (!forceRefresh && cargaDiariaCache[executorEmail]) return cargaDiariaCache[executorEmail];
 
-    const [planosAtividade, planosDocumento] = await Promise.all([
-      retryWithExtendedBackoff(() => PlanejamentoAtividade.filter({ executor_principal: executorEmail }), 'loadAllPlansAtividade')
-        .then(res => Array.isArray(res) ? res : [])
-        .catch(() => []),
-      retryWithExtendedBackoff(() => PlanejamentoDocumento.filter({ executor_principal: executorEmail }), 'loadPlanejamentosDocumento')
-        .then(res => Array.isArray(res) ? res : [])
-        .catch(() => [])
-    ]);
+    try {
+      const { PlanejamentoAtividade: PA, PlanejamentoDocumento: PD } = await import('@/entities/all');
+
+      const [planosAtividade, planosDocumento] = await Promise.all([
+        PA && PA.filter ? retryWithExtendedBackoff(() => PA.filter({ executor_principal: executorEmail }), 'loadAllPlansAtividade')
+          .then(res => Array.isArray(res) ? res : [])
+          .catch(() => []) : Promise.resolve([]),
+        PD && PD.filter ? retryWithExtendedBackoff(() => PD.filter({ executor_principal: executorEmail }), 'loadPlanejamentosDocumento')
+          .then(res => Array.isArray(res) ? res : [])
+          .catch(() => []) : Promise.resolve([])
+      ]);
 
     const todosOsPlanos = [...(planosAtividade || []), ...(planosDocumento || [])];
     const hoje = new Date();
