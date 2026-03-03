@@ -147,33 +147,33 @@ export default function DocumentosTab({
           .catch(() => []) : Promise.resolve([])
       ]);
 
-    const todosOsPlanos = [...(planosAtividade || []), ...(planosDocumento || [])];
-    const hoje = new Date();
-    const hojeMidnight = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
-    const cargaDiaria = {};
+      const todosOsPlanos = [...(planosAtividade || []), ...(planosDocumento || [])];
+      const hoje = new Date();
+      const hojeMidnight = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+      const cargaDiaria = {};
 
-    todosOsPlanos.forEach((plano) => {
-      if (plano.horas_por_dia && typeof plano.horas_por_dia === 'object') {
-        Object.entries(plano.horas_por_dia).forEach(([data, horas]) => {
-          try {
-            const dataObj = parseISO(data);
-            if (isValid(dataObj) && dataObj >= hojeMidnight) {
-              const diaKey = format(dataObj, 'yyyy-MM-dd');
-              const horasValidas = Number(horas) || 0;
-              if (horasValidas > 0 && horasValidas <= 12) {
-                cargaDiaria[diaKey] = (cargaDiaria[diaKey] || 0) + horasValidas;
+      todosOsPlanos.forEach((plano) => {
+        if (plano.horas_por_dia && typeof plano.horas_por_dia === 'object') {
+          Object.entries(plano.horas_por_dia).forEach(([data, horas]) => {
+            try {
+              const dataObj = parseISO(data);
+              if (isValid(dataObj) && dataObj >= hojeMidnight) {
+                const diaKey = format(dataObj, 'yyyy-MM-dd');
+                const horasValidas = Number(horas) || 0;
+                if (horasValidas > 0 && horasValidas <= 12) {
+                  cargaDiaria[diaKey] = (cargaDiaria[diaKey] || 0) + horasValidas;
+                }
               }
-            }
-          } catch (erro) { }
-        });
-      }
-    });
+            } catch (erro) { }
+          });
+        }
+      });
 
-    setCargaDiariaCache(prev => ({ ...prev, [executorEmail]: cargaDiaria }));
-    return cargaDiaria;
+      setCargaDiariaCache(prev => ({ ...prev, [executorEmail]: cargaDiaria }));
+      return cargaDiaria;
     } catch (error) {
-    console.error('Erro ao carregar carga diária:', error);
-    return {};
+      console.error('Erro ao carregar carga diária:', error);
+      return {};
     }
   }, [cargaDiariaCache]);
 
