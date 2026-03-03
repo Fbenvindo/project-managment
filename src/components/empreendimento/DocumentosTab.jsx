@@ -540,12 +540,12 @@ export default function DocumentosTab({
     setCargaDiariaCache({});
     setTimeout(() => {
       Promise.all([
-        retryWithBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimento.id }), 3, 500),
-        retryWithBackoff(() => PlanejamentoDocumento.filter({ empreendimento_id: empreendimento.id }), 3, 500),
+        retryWithBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimento.id }), 3, 500).catch(() => []),
+        retryWithBackoff(() => PlanejamentoDocumento.filter({ empreendimento_id: empreendimento.id }), 3, 500).catch(() => []),
       ]).then(([plansAtividade, plansDocumento]) => {
         setLocalPlanejamentos([
-          ...(plansAtividade || []).map(p => ({ ...p, tipo_plano: 'atividade' })),
-          ...(plansDocumento || []).map(p => ({ ...p, tipo_plano: 'documento' }))
+          ...(Array.isArray(plansAtividade) ? plansAtividade : []).map(p => ({ ...p, tipo_plano: 'atividade' })),
+          ...(Array.isArray(plansDocumento) ? plansDocumento : []).map(p => ({ ...p, tipo_plano: 'documento' }))
         ]);
       }).catch(() => {});
     }, 200);
