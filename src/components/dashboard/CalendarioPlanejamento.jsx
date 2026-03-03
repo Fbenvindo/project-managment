@@ -2450,39 +2450,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       }
     });
 
-    // Ordenar atividades dentro de cada dia
+    // Ordenar atividades respeitando predecessoras (topológico) + concluídas no final
     for (const dayKey in grouped) {
-      grouped[dayKey].sort((a, b) => {
-        // Atividades legadas e concluídas por último
-        if (a.isLegacyExecution && !b.isLegacyExecution) return 1;
-        if (!a.isLegacyExecution && b.isLegacyExecution) return -1;
-
-        const statusA = calculateActivityStatus(a, filteredPlanejamentos);
-        const statusB = calculateActivityStatus(b, filteredPlanejamentos);
-
-        if (statusA === 'concluido' && statusB !== 'concluido') return 1;
-        if (statusA !== 'concluido' && statusB === 'concluido') return -1;
-
-        if (statusA === 'pausado' && statusB === 'em_andamento') return 1;
-        if (statusA !== 'pausado' && statusB === 'em_andamento') return -1;
-
-        // Em seguida, pelo horário de início planejado (más cedo primeiro)
-        const inicioA = a.inicio_planejado ? parseISO(a.inicio_planejado) : null;
-        const inicioB = b.inicio_planejado ? parseISO(b.inicio_planejado) : null;
-        if (inicioA && inicioB) {
-          if (inicioA.getTime() < inicioB.getTime()) return -1;
-          if (inicioA.getTime() > inicioB.getTime()) return 1;
-        } else if (inicioA) {
-          return -1; // Atividades com data de início vêm antes daquelas sem
-        } else if (inicioB) {
-          return 1;
-        }
-
-        // Finalmente, por nome
-        const nameA = a.atividade?.atividade || a.documento?.numero_completo || a.descritivo || '';
-        const nameB = b.atividade?.atividade || b.documento?.numero_completo || b.descritivo || '';
-        return nameA.localeCompare(nameB, 'pt-BR', { sensitivity: 'base' });
-      });
+      grouped[dayKey] = sortActivitiesTopological(grouped[dayKey], filteredPlanejamentos);
     }
 
     return grouped;
