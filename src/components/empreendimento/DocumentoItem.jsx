@@ -660,10 +660,11 @@ export default function DocumentoItem({
                             {String(atividade.atividade || '').replace(/^\(Concluída na folha \d+\)\s*/, '').trim() || 'Atividade'}
                           </span>
                           {atividade.statusPlanejamento === 'concluido' && <Badge className="bg-green-600 text-white text-xs">Finalizado</Badge>}
-                          {atividade.estaConcluida && atividade.statusPlanejamento !== 'concluido' && <Badge className="bg-blue-100 text-blue-800 text-xs">Concluída Manualmente</Badge>}
-                          {atividade.statusPlanejamento === 'em_andamento' && <Badge className="bg-yellow-100 text-yellow-800 text-xs">Em Andamento</Badge>}
+                          {atividade.estaConcluida && atividade.statusPlanejamento !== 'concluido' && <Badge className="bg-gray-100 text-gray-600 text-xs">Concluída Manualmente</Badge>}
+                          {atividade.statusPlanejamento === 'em_andamento' && <Badge className="bg-blue-100 text-blue-800 text-xs">Em Andamento</Badge>}
+                          {atividade.statusPlanejamento === 'pausado' && <Badge className="bg-yellow-100 text-yellow-800 text-xs">Pausada</Badge>}
                           {atividade.statusPlanejamento === 'nao_iniciado' && <Badge className="bg-blue-100 text-blue-800 text-xs">Planejado</Badge>}
-                          {!atividade.statusPlanejamento && !atividade.estaConcluida && <Badge className="bg-gray-100 text-gray-600 text-xs">Disponível para planejamento</Badge>}
+                          {!atividade.statusPlanejamento && !atividade.estaConcluida && <Badge className="bg-gray-100 text-gray-600 text-xs">Não planejado</Badge>}
                         </div>
                         <div className="text-sm text-gray-500 mt-1">
                           {atividade.etapa} • {atividade.subdisciplina || 'N/A'}
