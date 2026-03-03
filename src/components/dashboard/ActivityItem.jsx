@@ -7,22 +7,31 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Clock, Play, Trash2, RefreshCw, Edit2, Loader2 } from "lucide-react";
-import { format } from "date-fns";
+import { format, parseISO, isValid, startOfDay, isAfter } from "date-fns";
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 import { PlanejamentoAtividade, PlanejamentoDocumento, Execucao, Empreendimento } from '@/entities/all';
 import { retryWithBackoff } from '../utils/apiUtils';
+import { isActivityOverdue as isOverdueShared } from '../utils/DateCalculator';
+
+const isActivityOverdue = (p) => p.isLegacyExecution ? false : isOverdueShared(p);
 
 const calculateActivityStatus = (plano, allPlanejamentos = []) => {
   if (plano.isLegacyExecution) return plano.status;
   if (plano.status === 'concluido') return 'concluido';
-  const { isActivityOverdue: isOverdueShared } = require('../utils/DateCalculator');
-  const isActivityOverdue = (p) => p.isLegacyExecution ? false : isOverdueShared(p);
   if (plano.status === 'atrasado' || isActivityOverdue(plano)) return 'atrasado';
-  // predecessora atrasada
   if (plano.predecessora_id) {
     const pred = allPlanejamentos.find(p => p.id === plano.predecessora_id);
     if (pred && isActivityOverdue(pred)) return 'impactado_por_atraso';
   }
+  let wasReplannedLater = false;
+  if (plano.termino_ajustado && plano.termino_planejado) {
+    try {
+      const aj = startOfDay(parseISO(plano.termino_ajustado));
+      const pl = startOfDay(parseISO(plano.termino_planejado));
+      if (isValid(aj) && isValid(pl) && isAfter(aj, pl)) wasReplannedLater = true;
+    } catch (e) {}
+  }
+  if (wasReplannedLater) return 'replanejado_atrasado';
   return plano.status || 'nao_iniciado';
 };
 
