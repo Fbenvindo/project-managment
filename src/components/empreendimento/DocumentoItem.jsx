@@ -484,28 +484,40 @@ export default function DocumentoItem({
         {!readOnly && (
           <TableCell className="w-[180px]">
             <div className="space-y-1">
-              {doc.executor_principal ? (
-                <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-xs font-medium text-green-800">
-                      {usuariosOrdenados.find(u => u.email === doc.executor_principal)?.nome || doc.executor_principal}
-                    </span>
+              {doc.executor_principal && !showReplanejamentoSelect ? (
+                <div className="space-y-1">
+                  <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
+                    <div className="flex items-center gap-1">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <span className="text-xs font-medium text-green-800">
+                        {usuariosOrdenados.find(u => u.email === doc.executor_principal)?.nome || doc.executor_principal}
+                      </span>
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => handleExecutorChange('executor_principal', null)} className="text-xs text-red-600 hover:text-red-700 h-6" disabled={isUpdating || isDocLoading}>
+                      Remover
+                    </Button>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => handleExecutorChange('executor_principal', null)} className="text-xs text-red-600 hover:text-red-700 h-6" disabled={isUpdating || isDocLoading}>
-                    Remover
+                  <Button variant="outline" size="sm" className="w-full text-xs h-6 border-blue-400 text-blue-600 hover:bg-blue-50" onClick={() => setShowReplanejamentoSelect(true)} disabled={isUpdating || isDocLoading}>
+                    + Planejar outra etapa
                   </Button>
                 </div>
               ) : (
-                <Select onValueChange={(value) => handleExecutorSelectChange(value)} disabled={isUpdating || isDocLoading}>
-                  <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
-                    <Users2 className="w-3 h-3 mr-1" />
-                    <SelectValue placeholder="Selecionar Executor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {usuariosOrdenados.map(u => <SelectItem key={u.id} value={u.email}>{u.nome}</SelectItem>)}
-                  </SelectContent>
-                </Select>
+                <div className="space-y-1">
+                  <Select onValueChange={(value) => { handleExecutorSelectChange(value); setShowReplanejamentoSelect(false); }} disabled={isUpdating || isDocLoading}>
+                    <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
+                      <Users2 className="w-3 h-3 mr-1" />
+                      <SelectValue placeholder="Selecionar Executor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {usuariosOrdenados.map(u => <SelectItem key={u.id} value={u.email}>{u.nome}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  {showReplanejamentoSelect && (
+                    <Button variant="ghost" size="sm" className="w-full text-xs h-6 text-gray-500" onClick={() => setShowReplanejamentoSelect(false)} disabled={isUpdating}>
+                      Cancelar
+                    </Button>
+                  )}
+                </div>
               )}
               {(isUpdating || isDocLoading) && (
                 <div className="flex items-center gap-1 text-xs text-blue-600">
