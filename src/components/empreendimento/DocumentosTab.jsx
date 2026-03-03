@@ -76,6 +76,15 @@ export default function DocumentosTab({
   const [cargaDiariaCache, setCargaDiariaCache] = useState({});
   const [disciplinasMinimizadas, setDisciplinasMinimizadas] = useState({});
 
+  const { updateKey } = useContext(ActivityTimerContext);
+  const prevUpdateKeyRef = useRef(updateKey);
+  useEffect(() => {
+    if (updateKey !== prevUpdateKeyRef.current) {
+      prevUpdateKeyRef.current = updateKey;
+      reloadPlanejamentos();
+    }
+  }, [updateKey, reloadPlanejamentos]);
+
   useEffect(() => { setLocalDocumentos(documentos); }, [documentos]);
   useEffect(() => { setLocalPlanejamentos(planejamentos); }, [planejamentos]);
 
