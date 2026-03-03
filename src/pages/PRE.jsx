@@ -666,18 +666,39 @@ export default function PRE() {
                       </div>
 
                       {/* Localização */}
-                      <div>
-                        <label className="text-xs font-semibold text-gray-600 block mb-1">Localização</label>
-                        <Textarea
-                          value={item.localizacao}
-                          onChange={(e) => handleUpdateItem(item.id, 'localizacao', e.target.value)}
-                          className="w-full text-sm print:border-none print:bg-transparent resize-none"
-                          rows={3}
-                          placeholder="Localização..."
-                        />
-                      </div>
+                       <div>
+                         <label className="text-xs font-semibold text-gray-600 block mb-1">Localização</label>
+                         <Textarea
+                           value={item.localizacao}
+                           onChange={(e) => handleUpdateItem(item.id, 'localizacao', e.target.value)}
+                           className="w-full text-sm print:border-none print:bg-transparent resize-none"
+                           rows={3}
+                           placeholder="Localização..."
+                         />
+                       </div>
 
-                      {/* Status */}
+                       {/* Disciplina */}
+                       <div>
+                         <label className="text-xs font-semibold text-gray-600 block mb-1">Disciplina</label>
+                         <Select
+                           value={item.disciplina || ''}
+                           onValueChange={(value) => handleUpdateItem(item.id, 'disciplina', value)}
+                         >
+                           <SelectTrigger className="h-9 text-sm print:border-none print:bg-transparent">
+                             <SelectValue placeholder="Selecione a disciplina" />
+                           </SelectTrigger>
+                           <SelectContent>
+                             <SelectItem value={null}>Sem disciplina</SelectItem>
+                             {disciplinas.map(disc => (
+                               <SelectItem key={disc.id} value={disc.nome}>
+                                 {disc.nome}
+                               </SelectItem>
+                             ))}
+                           </SelectContent>
+                         </Select>
+                       </div>
+
+                       {/* Status */}
                       <div>
                         <label className="text-xs font-semibold text-gray-600 block mb-1">Status</label>
                         <Select
