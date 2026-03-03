@@ -432,9 +432,9 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todas">Todas as disciplinas</SelectItem>
-                  {disciplinas.map(disc => (
-                    <SelectItem key={disc.id} value={disc.nome}>
-                      {disc.nome}
+                  {Array.from(new Set(items.map(item => item.descritiva).filter(Boolean))).sort().map(desc => (
+                    <SelectItem key={desc} value={desc}>
+                      {desc}
                     </SelectItem>
                   ))}
                 </SelectContent>
