@@ -132,11 +132,11 @@ export default function DocumentosTab({
     if (!forceRefresh && cargaDiariaCache[executorEmail]) return cargaDiariaCache[executorEmail];
 
     const [planosAtividade, planosDocumento] = await Promise.all([
-      retryWithExtendedBackoff(() => PlanejamentoAtividade.filter({ executor_principal: executorEmail }), 'loadAllPlansAtividade'),
-      retryWithExtendedBackoff(() => PlanejamentoDocumento.filter({ executor_principal: executorEmail }), 'loadAllPlansDocumento')
+      retryWithExtendedBackoff(() => PlanejamentoAtividade.filter({ executor_principal: executorEmail }), 'loadAllPlansAtividade').catch(() => []),
+      retryWithExtendedBackoff(() => PlanejamentoDocumento.filter({ executor_principal: executorEmail }), 'loadPlanejamentosDocumento').catch(() => [])
     ]);
 
-    const todosOsPlanos = [...(planosAtividade || []), ...(planosDocumento || [])];
+    const todosOsPlanos = [...(Array.isArray(planosAtividade) ? planosAtividade : []), ...(Array.isArray(planosDocumento) ? planosDocumento : [])];
     const hoje = new Date();
     const hojeMidnight = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
     const cargaDiaria = {};
