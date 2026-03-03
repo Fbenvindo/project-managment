@@ -136,7 +136,8 @@ export default function DocumentosTab({
     if (!forceRefresh && cargaDiariaCache[executorEmail]) return cargaDiariaCache[executorEmail];
 
     try {
-      const { PlanejamentoAtividade: PA, PlanejamentoDocumento: PD } = await import('@/entities/all');
+      const PA = PlanejamentoAtividade;
+      const PD = PlanejamentoDocumento;
 
       const [planosAtividade, planosDocumento] = await Promise.all([
         PA && PA.filter ? retryWithExtendedBackoff(() => PA.filter({ executor_principal: executorEmail }), 'loadAllPlansAtividade')
