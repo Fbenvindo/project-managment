@@ -471,57 +471,32 @@ export default function PRE() {
               </div>
             </div>
 
-            {/* Info do Cliente e Filtro */}
-            <div className="border-b border-gray-400 p-4 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Cliente:</label>
-                  <Input
-                    value={headerData.cliente}
-                    onChange={(e) => setHeaderData(prev => ({ ...prev, cliente: e.target.value }))}
-                    className="mt-1 print:border-none print:bg-transparent"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700">Descrição:</label>
-                  <Input
-                    value={headerData.descricao}
-                    onChange={(e) => setHeaderData(prev => ({ ...prev, descricao: e.target.value }))}
-                    className="mt-1 print:border-none print:bg-transparent"
-                  />
-                </div>
-                <div className="col-span-2">
-                  <label className="text-sm font-medium text-gray-700">Obra:</label>
-                  <Input
-                    value={headerData.obra}
-                    onChange={(e) => setHeaderData(prev => ({ ...prev, obra: e.target.value }))}
-                    className="mt-1 print:border-none print:bg-transparent"
-                  />
-                </div>
+            {/* Info do Cliente */}
+            <div className="border-b border-gray-400 p-4 grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700">Cliente:</label>
+                <Input
+                  value={headerData.cliente}
+                  onChange={(e) => setHeaderData(prev => ({ ...prev, cliente: e.target.value }))}
+                  className="mt-1 print:border-none print:bg-transparent"
+                />
               </div>
-              {selectedEmp && (
-                <div className="no-print flex items-center gap-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
-                  <label className="text-sm font-semibold text-gray-700 whitespace-nowrap">Filtrar por Disciplina:</label>
-                  <Select value={filtroDispline} onValueChange={setFiltroDispline}>
-                    <SelectTrigger className="w-[250px]">
-                      <SelectValue placeholder="Todas as disciplinas" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="todas">Todas as disciplinas</SelectItem>
-                      {disciplinas.map(disc => (
-                        <SelectItem key={disc.id} value={disc.nome}>
-                          {disc.nome}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {filtroDispline !== 'todas' && (
-                    <span className="text-sm text-blue-700 font-medium">
-                      ({filteredItems.length})
-                    </span>
-                  )}
-                </div>
-              )}
+              <div>
+                <label className="text-sm font-medium text-gray-700">Descrição:</label>
+                <Input
+                  value={headerData.descricao}
+                  onChange={(e) => setHeaderData(prev => ({ ...prev, descricao: e.target.value }))}
+                  className="mt-1 print:border-none print:bg-transparent"
+                />
+              </div>
+              <div className="col-span-2">
+                <label className="text-sm font-medium text-gray-700">Obra:</label>
+                <Input
+                  value={headerData.obra}
+                  onChange={(e) => setHeaderData(prev => ({ ...prev, obra: e.target.value }))}
+                  className="mt-1 print:border-none print:bg-transparent"
+                />
+              </div>
             </div>
 
             {/* Container de Itens */}
