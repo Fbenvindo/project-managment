@@ -62,6 +62,7 @@ export default function DocumentoItem({
   usuariosOrdenados,
   pavimentos,
   handleEditAtividade,
+  atividadesEmpCache = [],
 }) {
   const [isUpdatingActivity, setIsUpdatingActivity] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
