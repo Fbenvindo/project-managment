@@ -75,8 +75,8 @@ export default function DocumentoItem({
   const [pendingExecutor, setPendingExecutor] = useState(null);
 
   const planejamentosDoDocumento = useMemo(() => {
-    return planejamentos.filter(p => p.documento_id === doc.id);
-  }, [planejamentos, doc.id]);
+    return localPlanejamentos.filter(p => p.documento_id === doc.id);
+  }, [localPlanejamentos, doc.id]);
 
   const atividadesDisponiveis = useMemo(() => {
     const subdisciplinasDoc = doc.subdisciplinas || [];
