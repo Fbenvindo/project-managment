@@ -164,8 +164,19 @@ export default function DocumentoItem({
         p.atividade_id === atividade.id && p.etapa === etapaFinal && p.tipo_plano === 'atividade' && p.tempo_planejado > 0
       );
       const planejamentoDocDaEtapa = planejamentosDoDocumento.find(p => p.etapa === etapaFinal && p.tipo_plano === 'documento');
-      const jaFoiPlanejada = !!planejamentoDocDaEtapa || !!planejamentoAtividade;
-      const statusPlanejamento = planejamentoAtividade?.status || (jaFoiPlanejada ? planejamentoDocDaEtapa?.status : null);
+
+      // Verificar registro em AtividadesEmpreendimento (novo fluxo)
+      const atividadeEmpRecord = atividadesEmpCache.find(ae =>
+        (ae.atividade_id === atividade.id || ae.id_atividade === atividade.id_atividade || ae.id_atividade === atividade.id) &&
+        ae.etapa === etapaFinal
+      );
+
+      const jaFoiPlanejada = !!planejamentoDocDaEtapa || !!planejamentoAtividade || !!atividadeEmpRecord;
+
+      // Status: priorizar AtividadesEmpreendimento, depois PlanejamentoAtividade, depois PlanejamentoDocumento
+      const statusExecucaoMap = { 'em_andamento': 'em_andamento', 'pausada': 'pausado', 'concluida': 'concluido', 'nao_iniciada': 'nao_iniciado' };
+      const statusDeExecucao = atividadeEmpRecord?.status_execucao ? statusExecucaoMap[atividadeEmpRecord.status_execucao] : null;
+      const statusPlanejamento = statusDeExecucao || planejamentoAtividade?.status || (jaFoiPlanejada ? planejamentoDocDaEtapa?.status : null);
 
       const fatorDificuldade = doc.fator_dificuldade || 1;
       const isConfeccaoA = nomeAtividadeSeguro.trim().startsWith('Confecção de A-');
