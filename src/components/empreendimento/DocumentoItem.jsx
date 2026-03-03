@@ -502,17 +502,11 @@ export default function DocumentoItem({
                             {usuariosOrdenados.find(u => u.email === executorDaEtapa)?.nome || executorDaEtapa}
                           </span>
                         </div>
+                        <Button variant="ghost" size="sm" onClick={() => handleExecutorChange('executor_principal', null)} className="text-xs text-red-600 hover:text-red-700 h-6" disabled={isUpdating || isDocLoading}>
+                          Remover
+                        </Button>
                       </div>
                       <div className="text-xs text-gray-500 italic">{etapaSelecionada}</div>
-                      <Select onValueChange={(value) => handleExecutorSelectChange(value)} disabled={isUpdating || isDocLoading}>
-                        <SelectTrigger className="w-full text-xs h-7 border-blue-300 text-blue-500 hover:bg-blue-50">
-                          <Users2 className="w-3 h-3 mr-1" />
-                          <SelectValue placeholder="Replanejar etapa..." />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {usuariosOrdenados.map(u => <SelectItem key={u.id} value={u.email}>{u.nome}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
                     </div>
                   );
                 }
