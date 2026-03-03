@@ -1858,18 +1858,15 @@ export default function DocumentosTab({
             return;
         }
 
-        // Verificar se existem predecessoras ou sucessoras
-        const predecessoras = localDocumentos.filter(d => d.predecessora_id === doc.id);
-        const sucessoras = localDocumentos.filter(d => d.id === doc.predecessora_id);
-        
-        if (predecessoras.length > 0 || sucessoras.length > 0) {
-            // Mostrar diálogo para perguntar se quer aplicar às outras folhas
+        // Só perguntar se existem SUCESSORAS sem executor atribuído
+        const successorsWithoutExecutor = localDocumentos.filter(
+            d => d.predecessora_id === doc.id && !d.executor_principal
+        );
+        if (successorsWithoutExecutor.length > 0) {
             setPendingExecutor(executorEmail);
             setShowExecutorDialog(true);
             return;
         }
-
-        // Se não há predecessoras/sucessoras, aplicar diretamente
         await applyExecutor(executorEmail, [doc.id]);
     };
 
