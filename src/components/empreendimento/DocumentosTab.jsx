@@ -83,8 +83,12 @@ export default function DocumentosTab({
     try {
       const { PlanejamentoAtividade: PA, PlanejamentoDocumento: PD } = await import('@/entities/all');
       const [plansAtiv, plansDoc] = await Promise.all([
-        PA.filter({ empreendimento_id: empreendimento.id }),
-        PD.filter({ empreendimento_id: empreendimento.id }),
+        PA.filter({ empreendimento_id: empreendimento.id })
+          .then(res => Array.isArray(res) ? res : [])
+          .catch(() => []),
+        PD.filter({ empreendimento_id: empreendimento.id })
+          .then(res => Array.isArray(res) ? res : [])
+          .catch(() => []),
       ]);
       setLocalPlanejamentos([
         ...(plansAtiv || []).map(p => ({ ...p, tipo_plano: 'atividade' })),
