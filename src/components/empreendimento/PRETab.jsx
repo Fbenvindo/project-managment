@@ -277,6 +277,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
           localizacao: item.localizacao,
           assunto: item.assunto,
           comentario: item.comentario,
+          disciplina: item.disciplina,
           status: item.status || '',
           resposta: item.resposta,
           imagens: item.imagens || []
