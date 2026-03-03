@@ -585,6 +585,17 @@ export default function DocumentosTab({
       const documento = localDocumentos.find(d => d.id === documentoId);
       if (!documento) return;
 
+      // Permitir limpar a data
+      if (!novaDataStr) {
+        const updatedDocFromAPI = await retryWithExtendedBackoff(
+          () => Documento.update(documentoId, { inicio_planejado: null, termino_planejado: null }),
+          `clearStartDate-${documentoId}`
+        );
+        handleLocalUpdate(updatedDocFromAPI);
+        setCargaDiariaCache({});
+        return;
+      }
+
       const novaDataInicio = parseDate(novaDataStr);
       if (!isValid(novaDataInicio)) { alert("Data de início inválida."); return; }
 
