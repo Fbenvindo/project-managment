@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef, useContext } from 'react';
+import { ActivityTimerContext } from '@/components/contexts/ActivityTimerContext';
 import { Documento, Disciplina, Atividade, Execucao, Usuario, PlanejamentoAtividade, PlanejamentoDocumento, DataCadastro } from "@/entities/all";
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
