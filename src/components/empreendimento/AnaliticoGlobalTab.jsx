@@ -2262,39 +2262,23 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                               </Button>
                             )}
                           </TableCell>
-                          <TableCell className="font-medium">{String(ativ.atividade || '')}</TableCell>
-                          <TableCell>
-                            <Badge variant="outline">
-                              {grupo.folhas.length} {grupo.folhas.length === 1 ? 'folha' : 'folhas'}
-                            </Badge>
+                          <TableCell className="font-medium">
+                            <div>{String(ativ.atividade || '')}</div>
+                            {ativ.subdisciplina && <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded mt-0.5 inline-block">{ativ.subdisciplina}</span>}
                           </TableCell>
+                          <TableCell><Badge variant="outline">{grupo.folhas.length} {grupo.folhas.length === 1 ? 'folha' : 'folhas'}</Badge></TableCell>
                           <TableCell>
                             {grupo.folhas.length === 0 ? (
-                              <Badge variant={ativ.source === 'Projeto' ? 'default' : 'secondary'}>
-                                {ativ.source === 'Projeto' ? 'Projeto' : 'Disponível'}
-                              </Badge>
+                              <Badge variant={ativ.source === 'Projeto' ? 'default' : 'secondary'}>{ativ.source === 'Projeto' ? 'Projeto' : 'Disponível'}</Badge>
                             ) : (
                               <div className="flex gap-1">
-                                {grupo.folhas.some(f => f.status === 'Planejada') && (
-                                  <Badge className="bg-green-600 text-white font-semibold shadow-md flex items-center gap-1 w-fit">
-                                    <CheckCircle2 className="w-4 h-4" />
-                                    Planejada
-                                  </Badge>
-                                )}
-                                {grupo.folhas.some(f => f.status === 'Disponível') && (
-                                  <Badge variant="outline" className="text-gray-600">Disponível</Badge>
-                                )}
+                                {grupo.folhas.some(f => f.status === 'Planejada') && (<Badge className="bg-green-600 text-white font-semibold shadow-md flex items-center gap-1 w-fit"><CheckCircle2 className="w-4 h-4" />Planejada</Badge>)}
+                                {grupo.folhas.some(f => f.status === 'Disponível') && (<Badge variant="outline" className="text-gray-600">Disponível</Badge>)}
                               </div>
                             )}
                           </TableCell>
                           <TableCell>
-                            <button
-                              onClick={() => handleOpenEtapaModal(ativ)}
-                              className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer"
-                              title="Clique para editar a etapa"
-                            >
-                              {ativ.etapa}
-                            </button>
+                            <button onClick={() => handleOpenEtapaModal(ativ)} className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer" title="Clique para editar a etapa">{ativ.etapa}</button>
                           </TableCell>
                           <TableCell>
                             <div className="w-[210px]">
