@@ -323,6 +323,11 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     window.print();
   };
 
+  const filteredItems = useMemo(() => {
+    if (filtroDispline === 'todas') return items;
+    return items.filter(item => item.disciplina === filtroDispline);
+  }, [items, filtroDispline]);
+
   return (
     <>
       <style>{printStyles}</style>
