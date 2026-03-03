@@ -483,29 +483,84 @@ export default function DocumentoItem({
         {!readOnly && (
           <TableCell className="w-[180px]">
             <div className="space-y-1">
-              {doc.executor_principal ? (
-                <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
-                  <div className="flex items-center gap-1">
-                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                    <span className="text-xs font-medium text-green-800">
-                      {usuariosOrdenados.find(u => u.email === doc.executor_principal)?.nome || doc.executor_principal}
-                    </span>
-                  </div>
-                  <Button variant="ghost" size="sm" onClick={() => handleExecutorChange('executor_principal', null)} className="text-xs text-red-600 hover:text-red-700 h-6" disabled={isUpdating || isDocLoading}>
-                    Remover
-                  </Button>
-                </div>
-              ) : (
-                <Select onValueChange={(value) => handleExecutorSelectChange(value)} disabled={isUpdating || isDocLoading}>
-                  <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
-                    <Users2 className="w-3 h-3 mr-1" />
-                    <SelectValue placeholder="Selecionar Executor" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {usuariosOrdenados.map(u => <SelectItem key={u.id} value={u.email}>{u.nome}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              )}
+              {(() => {
+                // Verificar se a etapa selecionada já tem planejamento nesta folha
+                const etapaSelecionada = etapaParaPlanejamento !== 'todas' ? etapaParaPlanejamento : null;
+                const planejamentoDaEtapa = etapaSelecionada
+                  ? planejamentosDoDocumento.find(p => p.etapa === etapaSelecionada)
+                  : null;
+                const executorDaEtapa = planejamentoDaEtapa?.executor_principal;
+
+                // Se tem etapa selecionada e tem planejamento para essa etapa: mostrar executor do planejamento
+                if (etapaSelecionada && planejamentoDaEtapa && executorDaEtapa) {
+                  return (
+                    <div className="space-y-1">
+                      <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
+                        <div className="flex items-center gap-1">
+                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                          <span className="text-xs font-medium text-green-800">
+                            {usuariosOrdenados.find(u => u.email === executorDaEtapa)?.nome || executorDaEtapa}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-xs text-gray-500 italic">{etapaSelecionada}</div>
+                      <Select onValueChange={(value) => handleExecutorSelectChange(value)} disabled={isUpdating || isDocLoading}>
+                        <SelectTrigger className="w-full text-xs h-7 border-blue-300 text-blue-500 hover:bg-blue-50">
+                          <Users2 className="w-3 h-3 mr-1" />
+                          <SelectValue placeholder="Replanejar etapa..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {usuariosOrdenados.map(u => <SelectItem key={u.id} value={u.email}>{u.nome}</SelectItem>)}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  );
+                }
+
+                // Se tem etapa selecionada mas sem planejamento: mostrar select vazio (independente de executor_principal)
+                if (etapaSelecionada && !planejamentoDaEtapa) {
+                  return (
+                    <Select onValueChange={(value) => handleExecutorSelectChange(value)} disabled={isUpdating || isDocLoading}>
+                      <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
+                        <Users2 className="w-3 h-3 mr-1" />
+                        <SelectValue placeholder="Selecionar Executor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {usuariosOrdenados.map(u => <SelectItem key={u.id} value={u.email}>{u.nome}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  );
+                }
+
+                // Sem etapa selecionada ("todas"): comportamento original
+                if (doc.executor_principal) {
+                  return (
+                    <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
+                      <div className="flex items-center gap-1">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-xs font-medium text-green-800">
+                          {usuariosOrdenados.find(u => u.email === doc.executor_principal)?.nome || doc.executor_principal}
+                        </span>
+                      </div>
+                      <Button variant="ghost" size="sm" onClick={() => handleExecutorChange('executor_principal', null)} className="text-xs text-red-600 hover:text-red-700 h-6" disabled={isUpdating || isDocLoading}>
+                        Remover
+                      </Button>
+                    </div>
+                  );
+                }
+
+                return (
+                  <Select onValueChange={(value) => handleExecutorSelectChange(value)} disabled={isUpdating || isDocLoading}>
+                    <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
+                      <Users2 className="w-3 h-3 mr-1" />
+                      <SelectValue placeholder="Selecionar Executor" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {usuariosOrdenados.map(u => <SelectItem key={u.id} value={u.email}>{u.nome}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                );
+              })()}
               {(isUpdating || isDocLoading) && (
                 <div className="flex items-center gap-1 text-xs text-blue-600">
                   <Loader2 className="w-3 h-3 animate-spin" />
