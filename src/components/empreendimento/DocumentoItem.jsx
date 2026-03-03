@@ -540,6 +540,9 @@ export default function DocumentoItem({
                             </div>
                             <span className="text-xs text-gray-500 italic pl-3">{p.etapa}</span>
                           </div>
+                          <Button variant="ghost" size="sm" onClick={() => handleExecutorChange('executor_principal', null)} className="text-xs text-red-600 hover:text-red-700 h-6 flex-shrink-0" disabled={isUpdating || isDocLoading}>
+                            Remover
+                          </Button>
                         </div>
                       ))}
                     </div>
