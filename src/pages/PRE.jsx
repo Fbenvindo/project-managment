@@ -416,10 +416,10 @@ export default function PRE() {
             </div>
           </div>
           {selectedEmp && (
-            <div className="flex items-center gap-2">
-              <label className="text-sm font-medium text-gray-700">Filtrar por Disciplina:</label>
+            <div className="flex items-center gap-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <label className="text-sm font-semibold text-gray-700 whitespace-nowrap">Filtrar por Disciplina:</label>
               <Select value={filtroDispline} onValueChange={setFiltroDispline}>
-                <SelectTrigger className="w-[250px]">
+                <SelectTrigger className="w-[300px]">
                   <SelectValue placeholder="Todas as disciplinas" />
                 </SelectTrigger>
                 <SelectContent>
@@ -431,6 +431,11 @@ export default function PRE() {
                   ))}
                 </SelectContent>
               </Select>
+              {filtroDispline !== 'todas' && (
+                <span className="text-sm text-blue-700 font-medium">
+                  Mostrando: <strong>{filteredItems.length}</strong> item(ns)
+                </span>
+              )}
             </div>
           )}
         </div>
