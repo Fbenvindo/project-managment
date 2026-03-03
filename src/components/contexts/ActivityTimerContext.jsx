@@ -287,39 +287,9 @@ export const ActivityTimerProvider = ({ children }) => {
                 3, 1000, 'updatePlanejamento.update'
             );
             
-            // Atualizar status_execucao na entidade AtividadesEmpreendimento
-            if (planejamento.atividade_id && !isDocumento) {
-                try {
-                    // Buscar pelo planejamento_id vinculado ou pelo id_atividade
-                    const atividadesEmp = await retryWithBackoff(
-                        () => AtividadesEmpreendimento.filter({ planejamento_id: planejamento.id }),
-                        2, 500, 'updateAtividadesEmpStatus.findByPlanId'
-                    );
-                    const records = atividadesEmp && atividadesEmp.length > 0
-                        ? atividadesEmp
-                        : await retryWithBackoff(
-                            () => AtividadesEmpreendimento.filter({ id_atividade: planejamento.atividade_id, empreendimento_id: planejamento.empreendimento_id }),
-                            2, 500, 'updateAtividadesEmpStatus.findByAtivId'
-                          ).then(r => r || []);
-
-                    if (records && records.length > 0) {
-                        const statusMap = { concluido: 'concluida', pausado: 'pausada', em_andamento: 'em_andamento' };
-                        const novoStatusExecucao = statusMap[finalStatus] || 'em_andamento';
-                        const updatePayload = { status_execucao: novoStatusExecucao };
-                        if (finalStatus === 'concluido') {
-                            updatePayload.data_conclusao = new Date().toISOString();
-                            updatePayload.status_planejamento = 'planejada';
-                        }
-                        await retryWithBackoff(
-                            () => AtividadesEmpreendimento.update(records[0].id, updatePayload),
-                            2, 500, 'updateAtividadesEmpStatus.update'
-                        );
-                        console.log(`✅ AtividadesEmpreendimento ${records[0].id} status_execucao → ${novoStatusExecucao}`);
-                    }
-                } catch (e) {
-                    console.warn('⚠️ Erro ao atualizar AtividadesEmpreendimento:', e);
-                }
-            }
+            // Não há entidade AtividadesEmpreendimento para atualizar aqui.
+            // O status é refletido diretamente via PlanejamentoAtividade/PlanejamentoDocumento já atualizado acima.
+            // O DocumentoItem lê localPlanejamentos que é recarregado via triggerUpdate().
 
             console.log(`✅ [updatePlanejamento] ${isDocumento ? 'PlanejamentoDocumento' : 'PlanejamentoAtividade'} ${planejamento.id} ATUALIZADO COM SUCESSO`);
             console.log(`   Resposta do servidor:`, updatedPlano);
