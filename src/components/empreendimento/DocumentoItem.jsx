@@ -608,9 +608,21 @@ export default function DocumentoItem({
 
         {!readOnly && (
           <TableCell className="text-sm text-gray-700">
-            <div className="flex flex-col">
-              <span>Início: {doc.inicio_planejado ? format(parseISO(doc.inicio_planejado), 'dd/MM/yyyy') : 'N/A'}</span>
-              <span>Término: {doc.termino_planejado ? format(parseISO(doc.termino_planejado), 'dd/MM/yyyy') : 'N/A'}</span>
+            <div className="flex flex-col gap-1">
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-gray-500 w-12">Início:</span>
+                <Input
+                  type="date"
+                  value={doc.inicio_planejado || ''}
+                  onChange={(e) => handleDataInicioChange(doc.id, e.target.value || null)}
+                  disabled={isDocLoading}
+                  className="h-6 text-xs px-1 w-32"
+                />
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-xs text-gray-500 w-12">Término:</span>
+                <span className="text-xs">{doc.termino_planejado ? format(parseISO(doc.termino_planejado), 'dd/MM/yyyy') : 'N/A'}</span>
+              </div>
             </div>
           </TableCell>
         )}
