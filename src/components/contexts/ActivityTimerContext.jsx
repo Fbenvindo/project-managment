@@ -1,5 +1,5 @@
 import React, { createContext, useState, useEffect, useMemo, useCallback } from 'react';
-import { Execucao, User, PlanejamentoAtividade, SobraUsuario, AtividadeGenerica, Empreendimento, PlanejamentoDocumento, Usuario } from '@/entities/all';
+import { Execucao, User, PlanejamentoAtividade, SobraUsuario, AtividadeGenerica, Empreendimento, PlanejamentoDocumento, Usuario, AtividadesEmpreendimento } from '@/entities/all';
 import { useIdleDetection } from '../hooks/useIdleDetection';
 import IdleWarningModal from '../layout/IdleWarningModal';
 import { retryWithBackoff, retryWithExtendedBackoff } from '../utils/apiUtils';
