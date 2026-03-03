@@ -71,6 +71,7 @@ export default function DocumentosTab({
 
   const [loadingDocs, setLoadingDocs] = useState({});
   const [localDocumentos, setLocalDocumentos] = useState(documentos);
+  const [atividadesEmpCache, setAtividadesEmpCache] = useState([]);
   const [localPlanejamentos, setLocalPlanejamentos] = useState(planejamentos);
   const [executorPreSelecionado, setExecutorPreSelecionado] = useState(null);
   const [cargaDiariaCache, setCargaDiariaCache] = useState({});
