@@ -355,6 +355,11 @@ export default function DocumentoItem({
       }
 
       for (const docToUpdate of orderedDocs) {
+        // Pular folhas já planejadas (exceto a folha principal clicada pelo usuário)
+        if (docToUpdate.id !== doc.id && docToUpdate.executor_principal && docToUpdate.termino_planejado) {
+          continue;
+        }
+
         const updateData = { executor_principal: executorEmail, multiplos_executores: false };
         const docAtualizado = await retryWithBackoff(() => Documento.update(docToUpdate.id, updateData), 3, 1000, `setExecutor-${docToUpdate.id}`);
         handleLocalUpdate(docAtualizado);
