@@ -68,6 +68,16 @@ export default function DocumentoItem({
   const isDocLoading = loadingDocs[doc.id] || false;
   const [isRefreshingPlanejamentos, setIsRefreshingPlanejamentos] = useState(false);
 
+  // Cache das AtividadesEmpreendimento para esta folha, para exibir status de execução
+  const [atividadesEmpCache, setAtividadesEmpCache] = useState([]);
+  useEffect(() => {
+    let cancelled = false;
+    AtividadesEmpreendimento.filter({ documento_id: doc.id })
+      .then(res => { if (!cancelled) setAtividadesEmpCache(res || []); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [doc.id, localPlanejamentos]);
+
   const [searchPredecessor, setSearchPredecessor] = useState('');
   const [selectedAtividades, setSelectedAtividades] = useState([]);
 
