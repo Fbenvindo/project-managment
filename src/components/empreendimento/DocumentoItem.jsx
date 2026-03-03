@@ -67,7 +67,6 @@ export default function DocumentoItem({
   const [isUpdatingActivity, setIsUpdatingActivity] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
   const isDocLoading = loadingDocs[doc.id] || false;
-  const [isRefreshingPlanejamentos, setIsRefreshingPlanejamentos] = useState(false);
 
   // atividadesEmpCache é recebido do pai (DocumentosTab) para evitar N requisições individuais
 
