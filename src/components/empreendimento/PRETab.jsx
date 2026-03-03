@@ -88,6 +88,8 @@ export default function PRETab({ empreendimento, readOnly = false }) {
   const [isSaving, setIsSaving] = useState(false);
   const [items, setItems] = useState([]);
   const [lastSaved, setLastSaved] = useState(null);
+  const [disciplinas, setDisciplinas] = useState([]);
+  const [filtroDispline, setFiltroDispline] = useState('todas');
   const [headerData, setHeaderData] = useState({
     cliente: empreendimento?.cliente || '',
     obra: empreendimento?.nome || '',
