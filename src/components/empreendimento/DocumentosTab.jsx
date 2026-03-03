@@ -81,12 +81,11 @@ export default function DocumentosTab({
   const reloadPlanejamentos = useCallback(async () => {
     if (!empreendimento?.id) return;
     try {
-      const { PlanejamentoAtividade: PA, PlanejamentoDocumento: PD } = await import('@/entities/all');
       const [plansAtiv, plansDoc] = await Promise.all([
-        PA.filter({ empreendimento_id: empreendimento.id })
+        PlanejamentoAtividade.filter({ empreendimento_id: empreendimento.id })
           .then(res => Array.isArray(res) ? res : [])
           .catch(() => []),
-        PD.filter({ empreendimento_id: empreendimento.id })
+        PlanejamentoDocumento.filter({ empreendimento_id: empreendimento.id })
           .then(res => Array.isArray(res) ? res : [])
           .catch(() => []),
       ]);
