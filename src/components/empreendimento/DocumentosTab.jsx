@@ -171,6 +171,10 @@ export default function DocumentosTab({
 
     setCargaDiariaCache(prev => ({ ...prev, [executorEmail]: cargaDiaria }));
     return cargaDiaria;
+    } catch (error) {
+    console.error('Erro ao carregar carga diária:', error);
+    return {};
+    }
   }, [cargaDiariaCache]);
 
   const handleCascadingUpdate = useCallback(async (startDoc) => {
