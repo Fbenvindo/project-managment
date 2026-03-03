@@ -128,10 +128,14 @@ export default function PRE() {
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const emps = await retryWithBackoff(() => Empreendimento.list(), 3, 2000, 'PRE-Empreendimentos');
+      const [emps, discs] = await Promise.all([
+        retryWithBackoff(() => Empreendimento.list(), 3, 2000, 'PRE-Empreendimentos'),
+        retryWithBackoff(() => Disciplina.list(), 3, 2000, 'PRE-Disciplinas')
+      ]);
       setEmpreendimentos(emps || []);
+      setDisciplinas(discs || []);
     } catch (error) {
-      console.error('Erro ao carregar empreendimentos:', error);
+      console.error('Erro ao carregar dados:', error);
     } finally {
       setIsLoading(false);
     }
