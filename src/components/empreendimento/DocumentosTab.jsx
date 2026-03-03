@@ -107,6 +107,14 @@ export default function DocumentosTab({
   useEffect(() => { setLocalDocumentos(documentos); }, [documentos]);
   useEffect(() => { setLocalPlanejamentos(planejamentos); }, [planejamentos]);
 
+  // Carregar AtividadesEmpreendimento UMA VEZ para o empreendimento inteiro
+  useEffect(() => {
+    if (!empreendimento?.id) return;
+    base44.entities.AtividadesEmpreendimento.filter({ empreendimento_id: empreendimento.id })
+      .then(res => setAtividadesEmpCache(res || []))
+      .catch(() => {});
+  }, [empreendimento?.id]);
+
   const handleLocalUpdate = useCallback((updatedItemOrArray) => {
     setLocalDocumentos(prevDocs => {
       const updatedDocs = Array.isArray(updatedItemOrArray) ? updatedItemOrArray : [updatedItemOrArray];
