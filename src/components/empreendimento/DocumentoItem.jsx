@@ -680,9 +680,11 @@ export default function DocumentoItem({
                             : `${atividade.tempoComFator.toFixed(1)}h`}
                         </div>
                         {atividade.statusPlanejamento === 'concluido' && <div className="text-xs text-green-600">Finalizado no planejamento</div>}
-                        {atividade.estaConcluida && atividade.statusPlanejamento !== 'concluido' && <div className="text-xs text-gray-500">Tempo zerado (concluída manualmente)</div>}
-                        {atividade.statusPlanejamento && atividade.statusPlanejamento !== 'concluido' && !atividade.estaConcluida && <div className="text-xs text-blue-600">{atividade.statusPlanejamento === 'em_andamento' ? 'Em execução' : 'Planejado'}</div>}
-                        {!atividade.estaConcluida && !atividade.statusPlanejamento && <div className="text-xs text-gray-500">Disponível para planejamento</div>}
+                        {atividade.estaConcluida && atividade.statusPlanejamento !== 'concluido' && <div className="text-xs text-gray-500">Concluída manualmente</div>}
+                        {atividade.statusPlanejamento === 'em_andamento' && !atividade.estaConcluida && <div className="text-xs text-blue-600">Em execução</div>}
+                        {atividade.statusPlanejamento === 'pausado' && !atividade.estaConcluida && <div className="text-xs text-yellow-600">Pausada</div>}
+                        {atividade.statusPlanejamento === 'nao_iniciado' && !atividade.estaConcluida && <div className="text-xs text-blue-600">Planejado</div>}
+                        {!atividade.estaConcluida && !atividade.statusPlanejamento && <div className="text-xs text-gray-500">Não planejado</div>}
                       </div>
                       <Button variant="ghost" size="icon" onClick={() => handleMarcarComoConcluida(atividade)} className={atividade.estaConcluida ? 'text-blue-600 hover:text-blue-800 hover:bg-blue-50' : 'text-gray-400 hover:text-blue-600 hover:bg-blue-50'} title={atividade.estaConcluida ? "Desmarcar como concluída" : "Marcar como concluída"} disabled={isUpdatingActivity}>
                         {isUpdatingActivity ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4" />}
