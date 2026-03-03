@@ -78,6 +78,24 @@ export default function DocumentosTab({
   useEffect(() => { setLocalDocumentos(documentos); }, [documentos]);
   useEffect(() => { setLocalPlanejamentos(planejamentos); }, [planejamentos]);
 
+  // Recarregar planejamentos quando triggerUpdate for chamado (ex: após execução/pause/finish)
+  const reloadPlanejamentos = useCallback(async () => {
+    if (!empreendimento?.id) return;
+    try {
+      const { PlanejamentoAtividade: PA, PlanejamentoDocumento: PD } = await import('@/entities/all');
+      const [plansAtiv, plansDoc] = await Promise.all([
+        PA.filter({ empreendimento_id: empreendimento.id }),
+        PD.filter({ empreendimento_id: empreendimento.id }),
+      ]);
+      setLocalPlanejamentos([
+        ...(plansAtiv || []).map(p => ({ ...p, tipo_plano: 'atividade' })),
+        ...(plansDoc || []).map(p => ({ ...p, tipo_plano: 'documento' }))
+      ]);
+    } catch (e) {
+      console.warn('Erro ao recarregar planejamentos:', e);
+    }
+  }, [empreendimento?.id]);
+
   const handleLocalUpdate = useCallback((updatedItemOrArray) => {
     setLocalDocumentos(prevDocs => {
       const updatedDocs = Array.isArray(updatedItemOrArray) ? updatedItemOrArray : [updatedItemOrArray];
