@@ -93,6 +93,8 @@ export default function PRE() {
   const [expandedImage, setExpandedImage] = useState(null);
   const [lastSavedTime, setLastSavedTime] = useState(null);
   const [autoSaveInProgress, setAutoSaveInProgress] = useState(false);
+  const [disciplinas, setDisciplinas] = useState([]);
+  const [filtroDispline, setFiltroDispline] = useState('todas');
   const autoSaveTimerRef = useRef(null);
   const [headerData, setHeaderData] = useState({
     cliente: '',
