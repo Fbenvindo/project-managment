@@ -516,7 +516,7 @@ export default function DocumentoItem({
                 }
 
                 // "Todas as etapas": mostrar todos os planejamentos existentes agrupados por etapa
-                const planejamentosComExecutor = planejamentosDoDocumento.filter(p => p.executor_principal);
+                const planejamentosComExecutor = planejamentosDoDocumento.filter(p => p.executor_principal && (p.etapa || p.tipo_plano === 'documento'));
 
                 if (planejamentosComExecutor.length > 0) {
                   return (
