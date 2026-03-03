@@ -651,7 +651,14 @@ export default function DocumentoItem({
 
               <div className="space-y-2">
                 {atividadesDisponiveis.length > 0 ? atividadesDisponiveis.map(atividade => (
-                  <div key={atividade.id} className={`flex justify-between items-center p-3 rounded border ${atividade.estaConcluida ? 'bg-blue-50 border-blue-200' : atividade.jaFoiPlanejada ? 'bg-green-50 border-green-200' : 'bg-white border-gray-200'}`}>
+                  <div key={atividade.id} className={`flex justify-between items-center p-3 rounded border ${
+                    atividade.statusPlanejamento === 'concluido' ? 'bg-green-50 border-green-200' :
+                    atividade.estaConcluida ? 'bg-gray-50 border-gray-200' :
+                    atividade.statusPlanejamento === 'em_andamento' ? 'bg-blue-50 border-blue-200' :
+                    atividade.statusPlanejamento === 'pausado' ? 'bg-yellow-50 border-yellow-200' :
+                    atividade.statusPlanejamento === 'nao_iniciado' ? 'bg-blue-50 border-blue-200' :
+                    'bg-white border-gray-200'
+                  }`}>
                     <div className="flex items-center gap-3 flex-1 pr-2">
                       <Checkbox checked={selectedAtividades.includes(atividade.id)} onCheckedChange={() => handleToggleAtividade(atividade.id)} disabled={isUpdatingActivity} />
                       <div className="flex-1">
