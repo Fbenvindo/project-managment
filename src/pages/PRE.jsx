@@ -385,34 +385,54 @@ export default function PRE() {
       <style>{printStyles}</style>
       <div className="p-6 bg-gray-50 min-h-screen print:p-0 print:bg-white">
         {/* Barra de Ações */}
-        <div className="mb-4 flex justify-between items-center no-print">
-          <h1 className="text-2xl font-bold text-gray-800">PRE - Emails, ATA e Documentos</h1>
-          <div className="flex gap-2">
-            <Select value={selectedEmp || ''} onValueChange={setSelectedEmp}>
-              <SelectTrigger className="w-[300px]">
-                <SelectValue placeholder="Selecione o empreendimento" />
-              </SelectTrigger>
-              <SelectContent>
-                {empreendimentos.map(emp => (
-                  <SelectItem key={emp.id} value={emp.id}>
-                    {emp.nome}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Button variant="outline" onClick={handleSave} disabled={isSaving || !selectedEmp}>
-              {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-              Salvar
-            </Button>
-            <Button variant="outline" onClick={handlePrint} disabled={!selectedEmp}>
-              <Printer className="w-4 h-4 mr-2" />
-              Imprimir
-            </Button>
-            <Button onClick={handleAddItem} disabled={!selectedEmp}>
-              <Plus className="w-4 h-4 mr-2" />
-              Adicionar Item
-            </Button>
+        <div className="mb-4 space-y-3 no-print">
+          <div className="flex justify-between items-center">
+            <h1 className="text-2xl font-bold text-gray-800">PRE - Emails, ATA e Documentos</h1>
+            <div className="flex gap-2">
+              <Select value={selectedEmp || ''} onValueChange={setSelectedEmp}>
+                <SelectTrigger className="w-[300px]">
+                  <SelectValue placeholder="Selecione o empreendimento" />
+                </SelectTrigger>
+                <SelectContent>
+                  {empreendimentos.map(emp => (
+                    <SelectItem key={emp.id} value={emp.id}>
+                      {emp.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <Button variant="outline" onClick={handleSave} disabled={isSaving || !selectedEmp}>
+                {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                Salvar
+              </Button>
+              <Button variant="outline" onClick={handlePrint} disabled={!selectedEmp}>
+                <Printer className="w-4 h-4 mr-2" />
+                Imprimir
+              </Button>
+              <Button onClick={handleAddItem} disabled={!selectedEmp}>
+                <Plus className="w-4 h-4 mr-2" />
+                Adicionar Item
+              </Button>
+            </div>
           </div>
+          {selectedEmp && (
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">Filtrar por Disciplina:</label>
+              <Select value={filtroDispline} onValueChange={setFiltroDispline}>
+                <SelectTrigger className="w-[250px]">
+                  <SelectValue placeholder="Todas as disciplinas" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todas">Todas as disciplinas</SelectItem>
+                  {disciplinas.map(disc => (
+                    <SelectItem key={disc.id} value={disc.nome}>
+                      {disc.nome}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
         </div>
 
         {!selectedEmp ? (
