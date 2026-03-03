@@ -194,7 +194,8 @@ export default function DocumentoItem({
         jaFoiPlanejada,
         estaConcluida,
         statusPlanejamento,
-        planejamentoId: planejamentoAtividade?.id || planejamentoDocDaEtapa?.id
+        planejamentoId: planejamentoAtividade?.id || planejamentoDocDaEtapa?.id,
+        atividadeEmpId: atividadeEmpRecord?.id
       };
     });
   }, [allAtividades, doc, planejamentosDoDocumento, etapaParaPlanejamento, empreendimento.id, pavimentos]);
