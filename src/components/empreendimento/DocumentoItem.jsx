@@ -517,7 +517,7 @@ export default function DocumentoItem({
                   );
                 }
 
-                // Se tem etapa selecionada mas sem planejamento: mostrar select vazio (independente de executor_principal)
+                // Se tem etapa selecionada mas sem planejamento: mostrar select vazio SEMPRE
                 if (etapaSelecionada && !planejamentoDaEtapa) {
                   return (
                     <Select onValueChange={(value) => handleExecutorSelectChange(value)} disabled={isUpdating || isDocLoading}>
@@ -532,7 +532,7 @@ export default function DocumentoItem({
                   );
                 }
 
-                // Sem etapa selecionada ("todas"): comportamento original
+                // Sem etapa selecionada ("todas"): mostrar executor global do documento
                 if (doc.executor_principal) {
                   return (
                     <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
