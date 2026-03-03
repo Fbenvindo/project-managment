@@ -287,6 +287,25 @@ export const ActivityTimerProvider = ({ children }) => {
                 3, 1000, 'updatePlanejamento.update'
             );
             
+            // Atualizar status na entidade AtividadesEmpreendimento quando atividade for concluída
+            if (finalStatus === 'concluido' && !isDocumento && planejamento.atividade_id) {
+                try {
+                    const atividadesEmp = await retryWithBackoff(
+                        () => AtividadesEmpreendimento.filter({ id: planejamento.atividade_id }),
+                        2, 500, 'updateAtividadesEmpStatus.find'
+                    );
+                    if (atividadesEmp && atividadesEmp.length > 0) {
+                        await retryWithBackoff(
+                            () => AtividadesEmpreendimento.update(atividadesEmp[0].id, { status_planejamento: 'planejada', data_conclusao: new Date().toISOString() }),
+                            2, 500, 'updateAtividadesEmpStatus.update'
+                        );
+                        console.log(`✅ AtividadesEmpreendimento ${atividadesEmp[0].id} marcada como concluída`);
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Erro ao atualizar AtividadesEmpreendimento:', e);
+                }
+            }
+
             console.log(`✅ [updatePlanejamento] ${isDocumento ? 'PlanejamentoDocumento' : 'PlanejamentoAtividade'} ${planejamento.id} ATUALIZADO COM SUCESSO`);
             console.log(`   Resposta do servidor:`, updatedPlano);
             console.log(`   Novo tempo_executado: ${updatedPlano.tempo_executado?.toFixed(2)}h`);
