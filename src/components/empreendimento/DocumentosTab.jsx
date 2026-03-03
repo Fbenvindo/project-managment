@@ -2142,7 +2142,7 @@ export default function DocumentosTab({
                     </DialogHeader>
                     <div className="space-y-4">
                       <p className="text-sm text-gray-600">
-                        Esta folha possui folhas predecessoras ou sucessoras. Deseja aplicar o executor <strong>{pendingExecutor}</strong> também a elas?
+                        Esta folha possui folhas sucessoras ainda sem executor. Deseja aplicar o executor <strong>{pendingExecutor}</strong> também a elas?
                       </p>
                       <div className="flex justify-end gap-2">
                         <Button
