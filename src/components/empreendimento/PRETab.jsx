@@ -535,7 +535,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                           <input
                             type="file"
                             id={`file-input-${item.id}`}
-                            accept="image/*"
+                            accept="image/*,.pdf"
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) handleUploadImage(item.id, file);
@@ -551,7 +551,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                             onClick={() => document.getElementById(`file-input-${item.id}`).click()}
                           >
                             <Upload className="w-3 h-3 mr-2" />
-                            Anexar Imagem
+                            Anexar Imagem ou PDF
                           </Button>
                         </div>
                         <div className="grid grid-cols-2 gap-3">
