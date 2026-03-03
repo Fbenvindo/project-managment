@@ -431,12 +431,19 @@ const sidebarMenuButtonVariants = cva(
   }
 )
 
-const SidebarMenuButton = React.forwardRef(function SidebarMenuButtonFinal(
-  { asChild = false, isActive = false, variant = "default", size = "default", tooltip, className, ...props },
-  ref
-) {
-  const Comp = asChild ? Slot : "button"
-  const { isMobile, state } = useSidebar()
+function SidebarMenuButtonInner(allProps, ref) {
+  const asChild = allProps.asChild || false;
+  const isActive = allProps.isActive || false;
+  const variant = allProps.variant || "default";
+  const size = allProps.size || "default";
+  const tooltip = allProps.tooltip;
+  const className = allProps.className;
+  const rest = Object.assign({}, allProps);
+  delete rest.asChild; delete rest.isActive; delete rest.variant;
+  delete rest.size; delete rest.tooltip; delete rest.className;
+
+  const Comp = asChild ? Slot : "button";
+  const { isMobile, state } = useSidebar();
 
   const button = (
     <Comp
@@ -445,30 +452,22 @@ const SidebarMenuButton = React.forwardRef(function SidebarMenuButtonFinal(
       data-size={size}
       data-active={isActive}
       className={cn(sidebarMenuButtonVariants({ variant, size }), className)}
-      {...props} />
-  )
+      {...rest} />
+  );
 
-  if (!tooltip) {
-    return button
-  }
+  if (!tooltip) return button;
 
-  if (typeof tooltip === "string") {
-    tooltip = {
-      children: tooltip,
-    }
-  }
+  const tooltipProps = typeof tooltip === "string" ? { children: tooltip } : tooltip;
 
   return (
-    (<Tooltip>
+    <Tooltip>
       <TooltipTrigger asChild>{button}</TooltipTrigger>
-      <TooltipContent
-        side="right"
-        align="center"
-        hidden={state !== "collapsed" || isMobile}
-        {...tooltip} />
-    </Tooltip>)
+      <TooltipContent side="right" align="center" hidden={state !== "collapsed" || isMobile} {...tooltipProps} />
+    </Tooltip>
   );
-})
+}
+
+const SidebarMenuButton = React.forwardRef(SidebarMenuButtonInner);
 SidebarMenuButton.displayName = "SidebarMenuButton"
 
 const SidebarMenuAction = React.forwardRef(({ className, asChild = false, showOnHover = false, ...props }, ref) => {
