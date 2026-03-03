@@ -367,6 +367,11 @@ export default function PRE() {
     window.print();
   };
 
+  const filteredItems = useMemo(() => {
+    if (filtroDispline === 'todas') return items;
+    return items.filter(item => item.disciplina === filtroDispline);
+  }, [items, filtroDispline]);
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
