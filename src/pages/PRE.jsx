@@ -283,6 +283,7 @@ export default function PRE() {
             localizacao: item.localizacao,
             assunto: item.assunto,
             comentario: item.comentario,
+            disciplina: item.disciplina,
             status: item.status || '',
             resposta: item.resposta,
             imagens: item.imagens || []
