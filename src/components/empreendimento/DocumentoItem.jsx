@@ -1,5 +1,5 @@
-import React, { useState, useMemo } from 'react';
-import { Atividade, PlanejamentoAtividade, PlanejamentoDocumento, Documento } from "@/entities/all";
+import React, { useState, useMemo, useEffect } from 'react';
+import { Atividade, PlanejamentoAtividade, PlanejamentoDocumento, Documento, AtividadesEmpreendimento } from "@/entities/all";
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
