@@ -76,18 +76,6 @@ export default function DocumentosTab({
   const [cargaDiariaCache, setCargaDiariaCache] = useState({});
   const [disciplinasMinimizadas, setDisciplinasMinimizadas] = useState({});
 
-  const { updateKey } = useContext(ActivityTimerContext);
-  const prevUpdateKeyRef = useRef(updateKey);
-  useEffect(() => {
-    if (updateKey !== prevUpdateKeyRef.current) {
-      prevUpdateKeyRef.current = updateKey;
-      reloadPlanejamentos();
-    }
-  }, [updateKey, reloadPlanejamentos]);
-
-  useEffect(() => { setLocalDocumentos(documentos); }, [documentos]);
-  useEffect(() => { setLocalPlanejamentos(planejamentos); }, [planejamentos]);
-
   // Recarregar planejamentos quando triggerUpdate for chamado (ex: após execução/pause/finish)
   const reloadPlanejamentos = useCallback(async () => {
     if (!empreendimento?.id) return;
@@ -105,6 +93,18 @@ export default function DocumentosTab({
       console.warn('Erro ao recarregar planejamentos:', e);
     }
   }, [empreendimento?.id]);
+
+  const { updateKey } = useContext(ActivityTimerContext);
+  const prevUpdateKeyRef = useRef(updateKey);
+  useEffect(() => {
+    if (updateKey !== prevUpdateKeyRef.current) {
+      prevUpdateKeyRef.current = updateKey;
+      reloadPlanejamentos();
+    }
+  }, [updateKey, reloadPlanejamentos]);
+
+  useEffect(() => { setLocalDocumentos(documentos); }, [documentos]);
+  useEffect(() => { setLocalPlanejamentos(planejamentos); }, [planejamentos]);
 
   const handleLocalUpdate = useCallback((updatedItemOrArray) => {
     setLocalDocumentos(prevDocs => {
