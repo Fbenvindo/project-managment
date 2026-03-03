@@ -153,9 +153,11 @@ export default function DocumentoItem({
       const planejamentoAtividade = planejamentosDoDocumento.find(p =>
         p.atividade_id === atividade.id && p.etapa === etapaFinal && p.tipo_plano === 'atividade' && p.tempo_planejado > 0
       );
+      // PlanejamentoDocumento cobre todas as atividades da etapa — usar seu status como fallback
       const planejamentoDocDaEtapa = planejamentosDoDocumento.find(p => p.etapa === etapaFinal && p.tipo_plano === 'documento');
       const jaFoiPlanejada = !!planejamentoDocDaEtapa || !!planejamentoAtividade;
-      const statusPlanejamento = planejamentoAtividade?.status || (jaFoiPlanejada ? planejamentoDocDaEtapa?.status : null);
+      // Prioridade: planejamento individual > planejamento do documento (que cobre todas as atividades da etapa)
+      const statusPlanejamento = planejamentoAtividade?.status || planejamentoDocDaEtapa?.status || null;
 
       const fatorDificuldade = doc.fator_dificuldade || 1;
       const isConfeccaoA = nomeAtividadeSeguro.trim().startsWith('Confecção de A-');
