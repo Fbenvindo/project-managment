@@ -118,6 +118,19 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     }
   }, []);
 
+  // Carrega disciplinas ao montar
+  useEffect(() => {
+    const loadDisciplinas = async () => {
+      try {
+        const discs = await retryWithBackoff(() => Disciplina.list(), 3, 2000, 'PRETab-Disciplinas');
+        setDisciplinas(discs || []);
+      } catch (error) {
+        console.error('Erro ao carregar disciplinas:', error);
+      }
+    };
+    loadDisciplinas();
+  }, []);
+
 
 
 
