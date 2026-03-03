@@ -176,6 +176,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
       localizacao: '',
       assunto: '',
       comentario: '',
+      disciplina: '',
       status: 'Em andamento',
       resposta: '',
       imagens: [],
