@@ -88,7 +88,9 @@ export default function DocumentoItem({
     const tempoOverrides = new Map();
 
     allAtividades.forEach(ativ => {
-      if (ativ.empreendimento_id === empreendimento.id && ativ.id_atividade && ativ.tempo !== -999) {
+      // Só considera override de tempo se for positivo (tempo > 0)
+      // tempo = 0 é marcador de "concluída", tempo = -999 é marcador de "excluída"
+      if (ativ.empreendimento_id === empreendimento.id && ativ.id_atividade && ativ.tempo > 0) {
         etapaOverrides.set(ativ.id_atividade, ativ.etapa);
         tempoOverrides.set(ativ.id_atividade, ativ.tempo);
       }
