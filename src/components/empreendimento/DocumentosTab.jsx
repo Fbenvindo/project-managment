@@ -281,7 +281,7 @@ export default function DocumentosTab({
       const etapaOverrides = new Map();
       const tempoOverrides = new Map();
       allAtividades.forEach(ativ => {
-        if (ativ.empreendimento_id === empreendimento.id && ativ.id_atividade && ativ.tempo !== -999) {
+        if (ativ.empreendimento_id === empreendimento.id && ativ.id_atividade && ativ.tempo > 0) {
           etapaOverrides.set(ativ.id_atividade, ativ.etapa);
           tempoOverrides.set(ativ.id_atividade, ativ.tempo);
         }
