@@ -173,10 +173,8 @@ export default function DocumentoItem({
       const fatorDificuldade = doc.fator_dificuldade || 1;
       const isConfeccaoA = nomeAtividadeSeguro.trim().startsWith('Confecção de A-');
       const multiplier = isConfeccaoA ? 1 : fatorDificuldade;
-      // Se estaConcluida, ainda mostra o tempo original (não zerado)
-      const tempoParaCalculo = estaConcluida ? tempoBaseOriginal : tempoBase;
-      const tempoComFator = tempoParaCalculo * multiplier;
-      const tempoBaseParaExibicao = tempoBaseOriginal;
+      const tempoComFator = tempoBase * multiplier;
+      const tempoBaseParaExibicao = estaConcluida ? tempoBaseOriginal : tempoBase;
 
       return {
         ...atividade,
@@ -758,7 +756,9 @@ export default function DocumentoItem({
                     <div className="flex items-center gap-3">
                       <div className="text-right">
                         <div className={`text-sm font-medium ${atividade.estaConcluida || atividade.statusPlanejamento === 'concluido' ? 'line-through text-gray-400' : ''}`}>
-                          {`${atividade.tempoComFator.toFixed(1)}h`}
+                          {atividade.estaConcluida || atividade.statusPlanejamento === 'concluido'
+                            ? `${((atividade.area || 1) * atividade.tempoBaseParaExibicao * (doc.fator_dificuldade || 1)).toFixed(1)}h`
+                            : `${atividade.tempoComFator.toFixed(1)}h`}
                         </div>
                         {atividade.statusPlanejamento === 'concluido' && <div className="text-xs text-green-600">Finalizado no planejamento</div>}
                         {atividade.estaConcluida && atividade.statusPlanejamento !== 'concluido' && <div className="text-xs text-gray-500">Concluída manualmente</div>}
