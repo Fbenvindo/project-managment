@@ -241,21 +241,23 @@ export default function EmpreendimentoForm({ empreendimento, onSubmit, onClose, 
                 </div>
               </div>
 
-              <div className="flex justify-end gap-3 pt-4">
-                <Button type="button" variant="outline" onClick={onClose}>
-                  Cancelar
-                </Button>
-                <Button 
-                  type="submit" 
-                  disabled={isSubmitting || isUploading}
-                  className="bg-blue-600 hover:bg-blue-700"
-                >
-                  <Save className="w-4 h-4 mr-2" />
-                  {isSubmitting ? "Salvando..." : "Salvar"}
-                </Button>
-              </div>
             </form>
           </CardContent>
+          <div className="flex justify-end gap-3 p-6 border-t border-gray-100 flex-shrink-0">
+            <Button type="button" variant="outline" onClick={onClose}>
+              Cancelar
+            </Button>
+            <Button 
+              type="submit"
+              form="empreendimento-form"
+              disabled={isSubmitting || isUploading}
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={handleSubmit}
+            >
+              <Save className="w-4 h-4 mr-2" />
+              {isSubmitting ? "Salvando..." : "Salvar"}
+            </Button>
+          </div>
         </Card>
       </motion.div>
     </motion.div>
