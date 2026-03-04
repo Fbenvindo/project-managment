@@ -151,10 +151,11 @@ export default function DocumentoItem({
       );
       const planejamentoDocDaEtapa = planejamentosDoDocumento.find(p => p.etapa === etapaFinal && p.tipo_plano === 'documento');
 
-      // Verificar registro em AtividadesEmpreendimento (novo fluxo)
+      // Verificar registro em AtividadesEmpreendimento (novo fluxo) - APENAS desta folha
       const atividadeEmpRecord = atividadesEmpCache.find(ae =>
         (ae.atividade_id === atividade.id || ae.id_atividade === atividade.id_atividade || ae.id_atividade === atividade.id) &&
-        ae.etapa === etapaFinal
+        ae.etapa === etapaFinal &&
+        ae.documento_id === doc.id
       );
 
       const jaFoiPlanejada = !!planejamentoDocDaEtapa || !!planejamentoAtividade || !!atividadeEmpRecord;
