@@ -88,9 +88,7 @@ export default function DocumentoItem({
     const tempoOverrides = new Map();
 
     allAtividades.forEach(ativ => {
-      // Só considera override de tempo se for positivo (tempo > 0)
-      // tempo = 0 é marcador de "concluída", tempo = -999 é marcador de "excluída"
-      if (ativ.empreendimento_id === empreendimento.id && ativ.id_atividade && ativ.tempo > 0) {
+      if (ativ.empreendimento_id === empreendimento.id && ativ.id_atividade && ativ.tempo !== -999) {
         etapaOverrides.set(ativ.id_atividade, ativ.etapa);
         tempoOverrides.set(ativ.id_atividade, ativ.tempo);
       }
@@ -117,7 +115,7 @@ export default function DocumentoItem({
         if (ativ.tempo === -999) {
           if (ativ.documento_id === doc.id) atividadesExcluidasPorDoc.add(ativ.id_atividade);
           else if (!ativ.documento_id) atividadesExcluidasGlobal.add(ativ.id_atividade);
-        } else if (ativ.tempo === 0 && ativ.documento_id === doc.id && String(ativ.atividade || '').includes(`Concluída na folha ${doc.numero}`)) {
+        } else if (ativ.tempo === 0 && ativ.documento_id === doc.id && String(ativ.atividade || '').includes('Concluída na folha')) {
           atividadesConcluidasPorDoc.add(ativ.id_atividade);
         }
       }
@@ -175,8 +173,10 @@ export default function DocumentoItem({
       const fatorDificuldade = doc.fator_dificuldade || 1;
       const isConfeccaoA = nomeAtividadeSeguro.trim().startsWith('Confecção de A-');
       const multiplier = isConfeccaoA ? 1 : fatorDificuldade;
-      const tempoComFator = tempoBase * multiplier;
-      const tempoBaseParaExibicao = estaConcluida ? tempoBaseOriginal : tempoBase;
+      // Se estaConcluida, ainda mostra o tempo original (não zerado)
+      const tempoParaCalculo = estaConcluida ? tempoBaseOriginal : tempoBase;
+      const tempoComFator = tempoParaCalculo * multiplier;
+      const tempoBaseParaExibicao = tempoBaseOriginal;
 
       return {
         ...atividade,
@@ -758,9 +758,7 @@ export default function DocumentoItem({
                     <div className="flex items-center gap-3">
                       <div className="text-right">
                         <div className={`text-sm font-medium ${atividade.estaConcluida || atividade.statusPlanejamento === 'concluido' ? 'line-through text-gray-400' : ''}`}>
-                          {atividade.estaConcluida || atividade.statusPlanejamento === 'concluido'
-                            ? `${((atividade.area || 1) * atividade.tempoBaseParaExibicao * (doc.fator_dificuldade || 1)).toFixed(1)}h`
-                            : `${atividade.tempoComFator.toFixed(1)}h`}
+                          {`${atividade.tempoComFator.toFixed(1)}h`}
                         </div>
                         {atividade.statusPlanejamento === 'concluido' && <div className="text-xs text-green-600">Finalizado no planejamento</div>}
                         {atividade.estaConcluida && atividade.statusPlanejamento !== 'concluido' && <div className="text-xs text-gray-500">Concluída manualmente</div>}
