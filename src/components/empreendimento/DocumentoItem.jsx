@@ -147,7 +147,7 @@ export default function DocumentoItem({
       else tempoBase = tempoBaseOriginal;
 
       const planejamentoAtividade = planejamentosDoDocumento.find(p =>
-        p.atividade_id === atividade.id && p.etapa === etapaFinal && p.tipo_plano === 'atividade'
+        p.atividade_id === atividade.id && p.etapa === etapaFinal && p.tipo_plano === 'atividade' && p.documento_id === doc.id
       );
       const planejamentoDocDaEtapa = planejamentosDoDocumento.find(p => p.etapa === etapaFinal && p.tipo_plano === 'documento');
 
