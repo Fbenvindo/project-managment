@@ -100,10 +100,7 @@ export default function DocumentoItem({
           Array.isArray(subdisciplinasDoc) && subdisciplinasDoc.includes(ativ.subdisciplina);
       }
       if (ativ.empreendimento_id === empreendimento.id && ativ.documento_id === doc.id && ativ.tempo !== -999) {
-        // Excluir apenas marcadores de conclusão (tempo=0 com texto especial)
         if (ativ.tempo === 0 && String(ativ.atividade || '').includes('Concluída na folha')) return false;
-        // Excluir atividades sem id_atividade que tenham tempo=0 (atividades "fantasmas")
-        if (ativ.tempo === 0 && !ativ.id_atividade && !ativ.atividade) return false;
         return true;
       }
       return false;

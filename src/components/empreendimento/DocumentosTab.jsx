@@ -287,21 +287,9 @@ export default function DocumentosTab({
         }
       });
 
-      // IDs de documentos do empreendimento para lookup
-      const documentoIdsDoEmp = allAtividades
-        .filter(a => a.empreendimento_id === empreendimento.id && a.documento_id)
-        .map(a => a.documento_id);
-
       let atividadesGerais = allAtividades.filter(ativ => {
-        // Atividades genéricas (sem empreendimento) com disciplina/subdisciplina compatível
-        if (!ativ.empreendimento_id) {
-          return ativ.disciplina === disciplinaDoc && Array.isArray(subdisciplinasDoc) && subdisciplinasDoc.includes(ativ.subdisciplina);
-        }
-        // Atividades específicas desta folha (vinculadas ao documento)
-        if (ativ.empreendimento_id === empreendimento.id && ativ.documento_id === documento.id && ativ.tempo !== -999 && ativ.tempo !== 0) {
-          return true;
-        }
-        return false;
+        if (ativ.empreendimento_id) return false;
+        return ativ.disciplina === disciplinaDoc && Array.isArray(subdisciplinasDoc) && subdisciplinasDoc.includes(ativ.subdisciplina);
       });
 
       const atividadesExcluidasGlobal = new Set();
@@ -313,11 +301,7 @@ export default function DocumentosTab({
         }
       });
 
-      atividadesGerais = atividadesGerais.filter(ativ =>
-        ativ.empreendimento_id // específica da folha, não filtrar por exclusão global
-          ? true
-          : !atividadesExcluidasGlobal.has(ativ.id) && !atividadesExcluidasPorDoc.has(ativ.id)
-      );
+      atividadesGerais = atividadesGerais.filter(ativ => !atividadesExcluidasGlobal.has(ativ.id) && !atividadesExcluidasPorDoc.has(ativ.id));
 
       const atividadesDaEtapa = atividadesGerais.filter(ativ => {
         const etapaFinal = etapaOverrides.has(ativ.id) ? etapaOverrides.get(ativ.id) : ativ.etapa;
