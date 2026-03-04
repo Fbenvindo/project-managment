@@ -337,7 +337,7 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
            </p>
           </div>
         </form>
-        <DialogFooter>
+        <DialogFooter className="flex-shrink-0">
           <Button variant="outline" onClick={onClose} disabled={isSubmitting}>Cancelar</Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
             {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Salvar Atividade'}
