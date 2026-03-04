@@ -135,13 +135,7 @@ export default function DocumentoItem({
       });
     }
 
-    return ordenarAtividades(atividadesGerais).filter(atividade => {
-      const planejamentoDaAtividade = planejamentosDoDocumento.find(p =>
-        p.atividade_id === atividade.id && p.tipo_plano === 'atividade'
-      );
-      if (planejamentoDaAtividade && (planejamentoDaAtividade.tempo_planejado === 0 || !planejamentoDaAtividade.tempo_planejado)) return false;
-      return true;
-    }).map(atividade => {
+    return ordenarAtividades(atividadesGerais).map(atividade => {
       const nomeAtividadeSeguro = String(atividade.atividade || '');
       const etapaFinal = etapaOverrides.has(atividade.id) ? etapaOverrides.get(atividade.id) : atividade.etapa;
       const estaConcluida = atividadesConcluidasPorDoc.has(atividade.id);
