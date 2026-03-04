@@ -239,14 +239,14 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
+      <DialogContent className="max-w-2xl flex flex-col max-h-[90vh]">
+        <DialogHeader className="flex-shrink-0">
           <DialogTitle>{atividade ? 'Editar Atividade' : 'Nova Atividade no Empreendimento'}</DialogTitle>
           <DialogDescription>
             Preencha os detalhes da atividade específica para este projeto.
           </DialogDescription>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="py-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form onSubmit={handleSubmit} className="py-4 grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto flex-1 pr-1">
           <div className="space-y-2">
             <Label htmlFor="atividade">Descrição da Atividade</Label>
             <Input id="atividade" name="atividade" value={formData.atividade} onChange={handleChange} required />
