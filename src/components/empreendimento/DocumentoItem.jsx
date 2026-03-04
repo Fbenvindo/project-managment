@@ -153,6 +153,7 @@ export default function DocumentoItem({
 
       // Verificar registro em AtividadesEmpreendimento (novo fluxo)
       const atividadeEmpRecord = atividadesEmpCache.find(ae =>
+        ae.documento_id === doc.id &&
         (ae.atividade_id === atividade.id || ae.id_atividade === atividade.id_atividade || ae.id_atividade === atividade.id) &&
         ae.etapa === etapaFinal
       );
