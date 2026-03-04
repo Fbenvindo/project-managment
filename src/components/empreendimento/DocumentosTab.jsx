@@ -287,9 +287,16 @@ export default function DocumentosTab({
         }
       });
 
+      // Atividades genéricas (sem empreendimento) que matcham disciplina/subdisciplina da folha
       let atividadesGerais = allAtividades.filter(ativ => {
-        if (ativ.empreendimento_id) return false;
-        return ativ.disciplina === disciplinaDoc && Array.isArray(subdisciplinasDoc) && subdisciplinasDoc.includes(ativ.subdisciplina);
+        if (!ativ.empreendimento_id) {
+          return ativ.disciplina === disciplinaDoc && Array.isArray(subdisciplinasDoc) && subdisciplinasDoc.includes(ativ.subdisciplina);
+        }
+        // Atividades específicas do empreendimento vinculadas a esta folha (exceto marcadores)
+        if (ativ.empreendimento_id === empreendimento.id && ativ.documento_id === documento.id && ativ.tempo !== -999 && ativ.tempo !== 0) {
+          return true;
+        }
+        return false;
       });
 
       const atividadesExcluidasGlobal = new Set();
