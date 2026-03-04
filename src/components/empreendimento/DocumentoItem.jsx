@@ -756,9 +756,7 @@ export default function DocumentoItem({
                     <div className="flex items-center gap-3">
                       <div className="text-right">
                         <div className={`text-sm font-medium ${atividade.estaConcluida || atividade.statusPlanejamento === 'concluido' ? 'line-through text-gray-400' : ''}`}>
-                          {atividade.estaConcluida || atividade.statusPlanejamento === 'concluido'
-                            ? `${((atividade.area || 1) * atividade.tempoBaseParaExibicao * (doc.fator_dificuldade || 1)).toFixed(1)}h`
-                            : `${atividade.tempoComFator.toFixed(1)}h`}
+                          {`${atividade.tempoComFator.toFixed(1)}h`}
                         </div>
                         {atividade.statusPlanejamento === 'concluido' && <div className="text-xs text-green-600">Finalizado no planejamento</div>}
                         {atividade.estaConcluida && atividade.statusPlanejamento !== 'concluido' && <div className="text-xs text-gray-500">Concluída manualmente</div>}
