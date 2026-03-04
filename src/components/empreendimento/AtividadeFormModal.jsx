@@ -203,7 +203,7 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
             const dataToSave = {
               ...formData,
               subdisciplina: subdisciplina,
-              tempo: formData.tempo ? Number(formData.tempo) : null,
+              tempo: formData.tempo !== '' && formData.tempo !== null && formData.tempo !== undefined ? Number(formData.tempo) : 0,
               documento_ids: [],
               documento_id: null,
             };
@@ -216,11 +216,11 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
               const dataToSave = {
                 ...formData,
                 subdisciplina: subdisciplina,
-                tempo: formData.tempo ? Number(formData.tempo) : null,
+                tempo: formData.tempo !== '' && formData.tempo !== null && formData.tempo !== undefined ? Number(formData.tempo) : 0,
                 documento_ids: [documentoId],
                 documento_id: documentoId,
+                empreendimento_id: formData.empreendimento_id || empreendimentoId,
               };
-              console.log("📝 Criando atividade com dados:", dataToSave);
               createPromises.push(Atividade.create(dataToSave));
             });
           });
