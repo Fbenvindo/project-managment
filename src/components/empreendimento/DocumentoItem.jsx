@@ -164,12 +164,20 @@ export default function DocumentoItem({
       const statusDeExecucao = atividadeEmpRecord?.status_execucao ? statusExecucaoMap[atividadeEmpRecord.status_execucao] : null;
       const statusPlanejamento = statusDeExecucao || planejamentoAtividade?.status || (jaFoiPlanejada ? planejamentoDocDaEtapa?.status : null);
 
+      // Se existe registro em AtividadesEmpreendimento com tempo válido, usar esse tempo (já é o tempo final correto)
+      const tempoDoEmpRecord = atividadeEmpRecord && typeof atividadeEmpRecord.tempo === 'number' && atividadeEmpRecord.tempo > 0
+        ? atividadeEmpRecord.tempo
+        : null;
+
       const fatorDificuldade = doc.fator_dificuldade || 1;
       const isConfeccaoA = nomeAtividadeSeguro.trim().startsWith('Confecção de A-');
       const multiplier = isConfeccaoA ? 1 : fatorDificuldade;
       // Se estaConcluida, ainda mostra o tempo original (não zerado)
       const tempoParaCalculo = estaConcluida ? tempoBaseOriginal : tempoBase;
-      const tempoComFator = tempoParaCalculo * multiplier;
+      // Priorizar tempo do AtividadesEmpreendimento (tempo base sem fator) se disponível
+      const tempoComFator = tempoDoEmpRecord !== null
+        ? tempoDoEmpRecord * multiplier
+        : tempoParaCalculo * multiplier;
       const tempoBaseParaExibicao = tempoBaseOriginal;
 
       return {
