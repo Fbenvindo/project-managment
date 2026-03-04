@@ -173,8 +173,10 @@ export default function DocumentoItem({
       const fatorDificuldade = doc.fator_dificuldade || 1;
       const isConfeccaoA = nomeAtividadeSeguro.trim().startsWith('Confecção de A-');
       const multiplier = isConfeccaoA ? 1 : fatorDificuldade;
-      const tempoComFator = tempoBase * multiplier;
-      const tempoBaseParaExibicao = estaConcluida ? tempoBaseOriginal : tempoBase;
+      // Se estaConcluida, ainda mostra o tempo original (não zerado)
+      const tempoParaCalculo = estaConcluida ? tempoBaseOriginal : tempoBase;
+      const tempoComFator = tempoParaCalculo * multiplier;
+      const tempoBaseParaExibicao = tempoBaseOriginal;
 
       return {
         ...atividade,
