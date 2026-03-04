@@ -117,7 +117,7 @@ export default function DocumentoItem({
         if (ativ.tempo === -999) {
           if (ativ.documento_id === doc.id) atividadesExcluidasPorDoc.add(ativ.id_atividade);
           else if (!ativ.documento_id) atividadesExcluidasGlobal.add(ativ.id_atividade);
-        } else if (ativ.tempo === 0 && ativ.documento_id === doc.id && String(ativ.atividade || '').includes('Concluída na folha')) {
+        } else if (ativ.tempo === 0 && ativ.documento_id === doc.id && String(ativ.atividade || '').includes(`Concluída na folha ${doc.numero}`)) {
           atividadesConcluidasPorDoc.add(ativ.id_atividade);
         }
       }
