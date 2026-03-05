@@ -592,27 +592,29 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                                   PDF
                                 </a>
                               ) : (
-                                <div className="relative">
-                                  <img
-                                    src={imgUrl}
-                                    alt={`Imagem ${idx + 1}`}
-                                    className="w-full rounded border cursor-pointer hover:opacity-80 transition-all"
-                                    onClick={() => setLightboxImg(imgUrl)}
-                                  />
-                                  <button
-                                    type="button"
-                                    onClick={() => setLightboxImg(imgUrl)}
-                                    className="absolute bottom-1 right-1 bg-black bg-opacity-50 text-white rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity no-print z-10"
-                                    title="Ampliar imagem"
-                                  >
-                                    <ZoomIn className="w-3 h-3" />
-                                  </button>
-                                </div>
+                                <img
+                                  src={imgUrl}
+                                  alt={`Imagem ${idx + 1}`}
+                                  className="w-full rounded border cursor-pointer hover:opacity-80 transition-all"
+                                  onClick={() => setLightboxImg(imgUrl)}
+                                />
                               )}
+                              {/* Botão ampliar - canto inferior esquerdo */}
+                              {!imgUrl.toLowerCase().endsWith('.pdf') && (
+                                <button
+                                  type="button"
+                                  onClick={() => setLightboxImg(imgUrl)}
+                                  className="absolute bottom-1 left-1 bg-black bg-opacity-60 text-white rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity no-print"
+                                  title="Ampliar imagem"
+                                >
+                                  <ZoomIn className="w-3 h-3" />
+                                </button>
+                              )}
+                              {/* Botão remover - canto superior direito */}
                               <button
                                 type="button"
                                 onClick={() => handleRemoveImage(item.id, imgUrl)}
-                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity no-print z-10"
+                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity no-print"
                               >
                                 <X className="w-3 h-3" />
                               </button>
