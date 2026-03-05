@@ -335,6 +335,29 @@ export default function PRETab({ empreendimento, readOnly = false }) {
   return (
     <>
       <style>{printStyles}</style>
+
+      {/* Lightbox */}
+      {lightboxImg && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4 no-print"
+          onClick={() => setLightboxImg(null)}
+        >
+          <div className="relative max-w-5xl max-h-full" onClick={(e) => e.stopPropagation()}>
+            <button
+              onClick={() => setLightboxImg(null)}
+              className="absolute -top-3 -right-3 bg-white text-gray-800 rounded-full p-1 shadow-lg hover:bg-gray-100 z-10"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <img
+              src={lightboxImg}
+              alt="Imagem ampliada"
+              className="max-w-full max-h-[90vh] rounded-lg shadow-2xl object-contain"
+            />
+          </div>
+        </div>
+      )}
+
       <div className="bg-gray-50 print:bg-white">
         <div className="mb-4 flex justify-between items-center no-print">
           <div className="flex items-center gap-2">
