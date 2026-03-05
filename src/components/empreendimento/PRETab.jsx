@@ -86,6 +86,7 @@ const printStyles = `
 
 export default function PRETab({ empreendimento, readOnly = false }) {
   const [isSaving, setIsSaving] = useState(false);
+  const [lightboxImg, setLightboxImg] = useState(null);
   const [items, setItems] = useState([]);
   const [lastSaved, setLastSaved] = useState(null);
   const [disciplinas, setDisciplinas] = useState([]);
