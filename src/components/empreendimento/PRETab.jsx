@@ -632,28 +632,6 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                       />
                     </div>
 
-                    {/* Disciplina */}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">Disciplina</label>
-                      <Select
-                        value={item.disciplina || ''}
-                        onValueChange={(value) => handleUpdateItem(item.id, 'disciplina', value)}
-                        disabled={readOnly}
-                      >
-                        <SelectTrigger className="h-9 text-sm print:border-none print:bg-transparent">
-                          <SelectValue placeholder="Selecione a disciplina" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={null}>Sem disciplina</SelectItem>
-                          {disciplinas.map(disc => (
-                            <SelectItem key={disc.id} value={disc.nome}>
-                              {disc.nome}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-
                     {/* Status */}
                     <div>
                       <label className="text-xs font-semibold text-gray-600 block mb-1">Status</label>
