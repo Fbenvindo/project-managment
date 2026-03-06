@@ -105,8 +105,8 @@ export default function CurvaSPlanejamento({ planejamentos, empreendimentoId }) 
               
               horasSemanaPlanejas += horasProporcionais;
               
-              // Para horas reais, usar tempo_real_executado se disponível
-              const horasReaisAtividade = p.tempo_real_executado || 0;
+              // Para horas reais, usar tempo_executado
+              const horasReaisAtividade = p.tempo_executado || 0;
               horasSemanareais += horasReaisAtividade * proporcao;
             }
           } catch (error) {
@@ -129,7 +129,7 @@ export default function CurvaSPlanejamento({ planejamentos, empreendimentoId }) 
 
       // Calcular resumo
       const totalPlanejado = planejamentosValidos.reduce((sum, p) => sum + (p.tempo_planejado || 0), 0);
-      const totalExecutado = planejamentosValidos.reduce((sum, p) => sum + (p.tempo_real_executado || 0), 0);
+      const totalExecutado = planejamentosValidos.reduce((sum, p) => sum + (p.tempo_executado || 0), 0);
       
       setResumo({
         totalPlanejado: Math.round(totalPlanejado * 10) / 10,
