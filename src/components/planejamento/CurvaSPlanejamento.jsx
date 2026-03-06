@@ -231,7 +231,7 @@ export default function CurvaSPlanejamento({ planejamentos, empreendimentoId }) 
                   label={{ value: 'Horas Acumuladas', angle: -90, position: 'insideLeft' }}
                 />
                 <Tooltip 
-                  formatter={(value, name) => [`${value}h`, name === 'horasPlanejadasAcumuladas' ? 'Planejado' : 'Real']}
+                  formatter={(value, name) => [`${value}h`, name === 'horasPlanejadasAcumuladas' ? 'Planejado' : name === 'horasReaisAcumuladas' ? 'Real' : name]}
                   labelFormatter={(label) => `Semana: ${label}`}
                 />
                 <Legend />
