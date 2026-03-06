@@ -129,7 +129,7 @@ export default function CurvaSPlanejamento({ planejamentos, empreendimentoId }) 
 
       // Calcular resumo
       const totalPlanejado = planejamentosValidos.reduce((sum, p) => sum + (p.tempo_planejado || 0), 0);
-      const totalExecutado = planejamentosValidos.reduce((sum, p) => sum + (p.tempo_real_executado || 0), 0);
+      const totalExecutado = planejamentosValidos.reduce((sum, p) => sum + (p.tempo_executado || 0), 0);
       
       setResumo({
         totalPlanejado: Math.round(totalPlanejado * 10) / 10,
