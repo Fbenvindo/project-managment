@@ -1101,6 +1101,14 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
             )}
             <Button
               variant="outline"
+              onClick={handleExportData}
+              className="border-blue-500 text-blue-600 hover:bg-blue-50"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              Exportar
+            </Button>
+            <Button
+              variant="outline"
               onClick={() => setShowImportModal(true)}
               className="border-green-500 text-green-600 hover:bg-green-50"
             >
