@@ -825,6 +825,57 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     }, 0);
   }, [ETAPAS, etapasExcluidas, etapasMinimizadas, revisoesPorEtapa]);
 
+  const handleExportData = () => {
+    const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
+
+    // Cabeçalhos
+    let headers = ['folha', 'descritivo', 'disciplina'];
+    etapasVisiveis.forEach(etapa => {
+      const revisoes = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+      revisoes.forEach(rev => {
+        headers.push(`${etapa}_${rev}`);
+      });
+    });
+
+    // Linhas de dados
+    const rows = linhas.map(linha => {
+      const doc = documentos.find(d => d.id === linha.documento_id);
+      const row = [
+        doc?.arquivo || doc?.numero || '',
+        doc?.descritivo || '',
+        doc?.disciplina || ''
+      ];
+
+      etapasVisiveis.forEach(etapa => {
+        const revisoes = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+        revisoes.forEach(rev => {
+          const val = getDataValue(linha, etapa, rev);
+          if (val) {
+            // Converter de yyyy-mm-dd para dd/mm/yyyy
+            const [ano, mes, dia] = val.split('-');
+            row.push(`${dia}/${mes}/${ano}`);
+          } else {
+            row.push('');
+          }
+        });
+      });
+
+      return row;
+    });
+
+    const csvContent = [
+      headers.join(';'),
+      ...rows.map(r => r.join(';'))
+    ].join('\n');
+
+    const BOM = '\uFEFF';
+    const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `cadastro_${empreendimento.nome.replace(/\s+/g, '_')}.csv`;
+    link.click();
+  };
+
   const handleExportTemplate = () => {
     const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
     
