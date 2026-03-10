@@ -460,9 +460,17 @@ export default function DocumentosTab({
     try {
       const fileContent = await new Promise((resolve, reject) => {
         const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target.result);
+        reader.onload = (e) => {
+          const buffer = e.target.result;
+          const bytes = new Uint8Array(buffer);
+          // Detecta BOM UTF-8 (EF BB BF)
+          const hasUtf8Bom = bytes[0] === 0xEF && bytes[1] === 0xBB && bytes[2] === 0xBF;
+          // Se não tem BOM UTF-8, assume ISO-8859-1 (padrão Excel Brasil)
+          const encoding = hasUtf8Bom ? 'UTF-8' : 'ISO-8859-1';
+          resolve(new TextDecoder(encoding).decode(buffer));
+        };
         reader.onerror = () => reject(new Error('Não foi possível ler o arquivo. Tente selecionar o arquivo novamente.'));
-        reader.readAsText(importFile, 'UTF-8');
+        reader.readAsArrayBuffer(importFile);
       });
       const lines = fileContent.split('\n').filter(line => line.trim());
       if (lines.length < 2) { alert('Arquivo vazio ou inválido'); return; }
