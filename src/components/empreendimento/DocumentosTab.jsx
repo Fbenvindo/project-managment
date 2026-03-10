@@ -477,7 +477,7 @@ export default function DocumentosTab({
       const erros = [];
 
       for (let i = 1; i < lines.length; i++) {
-        const values = lines[i].split(separator).map(v => v.trim());
+        const values = lines[i].split(separator).map(v => v.trim().replace(/^["']|["']$/g, ''));
         const row = {};
         headers.forEach((header, idx) => { row[header] = values[idx] || ''; });
         if (!row.numero || !row.arquivo) { erros.push(`Linha ${i + 1}: Número e Arquivo são obrigatórios`); continue; }
