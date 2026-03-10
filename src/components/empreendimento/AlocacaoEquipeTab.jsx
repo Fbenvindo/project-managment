@@ -79,8 +79,9 @@ export default function AlocacaoEquipeTab({
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [plans, emps, docs, teams, users, osManuals] = await Promise.all([
-        retryWithBackoff(() => PlanejamentoAtividade.list(), 3, 2000, 'AlocacaoEquipe-Planejamentos'),
+      const [plansAtiv, plansDoc, emps, docs, teams, users, osManuals] = await Promise.all([
+        retryWithBackoff(() => PlanejamentoAtividade.list(), 3, 2000, 'AlocacaoEquipe-PlansAtiv'),
+        retryWithBackoff(() => PlanejamentoDocumento.list(), 3, 2000, 'AlocacaoEquipe-PlansDoc'),
         retryWithBackoff(() => Empreendimento.list(), 3, 2000, 'AlocacaoEquipe-Empreendimentos'),
         retryWithBackoff(() => Documento.list(), 3, 2000, 'AlocacaoEquipe-Documentos'),
         retryWithBackoff(() => Equipe.list(), 3, 2000, 'AlocacaoEquipe-Equipes'),
@@ -88,7 +89,8 @@ export default function AlocacaoEquipeTab({
         retryWithBackoff(() => OSManual.list(), 3, 2000, 'AlocacaoEquipe-OSManual')
       ]);
       
-      setPlanejamentosLocal(plans || []);
+      const plans = [...(plansAtiv || []), ...(plansDoc || [])];
+      setPlanejamentosLocal(plans);
       setEmpreendimentosLocal(emps || []);
       setDocumentosLocal(docs || []);
       setEquipesLocal(teams || []);
