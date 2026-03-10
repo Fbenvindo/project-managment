@@ -89,7 +89,7 @@ export default function AlocacaoEquipeTab({
         retryWithBackoff(() => OSManual.list(), 3, 2000, 'AlocacaoEquipe-OSManual')
       ]);
       
-      setPlanejamentosLocal(plans || []);
+      setPlanejamentosLocal([...(plansAtiv || []), ...(plansDoc || [])]);
       setEmpreendimentosLocal(emps || []);
       setDocumentosLocal(docs || []);
       setEquipesLocal(teams || []);
