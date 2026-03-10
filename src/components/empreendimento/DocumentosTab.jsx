@@ -458,7 +458,12 @@ export default function DocumentosTab({
     if (!importFile) { alert('Selecione um arquivo para importar'); return; }
     setIsImporting(true);
     try {
-      const fileContent = await importFile.text();
+      const fileContent = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target.result);
+        reader.onerror = () => reject(new Error('Não foi possível ler o arquivo. Tente selecionar o arquivo novamente.'));
+        reader.readAsText(importFile, 'UTF-8');
+      });
       const lines = fileContent.split('\n').filter(line => line.trim());
       if (lines.length < 2) { alert('Arquivo vazio ou inválido'); return; }
 
