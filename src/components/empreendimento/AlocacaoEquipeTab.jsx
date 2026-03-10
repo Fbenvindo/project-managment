@@ -485,12 +485,8 @@ export default function AlocacaoEquipeTab({
             const empNome = emp?.nome || 'Sem Emp.';
             const empCor = coresEmpreendimentos[empId] || '#6B7280';
             
-            // Extrair número do documento se houver
-            const doc = plan.documento_id ? documentosMap[plan.documento_id] : null;
-            const docNumero = doc?.numero || null;
-            
-            // Adicionar item com cor
-            const label = docNumero || empNome.substring(0, 3).toUpperCase();
+            // Usar número da OS do empreendimento como label
+            const label = emp?.os || empNome.substring(0, 4).toUpperCase();
             const exists = alocacao[executor].planejado[dataStr].find(i => i.label === label);
             if (!exists) {
               alocacao[executor].planejado[dataStr].push({ label, cor: empCor, empNome });
