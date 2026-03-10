@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ChevronLeft, ChevronRight, Users, RefreshCw, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { format, addDays, startOfWeek, parseISO, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { PlanejamentoAtividade, Empreendimento, Documento, Equipe, Usuario, OSManual } from "@/entities/all";
+import { PlanejamentoAtividade, PlanejamentoDocumento, Empreendimento, Documento, Equipe, Usuario, OSManual } from "@/entities/all";
 import { retryWithBackoff } from "../utils/apiUtils";
 import { base44 } from "@/api/base44Client";
 
