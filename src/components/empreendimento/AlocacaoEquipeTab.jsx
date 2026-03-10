@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ChevronLeft, ChevronRight, Users, RefreshCw, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 import { format, addDays, startOfWeek, parseISO, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
-import { PlanejamentoAtividade, PlanejamentoDocumento, Empreendimento, Documento, Equipe, Usuario, OSManual } from "@/entities/all";
+import { PlanejamentoAtividade, Empreendimento, Documento, Equipe, Usuario, OSManual } from "@/entities/all";
 import { retryWithBackoff } from "../utils/apiUtils";
 import { base44 } from "@/api/base44Client";
 
@@ -79,9 +79,8 @@ export default function AlocacaoEquipeTab({
   const loadData = async () => {
     setIsLoading(true);
     try {
-      const [plansAtiv, plansDoc, emps, docs, teams, users, osManuals] = await Promise.all([
-        retryWithBackoff(() => PlanejamentoAtividade.list(), 3, 2000, 'AlocacaoEquipe-PlansAtiv'),
-        retryWithBackoff(() => PlanejamentoDocumento.list(), 3, 2000, 'AlocacaoEquipe-PlansDoc'),
+      const [plans, emps, docs, teams, users, osManuals] = await Promise.all([
+        retryWithBackoff(() => PlanejamentoAtividade.list(), 3, 2000, 'AlocacaoEquipe-Planejamentos'),
         retryWithBackoff(() => Empreendimento.list(), 3, 2000, 'AlocacaoEquipe-Empreendimentos'),
         retryWithBackoff(() => Documento.list(), 3, 2000, 'AlocacaoEquipe-Documentos'),
         retryWithBackoff(() => Equipe.list(), 3, 2000, 'AlocacaoEquipe-Equipes'),
@@ -89,8 +88,7 @@ export default function AlocacaoEquipeTab({
         retryWithBackoff(() => OSManual.list(), 3, 2000, 'AlocacaoEquipe-OSManual')
       ]);
       
-      const plans = [...(plansAtiv || []), ...(plansDoc || [])];
-      setPlanejamentosLocal(plans);
+      setPlanejamentosLocal(plans || []);
       setEmpreendimentosLocal(emps || []);
       setDocumentosLocal(docs || []);
       setEquipesLocal(teams || []);
@@ -486,8 +484,12 @@ export default function AlocacaoEquipeTab({
             const empNome = emp?.nome || 'Sem Emp.';
             const empCor = coresEmpreendimentos[empId] || '#6B7280';
             
-            // Usar número da OS do empreendimento como label
-            const label = emp?.os || empNome.substring(0, 6);
+            // Extrair número do documento se houver
+            const doc = plan.documento_id ? documentosMap[plan.documento_id] : null;
+            const docNumero = doc?.numero || null;
+            
+            // Adicionar item com cor
+            const label = docNumero || empNome.substring(0, 3).toUpperCase();
             const exists = alocacao[executor].planejado[dataStr].find(i => i.label === label);
             if (!exists) {
               alocacao[executor].planejado[dataStr].push({ label, cor: empCor, empNome });
@@ -509,7 +511,10 @@ export default function AlocacaoEquipeTab({
             const empNome = emp?.nome || 'Sem Emp.';
             const empCor = coresEmpreendimentos[empId] || '#6B7280';
             
-            const label = emp?.os || empNome.substring(0, 6);
+            const doc = plan.documento_id ? documentosMap[plan.documento_id] : null;
+            const docNumero = doc?.numero || null;
+            
+            const label = docNumero || empNome.substring(0, 3).toUpperCase();
             const exists = alocacao[executor].realizado[dataStr].find(i => i.label === label);
             if (!exists) {
               alocacao[executor].realizado[dataStr].push({ label, cor: empCor, empNome });
