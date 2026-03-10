@@ -468,7 +468,8 @@ export default function DocumentosTab({
       if (lines.length < 2) { alert('Arquivo vazio ou inválido'); return; }
 
       const separator = lines[0].includes(';') ? ';' : ',';
-      const headers = lines[0].split(separator).map(h => h.trim());
+      // Remove BOM, quotes, and extra whitespace from headers
+      const headers = lines[0].split(separator).map(h => h.trim().replace(/^\uFEFF/, '').replace(/^["']|["']$/g, '').trim().toLowerCase());
       const missingHeaders = ['numero', 'arquivo'].filter(h => !headers.includes(h));
       if (missingHeaders.length > 0) { alert(`Cabeçalhos obrigatórios faltando: ${missingHeaders.join(', ')}`); return; }
 
