@@ -531,13 +531,11 @@ export default function AlocacaoEquipeTab({
                   alocacao[executor].reprogramado[dataStr] = [];
                 }
                 
-                const doc = plan.documento_id ? documentosMap[plan.documento_id] : null;
-                const docNumero = doc?.numero || null;
                 const emp = empreendimentosMap[plan.empreendimento_id];
                 const empNome = emp?.nome || 'Sem Emp.';
                 const empCor = coresEmpreendimentos[plan.empreendimento_id] || '#6B7280';
                 
-                const label = docNumero || empNome.substring(0, 3).toUpperCase();
+                const label = emp?.os || empNome.substring(0, 4).toUpperCase();
                 const exists = alocacao[executor].reprogramado[dataStr].find(i => i.label === label);
                 if (!exists) {
                   alocacao[executor].reprogramado[dataStr].push({ label, cor: empCor, empNome });
