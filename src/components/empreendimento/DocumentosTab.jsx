@@ -413,6 +413,30 @@ export default function DocumentosTab({
 
   const handleSuccess = async () => { onUpdate(); setShowForm(false); setEditingDocumento(null); setCargaDiariaCache({}); };
 
+  const handleExportData = () => {
+    const rows = localDocumentos.map(doc => {
+      const pavimento = (pavimentos || []).find(p => p.id === doc.pavimento_id);
+      return [
+        doc.numero || '',
+        doc.arquivo || '',
+        doc.descritivo || '',
+        pavimento?.nome || '',
+        (doc.disciplinas || (doc.disciplina ? [doc.disciplina] : [])).join(', '),
+        (doc.subdisciplinas || []).join(', '),
+        doc.escala || '',
+        doc.fator_dificuldade || ''
+      ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(';');
+    });
+
+    const header = ['numero', 'arquivo', 'descritivo', 'pavimento_nome', 'disciplinas', 'subdisciplinas', 'escala', 'fator_dificuldade'].join(';');
+    const csvContent = [header, ...rows].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `documentos_${empreendimento.nome.replace(/\s+/g, '_')}.csv`;
+    link.click();
+  };
+
   const handleExportTemplate = () => {
     const etapasDisponiveis = ["ESTUDO PRELIMINAR", "ANTE-PROJETO", "PROJETO BÁSICO", "PROJETO EXECUTIVO", "LIBERADO PARA OBRA"];
     const revisoesDefault = ["R00", "R01", "R02"];
