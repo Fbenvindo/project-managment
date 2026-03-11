@@ -393,8 +393,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
       columns: [
         { key: 'projeto', label: 'PROJETO', width: '200px' },
         { key: 'planejamento_hidraulica_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
-        { key: 'planejamento_hidraulica_calculo', label: 'CÁLCULO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
-        { key: 'planejamento_hidraulica_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
+        { key: 'planejamento_hidraulica_calculo', label: 'CÁLCULO', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
       ]
     },
     eletrica: {
