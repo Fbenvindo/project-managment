@@ -410,8 +410,7 @@ export default function ControleOSSpreadsheet({ controlesOS, empreendimentos, se
       columns: [
         { key: 'projeto', label: 'PROJETO', width: '200px' },
         { key: 'planejamento_incendio_concepcao', label: 'CONCEPÇÃO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
-        { key: 'planejamento_incendio_calculo', label: 'CÁLCULO', width: '100px', isStatus: true, statusOptions: planejamentoOptions },
-        { key: 'planejamento_incendio_diagrama', label: 'DIAGRAMA', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
+        { key: 'planejamento_incendio_calculo', label: 'CÁLCULO', width: '100px', isStatus: true, statusOptions: planejamentoOptions }
       ]
     },
     sistemas: {
