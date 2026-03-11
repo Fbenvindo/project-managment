@@ -305,6 +305,40 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     console.log(`✅ Revisão ${novaRevisao} marcada em todas as ${linhas.length} linhas`);
   };
 
+  const handleRenameRevisao = (etapa, oldName, newName) => {
+    const trimmed = newName.trim();
+    if (!trimmed || trimmed === oldName) {
+      setEditingRevisao(null);
+      return;
+    }
+
+    setHasUnsavedChanges(true);
+    setRevisoesPorEtapa(prev => ({
+      ...prev,
+      [etapa]: prev[etapa].map(r => r === oldName ? trimmed : r)
+    }));
+
+    // Renomear chave nos dados de cada linha
+    setLinhas(prev => prev.map(linha => {
+      const novasDatas = { ...linha.datas };
+      if (novasDatas[etapa]) {
+        const etapaData = { ...novasDatas[etapa] };
+        if (etapaData[oldName] !== undefined) {
+          etapaData[trimmed] = etapaData[oldName];
+          delete etapaData[oldName];
+        }
+        // Atualizar _revisoes_existentes
+        if (Array.isArray(etapaData._revisoes_existentes)) {
+          etapaData._revisoes_existentes = etapaData._revisoes_existentes.map(r => r === oldName ? trimmed : r);
+        }
+        novasDatas[etapa] = etapaData;
+      }
+      return { ...linha, datas: novasDatas };
+    }));
+    setLinhasModificadas(new Set(linhas.map(l => l.id)));
+    setEditingRevisao(null);
+  };
+
   const handleRemoveRevisao = (etapa, revisao) => {
     if (!confirm(`Deseja excluir a revisão ${revisao} da etapa ${etapa}? Os dados desta revisão serão perdidos.`)) return;
     
