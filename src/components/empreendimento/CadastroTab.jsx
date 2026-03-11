@@ -1316,25 +1316,47 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                             <div className="flex border-t border-gray-300 bg-blue-50">
                               {console.log(`🔍 Renderizando cabeçalho ${etapa}:`, revisoesEtapa, 'Estado:', revisoesPorEtapa)}
                               {revisoesEtapa.map((revisao) => (
-                                <div
-                                  key={`${etapa}-${revisao}`}
-                                  className="border-r border-gray-200 p-1 text-center font-medium text-xs"
-                                  style={{ width: '110px', minWidth: '110px' }}
-                                >
-                                  <div className="flex items-center justify-center gap-0.5">
-                                    <span>{revisao}</span>
-                                    {!readOnly && (
-                                      <button
-                                        onClick={() => handleRemoveRevisao(etapa, revisao)}
-                                        className="text-red-500 hover:text-red-700 p-0.5"
-                                        title={`Excluir revisão ${revisao}`}
-                                      >
-                                        <Trash2 className="w-2.5 h-2.5" />
-                                      </button>
-                                    )}
-                                  </div>
-                                </div>
-                              ))}
+                                 <div
+                                   key={`${etapa}-${revisao}`}
+                                   className="border-r border-gray-200 p-1 text-center font-medium text-xs"
+                                   style={{ width: '110px', minWidth: '110px' }}
+                                 >
+                                   <div className="flex items-center justify-center gap-0.5">
+                                     {!readOnly && editingRevisao?.etapa === etapa && editingRevisao?.revisao === revisao ? (
+                                       <input
+                                         autoFocus
+                                         value={editingRevisaoValue}
+                                         onChange={(e) => setEditingRevisaoValue(e.target.value)}
+                                         onBlur={() => handleRenameRevisao(etapa, revisao, editingRevisaoValue)}
+                                         onKeyDown={(e) => {
+                                           if (e.key === 'Enter') handleRenameRevisao(etapa, revisao, editingRevisaoValue);
+                                           if (e.key === 'Escape') setEditingRevisao(null);
+                                         }}
+                                         className="w-16 px-1 py-0 text-xs border border-blue-500 rounded text-center"
+                                       />
+                                     ) : (
+                                       <span
+                                         className={!readOnly ? 'cursor-pointer hover:text-blue-600' : ''}
+                                         title={!readOnly ? 'Clique duplo para renomear' : ''}
+                                         onDoubleClick={() => {
+                                           if (readOnly) return;
+                                           setEditingRevisao({ etapa, revisao });
+                                           setEditingRevisaoValue(revisao);
+                                         }}
+                                       >{revisao}</span>
+                                     )}
+                                     {!readOnly && !(editingRevisao?.etapa === etapa && editingRevisao?.revisao === revisao) && (
+                                       <button
+                                         onClick={() => handleRemoveRevisao(etapa, revisao)}
+                                         className="text-red-500 hover:text-red-700 p-0.5"
+                                         title={`Excluir revisão ${revisao}`}
+                                       >
+                                         <Trash2 className="w-2.5 h-2.5" />
+                                       </button>
+                                     )}
+                                   </div>
+                                 </div>
+                               ))}
                               <div className="bg-green-50 p-0.5 text-center" style={{ width: '40px', minWidth: '40px' }}>
                                 {!readOnly && (
                                   <button
