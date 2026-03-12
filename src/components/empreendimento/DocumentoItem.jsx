@@ -229,12 +229,11 @@ export default function DocumentoItem({
           id_atividade: activityObj.id, documento_id: doc.id, tempo: 0
         }), 3, 1000, `createConclusionMarker-${activityObj.id}-${doc.id}`);
       }
-      setIsUpdatingActivity(false);
-      setTimeout(() => setIsUpdatingActivity(false), 500);
+      await onUpdate();
     } catch (error) {
       alert("Erro ao atualizar o status da atividade: " + error.message);
     } finally {
-      setTimeout(() => setIsUpdatingActivity(false), 500);
+      setIsUpdatingActivity(false);
     }
   };
 
