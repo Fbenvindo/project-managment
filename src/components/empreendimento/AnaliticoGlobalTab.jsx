@@ -3391,7 +3391,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
       for (const plano of todosPlanejamentos) {
         if (plano.status === 'concluido') { jaFinalizados++; continue; }
-        await retryWithBackoff(() => PlanejamentoAtividade.update(plano.id, { status: 'concluido', termino_real: hoje }), 3, 500, `concluirPlan-${plano.id}`);
+        await retryWithExtendedBackoff(() => PlanejamentoAtividade.update(plano.id, { status: 'concluido', termino_real: hoje }), `concluirPlan-${plano.id}`);
         totalConcluidos++;
       }
 
