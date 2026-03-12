@@ -1020,7 +1020,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                   source_documento_id: doc.id,
                   source_documento_numero: doc.numero,
                   source_documento_arquivo: doc.arquivo,
-                  status: 'Planejada',
+                  status: existingPlan.status === 'concluido' ? 'Concluída' : 'Planejada',
                   isEditable: false,
                   etapa: existingPlan.etapa || etapaCorreta,
                   executor_principal: existingPlan.executor_principal || executorPrincipal,
