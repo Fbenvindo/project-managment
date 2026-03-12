@@ -850,7 +850,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         .map(a => [a.id, a])
       );
       
-      const planejamentosMap = new Map((planejamentosData || []).map(p => [`${p.documento_id}-${p.atividade_id}`, p]));
+      const planejamentosMap = new Map((planejamentosData || []).map(p => [`${p.documento_id ?? null}-${p.atividade_id}`, p]));
 
       // Buscar etapas cadastradas no empreendimento
       const empreendimento = (empreendimentoData && empreendimentoData[0]) || null;
