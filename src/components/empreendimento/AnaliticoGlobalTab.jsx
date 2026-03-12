@@ -3376,63 +3376,46 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       console.log(`   ✅ ${novosPlanejamentos.length} planejamento(s) concluído(s) criado(s)`);
     }
 
-    if (!window.confirm(`Tem certeza que deseja CONCLUIR TODAS as atividades da etapa "${etapa}" em TODAS as folhas do empreendimento?\n\n${todosPlanejamentos.length} planejamento(s) serão concluídos.`)) {
-      return;
-    }
+    // Atividades sem planejamento (Disponível) também precisam ser concluídas
+    const atividadesDedupMap = new Map();
+    combinedActivities.filter(a => a.etapa === etapa && !a.isEditable).forEach(a => { const k = a.base_atividade_id || a.id; if (!atividadesDedupMap.has(k)) atividadesDedupMap.set(k, a); });
+    const atividadesSemPlano = Array.from(atividadesDedupMap.values()).filter(a => !todosPlanejamentos.some(p => p.atividade_id === (a.base_atividade_id || a.id)));
+
+    if (!window.confirm(`Concluir etapa "${etapa}"?\n\n${todosPlanejamentos.length} planejamento(s) + ${atividadesSemPlano.length} atividade(s) disponível(is) serão concluídos.`)) return;
 
     setIsConcluindoEtapa(true);
-
     try {
-      console.log(`\n🏁 ========================================`);
-      console.log(`🏁 CONCLUIR ETAPA COMPLETA: ${etapa}`);
-      console.log(`🏁 ========================================`);
-      console.log(`   Total de planejamentos: ${todosPlanejamentos.length}`);
-      console.log(`   Empreendimento: ${empreendimentoId}`);
-
-      let totalPlanejamentosConcluidos = 0;
+      let totalConcluidos = 0;
       let jaFinalizados = 0;
       const hoje = format(new Date(), 'yyyy-MM-dd');
 
       for (const plano of todosPlanejamentos) {
-        if (plano.status === 'concluido') {
-          jaFinalizados++;
-          console.log(`   ⏭️ Planejamento ${plano.id} já estava concluído`);
-          continue;
-        }
-
-        await retryWithBackoff(
-          () => PlanejamentoAtividade.update(plano.id, {
-            status: 'concluido',
-            termino_real: hoje
-          }),
-          3, 500, `concluirPlan-${plano.id}`
-        );
-        totalPlanejamentosConcluidos++;
-        console.log(`   ✅ Planejamento ${plano.id} concluído`);
+        if (plano.status === 'concluido') { jaFinalizados++; continue; }
+        await retryWithBackoff(() => PlanejamentoAtividade.update(plano.id, { status: 'concluido', termino_real: hoje }), 3, 500, `concluirPlan-${plano.id}`);
+        totalConcluidos++;
       }
 
-      console.log(`✅ ========================================`);
-      console.log(`✅ ETAPA "${etapa}" CONCLUÍDA`);
-      console.log(`   Planejamentos concluídos: ${totalPlanejamentosConcluidos}`);
-      console.log(`   Já finalizados: ${jaFinalizados}`);
-      console.log(`✅ ========================================\n`);
+      if (atividadesSemPlano.length > 0) {
+        const allAtivExtra = await retryWithBackoff(() => Atividade.list(), 3, 500, `getAllActivitiesExtra`);
+        const atividadesMapExtra = new Map((allAtivExtra || []).map(a => [a.id, a]));
+        for (const ativ of atividadesSemPlano) {
+          const atividadeId = ativ.base_atividade_id || ativ.id;
+          const atividadeOriginal = atividadesMapExtra.get(atividadeId);
+          if (!atividadeOriginal) continue;
+          const docsCompativeis = documentos.filter(doc => doc.disciplina === atividadeOriginal.disciplina && (doc.subdisciplinas || []).includes(atividadeOriginal.subdisciplina));
+          const docsParaCriar = docsCompativeis.length > 0 ? docsCompativeis.map(d => d.id) : [null];
+          for (const docId of docsParaCriar) {
+            await retryWithBackoff(() => PlanejamentoAtividade.create({ empreendimento_id: empreendimentoId, atividade_id: atividadeId, documento_id: docId, etapa, descritivo: atividadeOriginal.atividade, tempo_planejado: atividadeOriginal.tempo || 0, status: 'concluido', termino_real: hoje, horas_por_dia: {} }), 3, 500, `createConcluido-${docId}-${atividadeId}`);
+            totalConcluidos++;
+          }
+        }
+      }
 
       await fetchData();
       if (onUpdate) onUpdate();
-
-      let mensagem = `✅ Etapa "${etapa}" concluída em todas as folhas!`;
-      if (totalPlanejamentosConcluidos > 0) {
-        mensagem += `\n\n${totalPlanejamentosConcluidos} planejamento(s) marcado(s) como concluído(s).`;
-      }
-      if (jaFinalizados > 0) {
-        mensagem += `\n${jaFinalizados} já estava(m) finalizado(s).`;
-      }
-      
-      alert(mensagem);
+      alert(`✅ Etapa "${etapa}" concluída!\n${totalConcluidos} planejamento(s) concluído(s).${jaFinalizados > 0 ? `\n${jaFinalizados} já estava(m) finalizado(s).` : ''}`);
       setEtapaParaConcluir('');
-
     } catch (error) {
-      console.error("❌ Erro ao concluir etapa:", error);
       alert("Erro ao concluir etapa: " + error.message);
     } finally {
       setIsConcluindoEtapa(false);
