@@ -886,7 +886,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             const existingPlan = planejamentosMap.get(planKey);
             
             if (existingPlan) {
-              // Se há planejamento geral, mostrar como "Planejada"
+              // Se há planejamento geral, mostrar como "Planejada" ou "Concluída"
               atividadesDocumentacao.push({
                 ...baseAtividade,
                 id: existingPlan.id,
@@ -895,7 +895,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                 tempo: existingPlan.tempo_planejado,
                 source: 'Catálogo',
                 source_documento_id: null,
-                status: 'Planejada',
+                status: existingPlan.status === 'concluido' ? 'Concluída' : 'Planejada',
                 isEditable: false,
                 etapa: existingPlan.etapa || etapaCorreta,
                 executor_principal: existingPlan.executor_principal,
