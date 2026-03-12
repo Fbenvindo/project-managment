@@ -3382,17 +3382,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       
       const hoje = format(new Date(), 'yyyy-MM-dd');
       let novosPlanejamentos = [];
-      
+      const allAtivList = await retryWithBackoff(() => Atividade.list(), 3, 500, `getAllActivitiesForEtapa`);
+      const atividadesOriginaisMap = new Map((allAtivList || []).map(a => [a.id, a]));
       for (const ativ of atividadesEtapa) {
         const atividadeId = ativ.base_atividade_id || ativ.id;
-        const atividadeOriginalArr = await retryWithBackoff(
-          () => Atividade.filter({ id: atividadeId }),
-          3, 500, `getActivity-${atividadeId}`
-        );
-        
-        if (!atividadeOriginalArr || atividadeOriginalArr.length === 0) continue;
-        
-        const atividadeOriginal = atividadeOriginalArr[0];
+        const atividadeOriginal = atividadesOriginaisMap.get(atividadeId);
+        if (!atividadeOriginal) continue;
         const documentosComAtividade = documentos.filter(doc => {
           const disciplinaMatch = doc.disciplina === atividadeOriginal.disciplina;
           const subdisciplinasDoc = doc.subdisciplinas || [];
