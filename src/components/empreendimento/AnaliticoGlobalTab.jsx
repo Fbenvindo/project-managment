@@ -3405,8 +3405,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           const docsCompativeis = documentos.filter(doc => doc.disciplina === atividadeOriginal.disciplina && (doc.subdisciplinas || []).includes(atividadeOriginal.subdisciplina));
           const docsParaCriar = docsCompativeis.length > 0 ? docsCompativeis.map(d => d.id) : [null];
           for (const docId of docsParaCriar) {
-            await retryWithBackoff(() => PlanejamentoAtividade.create({ empreendimento_id: empreendimentoId, atividade_id: atividadeId, documento_id: docId, etapa, descritivo: atividadeOriginal.atividade, tempo_planejado: atividadeOriginal.tempo || 0, status: 'concluido', termino_real: hoje, horas_por_dia: {} }), 3, 500, `createConcluido-${docId}-${atividadeId}`);
-            totalConcluidos++;
+            await retryWithExtendedBackoff(() => PlanejamentoAtividade.create({ empreendimento_id: empreendimentoId, atividade_id: atividadeId, documento_id: docId, etapa, descritivo: atividadeOriginal.atividade, tempo_planejado: atividadeOriginal.tempo || 0, status: 'concluido', termino_real: hoje, horas_por_dia: {} }), `createConcluido-${docId}-${atividadeId}`); totalConcluidos++;
           }
         }
       }
