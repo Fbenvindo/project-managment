@@ -2122,16 +2122,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                     </TableCell>
                                     <TableCell></TableCell>
                                     <TableCell>
-                                      {folha.status === 'Planejada' ? (
-                                        <Badge className="bg-green-600 text-white font-semibold shadow-md flex items-center gap-1 w-fit text-xs">
-                                          <CheckCircle2 className="w-3 h-3" />
-                                          Planejada
-                                        </Badge>
-                                      ) : (
-                                        <Badge variant="outline" className="text-xs text-gray-600">
-                                          {folha.status}
-                                        </Badge>
-                                      )}
+                                      {folha.status === 'Concluída' ? <Badge className="bg-blue-600 text-white font-semibold flex items-center gap-1 w-fit text-xs"><CheckCircle2 className="w-3 h-3"/>Concluída</Badge> : folha.status === 'Planejada' ? <Badge className="bg-green-600 text-white font-semibold shadow-md flex items-center gap-1 w-fit text-xs"><CheckCircle2 className="w-3 h-3"/>Planejada</Badge> : <Badge variant="outline" className="text-xs text-gray-600">{folha.status}</Badge>}
                                     </TableCell>
                                     <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
                                     <TableCell></TableCell>
