@@ -3345,13 +3345,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     if (todosPlanejamentos.length === 0) {
       console.log(`   ℹ️ Nenhum planejamento encontrado para etapa "${etapa}". Criando planejamentos concluídos...`);
       
-      const atividadesEtapa = combinedActivities.filter(ativ => ativ.etapa === etapa && !ativ.isEditable);
-      
-      if (atividadesEtapa.length === 0) {
-        alert(`Nenhuma atividade encontrada para a etapa "${etapa}".`);
-        return;
-      }
-      
+      // Deduplicate by base_atividade_id
+      const atividadesEtapaDedup = new Map();
+      combinedActivities.filter(a => a.etapa === etapa && !a.isEditable).forEach(a => { const k = a.base_atividade_id || a.id; if (!atividadesEtapaDedup.has(k)) atividadesEtapaDedup.set(k, a); });
+      const atividadesEtapa = Array.from(atividadesEtapaDedup.values());
+      if (atividadesEtapa.length === 0) { alert(`Nenhuma atividade encontrada para a etapa "${etapa}".`); return; }
       const hoje = format(new Date(), 'yyyy-MM-dd');
       let novosPlanejamentos = [];
       const allAtivList = await retryWithBackoff(() => Atividade.list(), 3, 500, `getAllActivitiesForEtapa`);
