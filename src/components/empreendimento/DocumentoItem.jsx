@@ -706,6 +706,15 @@ export default function DocumentoItem({
                           if (existing && existing.length > 0) continue;
                           await retryWithBackoff(() => Atividade.create({ etapa: atividade.etapa, disciplina: atividade.disciplina, subdisciplina: atividade.subdisciplina, atividade: `(Concluída na folha ${doc.numero}) ${String(atividade.atividade || '')}`, funcao: atividade.funcao, empreendimento_id: empreendimento.id, id_atividade: atividade.id, documento_id: doc.id, tempo: 0 }), 3, 1000);
                         }
+                        // Marcar planejamentos da etapa como concluídos
+                        const planosDaEtapa = localPlanejamentos.filter(p => p.documento_id === doc.id && p.etapa === etapaParaPlanejamento);
+                        for (const plano of planosDaEtapa) {
+                          if (plano.tipo_plano === 'atividade') {
+                            await retryWithBackoff(() => PlanejamentoAtividade.update(plano.id, { status: 'concluido' }), 3, 1000);
+                          } else {
+                            await retryWithBackoff(() => PlanejamentoDocumento.update(plano.id, { status: 'concluido' }), 3, 1000);
+                          }
+                        }
                         alert(`✅ Todas as ${atividadesDaEtapa.length} atividades da etapa "${etapaParaPlanejamento}" foram concluídas!`);
                         await onUpdate();
                       } catch (error) {
