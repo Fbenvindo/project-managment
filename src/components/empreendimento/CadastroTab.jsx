@@ -204,7 +204,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         
         let todasRevisoes = revisoesEtapaSet && revisoesEtapaSet.size > 0
           ? Array.from(revisoesEtapaSet).sort()
-          : [];
+          : [...DEFAULT_REVISOES];
 
         const revisoesExcluidas = revisoesExcluidasMap[etapa] || new Set();
         const filtradas = todasRevisoes.filter(rev => !revisoesExcluidas.has(rev));
