@@ -3395,22 +3395,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           return disciplinaMatch && subdisciplinaMatch;
         });
         
-        for (const doc of documentosComAtividade) {
-          const novoPlanejamento = await retryWithBackoff(
-            () => PlanejamentoAtividade.create({
-              empreendimento_id: empreendimentoId,
-              atividade_id: atividadeId,
-              documento_id: doc.id,
-              etapa: etapa,
-              descritivo: atividadeOriginal.atividade,
-              tempo_planejado: atividadeOriginal.tempo || 0,
-              status: 'concluido',
-              termino_real: hoje,
-              horas_por_dia: {}
-            }),
-            3, 500, `createEtapaPlan-${doc.id}-${atividadeId}`
-          );
-          novosPlanejamentos.push(novoPlanejamento);
+        const docsParaCriar = documentosComAtividade.length > 0 ? documentosComAtividade.map(d => d.id) : [null];
+        for (const docId of docsParaCriar) {
+          const np = await retryWithBackoff(() => PlanejamentoAtividade.create({ empreendimento_id: empreendimentoId, atividade_id: atividadeId, documento_id: docId, etapa, descritivo: atividadeOriginal.atividade, tempo_planejado: atividadeOriginal.tempo || 0, status: 'concluido', termino_real: hoje, horas_por_dia: {} }), 3, 500, `createEtapaPlan-${docId}-${atividadeId}`);
+          novosPlanejamentos.push(np);
         }
       }
       
