@@ -449,9 +449,19 @@ export default function DocumentoItem({
 
   const documentosFiltradosParaPredecessor = useMemo(() => {
     const docs = localDocumentos.filter(d => d.id !== doc.id);
-    if (!searchPredecessor) return docs.slice(0, 50);
-    const search = searchPredecessor.toLowerCase();
-    return docs.filter(d => d.numero?.toLowerCase().includes(search) || d.arquivo?.toLowerCase().includes(search)).slice(0, 50);
+    let filtered = docs;
+    if (searchPredecessor) {
+      const search = searchPredecessor.toLowerCase();
+      filtered = docs.filter(d => d.numero?.toLowerCase().includes(search) || d.arquivo?.toLowerCase().includes(search));
+    }
+    // Agrupar por disciplina
+    const grupos = {};
+    filtered.forEach(d => {
+      const disc = d.disciplina || 'Sem Disciplina';
+      if (!grupos[disc]) grupos[disc] = [];
+      grupos[disc].push(d);
+    });
+    return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
   }, [localDocumentos, doc.id, searchPredecessor]);
 
   return (
