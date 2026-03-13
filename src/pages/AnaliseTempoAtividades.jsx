@@ -47,6 +47,56 @@ export default function AnaliseTempoAtividades() {
     const grupos = new Map();
 
     planejamentos.forEach(p => {
+      if (!p.atividade_id) return;
+      if (!p.tempo_executado || p.tempo_executado <= 0) return;
+
+      // Tentar encontrar atividade base pelo atividade_id
+      const atividadeBase = atividadeMap.get(p.atividade_id);
+      
+      // Se não achar no mapa base, usar o descritivo do próprio planejamento
+      const nome = atividadeBase?.atividade || p.descritivo || 'Sem nome';
+      const etapa = atividadeBase?.etapa || p.etapa || '';
+      const disciplina = atividadeBase?.disciplina || '';
+      const subdisciplina = atividadeBase?.subdisciplina || '';
+      const funcao = atividadeBase?.funcao || '';
+
+      if (!grupos.has(p.atividade_id)) {
+        grupos.set(p.atividade_id, {
+          atividade_id: p.atividade_id,
+          nome,
+          etapa,
+          disciplina,
+          subdisciplina,
+          funcao,
+          tempo_base: atividadeBase?.tempo || 0,
+          registros: [],
+        });
+      }
+
+      grupos.get(p.atividade_id).registros.push({
+        tempo_planejado: p.tempo_planejado || 0,
+        tempo_executado: p.tempo_executado,
+      });
+    });
+
+    return Array.from(grupos.values()).map(g => {
+      const n = g.registros.length;
+      const totalExecutado = g.registros.reduce((s, r) => s + r.tempo_executado, 0);
+      const totalPlanejado = g.registros.reduce((s, r) => s + r.tempo_planejado, 0);
+      const mediaExecutado = totalExecutado / n;
+      const mediaPlanejado = totalPlanejado / n;
+      const desvio = mediaPlanejado > 0 ? ((mediaExecutado - mediaPlanejado) / mediaPlanejado) * 100 : 0;
+
+      return { ...g, n, mediaExecutado, mediaPlanejado, desvio };
+    });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [planejamentos, atividadeMap]);
+
+  // BLOCO REMOVIDO - lógica inline abaixo
+  const _analise_dummy = useMemo(() => {
+    const grupos = new Map();
+
+    planejamentos.forEach(p => {
       if (!p.atividade_id || !p.tempo_executado || p.tempo_executado <= 0) return;
       if (p.status !== 'concluido') return;
 
