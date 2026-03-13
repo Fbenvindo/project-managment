@@ -16,44 +16,43 @@ export default function AnaliseTempoAtividades() {
   const [filtroDisciplina, setFiltroDisciplina] = useState('todas');
   const [ordenacao, setOrdenacao] = useState('desvio_desc');
 
+  // Busca todas as atividades (base e de empreendimentos)
   const { data: atividades = [], isLoading: loadingAtiv } = useQuery({
-    queryKey: ['atividades-base'],
+    queryKey: ['atividades-todas'],
     queryFn: () => Atividade.list('-created_date', 5000),
   });
 
+  // Busca planejamentos concluídos com tempo executado
   const { data: planejamentos = [], isLoading: loadingPlan } = useQuery({
-    queryKey: ['planejamentos-analise'],
+    queryKey: ['planejamentos-concluidos'],
     queryFn: () => PlanejamentoAtividade.filter({ status: 'concluido' }, '-created_date', 5000),
   });
 
   const isLoading = loadingAtiv || loadingPlan;
 
-  // Mapa de atividade_id -> dados da atividade base (sem empreendimento = atividade base/template)
+  // Mapa id -> atividade (para lookup rápido)
   const atividadeMap = useMemo(() => {
     const map = new Map();
     atividades.forEach(a => {
-      // Atividades base não têm empreendimento_id, mas têm id_atividade
-      if (!a.empreendimento_id) {
-        map.set(a.id, a);
-        // Também indexar por id_atividade se existir
-        if (a.id_atividade) map.set(a.id_atividade, a);
-      }
+      map.set(a.id, a);
+      if (a.id_atividade) map.set(a.id_atividade, a);
     });
     return map;
   }, [atividades]);
 
-  // Agrupa planejamentos concluídos por atividade_id e calcula médias
+  // Agrupa planejamentos por atividade_id e calcula médias
   const analise = useMemo(() => {
     const grupos = new Map();
 
     planejamentos.forEach(p => {
       if (!p.atividade_id) return;
-      if (!p.tempo_executado || p.tempo_executado <= 0) return;
+      // Aceitar qualquer valor positivo de tempo executado
+      const tempoExec = Number(p.tempo_executado);
+      if (!tempoExec || tempoExec <= 0) return;
 
-      // Tentar encontrar atividade base pelo atividade_id
       const atividadeBase = atividadeMap.get(p.atividade_id);
-      
-      // Se não achar no mapa base, usar o descritivo do próprio planejamento
+
+      // Usar dados da atividade base se disponível, senão usar dados do planejamento
       const nome = atividadeBase?.atividade || p.descritivo || 'Sem nome';
       const etapa = atividadeBase?.etapa || p.etapa || '';
       const disciplina = atividadeBase?.disciplina || '';
@@ -68,14 +67,13 @@ export default function AnaliseTempoAtividades() {
           disciplina,
           subdisciplina,
           funcao,
-          tempo_base: atividadeBase?.tempo || 0,
           registros: [],
         });
       }
 
       grupos.get(p.atividade_id).registros.push({
-        tempo_planejado: p.tempo_planejado || 0,
-        tempo_executado: p.tempo_executado,
+        tempo_planejado: Number(p.tempo_planejado) || 0,
+        tempo_executado: tempoExec,
       });
     });
 
@@ -86,57 +84,7 @@ export default function AnaliseTempoAtividades() {
       const mediaExecutado = totalExecutado / n;
       const mediaPlanejado = totalPlanejado / n;
       const desvio = mediaPlanejado > 0 ? ((mediaExecutado - mediaPlanejado) / mediaPlanejado) * 100 : 0;
-
       return { ...g, n, mediaExecutado, mediaPlanejado, desvio };
-    });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [planejamentos, atividadeMap]);
-
-  // BLOCO REMOVIDO - lógica inline abaixo
-  const _analise_dummy = useMemo(() => {
-    const grupos = new Map();
-
-    planejamentos.forEach(p => {
-      if (!p.atividade_id || !p.tempo_executado || p.tempo_executado <= 0) return;
-      if (p.status !== 'concluido') return;
-
-      const atividadeBase = atividadeMap.get(p.atividade_id);
-      if (!atividadeBase) return;
-
-      if (!grupos.has(p.atividade_id)) {
-        grupos.set(p.atividade_id, {
-          atividade_id: p.atividade_id,
-          nome: atividadeBase.atividade,
-          etapa: atividadeBase.etapa,
-          disciplina: atividadeBase.disciplina,
-          subdisciplina: atividadeBase.subdisciplina,
-          funcao: atividadeBase.funcao,
-          tempo_base: atividadeBase.tempo || 0, // h/m²
-          registros: [],
-        });
-      }
-
-      grupos.get(p.atividade_id).registros.push({
-        tempo_planejado: p.tempo_planejado || 0,
-        tempo_executado: p.tempo_executado,
-      });
-    });
-
-    return Array.from(grupos.values()).map(g => {
-      const n = g.registros.length;
-      const totalExecutado = g.registros.reduce((s, r) => s + r.tempo_executado, 0);
-      const totalPlanejado = g.registros.reduce((s, r) => s + r.tempo_planejado, 0);
-      const mediaExecutado = totalExecutado / n;
-      const mediaPlanejado = totalPlanejado / n;
-      const desvio = mediaPlanejado > 0 ? ((mediaExecutado - mediaPlanejado) / mediaPlanejado) * 100 : 0;
-
-      return {
-        ...g,
-        n,
-        mediaExecutado,
-        mediaPlanejado,
-        desvio, // % acima (+) ou abaixo (-) do planejado
-      };
     });
   }, [planejamentos, atividadeMap]);
 
@@ -151,7 +99,6 @@ export default function AnaliseTempoAtividades() {
       const s = search.toLowerCase();
       lista = lista.filter(a => a.nome?.toLowerCase().includes(s) || a.subdisciplina?.toLowerCase().includes(s));
     }
-
     return lista.sort((a, b) => {
       switch (ordenacao) {
         case 'desvio_desc': return b.desvio - a.desvio;
@@ -164,7 +111,6 @@ export default function AnaliseTempoAtividades() {
     });
   }, [analise, filtroEtapa, filtroDisciplina, search, ordenacao]);
 
-  // Estatísticas resumo
   const stats = useMemo(() => {
     if (!filtrado.length) return null;
     const acimaDoPlanejado = filtrado.filter(a => a.desvio > 10).length;
@@ -205,7 +151,6 @@ export default function AnaliseTempoAtividades() {
 
   return (
     <div className="p-6 space-y-6 bg-gray-50 min-h-screen">
-      {/* Header */}
       <div className="flex items-center gap-3">
         <div className="w-10 h-10 bg-blue-600 rounded-xl flex items-center justify-center">
           <BarChart2 className="w-6 h-6 text-white" />
@@ -216,7 +161,6 @@ export default function AnaliseTempoAtividades() {
         </div>
       </div>
 
-      {/* Stats Cards */}
       {stats && (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="border-0 shadow-sm">
@@ -262,7 +206,6 @@ export default function AnaliseTempoAtividades() {
         </div>
       )}
 
-      {/* Filtros */}
       <Card className="border-0 shadow-sm">
         <CardContent className="p-4">
           <div className="flex flex-wrap gap-3">
@@ -271,27 +214,21 @@ export default function AnaliseTempoAtividades() {
               <Input placeholder="Buscar atividade..." value={search} onChange={e => setSearch(e.target.value)} className="pl-9" />
             </div>
             <Select value={filtroEtapa} onValueChange={setFiltroEtapa}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Etapa" />
-              </SelectTrigger>
+              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Etapa" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas as etapas</SelectItem>
                 {etapas.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={filtroDisciplina} onValueChange={setFiltroDisciplina}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Disciplina" />
-              </SelectTrigger>
+              <SelectTrigger className="w-[180px]"><SelectValue placeholder="Disciplina" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="todas">Todas as disciplinas</SelectItem>
                 {disciplinas.map(d => <SelectItem key={d} value={d}>{d}</SelectItem>)}
               </SelectContent>
             </Select>
             <Select value={ordenacao} onValueChange={setOrdenacao}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Ordenar por" />
-              </SelectTrigger>
+              <SelectTrigger className="w-[200px]"><SelectValue placeholder="Ordenar por" /></SelectTrigger>
               <SelectContent>
                 <SelectItem value="desvio_desc">Maior desvio primeiro</SelectItem>
                 <SelectItem value="desvio_asc">Menor desvio primeiro</SelectItem>
@@ -304,17 +241,16 @@ export default function AnaliseTempoAtividades() {
         </CardContent>
       </Card>
 
-      {/* Tabela */}
       <Card className="border-0 shadow-sm">
         <CardHeader className="pb-2 pt-4 px-4">
-          <p className="text-sm text-gray-500">{filtrado.length} atividades encontradas</p>
+          <p className="text-sm text-gray-500">{filtrado.length} atividades encontradas · {planejamentos.length} planejamentos concluídos carregados</p>
         </CardHeader>
         <CardContent className="p-0">
           {filtrado.length === 0 ? (
             <div className="text-center py-16 text-gray-400">
               <Clock className="w-12 h-12 mx-auto mb-3 opacity-30" />
               <p>Nenhuma atividade com dados suficientes encontrada.</p>
-              <p className="text-sm mt-1">São necessárias atividades concluídas com tempo executado registrado.</p>
+              <p className="text-sm mt-1">São necessárias atividades concluídas com <strong>tempo_executado</strong> registrado no PlanejamentoAtividade.</p>
             </div>
           ) : (
             <div className="overflow-x-auto">
