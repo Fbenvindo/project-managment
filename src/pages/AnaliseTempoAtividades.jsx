@@ -18,12 +18,12 @@ export default function AnaliseTempoAtividades() {
 
   const { data: atividades = [], isLoading: loadingAtiv } = useQuery({
     queryKey: ['atividades-base'],
-    queryFn: () => Atividade.filter({ empreendimento_id: null }),
+    queryFn: () => Atividade.list('-created_date', 5000),
   });
 
   const { data: planejamentos = [], isLoading: loadingPlan } = useQuery({
     queryKey: ['planejamentos-analise'],
-    queryFn: () => PlanejamentoAtividade.list('-created_date', 2000),
+    queryFn: () => PlanejamentoAtividade.filter({ status: 'concluido' }, '-created_date', 5000),
   });
 
   const isLoading = loadingAtiv || loadingPlan;
