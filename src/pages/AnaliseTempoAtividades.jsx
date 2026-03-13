@@ -28,11 +28,16 @@ export default function AnaliseTempoAtividades() {
 
   const isLoading = loadingAtiv || loadingPlan;
 
-  // Mapa de atividade_id -> dados da atividade base
+  // Mapa de atividade_id -> dados da atividade base (sem empreendimento = atividade base/template)
   const atividadeMap = useMemo(() => {
     const map = new Map();
     atividades.forEach(a => {
-      if (!a.empreendimento_id) map.set(a.id, a);
+      // Atividades base não têm empreendimento_id, mas têm id_atividade
+      if (!a.empreendimento_id) {
+        map.set(a.id, a);
+        // Também indexar por id_atividade se existir
+        if (a.id_atividade) map.set(a.id_atividade, a);
+      }
     });
     return map;
   }, [atividades]);
