@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Building2, Settings, Home, Users, Zap, Calendar, BarChart3, Briefcase, FileText, Calculator, FlaskConical } from "lucide-react";
+import { Building2, Settings, Home, Users, Zap, Calendar, BarChart3, Briefcase, FileText, Calculator } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -126,16 +126,6 @@ const LayoutComponent = ({ children, currentPageName }) => {
         title: "Configurações",
         url: createPageUrl("Configuracoes"),
         icon: Settings,
-        show: true
-      });
-    }
-
-    // Análise de Tempo: apenas admin
-    if (isAdmin) {
-      items.push({
-        title: "Análise de Tempo",
-        url: createPageUrl("AnaliseTempoAtividades"),
-        icon: FlaskConical,
         show: true
       });
     }

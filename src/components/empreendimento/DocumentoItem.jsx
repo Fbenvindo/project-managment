@@ -449,19 +449,9 @@ export default function DocumentoItem({
 
   const documentosFiltradosParaPredecessor = useMemo(() => {
     const docs = localDocumentos.filter(d => d.id !== doc.id);
-    let filtered = docs;
-    if (searchPredecessor) {
-      const search = searchPredecessor.toLowerCase();
-      filtered = docs.filter(d => d.numero?.toLowerCase().includes(search) || d.arquivo?.toLowerCase().includes(search));
-    }
-    // Agrupar por disciplina
-    const grupos = {};
-    filtered.forEach(d => {
-      const disc = d.disciplina || 'Sem Disciplina';
-      if (!grupos[disc]) grupos[disc] = [];
-      grupos[disc].push(d);
-    });
-    return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
+    if (!searchPredecessor) return docs.slice(0, 50);
+    const search = searchPredecessor.toLowerCase();
+    return docs.filter(d => d.numero?.toLowerCase().includes(search) || d.arquivo?.toLowerCase().includes(search)).slice(0, 50);
   }, [localDocumentos, doc.id, searchPredecessor]);
 
   return (
@@ -668,22 +658,15 @@ export default function DocumentoItem({
                       <Button variant="ghost" className="w-full justify-start text-left font-normal" onClick={() => { handlePredecessoraChange(doc.id, null); setSearchPredecessor(''); }}>
                         <span className="text-gray-500">Nenhum predecessor</span>
                       </Button>
+                      {documentosFiltradosParaPredecessor.map(d => (
+                        <Button key={d.id} variant="ghost" className="w-full justify-start text-left font-normal" onClick={() => { handlePredecessoraChange(doc.id, d.id); setSearchPredecessor(''); }}>
+                          <span className="font-medium">{d.numero}</span>
+                          <span className="text-gray-500 ml-2 truncate">{d.arquivo}</span>
+                        </Button>
+                      ))}
                       {documentosFiltradosParaPredecessor.length === 0 && searchPredecessor && (
                         <div className="p-4 text-center text-sm text-gray-500">Nenhum documento encontrado</div>
                       )}
-                      {documentosFiltradosParaPredecessor.map(([disciplina, docs]) => (
-                        <div key={disciplina}>
-                          <div className="px-2 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider bg-gray-50 border-y border-gray-100 mt-1">
-                            {disciplina}
-                          </div>
-                          {docs.map(d => (
-                            <Button key={d.id} variant="ghost" className="w-full justify-start text-left font-normal pl-4" onClick={() => { handlePredecessoraChange(doc.id, d.id); setSearchPredecessor(''); }}>
-                              <span className="font-medium">{d.numero}</span>
-                              <span className="text-gray-500 ml-2 truncate">{d.arquivo}</span>
-                            </Button>
-                          ))}
-                        </div>
-                      ))}
                     </div>
                   </div>
                 </PopoverContent>
