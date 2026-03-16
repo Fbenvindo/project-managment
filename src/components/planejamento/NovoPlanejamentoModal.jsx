@@ -503,7 +503,7 @@ export default function NovoPlanejamentoModal({
     };
 
     await PlanejamentoAtividade.create(dadosPlanejamento);
-    return { termino: dataTermino, carga: cargaAtualizada };
+    return { termino: dataTermino, carga: novaCargaDiaria };
   };
 
   const handleIndividualSubmit = async () => {
