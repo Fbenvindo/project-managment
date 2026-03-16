@@ -64,6 +64,7 @@ import Orcamentos from './pages/Orcamentos';
 import PRE from './pages/PRE';
 import Planejamento from './pages/Planejamento';
 import Propostas from './pages/Propostas';
+import MediaAtividades from './pages/MediaAtividades';
 import Relatorios from './pages/Relatorios';
 import SeletorPlanejamento from './pages/SeletorPlanejamento';
 import Usuarios from './pages/Usuarios';
