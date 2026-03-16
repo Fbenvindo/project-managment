@@ -748,7 +748,7 @@ export default function NovoPlanejamentoModal({
       for (const executor of allSelectedExecutors) {
         const cargaDoExecutor = cargaPorExecutor[executor] || {};
         const diaDePartidaReal = new Date(proximaDataDePartida);
-        const { distribuicao, dataTermino, cargaAtualizada } = distribuirHorasPorDias(diaDePartidaReal, tempoTotal, 8, cargaDoExecutor);
+        const { distribuicao, dataTermino, novaCargaDiaria } = distribuirHorasPorDias(diaDePartidaReal, tempoTotal, 8, cargaDoExecutor);
 
         if (Object.keys(distribuicao).length === 0) {
           console.warn(`[handleDocumentoSubmit] ⚠️ Nenhuma hora pôde ser alocada para o documento "${documento.arquivo}" para o executor ${executor}.`);
