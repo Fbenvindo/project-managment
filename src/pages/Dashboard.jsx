@@ -165,7 +165,7 @@ export default function Dashboard() {
               <h1 className="text-3xl font-bold text-gray-900 mb-2">Painel de Controle</h1>
               <p className="text-gray-600">
                 {isColaboradorView ?
-                  `Bem-vindo, ${user.full_name || user.email}. Veja suas atividades.` :
+                  `Bem-vindo, ${user?.full_name || user?.email || ''}. Veja suas atividades.` :
                   "Gerencie seus projetos de forma eficiente."
                 }
               </p>
