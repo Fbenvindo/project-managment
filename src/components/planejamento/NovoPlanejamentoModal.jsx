@@ -779,7 +779,7 @@ export default function NovoPlanejamentoModal({
         };
 
         await PlanejamentoDocumento.create(dadosPlanejamento);
-        cargaPorExecutor[executor] = cargaAtualizada;
+        cargaPorExecutor[executor] = novaCargaDiaria;
         createdCount++;
       }
 
