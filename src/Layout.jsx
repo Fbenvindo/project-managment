@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Building2, Settings, Home, Users, Zap, Calendar, BarChart3, Briefcase, FileText, Calculator, TrendingUp } from "lucide-react";
+import { Building2, Settings, Home, Users, Zap, Calendar, BarChart3, Briefcase, FileText, Calculator } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -76,12 +76,6 @@ const LayoutComponent = ({ children, currentPageName }) => {
         title: "Relatórios",
         url: createPageUrl("Relatorios"),
         icon: BarChart3,
-        show: true
-      });
-      items.push({
-        title: "Média por Atividade",
-        url: createPageUrl("MediaAtividades"),
-        icon: TrendingUp,
         show: true
       });
     }
