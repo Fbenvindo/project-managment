@@ -401,6 +401,7 @@ export default function MediaAtividades() {
                                                     </TableCell>
                                                     <TableCell className="text-center">
                                                         {g.count > 0 ? <Desviobage desvio={g.desvio} /> : '-'}
+
                                                     </TableCell>
                                                 </TableRow>
                                             ))}
