@@ -482,7 +482,7 @@ export default function NovoPlanejamentoModal({
   const planAndCreateForExecutor = async (executor, isPrincipal, cargaDiariaExistente, dataPartida, descritivo, tempoTotal) => {
     console.log(`[planAndCreateForExecutor] 📅 Planejando para ${executor} a partir de ${format(dataPartida, 'yyyy-MM-dd')}`);
     const diaDePartidaReal = new Date(dataPartida);
-    const { distribuicao, dataTermino, cargaAtualizada } = distribuirHorasPorDias(diaDePartidaReal, tempoTotal, 8, cargaDiariaExistente);
+    const { distribuicao, dataTermino, novaCargaDiaria } = distribuirHorasPorDias(diaDePartidaReal, tempoTotal, 8, cargaDiariaExistente);
 
     if (Object.keys(distribuicao).length === 0) {
       console.warn(`[planAndCreateForExecutor] ⚠️ Nenhuma hora pôde ser alocada para "${descritivo}" para o executor ${executor}.`);
