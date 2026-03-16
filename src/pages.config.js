@@ -89,6 +89,7 @@ export const PAGES = {
     "PRE": PRE,
     "Planejamento": Planejamento,
     "Propostas": Propostas,
+    "MediaAtividades": MediaAtividades,
     "Relatorios": Relatorios,
     "SeletorPlanejamento": SeletorPlanejamento,
     "Usuarios": Usuarios,
