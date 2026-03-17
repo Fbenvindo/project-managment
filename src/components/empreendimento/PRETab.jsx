@@ -371,20 +371,39 @@ export default function PRETab({ empreendimento, readOnly = false }) {
             </button>
           </div>
 
-          {/* Imagem com zoom */}
+          {/* Imagem com zoom e pan */}
           <div
-            className="overflow-auto max-w-[90vw] max-h-[80vh] cursor-zoom-in"
+            className="overflow-hidden max-w-[90vw] max-h-[80vh] relative"
+            style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
             onClick={(e) => e.stopPropagation()}
             onWheel={(e) => {
               e.preventDefault();
               setZoom(z => Math.min(4, Math.max(0.5, z + (e.deltaY < 0 ? 0.1 : -0.1))));
             }}
+            onMouseDown={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+              dragStart.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
+            }}
+            onMouseMove={(e) => {
+              if (!isDragging || !dragStart.current) return;
+              setPan({ x: e.clientX - dragStart.current.x, y: e.clientY - dragStart.current.y });
+            }}
+            onMouseUp={() => setIsDragging(false)}
+            onMouseLeave={() => setIsDragging(false)}
           >
             <img
               src={lightboxImg}
               alt="Imagem ampliada"
-              style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', transition: 'transform 0.1s' }}
-              className="rounded-lg shadow-2xl block"
+              style={{
+                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                transformOrigin: 'center center',
+                transition: isDragging ? 'none' : 'transform 0.1s',
+                userSelect: 'none',
+                pointerEvents: 'none'
+              }}
+              className="rounded-lg shadow-2xl block max-w-[90vw] max-h-[80vh] object-contain"
+              draggable={false}
             />
           </div>
           <p className="text-gray-400 text-xs mt-3">Use o scroll do mouse ou os botões para dar zoom</p>
