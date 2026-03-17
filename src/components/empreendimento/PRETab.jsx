@@ -344,7 +344,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
       {lightboxImg && (
         <div
           className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col items-center justify-center no-print"
-          onClick={() => { setLightboxImg(null); setZoom(1); }}
+          onClick={() => { setLightboxImg(null); setZoom(1); setPan({ x: 0, y: 0 }); }}
         >
           {/* Controles */}
           <div className="flex items-center gap-3 mb-4 z-10" onClick={(e) => e.stopPropagation()}>
