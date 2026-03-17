@@ -340,22 +340,51 @@ export default function PRETab({ empreendimento, readOnly = false }) {
       {/* Lightbox */}
       {lightboxImg && (
         <div
-          className="fixed inset-0 bg-black bg-opacity-80 z-50 flex items-center justify-center p-4 no-print"
-          onClick={() => setLightboxImg(null)}
+          className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col items-center justify-center no-print"
+          onClick={() => { setLightboxImg(null); setZoom(1); }}
         >
-          <div className="relative max-w-5xl max-h-full" onClick={(e) => e.stopPropagation()}>
+          {/* Controles */}
+          <div className="flex items-center gap-3 mb-4 z-10" onClick={(e) => e.stopPropagation()}>
             <button
-              onClick={() => setLightboxImg(null)}
-              className="absolute -top-3 -right-3 bg-white text-gray-800 rounded-full p-1 shadow-lg hover:bg-gray-100 z-10"
+              onClick={() => setZoom(z => Math.max(0.5, z - 0.25))}
+              className="bg-white text-gray-800 rounded-full w-9 h-9 flex items-center justify-center shadow-lg hover:bg-gray-100 text-lg font-bold"
+              title="Diminuir zoom"
+            >−</button>
+            <span className="text-white text-sm font-medium w-12 text-center">{Math.round(zoom * 100)}%</span>
+            <button
+              onClick={() => setZoom(z => Math.min(4, z + 0.25))}
+              className="bg-white text-gray-800 rounded-full w-9 h-9 flex items-center justify-center shadow-lg hover:bg-gray-100 text-lg font-bold"
+              title="Aumentar zoom"
+            >+</button>
+            <button
+              onClick={() => setZoom(1)}
+              className="bg-white text-gray-800 rounded px-3 h-9 flex items-center justify-center shadow-lg hover:bg-gray-100 text-xs font-medium"
+            >Reset</button>
+            <button
+              onClick={() => { setLightboxImg(null); setZoom(1); }}
+              className="bg-white text-gray-800 rounded-full w-9 h-9 flex items-center justify-center shadow-lg hover:bg-gray-100 ml-4"
             >
               <X className="w-5 h-5" />
             </button>
+          </div>
+
+          {/* Imagem com zoom */}
+          <div
+            className="overflow-auto max-w-[90vw] max-h-[80vh] cursor-zoom-in"
+            onClick={(e) => e.stopPropagation()}
+            onWheel={(e) => {
+              e.preventDefault();
+              setZoom(z => Math.min(4, Math.max(0.5, z + (e.deltaY < 0 ? 0.1 : -0.1))));
+            }}
+          >
             <img
               src={lightboxImg}
               alt="Imagem ampliada"
-              className="max-w-full max-h-[90vh] rounded-lg shadow-2xl object-contain"
+              style={{ transform: `scale(${zoom})`, transformOrigin: 'top left', transition: 'transform 0.1s' }}
+              className="rounded-lg shadow-2xl block"
             />
           </div>
+          <p className="text-gray-400 text-xs mt-3">Use o scroll do mouse ou os botões para dar zoom</p>
         </div>
       )}
 
