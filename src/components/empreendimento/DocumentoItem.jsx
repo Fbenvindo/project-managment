@@ -94,8 +94,23 @@ export default function DocumentoItem({
       }
     });
 
+    // Coletar IDs de atividades genéricas que têm override específico nesta folha
+    const idsComOverrideEspecifico = new Set();
+    allAtividades.forEach(ativ => {
+      if (
+        ativ.empreendimento_id === empreendimento.id &&
+        ativ.documento_id === doc.id &&
+        ativ.id_atividade &&
+        ativ.tempo !== -999
+      ) {
+        idsComOverrideEspecifico.add(ativ.id_atividade);
+      }
+    });
+
     let atividadesGerais = allAtividades.filter(ativ => {
       if (!ativ.empreendimento_id) {
+        // Incluir atividade genérica apenas se não houver override específico para esta folha
+        if (idsComOverrideEspecifico.has(ativ.id)) return false;
         return ativ.disciplina === disciplinaDoc &&
           Array.isArray(subdisciplinasDoc) && subdisciplinasDoc.includes(ativ.subdisciplina);
       }
