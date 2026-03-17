@@ -360,11 +360,11 @@ export default function PRETab({ empreendimento, readOnly = false }) {
               title="Aumentar zoom"
             >+</button>
             <button
-              onClick={() => setZoom(1)}
+              onClick={() => { setZoom(1); setPan({ x: 0, y: 0 }); }}
               className="bg-white text-gray-800 rounded px-3 h-9 flex items-center justify-center shadow-lg hover:bg-gray-100 text-xs font-medium"
             >Reset</button>
             <button
-              onClick={() => { setLightboxImg(null); setZoom(1); }}
+              onClick={() => { setLightboxImg(null); setZoom(1); setPan({ x: 0, y: 0 }); }}
               className="bg-white text-gray-800 rounded-full w-9 h-9 flex items-center justify-center shadow-lg hover:bg-gray-100 ml-4"
             >
               <X className="w-5 h-5" />
