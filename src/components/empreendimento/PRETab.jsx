@@ -578,25 +578,26 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                             Anexar Imagem ou PDF
                           </Button>
                         </div>
-                        <div className="grid grid-cols-2 gap-3">
+                        <div className="flex flex-wrap gap-2">
                           {(item.imagens || []).map((imgUrl, idx) => (
-                            <div key={idx} className="relative group">
+                            <div key={idx} className="relative group flex-shrink-0">
                               {imgUrl.toLowerCase().endsWith('.pdf') ? (
                                 <a
                                   href={imgUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="w-full rounded border cursor-pointer hover:opacity-80 transition-all flex items-center justify-center p-4 bg-gray-50 text-sm font-medium text-blue-600 hover:bg-blue-50"
+                                  className="w-20 h-20 rounded border cursor-pointer hover:opacity-80 transition-all flex flex-col items-center justify-center bg-gray-50 text-xs font-medium text-blue-600 hover:bg-blue-50"
                                 >
-                                  <File className="w-4 h-4 mr-2" />
+                                  <File className="w-6 h-6 mb-1" />
                                   PDF
                                 </a>
                               ) : (
                                 <img
                                   src={imgUrl}
                                   alt={`Imagem ${idx + 1}`}
-                                  className="w-full rounded border cursor-pointer hover:opacity-80 transition-all"
+                                  className="w-20 h-20 object-cover rounded border cursor-pointer hover:opacity-80 transition-all"
                                   onClick={() => setLightboxImg(imgUrl)}
+                                  title="Clique para ampliar"
                                 />
                               )}
                               {/* Botão ampliar - canto inferior esquerdo */}
@@ -604,7 +605,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                                 <button
                                   type="button"
                                   onClick={() => setLightboxImg(imgUrl)}
-                                  className="absolute bottom-1 left-1 bg-black bg-opacity-60 text-white rounded p-1 opacity-0 group-hover:opacity-100 transition-opacity no-print"
+                                  className="absolute bottom-1 left-1 bg-black bg-opacity-60 text-white rounded p-0.5 opacity-0 group-hover:opacity-100 transition-opacity no-print"
                                   title="Ampliar imagem"
                                 >
                                   <ZoomIn className="w-3 h-3" />
@@ -614,7 +615,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                               <button
                                 type="button"
                                 onClick={() => handleRemoveImage(item.id, imgUrl)}
-                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity no-print"
+                                className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity no-print"
                               >
                                 <X className="w-3 h-3" />
                               </button>
