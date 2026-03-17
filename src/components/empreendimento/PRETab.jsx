@@ -595,7 +595,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                                 <img
                                   src={imgUrl}
                                   alt={`Imagem ${idx + 1}`}
-                                  className="w-20 h-20 object-cover rounded border cursor-pointer hover:opacity-80 transition-all"
+                                  className="w-32 h-32 object-cover rounded border cursor-pointer hover:opacity-80 transition-all"
                                   onClick={() => setLightboxImg(imgUrl)}
                                   title="Clique para ampliar"
                                 />
