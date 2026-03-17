@@ -586,7 +586,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                                   href={imgUrl}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="w-20 h-20 rounded border cursor-pointer hover:opacity-80 transition-all flex flex-col items-center justify-center bg-gray-50 text-xs font-medium text-blue-600 hover:bg-blue-50"
+                                  className="w-32 h-32 rounded border cursor-pointer hover:opacity-80 transition-all flex flex-col items-center justify-center bg-gray-50 text-xs font-medium text-blue-600 hover:bg-blue-50"
                                 >
                                   <File className="w-6 h-6 mb-1" />
                                   PDF
