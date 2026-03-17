@@ -628,7 +628,8 @@ export default function NovoPlanejamentoModal({
 
       const cargaPorExecutor = {};
       emailsDosUsuarios.forEach(email => { cargaPorExecutor[email] = {}; });
-      planejamentosExistentes.forEach(p => {
+      // Ignorar planejamentos já concluídos ao calcular carga
+      planejamentosExistentes.filter(p => p.status !== 'concluido').forEach(p => {
         const executorEmail = p.executor_principal;
         if (executorEmail && cargaPorExecutor[executorEmail] && p.horas_por_dia) {
           Object.entries(p.horas_por_dia).forEach(([data, horas]) => {
