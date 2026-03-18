@@ -291,8 +291,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             const existingPlan = planejamentosMap.get(planKey);
             const overrideKey = `${doc.id}|${baseAtividade.id}`;
             const override = overrideActivitiesByDocMap.get(overrideKey) || overrideActivitiesGlobalMap.get(baseAtividade.id);
-            // Se empreendimento tem etapa única, usá-la para todas as atividades das folhas
-            const etapaBase = etapasCadastradas.length === 1 ? etapasCadastradas[0] : baseAtividade.etapa;
+            // Se empreendimento tem etapas cadastradas, usar a primeira como padrão para atividades sem override
+            const etapaBase = etapasCadastradas.length > 0 ? etapasCadastradas[0] : baseAtividade.etapa;
             const etapaCorreta = override ? override.etapa : etapaBase;
             const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
 
