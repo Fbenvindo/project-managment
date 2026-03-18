@@ -20,7 +20,7 @@ import { format, isValid, parseISO, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-
+const PlanejamentoDocumento = base44.entities.PlanejamentoDocumento;
 const EtapaEditModal = ({ isOpen, onClose, atividade, onSave, documentos }) => {
   const [newEtapa, setNewEtapa] = useState('');
   const [escopo, setEscopo] = useState('empreendimento');
