@@ -230,7 +230,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       let documentActivities = [];
       (documentosData || []).forEach(doc => {
         const subdisciplinasDoc = doc.subdisciplinas || [];
-        const disciplinaDoc = doc.disciplina;
+        const disciplinasDoc = doc.disciplinas?.length > 0 ? doc.disciplinas : [doc.disciplina].filter(Boolean);
         const fatorDificuldade = doc.fator_dificuldade || 1;
 
         // Adicionar atividades específicas vinculadas a este documento
