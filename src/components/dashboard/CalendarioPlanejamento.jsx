@@ -789,8 +789,49 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       }
     });
 
-    // Ordenar respeitando predecessoras (topológico)
-    for (const dk in grouped) grouped[dk] = sortActivitiesTopological(grouped[dk], filteredPlanejamentos);
+    // Calcular ordem topológica global (para ordenar cards dentro do dia)
+    const topoOrderMap = new Map();
+    const buildGlobalTopoOrder = (allPlanos) => {
+      const idSet = new Set(allPlanos.map(p => p.id));
+      const inDegree = {};
+      const adjList = {};
+      allPlanos.forEach(p => { inDegree[p.id] = 0; adjList[p.id] = []; });
+      allPlanos.forEach(p => {
+        if (p.predecessora_id && idSet.has(p.predecessora_id)) {
+          adjList[p.predecessora_id].push(p.id);
+          inDegree[p.id]++;
+        }
+      });
+      const byInicio = (a, b) => (a.inicio_planejado || '').localeCompare(b.inicio_planejado || '');
+      const queue = allPlanos.filter(p => inDegree[p.id] === 0).sort(byInicio);
+      let order = 0;
+      while (queue.length > 0) {
+        const current = queue.shift();
+        topoOrderMap.set(current.id, order++);
+        (adjList[current.id] || []).forEach(succId => {
+          inDegree[succId]--;
+          if (inDegree[succId] === 0) {
+            const succItem = allPlanos.find(p => p.id === succId);
+            if (succItem) queue.push(succItem);
+          }
+          queue.sort(byInicio);
+        });
+      }
+      allPlanos.forEach(p => { if (!topoOrderMap.has(p.id)) topoOrderMap.set(p.id, order++); });
+    };
+
+    const allGroupedItems = Object.values(grouped).flat();
+    buildGlobalTopoOrder(allGroupedItems);
+
+    // Ordenar cada dia pela ordem topológica global
+    for (const dk in grouped) {
+      grouped[dk] = grouped[dk].sort((a, b) => {
+        const oA = topoOrderMap.get(a.id) ?? 999999;
+        const oB = topoOrderMap.get(b.id) ?? 999999;
+        if (oA !== oB) return oA - oB;
+        return (a.inicio_planejado || '').localeCompare(b.inicio_planejado || '');
+      });
+    }
 
     return grouped;
   }, [filteredPlanejamentos, execucoes, hasSelectedUser]);
