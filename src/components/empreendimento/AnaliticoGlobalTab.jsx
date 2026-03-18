@@ -157,7 +157,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       
       const normalizedProjectActivities = (activitiesToProcess || [])
         .filter(pa => !pa.id_atividade && pa.tempo !== -999)
-        .filter(pa => etapasCadastradas.length === 0 || etapasCadastradas.includes(pa.etapa))
         .map(ativ => ({
           ...ativ,
           uniqueId: `proj-${ativ.id}`,
