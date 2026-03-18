@@ -727,6 +727,36 @@ export default function PRETab({ empreendimento, readOnly = false, usuarios = []
                       />
                     </div>
 
+                    {/* Tempo para Planejamento */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-600 block mb-1">Tempo (h)</label>
+                      <Input
+                        type="number"
+                        step="0.5"
+                        min="0"
+                        value={item.tempo_planejamento || ''}
+                        onChange={(e) => handleUpdateItem(item.id, 'tempo_planejamento', e.target.value ? parseFloat(e.target.value) : null)}
+                        className="h-9 text-sm text-center print:border-none print:bg-transparent"
+                        disabled={readOnly}
+                        placeholder="0"
+                      />
+                    </div>
+
+                    {/* Botão Planejar */}
+                    {!readOnly && (
+                      <div className="no-print">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="w-full text-blue-600 border-blue-300 hover:bg-blue-50"
+                          onClick={() => setPlanejamentoItem(item)}
+                        >
+                          <CalendarPlus className="w-3 h-3 mr-1" />
+                          Planejar
+                        </Button>
+                      </div>
+                    )}
+
                     {/* Status */}
                     <div>
                       <label className="text-xs font-semibold text-gray-600 block mb-1">Status</label>
