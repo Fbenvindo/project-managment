@@ -553,7 +553,11 @@ export default function PRETab({ empreendimento, readOnly = false, usuarios = []
               </Card>
             ) : (
               filteredItems.map((item) => (
-                <div key={item.id} className="flex gap-4 border border-gray-300 rounded-lg overflow-hidden bg-white">
+                <div
+                  key={item.id}
+                  ref={el => itemRefs.current[item.id] = el}
+                  className="flex gap-4 border border-gray-300 rounded-lg overflow-hidden bg-white transition-all duration-500"
+                >
                   {/* Container Principal (80%) */}
                   <div className="w-4/5 p-4 space-y-4 border-r border-gray-300">
                     {/* De, Descritiva e Assunto - lado a lado */}
