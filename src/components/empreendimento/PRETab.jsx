@@ -94,6 +94,7 @@ export default function PRETab({ empreendimento, readOnly = false, usuarios = []
   const dragStart = React.useRef(null);
   const [items, setItems] = useState([]);
   const [lastSaved, setLastSaved] = useState(null);
+  const [planejamentoItem, setPlanejamentoItem] = useState(null);
   const [disciplinas, setDisciplinas] = useState([]);
   const [filtroDispline, setFiltroDispline] = useState('todas');
   const [headerData, setHeaderData] = useState({
