@@ -106,6 +106,21 @@ export default function PRETab({ empreendimento, readOnly = false, usuarios = []
     arquivo: ''
   });
   const saveTimeoutRef = React.useRef(null);
+  const itemRefs = React.useRef({});
+
+  // Scroll e highlight do item quando vindo do calendário
+  useEffect(() => {
+    if (highlightItemId && items.length > 0) {
+      const el = itemRefs.current[highlightItemId];
+      if (el) {
+        setTimeout(() => {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.classList.add('ring-4', 'ring-blue-400', 'ring-offset-2');
+          setTimeout(() => el.classList.remove('ring-4', 'ring-blue-400', 'ring-offset-2'), 3000);
+        }, 300);
+      }
+    }
+  }, [highlightItemId, items.length]);
 
   useEffect(() => {
     if (empreendimento) {
