@@ -14,8 +14,9 @@ import { PlanejamentoAtividade } from "@/entities/all";
 import { distribuirHorasPorDias, getNextWorkingDay } from '../utils/DateCalculator';
 import { retryWithBackoff } from '../utils/apiUtils';
 
-export default function PREPlanejamentoModal({ isOpen, onClose, item, usuarios = [], empreendimento }) {
-  const [executorEmail, setExecutorEmail] = useState('');
+export default function PREPlanejamentoModal({ isOpen, onClose, item, usuarios = [], empreendimento, onPlanejado }) {
+  const executorExistente = item?.executor_pre || '';
+  const [executorEmail, setExecutorEmail] = useState(executorExistente);
   const [tempoPlanejado, setTempoPlanejado] = useState(item?.tempo_planejamento ? String(item.tempo_planejamento) : '');
   const [selectedDate, setSelectedDate] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
