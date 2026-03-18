@@ -51,19 +51,11 @@ export default function EmpreendimentoPage() {
     loading: false
   });
 
-  const [activeTab, setActiveTab] = useState(urlTab || 'documentos');
+  const [activeTab, setActiveTab] = useState('documentos');
   const [etapaParaPlanejamento, setEtapaParaPlanejamento] = useState('todas');
 
   const empreendimentoId = useMemo(() =>
     new URLSearchParams(location.search).get("id"), [location.search]
-  );
-
-  const urlTab = useMemo(() =>
-    new URLSearchParams(location.search).get("tab"), [location.search]
-  );
-
-  const urlItemId = useMemo(() =>
-    new URLSearchParams(location.search).get("itemId"), [location.search]
   );
 
   const { user } = useContext(ActivityTimerContext);
@@ -409,7 +401,7 @@ export default function EmpreendimentoPage() {
           </TabsContent>
 
           <TabsContent value="pre">
-            <PRETab empreendimento={empreendimento} readOnly={!canEdit} usuarios={sharedData.usuarios} highlightItemId={urlItemId} />
+            <PRETab empreendimento={empreendimento} readOnly={!canEdit} usuarios={sharedData.usuarios} />
           </TabsContent>
 
           <TabsContent value="controle_os">

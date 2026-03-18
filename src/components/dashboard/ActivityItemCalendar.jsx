@@ -5,8 +5,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { User, Trash2, RefreshCw, Play, ListMusic, PlusCircle, Loader2, Edit2, ExternalLink } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { User, Trash2, RefreshCw, Play, ListMusic, PlusCircle, Loader2, Edit2 } from "lucide-react";
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 import FinalizarAtividadeButton from './FinalizarAtividadeButton';
 import { Execucao, PlanejamentoAtividade, PlanejamentoDocumento } from '@/entities/all';
@@ -48,7 +47,6 @@ export default function ActivityItemCalendar({
   hasSelections 
 }) {
   const { activeExecution, startExecution, user, playlist, addToPlaylist, removeFromPlaylist } = useContext(ActivityTimerContext);
-  const navigate = useNavigate();
   const [isStarting, setIsStarting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showTimeAdjustModal, setShowTimeAdjustModal] = useState(false);
@@ -113,21 +111,6 @@ export default function ActivityItemCalendar({
   }, [plano.horas_por_dia, dayKey]);
   
   const isNaPlaylist = playlist.includes(plano.id);
-
-  // Detectar se é um planejamento originado de item PRE
-  const preItemId = useMemo(() => {
-    if (plano.base_descritivo?.startsWith('pre_item:')) {
-      return plano.base_descritivo.replace('pre_item:', '');
-    }
-    return null;
-  }, [plano.base_descritivo]);
-
-  const handleOpenPRE = (e) => {
-    e.stopPropagation();
-    if (plano.empreendimento_id) {
-      navigate(`/Empreendimento?id=${plano.empreendimento_id}&tab=pre&itemId=${preItemId}`);
-    }
-  };
 
   const getDocumentoDisplay = () => {
     if (!plano.documento_id || plano.tipo_planejamento === 'documento') return null;
@@ -358,17 +341,6 @@ export default function ActivityItemCalendar({
             )}
           </div>
           <div className="flex items-center shrink-0 gap-2">
-            {preItemId && (
-              <Button
-                onClick={handleOpenPRE}
-                size="sm"
-                variant="ghost"
-                className="w-5 h-5 p-0 text-blue-400 hover:text-blue-600 hover:bg-blue-100"
-                title="Ver item na aba PRE"
-              >
-                <ExternalLink className="w-3 h-3" />
-              </Button>
-            )}
             {shouldShowEditButton() && (
               <Button
                 onClick={handleEditDescritivo}

@@ -85,7 +85,7 @@ const printStyles = `
 }
 `;
 
-export default function PRETab({ empreendimento, readOnly = false, usuarios = [], highlightItemId = null }) {
+export default function PRETab({ empreendimento, readOnly = false, usuarios = [] }) {
   const [isSaving, setIsSaving] = useState(false);
   const [lightboxImg, setLightboxImg] = useState(null);
   const [zoom, setZoom] = useState(1);
@@ -106,21 +106,6 @@ export default function PRETab({ empreendimento, readOnly = false, usuarios = []
     arquivo: ''
   });
   const saveTimeoutRef = React.useRef(null);
-  const itemRefs = React.useRef({});
-
-  // Scroll e highlight do item quando vindo do calendário
-  useEffect(() => {
-    if (highlightItemId && items.length > 0) {
-      const el = itemRefs.current[highlightItemId];
-      if (el) {
-        setTimeout(() => {
-          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          el.classList.add('ring-4', 'ring-blue-400', 'ring-offset-2');
-          setTimeout(() => el.classList.remove('ring-4', 'ring-blue-400', 'ring-offset-2'), 3000);
-        }, 300);
-      }
-    }
-  }, [highlightItemId, items.length]);
 
   useEffect(() => {
     if (empreendimento) {
@@ -553,11 +538,7 @@ export default function PRETab({ empreendimento, readOnly = false, usuarios = []
               </Card>
             ) : (
               filteredItems.map((item) => (
-                <div
-                  key={item.id}
-                  ref={el => itemRefs.current[item.id] = el}
-                  className="flex gap-4 border border-gray-300 rounded-lg overflow-hidden bg-white transition-all duration-500"
-                >
+                <div key={item.id} className="flex gap-4 border border-gray-300 rounded-lg overflow-hidden bg-white">
                   {/* Container Principal (80%) */}
                   <div className="w-4/5 p-4 space-y-4 border-r border-gray-300">
                     {/* De, Descritiva e Assunto - lado a lado */}
