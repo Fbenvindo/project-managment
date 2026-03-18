@@ -14,7 +14,7 @@ import { debounce } from 'lodash';
 import { Badge } from '@/components/ui/badge';
 import { retryWithBackoff, retryWithExtendedBackoff } from '../utils/apiUtils';
 import { Checkbox } from "@/components/ui/checkbox";
-import PDFListaDesenvolvimento from '../configuracoes/PDFListaDesenvolvimento';
+import PDFListaDesenvolvimento from '../configuracoes/PDFListaDesenvolvimento'; const PlanejamentoDocumento = base44.entities.PlanejamentoDocumento;
 import { getNextWorkingDay, distribuirHorasPorDias, isWorkingDay, calculateEndDate, ensureWorkingDay } from '../utils/DateCalculator';
 import { format, isValid, parseISO, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
