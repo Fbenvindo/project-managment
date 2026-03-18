@@ -85,7 +85,7 @@ const printStyles = `
 }
 `;
 
-export default function PRETab({ empreendimento, readOnly = false, usuarios = [] }) {
+export default function PRETab({ empreendimento, readOnly = false, usuarios = [], highlightItemId = null }) {
   const [isSaving, setIsSaving] = useState(false);
   const [lightboxImg, setLightboxImg] = useState(null);
   const [zoom, setZoom] = useState(1);
