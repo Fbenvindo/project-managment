@@ -83,6 +83,7 @@ export default function PREPlanejamentoModal({ isOpen, onClose, item, usuarios =
         horas_por_dia: distribuicao,
         status: 'nao_iniciado',
         prioridade: 1,
+        base_descritivo: `pre_item:${item.id}`,
       }), 3, 1000, 'PREPlan-create');
 
       alert('Planejamento criado com sucesso!');
