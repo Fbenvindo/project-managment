@@ -51,7 +51,7 @@ export default function EmpreendimentoPage() {
     loading: false
   });
 
-  const [activeTab, setActiveTab] = useState('documentos');
+  const [activeTab, setActiveTab] = useState(urlTab || 'documentos');
   const [etapaParaPlanejamento, setEtapaParaPlanejamento] = useState('todas');
 
   const empreendimentoId = useMemo(() =>
