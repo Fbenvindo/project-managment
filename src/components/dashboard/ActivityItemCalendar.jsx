@@ -472,7 +472,7 @@ export default function ActivityItemCalendar({
           </div>
         )}
 
-        <div className="flex gap-1 mt-2">
+        <div className="flex gap-1 mt-2" onClick={(e) => e.stopPropagation()}>
           {shouldShowStartButton() && (
             <Button
               onClick={handleStartActivity}
