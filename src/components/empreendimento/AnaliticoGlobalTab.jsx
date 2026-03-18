@@ -175,7 +175,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
           if (!isExcludedFromProject) {
             const override = overrideActivitiesGlobalMap.get(baseAtividade.id);
-            const etapaBase = etapasCadastradas.length === 1 ? etapasCadastradas[0] : baseAtividade.etapa;
+            const etapaBase = etapasCadastradas.length > 0 ? etapasCadastradas[0] : baseAtividade.etapa;
             const etapaCorreta = override ? override.etapa : etapaBase;
             
             // Verificar se existe planejamento geral (sem documento_id) para esta atividade
