@@ -48,6 +48,7 @@ export default function ActivityItemCalendar({
   hasSelections 
 }) {
   const { activeExecution, startExecution, user, playlist, addToPlaylist, removeFromPlaylist } = useContext(ActivityTimerContext);
+  const navigate = useNavigate();
   const [isStarting, setIsStarting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showTimeAdjustModal, setShowTimeAdjustModal] = useState(false);
