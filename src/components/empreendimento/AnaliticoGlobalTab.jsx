@@ -290,7 +290,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             return;
           }
 
-          const disciplinaMatch = baseAtividade.disciplina === disciplinaDoc;
+          const disciplinaMatch = disciplinasDoc.includes(baseAtividade.disciplina);
           const subdisciplinaMatch = subdisciplinasDoc.includes(baseAtividade.subdisciplina);
 
           if (disciplinaMatch && subdisciplinaMatch) {
