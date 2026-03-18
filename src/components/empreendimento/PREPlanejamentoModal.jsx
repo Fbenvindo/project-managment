@@ -84,8 +84,8 @@ export default function PREPlanejamentoModal({ isOpen, onClose, item, usuarios =
         prioridade: 1,
       }), 3, 1000, 'PREPlan-create');
 
-      // Notifica o pai para salvar o executor_pre no item
-      if (onPlanejado) onPlanejado(executorEmail);
+      // Notifica o pai para salvar o executor_pre e tempo_planejamento no item
+      if (onPlanejado) onPlanejado(executorEmail, tempoTotal);
 
       alert('Planejamento criado com sucesso!');
       onClose();
