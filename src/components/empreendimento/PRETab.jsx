@@ -187,6 +187,7 @@ export default function PRETab({ empreendimento, readOnly = false, usuarios = []
       status: 'Em andamento',
       resposta: '',
       imagens: [],
+      tempo_planejamento: null,
       isNew: true
     };
     setItems([...items, newItem]);
