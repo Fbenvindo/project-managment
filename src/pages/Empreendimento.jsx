@@ -401,7 +401,7 @@ export default function EmpreendimentoPage() {
           </TabsContent>
 
           <TabsContent value="pre">
-            <PRETab empreendimento={empreendimento} readOnly={!canEdit} />
+            <PRETab empreendimento={empreendimento} readOnly={!canEdit} usuarios={sharedData.usuarios} />
           </TabsContent>
 
           <TabsContent value="controle_os">
