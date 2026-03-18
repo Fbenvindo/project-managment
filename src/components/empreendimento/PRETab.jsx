@@ -746,16 +746,34 @@ export default function PRETab({ empreendimento, readOnly = false, usuarios = []
 
                     {/* Botão Planejar */}
                     {!readOnly && (
-                      <div className="no-print">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full text-blue-600 border-blue-300 hover:bg-blue-50"
-                          onClick={() => setPlanejamentoItem(item)}
-                        >
-                          <CalendarPlus className="w-3 h-3 mr-1" />
-                          Planejar
-                        </Button>
+                      <div className="no-print space-y-1">
+                        {item.executor_pre ? (
+                          <>
+                            <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 text-center leading-tight">
+                              <span className="font-semibold block">Planejado para:</span>
+                              <span>{usuarios.find(u => u.email === item.executor_pre)?.nome || item.executor_pre}</span>
+                            </div>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="w-full text-red-500 border-red-200 hover:bg-red-50 text-xs"
+                              onClick={() => handleUpdateItem(item.id, 'executor_pre', null)}
+                            >
+                              <X className="w-3 h-3 mr-1" />
+                              Remover executor
+                            </Button>
+                          </>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full text-blue-600 border-blue-300 hover:bg-blue-50"
+                            onClick={() => setPlanejamentoItem(item)}
+                          >
+                            <CalendarPlus className="w-3 h-3 mr-1" />
+                            Planejar
+                          </Button>
+                        )}
                       </div>
                     )}
 
