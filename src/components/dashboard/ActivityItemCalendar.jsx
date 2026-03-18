@@ -5,7 +5,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { User, Trash2, RefreshCw, Play, ListMusic, PlusCircle, Loader2, Edit2 } from "lucide-react";
+import { User, Trash2, RefreshCw, Play, ListMusic, PlusCircle, Loader2, Edit2, ExternalLink } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 import FinalizarAtividadeButton from './FinalizarAtividadeButton';
 import { Execucao, PlanejamentoAtividade, PlanejamentoDocumento } from '@/entities/all';
