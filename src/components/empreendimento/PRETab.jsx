@@ -5,9 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Printer, Save, FileText, Loader2, Upload, X, File, ZoomIn, CalendarPlus } from "lucide-react";
+import { Plus, Trash2, Printer, Save, FileText, Loader2, Upload, X, File, ZoomIn } from "lucide-react";
 import { ItemPRE, Disciplina } from "@/entities/all";
-import PREPlanejamentoModal from "./PREPlanejamentoModal";
 import { format } from "date-fns";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { base44 } from "@/api/base44Client";
@@ -85,7 +84,7 @@ const printStyles = `
 }
 `;
 
-export default function PRETab({ empreendimento, readOnly = false, usuarios = [] }) {
+export default function PRETab({ empreendimento, readOnly = false }) {
   const [isSaving, setIsSaving] = useState(false);
   const [lightboxImg, setLightboxImg] = useState(null);
   const [zoom, setZoom] = useState(1);
@@ -94,7 +93,6 @@ export default function PRETab({ empreendimento, readOnly = false, usuarios = []
   const dragStart = React.useRef(null);
   const [items, setItems] = useState([]);
   const [lastSaved, setLastSaved] = useState(null);
-  const [planejamentoItem, setPlanejamentoItem] = useState(null);
   const [disciplinas, setDisciplinas] = useState([]);
   const [filtroDispline, setFiltroDispline] = useState('todas');
   const [headerData, setHeaderData] = useState({
@@ -187,7 +185,6 @@ export default function PRETab({ empreendimento, readOnly = false, usuarios = []
       status: 'Em andamento',
       resposta: '',
       imagens: [],
-      tempo_planejamento: null,
       isNew: true
     };
     setItems([...items, newItem]);
@@ -240,9 +237,7 @@ export default function PRETab({ empreendimento, readOnly = false, usuarios = []
         disciplina: updatedItem.disciplina,
         status: updatedItem.status || '',
         resposta: updatedItem.resposta,
-        imagens: updatedItem.imagens,
-        tempo_planejamento: updatedItem.tempo_planejamento || null,
-        executor_pre: updatedItem.executor_pre || null
+        imagens: updatedItem.imagens
       };
 
       // Salva no banco
@@ -290,9 +285,7 @@ export default function PRETab({ empreendimento, readOnly = false, usuarios = []
           disciplina: item.disciplina,
           status: item.status || '',
           resposta: item.resposta,
-          imagens: item.imagens || [],
-          tempo_planejamento: item.tempo_planejamento || null,
-          executor_pre: item.executor_pre || null
+          imagens: item.imagens || []
         };
 
         if (item.isNew || item.id.toString().startsWith('temp-')) {
@@ -729,54 +722,6 @@ export default function PRETab({ empreendimento, readOnly = false, usuarios = []
                       />
                     </div>
 
-                    {/* Tempo para Planejamento */}
-                    <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">Tempo (h)</label>
-                      <Input
-                        type="number"
-                        step="0.5"
-                        min="0"
-                        value={item.tempo_planejamento || ''}
-                        onChange={(e) => handleUpdateItem(item.id, 'tempo_planejamento', e.target.value ? parseFloat(e.target.value) : null)}
-                        className="h-9 text-sm text-center print:border-none print:bg-transparent"
-                        disabled={readOnly}
-                        placeholder="0"
-                      />
-                    </div>
-
-                    {/* Botão Planejar */}
-                    {!readOnly && (
-                      <div className="no-print space-y-1">
-                        {item.executor_pre ? (
-                          <>
-                            <div className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded p-2 text-center leading-tight">
-                              <span className="font-semibold block">Planejado para:</span>
-                              <span>{usuarios.find(u => u.email === item.executor_pre)?.nome || item.executor_pre}</span>
-                            </div>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="w-full text-red-500 border-red-200 hover:bg-red-50 text-xs"
-                              onClick={() => handleUpdateItem(item.id, 'executor_pre', null)}
-                            >
-                              <X className="w-3 h-3 mr-1" />
-                              Remover executor
-                            </Button>
-                          </>
-                        ) : (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="w-full text-blue-600 border-blue-300 hover:bg-blue-50"
-                            onClick={() => setPlanejamentoItem(item)}
-                          >
-                            <CalendarPlus className="w-3 h-3 mr-1" />
-                            Planejar
-                          </Button>
-                        )}
-                      </div>
-                    )}
-
                     {/* Status */}
                     <div>
                       <label className="text-xs font-semibold text-gray-600 block mb-1">Status</label>
@@ -823,28 +768,6 @@ export default function PRETab({ empreendimento, readOnly = false, usuarios = []
           </div>
         </div>
       </div>
-
-      {/* Modal de Planejamento PRE */}
-      {planejamentoItem && (
-        <PREPlanejamentoModal
-          isOpen={!!planejamentoItem}
-          onClose={() => setPlanejamentoItem(null)}
-          item={planejamentoItem}
-          usuarios={usuarios}
-          empreendimento={empreendimento}
-          onPlanejado={async (executorEmail, tempoPlanejado) => {
-            // Atualiza localmente e salva no banco
-            const updatedItem = { ...planejamentoItem, executor_pre: executorEmail, tempo_planejamento: tempoPlanejado };
-            setItems(prev => prev.map(i => i.id === planejamentoItem.id ? updatedItem : i));
-            if (!planejamentoItem.id.toString().startsWith('temp-')) {
-              await retryWithBackoff(
-                () => ItemPRE.update(planejamentoItem.id, { executor_pre: executorEmail, tempo_planejamento: tempoPlanejado }),
-                3, 1000, 'PRE-executor_pre'
-              );
-            }
-          }}
-        />
-      )}
     </>
   );
 }

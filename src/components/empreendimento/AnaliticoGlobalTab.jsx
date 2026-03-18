@@ -1,5 +1,7 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Atividade, Disciplina, PlanejamentoAtividade, Documento, AlteracaoEtapa, Empreendimento, Usuario, AtividadesDoProjeto } from '@/entities/all';
+
+const PlanejamentoDocumento = base44.entities.PlanejamentoDocumento;
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,13 +16,14 @@ import { debounce } from 'lodash';
 import { Badge } from '@/components/ui/badge';
 import { retryWithBackoff, retryWithExtendedBackoff } from '../utils/apiUtils';
 import { Checkbox } from "@/components/ui/checkbox";
+import { base44 } from '@/api/base44Client';
 import PDFListaDesenvolvimento from '../configuracoes/PDFListaDesenvolvimento';
 import { getNextWorkingDay, distribuirHorasPorDias, isWorkingDay, calculateEndDate, ensureWorkingDay } from '../utils/DateCalculator';
 import { format, isValid, parseISO, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
-const PlanejamentoDocumento = base44.entities.PlanejamentoDocumento;
+
 const EtapaEditModal = ({ isOpen, onClose, atividade, onSave, documentos }) => {
   const [newEtapa, setNewEtapa] = useState('');
   const [escopo, setEscopo] = useState('empreendimento');

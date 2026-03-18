@@ -414,14 +414,7 @@ export default function DocumentosTab({
   const handleSuccess = async () => { onUpdate(); setShowForm(false); setEditingDocumento(null); setCargaDiariaCache({}); };
 
   const handleExportData = () => {
-    const sortedDocumentos = [...localDocumentos].sort((a, b) => {
-      const discA = (a.disciplina || 'Sem Disciplina').toLowerCase();
-      const discB = (b.disciplina || 'Sem Disciplina').toLowerCase();
-      if (discA !== discB) return discA.localeCompare(discB, 'pt-BR', { sensitivity: 'base' });
-      return (a.arquivo || '').trim().toLowerCase().localeCompare((b.arquivo || '').trim().toLowerCase(), 'pt-BR', { numeric: true, sensitivity: 'base' });
-    });
-
-    const rows = sortedDocumentos.map(doc => {
+    const rows = localDocumentos.map(doc => {
       const pavimento = (pavimentos || []).find(p => p.id === doc.pavimento_id);
       return [
         doc.numero || '',
