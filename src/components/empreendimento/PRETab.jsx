@@ -832,13 +832,13 @@ export default function PRETab({ empreendimento, readOnly = false, usuarios = []
           item={planejamentoItem}
           usuarios={usuarios}
           empreendimento={empreendimento}
-          onPlanejado={async (executorEmail) => {
+          onPlanejado={async (executorEmail, tempoPlanejado) => {
             // Atualiza localmente e salva no banco
-            const updatedItem = { ...planejamentoItem, executor_pre: executorEmail };
+            const updatedItem = { ...planejamentoItem, executor_pre: executorEmail, tempo_planejamento: tempoPlanejado };
             setItems(prev => prev.map(i => i.id === planejamentoItem.id ? updatedItem : i));
             if (!planejamentoItem.id.toString().startsWith('temp-')) {
               await retryWithBackoff(
-                () => ItemPRE.update(planejamentoItem.id, { executor_pre: executorEmail }),
+                () => ItemPRE.update(planejamentoItem.id, { executor_pre: executorEmail, tempo_planejamento: tempoPlanejado }),
                 3, 1000, 'PRE-executor_pre'
               );
             }
