@@ -495,6 +495,94 @@ export default function ActivityItemCalendar({
         </div>
       </div>
 
+      <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-base leading-snug">{displayName}</DialogTitle>
+          </DialogHeader>
+          <div className="py-2 space-y-3 text-sm">
+            {plano.empreendimento?.nome && (
+              <div>
+                <span className="font-semibold text-gray-600">Empreendimento: </span>
+                <span className="text-gray-800">{plano.empreendimento.nome}</span>
+              </div>
+            )}
+            {plano.etapa && (
+              <div>
+                <span className="font-semibold text-gray-600">Etapa: </span>
+                <span className="text-gray-800">{plano.etapa}</span>
+              </div>
+            )}
+            {subdisciplina && (
+              <div>
+                <span className="font-semibold text-gray-600">Subdisciplina: </span>
+                <span className="text-gray-800">{subdisciplina}</span>
+              </div>
+            )}
+            {planoExecutor && (
+              <div>
+                <span className="font-semibold text-gray-600">Executor: </span>
+                <span className="text-gray-800">{planoExecutor.nome || planoExecutor.email}</span>
+              </div>
+            )}
+            <div className="flex gap-6">
+              <div>
+                <span className="font-semibold text-gray-600">Tempo planejado: </span>
+                <span className="text-gray-800">{tempoPlanejado.toFixed(1)}h</span>
+              </div>
+              <div>
+                <span className="font-semibold text-gray-600">Executado: </span>
+                <span className="text-gray-800">{tempoExecutado.toFixed(1)}h</span>
+              </div>
+            </div>
+            {plano.inicio_planejado && (
+              <div>
+                <span className="font-semibold text-gray-600">Início planejado: </span>
+                <span className="text-gray-800">{plano.inicio_planejado}</span>
+              </div>
+            )}
+            {plano.termino_planejado && (
+              <div>
+                <span className="font-semibold text-gray-600">Término planejado: </span>
+                <span className="text-gray-800">{plano.termino_planejado}</span>
+              </div>
+            )}
+            <div>
+              <span className="font-semibold text-gray-600">Status: </span>
+              <span className={`font-medium ${
+                realStatus === 'concluido' ? 'text-green-600' :
+                realStatus === 'em_andamento' ? 'text-blue-600' :
+                realStatus === 'atrasado' ? 'text-red-600' :
+                'text-gray-600'
+              }`}>
+                {realStatus === 'concluido' ? 'Concluída' :
+                 realStatus === 'em_andamento' ? 'Em andamento' :
+                 realStatus === 'atrasado' ? 'Atrasada' :
+                 realStatus === 'pausado' ? 'Pausada' : 'Não iniciada'}
+              </span>
+            </div>
+          </div>
+          <DialogFooter className="flex-wrap gap-2">
+            {preItemId && (
+              <Button variant="outline" size="sm" onClick={(e) => { setShowDetailModal(false); handleOpenPRE(e); }}>
+                <ExternalLink className="w-3 h-3 mr-1" /> Ver no PRE
+              </Button>
+            )}
+            {shouldShowAdjustButton() && (
+              <Button variant="outline" size="sm" onClick={() => { setShowDetailModal(false); setAdjustedTime(''); setShowTimeAdjustModal(true); }}>
+                <Edit2 className="w-3 h-3 mr-1" /> Ajustar Tempo
+              </Button>
+            )}
+            {shouldShowStartButton() && (
+              <Button size="sm" className="bg-green-600 hover:bg-green-700" disabled={isStarting || !!activeExecution} onClick={() => { setShowDetailModal(false); handleStartActivity(); }}>
+                <Play className="w-3 h-3 mr-1" /> {isStarting ? 'Iniciando...' : 'Iniciar'}
+              </Button>
+            )}
+            <Button variant="outline" size="sm" onClick={() => setShowDetailModal(false)}>Fechar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showTimeAdjustModal} onOpenChange={setShowTimeAdjustModal}>
         <DialogContent>
           <DialogHeader>
