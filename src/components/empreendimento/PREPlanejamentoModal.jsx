@@ -25,14 +25,12 @@ export default function PREPlanejamentoModal({ isOpen, onClose, item, usuarios =
     return [...usuarios].sort((a, b) => (a.nome || a.email || '').localeCompare(b.nome || b.email || '', 'pt-BR', { sensitivity: 'base' }));
   }, [usuarios]);
 
-  // Monta o descritivo com De / Item / Disciplina / Assunto
+  // Monta o descritivo com De / Item e indica a disciplina
   const descritivo = useMemo(() => {
     if (!item) return '';
     const partes = [
       item.de && `De: ${item.de}`,
       item.item && `Item: ${item.item}`,
-      item.descritiva && `Disciplina: ${item.descritiva}`,
-      item.assunto && `Assunto: ${item.assunto}`,
     ].filter(Boolean);
     return partes.join(' | ');
   }, [item]);
