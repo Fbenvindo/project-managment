@@ -291,7 +291,8 @@ export default function PRETab({ empreendimento, readOnly = false, usuarios = []
           status: item.status || '',
           resposta: item.resposta,
           imagens: item.imagens || [],
-          tempo_planejamento: item.tempo_planejamento || null
+          tempo_planejamento: item.tempo_planejamento || null,
+          executor_pre: item.executor_pre || null
         };
 
         if (item.isNew || item.id.toString().startsWith('temp-')) {
