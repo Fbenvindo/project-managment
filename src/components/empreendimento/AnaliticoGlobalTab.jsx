@@ -282,13 +282,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         
         allGenericActivitiesMap.forEach(baseAtividade => {
           const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
-          const isExcludedFromThisDoc = excludedFromDocumentMap.has(baseAtividade.id) && 
-                                        excludedFromDocumentMap.get(baseAtividade.id).has(doc.id);
-          const etapaValida = etapasCadastradas.length === 0 || etapasCadastradas.includes(baseAtividade.etapa);
-          
-          if (isExcludedFromProject || isExcludedFromThisDoc || !etapaValida) {
-            return;
-          }
+          const isExcludedFromThisDoc = excludedFromDocumentMap.has(baseAtividade.id) && excludedFromDocumentMap.get(baseAtividade.id).has(doc.id);
+          if (isExcludedFromProject || isExcludedFromThisDoc) return;
 
           const disciplinaMatch = disciplinasDoc.includes(baseAtividade.disciplina);
           const subdisciplinaMatch = subdisciplinasDoc.includes(baseAtividade.subdisciplina);
@@ -296,14 +291,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           if (disciplinaMatch && subdisciplinaMatch) {
             const planKey = `${doc.id}-${baseAtividade.id}`;
             const existingPlan = planejamentosMap.get(planKey);
-            
-            // MODIFICADO: Buscar override específico do documento primeiro, depois global
             const overrideKey = `${doc.id}|${baseAtividade.id}`;
-            const overrideEspecifico = overrideActivitiesByDocMap.get(overrideKey);
-            const overrideGlobal = overrideActivitiesGlobalMap.get(baseAtividade.id);
-            const override = overrideEspecifico || overrideGlobal;
-            
-            const etapaCorreta = override ? override.etapa : baseAtividade.etapa;
+            const override = overrideActivitiesByDocMap.get(overrideKey) || overrideActivitiesGlobalMap.get(baseAtividade.id);
+            // Se empreendimento tem etapa única, usá-la para todas as atividades das folhas
+            const etapaBase = etapasCadastradas.length === 1 ? etapasCadastradas[0] : baseAtividade.etapa;
+            const etapaCorreta = override ? override.etapa : etapaBase;
             const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
 
             const sourceDisplay = `Folha: ${doc.numero} - ${doc.arquivo || 'Sem Nome'}`;
