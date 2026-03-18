@@ -289,7 +289,8 @@ export default function PRETab({ empreendimento, readOnly = false, usuarios = []
           disciplina: item.disciplina,
           status: item.status || '',
           resposta: item.resposta,
-          imagens: item.imagens || []
+          imagens: item.imagens || [],
+          tempo_planejamento: item.tempo_planejamento || null
         };
 
         if (item.isNew || item.id.toString().startsWith('temp-')) {
