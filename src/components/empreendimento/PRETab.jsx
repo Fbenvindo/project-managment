@@ -240,7 +240,8 @@ export default function PRETab({ empreendimento, readOnly = false, usuarios = []
         disciplina: updatedItem.disciplina,
         status: updatedItem.status || '',
         resposta: updatedItem.resposta,
-        imagens: updatedItem.imagens
+        imagens: updatedItem.imagens,
+        tempo_planejamento: updatedItem.tempo_planejamento || null
       };
 
       // Salva no banco
