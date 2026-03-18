@@ -122,18 +122,28 @@ export default function PREPlanejamentoModal({ isOpen, onClose, item, usuarios =
               <Users className="w-4 h-4" />
               Executor *
             </Label>
-            <Select value={executorEmail} onValueChange={setExecutorEmail}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione o executor" />
-              </SelectTrigger>
-              <SelectContent>
-                {usuariosOrdenados.map(u => (
-                  <SelectItem key={u.id} value={u.email}>
-                    {u.nome || u.email}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {executorExistente ? (
+              <div className="flex items-center gap-2 p-2 bg-amber-50 border border-amber-300 rounded-lg">
+                <Users className="w-4 h-4 text-amber-600 flex-shrink-0" />
+                <span className="text-sm font-medium text-amber-800 flex-1">
+                  {usuariosOrdenados.find(u => u.email === executorExistente)?.nome || executorExistente}
+                </span>
+                <span className="text-xs text-amber-600 bg-amber-100 px-2 py-0.5 rounded">vinculado</span>
+              </div>
+            ) : (
+              <Select value={executorEmail} onValueChange={setExecutorEmail}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o executor" />
+                </SelectTrigger>
+                <SelectContent>
+                  {usuariosOrdenados.map(u => (
+                    <SelectItem key={u.id} value={u.email}>
+                      {u.nome || u.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* Tempo */}
