@@ -358,6 +358,17 @@ export default function ActivityItemCalendar({
             )}
           </div>
           <div className="flex items-center shrink-0 gap-2">
+            {preItemId && (
+              <Button
+                onClick={handleOpenPRE}
+                size="sm"
+                variant="ghost"
+                className="w-5 h-5 p-0 text-blue-400 hover:text-blue-600 hover:bg-blue-100"
+                title="Ver item na aba PRE"
+              >
+                <ExternalLink className="w-3 h-3" />
+              </Button>
+            )}
             {shouldShowEditButton() && (
               <Button
                 onClick={handleEditDescritivo}
