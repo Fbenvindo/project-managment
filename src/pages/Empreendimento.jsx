@@ -58,6 +58,14 @@ export default function EmpreendimentoPage() {
     new URLSearchParams(location.search).get("id"), [location.search]
   );
 
+  const urlTab = useMemo(() =>
+    new URLSearchParams(location.search).get("tab"), [location.search]
+  );
+
+  const urlItemId = useMemo(() =>
+    new URLSearchParams(location.search).get("itemId"), [location.search]
+  );
+
   const { user } = useContext(ActivityTimerContext);
   const hasAccessToGestao = user && (
     user.role === 'admin' ||
