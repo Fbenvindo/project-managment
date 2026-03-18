@@ -803,6 +803,17 @@ export default function PRETab({ empreendimento, readOnly = false, usuarios = []
           </div>
         </div>
       </div>
+
+      {/* Modal de Planejamento PRE */}
+      {planejamentoItem && (
+        <PREPlanejamentoModal
+          isOpen={!!planejamentoItem}
+          onClose={() => setPlanejamentoItem(null)}
+          item={planejamentoItem}
+          usuarios={usuarios}
+          empreendimento={empreendimento}
+        />
+      )}
     </>
   );
 }
