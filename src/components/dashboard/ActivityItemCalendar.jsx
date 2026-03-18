@@ -313,7 +313,7 @@ export default function ActivityItemCalendar({
         )}
         
         {(hasSelections || isSelected) && plano.status !== 'concluido' && !plano.isLegacyExecution && (
-          <div className="absolute left-1 top-1 z-20">
+          <div className="absolute left-1 top-1 z-20" onClick={(e) => e.stopPropagation()}>
             <input
               type="checkbox"
               checked={isSelected}
