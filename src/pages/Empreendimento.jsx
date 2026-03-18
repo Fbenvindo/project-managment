@@ -409,7 +409,7 @@ export default function EmpreendimentoPage() {
           </TabsContent>
 
           <TabsContent value="pre">
-            <PRETab empreendimento={empreendimento} readOnly={!canEdit} usuarios={sharedData.usuarios} />
+            <PRETab empreendimento={empreendimento} readOnly={!canEdit} usuarios={sharedData.usuarios} highlightItemId={urlItemId} />
           </TabsContent>
 
           <TabsContent value="controle_os">
