@@ -55,6 +55,7 @@ export default function ActivityItemCalendar({
   const [adjustedTime, setAdjustedTime] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
   const [editedDescritivo, setEditedDescritivo] = useState('');
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   const realStatus = useMemo(() => {
     // Verificar primeiro se está explicitamente marcada como concluída
