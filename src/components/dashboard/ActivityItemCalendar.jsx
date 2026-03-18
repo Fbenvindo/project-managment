@@ -114,6 +114,21 @@ export default function ActivityItemCalendar({
   
   const isNaPlaylist = playlist.includes(plano.id);
 
+  // Detectar se é um planejamento originado de item PRE
+  const preItemId = useMemo(() => {
+    if (plano.base_descritivo?.startsWith('pre_item:')) {
+      return plano.base_descritivo.replace('pre_item:', '');
+    }
+    return null;
+  }, [plano.base_descritivo]);
+
+  const handleOpenPRE = (e) => {
+    e.stopPropagation();
+    if (plano.empreendimento_id) {
+      navigate(`/Empreendimento?id=${plano.empreendimento_id}&tab=pre&itemId=${preItemId}`);
+    }
+  };
+
   const getDocumentoDisplay = () => {
     if (!plano.documento_id || plano.tipo_planejamento === 'documento') return null;
     if (!plano.documento) return 'Carregando...';
