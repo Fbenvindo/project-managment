@@ -245,7 +245,8 @@ export default function PRETab({ empreendimento, readOnly = false }) {
         disciplina: updatedItem.disciplina,
         status: updatedItem.status || '',
         resposta: updatedItem.resposta,
-        imagens: updatedItem.imagens
+        imagens: updatedItem.imagens,
+        tempo_atendimento: updatedItem.tempo_atendimento ?? null,
       };
 
       // Salva no banco
