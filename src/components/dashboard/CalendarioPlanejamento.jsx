@@ -440,7 +440,7 @@ const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDel
 };
 
 // --- MonthView ---
-const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
+const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, onSelectAllOS }) => {
   const monthDays = useMemo(() => { const start = startOfWeek(startOfMonth(date), { locale: ptBR }); const end = endOfWeek(endOfMonth(date), { locale: ptBR }); return eachDayOfInterval({ start, end }); }, [date]);
   const weekHeaders = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
   return (
