@@ -174,13 +174,17 @@ export default function NovoPlanejamentoModal({
   };
 
   useEffect(() => {
+    if (isOpen && descritivo_inicial) {
+      setFormData(prev => ({ ...prev, descritivo: descritivo_inicial }));
+      setPlanningMode('individual');
+    }
     if (!isOpen) {
       resetIndividualForm();
       resetFuncaoForm();
       resetDocumentoForm();
       setPlanningMode('individual');
     }
-  }, [isOpen]);
+  }, [isOpen, descritivo_inicial]);
 
   useEffect(() => {
     const fetchFuncaoData = async () => {
