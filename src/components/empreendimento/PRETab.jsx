@@ -771,7 +771,22 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                       />
                     </div>
 
-                    {/* Status */}
+                    {/* Tempo de Atendimento */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-600 block mb-1">Tempo (horas)</label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.5"
+                        value={item.tempo_atendimento ?? ''}
+                        onChange={(e) => handleUpdateItem(item.id, 'tempo_atendimento', e.target.value ? parseFloat(e.target.value) : null)}
+                        className="h-9 text-sm print:border-none print:bg-transparent"
+                        disabled={readOnly}
+                        placeholder="0.0"
+                      />
+                    </div>
+
+                     {/* Status */}
                     <div>
                       <label className="text-xs font-semibold text-gray-600 block mb-1">Status</label>
                       {readOnly ? (
