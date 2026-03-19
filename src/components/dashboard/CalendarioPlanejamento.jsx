@@ -455,7 +455,7 @@ const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onSho
 };
 
 // --- WeekView ---
-const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
+const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, onSelectAllOS }) => {
   const [expandedDay, setExpandedDay] = useState(null);
   const weekDays = useMemo(() => { const start = startOfWeek(date, { locale: ptBR }); const end = endOfWeek(date, { locale: ptBR }); return eachDayOfInterval({ start, end }); }, [date]);
   const toggleExpand = (dayKey) => setExpandedDay(prev => (prev === dayKey ? null : dayKey));
