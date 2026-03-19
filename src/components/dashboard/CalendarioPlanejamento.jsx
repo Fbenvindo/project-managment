@@ -7,7 +7,7 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import {
   format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval,
   isSameMonth, isSameDay, parseISO, addWeeks, subWeeks, addDays, subDays, startOfDay, endOfDay,
-  isValid, isAfter, parseISO as parseDateISO
+  isValid, isAfter
 } from "date-fns";
 import { Input } from "@/components/ui/input";
 import { ptBR } from "date-fns/locale";
