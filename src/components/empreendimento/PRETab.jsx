@@ -293,7 +293,8 @@ export default function PRETab({ empreendimento, readOnly = false }) {
           disciplina: item.disciplina,
           status: item.status || '',
           resposta: item.resposta,
-          imagens: item.imagens || []
+          imagens: item.imagens || [],
+          tempo_atendimento: item.tempo_atendimento ?? null,
         };
 
         if (item.isNew || item.id.toString().startsWith('temp-')) {
