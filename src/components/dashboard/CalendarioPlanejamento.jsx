@@ -188,7 +188,7 @@ const CalendarFilters = ({
 };
 
 // --- DailyActivityGroup ---
-const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, onToggle, disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, groupKey, provided, isDragging }) => {
+const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, onToggle, disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, groupKey, provided, isDragging, onSelectAllOS, allActivitiesForOS }) => {
   const totalHoras = useMemo(() => {
     let soma = 0;
     atividades.forEach((atividade) => {
