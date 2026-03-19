@@ -268,7 +268,18 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
                 <LineChart className="w-3.5 h-3.5" />
               </Button>
             </div>
-            <p className="font-bold text-xs truncate text-gray-800">{empreendimentoNome}</p>
+            <div className="flex items-center gap-1">
+              <p className="font-bold text-xs truncate text-gray-800 flex-1">{empreendimentoNome}</p>
+              {canReprogram && onSelectAllOS && empreendimentoNome !== 'Atividades Rápidas' && (
+                <button
+                  onClick={(e) => { e.stopPropagation(); onSelectAllOS(); }}
+                  className="text-xs px-1 py-0.5 rounded bg-indigo-100 hover:bg-indigo-200 text-indigo-700 font-medium flex-shrink-0 border border-indigo-200"
+                  title="Selecionar todas as atividades desta OS"
+                >
+                  + OS
+                </button>
+              )}
+            </div>
             {empreendimentoNome !== 'Atividades Rápidas' && (
               <div className="flex items-center gap-1.5 mt-1"><User className="w-3 h-3 flex-shrink-0" /><p className="text-xs font-medium truncate">{executorNome}</p></div>
             )}
