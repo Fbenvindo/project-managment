@@ -296,6 +296,8 @@ export default function PRETab({ empreendimento, readOnly = false }) {
           resposta: item.resposta,
           imagens: item.imagens || [],
           tempo_atendimento: item.tempo_atendimento ?? null,
+          planejamento_executor: item.planejamento_executor ?? null,
+          planejamento_executor_nome: item.planejamento_executor_nome ?? null,
         };
 
         if (item.isNew || item.id.toString().startsWith('temp-')) {
