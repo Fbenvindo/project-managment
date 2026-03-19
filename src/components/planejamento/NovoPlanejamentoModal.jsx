@@ -189,7 +189,7 @@ export default function NovoPlanejamentoModal({
       resetDocumentoForm();
       setPlanningMode('individual');
     }
-  }, [isOpen, descritivo_inicial]);
+  }, [isOpen, descritivo_inicial, tempo_planejado_inicial]);
 
   useEffect(() => {
     const fetchFuncaoData = async () => {
