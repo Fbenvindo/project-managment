@@ -1000,10 +1000,13 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
               ) : 'Calendário de Planejamento'}
             </CardTitle>
             <div className="flex items-center gap-2">
-              {selectedActivities.size > 0 && (
+              {selectedActivities.size > 0 && canReprogram && (
                 <div className="flex items-center gap-2 mr-4 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-lg">
-                  <span className="text-sm font-medium text-indigo-700">{selectedActivities.size} selecionada{selectedActivities.size > 1 ? 's' : ''}</span>
-                  <Button variant="ghost" size="sm" onClick={clearSelection} className="h-6 px-2 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-100">Limpar</Button>
+                  <span className="text-sm font-medium text-indigo-700">{selectedActivities.size} atividade{selectedActivities.size > 1 ? 's' : ''} selecionada{selectedActivities.size > 1 ? 's' : ''}</span>
+                  <Button size="sm" onClick={() => setShowMoverOSModal(true)} className="h-6 px-2 text-xs bg-indigo-600 hover:bg-indigo-700 text-white">
+                    Mover OS
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={clearSelection} className="h-6 px-2 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-100">✕</Button>
                 </div>
               )}
               {hasSelectedUser && (
