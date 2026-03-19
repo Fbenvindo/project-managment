@@ -752,8 +752,16 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                     </div>
 
                     {/* Ações */}
-                    {!readOnly && (
-                      <div className="mt-auto pt-4 no-print">
+                    <div className="mt-auto pt-4 no-print space-y-2">
+                      <Button
+                        variant="outline"
+                        className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+                        onClick={() => { setItemParaPlanejar(item); setShowPlanejamentoModal(true); }}
+                      >
+                        <CalendarPlus className="w-4 h-4 mr-2" />
+                        Planejar
+                      </Button>
+                      {!readOnly && (
                         <Button
                           variant="ghost"
                           className="w-full text-red-500 hover:text-red-700 hover:bg-red-50"
@@ -762,8 +770,8 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                           <Trash2 className="w-4 h-4 mr-2" />
                           Excluir
                         </Button>
-                      </div>
-                    )}
+                      )}
+                    </div>
                   </div>
                 </div>
               ))
