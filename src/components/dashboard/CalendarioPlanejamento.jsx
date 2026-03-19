@@ -455,7 +455,7 @@ const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onSho
 };
 
 // --- WeekView ---
-const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, onSelectAllOS }) => {
+const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
   const [expandedDay, setExpandedDay] = useState(null);
   const weekDays = useMemo(() => { const start = startOfWeek(date, { locale: ptBR }); const end = endOfWeek(date, { locale: ptBR }); return eachDayOfInterval({ start, end }); }, [date]);
   const toggleExpand = (dayKey) => setExpandedDay(prev => (prev === dayKey ? null : dayKey));
@@ -501,7 +501,7 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
                   )}
                 </div>
                 <div className="flex-grow overflow-y-auto p-2">
-                  <ActivityContainer activities={dayActivities} disciplinas={disciplinas} dayKey={dayKey} onActivityDelete={onActivityDelete} onShowPrevisao={onShowPrevisao} executorMap={executorMap} allPlanejamentos={allPlanejamentos} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={onToggleSelect} hasSelections={hasSelections} viewType={viewType} onSelectAllOS={onSelectAllOS} />
+                  <ActivityContainer activities={dayActivities} disciplinas={disciplinas} dayKey={dayKey} onActivityDelete={onActivityDelete} onShowPrevisao={onShowPrevisao} executorMap={executorMap} allPlanejamentos={allPlanejamentos} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={onToggleSelect} hasSelections={hasSelections} viewType={viewType} />
                   {provided.placeholder}
                 </div>
               </div>
@@ -703,44 +703,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       setIsReprogramando(null);
     }
   }, [enrichedData, triggerUpdate, hasSelectedUser, filters.user, loadCalendarData]);
-
-  const handleMoverOSConfirm = useCallback(async () => {
-    if (!moverOSData.novaData) return;
-    const atividadesParaMover = Array.from(selectedActivities)
-      .map(id => (enrichedData || []).find(p => p.id === id))
-      .filter(Boolean)
-      .filter(a => !a.isLegacyExecution && a.status !== 'concluido');
-    if (atividadesParaMover.length === 0) return;
-
-    // Ordenação topológica para mover predecessoras primeiro
-    const idSet = new Set(atividadesParaMover.map(p => p.id));
-    const inDeg = {}; const adj = {};
-    atividadesParaMover.forEach(p => { inDeg[p.id] = 0; adj[p.id] = []; });
-    atividadesParaMover.forEach(p => {
-      if (p.predecessora_id && idSet.has(p.predecessora_id)) { adj[p.predecessora_id].push(p.id); inDeg[p.id]++; }
-    });
-    const topoOrder = new Map();
-    const queue = atividadesParaMover.filter(p => inDeg[p.id] === 0).sort((a, b) => (a.inicio_planejado || '').localeCompare(b.inicio_planejado || ''));
-    let order = 0;
-    while (queue.length > 0) {
-      const cur = queue.shift();
-      topoOrder.set(cur.id, order++);
-      (adj[cur.id] || []).forEach(sId => { inDeg[sId]--; if (inDeg[sId] === 0) { const s = atividadesParaMover.find(p => p.id === sId); if (s) queue.push(s); } });
-      queue.sort((a, b) => (a.inicio_planejado || '').localeCompare(b.inicio_planejado || ''));
-    }
-    const sorted = [...atividadesParaMover].sort((a, b) => (topoOrder.get(a.id) ?? 999) - (topoOrder.get(b.id) ?? 999));
-
-    setMoverOSData(prev => ({ ...prev, isMoving: true }));
-    let ok = 0, fail = 0;
-    for (const a of sorted) {
-      try { await handleReprogramarAtividade(a.id, moverOSData.novaData, a.executor_principal); ok++; await new Promise(r => setTimeout(r, 400)); }
-      catch { fail++; }
-    }
-    setMoverOSData({ novaData: '', isMoving: false });
-    setShowMoverOSModal(false);
-    if (ok > 0) { alert(`✅ ${ok} atividade(s) reprogramadas!${fail > 0 ? `\n⚠️ ${fail} falharam` : ''}`); clearSelection(); }
-    else alert('❌ Nenhuma atividade pôde ser movida.');
-  }, [selectedActivities, enrichedData, moverOSData.novaData, handleReprogramarAtividade, clearSelection]);
 
   const onDragEnd = (result) => {
     const { source, destination, draggableId } = result;
@@ -976,7 +938,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     );
     if (totalLoading) return <div className="flex justify-center items-center h-[400px]"><RefreshCw className="w-8 h-8 animate-spin text-blue-500" /><p className="ml-3 text-lg text-gray-600">Carregando atividades do calendário...</p></div>;
     const hasSelections = selectedActivities.size > 0;
-    const sharedProps = { activitiesByDay, disciplinas, onActivityDelete: handleActivityDelete, onShowPrevisao: (planos) => { setPlanejamentosParaPrevisao(planos); setShowPrevisaoModal(true); }, executorMap, allPlanejamentos: enrichedData, isReprogramando, canReprogram, selectedActivities, onToggleSelect: toggleActivitySelection, hasSelections, viewType };
+    const sharedProps = { activitiesByDay, disciplinas, onActivityDelete: handleActivityDelete, onShowPrevisao: (planos) => { setPlanejamentosParaPrevisao(planos); setShowPrevisaoModal(true); }, executorMap, allPlanejamentos: enrichedData, isReprogramando, canReprogram, selectedActivities, onToggleSelect: toggleActivitySelection, hasSelections, viewType, onSelectAllOS: canReprogram ? handleSelectAllOS : null };
     if (viewMode === 'month') return <MonthView date={currentDate} {...sharedProps} />;
     if (viewMode === 'week') return <WeekView date={currentDate} {...sharedProps} />;
     if (viewMode === 'day') return <DayView date={currentDate} {...sharedProps} />;
