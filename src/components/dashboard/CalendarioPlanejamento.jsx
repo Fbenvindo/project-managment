@@ -397,7 +397,7 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
 };
 
 // --- DayCell ---
-const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
+const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, onSelectAllOS }) => {
   const dayKey = format(day, 'yyyy-MM-dd');
   const hasMovableActivities = dayActivities.some(a => !a.isLegacyExecution && a.status !== 'concluido');
   const canDragDay = canReprogram && hasMovableActivities && dayActivities.length > 0;
