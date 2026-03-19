@@ -554,6 +554,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   const [isReprogramando, setIsReprogramando] = useState(null);
   const [viewType, setViewType] = useState('analitico');
   const [selectedActivities, setSelectedActivities] = useState(new Set());
+  const [selectedOSEmpreendimentoId, setSelectedOSEmpreendimentoId] = useState(null);
+  const [showMoverOSModal, setShowMoverOSModal] = useState(false);
+  const [moverOSData, setMoverOSData] = useState({ novaData: '', isMoving: false });
 
   const hasSelectedUser = !!filters.user;
   const isViewingAllUsers = filters.user === 'all';
