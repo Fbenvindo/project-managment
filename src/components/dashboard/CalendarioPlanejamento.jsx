@@ -376,17 +376,20 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
         if (atividadesComHoras.length === 0) return null;
         const groupDataFiltrado = { ...groupData, atividades: atividadesComHoras };
         const canDragGroup = canReprogram && groupDataFiltrado.empreendimento?.nome !== 'Atividades Rápidas' && !groupDataFiltrado.atividades.some(a => a.status === 'concluido' || a.isLegacyExecution);
+        const empId = groupDataFiltrado.empreendimento?.id || groupDataFiltrado.atividades[0]?.empreendimento_id;
+        const handleSelectAllOS = onSelectAllOS && empId ? () => onSelectAllOS(empId, groupDataFiltrado.executor?.email) : null;
+
         if (canDragGroup) {
           return (
             <Draggable key={`group-${groupKey}-${dayKey}`} draggableId={`group-${groupKey}-${dayKey}`} index={0} isDragDisabled={!canDragGroup}>
               {(provided, snapshot) => (
-                <DailyActivityGroup empreendimento={groupDataFiltrado.empreendimento} executor={groupDataFiltrado.executor} atividades={groupDataFiltrado.atividades} isExpanded={expandedGroups.has(groupKey)} onToggle={() => toggleGroup(groupKey)} disciplinas={disciplinas} dayKey={dayKey} onActivityDelete={onActivityDelete} onShowPrevisao={onShowPrevisao} executorMap={executorMap} allPlanejamentos={allPlanejamentos} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={onToggleSelect} hasSelections={hasSelections} groupKey={groupKey} provided={provided} isDragging={snapshot.isDragging} />
+                <DailyActivityGroup empreendimento={groupDataFiltrado.empreendimento} executor={groupDataFiltrado.executor} atividades={groupDataFiltrado.atividades} isExpanded={expandedGroups.has(groupKey)} onToggle={() => toggleGroup(groupKey)} disciplinas={disciplinas} dayKey={dayKey} onActivityDelete={onActivityDelete} onShowPrevisao={onShowPrevisao} executorMap={executorMap} allPlanejamentos={allPlanejamentos} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={onToggleSelect} hasSelections={hasSelections} groupKey={groupKey} provided={provided} isDragging={snapshot.isDragging} onSelectAllOS={handleSelectAllOS} />
               )}
             </Draggable>
           );
         }
         return (
-          <DailyActivityGroup key={`group-${groupKey}-${dayKey}-static`} empreendimento={groupDataFiltrado.empreendimento} executor={groupDataFiltrado.executor} atividades={groupDataFiltrado.atividades} isExpanded={expandedGroups.has(groupKey)} onToggle={() => toggleGroup(groupKey)} disciplinas={disciplinas} dayKey={dayKey} onActivityDelete={onActivityDelete} onShowPrevisao={onShowPrevisao} executorMap={executorMap} allPlanejamentos={allPlanejamentos} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={onToggleSelect} hasSelections={hasSelections} groupKey={groupKey} />
+          <DailyActivityGroup key={`group-${groupKey}-${dayKey}-static`} empreendimento={groupDataFiltrado.empreendimento} executor={groupDataFiltrado.executor} atividades={groupDataFiltrado.atividades} isExpanded={expandedGroups.has(groupKey)} onToggle={() => toggleGroup(groupKey)} disciplinas={disciplinas} dayKey={dayKey} onActivityDelete={onActivityDelete} onShowPrevisao={onShowPrevisao} executorMap={executorMap} allPlanejamentos={allPlanejamentos} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={onToggleSelect} hasSelections={hasSelections} groupKey={groupKey} onSelectAllOS={handleSelectAllOS} />
         );
       })}
     </div>
