@@ -90,6 +90,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
   const [lightboxImg, setLightboxImg] = useState(null);
   const [showPlanejamentoModal, setShowPlanejamentoModal] = useState(false);
   const [itemParaPlanejar, setItemParaPlanejar] = useState(null);
+  const [usuarios, setUsuarios] = useState([]);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
