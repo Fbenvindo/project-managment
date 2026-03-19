@@ -423,7 +423,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
           isOpen={showPlanejamentoModal}
           onClose={() => { setShowPlanejamentoModal(false); setItemParaPlanejar(null); }}
           empreendimentos={empreendimento ? [empreendimento] : []}
-          usuarios={[]}
+          usuarios={usuarios}
           atividades={[]}
           onSuccess={() => { setShowPlanejamentoModal(false); setItemParaPlanejar(null); }}
         />
