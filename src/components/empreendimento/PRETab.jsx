@@ -6,7 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Printer, Save, FileText, Loader2, Upload, X, File, ZoomIn, CalendarPlus } from "lucide-react";
-import { ItemPRE, Disciplina, Usuario } from "@/entities/all";
+import { ItemPRE, Disciplina, Usuario, PlanejamentoAtividade } from "@/entities/all";
 import NovoPlanejamentoModal from "@/components/planejamento/NovoPlanejamentoModal";
 import { format } from "date-fns";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
