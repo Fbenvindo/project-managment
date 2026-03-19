@@ -317,7 +317,7 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
 };
 
 // --- ActivityContainer ---
-const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
+const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, onSelectAllOS, allActivitiesByEmp }) => {
   const [expandedGroups, setExpandedGroups] = useState(new Set());
 
   const hasHoras = (atividade) => {
