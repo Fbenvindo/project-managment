@@ -1787,11 +1787,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                   size="icon" 
                                   onClick={() => handleExcluirAtividade(ativ)}
                                   variant="outline"
-                                  className="border-red-500 text-red-600 hover:bg-red-50"
+                                  className="border-red-500 text-red-600 hover:bg-red-50 shadow-sm"
                                   disabled={isDeleting}
-                                  title="Excluir de Todas as Folhas"
+                                  title="Excluir de Todas as Folhas do Empreendimento"
                                 >
-                                  {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4" />}
+                                  {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                                 </Button>
                               </div>
                             )}
