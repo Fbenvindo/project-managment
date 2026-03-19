@@ -428,6 +428,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
           usuarios={usuarios}
           atividades={[]}
           descritivo_inicial={`${itemParaPlanejar.de ? itemParaPlanejar.de + ' - ' : ''}${itemParaPlanejar.assunto || itemParaPlanejar.descritiva || ''}`.trim()}
+          tempo_planejado_inicial={itemParaPlanejar.tempo_atendimento || null}
           onSuccess={async (result) => {
             if (result?.executor_principal && itemParaPlanejar?.id) {
               const executorEmail = result.executor_principal;
