@@ -417,8 +417,10 @@ export default function PRETab({ empreendimento, readOnly = false }) {
         <NovoPlanejamentoModal
           isOpen={showPlanejamentoModal}
           onClose={() => { setShowPlanejamentoModal(false); setItemParaPlanejar(null); }}
-          empreendimento={empreendimento}
-          descricaoInicial={itemParaPlanejar ? `PRE ${itemParaPlanejar.item}: ${itemParaPlanejar.assunto || itemParaPlanejar.descritiva || ''}`.trim() : ''}
+          empreendimentos={empreendimento ? [empreendimento] : []}
+          usuarios={[]}
+          atividades={[]}
+          onSuccess={() => { setShowPlanejamentoModal(false); setItemParaPlanejar(null); }}
         />
       )}
 
