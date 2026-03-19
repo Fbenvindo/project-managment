@@ -418,14 +418,44 @@ export default function PRETab({ empreendimento, readOnly = false }) {
         </div>
       )}
 
-      {showPlanejamentoModal && (
+      {showPlanejamentoModal && itemParaPlanejar && (
         <NovoPlanejamentoModal
           isOpen={showPlanejamentoModal}
           onClose={() => { setShowPlanejamentoModal(false); setItemParaPlanejar(null); }}
           empreendimentos={empreendimento ? [empreendimento] : []}
           usuarios={usuarios}
           atividades={[]}
-          onSuccess={() => { setShowPlanejamentoModal(false); setItemParaPlanejar(null); }}
+          descritivo_inicial={`${itemParaPlanejar.de ? itemParaPlanejar.de + ' - ' : ''}${itemParaPlanejar.assunto || itemParaPlanejar.descritiva || ''}`.trim()}
+          onSuccess={async (result) => {
+            if (result?.executor_principal && itemParaPlanejar?.id) {
+              const executorEmail = result.executor_principal;
+              const usuarioEncontrado = usuarios.find(u => u.email === executorEmail);
+              const nomeExecutor = usuarioEncontrado?.nome || executorEmail;
+              const updatedItem = { ...itemParaPlanejar, planejamento_executor: executorEmail, planejamento_executor_nome: nomeExecutor };
+              // Salva no banco
+              if (!itemParaPlanejar.id.toString().startsWith('temp-')) {
+                await retryWithBackoff(() => ItemPRE.update(itemParaPlanejar.id, {
+                  empreendimento_id: itemParaPlanejar.empreendimento_id,
+                  item: itemParaPlanejar.item,
+                  data: itemParaPlanejar.data,
+                  de: itemParaPlanejar.de,
+                  descritiva: itemParaPlanejar.descritiva,
+                  localizacao: itemParaPlanejar.localizacao,
+                  assunto: itemParaPlanejar.assunto,
+                  comentario: itemParaPlanejar.comentario,
+                  disciplina: itemParaPlanejar.disciplina,
+                  status: itemParaPlanejar.status || '',
+                  resposta: itemParaPlanejar.resposta,
+                  imagens: itemParaPlanejar.imagens || [],
+                  planejamento_executor: executorEmail,
+                  planejamento_executor_nome: nomeExecutor,
+                }), 3, 2000, 'PRE-Update-Executor');
+              }
+              setItems(prev => prev.map(it => it.id === itemParaPlanejar.id ? updatedItem : it));
+            }
+            setShowPlanejamentoModal(false);
+            setItemParaPlanejar(null);
+          }}
         />
       )}
 
