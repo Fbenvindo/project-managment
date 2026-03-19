@@ -844,6 +844,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                                   status: item.status || '',
                                   resposta: item.resposta,
                                   imagens: item.imagens || [],
+                                  tempo_atendimento: item.tempo_atendimento ?? null,
                                   planejamento_executor: null,
                                   planejamento_executor_nome: null,
                                 }), 3, 2000, 'PRE-Remove-Executor');
