@@ -175,8 +175,12 @@ export default function NovoPlanejamentoModal({
   };
 
   useEffect(() => {
-    if (isOpen && descritivo_inicial) {
-      setFormData(prev => ({ ...prev, descritivo: descritivo_inicial }));
+    if (isOpen && (descritivo_inicial || tempo_planejado_inicial)) {
+      setFormData(prev => ({
+        ...prev,
+        ...(descritivo_inicial ? { descritivo: descritivo_inicial } : {}),
+        ...(tempo_planejado_inicial ? { tempo_planejado: String(tempo_planejado_inicial) } : {}),
+      }));
       setPlanningMode('individual');
     }
     if (!isOpen) {
