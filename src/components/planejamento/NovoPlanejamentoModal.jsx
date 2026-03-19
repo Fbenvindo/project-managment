@@ -594,7 +594,7 @@ export default function NovoPlanejamentoModal({
       }
 
       alert(`${createdCount} planejamento${createdCount > 1 ? 's' : ''} criado${createdCount > 1 ? 's' : ''} com sucesso!`);
-      if (onSuccess) onSuccess(true); // Passa flag indicando sucesso
+      if (onSuccess) onSuccess({ success: true, executor_principal: formData.executor_principal });
     } catch (error) {
       console.error("Erro ao criar planejamento individual:", error);
       alert("Erro ao criar planejamento. Verifique os dados e tente novamente.");
