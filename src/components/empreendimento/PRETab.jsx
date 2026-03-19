@@ -413,6 +413,15 @@ export default function PRETab({ empreendimento, readOnly = false }) {
         </div>
       )}
 
+      {showPlanejamentoModal && (
+        <NovoPlanejamentoModal
+          isOpen={showPlanejamentoModal}
+          onClose={() => { setShowPlanejamentoModal(false); setItemParaPlanejar(null); }}
+          empreendimento={empreendimento}
+          descricaoInicial={itemParaPlanejar ? `PRE ${itemParaPlanejar.item}: ${itemParaPlanejar.assunto || itemParaPlanejar.descritiva || ''}`.trim() : ''}
+        />
+      )}
+
       <div className="bg-gray-50 print:bg-white">
         <div className="mb-4 flex justify-between items-center no-print">
           <div className="flex items-center gap-2">
