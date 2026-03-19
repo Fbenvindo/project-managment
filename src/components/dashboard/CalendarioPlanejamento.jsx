@@ -976,7 +976,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     );
     if (totalLoading) return <div className="flex justify-center items-center h-[400px]"><RefreshCw className="w-8 h-8 animate-spin text-blue-500" /><p className="ml-3 text-lg text-gray-600">Carregando atividades do calendário...</p></div>;
     const hasSelections = selectedActivities.size > 0;
-    const sharedProps = { activitiesByDay, disciplinas, onActivityDelete: handleActivityDelete, onShowPrevisao: (planos) => { setPlanejamentosParaPrevisao(planos); setShowPrevisaoModal(true); }, executorMap, allPlanejamentos: enrichedData, isReprogramando, canReprogram, selectedActivities, onToggleSelect: toggleActivitySelection, hasSelections, viewType };
+    const sharedProps = { activitiesByDay, disciplinas, onActivityDelete: handleActivityDelete, onShowPrevisao: (planos) => { setPlanejamentosParaPrevisao(planos); setShowPrevisaoModal(true); }, executorMap, allPlanejamentos: enrichedData, isReprogramando, canReprogram, selectedActivities, onToggleSelect: toggleActivitySelection, hasSelections, viewType, onSelectAllOS: canReprogram ? handleSelectAllOS : null };
     if (viewMode === 'month') return <MonthView date={currentDate} {...sharedProps} />;
     if (viewMode === 'week') return <WeekView date={currentDate} {...sharedProps} />;
     if (viewMode === 'day') return <DayView date={currentDate} {...sharedProps} />;
