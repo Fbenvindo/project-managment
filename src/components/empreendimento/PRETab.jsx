@@ -698,7 +698,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                   </div>
 
                   {/* Container Secundário (20%) */}
-                  <div className="w-1/5 p-4 space-y-4 flex flex-col">
+                  <div className="w-1/5 p-4 space-y-4 flex flex-col min-h-0">
                     {/* Item */}
                     <div>
                       <label className="text-xs font-semibold text-gray-600 block mb-1">Item</label>
