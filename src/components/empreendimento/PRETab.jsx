@@ -127,17 +127,21 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     }
   }, []);
 
-  // Carrega disciplinas ao montar
+  // Carrega disciplinas e usuários ao montar
   useEffect(() => {
-    const loadDisciplinas = async () => {
+    const loadInitialData = async () => {
       try {
-        const discs = await retryWithBackoff(() => Disciplina.list(), 3, 2000, 'PRETab-Disciplinas');
+        const [discs, users] = await Promise.all([
+          retryWithBackoff(() => Disciplina.list(), 3, 2000, 'PRETab-Disciplinas'),
+          retryWithBackoff(() => Usuario.list(), 3, 2000, 'PRETab-Usuarios'),
+        ]);
         setDisciplinas(discs || []);
+        setUsuarios(users || []);
       } catch (error) {
-        console.error('Erro ao carregar disciplinas:', error);
+        console.error('Erro ao carregar dados iniciais:', error);
       }
     };
-    loadDisciplinas();
+    loadInitialData();
   }, []);
 
 
