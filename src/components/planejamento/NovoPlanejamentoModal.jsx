@@ -26,7 +26,8 @@ export default function NovoPlanejamentoModal({
   usuarios,
   atividades = [],
   onSuccess,
-  descritivo_inicial = ""
+  descritivo_inicial = "",
+  tempo_planejado_inicial = null
 }) {
   const [planningMode, setPlanningMode] = useState('individual');
   const [isSubmitting, setIsSubmitting] = useState(false);
