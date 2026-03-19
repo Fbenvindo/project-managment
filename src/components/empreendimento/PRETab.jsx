@@ -307,7 +307,13 @@ export default function PRETab({ empreendimento, readOnly = false }) {
         }
       });
 
-      const savedItems = await Promise.all(savePromises);
+      await Promise.all(savePromises);
+      
+      // Recarrega do banco para garantir consistência
+      const savedItems = await retryWithBackoff(
+        () => ItemPRE.filter({ empreendimento_id: empreendimento.id }),
+        3, 2000, 'PRE-Reload'
+      );
       
       const sortedSavedItems = savedItems.sort((a, b) => {
         const parseItem = (str) => {
@@ -832,8 +838,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                             className="w-full text-xs text-gray-400 hover:text-red-500 hover:bg-red-50"
                             onClick={async () => {
                               if (!confirm('Remover executor vinculado? Isso permitirá planejar novamente.')) return;
-                              // Atualiza o estado local imediatamente
-                              setItems(prev => prev.map(it => it.id === item.id ? { ...it, planejamento_executor: null, planejamento_executor_nome: null } : it));
+                              const updatedItem = { ...item, planejamento_executor: null, planejamento_executor_nome: null };
                               if (!item.id.toString().startsWith('temp-')) {
                                 await retryWithBackoff(() => ItemPRE.update(item.id, {
                                   empreendimento_id: item.empreendimento_id,
@@ -853,6 +858,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                                   planejamento_executor_nome: null,
                                 }), 3, 2000, 'PRE-Remove-Executor');
                               }
+                              setItems(prev => prev.map(it => it.id === item.id ? updatedItem : it));
                             }}
                           >
                             <X className="w-3 h-3 mr-1" />
