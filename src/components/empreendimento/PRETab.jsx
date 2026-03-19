@@ -768,7 +768,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                     </div>
 
                     {/* Ações */}
-                    <div className="mt-auto pt-4 no-print space-y-2">
+                    <div className="pt-4 no-print space-y-2">
                       <Button
                         variant="outline"
                         className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
