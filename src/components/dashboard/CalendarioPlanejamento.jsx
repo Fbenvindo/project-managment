@@ -455,7 +455,7 @@ const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onSho
 };
 
 // --- WeekView ---
-const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, onSelectAllOS }) => {
+const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
   const [expandedDay, setExpandedDay] = useState(null);
   const weekDays = useMemo(() => { const start = startOfWeek(date, { locale: ptBR }); const end = endOfWeek(date, { locale: ptBR }); return eachDayOfInterval({ start, end }); }, [date]);
   const toggleExpand = (dayKey) => setExpandedDay(prev => (prev === dayKey ? null : dayKey));
@@ -501,7 +501,7 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
                   )}
                 </div>
                 <div className="flex-grow overflow-y-auto p-2">
-                  <ActivityContainer activities={dayActivities} disciplinas={disciplinas} dayKey={dayKey} onActivityDelete={onActivityDelete} onShowPrevisao={onShowPrevisao} executorMap={executorMap} allPlanejamentos={allPlanejamentos} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={onToggleSelect} hasSelections={hasSelections} viewType={viewType} onSelectAllOS={onSelectAllOS} />
+                  <ActivityContainer activities={dayActivities} disciplinas={disciplinas} dayKey={dayKey} onActivityDelete={onActivityDelete} onShowPrevisao={onShowPrevisao} executorMap={executorMap} allPlanejamentos={allPlanejamentos} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={onToggleSelect} hasSelections={hasSelections} viewType={viewType} />
                   {provided.placeholder}
                 </div>
               </div>
@@ -658,62 +658,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   }, []);
 
   const clearSelection = useCallback(() => { setSelectedActivities(new Set()); setSelectedOSEmpreendimentoId(null); }, []);
-
-  // Seleciona todas as atividades de uma OS (empreendimento) em todos os dias visíveis
-  const handleSelectAllOS = useCallback((empId, executorEmail) => {
-    const atividadesDaOS = (filteredPlanejamentos || []).filter(p =>
-      p.empreendimento_id === empId &&
-      !p.isLegacyExecution &&
-      p.status !== 'concluido' &&
-      (!executorEmail || p.executor_principal === executorEmail)
-    );
-    if (atividadesDaOS.length === 0) return;
-    const ids = new Set(atividadesDaOS.map(a => a.id));
-    setSelectedActivities(ids);
-    setSelectedOSEmpreendimentoId(empId);
-  }, [filteredPlanejamentos]);
-
-  const handleMoverOSConfirm = useCallback(async () => {
-    if (!moverOSData.novaData) return;
-    const atividadesParaMover = Array.from(selectedActivities)
-      .map(id => (enrichedData || []).find(p => p.id === id))
-      .filter(Boolean)
-      .filter(a => !a.isLegacyExecution && a.status !== 'concluido');
-
-    if (atividadesParaMover.length === 0) return;
-
-    // Ordenar por predecessoras (topológico) para mover na ordem correta
-    const topoOrder = new Map();
-    const idSet = new Set(atividadesParaMover.map(p => p.id));
-    const inDeg = {}; const adj = {};
-    atividadesParaMover.forEach(p => { inDeg[p.id] = 0; adj[p.id] = []; });
-    atividadesParaMover.forEach(p => {
-      if (p.predecessora_id && idSet.has(p.predecessora_id)) { adj[p.predecessora_id].push(p.id); inDeg[p.id]++; }
-    });
-    const queue = atividadesParaMover.filter(p => inDeg[p.id] === 0).sort((a, b) => (a.inicio_planejado || '').localeCompare(b.inicio_planejado || ''));
-    let order = 0;
-    while (queue.length > 0) {
-      const cur = queue.shift();
-      topoOrder.set(cur.id, order++);
-      (adj[cur.id] || []).forEach(sId => { inDeg[sId]--; if (inDeg[sId] === 0) { const s = atividadesParaMover.find(p => p.id === sId); if (s) queue.push(s); } });
-      queue.sort((a, b) => (a.inicio_planejado || '').localeCompare(b.inicio_planejado || ''));
-    }
-    const sorted = [...atividadesParaMover].sort((a, b) => (topoOrder.get(a.id) ?? 999) - (topoOrder.get(b.id) ?? 999));
-
-    setMoverOSData(prev => ({ ...prev, isMoving: true }));
-    let ok = 0, fail = 0;
-    for (const a of sorted) {
-      try {
-        await handleReprogramarAtividade(a.id, moverOSData.novaData, a.executor_principal);
-        ok++;
-        await new Promise(r => setTimeout(r, 400));
-      } catch { fail++; }
-    }
-    setMoverOSData({ novaData: '', isMoving: false });
-    setShowMoverOSModal(false);
-    if (ok > 0) { alert(`✅ ${ok} atividade(s) da OS reprogramadas!${fail > 0 ? `\n⚠️ ${fail} falharam` : ''}`); clearSelection(); }
-    else alert('❌ Nenhuma atividade pôde ser movida.');
-  }, [selectedActivities, enrichedData, moverOSData.novaData, handleReprogramarAtividade, clearSelection]);
 
   const handleReprogramarAtividade = useCallback(async (atividadeId, novaDataInicio, executorEmail) => {
     setIsReprogramando(atividadeId);
