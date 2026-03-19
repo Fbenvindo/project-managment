@@ -455,7 +455,7 @@ const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onSho
 };
 
 // --- WeekView ---
-const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, onSelectAllOS }) => {
+const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
   const [expandedDay, setExpandedDay] = useState(null);
   const weekDays = useMemo(() => { const start = startOfWeek(date, { locale: ptBR }); const end = endOfWeek(date, { locale: ptBR }); return eachDayOfInterval({ start, end }); }, [date]);
   const toggleExpand = (dayKey) => setExpandedDay(prev => (prev === dayKey ? null : dayKey));
@@ -501,7 +501,7 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
                   )}
                 </div>
                 <div className="flex-grow overflow-y-auto p-2">
-                  <ActivityContainer activities={dayActivities} disciplinas={disciplinas} dayKey={dayKey} onActivityDelete={onActivityDelete} onShowPrevisao={onShowPrevisao} executorMap={executorMap} allPlanejamentos={allPlanejamentos} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={onToggleSelect} hasSelections={hasSelections} viewType={viewType} onSelectAllOS={onSelectAllOS} />
+                  <ActivityContainer activities={dayActivities} disciplinas={disciplinas} dayKey={dayKey} onActivityDelete={onActivityDelete} onShowPrevisao={onShowPrevisao} executorMap={executorMap} allPlanejamentos={allPlanejamentos} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={onToggleSelect} hasSelections={hasSelections} viewType={viewType} />
                   {provided.placeholder}
                 </div>
               </div>
@@ -514,7 +514,7 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
 };
 
 // --- DayView ---
-const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, onSelectAllOS }) => {
+const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
   const dayKey = format(date, 'yyyy-MM-dd');
   const activities = activitiesByDay[dayKey] || [];
   return (
@@ -524,7 +524,7 @@ const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowP
           <h2 className="text-2xl font-bold text-center mb-6">{format(date, "EEEE, d 'de' MMMM 'de' yyyy", { locale: ptBR })}</h2>
           <div className="max-w-4xl mx-auto">
             {activities.length > 0 ? (
-              <ActivityContainer activities={activities} containerClass="space-y-4" disciplinas={disciplinas} dayKey={dayKey} onActivityDelete={onActivityDelete} onShowPrevisao={onShowPrevisao} executorMap={executorMap} allPlanejamentos={allPlanejamentos} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={onToggleSelect} hasSelections={hasSelections} viewType={viewType} onSelectAllOS={onSelectAllOS} />
+              <ActivityContainer activities={activities} containerClass="space-y-4" disciplinas={disciplinas} dayKey={dayKey} onActivityDelete={onActivityDelete} onShowPrevisao={onShowPrevisao} executorMap={executorMap} allPlanejamentos={allPlanejamentos} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={onToggleSelect} hasSelections={hasSelections} viewType={viewType} />
             ) : (
               <div className="text-center py-12 text-gray-500"><CalendarDays className="w-12 h-12 mx-auto mb-4 text-gray-300" />Nenhuma atividade planejada para este dia.</div>
             )}
@@ -659,61 +659,21 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
 
   const clearSelection = useCallback(() => { setSelectedActivities(new Set()); setSelectedOSEmpreendimentoId(null); }, []);
 
-  // Seleciona todas as atividades de uma OS (empreendimento) em todos os dias visíveis
   const handleSelectAllOS = useCallback((empId, executorEmail) => {
-    const atividadesDaOS = (filteredPlanejamentos || []).filter(p =>
-      p.empreendimento_id === empId &&
-      !p.isLegacyExecution &&
-      p.status !== 'concluido' &&
-      (!executorEmail || p.executor_principal === executorEmail)
-    );
-    if (atividadesDaOS.length === 0) return;
-    const ids = new Set(atividadesDaOS.map(a => a.id));
-    setSelectedActivities(ids);
-    setSelectedOSEmpreendimentoId(empId);
-  }, [filteredPlanejamentos]);
-
-  const handleMoverOSConfirm = useCallback(async () => {
-    if (!moverOSData.novaData) return;
-    const atividadesParaMover = Array.from(selectedActivities)
-      .map(id => (enrichedData || []).find(p => p.id === id))
-      .filter(Boolean)
-      .filter(a => !a.isLegacyExecution && a.status !== 'concluido');
-
-    if (atividadesParaMover.length === 0) return;
-
-    // Ordenar por predecessoras (topológico) para mover na ordem correta
-    const topoOrder = new Map();
-    const idSet = new Set(atividadesParaMover.map(p => p.id));
-    const inDeg = {}; const adj = {};
-    atividadesParaMover.forEach(p => { inDeg[p.id] = 0; adj[p.id] = []; });
-    atividadesParaMover.forEach(p => {
-      if (p.predecessora_id && idSet.has(p.predecessora_id)) { adj[p.predecessora_id].push(p.id); inDeg[p.id]++; }
+    setEnrichedData(current => {
+      const atividadesDaOS = (current || []).filter(p =>
+        p.empreendimento_id === empId &&
+        !p.isLegacyExecution &&
+        p.status !== 'concluido' &&
+        (!executorEmail || p.executor_principal === executorEmail)
+      );
+      if (atividadesDaOS.length > 0) {
+        setSelectedActivities(new Set(atividadesDaOS.map(a => a.id)));
+        setSelectedOSEmpreendimentoId(empId);
+      }
+      return current;
     });
-    const queue = atividadesParaMover.filter(p => inDeg[p.id] === 0).sort((a, b) => (a.inicio_planejado || '').localeCompare(b.inicio_planejado || ''));
-    let order = 0;
-    while (queue.length > 0) {
-      const cur = queue.shift();
-      topoOrder.set(cur.id, order++);
-      (adj[cur.id] || []).forEach(sId => { inDeg[sId]--; if (inDeg[sId] === 0) { const s = atividadesParaMover.find(p => p.id === sId); if (s) queue.push(s); } });
-      queue.sort((a, b) => (a.inicio_planejado || '').localeCompare(b.inicio_planejado || ''));
-    }
-    const sorted = [...atividadesParaMover].sort((a, b) => (topoOrder.get(a.id) ?? 999) - (topoOrder.get(b.id) ?? 999));
-
-    setMoverOSData(prev => ({ ...prev, isMoving: true }));
-    let ok = 0, fail = 0;
-    for (const a of sorted) {
-      try {
-        await handleReprogramarAtividade(a.id, moverOSData.novaData, a.executor_principal);
-        ok++;
-        await new Promise(r => setTimeout(r, 400));
-      } catch { fail++; }
-    }
-    setMoverOSData({ novaData: '', isMoving: false });
-    setShowMoverOSModal(false);
-    if (ok > 0) { alert(`✅ ${ok} atividade(s) da OS reprogramadas!${fail > 0 ? `\n⚠️ ${fail} falharam` : ''}`); clearSelection(); }
-    else alert('❌ Nenhuma atividade pôde ser movida.');
-  }, [selectedActivities, enrichedData, moverOSData.novaData, handleReprogramarAtividade, clearSelection]);
+  }, []);
 
   const handleReprogramarAtividade = useCallback(async (atividadeId, novaDataInicio, executorEmail) => {
     setIsReprogramando(atividadeId);
@@ -1002,16 +962,13 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
               ) : 'Calendário de Planejamento'}
             </CardTitle>
             <div className="flex items-center gap-2">
-              {selectedActivities.size > 0 && (
+              {selectedActivities.size > 0 && canReprogram && (
                 <div className="flex items-center gap-2 mr-4 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-lg">
-                  <Building2 className="w-4 h-4 text-indigo-500" />
-                  <span className="text-sm font-medium text-indigo-700">{selectedActivities.size} ativ. da OS selecionadas</span>
-                  {canReprogram && (
-                    <Button size="sm" onClick={() => { setMoverOSData({ novaData: '', isMoving: false }); setShowMoverOSModal(true); }} className="h-6 px-2 text-xs bg-indigo-600 hover:bg-indigo-700 text-white">
-                      Mover para data...
-                    </Button>
-                  )}
-                  <Button variant="ghost" size="sm" onClick={clearSelection} className="h-6 px-2 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-100">Limpar</Button>
+                  <span className="text-sm font-medium text-indigo-700">{selectedActivities.size} atividade{selectedActivities.size > 1 ? 's' : ''} selecionada{selectedActivities.size > 1 ? 's' : ''}</span>
+                  <Button size="sm" onClick={() => setShowMoverOSModal(true)} className="h-6 px-2 text-xs bg-indigo-600 hover:bg-indigo-700 text-white">
+                    Mover OS
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={clearSelection} className="h-6 px-2 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-100">✕</Button>
                 </div>
               )}
               {hasSelectedUser && (
@@ -1040,39 +997,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           <CardContent className="p-0 flex-1">{renderContent()}</CardContent>
         </DragDropContext>
       </Card>
-      {showMoverOSModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => !moverOSData.isMoving && setShowMoverOSModal(false)}>
-          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 bg-indigo-100 rounded-full flex items-center justify-center">
-                <Building2 className="w-5 h-5 text-indigo-600" />
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-gray-900">Mover Atividades da OS</h3>
-                <p className="text-sm text-gray-500">{selectedActivities.size} atividade{selectedActivities.size > 1 ? 's' : ''} serão reprogramadas em sequência</p>
-              </div>
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Nova data de início</label>
-              <Input
-                type="date"
-                value={moverOSData.novaData}
-                onChange={e => setMoverOSData(prev => ({ ...prev, novaData: e.target.value }))}
-                disabled={moverOSData.isMoving}
-                className="w-full"
-              />
-              <p className="text-xs text-gray-400 mt-1">As atividades serão reprogramadas respeitando a ordem das predecessoras</p>
-            </div>
-            <div className="flex gap-3 justify-end">
-              <Button variant="outline" onClick={() => setShowMoverOSModal(false)} disabled={moverOSData.isMoving}>Cancelar</Button>
-              <Button onClick={handleMoverOSConfirm} disabled={!moverOSData.novaData || moverOSData.isMoving} className="bg-indigo-600 hover:bg-indigo-700">
-                {moverOSData.isMoving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Movendo...</> : 'Confirmar'}
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {hasSelectedUser && (
         <PrevisaoEntregaModal isOpen={showPrevisaoModal} onClose={() => setShowPrevisaoModal(false)}
           planejamentos={planejamentosParaPrevisao.length > 0 ? planejamentosParaPrevisao : filteredPlanejamentos}
