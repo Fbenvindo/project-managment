@@ -1041,6 +1041,27 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           execucoes={[]}
           cargaDiaria={planejamentosParaPrevisao.length > 0 && planejamentosParaPrevisao[0].executor_principal ? cargaDiariaPorUsuario[planejamentosParaPrevisao[0].executor_principal] || {} : {}} />
       )}
+
+      {showMoverOSModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-xl shadow-2xl p-6 w-full max-w-md">
+            <h2 className="text-lg font-bold text-gray-900 mb-1">Mover Atividades da OS</h2>
+            <p className="text-sm text-gray-500 mb-4">{selectedActivities.size} atividade{selectedActivities.size > 1 ? 's' : ''} selecionada{selectedActivities.size > 1 ? 's' : ''} serão reprogramadas a partir da nova data de início.</p>
+            <div className="mb-5">
+              <label className="block text-sm font-medium text-gray-700 mb-1">Nova data de início</label>
+              <Input type="date" value={moverOSData.novaData} onChange={e => setMoverOSData(prev => ({ ...prev, novaData: e.target.value }))} className="w-full" />
+            </div>
+            <div className="flex gap-3 justify-end">
+              <Button variant="outline" onClick={() => { setShowMoverOSModal(false); setMoverOSData({ novaData: '', isMoving: false }); }} disabled={moverOSData.isMoving}>
+                Cancelar
+              </Button>
+              <Button onClick={handleMoverOSConfirm} disabled={!moverOSData.novaData || moverOSData.isMoving} className="bg-indigo-600 hover:bg-indigo-700 text-white">
+                {moverOSData.isMoving ? <><RefreshCw className="w-4 h-4 mr-2 animate-spin" />Movendo...</> : 'Confirmar'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
