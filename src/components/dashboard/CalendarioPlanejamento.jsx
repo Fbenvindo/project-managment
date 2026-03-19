@@ -448,7 +448,7 @@ const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onSho
       {weekHeaders.map(day => <div key={day} className="text-center font-medium text-sm text-gray-500 py-3 border-b border-gray-100 bg-gray-50">{day}</div>)}
       {monthDays.map(day => {
         const dayKey = format(day, 'yyyy-MM-dd');
-        return <DayCell key={dayKey} day={day} dayActivities={activitiesByDay[dayKey] || []} date={date} isToday={isSameDay(day, new Date())} disciplinas={disciplinas} onActivityDelete={onActivityDelete} onShowPrevisao={onShowPrevisao} executorMap={executorMap} allPlanejamentos={allPlanejamentos} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={onToggleSelect} hasSelections={hasSelections} viewType={viewType} />;
+        return <DayCell key={dayKey} day={day} dayActivities={activitiesByDay[dayKey] || []} date={date} isToday={isSameDay(day, new Date())} disciplinas={disciplinas} onActivityDelete={onActivityDelete} onShowPrevisao={onShowPrevisao} executorMap={executorMap} allPlanejamentos={allPlanejamentos} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={onToggleSelect} hasSelections={hasSelections} viewType={viewType} onSelectAllOS={onSelectAllOS} />;
       })}
     </div>
   );
