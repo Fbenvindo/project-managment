@@ -799,14 +799,54 @@ export default function PRETab({ empreendimento, readOnly = false }) {
 
                     {/* Ações */}
                     <div className="pt-4 no-print space-y-2">
-                      <Button
-                        variant="outline"
-                        className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
-                        onClick={() => { setItemParaPlanejar(item); setShowPlanejamentoModal(true); }}
-                      >
-                        <CalendarPlus className="w-4 h-4 mr-2" />
-                        Planejar
-                      </Button>
+                      {item.planejamento_executor ? (
+                        <div className="space-y-1">
+                          <div className="w-full flex items-center gap-1 px-3 py-2 rounded-md border border-green-200 bg-green-50 text-green-700 text-sm">
+                            <CalendarPlus className="w-3 h-3 flex-shrink-0" />
+                            <span className="truncate font-medium text-xs">{item.planejamento_executor_nome || item.planejamento_executor}</span>
+                          </div>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="w-full text-xs text-gray-400 hover:text-red-500 hover:bg-red-50"
+                            onClick={async () => {
+                              if (!confirm('Remover executor vinculado? Isso permitirá planejar novamente.')) return;
+                              const updatedItem = { ...item, planejamento_executor: null, planejamento_executor_nome: null };
+                              if (!item.id.toString().startsWith('temp-')) {
+                                await retryWithBackoff(() => ItemPRE.update(item.id, {
+                                  empreendimento_id: item.empreendimento_id,
+                                  item: item.item,
+                                  data: item.data,
+                                  de: item.de,
+                                  descritiva: item.descritiva,
+                                  localizacao: item.localizacao,
+                                  assunto: item.assunto,
+                                  comentario: item.comentario,
+                                  disciplina: item.disciplina,
+                                  status: item.status || '',
+                                  resposta: item.resposta,
+                                  imagens: item.imagens || [],
+                                  planejamento_executor: null,
+                                  planejamento_executor_nome: null,
+                                }), 3, 2000, 'PRE-Remove-Executor');
+                              }
+                              setItems(prev => prev.map(it => it.id === item.id ? updatedItem : it));
+                            }}
+                          >
+                            <X className="w-3 h-3 mr-1" />
+                            Remover executor
+                          </Button>
+                        </div>
+                      ) : (
+                        <Button
+                          variant="outline"
+                          className="w-full text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
+                          onClick={() => { setItemParaPlanejar(item); setShowPlanejamentoModal(true); }}
+                        >
+                          <CalendarPlus className="w-4 h-4 mr-2" />
+                          Planejar
+                        </Button>
+                      )}
                       {!readOnly && (
                         <Button
                           variant="ghost"
