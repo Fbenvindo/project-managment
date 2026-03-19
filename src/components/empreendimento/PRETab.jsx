@@ -449,6 +449,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                   status: itemParaPlanejar.status || '',
                   resposta: itemParaPlanejar.resposta,
                   imagens: itemParaPlanejar.imagens || [],
+                  tempo_atendimento: itemParaPlanejar.tempo_atendimento ?? null,
                   planejamento_executor: executorEmail,
                   planejamento_executor_nome: nomeExecutor,
                 }), 3, 2000, 'PRE-Update-Executor');
