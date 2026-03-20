@@ -164,7 +164,8 @@ export default function DocumentoItem({
 
     return ordenarAtividades(atividadesGerais).map(atividade => {
       const nomeAtividadeSeguro = String(atividade.atividade || '');
-      const etapaFinal = etapaOverrides.has(atividade.id) ? etapaOverrides.get(atividade.id) : atividade.etapa;
+      const etapaBase = etapaOverrides.has(atividade.id) ? etapaOverrides.get(atividade.id) : atividade.etapa;
+      const etapaFinal = mapearEtapaEmp(etapaBase);
       const estaConcluida = atividadesConcluidasPorDoc.has(atividade.id);
       const tempoBaseOriginal = parseFloat(atividade.tempo) || 0;
 
