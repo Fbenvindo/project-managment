@@ -87,9 +87,11 @@ export default function DocumentoItem({
     const etapaOverrides = new Map();
     const tempoOverrides = new Map();
 
-    // Etapa padrão do empreendimento (quando há apenas uma etapa configurada)
+    // Etapa padrão: usar a etapa cadastrada no documento, ou fallback para etapa única do empreendimento
     const etapasCadastradas = [...new Set((empreendimento.etapas || []).filter(e => e && e.trim()))];
-    const etapaPadraoEmpreendimento = etapasCadastradas.length === 1 ? etapasCadastradas[0] : null;
+    const etapaPadraoEmpreendimento = doc.etapa && doc.etapa.trim()
+      ? doc.etapa.trim()
+      : (etapasCadastradas.length === 1 ? etapasCadastradas[0] : null);
 
     allAtividades.forEach(ativ => {
       if (ativ.empreendimento_id === empreendimento.id && ativ.id_atividade && ativ.tempo !== -999) {
