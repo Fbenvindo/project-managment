@@ -76,6 +76,26 @@ export default function DocumentoForm({
     console.log("📋 [DocumentoForm] Quantidade de pavimentos:", pavimentos?.length || 0);
   }, [pavimentos]);
 
+  // Mapear etapa do catálogo para etapa do empreendimento
+  // Se o empreendimento tem etapas configuradas, usa a etapa única (ou a mais relevante)
+  const mapearEtapaParaEmpreendimento = useMemo(() => {
+    const etapasEmp = empreendimento?.etapas || [];
+    const etapasUnicas = [...new Set(etapasEmp.filter(Boolean))];
+    
+    // Se só tem 1 etapa distinta, todas as atividades usam ela
+    if (etapasUnicas.length === 1) {
+      return () => etapasUnicas[0];
+    }
+    
+    // Se a etapa da atividade está nas etapas do empreendimento, usa ela
+    // Caso contrário, usa a primeira etapa disponível
+    return (etapaAtividade) => {
+      if (etapasUnicas.includes(etapaAtividade)) return etapaAtividade;
+      if (etapasUnicas.length > 0) return etapasUnicas[0];
+      return etapaAtividade; // fallback: etapa original
+    };
+  }, [empreendimento?.etapas]);
+
   // NOVO: Criar mapa de overrides de etapa
   const etapaOverridesMap = useMemo(() => {
     const map = new Map();
