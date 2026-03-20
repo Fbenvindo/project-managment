@@ -206,7 +206,9 @@ export default function DocumentosTab({
             allAtividades.forEach(ativ => {
               if (ativ.empreendimento_id === empreendimento.id && ativ.id_atividade && ativ.tempo !== -999) {
                 etapaOverridesChild.set(ativ.id_atividade, ativ.etapa);
+                etapaOverridesChild.set(ativ.id, ativ.etapa);
                 tempoOverridesChild.set(ativ.id_atividade, ativ.tempo);
+                tempoOverridesChild.set(ativ.id, ativ.tempo);
               }
             });
 
