@@ -276,7 +276,7 @@ export default function DocumentosTab({
     }
   }, [handleLocalUpdate, allAtividades, localDocumentos, etapaParaPlanejamento, pavimentos, empreendimento.id, setCargaDiariaCache]);
 
-  const autoPlanejarAtividades = useCallback(async (documento, etapa, executorEmail, metodoData, dataManualInicio, cargaDiariaInicial = null) => {
+  const autoPlanejarAtividades = useCallback(async (documento, etapa, executorEmail, metodoData, dataManualInicio) => {
     if (!documento?.id || !executorEmail || !etapa) { alert("Dados insuficientes para planejar."); return; }
     if (etapa === 'todas') { alert("Selecione uma etapa específica antes de definir o executor."); return; }
 
