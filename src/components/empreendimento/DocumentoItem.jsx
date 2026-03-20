@@ -87,10 +87,6 @@ export default function DocumentoItem({
     const etapaOverrides = new Map();
     const tempoOverrides = new Map();
 
-    // Etapa padrão do empreendimento (quando há apenas uma etapa configurada)
-    const etapasCadastradas = [...new Set((empreendimento.etapas || []).filter(e => e && e.trim()))];
-    const etapaPadraoEmpreendimento = etapasCadastradas.length === 1 ? etapasCadastradas[0] : null;
-
     allAtividades.forEach(ativ => {
       if (ativ.empreendimento_id === empreendimento.id && ativ.id_atividade && ativ.tempo !== -999) {
         etapaOverrides.set(ativ.id_atividade, ativ.etapa);
@@ -149,14 +145,14 @@ export default function DocumentoItem({
 
     if (etapaParaPlanejamento !== 'todas') {
       atividadesGerais = atividadesGerais.filter(ativ => {
-        const etapaFinal = etapaOverrides.has(ativ.id) ? etapaOverrides.get(ativ.id) : (etapaPadraoEmpreendimento || ativ.etapa);
+        const etapaFinal = etapaOverrides.has(ativ.id) ? etapaOverrides.get(ativ.id) : ativ.etapa;
         return etapaFinal === etapaParaPlanejamento;
       });
     }
 
     return ordenarAtividades(atividadesGerais).map(atividade => {
       const nomeAtividadeSeguro = String(atividade.atividade || '');
-      const etapaFinal = etapaOverrides.has(atividade.id) ? etapaOverrides.get(atividade.id) : (etapaPadraoEmpreendimento || atividade.etapa);
+      const etapaFinal = etapaOverrides.has(atividade.id) ? etapaOverrides.get(atividade.id) : atividade.etapa;
       const estaConcluida = atividadesConcluidasPorDoc.has(atividade.id);
       const tempoBaseOriginal = parseFloat(atividade.tempo) || 0;
 
