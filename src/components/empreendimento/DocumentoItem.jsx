@@ -223,7 +223,7 @@ export default function DocumentoItem({
         atividadeEmpId: atividadeEmpRecord?.id
       };
     });
-  }, [allAtividades, doc, planejamentosDoDocumento, etapaParaPlanejamento, empreendimento.id, pavimentos]);
+  }, [allAtividades, doc, planejamentosDoDocumento, etapaParaPlanejamento, empreendimento.id, pavimentos, mapearEtapaEmp]);
 
   const tempoCalculadoPorEtapa = useMemo(() => {
     const atividadesFiltradas = etapaParaPlanejamento === 'todas'
