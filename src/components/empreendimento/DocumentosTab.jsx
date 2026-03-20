@@ -319,9 +319,17 @@ export default function DocumentosTab({
           : !atividadesExcluidasGlobal.has(ativ.id) && !atividadesExcluidasPorDoc.has(ativ.id)
       );
 
+      // Mapear etapa do catálogo para etapa do empreendimento
+      const etapasEmp = empreendimento?.etapas || [];
+      const mapearEtapa = (etapaAtividade) => {
+        if (etapasEmp.includes(etapaAtividade)) return etapaAtividade;
+        if (etapasEmp.length === 1) return etapasEmp[0];
+        return etapaAtividade;
+      };
+
       const atividadesDaEtapa = atividadesGerais.filter(ativ => {
-        const etapaFinal = etapaOverrides.has(ativ.id) ? etapaOverrides.get(ativ.id) : ativ.etapa;
-        return etapaFinal === etapa;
+        const etapaBase = etapaOverrides.has(ativ.id) ? etapaOverrides.get(ativ.id) : ativ.etapa;
+        return mapearEtapa(etapaBase) === etapa;
       });
 
       if (atividadesDaEtapa.length === 0) { alert(`Nenhuma atividade encontrada para a etapa "${etapa}".`); return; }
