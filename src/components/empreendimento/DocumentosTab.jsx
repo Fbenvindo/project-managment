@@ -904,6 +904,7 @@ export default function DocumentosTab({
             doc={editingDocumento}
             empreendimentoId={empreendimento.id}
             empreendimentoNome={empreendimento.nome}
+            empreendimento={empreendimento}
             onClose={() => { setShowForm(false); setEditingDocumento(null); }}
             onSave={handleSuccess}
             disciplinas={disciplinas}
