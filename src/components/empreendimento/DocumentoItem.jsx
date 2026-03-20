@@ -157,8 +157,8 @@ export default function DocumentoItem({
 
     if (etapaParaPlanejamento !== 'todas') {
       atividadesGerais = atividadesGerais.filter(ativ => {
-        const etapaFinal = etapaOverrides.has(ativ.id) ? etapaOverrides.get(ativ.id) : ativ.etapa;
-        return etapaFinal === etapaParaPlanejamento;
+        const etapaBase = etapaOverrides.has(ativ.id) ? etapaOverrides.get(ativ.id) : ativ.etapa;
+        return mapearEtapaEmp(etapaBase) === etapaParaPlanejamento;
       });
     }
 
