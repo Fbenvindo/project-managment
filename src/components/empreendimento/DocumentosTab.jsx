@@ -344,7 +344,7 @@ export default function DocumentosTab({
         return mapearEtapa(etapaBase) === etapa;
       });
 
-      if (atividadesDaEtapa.length === 0) { alert(`Nenhuma atividade encontrada para a etapa "${etapa}".`); return; }
+      if (atividadesDaEtapa.length === 0) { console.warn(`Nenhuma atividade encontrada para a etapa "${etapa}" no documento ${documento.numero}. Pulando.`); return; }
 
       const tempoTotal = atividadesDaEtapa.reduce((total, ativ) => {
         const tempoBase = tempoOverrides.has(ativ.id) ? parseFloat(tempoOverrides.get(ativ.id)) || 0 : parseFloat(ativ.tempo) || 0;
