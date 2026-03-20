@@ -142,17 +142,28 @@ export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
         });
       });
       
-      // Ordenar etapas na ordem correta
+      // Ordenar etapas na ordem correta e agrupar por disciplina
       const ordemEtapas = ['Concepção', 'Planejamento', 'Estudo Preliminar', 'Ante-Projeto', 'Projeto Básico', 'Projeto Executivo', 'Liberado para Obra'];
       const etapasOrdenadas = {};
       ordemEtapas.forEach(etapa => {
         if (atividadesPorEtapa[etapa]) {
-          etapasOrdenadas[etapa] = atividadesPorEtapa[etapa].sort((a, b) => {
+          const atividadesOrdenadas = atividadesPorEtapa[etapa].sort((a, b) => {
             // Ordenar primeiro por disciplina, depois por nome
             const disciplinaCompare = a.disciplina.localeCompare(b.disciplina, 'pt-BR');
             if (disciplinaCompare !== 0) return disciplinaCompare;
             return a.nome.localeCompare(b.nome, 'pt-BR');
           });
+          
+          // Agrupar por disciplina
+          const atividadesPorDisciplina = {};
+          atividadesOrdenadas.forEach(atividade => {
+            if (!atividadesPorDisciplina[atividade.disciplina]) {
+              atividadesPorDisciplina[atividade.disciplina] = [];
+            }
+            atividadesPorDisciplina[atividade.disciplina].push(atividade);
+          });
+          
+          etapasOrdenadas[etapa] = atividadesPorDisciplina;
         }
       });
       
