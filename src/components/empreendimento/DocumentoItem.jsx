@@ -401,21 +401,26 @@ export default function DocumentoItem({
         queue.push(...findSuccessors(currentDoc.id));
       }
 
+      // Mapa local de documentos atualizados para evitar stale closure nas iterações
+      const docStateMap = new Map(localDocumentos.map(d => [d.id, { ...d }]));
+
       for (const docToUpdate of orderedDocs) {
         // Pular folhas já planejadas (exceto a folha principal clicada pelo usuário)
-        if (docToUpdate.id !== doc.id && docToUpdate.executor_principal && docToUpdate.termino_planejado) {
+        const docAtual = docStateMap.get(docToUpdate.id) || docToUpdate;
+        if (docAtual.id !== doc.id && docAtual.executor_principal && docAtual.termino_planejado) {
           continue;
         }
 
         const updateData = { executor_principal: executorEmail, multiplos_executores: false };
         const docAtualizado = await retryWithBackoff(() => Documento.update(docToUpdate.id, updateData), 3, 1000, `setExecutor-${docToUpdate.id}`);
         handleLocalUpdate(docAtualizado);
+        docStateMap.set(docAtualizado.id, docAtualizado);
 
-        // Determinar data início: predecessora planejada > manual > agenda
+        // Determinar data início: usar docStateMap para ter dados frescos da predecessora
         let metodoData = 'agenda';
         let dataManualInicio = null;
         if (docAtualizado.predecessora_id) {
-          const pred = localDocumentos.find(d => d.id === docAtualizado.predecessora_id);
+          const pred = docStateMap.get(docAtualizado.predecessora_id);
           if (pred?.termino_planejado && isValid(parseDate(pred.termino_planejado))) {
             dataManualInicio = format(ensureWorkingDay(parseDate(pred.termino_planejado)), 'yyyy-MM-dd');
             metodoData = 'manual';
@@ -428,11 +433,14 @@ export default function DocumentoItem({
 
         await autoPlanejarAtividades(docAtualizado, etapaParaPlanejamento, executorEmail, metodoData, dataManualInicio);
 
-        // Atualizar o estado local com a data de término calculada
+        // Buscar estado atualizado do banco (com termino_planejado calculado) e atualizar mapa
         const [docFinalizado] = await retryWithBackoff(
           () => Documento.filter({ id: docToUpdate.id }), 3, 1000, `getDoc-${docToUpdate.id}`
         );
-        if (docFinalizado) handleLocalUpdate(docFinalizado);
+        if (docFinalizado) {
+          handleLocalUpdate(docFinalizado);
+          docStateMap.set(docFinalizado.id, docFinalizado);
+        }
       }
 
       setCargaDiariaCache({});
