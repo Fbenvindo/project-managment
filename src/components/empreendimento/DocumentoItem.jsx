@@ -84,13 +84,14 @@ export default function DocumentoItem({
   const mapearEtapaEmp = useMemo(() => {
     const etapasEmp = empreendimento?.etapas || [];
     const etapasUnicas = [...new Set(etapasEmp.filter(Boolean))];
-    if (etapasUnicas.length === 1) return () => etapasUnicas[0];
     return (etapaAtividade) => {
       if (etapasUnicas.includes(etapaAtividade)) return etapaAtividade;
+      // A etapa não existe no empreendimento → mapear para a etapa selecionada para planejamento (ou primeira disponível)
+      if (etapaParaPlanejamento && etapaParaPlanejamento !== 'todas') return etapaParaPlanejamento;
       if (etapasUnicas.length > 0) return etapasUnicas[0];
       return etapaAtividade;
     };
-  }, [empreendimento?.etapas]);
+  }, [empreendimento?.etapas, etapaParaPlanejamento]);
 
   const atividadesDisponiveis = useMemo(() => {
     const subdisciplinasDoc = doc.subdisciplinas || [];
