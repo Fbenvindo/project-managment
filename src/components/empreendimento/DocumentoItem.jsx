@@ -80,6 +80,18 @@ export default function DocumentoItem({
     return localPlanejamentos.filter(p => p.documento_id === doc.id);
   }, [localPlanejamentos, doc.id]);
 
+  // Mapear etapa do catálogo para etapa do empreendimento
+  const mapearEtapaEmp = useMemo(() => {
+    const etapasEmp = empreendimento?.etapas || [];
+    const etapasUnicas = [...new Set(etapasEmp.filter(Boolean))];
+    if (etapasUnicas.length === 1) return () => etapasUnicas[0];
+    return (etapaAtividade) => {
+      if (etapasUnicas.includes(etapaAtividade)) return etapaAtividade;
+      if (etapasUnicas.length > 0) return etapasUnicas[0];
+      return etapaAtividade;
+    };
+  }, [empreendimento?.etapas]);
+
   const atividadesDisponiveis = useMemo(() => {
     const subdisciplinasDoc = doc.subdisciplinas || [];
     const disciplinaDoc = doc.disciplina;
