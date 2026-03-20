@@ -200,6 +200,8 @@ export default function DocumentosTab({
             const subdisciplinasChild = child.subdisciplinas || [];
             const disciplinaChild = child.disciplina;
             const fatorDificuldadeChild = child.fator_dificuldade || 1;
+            const pavimentoChild = (pavimentos || []).find(p => p.id === child.pavimento_id);
+            const areaPavimentoChild = pavimentoChild ? Number(pavimentoChild.area) : null;
 
             const etapaOverridesChild = new Map();
             const tempoOverridesChild = new Map();
