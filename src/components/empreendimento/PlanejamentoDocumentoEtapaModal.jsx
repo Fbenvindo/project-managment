@@ -61,6 +61,15 @@ export default function PlanejamentoDocumentoEtapaModal({
     console.log(`   - Subdisciplinas: [${subdisciplinasDoc.join(', ')}]`);
     console.log(`   - Etapa para planejamento: ${etapaParaPlanejamento}`);
 
+    // Obter etapas do empreendimento para mapeamento
+    const empreendimentoEtapas = documento.empreendimento_etapas || [];
+    const mapearEtapa = (etapaAtividade) => {
+      if (!empreendimentoEtapas || empreendimentoEtapas.length === 0) return etapaAtividade;
+      if (empreendimentoEtapas.includes(etapaAtividade)) return etapaAtividade;
+      if (empreendimentoEtapas.length === 1) return empreendimentoEtapas[0];
+      return etapaAtividade;
+    };
+
     // Incluir tanto atividades gerais quanto atividades específicas vinculadas a esta folha
     let atividadesCorrespondentes = allAtividades.filter(ativ => {
        // Atividades gerais (sem empreendimento_id)
@@ -70,7 +79,7 @@ export default function PlanejamentoDocumentoEtapaModal({
          const match = disciplinaMatch && subdisciplinaMatch;
          
          if (match) {
-           console.log(`   ✅ Match (genérica): ${ativ.atividade} (${ativ.etapa} - ${ativ.subdisciplina})`);
+           console.log(`   ✅ Match (genérica): ${ativ.atividade} (${ativ.etapa} → ${mapearEtapa(ativ.etapa)} - ${ativ.subdisciplina})`);
          }
          
          return match;
@@ -83,7 +92,7 @@ export default function PlanejamentoDocumentoEtapaModal({
            console.log(`   ⏭️ Ignorando marcador de conclusão: ${ativ.atividade}`);
            return false;
          }
-         console.log(`   ✅ Match (específica da folha): ${ativ.atividade} (${ativ.etapa})`);
+         console.log(`   ✅ Match (específica da folha): ${ativ.atividade} (${ativ.etapa} → ${mapearEtapa(ativ.etapa)})`);
          return true;
        }
        
@@ -94,17 +103,19 @@ export default function PlanejamentoDocumentoEtapaModal({
 
     if (etapaParaPlanejamento !== 'todas') {
       atividadesCorrespondentes = atividadesCorrespondentes.filter(ativ =>
-        ativ.etapa === etapaParaPlanejamento
+        mapearEtapa(ativ.etapa) === etapaParaPlanejamento
       );
-      console.log(`📊 Após filtro de etapa: ${atividadesCorrespondentes.length}`);
+      console.log(`📊 Após filtro de etapa (com mapeamento): ${atividadesCorrespondentes.length}`);
     }
 
     const porEtapa = {};
     atividadesCorrespondentes.forEach(ativ => {
-      if (!porEtapa[ativ.etapa]) {
-        porEtapa[ativ.etapa] = [];
+      // Agrupar pela etapa MAPEADA, não pela original do catálogo
+      const etapaMapeada = mapearEtapa(ativ.etapa);
+      if (!porEtapa[etapaMapeada]) {
+        porEtapa[etapaMapeada] = [];
       }
-      porEtapa[ativ.etapa].push(ativ);
+      porEtapa[etapaMapeada].push(ativ);
     });
 
     console.log(`📊 Etapas encontradas:`, Object.keys(porEtapa));
