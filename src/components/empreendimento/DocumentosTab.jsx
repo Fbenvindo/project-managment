@@ -289,8 +289,11 @@ export default function DocumentosTab({
       const tempoOverrides = new Map();
       allAtividades.forEach(ativ => {
         if (ativ.empreendimento_id === empreendimento.id && ativ.id_atividade && ativ.tempo !== -999) {
+          // Indexar tanto por id_atividade (para lookup por id genérico) como pelo id original
           etapaOverrides.set(ativ.id_atividade, ativ.etapa);
+          etapaOverrides.set(ativ.id, ativ.etapa);
           tempoOverrides.set(ativ.id_atividade, ativ.tempo);
+          tempoOverrides.set(ativ.id, ativ.tempo);
         }
       });
 
