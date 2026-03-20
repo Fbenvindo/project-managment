@@ -351,7 +351,10 @@ export default function DocumentosTab({
       if (atividadesDaEtapa.length === 0) { alert(`Nenhuma atividade encontrada para a etapa "${etapa}".`); return; }
 
       const tempoTotal = atividadesDaEtapa.reduce((total, ativ) => {
-        const tempoBase = tempoOverrides.has(ativ.id) ? parseFloat(tempoOverrides.get(ativ.id)) || 0 : parseFloat(ativ.tempo) || 0;
+        const tempoBaseRaw = tempoOverrides.has(ativ.id) ? parseFloat(tempoOverrides.get(ativ.id)) || 0 : parseFloat(ativ.tempo) || 0;
+        // Multiplicar pela área do pavimento quando a atividade é do catálogo (h/m²) e há pavimento vinculado
+        const ehCatalogo = !ativ.empreendimento_id;
+        const tempoBase = ehCatalogo && areaPavimento ? tempoBaseRaw * areaPavimento : tempoBaseRaw;
         const isConfeccaoA = ativ.atividade && String(ativ.atividade).trim().startsWith('Confecção de A-');
         return total + tempoBase * (isConfeccaoA ? 1 : fatorDificuldade);
       }, 0);
