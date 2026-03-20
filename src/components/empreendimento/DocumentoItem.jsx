@@ -166,9 +166,12 @@ export default function DocumentoItem({
       else tempoBase = tempoBaseOriginal;
 
       const planejamentoAtividade = planejamentosDoDocumento.find(p =>
-        p.atividade_id === atividade.id && p.etapa === etapaFinal && p.tipo_plano === 'atividade' && p.documento_id === doc.id
+        p.atividade_id === atividade.id && p.tipo_plano === 'atividade' && p.documento_id === doc.id &&
+        (p.etapa === etapaFinal || (etapaPadraoEmpreendimento && true))
       );
-      const planejamentoDocDaEtapa = planejamentosDoDocumento.find(p => p.etapa === etapaFinal && p.tipo_plano === 'documento');
+      const planejamentoDocDaEtapa = planejamentosDoDocumento.find(p => 
+        p.tipo_plano === 'documento' && (p.etapa === etapaFinal || etapaPadraoEmpreendimento)
+      );
 
       // Verificar registro em AtividadesEmpreendimento (novo fluxo)
       const atividadeEmpRecord = atividadesEmpCache.find(ae =>
