@@ -147,9 +147,12 @@ export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
       const etapasOrdenadas = {};
       ordemEtapas.forEach(etapa => {
         if (atividadesPorEtapa[etapa]) {
-          etapasOrdenadas[etapa] = atividadesPorEtapa[etapa].sort((a, b) => 
-            a.nome.localeCompare(b.nome, 'pt-BR')
-          );
+          etapasOrdenadas[etapa] = atividadesPorEtapa[etapa].sort((a, b) => {
+            // Ordenar primeiro por disciplina, depois por nome
+            const disciplinaCompare = a.disciplina.localeCompare(b.disciplina, 'pt-BR');
+            if (disciplinaCompare !== 0) return disciplinaCompare;
+            return a.nome.localeCompare(b.nome, 'pt-BR');
+          });
         }
       });
       
