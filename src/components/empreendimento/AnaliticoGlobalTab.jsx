@@ -151,9 +151,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       
       const planejamentosMap = new Map((planejamentosData || []).map(p => [`${(p.documento_id === undefined || p.documento_id === null || p.documento_id === 'null') ? 'null' : p.documento_id}-${p.atividade_id}`, p]));
 
-      // Buscar etapas cadastradas no empreendimento
+      // Buscar etapas cadastradas no empreendimento (filtrar vazias e duplicatas)
       const empreendimento = (empreendimentoData && empreendimentoData[0]) || null;
-      const etapasCadastradas = empreendimento?.etapas || [];
+      const etapasCadastradas = [...new Set((empreendimento?.etapas || []).filter(e => e && e.trim()))];
       
       const normalizedProjectActivities = (activitiesToProcess || [])
         .filter(pa => !pa.id_atividade && pa.tempo !== -999)
