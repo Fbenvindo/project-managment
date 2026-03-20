@@ -228,8 +228,15 @@ export default function DocumentosTab({
               !atividadesExcluidasGlobalChild.has(ativ.id) && !atividadesExcluidasPorDocChild.has(ativ.id)
             );
 
+            const etapasEmpChild = empreendimento?.etapas || [];
+            const mapearEtapaChild = (etapaAtividade) => {
+              if (etapasEmpChild.includes(etapaAtividade)) return etapaAtividade;
+              if (etapasEmpChild.length === 1) return etapasEmpChild[0];
+              return etapaAtividade;
+            };
             const atividadesParaCalculoChild = atividadesGeraisChild.filter(ativ => {
-              const etapaFinal = etapaOverridesChild.has(ativ.id) ? etapaOverridesChild.get(ativ.id) : ativ.etapa;
+              const etapaBase = etapaOverridesChild.has(ativ.id) ? etapaOverridesChild.get(ativ.id) : ativ.etapa;
+              const etapaFinal = mapearEtapaChild(etapaBase);
               return etapaParaPlanejamento === "todas" || etapaFinal === etapaParaPlanejamento;
             });
 
