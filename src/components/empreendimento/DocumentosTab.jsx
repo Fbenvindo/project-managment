@@ -233,8 +233,8 @@ export default function DocumentosTab({
             const etapasEmpChild = empreendimento?.etapas || [];
             const mapearEtapaChild = (etapaAtividade) => {
               if (etapasEmpChild.includes(etapaAtividade)) return etapaAtividade;
-              if (etapasEmpChild.length === 1) return etapasEmpChild[0];
-              return etapaAtividade;
+              // A etapa não existe no empreendimento → mapear para a etapa de planejamento selecionada
+              return etapaParaPlanejamento !== 'todas' ? etapaParaPlanejamento : (etapasEmpChild[0] || etapaAtividade);
             };
             const atividadesParaCalculoChild = atividadesGeraisChild.filter(ativ => {
               const etapaBase = etapaOverridesChild.has(ativ.id) ? etapaOverridesChild.get(ativ.id) : ativ.etapa;
