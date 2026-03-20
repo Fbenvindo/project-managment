@@ -16,6 +16,7 @@ export default function DocumentoForm({
   doc,
   empreendimentoId,
   empreendimentoNome,
+  empreendimento,
   onClose,
   onSave,
   disciplinas = [],
