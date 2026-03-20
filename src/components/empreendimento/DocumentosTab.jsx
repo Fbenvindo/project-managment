@@ -937,7 +937,7 @@ export default function DocumentosTab({
 
       {isDocEtapaModalOpen && documentForDocEtapaModal && (
         <PlanejamentoDocumentoEtapaModal
-          documento={documentForDocEtapaModal}
+          documento={{ ...documentForDocEtapaModal, empreendimento_etapas: empreendimento?.etapas || [] }}
           usuarios={usuariosOrdenados}
           empreendimentoId={empreendimento.id}
           allAtividades={allAtividades}
