@@ -506,6 +506,7 @@ export default function DocumentoForm({
               // Verificar se a atividade deve se repetir POR FOLHA (apenas uma vez para este documento)
               const ehAtividadePorFolha = atividadesPorFolha.some(padrao => nomeAtividade.includes(padrao));
               
+              const etapaMapeada = mapearEtapaParaEmpreendimento(ativ.etapa);
               if (ehAtividadePorFolha) {
                 // Registrar apenas UMA VEZ para este documento
                 await retryWithBackoff(
@@ -513,7 +514,7 @@ export default function DocumentoForm({
                     id_atividade: ativ.id_atividade || ativ.id,
                     empreendimento_id: empreendimentoId,
                     documento_id: savedDoc.id,
-                    etapa: ativ.etapa,
+                    etapa: etapaMapeada,
                     disciplina: ativ.disciplina,
                     subdisciplina: ativ.subdisciplina,
                     atividade: `${ativ.atividade} (Folha ${savedDoc.numero})`,
@@ -525,7 +526,7 @@ export default function DocumentoForm({
                   }),
                   3, 500, `createAtividadeEmp-${ativ.id}-${savedDoc.id}`
                 );
-                console.log(`   ✅ Atividade por folha registrada: ${nomeAtividade}`);
+                console.log(`   ✅ Atividade por folha registrada: ${nomeAtividade} (etapa: ${etapaMapeada})`);
               } else {
                 // Atividade normal - registrar uma vez
                 await retryWithBackoff(
@@ -533,7 +534,7 @@ export default function DocumentoForm({
                     id_atividade: ativ.id_atividade || ativ.id,
                     empreendimento_id: empreendimentoId,
                     documento_id: savedDoc.id,
-                    etapa: ativ.etapa,
+                    etapa: etapaMapeada,
                     disciplina: ativ.disciplina,
                     subdisciplina: ativ.subdisciplina,
                     atividade: ativ.atividade,
