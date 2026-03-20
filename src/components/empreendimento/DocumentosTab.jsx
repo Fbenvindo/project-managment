@@ -245,7 +245,9 @@ export default function DocumentosTab({
             });
 
             const tempoTotalChild = atividadesParaCalculoChild.reduce((total, ativ) => {
-              const tempoBase = tempoOverridesChild.has(ativ.id) ? parseFloat(tempoOverridesChild.get(ativ.id)) || 0 : parseFloat(ativ.tempo) || 0;
+              const tempoBaseRaw = tempoOverridesChild.has(ativ.id) ? parseFloat(tempoOverridesChild.get(ativ.id)) || 0 : parseFloat(ativ.tempo) || 0;
+              const ehCatalogoChild = !ativ.empreendimento_id;
+              const tempoBase = ehCatalogoChild && areaPavimentoChild ? tempoBaseRaw * areaPavimentoChild : tempoBaseRaw;
               const isConfeccaoA = ativ.atividade && String(ativ.atividade).trim().startsWith('Confecção de A-');
               return total + tempoBase * (isConfeccaoA ? 1 : fatorDificuldadeChild);
             }, 0);
