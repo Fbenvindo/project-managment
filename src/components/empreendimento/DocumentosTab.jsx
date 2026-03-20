@@ -332,11 +332,13 @@ export default function DocumentosTab({
       );
 
       // Mapear etapa do catálogo para etapa do empreendimento
+      // Se a etapa original da atividade não existe nas etapas do empreendimento,
+      // mapear para a etapa selecionada para planejamento (todas as atividades entram na etapa escolhida)
       const etapasEmp = empreendimento?.etapas || [];
       const mapearEtapa = (etapaAtividade) => {
         if (etapasEmp.includes(etapaAtividade)) return etapaAtividade;
-        if (etapasEmp.length === 1) return etapasEmp[0];
-        return etapaAtividade;
+        // A etapa não existe no empreendimento → mapear para a etapa de planejamento selecionada
+        return etapa;
       };
 
       const atividadesDaEtapa = atividadesGerais.filter(ativ => {
