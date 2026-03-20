@@ -264,10 +264,12 @@ export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
       const ordemEtapas = ['Concepção', 'Planejamento', 'Estudo Preliminar', 'Ante-Projeto', 'Projeto Básico', 'Projeto Executivo', 'Liberado para Obra'];
       
       ordemEtapas.forEach((etapa, etapaIndex) => {
-        const atividades = atividadesPorEtapa[etapa];
-        if (!atividades || atividades.length === 0) return;
-        // Se a etapa tem 6 ou mais atividades e não é a primeira, começar em nova página
-        if (atividades.length >= 6 && etapaIndex > 0) {
+        const atividadesPorDisciplina = atividadesPorEtapa[etapa];
+        if (!atividadesPorDisciplina || Object.keys(atividadesPorDisciplina).length === 0) return;
+
+        // Se a etapa tem conteúdo e não é a primeira, considerar quebra de página
+        const totalAtividadesEtapa = Object.values(atividadesPorDisciplina).reduce((sum, ativs) => sum + ativs.length, 0);
+        if (totalAtividadesEtapa >= 6 && etapaIndex > 0) {
           pdf.addPage();
           yPos = margin + 30;
         } else {
@@ -281,34 +283,51 @@ export default function PDFListaDesenvolvimento({ empreendimentoId = null }) {
         pdf.text(etapa.toUpperCase(), margin, yPos);
         pdf.setTextColor(0);
         yPos += 8;
-        
-        // Atividades da etapa
-        atividades.forEach(atividade => {
-          checkPageBreak(15);
 
-          // Nome da atividade
+        // Iterar por disciplinas (já ordenadas)
+        Object.entries(atividadesPorDisciplina).forEach(([disciplina, atividades]) => {
+          checkPageBreak(10);
+
+          // Cabeçalho de Disciplina
           pdf.setFont('helvetica', 'bold');
-          pdf.setFontSize(9);
-          const itemNum = `${atividadeCounter}.`;
-          pdf.text(itemNum, margin + 5, yPos);
-          
-          const atividadeWidth = pageWidth - 2 * margin - 15;
-          const linhasAtividade = pdf.splitTextToSize(atividade.nome, atividadeWidth);
-          pdf.text(linhasAtividade, margin + 13, yPos);
-          yPos += linhasAtividade.length * 4 + 2;
-
-          // Disciplina
-          pdf.setFont('helvetica', 'italic');
-          pdf.setFontSize(8);
-          pdf.setTextColor(80);
-          pdf.text(`${atividade.disciplina}${atividade.subdisciplina ? ` - ${atividade.subdisciplina}` : ''}`, margin + 13, yPos);
+          pdf.setFontSize(10);
+          pdf.setTextColor(80, 80, 80);
+          pdf.text(disciplina, margin + 5, yPos);
           pdf.setTextColor(0);
           yPos += 6;
 
-          atividadeCounter++;
+          // Atividades da disciplina
+          atividades.forEach(atividade => {
+            checkPageBreak(15);
+
+            // Nome da atividade
+            pdf.setFont('helvetica', 'normal');
+            pdf.setFontSize(9);
+            const itemNum = `${atividadeCounter}.`;
+            pdf.text(itemNum, margin + 10, yPos);
+
+            const atividadeWidth = pageWidth - 2 * margin - 20;
+            const linhasAtividade = pdf.splitTextToSize(atividade.nome, atividadeWidth);
+            pdf.text(linhasAtividade, margin + 18, yPos);
+            yPos += linhasAtividade.length * 4 + 2;
+
+            // Subdisciplina
+            if (atividade.subdisciplina) {
+              pdf.setFont('helvetica', 'italic');
+              pdf.setFontSize(8);
+              pdf.setTextColor(120);
+              pdf.text(`${atividade.subdisciplina}`, margin + 18, yPos);
+              pdf.setTextColor(0);
+              yPos += 4;
+            }
+
+            atividadeCounter++;
+          });
+
+          yPos += 3;
         });
-        
-        yPos += 5;
+
+        yPos += 2;
       });
 
       // === RODAPÉ ===
