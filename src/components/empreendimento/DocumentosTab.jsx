@@ -200,8 +200,6 @@ export default function DocumentosTab({
             const subdisciplinasChild = child.subdisciplinas || [];
             const disciplinaChild = child.disciplina;
             const fatorDificuldadeChild = child.fator_dificuldade || 1;
-            const pavimentoChild = (pavimentos || []).find(p => p.id === child.pavimento_id);
-            const areaPavimentoChild = pavimentoChild ? Number(pavimentoChild.area) : null;
 
             const etapaOverridesChild = new Map();
             const tempoOverridesChild = new Map();
@@ -245,9 +243,7 @@ export default function DocumentosTab({
             });
 
             const tempoTotalChild = atividadesParaCalculoChild.reduce((total, ativ) => {
-              const tempoBaseRaw = tempoOverridesChild.has(ativ.id) ? parseFloat(tempoOverridesChild.get(ativ.id)) || 0 : parseFloat(ativ.tempo) || 0;
-              const ehCatalogoChild = !ativ.empreendimento_id;
-              const tempoBase = ehCatalogoChild && areaPavimentoChild ? tempoBaseRaw * areaPavimentoChild : tempoBaseRaw;
+              const tempoBase = tempoOverridesChild.has(ativ.id) ? parseFloat(tempoOverridesChild.get(ativ.id)) || 0 : parseFloat(ativ.tempo) || 0;
               const isConfeccaoA = ativ.atividade && String(ativ.atividade).trim().startsWith('Confecção de A-');
               return total + tempoBase * (isConfeccaoA ? 1 : fatorDificuldadeChild);
             }, 0);
@@ -290,10 +286,6 @@ export default function DocumentosTab({
       const subdisciplinasDoc = documento.subdisciplinas || [];
       const disciplinaDoc = documento.disciplina;
       const fatorDificuldade = documento.fator_dificuldade || 1;
-
-      // Calcular área do pavimento para multiplicar h/m²
-      const pavimento = (pavimentos || []).find(p => p.id === documento.pavimento_id);
-      const areaPavimento = pavimento ? Number(pavimento.area) : null;
 
       const etapaOverrides = new Map();
       const tempoOverrides = new Map();
@@ -355,10 +347,7 @@ export default function DocumentosTab({
       if (atividadesDaEtapa.length === 0) { alert(`Nenhuma atividade encontrada para a etapa "${etapa}".`); return; }
 
       const tempoTotal = atividadesDaEtapa.reduce((total, ativ) => {
-        const tempoBaseRaw = tempoOverrides.has(ativ.id) ? parseFloat(tempoOverrides.get(ativ.id)) || 0 : parseFloat(ativ.tempo) || 0;
-        // Multiplicar pela área do pavimento quando a atividade é do catálogo (h/m²) e há pavimento vinculado
-        const ehCatalogo = !ativ.empreendimento_id;
-        const tempoBase = ehCatalogo && areaPavimento ? tempoBaseRaw * areaPavimento : tempoBaseRaw;
+        const tempoBase = tempoOverrides.has(ativ.id) ? parseFloat(tempoOverrides.get(ativ.id)) || 0 : parseFloat(ativ.tempo) || 0;
         const isConfeccaoA = ativ.atividade && String(ativ.atividade).trim().startsWith('Confecção de A-');
         return total + tempoBase * (isConfeccaoA ? 1 : fatorDificuldade);
       }, 0);
