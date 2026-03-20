@@ -287,6 +287,10 @@ export default function DocumentosTab({
       const disciplinaDoc = documento.disciplina;
       const fatorDificuldade = documento.fator_dificuldade || 1;
 
+      // Calcular área do pavimento para multiplicar h/m²
+      const pavimento = (pavimentos || []).find(p => p.id === documento.pavimento_id);
+      const areaPavimento = pavimento ? Number(pavimento.area) : null;
+
       const etapaOverrides = new Map();
       const tempoOverrides = new Map();
       allAtividades.forEach(ativ => {
