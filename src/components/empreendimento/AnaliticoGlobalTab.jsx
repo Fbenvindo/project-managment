@@ -1127,21 +1127,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                      </TableCell>
                                    )}
                                    <TableCell>
-                                     {!ativ.isEditable && (
-                                       <Checkbox
-                                         checked={atividadesSelecionadasParaExcluir.has(ativ.base_atividade_id || ativ.id)}
-                                         onCheckedChange={(checked) => {
-                                           setAtividadesSelecionadasParaExcluir(prev => {
-                                             const newSet = new Set(prev);
-                                             const id = ativ.base_atividade_id || ativ.id;
-                                             if (checked) newSet.add(id);
-                                             else newSet.delete(id);
-                                             return newSet;
-                                           });
-                                         }}
-                                       />
-                                     )}
-                                   </TableCell>
+                                      <Checkbox checked={atividadesSelecionadasParaExcluir.has(ativ.base_atividade_id || ativ.id)} onCheckedChange={(checked) => { setAtividadesSelecionadasParaExcluir(prev => { const newSet = new Set(prev); const id = ativ.base_atividade_id || ativ.id; if (checked) newSet.add(id); else newSet.delete(id); return newSet; }); }} />
+                                    </TableCell>
                                    
                                   <TableCell>
                                     {grupo.folhas.length > 0 && (
@@ -1514,29 +1501,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                     return (
                       <>
                         <TableRow key={key} className="hover:bg-gray-50">
-                          {hasCheckboxColumn && (
-                            <TableCell>
-                              {ativ.isEditable && (
-                                <Checkbox
-                                  checked={selectedIds.has(ativ.uniqueId)}
-                                  onCheckedChange={() => handleSelectItem(ativ.uniqueId)}
-                                  disabled={isDeletingMultiple}
-                                />
-                              )}
-                            </TableCell>
-                          )}
-                          <TableCell>
-                            {grupo.folhas.length > 0 && (
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                onClick={() => toggleAtividadeExpansion(key)}
-                                className="h-8 w-8"
-                              >
-                                {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                              </Button>
-                            )}
-                          </TableCell>
+                          {hasCheckboxColumn && (<TableCell>{ativ.isEditable && (<Checkbox checked={selectedIds.has(ativ.uniqueId)} onCheckedChange={() => handleSelectItem(ativ.uniqueId)} disabled={isDeletingMultiple} />)}</TableCell>)}
+                          <TableCell><Checkbox checked={atividadesSelecionadasParaExcluir.has(ativ.base_atividade_id || ativ.id)} onCheckedChange={(checked) => { setAtividadesSelecionadasParaExcluir(prev => { const ns = new Set(prev); const id = ativ.base_atividade_id || ativ.id; if (checked) ns.add(id); else ns.delete(id); return ns; }); }} /></TableCell>
+                          <TableCell>{grupo.folhas.length > 0 && (<Button variant="ghost" size="icon" onClick={() => toggleAtividadeExpansion(key)} className="h-8 w-8">{isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</Button>)}</TableCell>
                           <TableCell className="font-medium">
                             <div>{String(ativ.atividade || '')}</div>
                             {ativ.subdisciplina && <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded mt-0.5 inline-block">{ativ.subdisciplina}</span>}
@@ -2940,14 +2907,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
         for (const ativ of atividadesEncontradas) {
           const atividadeId = ativ.base_atividade_id || ativ.id;
-          
-          const atividadeOriginalArr = await retryWithBackoff(
-            () => Atividade.filter({ id: atividadeId }),
-            3, 500, `getActivityForGlobalDelete-${atividadeId}`
-          );
-
+          if (ativ.isEditable) { await retryWithBackoff(() => Atividade.delete(atividadeId), 3, 500, `deleteEditable-${atividadeId}`); deletados++; continue; }
+          const atividadeOriginalArr = await retryWithBackoff(() => Atividade.filter({ id: atividadeId }), 3, 500, `getActivityForGlobalDelete-${atividadeId}`);
           if (!atividadeOriginalArr || atividadeOriginalArr.length === 0) continue;
-
           const atividadeOriginal = atividadeOriginalArr[0];
           
           const existingMarkers = await retryWithBackoff(
