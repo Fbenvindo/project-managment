@@ -156,3 +156,13 @@ button:focus-visible {
     @apply bg-background text-foreground;
   }
 }
+
+/* Align table checkboxes to the left */
+table tbody td:has(input[role="checkbox"]) {
+  padding-left: 0 !important;
+  padding-right: 0.5rem !important;
+}
+
+table tbody td input[role="checkbox"] {
+  margin-left: 0.5rem !important;
+}
