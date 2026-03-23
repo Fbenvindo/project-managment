@@ -1127,7 +1127,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                                      </TableCell>
                                    )}
                                    <TableCell>
-                                      <Checkbox checked={atividadesSelecionadasParaExcluir.has(ativ.base_atividade_id || ativ.id)} onCheckedChange={(checked) => { setAtividadesSelecionadasParaExcluir(prev => { const newSet = new Set(prev); const id = ativ.base_atividade_id || ativ.id; if (checked) newSet.add(id); else newSet.delete(id); return newSet; }); }} />
+                                      {!ativ.isEditable && <Checkbox checked={atividadesSelecionadasParaExcluir.has(ativ.base_atividade_id || ativ.id)} onCheckedChange={(checked) => { setAtividadesSelecionadasParaExcluir(prev => { const newSet = new Set(prev); const id = ativ.base_atividade_id || ativ.id; if (checked) newSet.add(id); else newSet.delete(id); return newSet; }); }} />}
                                     </TableCell>
                                    
                                   <TableCell>
@@ -1502,7 +1502,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
                       <>
                         <TableRow key={key} className="hover:bg-gray-50">
                           {hasCheckboxColumn && (<TableCell>{ativ.isEditable && (<Checkbox checked={selectedIds.has(ativ.uniqueId)} onCheckedChange={() => handleSelectItem(ativ.uniqueId)} disabled={isDeletingMultiple} />)}</TableCell>)}
-                          <TableCell><Checkbox checked={atividadesSelecionadasParaExcluir.has(ativ.base_atividade_id || ativ.id)} onCheckedChange={(checked) => { setAtividadesSelecionadasParaExcluir(prev => { const ns = new Set(prev); const id = ativ.base_atividade_id || ativ.id; if (checked) ns.add(id); else ns.delete(id); return ns; }); }} /></TableCell>
+                          <TableCell>{!ativ.isEditable && <Checkbox checked={atividadesSelecionadasParaExcluir.has(ativ.base_atividade_id || ativ.id)} onCheckedChange={(checked) => { setAtividadesSelecionadasParaExcluir(prev => { const ns = new Set(prev); const id = ativ.base_atividade_id || ativ.id; if (checked) ns.add(id); else ns.delete(id); return ns; }); }} />}</TableCell>
                           <TableCell>{grupo.folhas.length > 0 && (<Button variant="ghost" size="icon" onClick={() => toggleAtividadeExpansion(key)} className="h-8 w-8">{isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</Button>)}</TableCell>
                           <TableCell className="font-medium">
                             <div>{String(ativ.atividade || '')}</div>
