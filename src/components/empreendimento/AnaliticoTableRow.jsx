@@ -37,16 +37,14 @@ export default function AnaliticoTableRow({
   if (ativ.isEditable) {
     return (
       <TableRow key={key} className="hover:bg-gray-50">
-        {hasCheckboxColumn && (
-          <TableCell>
-            <Checkbox
-              checked={selectedIds.has(ativ.uniqueId)}
-              onCheckedChange={() => onSelectItem(ativ.uniqueId)}
-              disabled={isDeletingMultiple}
-            />
-          </TableCell>
-        )}
-        <TableCell colSpan="2">
+        <TableCell>
+          <Checkbox
+            checked={selectedIds.has(ativ.uniqueId)}
+            onCheckedChange={() => onSelectItem(ativ.uniqueId)}
+            disabled={isDeletingMultiple}
+          />
+        </TableCell>
+        <TableCell>
           {grupo.folhas.length > 0 && (
             <Button 
               variant="ghost" 
