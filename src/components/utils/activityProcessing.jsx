@@ -57,7 +57,7 @@ export function processDocumentationActivities(
         });
       });
     } else {
-      // Se não há planejamento, criar uma linha para CADA etapa cadastrada
+      // Se não há planejamento, verificar se a etapa original existe nas etapas cadastradas
       const executorPrincipal = override
         ? override.executor_principal
         : baseAtividade.executor_principal;
@@ -65,9 +65,14 @@ export function processDocumentationActivities(
         override?.tempo !== undefined && override?.tempo !== null
           ? override.tempo
           : baseAtividade.tempo || 0;
-      const etapasParaExpandir = etapasCadastradas.length > 0
-        ? etapasCadastradas
-        : [baseAtividade.etapa];
+      
+      // Se a etapa original da atividade existe nas etapas cadastradas, usar só ela
+      // Senão, expandir para todas as etapas cadastradas
+      const etapaOriginal = baseAtividade.etapa;
+      const etapaExisteNasCadastradas = etapasCadastradas.includes(etapaOriginal);
+      const etapasParaExpandir = etapaExisteNasCadastradas
+        ? [etapaOriginal]
+        : (etapasCadastradas.length > 0 ? etapasCadastradas : [baseAtividade.etapa]);
 
       etapasParaExpandir.forEach((etapa, idx) => {
         const etapaCorreta = override ? override.etapa : etapa;
@@ -240,18 +245,23 @@ export function processDocumentActivities(
           });
         });
       } else {
-        // Sem planejamento, criar uma linha para CADA etapa cadastrada
+        // Sem planejamento, verificar se a etapa original existe nas etapas cadastradas
         const tempoComOverride =
           override?.tempo !== undefined && override?.tempo !== null
             ? override.tempo
             : baseAtividade.tempo || 0;
         const tempoFinal = tempoComOverride * fatorDificuldade;
-        const etapasParaExpandir = etapasCadastradas.length > 0
-          ? etapasCadastradas
-          : [baseAtividade.etapa];
         const executorPrincipal = override
           ? override.executor_principal
           : baseAtividade.executor_principal;
+
+        // Se a etapa original da atividade existe nas etapas cadastradas, usar só ela
+        // Senão, expandir para todas as etapas cadastradas
+        const etapaOriginal = baseAtividade.etapa;
+        const etapaExisteNasCadastradas = etapasCadastradas.includes(etapaOriginal);
+        const etapasParaExpandir = etapaExisteNasCadastradas
+          ? [etapaOriginal]
+          : (etapasCadastradas.length > 0 ? etapasCadastradas : [baseAtividade.etapa]);
 
         etapasParaExpandir.forEach((etapa, idx) => {
           const etapaCorreta = override ? override.etapa : etapa;
