@@ -181,7 +181,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
               const planKey = null; // Sem documento específico, para atividades genéricas
               const existingPlan = planejamentosMap.get(planKey);
 
-              if (existingPlan) {);
+              if (existingPlan) {
                                     return newSet;
                                   });
                                 }}
