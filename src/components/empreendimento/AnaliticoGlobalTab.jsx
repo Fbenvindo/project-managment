@@ -18,6 +18,7 @@ import { retryWithBackoff, retryWithExtendedBackoff } from '../utils/apiUtils';
 import { Checkbox } from "@/components/ui/checkbox";
 import { base44 } from '@/api/base44Client';
 import PDFListaDesenvolvimento from '../configuracoes/PDFListaDesenvolvimento';
+import { processDocumentationActivities, processDocumentActivities } from '../utils/activityProcessing';
 import { getNextWorkingDay, distribuirHorasPorDias, isWorkingDay, calculateEndDate, ensureWorkingDay } from '../utils/DateCalculator';
 import { format, isValid, parseISO, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
@@ -170,177 +171,25 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
       const atividadesDocumentacao = [];
       
-      allGenericActivitiesMap.forEach(baseAtividade => {
-        if (disciplinasDocumentacao.includes(baseAtividade.disciplina)) {
-          const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
-          if (!isExcludedFromProject) {
-            const override = overrideActivitiesGlobalMap.get(baseAtividade.id);
-            const etapaBase = etapasCadastradas.length > 0 ? etapasCadastradas[0] : baseAtividade.etapa;
-            const etapaCorreta = override ? override.etapa : etapaBase;
-            
-            // Verificar se existe planejamento geral (sem documento_id) para esta atividade
-            const planKey = `null-${baseAtividade.id}`;
-            const existingPlan = planejamentosMap.get(planKey);
-            
-            if (existingPlan) {
-              // Se há planejamento geral, mostrar como "Planejada" ou "Concluída"
-              atividadesDocumentacao.push({
-                ...baseAtividade,
-                id: existingPlan.id,
-                uniqueId: `plano-${existingPlan.id}`,
-                atividade: existingPlan.descritivo || baseAtividade.atividade,
-                tempo: existingPlan.tempo_planejado,
-                source: 'Catálogo',
-                source_documento_id: null,
-                status: existingPlan.status === 'concluido' ? 'Concluída' : 'Planejada',
-                isEditable: false,
-                etapa: existingPlan.etapa || etapaCorreta,
-                executor_principal: existingPlan.executor_principal,
-                base_atividade_id: baseAtividade.id,
-              });
-            } else {
-              // Se não há planejamento, mostrar como "Disponível"
-               const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
+      const atividadesDocumentacao = processDocumentationActivities(
+        allGenericActivitiesMap,
+        planejamentosData,
+        etapasCadastradas,
+        overrideActivitiesGlobalMap,
+        excludedActivitiesSet
+      );
 
-               // Aplicar override de tempo se existir
-               const tempoFinal = override?.tempo !== undefined && override?.tempo !== null 
-                 ? override.tempo 
-                 : (baseAtividade.tempo || 0);
-
-               atividadesDocumentacao.push({
-                 ...baseAtividade,
-                 uniqueId: `doc-${baseAtividade.id}`,
-                 id: baseAtividade.id,
-                 tempo: tempoFinal,
-                 source: 'Catálogo',
-                 source_documento_id: null,
-                 status: 'Disponível',
-                 isEditable: false,
-                 etapa: etapaCorreta,
-                 executor_principal: executorPrincipal,
-                 base_atividade_id: baseAtividade.id,
-               });
-            }
-          }
-        }
-      });
-
-      let documentActivities = [];
-      (documentosData || []).forEach(doc => {
-        const subdisciplinasDoc = doc.subdisciplinas || [];
-        const disciplinasDoc = doc.disciplinas?.length > 0 ? doc.disciplinas : [doc.disciplina].filter(Boolean);
-        const fatorDificuldade = doc.fator_dificuldade || 1;
-
-        // Adicionar atividades específicas vinculadas a este documento
-        const atividadesVinculadasDoc = (projectActivities || []).filter(pa => 
-          pa.documento_id === doc.id && 
-          !pa.id_atividade && 
-          pa.tempo !== -999
-        );
-        
-        atividadesVinculadasDoc.forEach(atividadeVinculada => {
-          const planKey = `${doc.id}-${atividadeVinculada.id}`;
-          const existingPlan = planejamentosMap.get(planKey);
-          const sourceDisplay = `Folha: ${doc.numero} - ${doc.arquivo || 'Sem Nome'}`;
-          
-          if (existingPlan) {
-            documentActivities.push({
-              ...atividadeVinculada,
-              id: existingPlan.id,
-              uniqueId: `plano-${existingPlan.id}`,
-              atividade: existingPlan.descritivo || atividadeVinculada.atividade,
-              tempo: existingPlan.tempo_planejado,
-              source: sourceDisplay,
-              source_documento_id: doc.id,
-              source_documento_numero: doc.numero,
-              source_documento_arquivo: doc.arquivo,
-              status: existingPlan.status === 'concluido' ? 'Concluída' : 'Planejada',
-              isEditable: false,
-              etapa: existingPlan.etapa || atividadeVinculada.etapa,
-              executor_principal: existingPlan.executor_principal,
-              base_atividade_id: atividadeVinculada.id,
-            });
-          } else {
-            documentActivities.push({
-              ...atividadeVinculada,
-              uniqueId: `avail-${doc.id}-${atividadeVinculada.id}`,
-              id: atividadeVinculada.id,
-              tempo: atividadeVinculada.tempo || 0,
-              source: sourceDisplay,
-              source_documento_id: doc.id,
-              source_documento_numero: doc.numero,
-              source_documento_arquivo: doc.arquivo,
-              status: 'Disponível',
-              isEditable: false,
-              etapa: atividadeVinculada.etapa,
-              base_atividade_id: atividadeVinculada.id,
-            });
-          }
-        });
-        
-        allGenericActivitiesMap.forEach(baseAtividade => {
-          const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
-          const isExcludedFromThisDoc = excludedFromDocumentMap.has(baseAtividade.id) && excludedFromDocumentMap.get(baseAtividade.id).has(doc.id);
-          if (isExcludedFromProject || isExcludedFromThisDoc) return;
-
-          const disciplinaMatch = disciplinasDoc.includes(baseAtividade.disciplina);
-          const subdisciplinaMatch = subdisciplinasDoc.includes(baseAtividade.subdisciplina);
-
-          if (disciplinaMatch && subdisciplinaMatch) {
-            const planKey = `${doc.id}-${baseAtividade.id}`;
-            const existingPlan = planejamentosMap.get(planKey);
-            const overrideKey = `${doc.id}|${baseAtividade.id}`;
-            const override = overrideActivitiesByDocMap.get(overrideKey) || overrideActivitiesGlobalMap.get(baseAtividade.id);
-            // Se empreendimento tem etapas cadastradas, usar a primeira como padrão para atividades sem override
-            const etapaBase = etapasCadastradas.length > 0 ? etapasCadastradas[0] : baseAtividade.etapa;
-            const etapaCorreta = override ? override.etapa : etapaBase;
-            const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
-
-            const sourceDisplay = `Folha: ${doc.numero} - ${doc.arquivo || 'Sem Nome'}`;
-
-            if (existingPlan) {
-                documentActivities.push({
-                  ...baseAtividade,
-                  id: existingPlan.id,
-                  uniqueId: `plano-${existingPlan.id}`,
-                  atividade: existingPlan.descritivo || baseAtividade.atividade,
-                  tempo: existingPlan.tempo_planejado,
-                  source: sourceDisplay,
-                  source_documento_id: doc.id,
-                  source_documento_numero: doc.numero,
-                  source_documento_arquivo: doc.arquivo,
-                  status: existingPlan.status === 'concluido' ? 'Concluída' : 'Planejada',
-                  isEditable: false,
-                  etapa: existingPlan.etapa || etapaCorreta,
-                  executor_principal: existingPlan.executor_principal || executorPrincipal,
-                  base_atividade_id: baseAtividade.id,
-                });
-              } else {
-                // Aplicar override de tempo se existir
-                const tempoComOverride = override?.tempo !== undefined && override?.tempo !== null
-                  ? override.tempo
-                  : (baseAtividade.tempo || 0);
-                const tempoFinal = tempoComOverride * fatorDificuldade;
-
-                documentActivities.push({
-                    ...baseAtividade,
-                    uniqueId: `avail-${doc.id}-${baseAtividade.id}`,
-                    id: baseAtividade.id,
-                    tempo: tempoFinal,
-                    source: sourceDisplay,
-                    source_documento_id: doc.id,
-                    source_documento_numero: doc.numero,
-                    source_documento_arquivo: doc.arquivo,
-                    status: 'Disponível',
-                    isEditable: false,
-                    etapa: etapaCorreta,
-                    executor_principal: executorPrincipal,
-                    base_atividade_id: baseAtividade.id,
-                  });
-              }
-          }
-        });
-      });
+      const documentActivities = processDocumentActivities(
+        documentosData,
+        allGenericActivitiesMap,
+        planejamentosData,
+        etapasCadastradas,
+        projectActivities,
+        overrideActivitiesByDocMap,
+        overrideActivitiesGlobalMap,
+        excludedActivitiesSet,
+        excludedFromDocumentMap
+      );
 
       setCombinedActivities([...normalizedProjectActivities, ...documentActivities, ...atividadesDocumentacao]);
       setDisciplinas(disciplinasData || []);
