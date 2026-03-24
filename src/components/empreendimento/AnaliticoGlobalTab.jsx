@@ -168,9 +168,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       }));
 
       // Adicionar atividades de Documentação (sempre visíveis)
-      const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
-      const atividadesDocumentacao = [];
-      
       const atividadesDocumentacao = processDocumentationActivities(
         allGenericActivitiesMap,
         planejamentosData,
