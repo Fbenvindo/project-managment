@@ -79,18 +79,7 @@ export function processDocumentationActivities(
         
         atividadesDocumentacao.push({
           ...baseAtividade,
-          uniqueId: `doc-${baseAtividade.id}-${idx}`,
-          id: baseAtividade.id,
-          tempo: tempoFinal,
-          source: 'Catálogo',
-          source_documento_id: null,
-          status: 'Disponível',
-          isEditable: false,
-          etapa: etapaCorreta,
-          executor_principal: executorPrincipal,
-          base_atividade_id: baseAtividade.id
-        });
-      });
+          uniqueId: `doc-${baseAtividade.id}-${etapa}-${idx}`,
     }
   });
 
@@ -268,20 +257,7 @@ export function processDocumentActivities(
           
           documentActivities.push({
             ...baseAtividade,
-            uniqueId: `avail-${doc.id}-${baseAtividade.id}-${idx}`,
-            id: baseAtividade.id,
-            tempo: tempoFinal,
-            source: sourceDisplay,
-            source_documento_id: doc.id,
-            source_documento_numero: doc.numero,
-            source_documento_arquivo: doc.arquivo,
-            status: 'Disponível',
-            isEditable: false,
-            etapa: etapaCorreta,
-            executor_principal: executorPrincipal,
-            base_atividade_id: baseAtividade.id
-          });
-        });
+            uniqueId: `avail-${doc.id}-${baseAtividade.id}-${etapa}-${idx}`,
       }
     });
   });
