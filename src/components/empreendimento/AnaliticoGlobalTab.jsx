@@ -179,381 +179,162 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
               const etapaBase = etapasCadastradas.includes(baseAtividade.etapa) ? baseAtividade.etapa : etapasCadastradas.length > 0 ? null : baseAtividade.etapa;
               const etapaCorreta = override ? override.etapa : etapaBase;
               const planKey = null; // Sem documento específico, para atividades genéricas
-              const existingPlan = planejamentosMap.get(planKey);
+              const existingPlan = planejamentos.find(p => p.atividade_id === baseAtividade.id && !p.documento_id && p.empreendimento_id === empreendimentoId);
 
               if (existingPlan) {
-                                    return newSet;
-                                  });
-                                }}
-                              />
-                            </TableHead>
-                            <TableHead className="w-[50px]"></TableHead>
-                            <TableHead>Atividade</TableHead>
-                            <TableHead>Folhas</TableHead>
-                            <TableHead>Status</TableHead>
-                            <TableHead>Etapa</TableHead>
-                            <TableHead>Executor</TableHead>
-                            <TableHead>Datas Planejadas</TableHead>
-                            <TableHead>Tempo Padrão</TableHead>
-                            <TableHead>Tempo Total</TableHead>
-                            <TableHead className="text-center w-[120px]">Ações</TableHead>
-                            <TableHead className="w-[50px]"></TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {atividadesSubgrupo.map(grupo => {
-                            const ativ = grupo.baseAtividade;
-                            const key = `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.disciplina}-${ativ.subdisciplina}`;
-                            const isExpanded = expandedAtividades[key];
-                            const genericAtividadeIdToExclude = ativ.base_atividade_id || ativ.id;
-                            const isDeleting = isDeletingActivity[genericAtividadeIdToExclude];
+                atividadesDocumentacao.push({ ...baseAtividade, id: existingPlan.id, uniqueId: `plano-${existingPlan.id}`, atividade: existingPlan.descritivo || baseAtividade.atividade, tempo: existingPlan.tempo_planejado, source: 'Catálogo', source_documento_id: null, status: existingPlan.status === 'concluido' ? 'Concluída' : 'Planejada', isEditable: false, etapa: existingPlan.etapa || etapaCorreta, executor_principal: existingPlan.executor_principal, base_atividade_id: baseAtividade.id });
+              } else {
+                const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
+                const tempoFinal = override?.tempo !== undefined && override?.tempo !== null ? override.tempo : (baseAtividade.tempo || 0);
+                atividadesDocumentacao.push({ ...baseAtividade, uniqueId: `doc-${baseAtividade.id}`, id: baseAtividade.id, tempo: tempoFinal, source: 'Catálogo', source_documento_id: null, status: 'Disponível', isEditable: false, etapa: etapaCorreta, executor_principal: executorPrincipal, base_atividade_id: baseAtividade.id });
+              }
+              }
+              }
+              }
+              });
 
-                            return (
-                              <>
-                                <TableRow key={key} className="hover:bg-gray-50">
-                                   {hasCheckboxColumn && (
-                                     <TableCell>
-                                       {ativ.isEditable && (
-                                         <Checkbox
-                                           checked={selectedIds.has(ativ.uniqueId)}
-                                           onCheckedChange={() => handleSelectItem(ativ.uniqueId)}
-                                           disabled={isDeletingMultiple}
-                                         />
-                                       )}
-                                     </TableCell>
-                                   )}
-                                   <TableCell>
-                                      {!ativ.isEditable && <Checkbox checked={atividadesSelecionadasParaExcluir.has(ativ.base_atividade_id || ativ.id)} onCheckedChange={(checked) => { setAtividadesSelecionadasParaExcluir(prev => { const newSet = new Set(prev); const id = ativ.base_atividade_id || ativ.id; if (checked) newSet.add(id); else newSet.delete(id); return newSet; }); }} />}
-                                    </TableCell>
-                                   
-                                  <TableCell>
-                                    {grupo.folhas.length > 0 && (
-                                      <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        onClick={() => toggleAtividadeExpansion(key)}
-                                        className="h-8 w-8"
-                                      >
-                                        {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                                      </Button>
-                                    )}
-                                  </TableCell>
-                                  <TableCell className="font-medium text-sm">
-                                    <div>{String(ativ.atividade || '')}</div>
-                                    {ativ.subdisciplina && <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded mt-0.5 inline-block">{ativ.subdisciplina}</span>}
-                                  </TableCell>
-                                  <TableCell><Badge variant="outline">{grupo.folhas.length} {grupo.folhas.length === 1 ? 'folha' : 'folhas'}</Badge></TableCell>
-                                  <TableCell>
-                                    {grupo.folhas.length === 0 ? (
-                                      ativ.source === 'Projeto' ? <Badge>Projeto</Badge> : ativ.status === 'Concluída' ? <Badge className="bg-blue-600 text-white flex items-center gap-1 w-fit"><CheckCircle2 className="w-4 h-4"/>Concluída</Badge> : ativ.status === 'Planejada' ? <Badge className="bg-green-600 text-white flex items-center gap-1 w-fit"><CheckCircle2 className="w-4 h-4"/>Planejada</Badge> : <Badge variant="secondary">Disponível</Badge>
-                                    ) : (<div className="flex gap-1">{grupo.folhas.some(f=>f.status==='Concluída')&&<Badge className="bg-blue-600 text-white font-semibold shadow-md flex items-center gap-1 w-fit"><CheckCircle2 className="w-4 h-4"/>Concluída</Badge>}{grupo.folhas.some(f=>f.status==='Planejada')&&<Badge className="bg-green-600 text-white font-semibold shadow-md flex items-center gap-1 w-fit"><CheckCircle2 className="w-4 h-4"/>Planejada</Badge>}{grupo.folhas.some(f=>f.status==='Disponível')&&<Badge variant="outline" className="text-gray-600">Disponível</Badge>}</div>)}
-                                    </TableCell>
-                                  <TableCell className="text-sm">
-                                    <button onClick={() => handleOpenEtapaModal(ativ)} className="text-blue-600 hover:text-blue-800 hover:underline font-medium cursor-pointer" title="Clique para editar a etapa">{ativ.etapa}</button>
-                                  </TableCell>
-                                  <TableCell>
-                                    <div className="w-[210px]">
-                                    {ativ.executor_principal ? (
-                                      <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
-                                        <div className="flex items-center gap-1">
-                                          <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                                          <span className="text-xs font-medium text-green-800">
-                                            {usuarios.find(u => u.email === ativ.executor_principal)?.nome || ativ.executor_principal}
-                                          </span>
-                                        </div>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          onClick={() => handleSaveExecutor(ativ, "")}
-                                          className="text-xs text-red-600 hover:text-red-700 h-6"
-                                          disabled={isSavingExecutor[genericAtividadeIdToExclude]}
-                                        >
-                                          Remover
-                                        </Button>
-                                      </div>
-                                    ) : (
-                                      <div className="flex gap-1">
-                                        <Checkbox
-                                          checked={atividadesSelecionadasParaPlanejar.has(genericAtividadeIdToExclude)}
-                                          onCheckedChange={(checked) => {
-                                            setAtividadesSelecionadasParaPlanejar(prev => {
-                                              const newSet = new Set(prev);
-                                              if (checked) {
-                                                newSet.add(genericAtividadeIdToExclude);
-                                              } else {
-                                                newSet.delete(genericAtividadeIdToExclude);
-                                              }
-                                              return newSet;
-                                            });
-                                          }}
-                                          disabled={isSavingExecutor[genericAtividadeIdToExclude]}
-                                        />
-                                        <Select
-                                          onValueChange={(value) => {
-                                            if (atividadesSelecionadasParaPlanejar.size > 0 && atividadesSelecionadasParaPlanejar.has(genericAtividadeIdToExclude)) {
-                                              handlePlanejarMultiplas(value, datasInicio[genericAtividadeIdToExclude]);
-                                            } else {
-                                              handleSaveExecutor(ativ, value, datasInicio[genericAtividadeIdToExclude]);
-                                            }
-                                          }}
-                                          disabled={isSavingExecutor[genericAtividadeIdToExclude]}
-                                        >
-                                          <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
-                                            <Users2 className="w-3 h-3 mr-1" />
-                                            <SelectValue placeholder="Selecionar Executor" />
-                                          </SelectTrigger>
-                                          <SelectContent>
-                                            {usuarios
-                                              .filter(u => u.status === 'ativo')
-                                              .sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))
-                                              .map(u => (
-                                                <SelectItem key={u.email} value={u.email} className="text-xs">
-                                                  {u.nome || u.email}
-                                                </SelectItem>
-                                              ))}
-                                          </SelectContent>
-                                        </Select>
-                                        <Popover>
-                                          <PopoverTrigger asChild>
-                                            <Button
-                                              variant="outline"
-                                              size="icon"
-                                              className={`h-7 w-7 ${datasInicio[genericAtividadeIdToExclude] ? 'border-green-500 text-green-600' : ''}`}
-                                              disabled={isSavingExecutor[genericAtividadeIdToExclude]}
-                                            >
-                                              <Calendar className="w-3 h-3" />
-                                            </Button>
-                                          </PopoverTrigger>
-                                          <PopoverContent className="w-auto p-0" align="start">
-                                            <CalendarComponent
-                                              mode="single"
-                                              selected={datasInicio[genericAtividadeIdToExclude]}
-                                              onSelect={(date) => setDatasInicio(prev => ({ ...prev, [genericAtividadeIdToExclude]: date }))}
-                                              disabled={(date) => date < new Date(new Date().setHours(0, 0, 0, 0))}
-                                              locale={ptBR}
-                                            />
-                                            {datasInicio[genericAtividadeIdToExclude] && (
-                                              <div className="p-2 border-t">
-                                                <Button
-                                                  variant="ghost"
-                                                  size="sm"
-                                                  onClick={() => setDatasInicio(prev => ({ ...prev, [genericAtividadeIdToExclude]: null }))}
-                                                  className="w-full text-xs"
-                                                >
-                                                  Limpar Data
-                                                </Button>
-                                              </div>
-                                            )}
-                                          </PopoverContent>
-                                        </Popover>
-                                      </div>
-                                    )}
-                                    {isSavingExecutor[genericAtividadeIdToExclude] && (
-                                      <div className="flex items-center gap-1 text-xs text-blue-600 mt-1">
-                                        <Loader2 className="w-3 h-3 animate-spin" />
-                                        Planejando...
-                                      </div>
-                                    )}
-                                    </div>
-                                    </TableCell>
-                                      <TableCell>
-                                        {datasInicio[genericAtividadeIdToExclude] ? (
-                                          <div className="flex items-center gap-1 text-blue-600 text-xs">
-                                            <Calendar className="w-3 h-3" />
-                                            <span>Início: {format(datasInicio[genericAtividadeIdToExclude], 'dd/MM/yyyy')}</span>
-                                          </div>
-                                        ) : grupo.folhas.some(f => f.status === 'Planejada') ? (
-                                          (() => {
-                                            const folhasPlanejadas = grupo.folhas.filter(f => f.status === 'Planejada');
-                                            const planejamentosComDatas = folhasPlanejadas
-                                              .map(f => planejamentos?.find(p => 
-                                                p.documento_id === f.source_documento_id && 
-                                                p.atividade_id === f.base_atividade_id
-                                              ))
-                                              .filter(p => p?.inicio_planejado && p?.termino_planejado);
+              let documentActivities = [];
+              (documentosData || []).forEach(doc => {
+              const subdisciplinasDoc = doc.subdisciplinas || [];
+              const disciplinasDoc = doc.disciplinas?.length > 0 ? doc.disciplinas : [doc.disciplina].filter(Boolean);
+              const fatorDificuldade = doc.fator_dificuldade || 1;
 
-                                            if (planejamentosComDatas.length > 0) {
-                                              const datas = planejamentosComDatas.map(p => ({
-                                                inicio: parseISO(p.inicio_planejado),
-                                                termino: parseISO(p.termino_planejado)
-                                              }));
+              const atividadesVinculadasDoc = (projectActivities || []).filter(pa => pa.documento_id === doc.id && !pa.id_atividade && pa.tempo !== -999);
 
-                                              const dataInicio = datas.reduce((min, d) => d.inicio < min ? d.inicio : min, datas[0].inicio);
-                                              const dataTermino = datas.reduce((max, d) => d.termino > max ? d.termino : max, datas[0].termino);
+              atividadesVinculadasDoc.forEach(atividadeVinculada => {
+              const planKey = `${doc.id}-${atividadeVinculada.id}`;
+              const existingPlan = planejamentosMap.get(planKey);
+              const sourceDisplay = `Folha: ${doc.numero} - ${doc.arquivo || 'Sem Nome'}`;
+              if (existingPlan) {
+              documentActivities.push({ ...atividadeVinculada, id: existingPlan.id, uniqueId: `plano-${existingPlan.id}`, atividade: existingPlan.descritivo || atividadeVinculada.atividade, tempo: existingPlan.tempo_planejado, source: sourceDisplay, source_documento_id: doc.id, source_documento_numero: doc.numero, source_documento_arquivo: doc.arquivo, status: existingPlan.status === 'concluido' ? 'Concluída' : 'Planejada', isEditable: false, etapa: existingPlan.etapa || atividadeVinculada.etapa, executor_principal: existingPlan.executor_principal, base_atividade_id: atividadeVinculada.id });
+              } else {
+              documentActivities.push({ ...atividadeVinculada, uniqueId: `avail-${doc.id}-${atividadeVinculada.id}`, id: atividadeVinculada.id, tempo: atividadeVinculada.tempo || 0, source: sourceDisplay, source_documento_id: doc.id, source_documento_numero: doc.numero, source_documento_arquivo: doc.arquivo, status: 'Disponível', isEditable: false, etapa: atividadeVinculada.etapa, base_atividade_id: atividadeVinculada.id });
+              }
+              });
 
-                                              return (
-                                                <div className="flex items-center gap-1 text-gray-600 text-xs">
-                                                  <Calendar className="w-3 h-3" />
-                                                  <span>{format(dataInicio, 'dd/MM')} - {format(dataTermino, 'dd/MM')}</span>
-                                                </div>
-                                              );
-                                            }
-                                            return <span className="text-xs text-gray-400">-</span>;
-                                          })()
-                                        ) : (
-                                          <span className="text-xs text-gray-400">-</span>
-                                        )}
-                                      </TableCell>
-                                      <TableCell className="text-sm">{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</TableCell>
-                                      <TableCell className="text-sm font-semibold text-blue-600">
-                                    {grupo.folhas.length > 0 
-                                      ? `${grupo.folhas.reduce((sum, f) => sum + (Number(f.tempo) || 0), 0).toFixed(1)}h`
-                                      : '-'}
-                                  </TableCell>
-                                  <TableCell className="text-center">
-                                    {!ativ.isEditable && (
-                                      <div className="flex items-center gap-2 justify-center">
-                                        <Button 
-                                          size="icon" 
-                                          onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)}
-                                          variant="outline"
-                                          className="border-blue-500 text-blue-600 hover:bg-blue-50"
-                                          title="Editar Etapa"
-                                        >
-                                          <Edit2 className="w-4 h-4" />
-                                        </Button>
-                                        <Button 
-                                          size="icon" 
-                                          onClick={() => handleConcluirEmTodasFolhas(ativ)}
-                                          variant="outline"
-                                          className="border-green-500 text-green-600 hover:bg-green-50"
-                                          disabled={isConcluindo[genericAtividadeIdToExclude]}
-                                          title="Concluir em Todas as Folhas"
-                                        >
-                                          {isConcluindo[genericAtividadeIdToExclude] ? (
-                                            <Loader2 className="w-4 h-4 animate-spin" />
-                                          ) : (
-                                            <CheckCircle className="w-4 h-4" />
-                                          )}
-                                        </Button>
-                                        <Button 
-                                          size="icon" 
-                                          onClick={() => handleOpenExcluirDeFolhasModal(ativ)}
-                                          variant="outline"
-                                          className="border-orange-500 text-orange-600 hover:bg-orange-50"
-                                          disabled={isDeleting}
-                                          title="Excluir de Folhas Específicas"
-                                        >
-                                          {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileX className="w-4 h-4" />}
-                                        </Button>
-                                        <Button 
-                                          size="icon" 
-                                          onClick={() => handleExcluirAtividade(ativ)}
-                                          variant="outline"
-                                          className="border-red-500 text-red-600 hover:bg-red-50 shadow-sm"
-                                          disabled={isDeleting}
-                                          title="Excluir de Todas as Folhas do Empreendimento"
-                                        >
-                                          {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
-                                        </Button>
-                                      </div>
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="icon" disabled={isDeleting || isDeletingMultiple}>
-                                          {isDeleting || isDeletingMultiple ? <Loader2 className="w-4 h-4 animate-spin" /> : <MoreHorizontal className="w-4 h-4" />}
-                                        </Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent>
-                                        {ativ.isEditable ? (
-                                          <>
-                                            <DropdownMenuItem onClick={() => handleOpenModal(ativ)}>
-                                              <Edit className="w-4 h-4 mr-2" /> Editar Atividade
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem onClick={() => handleDelete(ativ.id)} className="text-red-600">
-                                              <Trash2 className="w-4 h-4 mr-2" /> Excluir Atividade de Projeto
-                                            </DropdownMenuItem>
-                                          </>
-                                        ) : (
-                                          <>
-                                            <DropdownMenuItem onClick={() => handleOpenEtapaModal(ativ)}>
-                                              <Layers className="w-4 h-4 mr-2 text-blue-600" /> Editar Etapa (Empreendimento)
-                                            </DropdownMenuItem>
-                                            <DropdownMenuItem 
-                                              onClick={() => handleOpenEditarEtapaEmFolhasModal(ativ)} 
-                                              className="text-blue-600"
-                                            >
-                                              <Edit2 className="w-4 h-4 mr-2" /> Editar Etapa em Folhas Específicas
-                                            </DropdownMenuItem>
-                                          </>
-                                        )}
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
-                                  </TableCell>
-                                </TableRow>
-                                {isExpanded && grupo.folhas.map(folha => (
-                                  <TableRow key={folha.uniqueId} className="bg-blue-50/50">
-                                    {hasCheckboxColumn && <TableCell></TableCell>}
-                                    <TableCell className="pl-12">
-                                      <ChevronRight className="w-3 h-3 text-gray-400 inline mr-1" />
-                                    </TableCell>
-                                    <TableCell className="text-sm text-gray-600">
-                                      {folha.source_documento_numero} - {folha.source_documento_arquivo}
-                                    </TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell>
-                                      {folha.status === 'Concluída' ? <Badge className="bg-blue-600 text-white font-semibold flex items-center gap-1 w-fit text-xs"><CheckCircle2 className="w-3 h-3"/>Concluída</Badge> : folha.status === 'Planejada' ? <Badge className="bg-green-600 text-white font-semibold shadow-md flex items-center gap-1 w-fit text-xs"><CheckCircle2 className="w-3 h-3"/>Planejada</Badge> : <Badge variant="outline" className="text-xs text-gray-600">{folha.status}</Badge>}
-                                    </TableCell>
-                                    <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
-                                    <TableCell></TableCell>
-                                    <TableCell>
-                                      {folha.status === 'Planejada' ? (
-                                        (() => {
-                                          const planejamento = planejamentos?.find(p => 
-                                            p.documento_id === folha.source_documento_id && 
-                                            p.atividade_id === folha.base_atividade_id
-                                          );
+              allGenericActivitiesMap.forEach(baseAtividade => {
+              const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
+              const isExcludedFromThisDoc = excludedFromDocumentMap.has(baseAtividade.id) && excludedFromDocumentMap.get(baseAtividade.id).has(doc.id);
+              if (isExcludedFromProject || isExcludedFromThisDoc) return;
+              const disciplinaMatch = disciplinasDoc.includes(baseAtividade.disciplina);
+              const subdisciplinaMatch = subdisciplinasDoc.includes(baseAtividade.subdisciplina);
+              if (disciplinaMatch && subdisciplinaMatch) {
+              const planKey = `${doc.id}-${baseAtividade.id}`;
+              const existingPlan = planejamentosMap.get(planKey);
+              const overrideKey = `${doc.id}|${baseAtividade.id}`;
+              const override = overrideActivitiesByDocMap.get(overrideKey) || overrideActivitiesGlobalMap.get(baseAtividade.id);
+              const etapaBase = etapasCadastradas.includes(baseAtividade.etapa) ? baseAtividade.etapa : etapasCadastradas.length > 0 ? null : baseAtividade.etapa;
+              const etapaCorreta = override ? override.etapa : etapaBase;
+              const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
+              const sourceDisplay = `Folha: ${doc.numero} - ${doc.arquivo || 'Sem Nome'}`;
+              if (existingPlan) {
+              documentActivities.push({ ...baseAtividade, id: existingPlan.id, uniqueId: `plano-${existingPlan.id}`, atividade: existingPlan.descritivo || baseAtividade.atividade, tempo: existingPlan.tempo_planejado, source: sourceDisplay, source_documento_id: doc.id, source_documento_numero: doc.numero, source_documento_arquivo: doc.arquivo, status: existingPlan.status === 'concluido' ? 'Concluída' : 'Planejada', isEditable: false, etapa: existingPlan.etapa || etapaCorreta, executor_principal: existingPlan.executor_principal || executorPrincipal, base_atividade_id: baseAtividade.id });
+              } else {
+              const tempoComOverride = override?.tempo !== undefined && override?.tempo !== null ? override.tempo : (baseAtividade.tempo || 0);
+              const tempoFinal = tempoComOverride * fatorDificuldade;
+              documentActivities.push({ ...baseAtividade, uniqueId: `avail-${doc.id}-${baseAtividade.id}`, id: baseAtividade.id, tempo: tempoFinal, source: sourceDisplay, source_documento_id: doc.id, source_documento_numero: doc.numero, source_documento_arquivo: doc.arquivo, status: 'Disponível', isEditable: false, etapa: etapaCorreta, executor_principal: executorPrincipal, base_atividade_id: baseAtividade.id });
+              }
+              }
+              });
+              });
 
-                                          if (planejamento?.inicio_planejado && planejamento?.termino_planejado) {
-                                            return (
-                                              <div className="flex items-center gap-1 text-gray-600 text-xs">
-                                                <Calendar className="w-3 h-3" />
-                                                <span>{format(parseISO(planejamento.inicio_planejado), 'dd/MM')} - {format(parseISO(planejamento.termino_planejado), 'dd/MM')}</span>
-                                              </div>
-                                            );
-                                          }
-                                          return <span className="text-xs text-gray-400">-</span>;
-                                        })()
-                                      ) : (
-                                        <span className="text-xs text-gray-400">-</span>
-                                      )}
-                                    </TableCell>
-                                    <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
-                                      <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
-                                      <TableCell>
-                                        <Checkbox
-                                          checked={atividadesSelecionadasParaExcluir.has(folha.base_atividade_id || folha.id)}
-                                          onCheckedChange={(checked) => {
-                                            setAtividadesSelecionadasParaExcluir(prev => {
-                                              const newSet = new Set(prev);
-                                              const id = folha.base_atividade_id || folha.id;
-                                              if (checked) {
-                                                newSet.add(id);
-                                              } else {
-                                                newSet.delete(id);
-                                              }
-                                              return newSet;
-                                            });
-                                          }}
-                                        />
-                                      </TableCell>
-                                      <TableCell></TableCell>
-                                    </TableRow>
-                                    ))}
-                                    </>
-                                    );
-                                    })}
-                                    </TableBody>
-                                    </Table>
-                      </div>
-                      ))}
-                      </div>
-                      ) : (
-                      <Table>
-                      <TableHeader className="bg-gray-50">
-                        <TableRow>
+              setCombinedActivities([...normalizedProjectActivities, ...documentActivities, ...atividadesDocumentacao]);
+              setDisciplinas(disciplinasData || []);
+
+              } catch (error) {
+              console.error("Erro ao buscar dados do catálogo:", error);
+              setCombinedActivities([]);
+              setDisciplinas([]);
+              setDocumentos([]);
+              } finally {
+              setIsLoading(false);
+              }
+              }, [empreendimentoId]);
+
+              useEffect(() => {
+              if (empreendimentoId) {
+              fetchData();
+              }
+              }, [fetchData, empreendimentoId]);
+
+              const debouncedSetSearch = useCallback(debounce((value) => {
+              setFilters(prev => ({ ...prev, search: value }));
+              }, 300), []);
+
+              const atividadesAgrupadas = useMemo(() => {
+              const filtered = combinedActivities.filter(ativ => {
+              const searchLower = filters.search.toLowerCase();
+              const searchMatch = !filters.search ||
+              String(ativ.atividade || '').toLowerCase().includes(searchLower) ||
+              String(ativ.disciplina || '').toLowerCase().includes(searchLower) ||
+              String(ativ.subdisciplina || '').toLowerCase().includes(searchLower) ||
+              String(ativ.etapa || '').toLowerCase().includes(searchLower) ||
+              String(ativ.source || '').toLowerCase().includes(searchLower) ||
+              String(ativ.status || '').toLowerCase().includes(searchLower);
+              const disciplinaMatch = filters.disciplina === 'all' || ativ.disciplina === filters.disciplina;
+              const etapaMatch = filters.etapa === 'all' || ativ.etapa === 'all' || ativ.etapa === filters.etapa;
+              return searchMatch && disciplinaMatch && etapaMatch;
+              });
+              const grupos = new Map();
+              filtered.forEach(ativ => {
+              const key = `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.disciplina}-${ativ.subdisciplina}`;
+              if (!grupos.has(key)) { grupos.set(key, { baseAtividade: ativ, folhas: [] }); }
+              if (ativ.source_documento_id) { grupos.get(key).folhas.push(ativ); }
+              });
+              return Array.from(grupos.values());
+              }, [combinedActivities, filters]);
+
+              const atividadesPorDisciplina = useMemo(() => {
+              const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
+              const grupos = {};
+              const gruposDocumentacao = {};
+              disciplinasDocumentacao.forEach(disc => { gruposDocumentacao[disc] = {}; });
+              atividadesAgrupadas.forEach(grupo => {
+              const disciplina = grupo.baseAtividade.disciplina || 'Sem Disciplina';
+              if (disciplinasDocumentacao.includes(disciplina)) {
+              const subdisciplina = grupo.baseAtividade.subdisciplina || 'Sem Subdisciplina';
+              if (!gruposDocumentacao[disciplina][subdisciplina]) { gruposDocumentacao[disciplina][subdisciplina] = []; }
+              gruposDocumentacao[disciplina][subdisciplina].push(grupo);
+              } else {
+              if (!grupos[disciplina]) { grupos[disciplina] = []; }
+              grupos[disciplina].push(grupo);
+              }
+              });
+              const result = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
+              Object.entries(gruposDocumentacao).sort((a, b) => a[0].localeCompare(b[0])).forEach(([disciplina, subdisciplinas]) => {
+              const temAtividades = Object.values(subdisciplinas).flat().length > 0;
+              if (temAtividades) { result.push([disciplina, subdisciplinas]); }
+              });
+              return result;
+              }, [atividadesAgrupadas]);
+
+              const etapasUnicas = useMemo(() => {
+              const empreendimento = allEmpreendimentos?.find(e => e.id === empreendimentoId);
+              if (empreendimento?.etapas && empreendimento.etapas.length > 0) { return empreendimento.etapas; }
+              return [...new Set(combinedActivities.map(a => a.etapa).filter(Boolean))];
+              }, [combinedActivities, empreendimentoId]);
+
+              const handleOpenModal = (atividade = null) => { setSelectedAtividade(atividade); setIsModalOpen(true); };
+              const handleOpenEtapaModal = (atividade) => { setSelectedAtividade(atividade); setIsEtapaModalOpen(true); };
+              const handleOpenEditarEtapaEmFolhasModal = (atividade) => { setSelectedAtividade(atividade); setIsEditarEtapaEmFolhasModalOpen(true); };
+
+              // Dummy comment to maintain reference point
+              const _renderContentMarker = 'renderContent_starts_here';
+
+              const renderContent_dummy = () => null; // placeholder
+
+              if (false) {
+                       // This dead code block kept for structure
+                       const _ = null;
+                       }
+
+              // END: data processing section
+              // BEGIN: render content (this is actually in renderContent)
+
+              const _renderContentActual = () => (
+              <Table>
+                       <TableHeader className="bg-gray-50">
+                         <TableRow>
                            {hasCheckboxColumn && <TableHead className="w-[50px]"></TableHead>}
                            <TableHead className="w-[50px]">
                              <Checkbox
