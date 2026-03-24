@@ -175,13 +175,879 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
           if (!isExcludedFromProject) {
             const override = overrideActivitiesGlobalMap.get(baseAtividade.id);
-              // Se etapa original da atividade está em etapas cadastradas, usar ela; senão, deixar editável (null para que o modal peça escolha)
-              const etapaBase = etapasCadastradas.includes(baseAtividade.etapa) ? baseAtividade.etapa : etapasCadastradas.length > 0 ? null : baseAtividade.etapa;
-              const etapaCorreta = override ? override.etapa : etapaBase;
-              const planKey = null; // Sem documento específico, para atividades genéricas
-              const existingPlan = planejamentosMap.get(planKey);
+            // Se etapa original da atividade está em etapas cadastradas, usar ela; senão, deixar editável (null para que o modal peça escolha)
+            const etapaBase = etapasCadastradas.includes(baseAtividade.etapa) ? baseAtividade.etapa : etapasCadastradas.length > 0 ? null : baseAtividade.etapa;
+            const etapaCorreta = override ? override.etapa : etapaBase;
+            
+            if (existingPlan) {
+              // Se há planejamento geral, mostrar como "Planejada" ou "Concluída"
+              atividadesDocumentacao.push({
+                ...baseAtividade,
+                id: existingPlan.id,
+                uniqueId: `plano-${existingPlan.id}`,
+                atividade: existingPlan.descritivo || baseAtividade.atividade,
+                tempo: existingPlan.tempo_planejado,
+                source: 'Catálogo',
+                source_documento_id: null,
+                status: existingPlan.status === 'concluido' ? 'Concluída' : 'Planejada',
+                isEditable: false,
+                etapa: existingPlan.etapa || etapaCorreta,
+                executor_principal: existingPlan.executor_principal,
+                base_atividade_id: baseAtividade.id,
+              });
+            } else {
+              // Se não há planejamento, mostrar como "Disponível"
+               const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
 
-              if (existingPlan) {
+               // Aplicar override de tempo se existir
+               const tempoFinal = override?.tempo !== undefined && override?.tempo !== null 
+                 ? override.tempo 
+                 : (baseAtividade.tempo || 0);
+
+               atividadesDocumentacao.push({
+                 ...baseAtividade,
+                 uniqueId: `doc-${baseAtividade.id}`,
+                 id: baseAtividade.id,
+                 tempo: tempoFinal,
+                 source: 'Catálogo',
+                 source_documento_id: null,
+                 status: 'Disponível',
+                 isEditable: false,
+                 etapa: etapaCorreta,
+                 executor_principal: executorPrincipal,
+                 base_atividade_id: baseAtividade.id,
+               });
+            }
+          }
+        }
+      });
+
+      let documentActivities = [];
+      (documentosData || []).forEach(doc => {
+        const subdisciplinasDoc = doc.subdisciplinas || [];
+        const disciplinasDoc = doc.disciplinas?.length > 0 ? doc.disciplinas : [doc.disciplina].filter(Boolean);
+        const fatorDificuldade = doc.fator_dificuldade || 1;
+
+        // Adicionar atividades específicas vinculadas a este documento
+        const atividadesVinculadasDoc = (projectActivities || []).filter(pa => 
+          pa.documento_id === doc.id && 
+          !pa.id_atividade && 
+          pa.tempo !== -999
+        );
+        
+        atividadesVinculadasDoc.forEach(atividadeVinculada => {
+          const planKey = `${doc.id}-${atividadeVinculada.id}`;
+          const existingPlan = planejamentosMap.get(planKey);
+          const sourceDisplay = `Folha: ${doc.numero} - ${doc.arquivo || 'Sem Nome'}`;
+          
+          if (existingPlan) {
+            documentActivities.push({
+              ...atividadeVinculada,
+              id: existingPlan.id,
+              uniqueId: `plano-${existingPlan.id}`,
+              atividade: existingPlan.descritivo || atividadeVinculada.atividade,
+              tempo: existingPlan.tempo_planejado,
+              source: sourceDisplay,
+              source_documento_id: doc.id,
+              source_documento_numero: doc.numero,
+              source_documento_arquivo: doc.arquivo,
+              status: existingPlan.status === 'concluido' ? 'Concluída' : 'Planejada',
+              isEditable: false,
+              etapa: existingPlan.etapa || atividadeVinculada.etapa,
+              executor_principal: existingPlan.executor_principal,
+              base_atividade_id: atividadeVinculada.id,
+            });
+          } else {
+            documentActivities.push({
+              ...atividadeVinculada,
+              uniqueId: `avail-${doc.id}-${atividadeVinculada.id}`,
+              id: atividadeVinculada.id,
+              tempo: atividadeVinculada.tempo || 0,
+              source: sourceDisplay,
+              source_documento_id: doc.id,
+              source_documento_numero: doc.numero,
+              source_documento_arquivo: doc.arquivo,
+              status: 'Disponível',
+              isEditable: false,
+              etapa: atividadeVinculada.etapa,
+              base_atividade_id: atividadeVinculada.id,
+            });
+          }
+        });
+        
+        allGenericActivitiesMap.forEach(baseAtividade => {
+          const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
+          const isExcludedFromThisDoc = excludedFromDocumentMap.has(baseAtividade.id) && excludedFromDocumentMap.get(baseAtividade.id).has(doc.id);
+          if (isExcludedFromProject || isExcludedFromThisDoc) return;
+
+          const disciplinaMatch = disciplinasDoc.includes(baseAtividade.disciplina);
+          const subdisciplinaMatch = subdisciplinasDoc.includes(baseAtividade.subdisciplina);
+
+          if (disciplinaMatch && subdisciplinaMatch) {
+            const planKey = `${doc.id}-${baseAtividade.id}`;
+            const existingPlan = planejamentosMap.get(planKey);
+            const overrideKey = `${doc.id}|${baseAtividade.id}`;
+            const override = overrideActivitiesByDocMap.get(overrideKey) || overrideActivitiesGlobalMap.get(baseAtividade.id);
+            const etapaBase = etapasCadastradas.includes(baseAtividade.etapa) ? baseAtividade.etapa : etapasCadastradas.length > 0 ? null : baseAtividade.etapa;
+            const etapaCorreta = override ? override.etapa : etapaBase;
+            const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
+            const sourceDisplay = `Folha: ${doc.numero} - ${doc.arquivo || 'Sem Nome'}`;
+
+            if (existingPlan) {
+                documentActivities.push({ ...baseAtividade, id: existingPlan.id, uniqueId: `plano-${existingPlan.id}`, atividade: existingPlan.descritivo || baseAtividade.atividade, tempo: existingPlan.tempo_planejado, source: sourceDisplay, source_documento_id: doc.id, source_documento_numero: doc.numero, source_documento_arquivo: doc.arquivo, status: existingPlan.status === 'concluido' ? 'Concluída' : 'Planejada', isEditable: false, etapa: existingPlan.etapa || etapaCorreta, executor_principal: existingPlan.executor_principal || executorPrincipal, base_atividade_id: baseAtividade.id });
+              } else {
+                const tempoComOverride = override?.tempo !== undefined && override?.tempo !== null ? override.tempo : (baseAtividade.tempo || 0);
+                const tempoFinal = tempoComOverride * fatorDificuldade;
+                documentActivities.push({ ...baseAtividade, uniqueId: `avail-${doc.id}-${baseAtividade.id}`, id: baseAtividade.id, tempo: tempoFinal, source: sourceDisplay, source_documento_id: doc.id, source_documento_numero: doc.numero, source_documento_arquivo: doc.arquivo, status: 'Disponível', isEditable: false, etapa: etapaCorreta, executor_principal: executorPrincipal, base_atividade_id: baseAtividade.id });
+              }
+          }
+          });
+          });
+
+          setCombinedActivities([...normalizedProjectActivities, ...documentActivities, ...atividadesDocumentacao]);
+      setDisciplinas(disciplinasData || []);
+
+    } catch (error) {
+      console.error("Erro ao buscar dados do catálogo:", error);
+      setCombinedActivities([]);
+      setDisciplinas([]);
+      setDocumentos([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [empreendimentoId]);
+
+  useEffect(() => {
+    if (empreendimentoId) {
+      fetchData();
+    }
+  }, [fetchData, empreendimentoId]);
+
+  const debouncedSetSearch = useCallback(debounce((value) => {
+    setFilters(prev => ({ ...prev, search: value }));
+  }, 300), []);
+
+  const atividadesAgrupadas = useMemo(() => {
+    const filtered = combinedActivities.filter(ativ => {
+      const searchLower = filters.search.toLowerCase();
+      const searchMatch = !filters.search ||
+        String(ativ.atividade || '').toLowerCase().includes(searchLower) ||
+        String(ativ.disciplina || '').toLowerCase().includes(searchLower) ||
+        String(ativ.subdisciplina || '').toLowerCase().includes(searchLower) ||
+        String(ativ.etapa || '').toLowerCase().includes(searchLower) ||
+        String(ativ.source || '').toLowerCase().includes(searchLower) ||
+        String(ativ.status || '').toLowerCase().includes(searchLower);
+      
+      const disciplinaMatch = filters.disciplina === 'all' || ativ.disciplina === filters.disciplina;
+      const etapaMatch = filters.etapa === 'all' || ativ.etapa === 'all' || ativ.etapa === filters.etapa;
+
+      return searchMatch && disciplinaMatch && etapaMatch;
+    });
+
+    // Agrupar por atividade base
+    const grupos = new Map();
+    
+    filtered.forEach(ativ => {
+      const key = `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.disciplina}-${ativ.subdisciplina}`;
+      
+      if (!grupos.has(key)) {
+        grupos.set(key, {
+          baseAtividade: ativ,
+          folhas: []
+        });
+      }
+      
+      if (ativ.source_documento_id) {
+        grupos.get(key).folhas.push(ativ);
+      }
+    });
+
+    return Array.from(grupos.values());
+  }, [combinedActivities, filters]);
+
+  const atividadesPorDisciplina = useMemo(() => {
+    const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
+    const grupos = {};
+    const gruposDocumentacao = {};
+    
+    // Inicializar todas as disciplinas de Documentação com objetos de subdisciplinas
+    disciplinasDocumentacao.forEach(disc => {
+      gruposDocumentacao[disc] = {};
+    });
+    
+    atividadesAgrupadas.forEach(grupo => {
+      const disciplina = grupo.baseAtividade.disciplina || 'Sem Disciplina';
+      
+      if (disciplinasDocumentacao.includes(disciplina)) {
+        // Agrupar Documentação por subdisciplina dentro da disciplina
+        const subdisciplina = grupo.baseAtividade.subdisciplina || 'Sem Subdisciplina';
+        if (!gruposDocumentacao[disciplina][subdisciplina]) {
+          gruposDocumentacao[disciplina][subdisciplina] = [];
+        }
+        gruposDocumentacao[disciplina][subdisciplina].push(grupo);
+      } else {
+        if (!grupos[disciplina]) {
+          grupos[disciplina] = [];
+        }
+        grupos[disciplina].push(grupo);
+      }
+    });
+
+    const result = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
+    
+    // Adicionar apenas disciplinas de Documentação que têm atividades
+    Object.entries(gruposDocumentacao)
+      .sort((a, b) => a[0].localeCompare(b[0]))
+      .forEach(([disciplina, subdisciplinas]) => {
+        const temAtividades = Object.values(subdisciplinas).flat().length > 0;
+        if (temAtividades) {
+          result.push([disciplina, subdisciplinas]);
+        }
+      });
+    
+    return result;
+  }, [atividadesAgrupadas]);
+  
+  const etapasUnicas = useMemo(() => {
+    // Buscar etapas do empreendimento cadastrado
+    const empreendimento = allEmpreendimentos?.find(e => e.id === empreendimentoId);
+    if (empreendimento?.etapas && empreendimento.etapas.length > 0) {
+      return empreendimento.etapas;
+    }
+    // Fallback: etapas únicas das atividades
+    return [...new Set(combinedActivities.map(a => a.etapa).filter(Boolean))];
+  }, [combinedActivities, empreendimentoId]);
+
+  const handleOpenModal = (atividade = null) => {
+    setSelectedAtividade(atividade);
+    setIsModalOpen(true);
+  };
+  
+  const handleOpenEtapaModal = (atividade) => {
+    setSelectedAtividade(atividade);
+    setIsEtapaModalOpen(true);
+  };
+
+  const handleOpenEditarEtapaEmFolhasModal = (atividade) => {
+    setSelectedAtividade(atividade);
+    setIsEditarEtapaEmFolhasModalOpen(true);
+  };
+
+  const handleSaveEtapa = async (newEtapa, escopo = 'empreendimento', selectedFolhaId = '') => {
+    if (!selectedAtividade || !selectedAtividade.base_atividade_id) {
+      alert("Não foi possível identificar a atividade base para atualização.");
+      return;
+    }
+  
+    try {
+      // Se escopo é 'folha' e uma folha foi selecionada, fazer a alteração direto
+      if (escopo === 'folha' && selectedFolhaId) {
+        const allPlanejamentos = await retryWithBackoff(() => PlanejamentoAtividade.filter({ 
+          empreendimento_id: empreendimentoId,
+          atividade_id: selectedAtividade.base_atividade_id,
+          documento_id: selectedFolhaId
+        }), 3, 500, 'findPlanosForEtapaUpdateSpecificDoc');
+    
+        // Registrar alteração
+        const user = await base44.auth.me();
+        const etapaAnterior = selectedAtividade.etapa;
+        const folhaObj = documentos.find(d => d.id === selectedFolhaId);
+        
+        await AlteracaoEtapa.create({
+          atividade_id: selectedAtividade.base_atividade_id,
+          id_atividade: selectedAtividade.id_atividade || "",
+          nome_atividade: selectedAtividade.atividade,
+          disciplina: selectedAtividade.disciplina,
+          subdisciplina: selectedAtividade.subdisciplina || "",
+          etapa_anterior: etapaAnterior,
+          etapa_nova: newEtapa,
+          empreendimento_id: empreendimentoId,
+          empreendimento_nome: empreendimentoNome,
+          data_alteracao: new Date().toISOString(),
+          usuario_email: user.email,
+          usuario_nome: user.full_name || user.nome || user.email,
+          folha_numero: folhaObj?.numero || "",
+          folha_arquivo: folhaObj?.arquivo || ""
+        });
+
+        if (allPlanejamentos.length > 0) {
+          const updatePromises = allPlanejamentos.map(plano => 
+            retryWithBackoff(() => PlanejamentoAtividade.update(plano.id, { etapa: newEtapa }), 3, 500, `updateEtapa-${plano.id}`)
+          );
+          await Promise.all(updatePromises);
+        } else {
+          // Criar override específico da folha
+          const baseAtividadeArr = await retryWithBackoff(() => Atividade.filter({ id: selectedAtividade.base_atividade_id }), 3, 500, 'findBaseAtividade');
+          
+          if (!baseAtividadeArr || baseAtividadeArr.length === 0) {
+            throw new Error("Atividade base original não encontrada.");
+          }
+          
+          const atividadeOriginal = baseAtividadeArr[0];
+          
+          const existingOverride = await retryWithBackoff(() => Atividade.filter({
+            empreendimento_id: empreendimentoId,
+            id_atividade: selectedAtividade.base_atividade_id,
+            documento_id: selectedFolhaId,
+            tempo: { operator: '!=', value: -999 } 
+          }), 3, 500, 'findExistingOverrideForDoc');
+
+          const foundOverride = existingOverride.find(o => o.id_atividade === selectedAtividade.base_atividade_id);
+
+          if (foundOverride) {
+            await retryWithBackoff(() => Atividade.update(foundOverride.id, { etapa: newEtapa }), 3, 500, 'updateAtividadeOverrideDoc');
+          } else {
+            const overrideAtividade = {
+              ...atividadeOriginal,
+              id_atividade: selectedAtividade.base_atividade_id,
+              etapa: newEtapa,
+              empreendimento_id: empreendimentoId,
+              documento_id: selectedFolhaId,
+            };
+            delete overrideAtividade.id;
+            await retryWithBackoff(() => Atividade.create(overrideAtividade), 3, 500, 'createAtividadeOverrideDoc');
+          }
+        }
+
+        alert(`A etapa de "${selectedAtividade.atividade}" foi alterada para "${newEtapa}" na folha ${folhaObj?.numero} - ${folhaObj?.arquivo}.`);
+        const alteracoes = await AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId });
+        setAlteracoesEtapa(alteracoes || []);
+        fetchData();
+        setIsEtapaModalOpen(false);
+        return;
+      }
+
+      const allPlanejamentos = await retryWithBackoff(() => PlanejamentoAtividade.filter({ 
+        empreendimento_id: empreendimentoId,
+        atividade_id: selectedAtividade.base_atividade_id
+      }), 3, 500, 'findPlanosForEtapaUpdate');
+  
+      // Registrar alteração antes de aplicar
+      const user = await base44.auth.me();
+      const etapaAnterior = selectedAtividade.etapa;
+      
+      await AlteracaoEtapa.create({
+        atividade_id: selectedAtividade.base_atividade_id,
+        id_atividade: selectedAtividade.id_atividade || "",
+        nome_atividade: selectedAtividade.atividade,
+        disciplina: selectedAtividade.disciplina,
+        subdisciplina: selectedAtividade.subdisciplina || "",
+        etapa_anterior: etapaAnterior,
+        etapa_nova: newEtapa,
+        empreendimento_id: empreendimentoId,
+        empreendimento_nome: empreendimentoNome,
+        data_alteracao: new Date().toISOString(),
+        usuario_email: user.email,
+        usuario_nome: user.full_name || user.nome || user.email
+      });
+  
+      if (allPlanejamentos.length === 0) {
+        const baseAtividadeArr = await retryWithBackoff(() => Atividade.filter({ id: selectedAtividade.base_atividade_id }), 3, 500, 'findBaseAtividade');
+        
+        if (!baseAtividadeArr || baseAtividadeArr.length === 0) {
+            throw new Error("Atividade base original não encontrada para criar a nova versão.");
+        }
+        
+        const atividadeOriginal = baseAtividadeArr[0];
+
+        const existingOverride = await retryWithBackoff(() => Atividade.filter({
+            empreendimento_id: empreendimentoId,
+            id_atividade: selectedAtividade.base_atividade_id,
+            documento_id: null,
+            tempo: { operator: '!=', value: -999 } 
+        }), 3, 500, 'findExistingOverride');
+
+        const foundOverride = existingOverride.find(o => o.id_atividade === selectedAtividade.base_atividade_id && o.empreendimento_id === empreendimentoId);
+
+        if (foundOverride) {
+            await retryWithBackoff(() => Atividade.update(foundOverride.id, { etapa: newEtapa }), 3, 500, 'updateAtividadeOverride');
+            alert(`A etapa para "${selectedAtividade.atividade}" foi atualizada para "${newEtapa}" para todo este empreendimento.`);
+        } else {
+            const overrideAtividade = {
+                ...atividadeOriginal,
+                id_atividade: selectedAtividade.base_atividade_id,
+                etapa: newEtapa,
+                empreendimento_id: empreendimentoId,
+                documento_id: null,
+            };
+            delete overrideAtividade.id;
+
+            await retryWithBackoff(() => Atividade.create(overrideAtividade), 3, 500, 'createAtividadeOverride');
+            alert(`A etapa para "${selectedAtividade.atividade}" foi definida como "${newEtapa}" para todo este empreendimento. Futuros planejamentos e visualizações de atividades "Disponíveis" usarão esta nova etapa.`);
+        }
+
+      } else {
+        const updatePromises = allPlanejamentos.map(plano => 
+          retryWithBackoff(() => PlanejamentoAtividade.update(plano.id, { etapa: newEtapa }), 3, 500, `updateEtapa-${plano.id}`)
+        );
+        
+        await Promise.all(updatePromises);
+        
+        alert(`${allPlanejamentos.length} ocorrência(s) da atividade foram atualizadas para a etapa "${newEtapa}".`);
+      }
+      
+      // Recarregar alterações
+      const alteracoes = await AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId });
+      setAlteracoesEtapa(alteracoes || []);
+  
+      fetchData();
+  
+    } catch (error) {
+      console.error("Erro ao atualizar etapa:", error);
+      alert("Ocorreu um erro ao atualizar a etapa da atividade.");
+      throw error;
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (window.confirm("Tem certeza que deseja excluir esta atividade do projeto? Atividades de folhas não são afetadas.")) {
+      try {
+        await retryWithBackoff(() => Atividade.delete(id), 3, 500, 'deleteAtividade');
+        fetchData(); 
+        if(onUpdate) onUpdate();
+      } catch (error) {
+        console.error("Erro ao excluir atividade:", error);
+        alert("Não foi possível excluir a atividade.");
+      }
+    }
+  };
+
+  const handleExcluirAtividade = async (atividade) => {
+    const genericAtividadeIdToExclude = atividade.base_atividade_id || atividade.id;
+    
+    if (!window.confirm(`Tem certeza que deseja excluir a atividade "${atividade.atividade}" de TODAS as folhas deste empreendimento? Ela não aparecerá mais como "Disponível" ou "Planejada" em nenhuma folha.`)) {
+      return;
+    }
+
+    setIsDeletingActivity(prev => ({ ...prev, [genericAtividadeIdToExclude]: true }));
+
+    try {
+      console.log(`🗑️ Marcando atividade genérica ${genericAtividadeIdToExclude} como excluída para empreendimento ${empreendimentoId}`);
+      
+      const existingMarkers = await retryWithBackoff(
+        () => Atividade.filter({ 
+          empreendimento_id: empreendimentoId,
+          id_atividade: genericAtividadeIdToExclude,
+          tempo: -999,
+          documento_id: null
+        }),
+        3, 500, `checkExistingExclusionMarker-${genericAtividadeIdToExclude}`
+      );
+
+      if (existingMarkers && existingMarkers.length > 0) {
+        alert("Esta atividade já está marcada como excluída para este empreendimento.");
+        setIsDeletingActivity(prev => ({ ...prev, [genericAtividadeIdToExclude]: false }));
+        return;
+      }
+
+      const atividadeOriginalArr = await retryWithBackoff(
+        () => Atividade.filter({ id: genericAtividadeIdToExclude }),
+        3, 500, `getOriginalGenericActivity-${genericAtividadeIdToExclude}`
+      );
+
+      if (!atividadeOriginalArr || atividadeOriginalArr.length === 0) {
+        throw new Error("Atividade genérica original não encontrada.");
+      }
+      const atividadeOriginal = atividadeOriginalArr[0];
+
+      await retryWithBackoff(
+        () => Atividade.create({
+          ...atividadeOriginal,
+          id: undefined,
+          empreendimento_id: empreendimentoId,
+          id_atividade: genericAtividadeIdToExclude,
+          tempo: -999,
+          documento_id: null,
+          atividade: `(Excluída) ${atividadeOriginal.atividade}`
+        }),
+        3, 500, `createExclusionMarker-${genericAtividadeIdToExclude}`
+      );
+
+      console.log(`✅ Marcador de exclusão criado com sucesso para atividade genérica ${genericAtividadeIdToExclude}`);
+      
+      // Registrar exclusão em AtividadesEmpreendimento
+      try {
+        const atividadesEmp = await retryWithBackoff(
+          () => base44.entities.AtividadesEmpreendimento.filter({
+            empreendimento_id: empreendimentoId,
+            id_atividade: atividadeOriginal.id_atividade || genericAtividadeIdToExclude
+          }),
+          3, 500, `getAtividadesEmpExcluir-${genericAtividadeIdToExclude}`
+        );
+        
+        const agora = new Date().toISOString();
+        for (const atividadeEmp of atividadesEmp) {
+          await retryWithBackoff(
+            () => base44.entities.AtividadesEmpreendimento.update(atividadeEmp.id, {
+              status_planejamento: 'nao_planejada',
+              data_exclusao: agora,
+              motivo_exclusao: 'Excluída globalmente do empreendimento'
+            }),
+            3, 500, `updateAtividadeEmpExclusao-${atividadeEmp.id}`
+          );
+        }
+        console.log(`   📋 ${atividadesEmp.length} registro(s) marcado(s) como excluído(s) em AtividadesEmpreendimento`);
+      } catch (error) {
+        console.warn(`   ⚠️ Erro ao atualizar AtividadesEmpreendimento:`, error);
+      }
+      
+      await fetchData();
+      if (onUpdate) onUpdate();
+      
+      alert(`Atividade "${atividade.atividade}" foi marcada como excluída de todas as folhas deste empreendimento.`);
+
+    } catch (error) {
+      console.error("Erro ao marcar atividade para exclusão:", error);
+      alert("Erro ao marcar atividade para exclusão. Tente novamente: " + error.message);
+    } finally {
+      setIsDeletingActivity(prev => ({ ...prev, [genericAtividadeIdToExclude]: false }));
+    }
+  };
+
+  const handleOpenExcluirDeFolhasModal = (atividade) => {
+    setSelectedAtividade(atividade);
+    setIsExcluirDeFolhasModalOpen(true);
+  };
+
+  const handlePlanejarAtividade = (atividade) => {
+    setAtividadeParaPlanejar(atividade);
+    setIsPlanejamentoModalOpen(true);
+  };
+
+  const handlePlanejarComplete = () => {
+    setIsPlanejamentoModalOpen(false);
+    setAtividadeParaPlanejar(null);
+    fetchData();
+    if (onUpdate) onUpdate();
+  };
+
+  const handleSelectItem = (uniqueId) => {
+    setSelectedIds(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(uniqueId)) {
+        newSet.delete(uniqueId);
+      } else {
+        newSet.add(uniqueId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAll = (isChecked) => {
+    if (isChecked) {
+      const projectActivityIds = atividadesAgrupadas
+        .filter(grupo => grupo.baseAtividade.isEditable)
+        .map(grupo => grupo.baseAtividade.uniqueId);
+      setSelectedIds(new Set(projectActivityIds));
+    } else {
+      setSelectedIds(new Set());
+    }
+  };
+
+  const toggleAtividadeExpansion = (key) => {
+    setExpandedAtividades(prev => ({ ...prev, [key]: !prev[key] }));
+  };
+
+  const handleDeleteSelected = async () => {
+    const count = selectedIds.size;
+    if (count === 0) return;
+
+    if (!window.confirm(`Tem certeza que deseja excluir ${count} atividade(s) selecionada(s)?`)) {
+      return;
+    }
+
+    setIsDeletingMultiple(true);
+
+    try {
+      const idsArray = Array.from(selectedIds);
+      const results = {
+        deleted: 0,
+        notFound: 0,
+        errors: 0
+      };
+
+      for (const uniqueId of idsArray) {
+        try {
+          const grupo = atividadesAgrupadas.find(g => g.baseAtividade.uniqueId === uniqueId);
+          if (!grupo || !grupo.baseAtividade.isEditable) {
+            console.warn('Atividade não editável ou não encontrada:', uniqueId);
+            continue;
+          }
+
+          await retryWithBackoff(() => Atividade.delete(grupo.baseAtividade.id), 3, 500, `deleteAtividade-${grupo.baseAtividade.id}`);
+          results.deleted++;
+          
+          await new Promise(resolve => setTimeout(resolve, 100));
+
+        } catch (error) {
+          if (error.message?.includes("Object not found") || 
+              error.message?.includes("ObjectNotFoundError") ||
+              error.response?.status === 404) {
+            results.notFound++;
+          } else {
+            results.errors++;
+            console.error('Erro ao excluir atividade:', uniqueId, error);
+          }
+        }
+      }
+
+      setSelectedIds(new Set());
+      fetchData();
+      if (onUpdate) onUpdate();
+
+      if (results.errors === 0) {
+        if (results.notFound > 0) {
+          alert(`${results.deleted} atividades foram excluídas. ${results.notFound} já haviam sido excluídas anteriormente.`);
+        } else {
+          alert(`${results.deleted} atividades foram excluídas com sucesso.`);
+        }
+      } else {
+        alert(`Processo concluído: ${results.deleted} excluídas, ${results.notFound} já excluídas, ${results.errors} erros.`);
+      }
+
+    } catch (error) {
+      console.error("Erro durante exclusão em lote:", error);
+      alert("Ocorreu um erro durante a exclusão em lote.");
+    } finally {
+      setIsDeletingMultiple(false);
+    }
+  };
+
+  const handleRestaurarExclusoesGlobais = async () => {
+    if (!window.confirm("Tem certeza que deseja RESTAURAR todas as atividades que foram excluídas globalmente por engano?\n\nIsso irá remover todos os marcadores de exclusão global (documento_id = null) e as atividades voltarão a aparecer em TODOS os documentos.")) {
+      return;
+    }
+
+    setIsRestoringGlobal(true);
+
+    try {
+      console.log("🔄 Buscando marcadores de exclusão global...");
+      
+      const marcadoresGlobais = await retryWithBackoff(
+        () => Atividade.filter({
+          empreendimento_id: empreendimentoId,
+          tempo: -999,
+          documento_id: null
+        }),
+        3, 1000, 'buscarMarcadoresGlobais'
+      );
+
+      if (!marcadoresGlobais || marcadoresGlobais.length === 0) {
+        alert("Nenhum marcador de exclusão global encontrado. Todas as atividades já estão disponíveis!");
+        return;
+      }
+
+      console.log(`✅ Encontrados ${marcadoresGlobais.length} marcadores globais a serem removidos:`, marcadoresGlobais);
+
+      let deletados = 0;
+      let erros = 0;
+
+      for (const marcador of marcadoresGlobais) {
+        try {
+          await retryWithBackoff(
+            () => Atividade.delete(marcador.id),
+            3, 500, `deleteMarcadorGlobal-${marcador.id}`
+          );
+          deletados++;
+          console.log(`✅ Marcador ${marcador.id} deletado (atividade "${marcador.atividade}")`);
+        } catch (error) {
+          erros++;
+          console.error(`❌ Erro ao deletar marcador ${marcador.id}:`, error);
+        }
+      }
+
+      console.log(`\n✅ Processo concluído:`);
+      console.log(`   Deletados: ${deletados}`);
+      console.log(`   Erros: ${erros}`);
+
+      if (erros === 0) {
+        alert(`✅ Sucesso! ${deletados} atividade(s) foram restauradas e agora estão disponíveis em todos os documentos.`);
+      } else {
+        alert(`⚠️ Processo concluído com avisos:\n${deletados} restauradas\n${erros} erros\n\nAtualize a página para ver as mudanças.`);
+      }
+
+      fetchData();
+      if (onUpdate) onUpdate();
+
+    } catch (error) {
+      console.error("❌ Erro ao restaurar exclusões globais:", error);
+      alert("Erro ao restaurar atividades. Tente novamente.");
+    } finally {
+      setIsRestoringGlobal(false);
+    }
+  };
+
+
+  const renderContent = () => {
+    if (isLoading) {
+      return (
+        <div className="flex items-center justify-center p-12">
+          <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
+          <p className="ml-4 text-gray-600">Carregando catálogo de atividades...</p>
+        </div>
+      );
+    }
+
+    if (atividadesAgrupadas.length === 0 && !isLoading) {
+      return (
+        <div className="text-center py-16 px-6 bg-gray-50 rounded-lg">
+          <PackageOpen className="w-16 h-16 mx-auto text-gray-300 mb-4" />
+          <h3 className="text-xl font-semibold text-gray-800">Catálogo Vazio</h3>
+          <p className="text-gray-500 mt-2 mb-6">Nenhuma atividade encontrada para este empreendimento (verificando atividades do projeto e das folhas).</p>
+          <Button onClick={() => handleOpenModal()}>
+            <PlusCircle className="w-4 h-4 mr-2" />
+            Criar Atividade de Projeto
+          </Button>
+        </div>
+      );
+    }
+
+    const editableActivities = atividadesAgrupadas.filter(grupo => grupo.baseAtividade.isEditable);
+    const nonEditableActivities = atividadesAgrupadas.filter(grupo => !grupo.baseAtividade.isEditable);
+    const hasCheckboxColumn = editableActivities.length > 0;
+
+    return (
+      <div className="space-y-6">
+        {editableActivities.length > 0 && (
+          <div className="flex items-center justify-between p-4 border rounded-lg bg-white shadow-sm">
+            <div className="flex items-center gap-3">
+              <Checkbox
+                id="selectAll"
+                checked={selectedIds.size === editableActivities.length && editableActivities.length > 0}
+                onCheckedChange={handleSelectAll}
+                disabled={editableActivities.length === 0 || isDeletingMultiple}
+              />
+              <label htmlFor="selectAll" className="text-sm font-medium text-gray-700 cursor-pointer">
+                Selecionar todas as {editableActivities.length} atividades de projeto
+              </label>
+            </div>
+            {selectedIds.size > 0 && (
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDeleteSelected}
+                disabled={isDeletingMultiple}
+              >
+                {isDeletingMultiple ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Excluindo...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Excluir Selecionadas ({selectedIds.size})
+                  </>
+                )}
+              </Button>
+            )}
+          </div>
+        )}
+        
+        {atividadesSelecionadasParaPlanejar.size > 0 && (
+          <div className="flex items-center justify-between p-4 border-2 border-blue-500 rounded-lg bg-blue-50 shadow-sm">
+            <div className="flex items-center gap-3">
+              <Badge className="bg-blue-600 text-white">
+                {atividadesSelecionadasParaPlanejar.size} atividade{atividadesSelecionadasParaPlanejar.size > 1 ? 's' : ''} selecionada{atividadesSelecionadasParaPlanejar.size > 1 ? 's' : ''}
+              </Badge>
+              <span className="text-sm text-gray-700">
+                Selecione executor e data para planejar em lote
+              </span>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setAtividadesSelecionadasParaPlanejar(new Set())}
+              >
+                Cancelar
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {atividadesSelecionadasParaExcluir.size > 0 && (
+           <div className="flex items-center justify-between p-4 border-2 border-red-500 rounded-lg bg-red-50 shadow-sm">
+             <div className="flex items-center gap-3">
+               <Badge className="bg-red-600 text-white">
+                 {atividadesSelecionadasParaExcluir.size} atividade{atividadesSelecionadasParaExcluir.size > 1 ? 's' : ''} selecionada{atividadesSelecionadasParaExcluir.size > 1 ? 's' : ''}
+               </Badge>
+               <span className="text-sm text-gray-700">
+                 Excluir selecionadas
+               </span>
+             </div>
+             <div className="flex gap-2">
+               <Button 
+                 onClick={() => handleExcluirMultiplas()}
+                 className="bg-red-600 hover:bg-red-700"
+                 disabled={isExcluindoMultiplasFolhas}
+                 size="sm"
+               >
+                 <Trash2 className="w-4 h-4 mr-2" />
+                 Excluir do Empreendimento
+               </Button>
+               <Button
+                 variant="outline"
+                 size="sm"
+                 onClick={() => setAtividadesSelecionadasParaExcluir(new Set())}
+               >
+                 Cancelar
+               </Button>
+             </div>
+           </div>
+         )}
+
+        {atividadesPorDisciplina.map(([disciplina, grupos]) => {
+          const isDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina);
+          const subdisciplinasMap = isDocumentacao ? grupos : null;
+          const atividadesList = isDocumentacao ? null : grupos;
+          
+          return (
+          <div key={disciplina} className="border rounded-lg overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border-b">
+              <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
+                <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
+                {disciplina}
+                <Badge variant="secondary" className="ml-2">
+                  {isDocumentacao 
+                    ? Object.values(subdisciplinasMap).flat().length 
+                    : atividadesList.length
+                  } {isDocumentacao 
+                    ? Object.values(subdisciplinasMap).flat().length === 1 ? 'atividade' : 'atividades'
+                    : atividadesList.length === 1 ? 'atividade' : 'atividades'
+                  }
+                </Badge>
+              </h3>
+            </div>
+            <div className="overflow-x-auto">
+              {isDocumentacao ? (
+                // Mostrar subdisciplinas para disciplinas de documentação
+                <div className="space-y-4 p-4">
+                  {Object.entries(subdisciplinasMap)
+                    .sort((a, b) => a[0].localeCompare(b[0]))
+                    .map(([subdisciplina, atividadesSubgrupo]) => (
+                    <div key={subdisciplina} className="border rounded-lg overflow-hidden">
+                      <div className="bg-gray-50 px-3 py-2 border-b">
+                        <h4 className="font-medium text-sm text-gray-700">
+                          {subdisciplina} ({atividadesSubgrupo.length})
+                        </h4>
+                      </div>
+                      <Table className="text-sm">
+                        <TableHeader className="bg-white">
+                          <TableRow>
+                            {hasCheckboxColumn && <TableHead className="w-[50px]"></TableHead>}
+                            <TableHead className="w-[50px]">
+                              <Checkbox
+                                checked={atividadesSelecionadasParaExcluir.size > 0 && 
+                                         atividadesSubgrupo.every(grupo => atividadesSelecionadasParaExcluir.has(grupo.baseAtividade.base_atividade_id || grupo.baseAtividade.id))}
+                                onCheckedChange={(checked) => {
+                                  const ids = atividadesSubgrupo.map(g => g.baseAtividade.base_atividade_id || g.baseAtividade.id);
+                                  setAtividadesSelecionadasParaExcluir(prev => {
+                                    const newSet = new Set(prev);
+                                    ids.forEach(id => {
+                                      if (checked) newSet.add(id);
+                                      else newSet.delete(id);
+                                    });
                                     return newSet;
                                   });
                                 }}
