@@ -154,7 +154,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       // Buscar etapas cadastradas no empreendimento
       const empreendimento = (empreendimentoData && empreendimentoData[0]) || null;
       const etapasCadastradas = empreendimento?.etapas || [];
-      
+
       const normalizedProjectActivities = (activitiesToProcess || [])
         .filter(pa => !pa.id_atividade && pa.tempo !== -999)
         .map(ativ => ({
