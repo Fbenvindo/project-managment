@@ -175,12 +175,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
           if (!isExcludedFromProject) {
             const override = overrideActivitiesGlobalMap.get(baseAtividade.id);
-            const etapaBase = etapasCadastradas.length > 0 ? etapasCadastradas[0] : baseAtividade.etapa;
+            // Se etapa original da atividade está em etapas cadastradas, usar ela; senão, deixar editável (null para que o modal peça escolha)
+            const etapaBase = etapasCadastradas.includes(baseAtividade.etapa) ? baseAtividade.etapa : etapasCadastradas.length > 0 ? null : baseAtividade.etapa;
             const etapaCorreta = override ? override.etapa : etapaBase;
-            
-            // Verificar se existe planejamento geral (sem documento_id) para esta atividade
-            const planKey = `null-${baseAtividade.id}`;
-            const existingPlan = planejamentosMap.get(planKey);
             
             if (existingPlan) {
               // Se há planejamento geral, mostrar como "Planejada" ou "Concluída"
@@ -284,19 +281,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           if (isExcludedFromProject || isExcludedFromThisDoc) return;
 
           const disciplinaMatch = disciplinasDoc.includes(baseAtividade.disciplina);
-          const subdisciplinaMatch = subdisciplinasDoc.includes(baseAtividade.subdisciplina);
-
-          if (disciplinaMatch && subdisciplinaMatch) {
-            const planKey = `${doc.id}-${baseAtividade.id}`;
-            const existingPlan = planejamentosMap.get(planKey);
-            const overrideKey = `${doc.id}|${baseAtividade.id}`;
-            const override = overrideActivitiesByDocMap.get(overrideKey) || overrideActivitiesGlobalMap.get(baseAtividade.id);
-            // Se empreendimento tem etapas cadastradas, usar a primeira como padrão para atividades sem override
-            const etapaBase = etapasCadastradas.length > 0 ? etapasCadastradas[0] : baseAtividade.etapa;
-            const etapaCorreta = override ? override.etapa : etapaBase;
-            const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
-
-            const sourceDisplay = `Folha: ${doc.numero} - ${doc.arquivo || 'Sem Nome'}`;
 
             if (existingPlan) {
                 documentActivities.push({
