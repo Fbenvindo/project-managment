@@ -57,7 +57,7 @@ export function processDocumentationActivities(
         });
       });
     } else {
-      // Se não há planejamento, mostrar como "Disponível" em uma etapa padrão
+      // Se não há planejamento, criar uma linha para CADA etapa cadastrada
       const executorPrincipal = override
         ? override.executor_principal
         : baseAtividade.executor_principal;
@@ -65,24 +65,26 @@ export function processDocumentationActivities(
         override?.tempo !== undefined && override?.tempo !== null
           ? override.tempo
           : baseAtividade.tempo || 0;
-      const etapaBase =
-        etapasCadastradas.length > 0
-          ? etapasCadastradas[0]
-          : baseAtividade.etapa;
-      const etapaCorreta = override ? override.etapa : etapaBase;
+      const etapasParaExpandir = etapasCadastradas.length > 0
+        ? etapasCadastradas
+        : [baseAtividade.etapa];
 
-      atividadesDocumentacao.push({
-        ...baseAtividade,
-        uniqueId: `doc-${baseAtividade.id}`,
-        id: baseAtividade.id,
-        tempo: tempoFinal,
-        source: 'Catálogo',
-        source_documento_id: null,
-        status: 'Disponível',
-        isEditable: false,
-        etapa: etapaCorreta,
-        executor_principal: executorPrincipal,
-        base_atividade_id: baseAtividade.id
+      etapasParaExpandir.forEach((etapa, idx) => {
+        const etapaCorreta = override ? override.etapa : etapa;
+        
+        atividadesDocumentacao.push({
+          ...baseAtividade,
+          uniqueId: `doc-${baseAtividade.id}-${idx}`,
+          id: baseAtividade.id,
+          tempo: tempoFinal,
+          source: 'Catálogo',
+          source_documento_id: null,
+          status: 'Disponível',
+          isEditable: false,
+          etapa: etapaCorreta,
+          executor_principal: executorPrincipal,
+          base_atividade_id: baseAtividade.id
+        });
       });
     }
   });
@@ -238,37 +240,37 @@ export function processDocumentActivities(
           });
         });
       } else {
-        // Sem planejamento, mostrar como disponível
+        // Sem planejamento, criar uma linha para CADA etapa cadastrada
         const tempoComOverride =
           override?.tempo !== undefined && override?.tempo !== null
             ? override.tempo
             : baseAtividade.tempo || 0;
         const tempoFinal = tempoComOverride * fatorDificuldade;
-        const etapaBase =
-          etapasCadastradas.length > 0
-            ? etapasCadastradas[0]
-            : baseAtividade.etapa;
-        const etapaCorreta = override
-          ? override.etapa
-          : etapaBase;
+        const etapasParaExpandir = etapasCadastradas.length > 0
+          ? etapasCadastradas
+          : [baseAtividade.etapa];
         const executorPrincipal = override
           ? override.executor_principal
           : baseAtividade.executor_principal;
 
-        documentActivities.push({
-          ...baseAtividade,
-          uniqueId: `avail-${doc.id}-${baseAtividade.id}`,
-          id: baseAtividade.id,
-          tempo: tempoFinal,
-          source: sourceDisplay,
-          source_documento_id: doc.id,
-          source_documento_numero: doc.numero,
-          source_documento_arquivo: doc.arquivo,
-          status: 'Disponível',
-          isEditable: false,
-          etapa: etapaCorreta,
-          executor_principal: executorPrincipal,
-          base_atividade_id: baseAtividade.id
+        etapasParaExpandir.forEach((etapa, idx) => {
+          const etapaCorreta = override ? override.etapa : etapa;
+          
+          documentActivities.push({
+            ...baseAtividade,
+            uniqueId: `avail-${doc.id}-${baseAtividade.id}-${idx}`,
+            id: baseAtividade.id,
+            tempo: tempoFinal,
+            source: sourceDisplay,
+            source_documento_id: doc.id,
+            source_documento_numero: doc.numero,
+            source_documento_arquivo: doc.arquivo,
+            status: 'Disponível',
+            isEditable: false,
+            etapa: etapaCorreta,
+            executor_principal: executorPrincipal,
+            base_atividade_id: baseAtividade.id
+          });
         });
       }
     });
