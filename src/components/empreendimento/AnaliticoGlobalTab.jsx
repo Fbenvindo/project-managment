@@ -154,7 +154,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       // Buscar etapas cadastradas no empreendimento
       const empreendimento = (empreendimentoData && empreendimentoData[0]) || null;
       const etapasCadastradas = empreendimento?.etapas || [];
-
+      
       const normalizedProjectActivities = (activitiesToProcess || [])
         .filter(pa => !pa.id_atividade && pa.tempo !== -999)
         .map(ativ => ({
@@ -175,9 +175,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
           const isExcludedFromProject = excludedActivitiesSet.has(baseAtividade.id);
           if (!isExcludedFromProject) {
             const override = overrideActivitiesGlobalMap.get(baseAtividade.id);
-            // Se etapa original da atividade está em etapas cadastradas, usar ela; senão, deixar editável (null para que o modal peça escolha)
-            const etapaBase = etapasCadastradas.includes(baseAtividade.etapa) ? baseAtividade.etapa : etapasCadastradas.length > 0 ? null : baseAtividade.etapa;
+            const etapaBase = etapasCadastradas.length > 0 ? etapasCadastradas[0] : baseAtividade.etapa;
             const etapaCorreta = override ? override.etapa : etapaBase;
+            
+            // Verificar se existe planejamento geral (sem documento_id) para esta atividade
+            const planKey = `null-${baseAtividade.id}`;
+            const existingPlan = planejamentosMap.get(planKey);
             
             if (existingPlan) {
               // Se há planejamento geral, mostrar como "Planejada" ou "Concluída"
@@ -288,23 +291,58 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
             const existingPlan = planejamentosMap.get(planKey);
             const overrideKey = `${doc.id}|${baseAtividade.id}`;
             const override = overrideActivitiesByDocMap.get(overrideKey) || overrideActivitiesGlobalMap.get(baseAtividade.id);
-            const etapaBase = etapasCadastradas.includes(baseAtividade.etapa) ? baseAtividade.etapa : etapasCadastradas.length > 0 ? null : baseAtividade.etapa;
+            // Se empreendimento tem etapas cadastradas, usar a primeira como padrão para atividades sem override
+            const etapaBase = etapasCadastradas.length > 0 ? etapasCadastradas[0] : baseAtividade.etapa;
             const etapaCorreta = override ? override.etapa : etapaBase;
             const executorPrincipal = override ? override.executor_principal : baseAtividade.executor_principal;
+
             const sourceDisplay = `Folha: ${doc.numero} - ${doc.arquivo || 'Sem Nome'}`;
 
             if (existingPlan) {
-                documentActivities.push({ ...baseAtividade, id: existingPlan.id, uniqueId: `plano-${existingPlan.id}`, atividade: existingPlan.descritivo || baseAtividade.atividade, tempo: existingPlan.tempo_planejado, source: sourceDisplay, source_documento_id: doc.id, source_documento_numero: doc.numero, source_documento_arquivo: doc.arquivo, status: existingPlan.status === 'concluido' ? 'Concluída' : 'Planejada', isEditable: false, etapa: existingPlan.etapa || etapaCorreta, executor_principal: existingPlan.executor_principal || executorPrincipal, base_atividade_id: baseAtividade.id });
+                documentActivities.push({
+                  ...baseAtividade,
+                  id: existingPlan.id,
+                  uniqueId: `plano-${existingPlan.id}`,
+                  atividade: existingPlan.descritivo || baseAtividade.atividade,
+                  tempo: existingPlan.tempo_planejado,
+                  source: sourceDisplay,
+                  source_documento_id: doc.id,
+                  source_documento_numero: doc.numero,
+                  source_documento_arquivo: doc.arquivo,
+                  status: existingPlan.status === 'concluido' ? 'Concluída' : 'Planejada',
+                  isEditable: false,
+                  etapa: existingPlan.etapa || etapaCorreta,
+                  executor_principal: existingPlan.executor_principal || executorPrincipal,
+                  base_atividade_id: baseAtividade.id,
+                });
               } else {
-                const tempoComOverride = override?.tempo !== undefined && override?.tempo !== null ? override.tempo : (baseAtividade.tempo || 0);
+                // Aplicar override de tempo se existir
+                const tempoComOverride = override?.tempo !== undefined && override?.tempo !== null
+                  ? override.tempo
+                  : (baseAtividade.tempo || 0);
                 const tempoFinal = tempoComOverride * fatorDificuldade;
-                documentActivities.push({ ...baseAtividade, uniqueId: `avail-${doc.id}-${baseAtividade.id}`, id: baseAtividade.id, tempo: tempoFinal, source: sourceDisplay, source_documento_id: doc.id, source_documento_numero: doc.numero, source_documento_arquivo: doc.arquivo, status: 'Disponível', isEditable: false, etapa: etapaCorreta, executor_principal: executorPrincipal, base_atividade_id: baseAtividade.id });
+
+                documentActivities.push({
+                    ...baseAtividade,
+                    uniqueId: `avail-${doc.id}-${baseAtividade.id}`,
+                    id: baseAtividade.id,
+                    tempo: tempoFinal,
+                    source: sourceDisplay,
+                    source_documento_id: doc.id,
+                    source_documento_numero: doc.numero,
+                    source_documento_arquivo: doc.arquivo,
+                    status: 'Disponível',
+                    isEditable: false,
+                    etapa: etapaCorreta,
+                    executor_principal: executorPrincipal,
+                    base_atividade_id: baseAtividade.id,
+                  });
               }
           }
-          });
-          });
+        });
+      });
 
-          setCombinedActivities([...normalizedProjectActivities, ...documentActivities, ...atividadesDocumentacao]);
+      setCombinedActivities([...normalizedProjectActivities, ...documentActivities, ...atividadesDocumentacao]);
       setDisciplinas(disciplinasData || []);
 
     } catch (error) {
