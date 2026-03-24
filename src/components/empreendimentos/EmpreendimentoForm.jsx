@@ -124,7 +124,7 @@ export default function EmpreendimentoForm({ empreendimento, onSubmit, onClose, 
           </CardHeader>
           
           <CardContent className="p-6 overflow-y-auto flex-1">
-            <form id="empreendimento-form" onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="nome">Nome do Empreendimento *</Label>
