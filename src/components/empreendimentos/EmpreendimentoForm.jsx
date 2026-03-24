@@ -53,8 +53,9 @@ export default function EmpreendimentoForm({ empreendimento, onSubmit, onClose, 
     novasEtapas[index] = valor;
     setEtapasEditaveis(novasEtapas);
     
-    // Salvar todas as etapas mantendo sua posição (incluindo vazias)
-    setFormData(prev => ({ ...prev, etapas: novasEtapas }));
+    // Atualizar formData apenas com etapas preenchidas
+    const etapasPreenchidas = novasEtapas.filter(e => e.trim() !== "");
+    setFormData(prev => ({ ...prev, etapas: etapasPreenchidas }));
   };
 
   const handleFileUpload = async (e) => {
