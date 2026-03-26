@@ -516,44 +516,35 @@ export default function DocumentoItem({
                   const planejamentoDaEtapa = planejamentosDoDocumento.find(p => p.etapa === etapaSelecionada && p.executor_principal);
                   const executorDaEtapa = planejamentoDaEtapa?.executor_principal || null;
 
-                  // Fallback: executor de qualquer outra etapa ou do documento
-                  const qualquerPlanejamentoComExecutor = planejamentosDoDocumento.find(p => p.executor_principal);
-                  const executorFallback = qualquerPlanejamentoComExecutor?.executor_principal || doc.executor_principal || null;
-                  const etapaFallback = qualquerPlanejamentoComExecutor?.etapa || null;
-
-                  const executorExibir = executorDaEtapa || executorFallback;
-                  const estaPlaneadoNaEtapa = !!executorDaEtapa;
-
-                  return (
-                    <div className="space-y-1">
-                      {executorExibir && (
-                        <div className={`flex items-center justify-between p-1 rounded border ${estaPlaneadoNaEtapa ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'}`}>
-                          <div className="flex flex-col min-w-0">
-                            <div className="flex items-center gap-1">
-                              <div className={`w-2 h-2 rounded-full flex-shrink-0 ${estaPlaneadoNaEtapa ? 'bg-green-500' : 'bg-gray-400'}`}></div>
-                              <span className={`text-xs font-medium truncate ${estaPlaneadoNaEtapa ? 'text-green-800' : 'text-gray-700'}`}>
-                                {usuariosOrdenados.find(u => u.email === executorExibir)?.nome || executorExibir}
-                              </span>
-                            </div>
-                            {!estaPlaneadoNaEtapa && etapaFallback && (
-                              <span className="text-xs text-gray-400 italic pl-3">Planejado em: {etapaFallback}</span>
-                            )}
+                  if (planejamentoDaEtapa && executorDaEtapa) {
+                    return (
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
+                          <div className="flex items-center gap-1 min-w-0">
+                            <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+                            <span className="text-xs font-medium text-green-800 truncate">
+                              {usuariosOrdenados.find(u => u.email === executorDaEtapa)?.nome || executorDaEtapa}
+                            </span>
                           </div>
                           <Button variant="ghost" size="sm" onClick={() => handleExecutorChange('executor_principal', null)} className="text-xs text-red-600 hover:text-red-700 h-6 flex-shrink-0" disabled={isUpdating || isDocLoading}>
                             Remover
                           </Button>
                         </div>
-                      )}
-                      <Select onValueChange={(value) => handleExecutorSelectChange(value)} disabled={isUpdating || isDocLoading}>
-                        <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
-                          <Users2 className="w-3 h-3 mr-1" />
-                          <SelectValue placeholder={executorExibir ? `Trocar executor (${etapaSelecionada})` : 'Selecionar Executor'} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {usuariosOrdenados.map(u => <SelectItem key={u.id} value={u.email}>{u.nome}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
-                    </div>
+                        <div className="text-xs text-gray-500 italic">{etapaSelecionada}</div>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <Select onValueChange={(value) => handleExecutorSelectChange(value)} disabled={isUpdating || isDocLoading}>
+                      <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
+                        <Users2 className="w-3 h-3 mr-1" />
+                        <SelectValue placeholder="Selecionar Executor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {usuariosOrdenados.map(u => <SelectItem key={u.id} value={u.email}>{u.nome}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
                   );
                 }
 
