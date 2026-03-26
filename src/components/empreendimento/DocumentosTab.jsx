@@ -400,6 +400,17 @@ export default function DocumentosTab({
       const inicioPlanejado = diasUtilizados[0];
       const terminoPlanejado = format(dataTermino, 'yyyy-MM-dd');
 
+      // Buscar predecessora_id do planejamento da predecessora (para ordenação correta no calendário)
+      let predecessoraPlanejamentoId = null;
+      if (documento.predecessora_id) {
+        const planoPredecessora = localPlanejamentos.find(p =>
+          p.documento_id === documento.predecessora_id &&
+          (p.etapa || '').toLowerCase() === (etapa || '').toLowerCase() &&
+          p.tipo_plano === 'documento'
+        );
+        if (planoPredecessora) predecessoraPlanejamentoId = planoPredecessora.id;
+      }
+
       const novoPlano = await retryWithBackoff(() => PlanejamentoDocumento.create({
         empreendimento_id: empreendimento.id,
         documento_id: documento.id,
@@ -407,7 +418,8 @@ export default function DocumentosTab({
         etapa, executor_principal: executorEmail, executores: [executorEmail],
         tempo_planejado: tempoTotal, inicio_planejado: inicioPlanejado,
         termino_planejado: terminoPlanejado, horas_por_dia: distribuicao,
-        status: 'nao_iniciado', prioridade: 1, tipo_plano: 'documento'
+        status: 'nao_iniciado', prioridade: 1, tipo_plano: 'documento',
+        ...(predecessoraPlanejamentoId ? { predecessora_id: predecessoraPlanejamentoId } : {})
       }), 3, 1000, 'createPlanDocumento');
 
       const docAtualizado = await retryWithBackoff(() => Documento.update(documento.id, {
