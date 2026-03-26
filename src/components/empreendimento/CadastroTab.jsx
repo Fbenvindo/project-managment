@@ -54,16 +54,13 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
   useEffect(() => {
     if (!empreendimento?.id) return;
+    const etapasKey = JSON.stringify(empreendimento?.etapas || []);
 
-    // Se mudou de empreendimento, reseta e carrega dados do novo
-    if (empreendimento.id !== loadedEmpreendimentoId) {
-      console.log(`🔄 Mudança de empreendimento: ${loadedEmpreendimentoId} -> ${empreendimento.id}`);
-      setLoadedEmpreendimentoId(empreendimento.id);
-      setIsLoading(true);
-      // Carrega dados imediatamente
-      loadData();
-    }
-  }, [empreendimento?.id]);
+    // Recarregar se mudou empreendimento OU se mudaram as etapas configuradas
+    setLoadedEmpreendimentoId(empreendimento.id);
+    setIsLoading(true);
+    loadData();
+  }, [empreendimento?.id, JSON.stringify(empreendimento?.etapas || [])]);
 
   // Auto-save desabilitado - causava conflitos de rate limit
   // useEffect(() => {
