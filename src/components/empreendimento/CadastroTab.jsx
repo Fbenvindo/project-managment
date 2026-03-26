@@ -46,6 +46,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   const [massEditData, setMassEditData] = useState('');
   const [etapasMinimizadas, setEtapasMinimizadas] = useState({});
   const [linhasModificadas, setLinhasModificadas] = useState(new Set());
+  const [etapasEfetivas, setEtapasEfetivas] = useState([]);
   const [editingRevisao, setEditingRevisao] = useState(null); // { etapa, revisao }
   const [editingRevisaoValue, setEditingRevisaoValue] = useState('');
   
@@ -54,13 +55,9 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
   useEffect(() => {
     if (!empreendimento?.id) return;
-    const etapasKey = JSON.stringify(empreendimento?.etapas || []);
-
-    // Recarregar se mudou empreendimento OU se mudaram as etapas configuradas
-    setLoadedEmpreendimentoId(empreendimento.id);
     setIsLoading(true);
     loadData();
-  }, [empreendimento?.id, JSON.stringify(empreendimento?.etapas || [])]);
+  }, [empreendimento?.id]);
 
   // Auto-save desabilitado - causava conflitos de rate limit
   // useEffect(() => {
@@ -186,9 +183,11 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         console.log('🎯 Resumo de revisões carregadas:', revisoesMap);
       }
       
-      // Inicializar revisões para todas as etapas, removendo as excluídas
+      // Inicializar revisões para TODAS as etapas encontradas nos dados do banco + etapas do empreendimento
+      const etapasDoBanco = Object.keys(revisoesMap);
+      const etapasUnion = [...new Set([...ETAPAS, ...etapasDoBanco])];
       const revisoesCompletas = {};
-      ETAPAS.forEach(etapa => {
+      etapasUnion.forEach(etapa => {
         // Usar APENAS as revisões mapeadas (dados + _revisoes_existentes)
         // NÃO usar DEFAULT_REVISOES como fallback, pois pode sobrescrever revisões criadas
         const revisoesEtapaSet = revisoesMap[etapa];
@@ -209,7 +208,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         console.log(`✅ Etapa ${etapa}: ${revisoesCompletas[etapa].join(', ')} (Total: ${revisoesCompletas[etapa].length})`);
       });
       
-      // Log com stringify para evitar problema de referência do console
       console.log('📋 Revisões finais para setar no estado:', JSON.stringify(revisoesCompletas, null, 2));
       console.log('📋 ETAPAS para debug:', ETAPAS);
       console.log('📋 revisoesMap para debug:', revisoesMap);
@@ -229,6 +227,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       });
       
       // Setar tudo junto de uma vez
+      setEtapasEfetivas(etapasUnion);
       setRevisoesPorEtapa(revisoesCompletas);
       setEtapasExcluidas(Array.from(etapasExcluidasSet));
       setLinhas(novasLinhas);
@@ -497,7 +496,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       return;
     }
     
-    const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
+    const etapasVisiveis = ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e));
     const etapaIndex = etapasVisiveis.indexOf(etapa);
     const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
     const revisaoIndex = revisoesEtapa.indexOf(revisao);
@@ -600,7 +599,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       return;
     }
     
-    const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
+    const etapasVisiveis = ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e));
     const etapaIndex = etapasVisiveis.indexOf(etapa);
     const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
     const revisaoIndex = revisoesEtapa.indexOf(revisao);
@@ -719,7 +718,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                };
 
                // GARANTIR que revisões criadas são salvas mesmo que vazias
-               const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
+               const etapasVisiveis = ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e));
                etapasVisiveis.forEach(etapa => {
                  const revisoesEtapa = revisoesPorEtapa[etapa];
                  if (revisoesEtapa && revisoesEtapa.length > 0) {
@@ -846,8 +845,10 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
   }, [linhas, documentos]);
 
+  const ETAPAS_VIEW = etapasEfetivas.length > 0 ? etapasEfetivas : ETAPAS;
+
   const larguraTotalEtapas = useMemo(() => {
-    const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
+    const etapasVisiveis = ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e));
     return etapasVisiveis.reduce((total, etapa) => {
       const isMinimizada = etapasMinimizadas[etapa];
       if (isMinimizada) {
@@ -856,10 +857,10 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
       return total + ((revisoesEtapa.length * 110) + 40);
     }, 0);
-  }, [ETAPAS, etapasExcluidas, etapasMinimizadas, revisoesPorEtapa]);
+  }, [ETAPAS_VIEW, etapasExcluidas, etapasMinimizadas, revisoesPorEtapa]);
 
   const handleExportData = () => {
-    const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
+    const etapasVisiveis = ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e));
 
     // Cabeçalhos
     let headers = ['folha', 'descritivo', 'disciplina'];
@@ -910,7 +911,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   };
 
   const handleExportTemplate = () => {
-    const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
+    const etapasVisiveis = ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e));
     
     // Criar cabeçalhos dinamicamente
     let headers = ['folha'];
@@ -1273,7 +1274,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 {/* Cabeçalho Fixo das Etapas */}
                 <div className="bg-blue-100 border-b-2 border-gray-300 sticky top-0 z-20" style={{ minWidth: `${larguraTotalEtapas}px`, height: '72px' }}>
                   <div className="flex h-full">
-                    {ETAPAS.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
+                    {ETAPAS_VIEW.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
                       const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                       const isMinimizada = etapasMinimizadas[etapa];
                       const colSpanTotal = isMinimizada ? 1 : revisoesEtapa.length + 1;
@@ -1384,7 +1385,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                   <div key={disciplina}>
                     {/* Cabeçalho da Disciplina - para alinhar com a coluna de folhas */}
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-300 flex" style={{ minWidth: `${larguraTotalEtapas}px`, height: '44px' }}>
-                      {ETAPAS.filter(e => !etapasExcluidas.includes(e)).map((etapa) => {
+                      {ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e)).map((etapa) => {
                         const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                         const isMinimizada = etapasMinimizadas[etapa];
                         return (
@@ -1403,7 +1404,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                     {/* Linhas da Disciplina */}
                     {linhasDaDisciplina.map((linha) => {
                       const doc = documentos.find(d => d.id === linha.documento_id);
-                      const etapasVisiveis = ETAPAS.filter(e => !etapasExcluidas.includes(e));
+                      const etapasVisiveis = ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e));
                       
                       return (
                         <div key={linha.id} className="flex border-b border-gray-200 hover:bg-gray-50" style={{ minWidth: `${larguraTotalEtapas}px`, height: '48px' }}>
@@ -1582,7 +1583,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                   className="w-full border border-gray-300 rounded-md p-2 text-sm"
                 >
                   <option value="">Selecione a etapa</option>
-                  {ETAPAS.filter(e => !etapasExcluidas.includes(e)).map(etapa => (
+                  {ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e)).map(etapa => (
                     <option key={etapa} value={etapa}>{etapa}</option>
                   ))}
                 </select>
