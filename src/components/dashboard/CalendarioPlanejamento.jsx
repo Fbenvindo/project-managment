@@ -865,12 +865,21 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     const topoOrderMap = new Map();
     const buildGlobalTopoOrder = (allPlanos) => {
       const idSet = new Set(allPlanos.map(p => p.id));
+      // Mapear documento_id -> planejamento para resolver predecessoras por documento
+      const docIdToPlano = {};
+      allPlanos.forEach(p => { if (p.documento_id) docIdToPlano[p.documento_id] = p; });
       const inDegree = {};
       const adjList = {};
       allPlanos.forEach(p => { inDegree[p.id] = 0; adjList[p.id] = []; });
       allPlanos.forEach(p => {
-        if (p.predecessora_id && idSet.has(p.predecessora_id)) {
-          adjList[p.predecessora_id].push(p.id);
+        // Usar predecessora_id direto do planejamento, ou derivar do documento
+        let predId = p.predecessora_id;
+        if (!predId && p.documento?.predecessora_id) {
+          const predPlano = docIdToPlano[p.documento.predecessora_id];
+          if (predPlano) predId = predPlano.id;
+        }
+        if (predId && idSet.has(predId)) {
+          adjList[predId].push(p.id);
           inDegree[p.id]++;
         }
       });
