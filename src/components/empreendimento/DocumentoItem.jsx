@@ -547,7 +547,7 @@ export default function DocumentoItem({
                       <Select onValueChange={(value) => handleExecutorSelectChange(value)} disabled={isUpdating || isDocLoading}>
                         <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
                           <Users2 className="w-3 h-3 mr-1" />
-                          <SelectValue placeholder={executorExibir ? `Trocar executor (${etapaSelecionada})` : 'Selecionar Executor'} />
+                          <SelectValue placeholder={executorExibir ? `Planejar: ${etapaSelecionada}` : 'Selecionar Executor'} />
                         </SelectTrigger>
                         <SelectContent>
                           {usuariosOrdenados.map(u => <SelectItem key={u.id} value={u.email}>{u.nome}</SelectItem>)}
