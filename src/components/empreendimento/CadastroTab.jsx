@@ -219,37 +219,30 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       console.log('📋 revisoesMap para debug:', revisoesMap);
       console.log('🔴 ANTES DE SETAR STATE - revisoesCompletas:', JSON.stringify(revisoesCompletas, null, 2));
       
-      // Criar uma linha para cada documento (na ordem dos documentos)
-      // Para o mesmo documento_id, preferir o registro com mais datas
-      const bestDataMap = new Map();
-      (data || []).forEach(item => {
-        if (!item.documento_id) return;
-        const existing = bestDataMap.get(item.documento_id);
-        if (!existing) {
-          bestDataMap.set(item.documento_id, item);
-        } else {
-          // Preferir o que tem mais chaves de etapas com valores reais
-          const countDates = (d) => Object.values(d.datas || {}).reduce((acc, etapaData) => {
-            if (!etapaData || typeof etapaData !== 'object') return acc;
-            return acc + Object.keys(etapaData).filter(k => !k.startsWith('_')).length;
-          }, 0);
-          if (countDates(item) > countDates(existing)) {
-            bestDataMap.set(item.documento_id, item);
-          }
-        }
-      });
-
-      const novasLinhas = sortedDocs.map((doc, idx) => {
-        const existingData = bestDataMap.get(doc.id);
-        return existingData || {
+      // Montar linhas baseado nos registros do DataCadastro (fonte primária),
+      // depois adicionar documentos que ainda não têm registro.
+      const docIdSet = new Set(sortedDocs.map(d => d.id));
+      
+      // Linhas com DataCadastro existente, ordenadas por ordem
+      const linhasComData = (data || [])
+        .filter(item => item.documento_id)
+        .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
+      
+      const documento_idsComData = new Set(linhasComData.map(l => l.documento_id));
+      
+      // Documentos sem registro DataCadastro ainda
+      const docsNovos = sortedDocs
+        .filter(doc => !documento_idsComData.has(doc.id))
+        .map((doc, idx) => ({
           id: `temp-${doc.id}`,
           empreendimento_id: empreendimento.id,
-          ordem: idx,
+          ordem: linhasComData.length + idx,
           documento_id: doc.id,
           datas: {},
           isNew: true
-        };
-      });
+        }));
+      
+      const novasLinhas = [...linhasComData, ...docsNovos];
       
       // Setar tudo junto de uma vez
       setEtapasEfetivas(etapasUnion);
