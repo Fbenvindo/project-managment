@@ -132,24 +132,12 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         console.log('📊 Processando dados carregados do banco:', data.length, 'registros');
         data.forEach((item, itemIdx) => {
           console.log(`\n[${itemIdx}] Processando item ID: ${item.id}, documento_id: ${item.documento_id}`);
-          
-          // Normalizar chaves de datas para o case correto de ETAPAS
-          const normalizedDatas = {};
-          if (item.datas) {
-            Object.entries(item.datas).forEach(([etapaKey, val]) => {
-              const matchedEtapa = ETAPAS.find(e => e.toUpperCase() === etapaKey.toUpperCase()) || etapaKey;
-              normalizedDatas[matchedEtapa] = val;
-            });
-          }
-          const normalizedItem = { ...item, datas: normalizedDatas };
-          
           if (item.documento_id) {
-            dataMap.set(item.documento_id, normalizedItem);
+            dataMap.set(item.documento_id, item);
           }
 
           // Detectar revisões existentes e excluídas por etapa
-          if (normalizedItem.datas) {
-            const item = normalizedItem; // shadow original para reutilizar código abaixo
+          if (item.datas) {
             console.log(`  Datas para este item:`, Object.keys(item.datas));
             Object.entries(item.datas).forEach(([etapa, etapaData]) => {
               console.log(`  📌 Processando etapa: ${etapa}`, etapaData);
