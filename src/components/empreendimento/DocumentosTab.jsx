@@ -230,16 +230,9 @@ export default function DocumentosTab({
               !atividadesExcluidasGlobalChild.has(ativ.id) && !atividadesExcluidasPorDocChild.has(ativ.id)
             );
 
-            const etapasEmpChild = empreendimento?.etapas || [];
-            const mapearEtapaChild = (etapaAtividade) => {
-              if (etapasEmpChild.includes(etapaAtividade)) return etapaAtividade;
-              // A etapa não existe no empreendimento → mapear para a etapa de planejamento selecionada
-              return etapaParaPlanejamento !== 'todas' ? etapaParaPlanejamento : (etapasEmpChild[0] || etapaAtividade);
-            };
             const atividadesParaCalculoChild = atividadesGeraisChild.filter(ativ => {
               const etapaBase = etapaOverridesChild.has(ativ.id) ? etapaOverridesChild.get(ativ.id) : ativ.etapa;
-              const etapaFinal = mapearEtapaChild(etapaBase);
-              return etapaParaPlanejamento === "todas" || etapaFinal === etapaParaPlanejamento;
+              return etapaParaPlanejamento === "todas" || (etapaBase || '').toLowerCase() === (etapaParaPlanejamento || '').toLowerCase();
             });
 
             const tempoTotalChild = atividadesParaCalculoChild.reduce((total, ativ) => {
@@ -335,18 +328,9 @@ export default function DocumentosTab({
       // Se a etapa original da atividade não existe nas etapas do empreendimento,
       // mapear para a etapa selecionada para planejamento (todas as atividades entram na etapa escolhida)
       // Se empreendimento não tem etapas, usar a etapa original da atividade
-      const etapasEmp = empreendimento?.etapas || [];
-      const mapearEtapa = (etapaAtividade) => {
-        if (etapasEmp.includes(etapaAtividade)) return etapaAtividade;
-        // A etapa não existe no empreendimento → mapear para a etapa de planejamento selecionada
-        // Se empreendimento não tem etapas, usar a etapa original da atividade
-        if (etapasEmp.length === 0) return etapaAtividade;
-        return etapa;
-      };
-
       const atividadesDaEtapa = atividadesGerais.filter(ativ => {
         const etapaBase = etapaOverrides.has(ativ.id) ? etapaOverrides.get(ativ.id) : ativ.etapa;
-        return mapearEtapa(etapaBase) === etapa;
+        return (etapaBase || '').toLowerCase() === (etapa || '').toLowerCase();
       });
 
       if (atividadesDaEtapa.length === 0) { console.warn(`Nenhuma atividade encontrada para a etapa "${etapa}" no documento ${documento.numero}. Pulando.`); return; }
