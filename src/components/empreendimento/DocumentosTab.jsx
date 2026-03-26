@@ -297,9 +297,18 @@ export default function DocumentosTab({
         .filter(a => a.empreendimento_id === empreendimento.id && a.documento_id)
         .map(a => a.documento_id);
 
+      // IDs de atividades genéricas que têm override específico nesta folha (evitar dupla contagem)
+      const idsComOverrideEspecifico = new Set();
+      allAtividades.forEach(ativ => {
+        if (ativ.empreendimento_id === empreendimento.id && ativ.documento_id === documento.id && ativ.id_atividade && ativ.tempo !== -999) {
+          idsComOverrideEspecifico.add(ativ.id_atividade);
+        }
+      });
+
       let atividadesGerais = allAtividades.filter(ativ => {
         // Atividades genéricas (sem empreendimento) com disciplina/subdisciplina compatível
         if (!ativ.empreendimento_id) {
+          if (idsComOverrideEspecifico.has(ativ.id)) return false; // já existe override específico
           return ativ.disciplina === disciplinaDoc && Array.isArray(subdisciplinasDoc) && subdisciplinasDoc.includes(ativ.subdisciplina);
         }
         // Atividades específicas desta folha (vinculadas ao documento)
