@@ -80,18 +80,10 @@ export default function DocumentoItem({
     return localPlanejamentos.filter(p => p.documento_id === doc.id);
   }, [localPlanejamentos, doc.id]);
 
-  // Mapear etapa do catálogo para etapa do empreendimento
+  // Mapear etapa do catálogo para etapa do empreendimento (sem remapear para a etapa selecionada)
   const mapearEtapaEmp = useMemo(() => {
-    const etapasEmp = empreendimento?.etapas || [];
-    const etapasUnicas = [...new Set(etapasEmp.filter(Boolean))];
-    return (etapaAtividade) => {
-      if (etapasUnicas.includes(etapaAtividade)) return etapaAtividade;
-      // A etapa não existe no empreendimento → mapear para a etapa selecionada para planejamento (ou primeira disponível)
-      if (etapaParaPlanejamento && etapaParaPlanejamento !== 'todas') return etapaParaPlanejamento;
-      if (etapasUnicas.length > 0) return etapasUnicas[0];
-      return etapaAtividade;
-    };
-  }, [empreendimento?.etapas, etapaParaPlanejamento]);
+    return (etapaAtividade) => etapaAtividade;
+  }, []);
 
   const atividadesDisponiveis = useMemo(() => {
     const subdisciplinasDoc = doc.subdisciplinas || [];
