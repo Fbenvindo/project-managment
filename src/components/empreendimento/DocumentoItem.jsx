@@ -95,7 +95,9 @@ export default function DocumentoItem({
     allAtividades.forEach(ativ => {
       if (ativ.empreendimento_id === empreendimento.id && ativ.id_atividade && ativ.tempo !== -999) {
         etapaOverrides.set(ativ.id_atividade, ativ.etapa);
+        etapaOverrides.set(ativ.id, ativ.etapa);
         tempoOverrides.set(ativ.id_atividade, ativ.tempo);
+        tempoOverrides.set(ativ.id, ativ.tempo);
       }
     });
 
@@ -151,7 +153,7 @@ export default function DocumentoItem({
     if (etapaParaPlanejamento !== 'todas') {
       atividadesGerais = atividadesGerais.filter(ativ => {
         const etapaBase = etapaOverrides.has(ativ.id) ? etapaOverrides.get(ativ.id) : ativ.etapa;
-        return mapearEtapaEmp(etapaBase) === etapaParaPlanejamento;
+        return (etapaBase || '').toLowerCase() === (etapaParaPlanejamento || '').toLowerCase();
       });
     }
 
