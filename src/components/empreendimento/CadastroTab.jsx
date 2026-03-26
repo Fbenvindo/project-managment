@@ -183,9 +183,10 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         console.log('🎯 Resumo de revisões carregadas:', revisoesMap);
       }
       
-      // Inicializar revisões para TODAS as etapas encontradas nos dados do banco + etapas do empreendimento
+      // Usar etapas diretamente do banco (chaves originais), com fallback para ETAPAS do empreendimento
       const etapasDoBanco = Object.keys(revisoesMap);
-      const etapasUnion = [...new Set([...ETAPAS, ...etapasDoBanco])];
+      // NÃO misturar com ETAPAS uppercase para evitar duplicatas por case diferente
+      const etapasUnion = etapasDoBanco.length > 0 ? etapasDoBanco : ETAPAS;
       const revisoesCompletas = {};
       etapasUnion.forEach(etapa => {
         // Usar APENAS as revisões mapeadas (dados + _revisoes_existentes)
