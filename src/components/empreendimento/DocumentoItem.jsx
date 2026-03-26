@@ -513,8 +513,10 @@ export default function DocumentoItem({
 
                 // Quando uma etapa específica está selecionada
                 if (etapaSelecionada) {
-                  const planejamentoDaEtapa = planejamentosDoDocumento.find(p => p.etapa === etapaSelecionada && p.executor_principal);
-                  const executorDaEtapa = planejamentoDaEtapa?.executor_principal || null;
+                  const planejamentoDaEtapa = planejamentosDoDocumento.find(p =>
+                    (p.etapa || '').toLowerCase() === (etapaSelecionada || '').toLowerCase() && p.executor_principal
+                  );
+                  const executorDaEtapa = planejamentoDaEtapa?.executor_principal || doc.executor_principal || null;
 
                   if (planejamentoDaEtapa && executorDaEtapa) {
                     return (
