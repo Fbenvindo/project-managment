@@ -16,9 +16,10 @@ export default function RelatorioMediaSubdisciplinas({ planejamentos, agrupament
                 const chave = doc.id;
                 const label = `${doc.numero || ''} - ${doc.arquivo || ''}`.trim().replace(/^-\s*/, '');
                 if (!mapa[chave]) {
-                    mapa[chave] = { total_horas: 0, quantidade: 0, label, subdisciplinas: new Set() };
+                    mapa[chave] = { total_planejado: 0, total_executado: 0, quantidade: 0, label, subdisciplinas: new Set() };
                 }
-                mapa[chave].total_horas += p.tempo_planejado;
+                mapa[chave].total_planejado += p.tempo_planejado;
+                mapa[chave].total_executado += p.tempo_executado || 0;
                 mapa[chave].quantidade += 1;
                 (doc.subdisciplinas || []).forEach(s => s && mapa[chave].subdisciplinas.add(s));
             } else {
@@ -27,9 +28,10 @@ export default function RelatorioMediaSubdisciplinas({ planejamentos, agrupament
                 subdisciplinas.forEach(sub => {
                     if (!sub) return;
                     if (!mapa[sub]) {
-                        mapa[sub] = { total_horas: 0, quantidade: 0, label: sub };
+                        mapa[sub] = { total_planejado: 0, total_executado: 0, quantidade: 0, label: sub };
                     }
-                    mapa[sub].total_horas += p.tempo_planejado;
+                    mapa[sub].total_planejado += p.tempo_planejado;
+                    mapa[sub].total_executado += p.tempo_executado || 0;
                     mapa[sub].quantidade += 1;
                 });
             }
@@ -38,13 +40,14 @@ export default function RelatorioMediaSubdisciplinas({ planejamentos, agrupament
         return Object.values(mapa)
             .map(item => ({
                 ...item,
-                media: item.total_horas / item.quantidade,
+                media_planejada: item.total_planejado / item.quantidade,
+                media_executada: item.total_executado / item.quantidade,
                 subdisciplinas: item.subdisciplinas ? [...item.subdisciplinas] : [],
             }))
-            .sort((a, b) => b.media - a.media);
+            .sort((a, b) => b.media_planejada - a.media_planejada);
     }, [planejamentos, agrupamento]);
 
-    const maxMedia = Math.max(...dados.map(d => d.media));
+    const maxMedia = Math.max(...dados.map(d => d.media_planejada));
 
     return (
         <div className="space-y-4">
@@ -59,10 +62,11 @@ export default function RelatorioMediaSubdisciplinas({ planejamentos, agrupament
                         <tr>
                             <th className="text-left px-4 py-3 font-semibold text-gray-700">{agrupamento === 'folha' ? 'Folha' : 'Subdisciplina'}</th>
                             {agrupamento === 'folha' && <th className="text-left px-4 py-3 font-semibold text-gray-700">Subdisciplinas</th>}
-                            <th className="text-right px-4 py-3 font-semibold text-gray-700">Qtd. Planejamentos</th>
-                            <th className="text-right px-4 py-3 font-semibold text-gray-700">Total de Horas</th>
-                            <th className="text-right px-4 py-3 font-semibold text-gray-700">Média de Horas</th>
+                            <th className="text-right px-4 py-3 font-semibold text-gray-700">Qtd.</th>
+                            <th className="text-right px-4 py-3 font-semibold text-gray-700">Média Planejada</th>
+                            <th className="text-right px-4 py-3 font-semibold text-gray-700">Média Executada</th>
                             <th className="px-4 py-3 w-40"></th>
+
                         </tr>
                     </thead>
                     <tbody className="divide-y">
@@ -82,15 +86,21 @@ export default function RelatorioMediaSubdisciplinas({ planejamentos, agrupament
                                              </div>
                                          </td>
                                      )}
-                                    <td className="px-4 py-3 text-right text-gray-600">{item.quantidade}</td>
-                                    <td className="px-4 py-3 text-right text-gray-600">{item.total_horas.toFixed(1)}h</td>
-                                    <td className="px-4 py-3 text-right font-semibold text-blue-700">{item.media.toFixed(1)}h</td>
+                                     <td className="px-4 py-3 text-right text-gray-600">{item.quantidade}</td>
+                                     <td className="px-4 py-3 text-right font-semibold text-blue-700">{item.media_planejada.toFixed(1)}h</td>
+                                     <td className="px-4 py-3 text-right font-semibold text-green-700">{item.media_executada.toFixed(1)}h</td>
                                     <td className="px-4 py-3">
-                                        <div className="w-full bg-gray-200 rounded-full h-2">
+                                        <div className="w-full bg-gray-200 rounded-full h-2 relative">
                                             <div
-                                                className="bg-blue-500 h-2 rounded-full transition-all"
+                                                className="bg-blue-400 h-2 rounded-full absolute"
                                                 style={{ width: `${barWidth}%` }}
                                             />
+                                            {item.media_executada > 0 && (
+                                                <div
+                                                    className="bg-green-500 h-2 rounded-full absolute"
+                                                    style={{ width: `${maxMedia > 0 ? (item.media_executada / maxMedia) * 100 : 0}%` }}
+                                                />
+                                            )}
                                         </div>
                                     </td>
                                 </tr>
