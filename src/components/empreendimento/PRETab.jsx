@@ -561,12 +561,10 @@ export default function PRETab({ empreendimento, readOnly = false }) {
               className="hidden"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImportFile(f); }}
             />
-            {!readOnly && (
-              <Button variant="outline" onClick={() => importFileRef.current?.click()} disabled={isImporting}>
-                {isImporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileUp className="w-4 h-4 mr-2" />}
-                Importar PRE
-              </Button>
-            )}
+            <Button variant="outline" onClick={() => importFileRef.current?.click()} disabled={isImporting}>
+              {isImporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileUp className="w-4 h-4 mr-2" />}
+              Importar PRE
+            </Button>
             <Button variant="outline" onClick={handleSave} disabled={isSaving}>
               {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
               Salvar Agora
