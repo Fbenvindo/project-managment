@@ -428,7 +428,7 @@ export default function DocumentosTab({
       }), 3, 1000, `updateDoc-${documento.id}`);
 
       handleLocalUpdate(docAtualizado);
-      setLocalPlanejamentos(prev => prev.filter(p => !(p.documento_id === documento.id && p.etapa === etapa)).concat(novoPlano));
+      setLocalPlanejamentos(prev => prev.filter(p => !(p.documento_id === documento.id && p.etapa === etapa)).concat({ ...novoPlano, tipo_plano: 'documento' }));
       setCargaDiariaCache({});
       await handleCascadingUpdate(docAtualizado);
 
