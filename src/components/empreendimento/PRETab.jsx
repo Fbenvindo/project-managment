@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Printer, Save, FileText, Loader2, Upload, X, File, ZoomIn, CalendarPlus } from "lucide-react";
+import { Plus, Trash2, Printer, Save, FileText, Loader2, Upload, X, File, ZoomIn, CalendarPlus, FileUp } from "lucide-react";
 import { ItemPRE, Disciplina, Usuario, PlanejamentoAtividade } from "@/entities/all";
 import NovoPlanejamentoModal from "@/components/planejamento/NovoPlanejamentoModal";
 import { format } from "date-fns";
@@ -97,6 +97,8 @@ export default function PRETab({ empreendimento, readOnly = false }) {
   const dragStart = React.useRef(null);
   const [items, setItems] = useState([]);
   const [lastSaved, setLastSaved] = useState(null);
+  const [isImporting, setIsImporting] = useState(false);
+  const importFileRef = useRef(null);
   const [disciplinas, setDisciplinas] = useState([]);
   const [filtroDispline, setFiltroDispline] = useState('todas');
   const [headerData, setHeaderData] = useState({
@@ -349,6 +351,70 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     window.print();
   };
 
+  const handleImportFile = async (file) => {
+    setIsImporting(true);
+    try {
+      const { file_url } = await base44.integrations.Core.UploadFile({ file });
+      const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
+        file_url,
+        json_schema: {
+          type: 'object',
+          properties: {
+            items: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  item: { type: 'string' },
+                  data: { type: 'string' },
+                  de: { type: 'string' },
+                  descritiva: { type: 'string' },
+                  localizacao: { type: 'string' },
+                  assunto: { type: 'string' },
+                  comentario: { type: 'string' },
+                  disciplina: { type: 'string' },
+                  status: { type: 'string' },
+                  resposta: { type: 'string' },
+                }
+              }
+            }
+          }
+        }
+      });
+
+      if (result.status !== 'success' || !result.output?.items?.length) {
+        alert('Não foi possível extrair dados do arquivo. Verifique o formato.');
+        return;
+      }
+
+      const novosItens = result.output.items.map((row, idx) => ({
+        id: `temp-import-${Date.now()}-${idx}`,
+        empreendimento_id: empreendimento.id,
+        item: row.item || String(items.length + idx + 1),
+        data: row.data || format(new Date(), 'yyyy-MM-dd'),
+        de: row.de || '',
+        descritiva: row.descritiva || '',
+        localizacao: row.localizacao || '',
+        assunto: row.assunto || '',
+        comentario: row.comentario || '',
+        disciplina: row.disciplina || '',
+        status: row.status || 'Em andamento',
+        resposta: row.resposta || '',
+        imagens: [],
+        isNew: true,
+      }));
+
+      setItems(prev => [...prev, ...novosItens]);
+      alert(`${novosItens.length} item(s) importado(s)! Clique em Salvar para persistir.`);
+    } catch (e) {
+      console.error(e);
+      alert('Erro ao importar arquivo.');
+    } finally {
+      setIsImporting(false);
+      if (importFileRef.current) importFileRef.current.value = '';
+    }
+  };
+
   const filteredItems = useMemo(() => {
     if (filtroDispline === 'todas') return items;
     return items.filter(item => item.descritiva === filtroDispline);
@@ -488,6 +554,19 @@ export default function PRETab({ empreendimento, readOnly = false }) {
             )}
           </div>
           <div className="flex gap-2">
+            <input
+              ref={importFileRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              className="hidden"
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImportFile(f); }}
+            />
+            {!readOnly && (
+              <Button variant="outline" onClick={() => importFileRef.current?.click()} disabled={isImporting}>
+                {isImporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileUp className="w-4 h-4 mr-2" />}
+                Importar PRE
+              </Button>
+            )}
             <Button variant="outline" onClick={handleSave} disabled={isSaving}>
               {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
               Salvar Agora
