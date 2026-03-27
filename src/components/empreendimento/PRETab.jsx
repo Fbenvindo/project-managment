@@ -364,43 +364,71 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     URL.revokeObjectURL(url);
   };
 
+  const parseCSV = (text) => {
+    const lines = text.split(/\r?\n/).filter(l => l.trim());
+    if (lines.length < 2) return [];
+    const sep = lines[0].includes(';') ? ';' : ',';
+    const headers = lines[0].split(sep).map(h => h.trim().replace(/^"|"$/g, '').toLowerCase());
+    return lines.slice(1).map(line => {
+      const vals = line.split(sep).map(v => v.trim().replace(/^"|"$/g, ''));
+      const obj = {};
+      headers.forEach((h, i) => { obj[h] = vals[i] || ''; });
+      return obj;
+    });
+  };
+
   const handleImportFile = async (file) => {
     setIsImporting(true);
     try {
-      const { file_url } = await base44.integrations.Core.UploadFile({ file });
-      const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
-        file_url,
-        json_schema: {
-          type: 'object',
-          properties: {
-            items: {
-              type: 'array',
+      const isCSV = file.name.toLowerCase().endsWith('.csv');
+
+      let rows = [];
+
+      if (isCSV) {
+        const text = await file.text();
+        rows = parseCSV(text);
+      } else {
+        // Excel: usa extração via IA
+        const { file_url } = await base44.integrations.Core.UploadFile({ file });
+        const result = await base44.integrations.Core.ExtractDataFromUploadedFile({
+          file_url,
+          json_schema: {
+            type: 'object',
+            properties: {
               items: {
-                type: 'object',
-                properties: {
-                  item: { type: 'string' },
-                  data: { type: 'string' },
-                  de: { type: 'string' },
-                  descritiva: { type: 'string' },
-                  localizacao: { type: 'string' },
-                  assunto: { type: 'string' },
-                  comentario: { type: 'string' },
-                  disciplina: { type: 'string' },
-                  status: { type: 'string' },
-                  resposta: { type: 'string' },
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    item: { type: 'string' },
+                    data: { type: 'string' },
+                    de: { type: 'string' },
+                    descritiva: { type: 'string' },
+                    localizacao: { type: 'string' },
+                    assunto: { type: 'string' },
+                    comentario: { type: 'string' },
+                    disciplina: { type: 'string' },
+                    status: { type: 'string' },
+                    resposta: { type: 'string' },
+                  }
                 }
               }
             }
           }
+        });
+        if (result.status !== 'success' || !result.output?.items?.length) {
+          alert('Não foi possível extrair dados do arquivo Excel. Verifique o formato.');
+          return;
         }
-      });
+        rows = result.output.items;
+      }
 
-      if (result.status !== 'success' || !result.output?.items?.length) {
-        alert('Não foi possível extrair dados do arquivo. Verifique o formato.');
+      if (!rows.length) {
+        alert('Nenhum dado encontrado no arquivo. Verifique o formato.');
         return;
       }
 
-      const novosItens = result.output.items.map((row, idx) => ({
+      const novosItens = rows.map((row, idx) => ({
         id: `temp-import-${Date.now()}-${idx}`,
         empreendimento_id: empreendimento.id,
         item: row.item || String(items.length + idx + 1),
