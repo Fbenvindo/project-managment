@@ -6,6 +6,7 @@ import RelatorioFiltros from '../components/relatorios/RelatorioFiltros';
 import RelatorioResumo from '../components/relatorios/RelatorioResumo';
 import RelatorioAtividades from '../components/relatorios/RelatorioAtividades';
 import RelatorioCargaHoraria from '../components/relatorios/RelatorioCargaHoraria';
+import RelatorioMediaSubdisciplinas from '../components/relatorios/RelatorioMediaSubdisciplinas';
 import { Skeleton } from '@/components/ui/skeleton';
 import { base44 } from '@/api/base44Client';
 import { retryWithBackoff, delay } from '../components/utils/apiUtils';
@@ -483,9 +484,10 @@ export default function Relatorios() {
                     />
                     
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full mt-6">
-                        <TabsList className="grid w-full grid-cols-2">
+                        <TabsList className="grid w-full grid-cols-3">
                             <TabsTrigger value="atividades">Relatório de Atividades</TabsTrigger>
                             <TabsTrigger value="carga_horaria">Relatório de Carga Horária</TabsTrigger>
+                            <TabsTrigger value="media_subdisciplinas">Média por Subdisciplina</TabsTrigger>
                         </TabsList>
                         <TabsContent value="atividades" className="mt-4">
                             <RelatorioResumo planejamentos={planejamentosFiltrados} execucoes={execucoesFiltradas} />
@@ -501,6 +503,9 @@ export default function Relatorios() {
                                 execucoes={execucoesFiltradas}
                                 usuarios={data.usuarios}
                              />
+                        </TabsContent>
+                        <TabsContent value="media_subdisciplinas" className="mt-4">
+                            <RelatorioMediaSubdisciplinas planejamentos={planejamentosFiltrados} />
                         </TabsContent>
                     </Tabs>
                 </CardContent>
