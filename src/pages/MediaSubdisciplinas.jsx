@@ -23,6 +23,7 @@ export default function MediaSubdisciplinas() {
     const [isLoading, setIsLoading] = useState(false);
     const [hasSearched, setHasSearched] = useState(false);
     const [filters, setFilters] = useState({ usuario: 'all', empreendimento: 'all' });
+    const [agrupamento, setAgrupamento] = useState('subdisciplina');
 
     useEffect(() => {
         Promise.all([
@@ -113,6 +114,16 @@ export default function MediaSubdisciplinas() {
                                 </SelectContent>
                             </Select>
                         </div>
+                        <div className="space-y-1">
+                            <Label>Agrupar por</Label>
+                            <Select value={agrupamento} onValueChange={setAgrupamento}>
+                                <SelectTrigger className="w-48 bg-white"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="subdisciplina">Subdisciplina</SelectItem>
+                                    <SelectItem value="folha">Folha</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
                         <Button onClick={loadData} disabled={isLoading} className="bg-blue-600 hover:bg-blue-700">
                             {isLoading ? (
                                 <><div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />Carregando...</>
@@ -130,7 +141,7 @@ export default function MediaSubdisciplinas() {
                     )}
 
                     {hasSearched && !isLoading && (
-                        <RelatorioMediaSubdisciplinas planejamentos={planejamentos} />
+                        <RelatorioMediaSubdisciplinas planejamentos={planejamentos} agrupamento={agrupamento} />
                     )}
                 </CardContent>
             </Card>
