@@ -352,8 +352,8 @@ export default function PRETab({ empreendimento, readOnly = false }) {
   };
 
   const handleDownloadTemplate = () => {
-    const headers = ['item', 'data', 'de', 'descritiva', 'localizacao', 'assunto', 'comentario', 'status', 'resposta'];
-    const exemplo = ['1', '2026-03-27', 'Cliente XYZ', 'Elétrica', 'Pavimento 1', 'Assunto do item', 'Comentário detalhado', 'Em andamento', ''];
+    const headers = ['item', 'data', 'de', 'descritiva', 'localizacao', 'assunto', 'comentario', 'tempo_atendimento', 'status', 'resposta'];
+    const exemplo = ['1', '2026-03-27', 'Cliente XYZ', 'Elétrica', 'Pavimento 1', 'Assunto do item', 'Comentário detalhado', '2', 'Em andamento', ''];
     const csvContent = [headers.join(';'), exemplo.join(';')].join('\n');
     const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -438,6 +438,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
         localizacao: row.localizacao || '',
         assunto: row.assunto || '',
         comentario: row.comentario || '',
+        tempo_atendimento: row.tempo_atendimento ? parseFloat(row.tempo_atendimento) : 0,
         disciplina: row.disciplina || '',
         status: row.status || 'Em andamento',
         resposta: row.resposta || '',
