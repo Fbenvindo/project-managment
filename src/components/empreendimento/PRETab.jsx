@@ -438,7 +438,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
         localizacao: row.localizacao || '',
         assunto: row.assunto || '',
         comentario: row.comentario || '',
-        tempo_atendimento: row.tempo_atendimento ? parseFloat(row.tempo_atendimento) : 0,
+        tempo_atendimento: row.tempo_atendimento ? parseFloat(String(row.tempo_atendimento).replace(',', '.')) : 0,
         disciplina: row.disciplina || '',
         status: row.status || 'Em andamento',
         resposta: row.resposta || '',
