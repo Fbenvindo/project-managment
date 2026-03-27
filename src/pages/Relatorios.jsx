@@ -47,15 +47,24 @@ export default function Relatorios() {
     useEffect(() => {
         const loadInitialData = async () => {
             try {
-                const [empreendimentos, usuarios] = await Promise.all([
+                const [empreendimentos, usuarios, usuariosCustom] = await Promise.all([
                     fetchAllRecords(base44.entities.Empreendimento, 'Empreendimentos'),
                     fetchAllRecords(base44.entities.User, 'Usuarios'),
+                    fetchAllRecords(base44.entities.Usuario, 'UsuariosCustom'),
                 ]);
+
+                // Filtrar apenas usuários ativos (cruzando com entidade Usuario customizada)
+                const emailsAtivos = new Set(
+                    (usuariosCustom || []).filter(u => u.status === 'ativo').map(u => u.email)
+                );
+                const usuariosFiltrados = emailsAtivos.size > 0
+                    ? (usuarios || []).filter(u => emailsAtivos.has(u.email))
+                    : (usuarios || []);
                 
                 setData(prev => ({
                     ...prev,
                     empreendimentos: empreendimentos || [],
-                    usuarios: usuarios || [],
+                    usuarios: usuariosFiltrados,
                 }));
             } catch (error) {
                 console.error("Erro ao carregar dados iniciais:", error);
