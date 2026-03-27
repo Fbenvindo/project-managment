@@ -65,6 +65,7 @@ import PRE from './pages/PRE';
 import Planejamento from './pages/Planejamento';
 import Propostas from './pages/Propostas';
 import Relatorios from './pages/Relatorios';
+import MediaSubdisciplinas from './pages/MediaSubdisciplinas';
 import SeletorPlanejamento from './pages/SeletorPlanejamento';
 import Usuarios from './pages/Usuarios';
 import __Layout from './Layout.jsx';
@@ -89,6 +90,7 @@ export const PAGES = {
     "Planejamento": Planejamento,
     "Propostas": Propostas,
     "Relatorios": Relatorios,
+    "MediaSubdisciplinas": MediaSubdisciplinas,
     "SeletorPlanejamento": SeletorPlanejamento,
     "Usuarios": Usuarios,
 }

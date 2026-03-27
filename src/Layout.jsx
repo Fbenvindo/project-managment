@@ -78,6 +78,12 @@ const LayoutComponent = ({ children, currentPageName }) => {
         icon: BarChart3,
         show: true
       });
+      items.push({
+        title: "Média por Subdisciplina",
+        url: createPageUrl("MediaSubdisciplinas"),
+        icon: BarChart3,
+        show: true
+      });
     }
 
     // ATA de Reunião: coordenador e consultor
