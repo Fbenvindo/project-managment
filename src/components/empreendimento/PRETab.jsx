@@ -6,6 +6,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Plus, Trash2, Printer, Save, FileText, Loader2, Upload, X, File, ZoomIn, CalendarPlus, FileUp, Download } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ItemPRE, Disciplina, Usuario, PlanejamentoAtividade } from "@/entities/all";
 import NovoPlanejamentoModal from "@/components/planejamento/NovoPlanejamentoModal";
 import { format } from "date-fns";
@@ -98,6 +99,8 @@ export default function PRETab({ empreendimento, readOnly = false }) {
   const [items, setItems] = useState([]);
   const [lastSaved, setLastSaved] = useState(null);
   const [isImporting, setIsImporting] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importSelectedFile, setImportSelectedFile] = useState(null);
   const importFileRef = useRef(null);
   const [disciplinas, setDisciplinas] = useState([]);
   const [filtroDispline, setFiltroDispline] = useState('todas');
@@ -579,6 +582,55 @@ export default function PRETab({ empreendimento, readOnly = false }) {
         />
       )}
 
+      <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Importar PRE</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 text-sm space-y-1">
+              <div className="flex items-center gap-2 font-semibold text-blue-800 mb-2">
+                <FileText className="w-4 h-4" />
+                Instruções
+              </div>
+              <p className="text-blue-700">• Envie um arquivo CSV com os itens PRE</p>
+              <p className="text-blue-700">• Colunas obrigatórias: <strong>item</strong>, <strong>data</strong></p>
+              <p className="text-blue-700">• Colunas opcionais: de, descritiva, localizacao, assunto, comentario, tempo_atendimento, status, resposta</p>
+              <p className="text-blue-700">• Formato de data: YYYY-MM-DD (ex: 2026-03-27)</p>
+              <p className="text-blue-700">• Separador: ponto e vírgula (;) ou vírgula (,)</p>
+            </div>
+            <Button variant="outline" className="w-full" onClick={handleDownloadTemplate}>
+              <Download className="w-4 h-4 mr-2" />
+              Baixar Template CSV
+            </Button>
+            <div>
+              <input
+                ref={importFileRef}
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border file:border-gray-300 file:text-sm file:font-medium file:bg-white file:text-gray-700 hover:file:bg-gray-50 cursor-pointer"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) setImportSelectedFile(f); }}
+              />
+            </div>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setShowImportModal(false)}>Cancelar</Button>
+              <Button
+                disabled={!importSelectedFile || isImporting}
+                onClick={async () => {
+                  if (!importSelectedFile) return;
+                  await handleImportFile(importSelectedFile);
+                  setShowImportModal(false);
+                  setImportSelectedFile(null);
+                }}
+              >
+                {isImporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileUp className="w-4 h-4 mr-2" />}
+                Importar
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       <div className="bg-gray-50 print:bg-white">
         <div className="mb-4 flex justify-between items-center no-print">
           <div className="flex items-center gap-2">
@@ -601,13 +653,9 @@ export default function PRETab({ empreendimento, readOnly = false }) {
               type="file"
               accept=".xlsx,.xls,.csv"
               className="hidden"
-              onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImportFile(f); }}
+              onChange={(e) => { const f = e.target.files?.[0]; if (f) setImportSelectedFile(f); }}
             />
-            <Button variant="outline" onClick={handleDownloadTemplate}>
-              <Download className="w-4 h-4 mr-2" />
-              Baixar Modelo
-            </Button>
-            <Button variant="outline" onClick={() => importFileRef.current?.click()} disabled={isImporting}>
+            <Button variant="outline" onClick={() => { setImportSelectedFile(null); setShowImportModal(true); }} disabled={isImporting}>
               {isImporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileUp className="w-4 h-4 mr-2" />}
               Importar PRE
             </Button>
