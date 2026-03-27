@@ -28,9 +28,17 @@ export default function MediaSubdisciplinas() {
         Promise.all([
             fetchAll(base44.entities.Empreendimento, 'emp'),
             fetchAll(base44.entities.User, 'users'),
-        ]).then(([emps, users]) => {
+            fetchAll(base44.entities.Usuario, 'usuariosCustom'),
+        ]).then(([emps, users, usuariosCustom]) => {
             setEmpreendimentos(emps || []);
-            setUsuarios(users || []);
+            // Filtrar apenas usuários ativos
+            const emailsAtivos = new Set(
+                (usuariosCustom || []).filter(u => u.status === 'ativo').map(u => u.email)
+            );
+            const usuariosFiltrados = emailsAtivos.size > 0
+                ? (users || []).filter(u => emailsAtivos.has(u.email))
+                : (users || []);
+            setUsuarios(usuariosFiltrados);
         });
     }, []);
 
