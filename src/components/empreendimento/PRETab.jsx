@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Trash2, Printer, Save, FileText, Loader2, Upload, X, File, ZoomIn, CalendarPlus, FileUp } from "lucide-react";
+import { Plus, Trash2, Printer, Save, FileText, Loader2, Upload, X, File, ZoomIn, CalendarPlus, FileUp, Download } from "lucide-react";
 import { ItemPRE, Disciplina, Usuario, PlanejamentoAtividade } from "@/entities/all";
 import NovoPlanejamentoModal from "@/components/planejamento/NovoPlanejamentoModal";
 import { format } from "date-fns";
@@ -351,6 +351,19 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     window.print();
   };
 
+  const handleDownloadTemplate = () => {
+    const headers = ['item', 'data', 'de', 'descritiva', 'localizacao', 'assunto', 'comentario', 'disciplina', 'status', 'resposta'];
+    const exemplo = ['1', '2026-03-27', 'Cliente XYZ', 'Elétrica', 'Pavimento 1', 'Assunto do item', 'Comentário detalhado', 'Elétrica', 'Em andamento', ''];
+    const csvContent = [headers.join(';'), exemplo.join(';')].join('\n');
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'modelo_pre.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleImportFile = async (file) => {
     setIsImporting(true);
     try {
@@ -561,6 +574,10 @@ export default function PRETab({ empreendimento, readOnly = false }) {
               className="hidden"
               onChange={(e) => { const f = e.target.files?.[0]; if (f) handleImportFile(f); }}
             />
+            <Button variant="outline" onClick={handleDownloadTemplate}>
+              <Download className="w-4 h-4 mr-2" />
+              Baixar Modelo
+            </Button>
             <Button variant="outline" onClick={() => importFileRef.current?.click()} disabled={isImporting}>
               {isImporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileUp className="w-4 h-4 mr-2" />}
               Importar PRE
