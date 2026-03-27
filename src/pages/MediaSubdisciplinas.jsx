@@ -49,11 +49,11 @@ export default function MediaSubdisciplinas() {
         try {
             let paQuery, pdQuery;
             if (filters.usuario === 'all') {
-                paQuery = base44.entities.PlanejamentoAtividade.list();
-                pdQuery = base44.entities.PlanejamentoDocumento.list();
+                paQuery = base44.entities.PlanejamentoAtividade.list(null, 5000);
+                pdQuery = base44.entities.PlanejamentoDocumento.list(null, 5000);
             } else {
-                paQuery = base44.entities.PlanejamentoAtividade.filter({ executor_principal: filters.usuario });
-                pdQuery = base44.entities.PlanejamentoDocumento.filter({ executor_principal: filters.usuario });
+                paQuery = base44.entities.PlanejamentoAtividade.filter({ executor_principal: filters.usuario }, null, 5000);
+                pdQuery = base44.entities.PlanejamentoDocumento.filter({ executor_principal: filters.usuario }, null, 5000);
             }
             const [pa, pd, docs] = await Promise.all([
                 retryWithBackoff(() => paQuery, 3, 1000, 'pa'),
