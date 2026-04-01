@@ -191,7 +191,12 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         const jaExiste = etapasDoBanco.some(e => e.toLowerCase() === etapaConfig.toLowerCase());
         if (!jaExiste) etapasNormalizadas.push(etapaConfig);
       });
-      const etapasUnion = etapasNormalizadas;
+      // Ordenar etapas na sequência correta (baseado em ETAPAS)
+      const etapasUnion = etapasNormalizadas.sort((a, b) => {
+        const indexA = ETAPAS.findIndex(e => e.toLowerCase() === a.toLowerCase());
+        const indexB = ETAPAS.findIndex(e => e.toLowerCase() === b.toLowerCase());
+        return (indexA !== -1 ? indexA : 999) - (indexB !== -1 ? indexB : 999);
+      });
       const revisoesCompletas = {};
       etapasUnion.forEach(etapa => {
         // Usar APENAS as revisões mapeadas (dados + _revisoes_existentes)
