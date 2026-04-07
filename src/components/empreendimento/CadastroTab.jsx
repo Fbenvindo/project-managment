@@ -864,7 +864,10 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     
     linhas.forEach(linha => {
       const doc = documentos.find(d => d.id === linha.documento_id);
-      const disciplina = doc?.disciplina || 'Sem Disciplina';
+      // Filtrar apenas linhas que possuem um documento válido
+      if (!doc) return;
+      
+      const disciplina = doc.disciplina || 'Sem Disciplina';
       
       if (!grupos[disciplina]) {
         grupos[disciplina] = [];
