@@ -228,26 +228,33 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       // depois adicionar documentos que ainda não têm registro.
       const docIdSet = new Set(sortedDocs.map(d => d.id));
       
-      // Linhas com DataCadastro existente, ordenadas por ordem
+      // Mapa de índices dos documentos para reordenação
+      const docIndexMap = new Map(sortedDocs.map((doc, idx) => [doc.id, idx]));
+
+      // Linhas com DataCadastro existente
       const linhasComData = (data || [])
-        .filter(item => item.documento_id)
-        .sort((a, b) => (a.ordem ?? 0) - (b.ordem ?? 0));
-      
+        .filter(item => item.documento_id);
+
       const documento_idsComData = new Set(linhasComData.map(l => l.documento_id));
-      
+
       // Documentos sem registro DataCadastro ainda
       const docsNovos = sortedDocs
         .filter(doc => !documento_idsComData.has(doc.id))
-        .map((doc, idx) => ({
+        .map((doc) => ({
           id: `temp-${doc.id}`,
           empreendimento_id: empreendimento.id,
-          ordem: linhasComData.length + idx,
           documento_id: doc.id,
           datas: {},
           isNew: true
         }));
-      
-      const novasLinhas = [...linhasComData, ...docsNovos];
+
+      // Ordenar todas as linhas de acordo com a ordem dos documentos
+      const todasAsLinhas = [...linhasComData, ...docsNovos];
+      const novasLinhas = todasAsLinhas.sort((a, b) => {
+        const indexA = docIndexMap.get(a.documento_id) ?? 999999;
+        const indexB = docIndexMap.get(b.documento_id) ?? 999999;
+        return indexA - indexB;
+      });
       
       // Setar tudo junto de uma vez
       setEtapasEfetivas(etapasUnion);
