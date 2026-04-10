@@ -194,37 +194,21 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
         };
         await Atividade.update(atividade.id, dataToSave);
       } else {
-        // Criação - criar uma atividade para cada combinação de subdisciplina x folha
+        // Criação - criar uma atividade por subdisciplina com múltiplas folhas
         const createPromises = [];
-        
-        if (selectedDocumentoIds.length === 0) {
-          // Sem folhas selecionadas - criar uma atividade por subdisciplina (geral)
-          selectedSubdisciplinas.forEach(subdisciplina => {
-            const dataToSave = {
-              ...formData,
-              subdisciplina: subdisciplina,
-              tempo: formData.tempo ? Number(formData.tempo) : null,
-              documento_ids: [],
-              documento_id: null,
-            };
-            createPromises.push(Atividade.create(dataToSave));
-          });
-        } else {
-          // Com folhas selecionadas - criar atividade para cada combinação subdisciplina x folha
-          selectedSubdisciplinas.forEach(subdisciplina => {
-            selectedDocumentoIds.forEach(documentoId => {
-              const dataToSave = {
-                ...formData,
-                subdisciplina: subdisciplina,
-                tempo: formData.tempo ? Number(formData.tempo) : null,
-                documento_ids: [documentoId],
-                documento_id: documentoId,
-              };
-              console.log("📝 Criando atividade com dados:", dataToSave);
-              createPromises.push(Atividade.create(dataToSave));
-            });
-          });
-        }
+
+        // Criar uma atividade para cada subdisciplina
+        selectedSubdisciplinas.forEach(subdisciplina => {
+          const dataToSave = {
+            ...formData,
+            subdisciplina: subdisciplina,
+            tempo: formData.tempo ? Number(formData.tempo) : null,
+            documento_ids: selectedDocumentoIds.length > 0 ? selectedDocumentoIds : [],
+            documento_id: selectedDocumentoIds[0] || null, // Compatibilidade
+          };
+          console.log("📝 Criando atividade com dados:", dataToSave);
+          createPromises.push(Atividade.create(dataToSave));
+        });
         
         await Promise.all(createPromises);
       }
@@ -331,9 +315,9 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
            </div>
            <p className="text-xs text-gray-500">
              {selectedDocumentoIds.length === 0 
-               ? 'Se nenhuma folha for selecionada, a atividade ficará vinculada apenas ao empreendimento.'
-               : `${selectedDocumentoIds.length} folha(s) selecionada(s). ${selectedSubdisciplinas.length > 0 ? `Serão criadas ${selectedDocumentoIds.length * selectedSubdisciplinas.length} atividade(s).` : ''}`
-             }
+                  ? 'Se nenhuma folha for selecionada, a atividade ficará vinculada apenas ao empreendimento.'
+                  : `${selectedDocumentoIds.length} folha(s) selecionada(s). ${selectedSubdisciplinas.length > 0 ? `Será criada ${selectedSubdisciplinas.length} atividade(s) com múltiplas folhas.` : ''}`
+                }
            </p>
           </div>
         </form>
