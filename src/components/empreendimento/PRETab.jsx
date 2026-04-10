@@ -125,6 +125,25 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     }
   }, [empreendimento?.id]);
 
+  // AutoSave com debounce
+  useEffect(() => {
+    if (readOnly || items.length === 0) return;
+
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(() => {
+      handleAutoSave();
+    }, 2000);
+
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [items]);
+
   // Recarrega dados ao montar o componente
   useEffect(() => {
     if (empreendimento?.id) {
