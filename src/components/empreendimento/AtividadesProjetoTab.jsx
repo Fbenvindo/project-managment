@@ -39,11 +39,11 @@ const initialState = {
 
 const AtividadeFormDialog = ({ open, setOpen, empreendimentoId, disciplinas, onUpdate, atividadeToEdit, documentos }) => {
   const [atividade, setAtividade] = useState(atividadeToEdit || initialState);
-  const [selectedDocumentoId, setSelectedDocumentoId] = useState(null);
+  const [selectedDocumentoIds, setSelectedDocumentoIds] = useState([]);
   
   React.useEffect(() => {
     setAtividade(atividadeToEdit || initialState);
-    setSelectedDocumentoId(atividadeToEdit?.documento_id || null);
+    setSelectedDocumentoIds(atividadeToEdit?.documento_ids || []);
   }, [atividadeToEdit, open]);
 
   const handleSubmit = async () => {
@@ -62,7 +62,7 @@ const AtividadeFormDialog = ({ open, setOpen, empreendimentoId, disciplinas, onU
           ...atividade, 
           tempo: tempoNovo, 
           empreendimento_id: empreendimentoId,
-          documento_id: selectedDocumentoId || atividade.documento_id
+          documento_ids: selectedDocumentoIds.length > 0 ? selectedDocumentoIds : (atividade.documento_ids || [])
         };
         await Atividade.update(atividade.id, payload);
         
@@ -128,12 +128,12 @@ const AtividadeFormDialog = ({ open, setOpen, empreendimentoId, disciplinas, onU
         onUpdate();
         setOpen(false);
       } else {
-        // CRIAÇÃO: Cria atividade vinculada à folha selecionada
+        // CRIAÇÃO: Cria atividade vinculada às folhas selecionadas
         const payload = { 
           ...atividade, 
           tempo: Number(atividade.tempo) || 0, 
           empreendimento_id: empreendimentoId,
-          documento_id: selectedDocumentoId || null
+          documento_ids: selectedDocumentoIds.length > 0 ? selectedDocumentoIds : []
         };
         await Atividade.create(payload);
         onUpdate();
@@ -199,22 +199,32 @@ const AtividadeFormDialog = ({ open, setOpen, empreendimentoId, disciplinas, onU
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="folha">Folha (Opcional)</Label>
-            <Select value={selectedDocumentoId || 'sem_folha'} onValueChange={(value) => setSelectedDocumentoId(value === 'sem_folha' ? null : value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Selecione a folha" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="sem_folha">Sem folha específica</SelectItem>
-                {(documentos || []).map(doc => (
-                  <SelectItem key={doc.id} value={doc.id}>
-                    {doc.numero} - {doc.arquivo}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label>Folhas (Opcional)</Label>
+            <div className="border rounded p-3 max-h-64 overflow-y-auto space-y-2">
+              {(documentos || []).length === 0 ? (
+                <p className="text-xs text-gray-500">Nenhuma folha disponível</p>
+              ) : (
+                (documentos || []).map(doc => (
+                  <label key={doc.id} className="flex items-center gap-2 cursor-pointer hover:bg-gray-50 p-2 rounded">
+                    <input
+                      type="checkbox"
+                      checked={selectedDocumentoIds.includes(doc.id)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedDocumentoIds([...selectedDocumentoIds, doc.id]);
+                        } else {
+                          setSelectedDocumentoIds(selectedDocumentoIds.filter(id => id !== doc.id));
+                        }
+                      }}
+                      className="w-4 h-4"
+                    />
+                    <span className="text-sm">{doc.numero} - {doc.arquivo}</span>
+                  </label>
+                ))
+              )}
+            </div>
             <p className="text-xs text-gray-500">
-              Se selecionada, a atividade ficará vinculada apenas a esta folha.
+              Selecione uma ou mais folhas. Se nenhuma for selecionada, a atividade será disponível para todas.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-4">
