@@ -230,12 +230,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         const disciplinasDoc = doc.disciplinas?.length > 0 ? doc.disciplinas : [doc.disciplina].filter(Boolean);
         const fatorDificuldade = doc.fator_dificuldade || 1;
 
-        // Adicionar atividades específicas vinculadas a este documento
-        const atividadesVinculadasDoc = (projectActivities || []).filter(pa => 
-          pa.documento_id === doc.id && 
-          !pa.id_atividade && 
-          pa.tempo !== -999
-        );
+        // Adicionar atividades específicas vinculadas a este documento (incluindo documento_ids)
+        const atividadesVinculadasDoc = (projectActivities || []).filter(pa => {
+          const temDocumentoIdSingular = pa.documento_id === doc.id;
+          const temDocumentoIdArray = pa.documento_ids && Array.isArray(pa.documento_ids) && pa.documento_ids.includes(doc.id);
+          return !pa.id_atividade && pa.tempo !== -999 && (temDocumentoIdSingular || temDocumentoIdArray);
+        });
         
         atividadesVinculadasDoc.forEach(atividadeVinculada => {
           const planKey = `${doc.id}-${atividadeVinculada.id}`;
