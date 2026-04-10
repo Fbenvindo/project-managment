@@ -127,7 +127,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
 
   // AutoSave com debounce
   useEffect(() => {
-    if (readOnly || items.length === 0) return;
+    if (items.length === 0) return;
 
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
