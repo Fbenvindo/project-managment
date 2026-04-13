@@ -149,8 +149,8 @@ export default function ResumoAlocacaoTab({
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todas">Todas as equipes</SelectItem>
-            {Object.keys(usuariosPorEquipe).sort().map(eq => (
-              <SelectItem key={eq} value={eq}>{eq}</SelectItem>
+            {equipes.sort((a, b) => a.nome.localeCompare(b.nome, 'pt-BR')).map(eq => (
+              <SelectItem key={eq.id} value={eq.nome}>{eq.nome}</SelectItem>
             ))}
           </SelectContent>
         </Select>
