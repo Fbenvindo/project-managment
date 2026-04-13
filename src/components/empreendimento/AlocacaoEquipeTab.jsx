@@ -6,12 +6,13 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Users, RefreshCw, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Users, RefreshCw, Plus, Pencil, Trash2, Loader2, BarChart2 } from "lucide-react";
 import { format, addDays, startOfWeek, parseISO, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PlanejamentoAtividade, PlanejamentoDocumento, Empreendimento, Documento, Equipe, Usuario, OSManual } from "@/entities/all";
 import { retryWithBackoff } from "../utils/apiUtils";
 import { base44 } from "@/api/base44Client";
+import ResumoAlocacaoTab from './ResumoAlocacaoTab';
 
 // Função para parsear datas locais
 const parseLocalDate = (dateString) => {
@@ -36,6 +37,7 @@ export default function AlocacaoEquipeTab({
   documentos: documentosProp,
   equipes: equipesProp
 }) {
+  const [activeView, setActiveView] = useState('calendario'); // 'calendario' | 'resumo'
   const [weekOffset, setWeekOffset] = useState(0);
   const [planejamentosLocal, setPlanejamentosLocal] = useState([]);
   const [empreendimentosLocal, setEmpreendimentosLocal] = useState([]);
@@ -569,6 +571,27 @@ export default function AlocacaoEquipeTab({
           Alocação por Equipe/Colaborador
         </CardTitle>
         <div className="flex items-center gap-2">
+            {/* Toggle de visão */}
+            <div className="flex border rounded-md overflow-hidden">
+              <button
+                onClick={() => setActiveView('calendario')}
+                className={`px-3 py-1.5 text-xs font-medium flex items-center gap-1 transition-colors ${
+                  activeView === 'calendario' ? 'bg-gray-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <Users className="w-3 h-3" />
+                Calendário
+              </button>
+              <button
+                onClick={() => setActiveView('resumo')}
+                className={`px-3 py-1.5 text-xs font-medium flex items-center gap-1 transition-colors ${
+                  activeView === 'resumo' ? 'bg-gray-800 text-white' : 'bg-white text-gray-600 hover:bg-gray-50'
+                }`}
+              >
+                <BarChart2 className="w-3 h-3" />
+                Resumo
+              </button>
+            </div>
             <Button variant="outline" size="sm" onClick={() => setShowEquipeModal(true)}>
               <Users className="w-4 h-4 mr-1" />
               Equipes
@@ -589,6 +612,15 @@ export default function AlocacaoEquipeTab({
         </div>
       </CardHeader>
       <CardContent>
+        {activeView === 'resumo' && (
+          <ResumoAlocacaoTab
+            planejamentos={planejamentos}
+            empreendimentos={empreendimentos}
+            documentos={documentos}
+            usuarios={usuarios}
+          />
+        )}
+        {activeView === 'calendario' && (
         <div className="overflow-auto max-h-[calc(100vh-250px)]">
           <table className="w-full border-collapse text-xs">
             <thead className="sticky top-0 z-20">
@@ -742,16 +774,17 @@ export default function AlocacaoEquipeTab({
               ))}
             </tbody>
           </table>
-        </div>
+          </div>
+          )} {/* fim activeView === 'calendario' */}
 
-        {isLoading && (
+          {isLoading && (
           <div className="flex flex-col items-center justify-center py-12">
             <RefreshCw className="w-8 h-8 animate-spin text-blue-500 mb-4" />
             <p className="text-gray-600">Carregando dados de alocação...</p>
           </div>
         )}
 
-        {!isLoading && Object.keys(usuariosPorEquipe).length === 0 && (
+        {!isLoading && Object.keys(usuariosPorEquipe).length === 0 && activeView === 'calendario' && (
           <div className="text-center py-8 text-gray-500">
             <Users className="w-12 h-12 mx-auto mb-4 text-gray-300" />
             <p>Nenhum usuário encontrado para exibir a alocação.</p>
