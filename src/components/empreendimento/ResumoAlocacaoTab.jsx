@@ -209,7 +209,11 @@ export default function ResumoAlocacaoTab({
                       </td>
                       {diasExibidos.map(dia => {
                         const dataStr = format(dia, 'yyyy-MM-dd');
-                        const items = diasUser[dataStr] || [];
+                        const osLower = filtroOS.trim().toLowerCase();
+                        const allItems = diasUser[dataStr] || [];
+                        const items = osLower
+                          ? allItems.filter(i => i.label.toLowerCase().includes(osLower) || i.empNome.toLowerCase().includes(osLower))
+                          : allItems;
                         return (
                           <td
                             key={dataStr}
