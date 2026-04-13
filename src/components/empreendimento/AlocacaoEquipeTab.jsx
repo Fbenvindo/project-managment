@@ -618,6 +618,9 @@ export default function AlocacaoEquipeTab({
             empreendimentos={empreendimentos}
             documentos={documentos}
             usuarios={usuarios}
+            equipes={equipes}
+            osManuais={osManuais}
+            weekOffset={weekOffset}
           />
         )}
         {activeView === 'calendario' && (

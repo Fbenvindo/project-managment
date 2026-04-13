@@ -1,10 +1,5 @@
-import React, { useMemo, useState } from 'react';
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Filter, X } from "lucide-react";
-import { format } from "date-fns";
+import React, { useMemo } from 'react';
+import { format, addDays, startOfWeek } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
 const parseLocalDate = (dateString) => {
@@ -17,15 +12,23 @@ const parseLocalDate = (dateString) => {
   return null;
 };
 
-const formatDate = (dateStr) => {
-  const d = parseLocalDate(dateStr);
-  if (!d) return '-';
-  return format(d, 'dd/MM/yy', { locale: ptBR });
-};
-
-export default function ResumoAlocacaoTab({ planejamentos = [], empreendimentos = [], documentos = [], usuarios = [] }) {
-  const [filtroOS, setFiltroOS] = useState('');
-  const [filtroUsuario, setFiltroUsuario] = useState('todos');
+export default function ResumoAlocacaoTab({
+  planejamentos = [],
+  empreendimentos = [],
+  usuarios = [],
+  equipes = [],
+  osManuais = {},
+  weekOffset = 0
+}) {
+  const diasExibidos = useMemo(() => {
+    const hoje = new Date();
+    const inicioSemana = startOfWeek(addDays(hoje, weekOffset * 7), { weekStartsOn: 1 });
+    const dias = [];
+    for (let i = 0; i < 21; i++) {
+      dias.push(addDays(inicioSemana, i));
+    }
+    return dias;
+  }, [weekOffset]);
 
   const empreendimentosMap = useMemo(() => {
     const map = {};
@@ -33,177 +36,211 @@ export default function ResumoAlocacaoTab({ planejamentos = [], empreendimentos 
     return map;
   }, [empreendimentos]);
 
-  const usuariosMap = useMemo(() => {
+  const equipesMap = useMemo(() => {
     const map = {};
-    usuarios.forEach(u => { map[u.email] = u; });
+    equipes.forEach(eq => { map[eq.id] = eq; });
     return map;
-  }, [usuarios]);
+  }, [equipes]);
 
-  // Processar: { [os_empId]: { os, empNome, usuarios: { [email]: { datas: Set<string> } } } }
-  const dadosResumo = useMemo(() => {
-    const resultado = {};
+  const coresEmpreendimentos = useMemo(() => {
+    const cores = [
+      '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6',
+      '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1',
+      '#14B8A6', '#A855F7', '#0EA5E9', '#22C55E', '#E11D48'
+    ];
+    const map = {};
+    empreendimentos.forEach((emp, idx) => {
+      map[emp.id] = cores[idx % cores.length];
+    });
+    return map;
+  }, [empreendimentos]);
 
-    (planejamentos || []).forEach(plan => {
+  const usuariosPorEquipe = useMemo(() => {
+    const grupos = {};
+    usuarios.forEach(user => {
+      if (!user.nome && !user.full_name) return;
+      if (user.status === 'inativo') return;
+
+      let nomeEquipe = 'Sem Equipe';
+      if (user.equipe_id && equipesMap[user.equipe_id]) {
+        nomeEquipe = equipesMap[user.equipe_id].nome;
+      } else if (user.departamento) {
+        nomeEquipe = user.departamento;
+      } else if (user.cargo) {
+        nomeEquipe = user.cargo;
+      }
+
+      if (!grupos[nomeEquipe]) grupos[nomeEquipe] = [];
+      grupos[nomeEquipe].push(user);
+    });
+
+    Object.keys(grupos).forEach(equipe => {
+      grupos[equipe].sort((a, b) => (a.nome || a.full_name || '').localeCompare(b.nome || b.full_name || '', 'pt-BR'));
+    });
+
+    return grupos;
+  }, [usuarios, equipesMap]);
+
+  const alocacaoPorUsuarioDia = useMemo(() => {
+    const alocacao = {};
+
+    planejamentos.forEach(plan => {
       const executor = plan.executor_principal;
       if (!executor) return;
 
-      const emp = empreendimentosMap[plan.empreendimento_id];
-      const os = emp?.os || '-';
-      const empNome = emp?.nome || 'Sem Empreendimento';
-      const chave = `${plan.empreendimento_id}`;
-
-      if (!resultado[chave]) resultado[chave] = { os, empNome, usuarios: {} };
-      if (!resultado[chave].usuarios[executor]) {
-        resultado[chave].usuarios[executor] = { datas: new Set() };
+      if (!alocacao[executor]) {
+        alocacao[executor] = { planejado: {}, realizado: {} };
       }
 
-      // Coletar datas com horas > 0 (planejado ou executado)
-      const adicionarDatas = (horasPorDia) => {
-        if (!horasPorDia || typeof horasPorDia !== 'object') return;
-        Object.entries(horasPorDia).forEach(([dataStr, horas]) => {
+      const emp = empreendimentosMap[plan.empreendimento_id];
+      const empNome = emp?.nome || 'Sem Emp.';
+      const empCor = coresEmpreendimentos[plan.empreendimento_id] || '#6B7280';
+      const label = emp?.os || empNome.substring(0, 4).toUpperCase();
+
+      if (plan.horas_por_dia && typeof plan.horas_por_dia === 'object') {
+        Object.entries(plan.horas_por_dia).forEach(([dataStr, horas]) => {
           if (Number(horas) > 0) {
-            resultado[chave].usuarios[executor].datas.add(dataStr);
+            if (!alocacao[executor].planejado[dataStr]) alocacao[executor].planejado[dataStr] = [];
+            if (!alocacao[executor].planejado[dataStr].find(i => i.label === label)) {
+              alocacao[executor].planejado[dataStr].push({ label, cor: empCor, empNome });
+            }
           }
         });
-      };
+      }
 
-      adicionarDatas(plan.horas_por_dia);
-      adicionarDatas(plan.horas_executadas_por_dia);
-
-      // Fallback: usar datas de início/fim planejado
-      if (resultado[chave].usuarios[executor].datas.size === 0) {
-        const inicio = plan.inicio_planejado || plan.inicio_ajustado;
-        const fim = plan.termino_planejado || plan.termino_ajustado;
-        if (inicio) resultado[chave].usuarios[executor].datas.add(inicio.substring(0, 10));
-        if (fim && fim !== inicio) resultado[chave].usuarios[executor].datas.add(fim.substring(0, 10));
+      if (plan.horas_executadas_por_dia && typeof plan.horas_executadas_por_dia === 'object') {
+        Object.entries(plan.horas_executadas_por_dia).forEach(([dataStr, horas]) => {
+          if (Number(horas) > 0) {
+            if (!alocacao[executor].realizado[dataStr]) alocacao[executor].realizado[dataStr] = [];
+            if (!alocacao[executor].realizado[dataStr].find(i => i.label === label)) {
+              alocacao[executor].realizado[dataStr].push({ label, cor: empCor, empNome });
+            }
+          }
+        });
       }
     });
 
-    return resultado;
-  }, [planejamentos, empreendimentosMap]);
-
-  const usuariosDisponiveis = useMemo(() => {
-    const emails = new Set();
-    Object.values(dadosResumo).forEach(({ usuarios }) => {
-      Object.keys(usuarios).forEach(email => emails.add(email));
-    });
-    return Array.from(emails).sort();
-  }, [dadosResumo]);
-
-  const linhas = useMemo(() => {
-    const rows = [];
-    Object.entries(dadosResumo).forEach(([, { os, empNome, usuarios: usrs }]) => {
-      if (filtroOS && !os.toLowerCase().includes(filtroOS.toLowerCase()) && !empNome.toLowerCase().includes(filtroOS.toLowerCase())) return;
-
-      Object.entries(usrs).forEach(([email, { datas }]) => {
-        if (filtroUsuario !== 'todos' && email !== filtroUsuario) return;
-
-        const usuario = usuariosMap[email];
-        const nomeUsuario = usuario?.nome || usuario?.full_name || email;
-
-        const datasOrdenadas = Array.from(datas).sort();
-        const dataInicio = datasOrdenadas[0] || null;
-        const dataFim = datasOrdenadas[datasOrdenadas.length - 1] || null;
-        const totalDias = datasOrdenadas.length;
-
-        rows.push({ os, empNome, email, nomeUsuario, dataInicio, dataFim, totalDias, datasOrdenadas });
-      });
-    });
-
-    return rows.sort((a, b) => a.os.localeCompare(b.os) || a.nomeUsuario.localeCompare(b.nomeUsuario));
-  }, [dadosResumo, filtroOS, filtroUsuario, usuariosMap]);
-
-  const limparFiltros = () => {
-    setFiltroOS('');
-    setFiltroUsuario('todos');
-  };
-
-  const temFiltros = filtroOS || filtroUsuario !== 'todos';
+    return alocacao;
+  }, [planejamentos, empreendimentosMap, coresEmpreendimentos]);
 
   return (
-    <div className="space-y-4">
-      {/* Filtros */}
-      <div className="flex flex-wrap gap-3 items-center p-3 bg-gray-50 rounded-lg border">
-        <Filter className="w-4 h-4 text-gray-500" />
-        <div className="flex-1 min-w-[180px] max-w-xs">
-          <Input
-            placeholder="Filtrar por OS ou empreendimento..."
-            value={filtroOS}
-            onChange={(e) => setFiltroOS(e.target.value)}
-            className="h-8 text-sm"
-          />
-        </div>
-        <div className="min-w-[200px]">
-          <Select value={filtroUsuario} onValueChange={setFiltroUsuario}>
-            <SelectTrigger className="h-8 text-sm">
-              <SelectValue placeholder="Todos os usuários" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="todos">Todos os usuários</SelectItem>
-              {usuariosDisponiveis.map(email => {
-                const u = usuariosMap[email];
-                return (
-                  <SelectItem key={email} value={email}>
-                    {u?.nome || u?.full_name || email}
-                  </SelectItem>
-                );
-              })}
-            </SelectContent>
-          </Select>
-        </div>
-        {temFiltros && (
-          <Button variant="ghost" size="sm" onClick={limparFiltros} className="h-8 text-red-500 hover:text-red-700">
-            <X className="w-3 h-3 mr-1" />
-            Limpar
-          </Button>
-        )}
-        <Badge variant="secondary">{linhas.length} registros</Badge>
-      </div>
-
-      {/* Tabela */}
-      <div className="overflow-auto rounded-lg border">
-        <table className="w-full text-sm border-collapse">
-          <thead>
-            <tr className="bg-gray-800 text-white">
-              <th className="text-left p-3 font-semibold">OS</th>
-              <th className="text-left p-3 font-semibold">Empreendimento</th>
-              <th className="text-left p-3 font-semibold">Colaborador</th>
-              <th className="text-center p-3 font-semibold">Data Início</th>
-              <th className="text-center p-3 font-semibold">Data Fim</th>
-              <th className="text-center p-3 font-semibold">Dias Trabalhados</th>
-            </tr>
-          </thead>
-          <tbody>
-            {linhas.length === 0 ? (
-              <tr>
-                <td colSpan={6} className="text-center py-8 text-gray-400">
-                  Nenhum dado encontrado para os filtros selecionados.
+    <div className="overflow-auto max-h-[calc(100vh-250px)]">
+      <table className="w-full border-collapse text-xs">
+        <thead className="sticky top-0 z-20">
+          <tr className="bg-gray-800 text-white">
+            <th className="border border-gray-600 p-1 text-left sticky left-0 bg-gray-800 z-30 min-w-[120px]">Nome</th>
+            <th className="border border-gray-600 p-1 text-left min-w-[70px]">Item</th>
+            {diasExibidos.map(dia => (
+              <th
+                key={format(dia, 'yyyy-MM-dd')}
+                className={`border border-gray-600 p-1 text-center min-w-[40px] ${dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-700' : ''}`}
+              >
+                {format(dia, 'd/MM')}
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {Object.entries(usuariosPorEquipe).map(([equipe, usuariosEquipe]) => (
+            <React.Fragment key={equipe}>
+              <tr className="bg-gray-900 text-white font-bold">
+                <td colSpan={2 + diasExibidos.length} className="border border-gray-600 p-1">
+                  {equipe.toUpperCase()}
                 </td>
               </tr>
-            ) : (
-              linhas.map((row, idx) => (
-                <tr
-                  key={`${row.os}-${row.email}-${idx}`}
-                  className={`border-t ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors`}
-                >
-                  <td className="p-3">
-                    <Badge variant="outline" className="font-mono text-xs">{row.os}</Badge>
-                  </td>
-                  <td className="p-3 text-gray-700 max-w-[220px] truncate" title={row.empNome}>{row.empNome}</td>
-                  <td className="p-3 font-medium">{row.nomeUsuario}</td>
-                  <td className="p-3 text-center tabular-nums text-gray-700">{formatDate(row.dataInicio)}</td>
-                  <td className="p-3 text-center tabular-nums text-gray-700">{formatDate(row.dataFim)}</td>
-                  <td className="p-3 text-center">
-                    <span className="inline-flex items-center justify-center bg-blue-100 text-blue-700 font-semibold rounded-full px-2.5 py-0.5 text-xs">
-                      {row.totalDias}d
-                    </span>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
+
+              {usuariosEquipe.map(usuario => {
+                const email = usuario.email;
+                const alocacaoUser = alocacaoPorUsuarioDia[email] || { planejado: {}, realizado: {} };
+                const osManuaisUser = osManuais[email] || {};
+
+                return (
+                  <React.Fragment key={usuario.id}>
+                    {/* Programado */}
+                    <tr className="bg-gray-100">
+                      <td className="border border-gray-300 p-1 sticky left-0 bg-gray-100 z-10" rowSpan={3}>
+                        <div className="font-medium">{usuario.nome || usuario.full_name}</div>
+                        <div className="text-gray-500 text-[10px]">{usuario.cargo || ''}</div>
+                      </td>
+                      <td className="border border-gray-300 p-1 text-xs">Programado</td>
+                      {diasExibidos.map(dia => {
+                        const dataStr = format(dia, 'yyyy-MM-dd');
+                        const items = alocacaoUser.planejado[dataStr] || [];
+                        return (
+                          <td
+                            key={dataStr}
+                            className={`border border-gray-300 p-0.5 text-center ${dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-200' : ''}`}
+                            style={items.length > 0 ? { backgroundColor: '#D1FAE5' } : {}}
+                            title={items.map(i => `${i.label} (${i.empNome})`).join(', ')}
+                          >
+                            <div className="flex flex-wrap gap-0.5 justify-center">
+                              {items.map((item, idx) => (
+                                <span key={idx} className="px-1 rounded text-white text-[10px] font-medium" style={{ backgroundColor: item.cor }}>
+                                  {item.label}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+
+                    {/* Previsto (OS Manuais) */}
+                    <tr className="bg-gray-50">
+                      <td className="border border-gray-300 p-1 text-xs">Previsto</td>
+                      {diasExibidos.map(dia => {
+                        const dataStr = format(dia, 'yyyy-MM-dd');
+                        const itemsManuais = osManuaisUser[dataStr] || [];
+                        return (
+                          <td
+                            key={dataStr}
+                            className={`border border-gray-300 p-0.5 text-center ${dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-200' : ''}`}
+                            style={itemsManuais.length > 0 ? { backgroundColor: '#DBEAFE' } : {}}
+                            title={itemsManuais.map(i => `${i.label} (${i.empNome})`).join(', ')}
+                          >
+                            <div className="flex flex-wrap gap-0.5 justify-center">
+                              {itemsManuais.map((item, idx) => (
+                                <span key={idx} className="px-1 rounded text-white text-[10px] font-medium" style={{ backgroundColor: item.cor }}>
+                                  {item.label}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+
+                    {/* Realizado */}
+                    <tr className="bg-white">
+                      <td className="border border-gray-300 p-1 text-xs font-medium">Realizado</td>
+                      {diasExibidos.map(dia => {
+                        const dataStr = format(dia, 'yyyy-MM-dd');
+                        const items = alocacaoUser.realizado[dataStr] || [];
+                        return (
+                          <td
+                            key={dataStr}
+                            className={`border border-gray-300 p-0.5 text-center ${dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-200' : ''}`}
+                            style={items.length > 0 ? { backgroundColor: '#FEF3C7' } : {}}
+                            title={items.map(i => `${i.label} (${i.empNome})`).join(', ')}
+                          >
+                            <div className="flex flex-wrap gap-0.5 justify-center">
+                              {items.map((item, idx) => (
+                                <span key={idx} className="px-1 rounded text-white text-[10px] font-medium" style={{ backgroundColor: item.cor }}>
+                                  {item.label}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  </React.Fragment>
+                );
+              })}
+            </React.Fragment>
+          ))}
+        </tbody>
+      </table>
     </div>
   );
 }
