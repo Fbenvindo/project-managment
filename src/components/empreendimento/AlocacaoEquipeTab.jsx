@@ -6,7 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Users, RefreshCw, Plus, Pencil, Trash2, Loader2, BarChart2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Users, RefreshCw, Plus, Pencil, Trash2, Loader2, BarChart2, GripVertical } from "lucide-react";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { format, addDays, startOfWeek, parseISO, isValid } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { PlanejamentoAtividade, PlanejamentoDocumento, Empreendimento, Documento, Equipe, Usuario, OSManual } from "@/entities/all";
@@ -45,6 +46,14 @@ export default function AlocacaoEquipeTab({
   const [equipesLocal, setEquipesLocal] = useState([]);
   const [usuariosLocal, setUsuariosLocal] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Ordem personalizada das equipes
+  const [ordemEquipes, setOrdemEquipes] = useState(() => {
+    try {
+      const saved = localStorage.getItem('alocacao_ordem_equipes');
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
 
   // Modal de gerenciamento de equipes
   const [showEquipeModal, setShowEquipeModal] = useState(false);
@@ -408,21 +417,16 @@ export default function AlocacaoEquipeTab({
   }, [equipes]);
 
   // Agrupar usuários por equipe (usando equipe_id)
-  const usuariosPorEquipe = useMemo(() => {
+  const usuariosPorEquipeRaw = useMemo(() => {
     const grupos = {};
     
     (usuarios || []).forEach(user => {
-      if (!user.nome && !user.full_name) return; // Ignorar usuários sem nome
-      if (user.status === 'inativo') return; // Ignorar usuários inativos/excluídos
+      if (!user.nome && !user.full_name) return;
+      if (user.status === 'inativo') return;
       
-      // Usar equipe_id para agrupar, senão fallback para departamento/cargo
       let nomeEquipe = 'Sem Equipe';
       if (user.equipe_id && equipesMap[user.equipe_id]) {
         nomeEquipe = equipesMap[user.equipe_id].nome;
-      } else if (user.departamento) {
-        nomeEquipe = user.departamento;
-      } else if (user.cargo) {
-        nomeEquipe = user.cargo;
       }
       
       if (!grupos[nomeEquipe]) {
@@ -431,7 +435,6 @@ export default function AlocacaoEquipeTab({
       grupos[nomeEquipe].push(user);
     });
 
-    // Ordenar usuários dentro de cada equipe
     Object.keys(grupos).forEach(equipe => {
       grupos[equipe].sort((a, b) => {
         const nomeA = a.nome || a.full_name || '';
@@ -442,6 +445,25 @@ export default function AlocacaoEquipeTab({
 
     return grupos;
   }, [usuarios, equipesMap]);
+
+  // Ordem exibida das equipes (respeitando ordemEquipes salva)
+  const equipeOrdenadas = useMemo(() => {
+    const todasEquipes = Object.keys(usuariosPorEquipeRaw);
+    const ordenadas = ordemEquipes.filter(e => todasEquipes.includes(e));
+    const novas = todasEquipes.filter(e => !ordenadas.includes(e));
+    return [...ordenadas, ...novas];
+  }, [usuariosPorEquipeRaw, ordemEquipes]);
+
+  const usuariosPorEquipe = usuariosPorEquipeRaw;
+
+  const handleDragEndEquipes = (result) => {
+    if (!result.destination) return;
+    const newOrder = [...equipeOrdenadas];
+    const [moved] = newOrder.splice(result.source.index, 1);
+    newOrder.splice(result.destination.index, 0, moved);
+    setOrdemEquipes(newOrder);
+    localStorage.setItem('alocacao_ordem_equipes', JSON.stringify(newOrder));
+  };
 
   // Gerar cores para empreendimentos
   const coresEmpreendimentos = useMemo(() => {
@@ -643,7 +665,9 @@ export default function AlocacaoEquipeTab({
               </tr>
             </thead>
             <tbody>
-              {Object.entries(usuariosPorEquipe).map(([equipe, usuariosEquipe]) => (
+              {equipeOrdenadas.map((equipe) => {
+                const usuariosEquipe = usuariosPorEquipe[equipe] || [];
+                return (
                 <React.Fragment key={equipe}>
                   {/* Linha de cabeçalho da equipe */}
                   <tr className="bg-gray-900 text-white font-bold">
@@ -774,7 +798,8 @@ export default function AlocacaoEquipeTab({
                     );
                   })}
                 </React.Fragment>
-              ))}
+                );
+              })}
             </tbody>
           </table>
           </div>
@@ -817,18 +842,45 @@ export default function AlocacaoEquipeTab({
           </Button>
         </div>
 
-        {/* Lista de equipes existentes */}
-        <div className="flex flex-wrap gap-2 mb-4">
-          {equipes.map(eq => (
-            <div key={eq.id} className="flex items-center gap-1 px-2 py-1 rounded bg-gray-100">
-              <div className="w-3 h-3 rounded" style={{ backgroundColor: eq.cor || '#3B82F6' }} />
-              <span className="text-sm">{eq.nome}</span>
-              <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-red-500" onClick={() => handleDeleteEquipe(eq)}>
-                <Trash2 className="w-3 h-3" />
-              </Button>
-            </div>
-          ))}
-        </div>
+        {/* Lista de equipes existentes - com drag para reordenar */}
+        <DragDropContext onDragEnd={(result) => {
+          if (!result.destination) return;
+          const equipesList = equipes.map(e => e.nome);
+          const [movedName] = equipesList.splice(result.source.index, 1);
+          equipesList.splice(result.destination.index, 0, movedName);
+          const semEquipePos = equipeOrdenadas.includes('Sem Equipe') ? equipesList.length : -1;
+          const merged = semEquipePos >= 0 ? [...equipesList, 'Sem Equipe'] : equipesList;
+          setOrdemEquipes(merged);
+          localStorage.setItem('alocacao_ordem_equipes', JSON.stringify(merged));
+        }}>
+          <Droppable droppableId="equipes-list" direction="horizontal">
+            {(provided) => (
+              <div className="flex flex-wrap gap-2 mb-4" ref={provided.innerRef} {...provided.droppableProps}>
+                {equipes.map((eq, idx) => (
+                  <Draggable key={eq.id} draggableId={eq.id} index={idx}>
+                    {(provided2) => (
+                      <div
+                        ref={provided2.innerRef}
+                        {...provided2.draggableProps}
+                        className="flex items-center gap-1 px-2 py-1 rounded bg-gray-100"
+                      >
+                        <span {...provided2.dragHandleProps} className="cursor-grab text-gray-400">
+                          <GripVertical className="w-3 h-3" />
+                        </span>
+                        <div className="w-3 h-3 rounded" style={{ backgroundColor: eq.cor || '#3B82F6' }} />
+                        <span className="text-sm">{eq.nome}</span>
+                        <Button variant="ghost" size="sm" className="h-5 w-5 p-0 text-red-500" onClick={() => handleDeleteEquipe(eq)}>
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    )}
+                  </Draggable>
+                ))}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
 
         {/* Tabela de usuários com seletor de equipe */}
         <div className="border rounded-lg overflow-hidden">
