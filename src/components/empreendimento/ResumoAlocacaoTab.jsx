@@ -5,6 +5,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+const LINHAS = [
+  { key: 'previsto',    label: 'Previsto',    bg: 'bg-blue-50',   text: 'text-blue-700',   dot: '#3B82F6' },
+  { key: 'programado',  label: 'Programado',  bg: 'bg-green-50',  text: 'text-green-700',  dot: '#10B981' },
+  { key: 'realizado',   label: 'Realizado',   bg: 'bg-orange-50', text: 'text-orange-700', dot: '#F97316' },
+];
+
 export default function ResumoAlocacaoTab({
   planejamentos = [],
   empreendimentos = [],
@@ -16,6 +22,10 @@ export default function ResumoAlocacaoTab({
   const [filtroEquipe, setFiltroEquipe] = useState('todas');
   const [filtroUsuario, setFiltroUsuario] = useState('todos');
   const [filtroOS, setFiltroOS] = useState('');
+  // Quais linhas mostrar: previsto, programado, realizado
+  const [linhasVisiveis, setLinhasVisiveis] = useState({ previsto: true, programado: true, realizado: true });
+
+  const toggleLinha = (key) => setLinhasVisiveis(prev => ({ ...prev, [key]: !prev[key] }));
 
   const diasExibidos = useMemo(() => {
     const hoje = new Date();
@@ -44,50 +54,55 @@ export default function ResumoAlocacaoTab({
     return map;
   }, [empreendimentos]);
 
-  // Mapa: email -> { [dataStr]: [{ label, cor, empNome }] }  (programado + realizado unidos)
+  // Mapa separado por tipo: email -> { [dataStr]: [{ label, cor, empNome }] }
   const osPorUsuarioDia = useMemo(() => {
-    const result = {};
+    const programado = {};
+    const realizado = {};
 
     planejamentos.forEach(plan => {
       const executor = plan.executor_principal;
       if (!executor) return;
-      if (!result[executor]) result[executor] = {};
 
       const emp = empreendimentosMap[plan.empreendimento_id];
       const empNome = emp?.nome || 'Sem Emp.';
       const empCor = coresEmpreendimentos[plan.empreendimento_id] || '#6B7280';
       const label = emp?.os || empNome.substring(0, 4).toUpperCase();
 
-      const addToDay = (dataStr) => {
-        if (!result[executor][dataStr]) result[executor][dataStr] = [];
-        if (!result[executor][dataStr].find(i => i.label === label)) {
-          result[executor][dataStr].push({ label, cor: empCor, empNome });
+      const addTo = (store, dataStr) => {
+        if (!store[executor]) store[executor] = {};
+        if (!store[executor][dataStr]) store[executor][dataStr] = [];
+        if (!store[executor][dataStr].find(i => i.label === label)) {
+          store[executor][dataStr].push({ label, cor: empCor, empNome });
         }
       };
 
-      ['horas_por_dia', 'horas_executadas_por_dia'].forEach(campo => {
-        if (plan[campo] && typeof plan[campo] === 'object') {
-          Object.entries(plan[campo]).forEach(([dataStr, horas]) => {
-            if (Number(horas) > 0) addToDay(dataStr);
-          });
-        }
-      });
+      if (plan.horas_por_dia && typeof plan.horas_por_dia === 'object') {
+        Object.entries(plan.horas_por_dia).forEach(([dataStr, horas]) => {
+          if (Number(horas) > 0) addTo(programado, dataStr);
+        });
+      }
+      if (plan.horas_executadas_por_dia && typeof plan.horas_executadas_por_dia === 'object') {
+        Object.entries(plan.horas_executadas_por_dia).forEach(([dataStr, horas]) => {
+          if (Number(horas) > 0) addTo(realizado, dataStr);
+        });
+      }
     });
 
-    // Adicionar OS manuais (previsto)
+    // Previsto = OS manuais
+    const previsto = {};
     Object.entries(osManuais).forEach(([email, diasMap]) => {
-      if (!result[email]) result[email] = {};
+      if (!previsto[email]) previsto[email] = {};
       Object.entries(diasMap).forEach(([dataStr, items]) => {
-        if (!result[email][dataStr]) result[email][dataStr] = [];
+        if (!previsto[email][dataStr]) previsto[email][dataStr] = [];
         items.forEach(item => {
-          if (!result[email][dataStr].find(i => i.label === item.label)) {
-            result[email][dataStr].push({ label: item.label, cor: item.cor || '#6B7280', empNome: item.empNome });
+          if (!previsto[email][dataStr].find(i => i.label === item.label)) {
+            previsto[email][dataStr].push({ label: item.label, cor: item.cor || '#6B7280', empNome: item.empNome });
           }
         });
       });
     });
 
-    return result;
+    return { previsto, programado, realizado };
   }, [planejamentos, empreendimentosMap, coresEmpreendimentos, osManuais]);
 
   const usuariosPorEquipe = useMemo(() => {
@@ -107,7 +122,6 @@ export default function ResumoAlocacaoTab({
     return grupos;
   }, [usuarios, equipesMap]);
 
-  // Filtrar por OS: verificar se o usuário tem a OS em algum dia visível
   const usuariosPorEquipeFiltrado = useMemo(() => {
     const result = {};
     Object.entries(usuariosPorEquipe).forEach(([equipe, usrs]) => {
@@ -115,11 +129,14 @@ export default function ResumoAlocacaoTab({
       const filtrados = usrs.filter(u => {
         if (filtroUsuario !== 'todos' && u.email !== filtroUsuario) return false;
         if (filtroOS.trim()) {
-          const diasUser = osPorUsuarioDia[u.email] || {};
           const osLower = filtroOS.trim().toLowerCase();
-          const temOS = Object.values(diasUser).some(items =>
-            items.some(i => i.label.toLowerCase().includes(osLower) || i.empNome.toLowerCase().includes(osLower))
-          );
+          const allStores = [osPorUsuarioDia.previsto, osPorUsuarioDia.programado, osPorUsuarioDia.realizado];
+          const temOS = allStores.some(store => {
+            const diasUser = store[u.email] || {};
+            return Object.values(diasUser).some(items =>
+              items.some(i => i.label.toLowerCase().includes(osLower) || i.empNome.toLowerCase().includes(osLower))
+            );
+          });
           if (!temOS) return false;
         }
         return true;
@@ -131,6 +148,7 @@ export default function ResumoAlocacaoTab({
 
   const temFiltros = filtroEquipe !== 'todas' || filtroUsuario !== 'todos' || filtroOS.trim();
   const totalLinhas = Object.values(usuariosPorEquipeFiltrado).reduce((a, b) => a + b.length, 0);
+  const linhasAtivas = LINHAS.filter(l => linhasVisiveis[l.key]);
 
   return (
     <div className="space-y-3">
@@ -165,6 +183,25 @@ export default function ResumoAlocacaoTab({
             ))}
           </SelectContent>
         </Select>
+
+        {/* Toggle linhas */}
+        <div className="flex items-center gap-1 ml-1 border-l pl-2">
+          {LINHAS.map(l => (
+            <button
+              key={l.key}
+              onClick={() => toggleLinha(l.key)}
+              className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs border transition-all ${
+                linhasVisiveis[l.key]
+                  ? `${l.bg} ${l.text} border-current font-semibold`
+                  : 'bg-white text-gray-400 border-gray-200'
+              }`}
+            >
+              <span className="w-2 h-2 rounded-full inline-block" style={{ backgroundColor: linhasVisiveis[l.key] ? l.dot : '#D1D5DB' }} />
+              {l.label}
+            </button>
+          ))}
+        </div>
+
         {temFiltros && (
           <Button variant="ghost" size="sm" onClick={() => { setFiltroOS(''); setFiltroEquipe('todas'); setFiltroUsuario('todos'); }} className="h-8 text-red-500 hover:text-red-700 text-xs">
             <X className="w-3 h-3 mr-1" />Limpar
@@ -199,34 +236,59 @@ export default function ResumoAlocacaoTab({
                 </tr>
                 {usrs.map((usuario, idx) => {
                   const email = usuario.email;
-                  const diasUser = osPorUsuarioDia[email] || {};
+                  const osLower = filtroOS.trim().toLowerCase();
+
+                  const getItems = (store) => {
+                    const diasUser = store[email] || {};
+                    return (dataStr) => {
+                      const all = diasUser[dataStr] || [];
+                      return osLower
+                        ? all.filter(i => i.label.toLowerCase().includes(osLower) || i.empNome.toLowerCase().includes(osLower))
+                        : all;
+                    };
+                  };
+
+                  const getterPrevisto = getItems(osPorUsuarioDia.previsto);
+                  const getterProgramado = getItems(osPorUsuarioDia.programado);
+                  const getterRealizado = getItems(osPorUsuarioDia.realizado);
+
+                  const baseBg = idx % 2 === 0 ? 'bg-white' : 'bg-gray-50';
 
                   return (
-                    <tr key={usuario.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                      <td className={`border border-gray-300 p-1 sticky left-0 z-10 ${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
+                    <tr key={usuario.id} className={baseBg}>
+                      <td className={`border border-gray-300 p-1 sticky left-0 z-10 ${baseBg}`}>
                         <div className="font-medium">{usuario.nome || usuario.full_name}</div>
                         <div className="text-gray-400 text-[10px]">{usuario.cargo || ''}</div>
                       </td>
                       {diasExibidos.map(dia => {
                         const dataStr = format(dia, 'yyyy-MM-dd');
-                        const osLower = filtroOS.trim().toLowerCase();
-                        const allItems = diasUser[dataStr] || [];
-                        const items = osLower
-                          ? allItems.filter(i => i.label.toLowerCase().includes(osLower) || i.empNome.toLowerCase().includes(osLower))
-                          : allItems;
+                        const isWeekend = dia.getDay() === 0 || dia.getDay() === 6;
+                        const itemsPrev = linhasVisiveis.previsto ? getterPrevisto(dataStr) : [];
+                        const itemsProg = linhasVisiveis.programado ? getterProgramado(dataStr) : [];
+                        const itemsReal = linhasVisiveis.realizado ? getterRealizado(dataStr) : [];
+
                         return (
                           <td
                             key={dataStr}
-                            className={`border border-gray-300 p-0.5 text-center ${dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-100' : ''}`}
-                            title={items.map(i => `${i.label} (${i.empNome})`).join(', ')}
+                            className={`border border-gray-300 p-0 align-top ${isWeekend ? 'bg-gray-100' : ''}`}
                           >
-                            <div className="flex flex-wrap gap-0.5 justify-center">
-                              {items.map((item, i) => (
-                                <span key={i} className="px-1 rounded text-white text-[10px] font-medium" style={{ backgroundColor: item.cor }}>
-                                  {item.label}
-                                </span>
-                              ))}
-                            </div>
+                            {linhasAtivas.map(l => {
+                              const items = l.key === 'previsto' ? itemsPrev : l.key === 'programado' ? itemsProg : itemsReal;
+                              if (!linhasVisiveis[l.key]) return null;
+                              return (
+                                <div
+                                  key={l.key}
+                                  className={`flex flex-wrap gap-0.5 justify-center p-0.5 min-h-[18px] ${items.length === 0 ? '' : l.bg}`}
+                                  title={`${l.label}: ${items.map(i => `${i.label} (${i.empNome})`).join(', ')}`}
+                                >
+                                  {items.map((item, i) => (
+                                    <span key={i} className="px-1 rounded text-white text-[10px] font-medium leading-tight" style={{ backgroundColor: item.cor }}>
+                                      {item.label}
+                                    </span>
+                                  ))}
+                                </div>
+                              );
+                            })}
                           </td>
                         );
                       })}
