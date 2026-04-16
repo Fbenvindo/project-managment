@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2, Save, Loader2, Upload, Download, Copy, ArrowDown, ArrowRight, Wand2, ChevronRight, ChevronLeft } from "lucide-react";
+import { Plus, Trash2, Save, Loader2, Upload, Download, Copy, ArrowDown, ArrowRight, Wand2, ChevronRight, ChevronLeft, GripHorizontal } from "lucide-react";
 import { DataCadastro, Documento } from "@/entities/all";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { format } from "date-fns";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 // As etapas serão carregadas do empreendimento
 
@@ -49,6 +50,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   const [etapasEfetivas, setEtapasEfetivas] = useState([]);
   const [editingRevisao, setEditingRevisao] = useState(null); // { etapa, revisao }
   const [editingRevisaoValue, setEditingRevisaoValue] = useState('');
+  const [ordemEtapas, setOrdemEtapas] = useState([]); // ordem customizada de etapas
   
   const folhasScrollRef = useRef(null);
   const dataScrollRef = useRef(null);
@@ -878,10 +880,34 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
   }, [linhas, documentos]);
 
-  const ETAPAS_VIEW = etapasEfetivas.length > 0 ? etapasEfetivas : ETAPAS;
+  const ETAPAS_VIEW_BASE = etapasEfetivas.length > 0 ? etapasEfetivas : ETAPAS;
+  // Aplicar ordem customizada se existir
+  const ETAPAS_VIEW = useMemo(() => {
+    if (ordemEtapas.length === 0) return ETAPAS_VIEW_BASE;
+    const sorted = [...ETAPAS_VIEW_BASE].sort((a, b) => {
+      const ia = ordemEtapas.indexOf(a);
+      const ib = ordemEtapas.indexOf(b);
+      if (ia === -1 && ib === -1) return 0;
+      if (ia === -1) return 1;
+      if (ib === -1) return -1;
+      return ia - ib;
+    });
+    return sorted;
+  }, [ETAPAS_VIEW_BASE, ordemEtapas]);
+
+  const handleDragEndEtapas = (result) => {
+    if (!result.destination) return;
+    const etapasVisiveis = ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e));
+    const novaOrdem = Array.from(etapasVisiveis);
+    const [moved] = novaOrdem.splice(result.source.index, 1);
+    novaOrdem.splice(result.destination.index, 0, moved);
+    // Incluir etapas excluídas ao final para não perdê-las
+    const excluidas = ETAPAS_VIEW.filter(e => etapasExcluidas.includes(e));
+    setOrdemEtapas([...novaOrdem, ...excluidas]);
+  };
 
   const larguraTotalEtapas = useMemo(() => {
-    const etapasVisiveis = ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e));
+    const etapasVisiveis = ETAPAS_VIEW_BASE.filter(e => !etapasExcluidas.includes(e));
     return etapasVisiveis.reduce((total, etapa) => {
       const isMinimizada = etapasMinimizadas[etapa];
       if (isMinimizada) {
@@ -1306,105 +1332,120 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
               <div style={{ width: `${larguraTotalEtapas}px` }}>
                 {/* Cabeçalho Fixo das Etapas */}
                 <div className="bg-blue-100 border-b-2 border-gray-300 sticky top-0 z-20" style={{ minWidth: `${larguraTotalEtapas}px`, height: '72px' }}>
-                  <div className="flex h-full">
-                    {ETAPAS_VIEW.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
-                      const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
-                      const isMinimizada = etapasMinimizadas[etapa];
-                      const colSpanTotal = isMinimizada ? 1 : revisoesEtapa.length + 1;
-                      
-                      return (
-                        <div
-                          key={etapa}
-                          className="border-r border-gray-300 last:border-r-0 relative group flex-shrink-0 flex flex-col"
-                          style={{ width: isMinimizada ? '40px' : `${(revisoesEtapa.length * 110) + 40}px`, minWidth: isMinimizada ? '40px' : `${(revisoesEtapa.length * 110) + 40}px` }}
-                        >
-                          <div className="p-1.5 text-center font-semibold flex-1 flex items-center justify-center">
-                            <div className="flex items-center justify-center gap-1">
-                              <button
-                                onClick={() => toggleMinimizarEtapa(etapa)}
-                                className="text-gray-600 hover:text-gray-900 p-0.5"
-                                title={isMinimizada ? "Expandir" : "Minimizar"}
-                              >
-                                {isMinimizada ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
-                              </button>
-                              <span className={`${isMinimizada ? 'writing-mode-vertical-rl transform rotate-180 text-xs' : 'text-xs'}`}>
-                                {isMinimizada ? etapa.substring(0, 3).toUpperCase() : etapa}
-                              </span>
-                              {!readOnly && !isMinimizada && (
-                                <button
-                                  onClick={() => handleExcluirEtapa(etapa)}
-                                  className="absolute top-0.5 right-0.5 text-red-500 hover:text-red-700 p-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded"
-                                  title="Excluir etapa"
-                                >
-                                  <Trash2 className="w-2.5 h-2.5" />
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                          
-                          {/* Cabeçalho de Revisões */}
-                          {!isMinimizada && (
-                            <div className="flex border-t border-gray-300 bg-blue-50">
-                              {console.log(`🔍 Renderizando cabeçalho ${etapa}:`, revisoesEtapa, 'Estado:', revisoesPorEtapa)}
-                              {revisoesEtapa.map((revisao) => (
-                                 <div
-                                   key={`${etapa}-${revisao}`}
-                                   className="border-r border-gray-200 p-1 text-center font-medium text-xs"
-                                   style={{ width: '110px', minWidth: '110px' }}
-                                 >
-                                   <div className="flex items-center justify-center gap-0.5">
-                                     {!readOnly && editingRevisao?.etapa === etapa && editingRevisao?.revisao === revisao ? (
-                                       <input
-                                         autoFocus
-                                         value={editingRevisaoValue}
-                                         onChange={(e) => setEditingRevisaoValue(e.target.value)}
-                                         onBlur={() => handleRenameRevisao(etapa, revisao, editingRevisaoValue)}
-                                         onKeyDown={(e) => {
-                                           if (e.key === 'Enter') handleRenameRevisao(etapa, revisao, editingRevisaoValue);
-                                           if (e.key === 'Escape') setEditingRevisao(null);
-                                         }}
-                                         className="w-16 px-1 py-0 text-xs border border-blue-500 rounded text-center"
-                                       />
-                                     ) : (
-                                       <span
-                                         className={!readOnly ? 'cursor-pointer hover:text-blue-600' : ''}
-                                         title={!readOnly ? 'Clique duplo para renomear' : ''}
-                                         onDoubleClick={() => {
-                                           if (readOnly) return;
-                                           setEditingRevisao({ etapa, revisao });
-                                           setEditingRevisaoValue(revisao);
-                                         }}
-                                       >{revisao}</span>
-                                     )}
-                                     {!readOnly && !(editingRevisao?.etapa === etapa && editingRevisao?.revisao === revisao) && (
-                                       <button
-                                         onClick={() => handleRemoveRevisao(etapa, revisao)}
-                                         className="text-red-500 hover:text-red-700 p-0.5"
-                                         title={`Excluir revisão ${revisao}`}
-                                       >
-                                         <Trash2 className="w-2.5 h-2.5" />
-                                       </button>
-                                     )}
-                                   </div>
-                                 </div>
-                               ))}
-                              <div className="bg-green-50 p-0.5 text-center" style={{ width: '40px', minWidth: '40px' }}>
-                                {!readOnly && (
-                                  <button
-                                    onClick={() => handleAddRevisao(etapa)}
-                                    className="text-green-600 hover:text-green-800 p-0.5"
-                                    title="Adicionar revisão"
+                  <DragDropContext onDragEnd={handleDragEndEtapas}>
+                    <Droppable droppableId="etapas-header" direction="horizontal">
+                      {(provided) => (
+                        <div className="flex h-full" ref={provided.innerRef} {...provided.droppableProps}>
+                          {ETAPAS_VIEW.filter(etapa => !etapasExcluidas.includes(etapa)).map((etapa, idx) => {
+                            const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+                            const isMinimizada = etapasMinimizadas[etapa];
+                            const colWidth = isMinimizada ? 40 : (revisoesEtapa.length * 110) + 40;
+
+                            return (
+                              <Draggable key={etapa} draggableId={etapa} index={idx}>
+                                {(prov, snapshot) => (
+                                  <div
+                                    ref={prov.innerRef}
+                                    {...prov.draggableProps}
+                                    className={`border-r border-gray-300 last:border-r-0 relative group flex-shrink-0 flex flex-col ${snapshot.isDragging ? 'opacity-80 shadow-lg z-50' : ''}`}
+                                    style={{ width: `${colWidth}px`, minWidth: `${colWidth}px`, ...prov.draggableProps.style }}
                                   >
-                                    <Plus className="w-3 h-3" />
-                                  </button>
+                                    <div className="p-1.5 text-center font-semibold flex-1 flex items-center justify-center">
+                                      <div className="flex items-center justify-center gap-1">
+                                        {/* Drag handle */}
+                                        <span {...prov.dragHandleProps} className="cursor-grab text-gray-400 hover:text-gray-600" title="Arrastar para reordenar">
+                                          <GripHorizontal className="w-3 h-3" />
+                                        </span>
+                                        <button
+                                          onClick={() => toggleMinimizarEtapa(etapa)}
+                                          className="text-gray-600 hover:text-gray-900 p-0.5"
+                                          title={isMinimizada ? "Expandir" : "Minimizar"}
+                                        >
+                                          {isMinimizada ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
+                                        </button>
+                                        <span className={`${isMinimizada ? 'writing-mode-vertical-rl transform rotate-180 text-xs' : 'text-xs'}`}>
+                                          {isMinimizada ? etapa.substring(0, 3).toUpperCase() : etapa}
+                                        </span>
+                                        {!readOnly && !isMinimizada && (
+                                          <button
+                                            onClick={() => handleExcluirEtapa(etapa)}
+                                            className="absolute top-0.5 right-0.5 text-red-500 hover:text-red-700 p-0.5 opacity-0 group-hover:opacity-100 transition-opacity bg-white rounded"
+                                            title="Excluir etapa"
+                                          >
+                                            <Trash2 className="w-2.5 h-2.5" />
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    {/* Cabeçalho de Revisões */}
+                                    {!isMinimizada && (
+                                      <div className="flex border-t border-gray-300 bg-blue-50">
+                                        {revisoesEtapa.map((revisao) => (
+                                          <div
+                                            key={`${etapa}-${revisao}`}
+                                            className="border-r border-gray-200 p-1 text-center font-medium text-xs"
+                                            style={{ width: '110px', minWidth: '110px' }}
+                                          >
+                                            <div className="flex items-center justify-center gap-0.5">
+                                              {!readOnly && editingRevisao?.etapa === etapa && editingRevisao?.revisao === revisao ? (
+                                                <input
+                                                  autoFocus
+                                                  value={editingRevisaoValue}
+                                                  onChange={(e) => setEditingRevisaoValue(e.target.value)}
+                                                  onBlur={() => handleRenameRevisao(etapa, revisao, editingRevisaoValue)}
+                                                  onKeyDown={(e) => {
+                                                    if (e.key === 'Enter') handleRenameRevisao(etapa, revisao, editingRevisaoValue);
+                                                    if (e.key === 'Escape') setEditingRevisao(null);
+                                                  }}
+                                                  className="w-16 px-1 py-0 text-xs border border-blue-500 rounded text-center"
+                                                />
+                                              ) : (
+                                                <span
+                                                  className={!readOnly ? 'cursor-pointer hover:text-blue-600' : ''}
+                                                  title={!readOnly ? 'Clique duplo para renomear' : ''}
+                                                  onDoubleClick={() => {
+                                                    if (readOnly) return;
+                                                    setEditingRevisao({ etapa, revisao });
+                                                    setEditingRevisaoValue(revisao);
+                                                  }}
+                                                >{revisao}</span>
+                                              )}
+                                              {!readOnly && !(editingRevisao?.etapa === etapa && editingRevisao?.revisao === revisao) && (
+                                                <button
+                                                  onClick={() => handleRemoveRevisao(etapa, revisao)}
+                                                  className="text-red-500 hover:text-red-700 p-0.5"
+                                                  title={`Excluir revisão ${revisao}`}
+                                                >
+                                                  <Trash2 className="w-2.5 h-2.5" />
+                                                </button>
+                                              )}
+                                            </div>
+                                          </div>
+                                        ))}
+                                        <div className="bg-green-50 p-0.5 text-center" style={{ width: '40px', minWidth: '40px' }}>
+                                          {!readOnly && (
+                                            <button
+                                              onClick={() => handleAddRevisao(etapa)}
+                                              className="text-green-600 hover:text-green-800 p-0.5"
+                                              title="Adicionar revisão"
+                                            >
+                                              <Plus className="w-3 h-3" />
+                                            </button>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
                                 )}
-                              </div>
-                            </div>
-                          )}
+                              </Draggable>
+                            );
+                          })}
+                          {provided.placeholder}
                         </div>
-                      );
-                    })}
-                  </div>
+                      )}
+                    </Droppable>
+                  </DragDropContext>
                 </div>
 
                 {/* Área de Dados */}
