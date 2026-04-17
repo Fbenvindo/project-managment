@@ -130,8 +130,13 @@ export default function ResumoAlocacaoTab({
         if (filtroUsuario !== 'todos' && u.email !== filtroUsuario) return false;
         if (filtroOS.trim()) {
           const osLower = filtroOS.trim().toLowerCase();
-          const allStores = [osPorUsuarioDia.previsto, osPorUsuarioDia.programado, osPorUsuarioDia.realizado];
-          const temOS = allStores.some(store => {
+          // Respeitar apenas os stores das linhas visíveis
+          const storesAtivos = [
+            linhasVisiveis.previsto ? osPorUsuarioDia.previsto : null,
+            linhasVisiveis.programado ? osPorUsuarioDia.programado : null,
+            linhasVisiveis.realizado ? osPorUsuarioDia.realizado : null,
+          ].filter(Boolean);
+          const temOS = storesAtivos.some(store => {
             const diasUser = store[u.email] || {};
             return Object.values(diasUser).some(items =>
               items.some(i => i.label.toLowerCase().includes(osLower) || i.empNome.toLowerCase().includes(osLower))
@@ -144,7 +149,7 @@ export default function ResumoAlocacaoTab({
       if (filtrados.length > 0) result[equipe] = filtrados;
     });
     return result;
-  }, [usuariosPorEquipe, filtroEquipe, filtroUsuario, filtroOS, osPorUsuarioDia]);
+  }, [usuariosPorEquipe, filtroEquipe, filtroUsuario, filtroOS, osPorUsuarioDia, linhasVisiveis]);
 
   const temFiltros = filtroEquipe !== 'todas' || filtroUsuario !== 'todos' || filtroOS.trim();
   const totalLinhas = Object.values(usuariosPorEquipeFiltrado).reduce((a, b) => a + b.length, 0);
