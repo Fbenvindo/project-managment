@@ -125,18 +125,14 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       const etapasExcluidasSet = new Set();
       
       if (data && data.length > 0) {
-        console.log('📊 Processando dados carregados do banco:', data.length, 'registros');
         data.forEach((item, itemIdx) => {
-          console.log(`\n[${itemIdx}] Processando item ID: ${item.id}, documento_id: ${item.documento_id}`);
           if (item.documento_id) {
             dataMap.set(item.documento_id, item);
           }
 
           // Detectar revisões existentes e excluídas por etapa
           if (item.datas) {
-            console.log(`  Datas para este item:`, Object.keys(item.datas));
             Object.entries(item.datas).forEach(([etapa, etapaData]) => {
-              console.log(`  📌 Processando etapa: ${etapa}`, etapaData);
               if (etapaData && typeof etapaData === 'object') {
                 if (!revisoesMap[etapa]) {
                   revisoesMap[etapa] = new Set();
@@ -149,21 +145,17 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 Object.keys(etapaData).forEach(rev => {
                  if (rev !== '_excluida' && rev !== '_revisoes_excluidas' && rev !== '_revisoes_existentes') {
                    const valor = etapaData[rev];
-                   console.log(`    📝 Revisão com dados: ${rev} = ${valor}`);
                    revisoesMap[etapa].add(rev);
                  }
                 });
 
                 // Carregar revisões que foram criadas (mesmo sem dados)
                 if ('_revisoes_existentes' in etapaData) {
-                 console.log(`    📋 _revisoes_existentes encontrado:`, etapaData._revisoes_existentes);
                  if (Array.isArray(etapaData._revisoes_existentes)) {
                    etapaData._revisoes_existentes.forEach(rev => {
-                     console.log(`      ➕ Adicionando revisão criada: ${rev}`);
                      revisoesMap[etapa].add(rev);
                    });
                  } else {
-                   console.log(`      ❌ _revisoes_existentes NÃO é array!`);
                  }
                 }
 
@@ -182,7 +174,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
             });
           }
         });
-        console.log('🎯 Resumo de revisões carregadas:', revisoesMap);
       }
       
       // Inicializar revisões para TODAS as etapas encontradas nos dados do banco + etapas do empreendimento
@@ -204,12 +195,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         // Usar APENAS as revisões mapeadas (dados + _revisoes_existentes)
         // NÃO usar DEFAULT_REVISOES como fallback, pois pode sobrescrever revisões criadas
         const revisoesEtapaSet = revisoesMap[etapa];
-        console.log(`🔎 Buscando ${etapa}:`, {
-          existe: !!revisoesEtapaSet,
-          isSet: revisoesEtapaSet instanceof Set,
-          size: revisoesEtapaSet?.size,
-          values: revisoesEtapaSet ? Array.from(revisoesEtapaSet) : 'N/A'
-        });
         
         let todasRevisoes = revisoesEtapaSet && revisoesEtapaSet.size > 0
           ? Array.from(revisoesEtapaSet).sort()
@@ -218,13 +203,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         const revisoesExcluidas = revisoesExcluidasMap[etapa] || new Set();
         const filtradas = todasRevisoes.filter(rev => !revisoesExcluidas.has(rev));
         revisoesCompletas[etapa] = filtradas;
-        console.log(`✅ Etapa ${etapa}: ${revisoesCompletas[etapa].join(', ')} (Total: ${revisoesCompletas[etapa].length})`);
       });
       
-      console.log('📋 Revisões finais para setar no estado:', JSON.stringify(revisoesCompletas, null, 2));
-      console.log('📋 ETAPAS para debug:', ETAPAS);
-      console.log('📋 revisoesMap para debug:', revisoesMap);
-      console.log('🔴 ANTES DE SETAR STATE - revisoesCompletas:', JSON.stringify(revisoesCompletas, null, 2));
       
       // Montar linhas baseado nos registros do DataCadastro (fonte primária),
       // depois adicionar documentos que ainda não têm registro.
@@ -242,10 +222,11 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       // Documentos sem registro DataCadastro ainda
       const docsNovos = sortedDocs
         .filter(doc => !documento_idsComData.has(doc.id))
-        .map((doc) => ({
+        .map((doc, idx) => ({
           id: `temp-${doc.id}`,
           empreendimento_id: empreendimento.id,
           documento_id: doc.id,
+          ordem: linhasComData.length + idx,
           datas: {},
           isNew: true
         }));
@@ -267,7 +248,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       setLinhasModificadas(new Set());
       
       // Log final para confirmar que revisões foram setadas
-      console.log('🎬 FINAL DO LOADDATA - Revisões devem estar em revisoesPorEtapa agora');
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
@@ -281,7 +261,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
     if (revisoesEtapa.length === 0) {
       // Se não há revisões, começar com R00
-      console.log(`➕ Adicionando primeira revisão (R00) em ${etapa}`);
       setHasUnsavedChanges(true);
       setRevisoesPorEtapa(prev => ({
         ...prev,
@@ -308,7 +287,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     const numero = parseInt(ultimaRevisao.substring(1)) + 1;
     const novaRevisao = `R${String(numero).padStart(2, '0')}`;
 
-    console.log(`➕ Adicionando revisão ${novaRevisao} em ${etapa} (antes: ${revisoesEtapa.join(', ')})`);
     setHasUnsavedChanges(true);
     setRevisoesPorEtapa(prev => ({
       ...prev,
@@ -330,7 +308,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       return { ...linha, datas: novasDatas };
     }));
     setLinhasModificadas(new Set(linhas.map(l => l.id)));
-    console.log(`✅ Revisão ${novaRevisao} marcada em todas as ${linhas.length} linhas`);
   };
 
   const handleRenameRevisao = (etapa, oldName, newName) => {
@@ -435,7 +412,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   };
 
   const handleUpdateData = (linhaId, etapa, revisao, valor) => {
-    console.log('📝 handleUpdateData:', { linhaId, etapa, revisao, valor });
     setLinhasModificadas(prev => new Set([...prev, linhaId]));
     setLinhas(prev => {
       const updated = prev.map(linha => {
@@ -448,10 +424,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         // Se o valor estiver vazio, deletar a chave ao invés de setar como vazio
         if (!valor || valor.trim() === '') {
           delete novasDatas[etapa][revisao];
-          console.log(`  ❌ Deletado: ${linhaId}/${etapa}/${revisao}`);
         } else {
           novasDatas[etapa][revisao] = valor;
-          console.log(`  ✅ Adicionado: ${linhaId}/${etapa}/${revisao} = ${valor}`);
         }
         
         return { ...linha, datas: novasDatas };
@@ -460,7 +434,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     });
     // Garantir que o flag de mudanças não salvas é setado DEPOIS da atualização das linhas
     setTimeout(() => {
-      console.log('🔔 Marcando como "Alterações não salvas"');
       setHasUnsavedChanges(true);
     }, 0);
   };
@@ -669,66 +642,48 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
 
   const handleSave = async (silent = false) => {
-    console.log('💾 INICIANDO SALVAMENTO');
     if (isSaving) {
-      console.log('⚠️ Já está salvando, ignorando chamada duplicada');
       return;
     }
     setIsSaving(true);
     try {
-      console.log('📋 Estado atual hasUnsavedChanges:', hasUnsavedChanges);
-      console.log('📋 Total de linhas:', linhas.length);
-      console.log('📋 Linhas modificadas:', linhasModificadas.size);
       
       // SALVAR APENAS linhas modificadas OU todas se não há rastreamento
       const linhasParaSalvar = linhas.filter(linha => {
         if (!linha.documento_id) {
-          console.log(`  ⏭️ Linha ${linha.id} ignorada (sem documento_id)`);
           return false;
         }
         
         // Se há rastreamento de modificações, salvar apenas modificadas
         if (linhasModificadas.size > 0 && !linhasModificadas.has(linha.id)) {
-          console.log(`  ⏭️ Linha ${linha.id} não modificada`);
           return false;
         }
         
         // Se tem datas (mesmo vazias), pode ter metadados
         if (linha.datas && Object.keys(linha.datas).length > 0) {
-          console.log(`  ✅ Linha ${linha.id} tem datas (salva)`);
           return true;
         }
         
         // Se não tem datas nenhuma, não salva
-        console.log(`  ⏭️ Linha ${linha.id} ignorada (sem datas nenhuma)`);
         return false;
       });
       
-      console.log(`📤 ${linhasParaSalvar.length} linhas para salvar (de ${linhas.length} total)`);
-      console.log('📤 Primeiras 3 linhas para debug:', linhasParaSalvar.slice(0, 3).map(l => ({
-        id: l.id,
-        documento_id: l.documento_id,
-        datas: l.datas
-      })));
 
       // Processar em lotes sequenciais para evitar rate limit
-       console.log('⚡ Iniciando salvamento em lotes...');
        let successCount = 0;
        let errorCount = 0;
        const updatedLinhas = new Map();
-       const BATCH_SIZE = 2; // Máximo de requisições paralelas por lote
-       const DELAY_ENTRE_LOTES = 1500; // Delay entre lotes em ms
+       const BATCH_SIZE = 5; // Máximo de requisições paralelas por lote
+       const DELAY_ENTRE_LOTES = 800; // Delay entre lotes em ms
 
        // Dividir em lotes
        for (let batchIdx = 0; batchIdx < linhasParaSalvar.length; batchIdx += BATCH_SIZE) {
          const batch = linhasParaSalvar.slice(batchIdx, batchIdx + BATCH_SIZE);
-         console.log(`\n📦 Lote ${Math.floor(batchIdx / BATCH_SIZE) + 1}: ${batch.length} linhas`);
 
          const batchPromises = batch.map((linha, idxNoBatch) => 
            (async () => {
              const idxGlobal = batchIdx + idxNoBatch;
              try {
-               console.log(`\n📨 [${idxGlobal + 1}/${linhasParaSalvar.length}] Salvando linha: ${linha.id}`);
 
                // Preservar metadados
                const datasComMetadados = {};
@@ -744,7 +699,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
                const linhaData = {
                  empreendimento_id: empreendimento.id,
-                 ordem: linha.ordem,
+                 ordem: linha.ordem ?? linhasParaSalvar.indexOf(linha),
                  documento_id: linha.documento_id,
                  datas: datasComMetadados
                };
@@ -767,7 +722,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                  datas: datasComMetadados
                };
 
-               console.log(`  Dados FINAL a salvar:`, linhaDataFinal);
 
                let result;
                let attempts = 0;
@@ -776,14 +730,12 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                while (attempts < maxAttempts) {
                  try {
                    const isNew = linha.isNew || linha.id.toString().startsWith('temp-');
-                   console.log(`  🔄 Tentativa ${attempts + 1}/${maxAttempts} (${isNew ? 'CREATE' : 'UPDATE'})`);
 
                    if (isNew) {
                      result = await DataCadastro.create(linhaDataFinal);
                    } else {
                      result = await DataCadastro.update(linha.id, linhaDataFinal);
                    }
-                   console.log(`  ✅ Sucesso! ID: ${result.id}`);
                    break;
                  } catch (err) {
                    attempts++;
@@ -794,7 +746,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                    }
 
                    const waitTime = 3000 * attempts;
-                   console.log(`  ⏳ Aguardando ${waitTime}ms...`);
                    await new Promise(resolve => setTimeout(resolve, waitTime));
                  }
                }
@@ -813,24 +764,19 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
          // Delay entre lotes (exceto no último)
          if (batchIdx + BATCH_SIZE < linhasParaSalvar.length) {
-           console.log(`⏳ Aguardando ${DELAY_ENTRE_LOTES}ms antes do próximo lote...`);
            await new Promise(resolve => setTimeout(resolve, DELAY_ENTRE_LOTES));
          }
        }
 
       // Atualizar estado local com os IDs salvos
-      console.log(`\n✨ Atualizando ${successCount} linhas salvas no estado local`);
       setLinhas(prev => prev.map(linha => {
         const savedData = updatedLinhas.get(linha.id);
         if (savedData) {
-          console.log(`  ✅ ${linha.id} -> ${savedData.id}`);
           return { ...linha, id: savedData.id, isNew: false };
         }
         return linha;
       }));
 
-      console.log(`\n🎉 SALVAMENTO COMPLETO - Sucesso: ${successCount}, Erros: ${errorCount}`);
-      console.log('🔄 Setando hasUnsavedChanges = false');
       setHasUnsavedChanges(false);
       setLinhasModificadas(new Set());
 
@@ -847,7 +793,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         alert(`Erro ao salvar dados: ${error.message || 'Erro desconhecido'}`);
       }
     } finally {
-      console.log('🔚 Finalizando salvamento - setando isSaving = false');
       setIsSaving(false);
     }
   };
