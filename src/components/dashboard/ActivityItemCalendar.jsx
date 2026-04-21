@@ -90,7 +90,7 @@ export default function ActivityItemCalendar({
       const etapa = plano.etapa || 'Sem Etapa';
       return `${numeroFolha} - ${nomeArquivo} - ${etapa}`;
     }
-    return plano.atividade?.atividade || plano.descritivo || 'Atividade não identificada';
+    return plano.atividade?.atividade || plano.descritivo || plano.titulo || 'Atividade não identificada';
   }, [plano]);
   
   const subdisciplina = plano.atividade?.subdisciplina;
