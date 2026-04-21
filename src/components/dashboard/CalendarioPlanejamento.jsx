@@ -100,7 +100,6 @@ const calculateActivityStatus = (plano, allPlanejamentos = []) => {
         foiReplanejadaParaIniciarMaisTarde = true;
       }
     } catch (e) {
-      console.warn("Erro ao parsear datas de início para status de replanejamento:", plano.inicio_ajustado, plano.inicio_planejado, e);
     }
   }
 
@@ -127,7 +126,6 @@ const calculateActivityStatus = (plano, allPlanejamentos = []) => {
         wasReplannedLaterTermino = true;
       }
     } catch (e) {
-      console.warn("Erro ao parsear datas de término para status de replanejamento:", plano.termino_ajustado, plano.termino_planejado, e);
     }
   }
 
@@ -383,17 +381,11 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
     try {
       if (plano.isLegacyExecution) { // Legacy virtual activities (Execucao)
         const execId = plano.id.split('-')[1]; // Extract original execution ID from virtual ID
-        console.log(`🗑️ Excluindo execução ${execId} (atividade rápida antiga)...`);
         await retryWithBackoff(() => Execucao.delete(execId), 3, 1000, 'deleteExecution');
-        console.log(`✅ Execução ${execId} excluída com sucesso`);
       } else if (plano.tipo_planejamento === 'documento') { // PlanejamentoDocumento
-        console.log(`🗑️ Excluindo planejamento de documento ${plano.id}...`);
         await retryWithBackoff(() => PlanejamentoDocumento.delete(plano.id), 3, 1000, 'deleteDocumentPlanning');
-        console.log(`✅ Planejamento de documento ${plano.id} excluído com sucesso`);
       } else { // PlanejamentoAtividade
-        console.log(`🗑️ Excluindo atividade ${plano.id} do PlanejamentoAtividade...`);
         await retryWithBackoff(() => PlanejamentoAtividade.delete(plano.id), 3, 1000, 'deleteActivity');
-        console.log(`✅ Atividade ${plano.id} excluída com sucesso do banco de dados`);
       }
 
       // Changed from onDelete to triggerUpdate for a more granular refresh
@@ -406,7 +398,6 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
       const is404 = error.message?.includes("404") || (error.response && error.response.status === 404);
 
       if (is404) {
-        console.warn("⚠️ Atividade já foi excluída do banco. Atualizando a interface.");
         // Changed from onDelete to triggerUpdate
         if (onDelete) { // Chamada ao onDelete do componente pai para recarregar os dados do calendário
           onDelete();
@@ -515,15 +506,13 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
       await retryWithBackoff(
         () => entityToUpdate.update(plano.id, {
           tempo_executado: timeValue,
-          tempo_planejado: timeValue,
-          horas_por_dia: novasHorasPorDia,
+          horas_executadas_por_dia: novasHorasPorDia,
           status: 'concluido',
           termino_real: format(new Date(), 'yyyy-MM-dd')
         }),
         3, 1000, 'adjustTime'
       );
 
-      console.log(`Tempo da atividade ${plano.id} ajustado para ${timeValue}h e marcada como concluída`);
       setShowTimeAdjustModal(false);
       setAdjustedTime('');
 
@@ -891,7 +880,6 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
 const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, onToggle, disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, groupKey, provided, isDragging }) => {
   const totalHoras = useMemo(() => {
     if (!dayKey) {
-      console.log(`⚠️ [GRUPO] dayKey é null/undefined`);
       return 0;
     }
 
@@ -1677,24 +1665,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   const usuariosPermitidos = userProfile?.usuarios_permitidos_visualizar || [];
   const podeVisualizarOutros = Array.isArray(usuariosPermitidos) && usuariosPermitidos.length > 0;
 
-  // Debug log do userProfile
-  console.log('👤 UserProfile no CalendarioPlanejamento:', {
-    user: user?.email,
-    userProfile,
-    usuarios_permitidos_visualizar: userProfile?.usuarios_permitidos_visualizar,
-    usuariosPermitidos,
-    podeVisualizarOutros,
-    perfilAtual,
-    isColaborador,
-    isGestao,
-    isApoio,
-    updateKey
-  });
-
-  // **CRÍTICO**: Se userProfile é null mas temos um usuário logado, alertar
-  if (!userProfile && user?.email) {
-    console.warn('⚠️ ATENÇÃO: userProfile está null, mas temos usuário logado. Isso pode indicar que o usuário não tem registro na entidade Usuario.');
-  }
 
   // **MODIFICADO**: Se for gestão OU apoio (sem permissão especial), já inicia com o próprio email selecionado
   const [filters, setFilters] = useState({
@@ -1717,7 +1687,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   // Auto-selecionar o próprio usuário no primeiro acesso
   useEffect(() => {
     if (user?.email && !filters.user) {
-      console.log(`🔄 Auto-selecionando usuário: ${user.email}`);
       setFilters(prev => ({ ...prev, user: user.email }));
     }
   }, [user?.email, filters.user]);
@@ -1805,12 +1774,19 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           documentoEnriquecido.numero_completo = parts.length ? parts.join(' - ') : (doc.titulo || doc.arquivo || null);
         }
 
+        // Merge exec records (from execucoes table) with manually adjusted hours (stored on planejamento).
+        // Exec records take precedence per day; stored field fills days not covered by any execution.
+        const storedHoras = (typeof plano.horas_executadas_por_dia === 'object' && plano.horas_executadas_por_dia)
+          ? plano.horas_executadas_por_dia
+          : {};
+        const mergedHorasExec = Object.assign({}, storedHoras, horasExec);
+
         return {
           ...plano,
           empreendimento: empreendimentosMap.get(plano.empreendimento_id) || null,
           atividade: atividadesMap.get(plano.atividade_id) || null,
           documento: documentoEnriquecido,
-          horas_executadas_por_dia: horasExec,
+          horas_executadas_por_dia: mergedHorasExec,
         };
       });
 
@@ -1923,7 +1899,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       // 6. Atualizar a atividade no banco de dados, usando a entidade correta
       await retryWithBackoff(() => entidadePlanejamento.update(atividadeParaMover.id, dadosUpdate), 3, 1500, `updateReprogrammedPlan`);
 
-      console.log(`Atividade "${atividadeParaMover.atividade?.atividade || atividadeParaMover.descritivo || atividadeParaMover.documento?.numero_completo}" reprogramada com sucesso!`);
 
       // 7. Disparar refresh para buscar os dados mais recentes
       if (hasSelectedUser) {
@@ -1955,7 +1930,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     }
 
     if (destination.droppableId === source.droppableId) {
-      console.log(`Item ${draggableId} movido dentro do mesmo dia. Nenhuma ação de reprogramação.`);
       return;
     }
 
@@ -1967,17 +1941,13 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       const sourceDayKey = draggableId.replace('day-', '');
       const dayActivities = activitiesByDay[sourceDayKey] || [];
 
-      console.log(`📅 [DIA COMPLETO] Iniciando movimentação do dia ${sourceDayKey} para ${destination.droppableId}`);
-      console.log(`📦 Total de atividades no dia: ${dayActivities.length}`);
 
       // Filtrar apenas atividades que podem ser movidas
       const movableActivities = dayActivities.filter(a => {
         const canMove = !a.isLegacyExecution && a.status !== 'concluido';
-        console.log(`   - ${a.descritivo || a.atividade?.atividade || 'Sem nome'}: ${canMove ? '✅ PODE MOVER' : '❌ NÃO PODE'} (isLegacy: ${a.isLegacyExecution}, status: ${a.status})`);
         return canMove;
       });
 
-      console.log(`✅ Atividades que PODEM ser movidas: ${movableActivities.length}`);
 
       if (movableActivities.length === 0) {
         alert("Nenhuma atividade deste dia pode ser movida (todas estão concluídas ou são execuções antigas).");
@@ -1990,19 +1960,16 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       );
 
       if (!confirmed) {
-        console.log('❌ Usuário cancelou a operação');
         return;
       }
 
       // **CORRIGIDO**: Mover atividades em SEQUÊNCIA (não paralelo) para evitar rate limit
       const moveDayActivities = async () => {
-        console.log(`🚀 Iniciando movimentação de ${movableActivities.length} atividades...`);
         let successCount = 0;
         let errorCount = 0;
 
         for (let i = 0; i < movableActivities.length; i++) {
           const atividade = movableActivities[i];
-          console.log(`\n📍 [${i + 1}/${movableActivities.length}] Movendo: ${atividade.descritivo || atividade.atividade?.atividade || 'Sem nome'}`);
 
           try {
             await handleReprogramarAtividade(
@@ -2011,7 +1978,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
               atividade.executor_principal
             );
             successCount++;
-            console.log(`   ✅ Movida com sucesso!`);
 
             // Pequeno delay entre atividades para evitar rate limit (500ms)
             if (i < movableActivities.length - 1) {
@@ -2023,9 +1989,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           }
         }
 
-        console.log(`\n📊 RESULTADO FINAL:`);
-        console.log(`   ✅ Sucesso: ${successCount}`);
-        console.log(`   ❌ Erros: ${errorCount}`);
 
         if (successCount > 0) {
           alert(`✅ ${successCount} atividade(s) do dia foram reprogramadas com sucesso!${errorCount > 0 ? `\n⚠️ ${errorCount} falharam (veja o console)` : ''}`);
@@ -2066,7 +2029,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         );
       }
 
-      console.log(`➡️ Movendo grupo com ${groupActivities.length} atividade(s) de ${source.droppableId} para ${destination.droppableId}`);
 
       const invalidActivities = groupActivities.filter(a =>
         a.isLegacyExecution || a.status === 'concluido'
@@ -2109,7 +2071,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       ? Array.from(selectedActivities)
       : [draggableId];
 
-    console.log(`➡️ Movendo ${activitiesToMove.length} atividade(s) de ${source.droppableId} para ${destination.droppableId}`);
 
     const invalidActivities = activitiesToMove.filter(id => {
       const atividade = (enrichedData || []).find(p => normalizeActivityId(p.id) === normalizeActivityId(id));
@@ -2128,7 +2089,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       for (const activityId of activitiesToMove) {
         const atividadeMovida = (enrichedData || []).find(p => normalizeActivityId(p.id) === normalizeActivityId(activityId));
         if (!atividadeMovida) {
-          console.warn(`Atividade ${activityId} não encontrada para mover.`);
           continue;
         }
 
@@ -2485,13 +2445,11 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
 
     if ((isGestao || isColaborador || isApoio) && !temPermissao) {
       const tipoUsuario = isGestao ? 'gestão' : isColaborador ? 'colaborador' : 'apoio';
-      console.log(`🔒 Perfil ${tipoUsuario} não pode limpar filtro de usuário`);
       setFilters(prev => ({ ...prev, discipline: 'all' })); // Só limpa disciplina
       clearSelection();
       return;
     }
 
-    console.log('🧹 Limpando filtros e seleção de usuário...');
     setFilters({
       user: '', // Limpa seleção de usuário
       discipline: 'all'
@@ -2639,11 +2597,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
             const usuariosPermitidosLocal = userProfile?.usuarios_permitidos_visualizar || [];
             const temPermissao = Array.isArray(usuariosPermitidosLocal) && usuariosPermitidosLocal.length > 0;
 
-            console.log('🔄 onFilterChange:', { key, value, temPermissao, usuariosPermitidos: usuariosPermitidosLocal });
 
             if ((isGestao || isColaborador || isApoio) && !temPermissao && key === 'user') {
               const tipoUsuario = isGestao ? 'gestão' : isColaborador ? 'colaborador' : 'apoio';
-              console.log(`🔒 Perfil ${tipoUsuario} não pode mudar de usuário`);
               return;
             }
             setFilters(prev => ({ ...prev, [key]: value }));
