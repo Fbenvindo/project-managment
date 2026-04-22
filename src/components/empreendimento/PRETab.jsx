@@ -218,6 +218,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
       status: 'Em andamento',
       resposta: '',
       imagens: [],
+      tempo_atendimento: null,
       isNew: true
     };
     setItems([...items, newItem]);
@@ -556,7 +557,13 @@ export default function PRETab({ empreendimento, readOnly = false }) {
           empreendimentos={empreendimento ? [empreendimento] : []}
           usuarios={usuarios}
           atividades={[]}
-          descritivo_inicial={`Item ${itemParaPlanejar.item}${itemParaPlanejar.de ? ' - ' + itemParaPlanejar.de : ''}${itemParaPlanejar.assunto ? ' - ' + itemParaPlanejar.assunto : itemParaPlanejar.descritiva ? ' - ' + itemParaPlanejar.descritiva : ''}`.trim()}
+          descritivo_inicial={[
+            empreendimento?.num_proposta ? `OS ${empreendimento.num_proposta}` : null,
+            empreendimento?.nome || null,
+            `Item ${itemParaPlanejar.item}`,
+            itemParaPlanejar.de || null,
+            itemParaPlanejar.assunto || itemParaPlanejar.descritiva || null,
+          ].filter(Boolean).join(' - ')}
           tempo_planejado_inicial={itemParaPlanejar.tempo_atendimento || null}
           onSuccess={async (result) => {
             if (result?.executor_principal && itemParaPlanejar?.id) {
@@ -944,7 +951,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                       ) : (
                         <Input
                           type="date"
-                          value={item.data}
+                          value={item.data ? item.data.toString().substring(0, 10) : ''}
                           onChange={(e) => handleUpdateItem(item.id, 'data', e.target.value)}
                           className="h-9 text-sm print:border-none print:bg-transparent"
                         />
@@ -971,7 +978,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                         type="number"
                         min="0"
                         step="0.5"
-                        value={item.tempo_atendimento ?? ''}
+                        value={item.tempo_atendimento !== null && item.tempo_atendimento !== undefined ? String(Number(item.tempo_atendimento)) : ''}
                         onChange={(e) => handleUpdateItem(item.id, 'tempo_atendimento', e.target.value ? parseFloat(e.target.value) : null)}
                         className="h-9 text-sm print:border-none print:bg-transparent"
                         disabled={readOnly}
