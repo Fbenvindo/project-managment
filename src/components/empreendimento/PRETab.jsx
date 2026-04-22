@@ -90,7 +90,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
   const [isSaving, setIsSaving] = useState(false);
   const [lightboxImg, setLightboxImg] = useState(null);
   const [showPlanejamentoModal, setShowPlanejamentoModal] = useState(false);
-  const [itemParaPlanejar, setItemParaPlanejar] = useState(null);
+  const [itemParaPlanejar, setItemParaPlanejar] = useState(/** @type {any} */ (null));
   const [usuarios, setUsuarios] = useState([]);
   const [zoom, setZoom] = useState(1);
   const [pan, setPan] = useState({ x: 0, y: 0 });
@@ -556,7 +556,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
           empreendimentos={empreendimento ? [empreendimento] : []}
           usuarios={usuarios}
           atividades={[]}
-          descritivo_inicial={`${itemParaPlanejar.de ? itemParaPlanejar.de + ' - ' : ''}${itemParaPlanejar.assunto || itemParaPlanejar.descritiva || ''}`.trim()}
+          descritivo_inicial={`Item ${itemParaPlanejar.item}${itemParaPlanejar.de ? ' - ' + itemParaPlanejar.de : ''}${itemParaPlanejar.assunto ? ' - ' + itemParaPlanejar.assunto : itemParaPlanejar.descritiva ? ' - ' + itemParaPlanejar.descritiva : ''}`.trim()}
           tempo_planejado_inicial={itemParaPlanejar.tempo_atendimento || null}
           onSuccess={async (result) => {
             if (result?.executor_principal && itemParaPlanejar?.id) {
