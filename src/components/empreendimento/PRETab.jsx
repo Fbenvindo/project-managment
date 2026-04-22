@@ -96,7 +96,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = React.useRef(null);
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState(/** @type {any[]} */ ([]));
   const [lastSaved, setLastSaved] = useState(null);
   const [isImporting, setIsImporting] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -125,9 +125,10 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     }
   }, [empreendimento?.id]);
 
-  // AutoSave com debounce
+  // AutoSave com debounce — só para itens já persistidos (sem temp-)
   useEffect(() => {
-    if (items.length === 0) return;
+    const hasPersistedItems = /** @type {any[]} */ (items).some(i => !String(i.id).startsWith('temp-'));
+    if (!hasPersistedItems) return;
 
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -135,7 +136,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
 
     saveTimeoutRef.current = setTimeout(() => {
       handleAutoSave();
-    }, 2000);
+    }, 8000);
 
     return () => {
       if (saveTimeoutRef.current) {
@@ -301,61 +302,51 @@ export default function PRETab({ empreendimento, readOnly = false }) {
 
   const handleAutoSave = async () => {
     if (isSaving) return;
-    
+
+    // Captura snapshot dos itens no momento do save para não sobrescrever edições posteriores
+    const itemsSnapshot = items;
+
     setIsSaving(true);
     try {
-      // Salvar todos os itens em paralelo
-      const savePromises = items.map(async (item) => {
-        const itemData = {
-          empreendimento_id: empreendimento.id,
-          item: item.item,
-          data: item.data,
-          de: item.de,
-          descritiva: item.descritiva,
-          localizacao: item.localizacao,
-          assunto: item.assunto,
-          comentario: item.comentario,
-          disciplina: item.disciplina,
-          status: item.status || '',
-          resposta: item.resposta,
-          imagens: item.imagens || [],
-          tempo_atendimento: item.tempo_atendimento ?? null,
-          planejamento_executor: item.planejamento_executor ?? null,
-          planejamento_executor_nome: item.planejamento_executor_nome ?? null,
-        };
+      const saveResults = await Promise.all(
+        itemsSnapshot.map(async (item) => {
+          const itemData = {
+            empreendimento_id: empreendimento.id,
+            item: item.item,
+            data: item.data,
+            de: item.de,
+            descritiva: item.descritiva,
+            localizacao: item.localizacao,
+            assunto: item.assunto,
+            comentario: item.comentario,
+            disciplina: item.disciplina,
+            status: item.status || '',
+            resposta: item.resposta,
+            imagens: item.imagens || [],
+            tempo_atendimento: item.tempo_atendimento ?? null,
+            planejamento_executor: item.planejamento_executor ?? null,
+            planejamento_executor_nome: item.planejamento_executor_nome ?? null,
+          };
 
-        if (item.isNew || item.id.toString().startsWith('temp-')) {
-          return retryWithBackoff(() => ItemPRE.create(itemData), 3, 2000, 'PRE-Create');
-        } else {
-          return retryWithBackoff(() => ItemPRE.update(item.id, itemData), 3, 2000, `PRE-Update-${item.id}`);
-        }
-      });
-
-      await Promise.all(savePromises);
-      
-      // Recarrega do banco para garantir consistência
-      const savedItems = await retryWithBackoff(
-        () => ItemPRE.filter({ empreendimento_id: empreendimento.id }),
-        3, 2000, 'PRE-Reload'
+          if (item.isNew || item.id.toString().startsWith('temp-')) {
+            const created = await retryWithBackoff(() => ItemPRE.create(itemData), 3, 2000, 'PRE-Create');
+            return { tempId: item.id, realId: created?.id ?? null };
+          } else {
+            await retryWithBackoff(() => ItemPRE.update(item.id, itemData), 3, 2000, `PRE-Update-${item.id}`);
+            return { tempId: null, realId: null };
+          }
+        })
       );
-      
-      const sortedSavedItems = savedItems.sort((a, b) => {
-        const parseItem = (str) => {
-          const parts = String(str).split('.');
-          return parts.map(p => parseInt(p) || 0);
-        };
-        
-        const partsA = parseItem(a.item);
-        const partsB = parseItem(b.item);
-        
-        for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
-          const numA = partsA[i] || 0;
-          const numB = partsB[i] || 0;
-          if (numA !== numB) return numA - numB;
+
+      // Substitui IDs temporários pelos reais sem sobrescrever edições em andamento
+      setItems(prev => prev.map(item => {
+        const result = saveResults.find(r => r.tempId === item.id);
+        if (result?.realId) {
+          return { ...item, id: result.realId, isNew: false };
         }
-        return 0;
-      });
-      setItems(sortedSavedItems);
+        return item;
+      }));
+
       setLastSaved(new Date());
     } catch (error) {
       console.error('Erro ao salvar:', error);
