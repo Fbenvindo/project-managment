@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useMemo, useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,8 @@ import { ptBR } from "date-fns/locale";
 import { PlanejamentoAtividade, PlanejamentoDocumento, Empreendimento, Documento, Equipe, Usuario, OSManual } from "@/entities/all";
 import { retryWithBackoff } from "../utils/apiUtils";
 import { base44 } from "@/api/base44Client";
+import ResumoAlocacaoTab from './ResumoAlocacaoTab';
+
 // Retorna o identificador curto do empreendimento (número da OS)
 const getOsLabel = (emp) => {
   if (!emp) return null;
