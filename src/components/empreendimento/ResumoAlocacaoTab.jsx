@@ -5,6 +5,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Filter, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
+// Retorna o identificador curto do empreendimento (número da OS)
+// Prioriza: número puro de num_proposta > número extraído do nome > num_proposta > 4 chars do nome
+const getOsLabel = (emp) => {
+  if (!emp) return null;
+  if (emp.num_proposta && /^\d+$/.test(emp.num_proposta.trim())) return emp.num_proposta.trim();
+  const match = (emp.nome || '').match(/^(\d+)/);
+  if (match) return match[1];
+  return emp.num_proposta || (emp.nome || '').substring(0, 4).toUpperCase();
+};
+
 const LINHAS = [
   { key: 'previsto',    label: 'Previsto',    bg: 'bg-blue-50',   text: 'text-blue-700',   dot: '#3B82F6' },
   { key: 'programado',  label: 'Programado',  bg: 'bg-green-50',  text: 'text-green-700',  dot: '#10B981' },
@@ -66,7 +76,7 @@ export default function ResumoAlocacaoTab({
       const emp = empreendimentosMap[plan.empreendimento_id];
       const empNome = emp?.nome || 'Sem Emp.';
       const empCor = coresEmpreendimentos[plan.empreendimento_id] || '#6B7280';
-      const label = emp?.num_proposta || empNome.substring(0, 4).toUpperCase();
+      const label = getOsLabel(emp) || empNome.substring(0, 4).toUpperCase();
 
       const addTo = (store, dataStr) => {
         if (!store[executor]) store[executor] = {};
