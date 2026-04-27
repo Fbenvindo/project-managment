@@ -66,7 +66,7 @@ export default function ResumoAlocacaoTab({
       const emp = empreendimentosMap[plan.empreendimento_id];
       const empNome = emp?.nome || 'Sem Emp.';
       const empCor = coresEmpreendimentos[plan.empreendimento_id] || '#6B7280';
-      const label = emp?.os || empNome.substring(0, 4).toUpperCase();
+      const label = emp?.num_proposta || empNome.substring(0, 4).toUpperCase();
 
       const addTo = (store, dataStr) => {
         if (!store[executor]) store[executor] = {};
@@ -130,13 +130,8 @@ export default function ResumoAlocacaoTab({
         if (filtroUsuario !== 'todos' && u.email !== filtroUsuario) return false;
         if (filtroOS.trim()) {
           const osLower = filtroOS.trim().toLowerCase();
-          // Respeitar apenas os stores das linhas visíveis
-          const storesAtivos = [
-            linhasVisiveis.previsto ? osPorUsuarioDia.previsto : null,
-            linhasVisiveis.programado ? osPorUsuarioDia.programado : null,
-            linhasVisiveis.realizado ? osPorUsuarioDia.realizado : null,
-          ].filter(Boolean);
-          const temOS = storesAtivos.some(store => {
+          const allStores = [osPorUsuarioDia.previsto, osPorUsuarioDia.programado, osPorUsuarioDia.realizado];
+          const temOS = allStores.some(store => {
             const diasUser = store[u.email] || {};
             return Object.values(diasUser).some(items =>
               items.some(i => i.label.toLowerCase().includes(osLower) || i.empNome.toLowerCase().includes(osLower))
@@ -149,7 +144,7 @@ export default function ResumoAlocacaoTab({
       if (filtrados.length > 0) result[equipe] = filtrados;
     });
     return result;
-  }, [usuariosPorEquipe, filtroEquipe, filtroUsuario, filtroOS, osPorUsuarioDia, linhasVisiveis]);
+  }, [usuariosPorEquipe, filtroEquipe, filtroUsuario, filtroOS, osPorUsuarioDia]);
 
   const temFiltros = filtroEquipe !== 'todas' || filtroUsuario !== 'todos' || filtroOS.trim();
   const totalLinhas = Object.values(usuariosPorEquipeFiltrado).reduce((a, b) => a + b.length, 0);
@@ -272,13 +267,20 @@ export default function ResumoAlocacaoTab({
                         const itemsProg = linhasVisiveis.programado ? getterProgramado(dataStr) : [];
                         const itemsReal = linhasVisiveis.realizado ? getterRealizado(dataStr) : [];
 
+                        // Deduplica: cada OS aparece apenas na sub-linha de maior prioridade
+                        // Realizado > Programado > Previsto
+                        const realLabels = new Set(itemsReal.map(i => i.label));
+                        const progLabels = new Set(itemsProg.map(i => i.label));
+                        const itemsProgFilt = itemsProg.filter(i => !realLabels.has(i.label));
+                        const itemsPrevFilt = itemsPrev.filter(i => !realLabels.has(i.label) && !progLabels.has(i.label));
+
                         return (
                           <td
                             key={dataStr}
                             className={`border border-gray-300 p-0 align-top ${isWeekend ? 'bg-gray-100' : ''}`}
                           >
                             {linhasAtivas.map(l => {
-                              const items = l.key === 'previsto' ? itemsPrev : l.key === 'programado' ? itemsProg : itemsReal;
+                              const items = l.key === 'previsto' ? itemsPrevFilt : l.key === 'programado' ? itemsProgFilt : itemsReal;
                               if (!linhasVisiveis[l.key]) return null;
                               return (
                                 <div
