@@ -13,7 +13,16 @@ import { ptBR } from "date-fns/locale";
 import { PlanejamentoAtividade, PlanejamentoDocumento, Empreendimento, Documento, Equipe, Usuario, OSManual } from "@/entities/all";
 import { retryWithBackoff } from "../utils/apiUtils";
 import { base44 } from "@/api/base44Client";
-import ResumoAlocacaoTab from './ResumoAlocacaoTab';
+import ResumoAlocacaoTab from '../dashboard/ResumoAlocacaoTab';
+
+// Retorna o identificador curto do empreendimento (número da OS)
+const getOsLabel = (emp) => {
+  if (!emp) return null;
+  if (emp.num_proposta && /^\d+$/.test(emp.num_proposta.trim())) return emp.num_proposta.trim();
+  const match = (emp.nome || '').match(/^(\d+)/);
+  if (match) return match[1];
+  return emp.num_proposta || (emp.nome || '').substring(0, 4).toUpperCase();
+};
 
 // Função para parsear datas locais
 const parseLocalDate = (dateString) => {
@@ -88,23 +97,46 @@ export default function AlocacaoEquipeTab({
 
   // Carregar dados se não recebeu via props
   const loadData = async () => {
+    const needsPlanejamentos = !planejamentosProp?.length;
+    const needsEmpreendimentos = !empreendimentosProp?.length;
+    const needsDocumentos = !documentosProp?.length;
+    const needsEquipes = !equipesProp?.length;
+    const needsUsuarios = !usuariosProp?.length;
+
+    if (!needsPlanejamentos && !needsEmpreendimentos && !needsDocumentos && !needsEquipes && !needsUsuarios) {
+      // Apenas carrega OS manuais, que não são passados via props
+      try {
+        const osManuals = await retryWithBackoff(() => OSManual.list(null, 5000), 3, 2000, 'AlocacaoEquipe-OSManual');
+        const osManuaisMap = {};
+        (osManuals || []).forEach(osm => {
+          if (!osManuaisMap[osm.usuario_email]) osManuaisMap[osm.usuario_email] = {};
+          if (!osManuaisMap[osm.usuario_email][osm.data]) osManuaisMap[osm.usuario_email][osm.data] = [];
+          osManuaisMap[osm.usuario_email][osm.data].push({ label: osm.os, cor: osm.cor, empNome: osm.empreendimento_nome, os: osm.os });
+        });
+        setOsManuais(osManuaisMap);
+      } catch (error) {
+        console.error('Erro ao carregar OS manuais:', error);
+      }
+      return;
+    }
+
     setIsLoading(true);
     try {
       const [plansAtiv, plansDoc, emps, docs, teams, users, osManuals] = await Promise.all([
-        retryWithBackoff(() => PlanejamentoAtividade.list(), 3, 2000, 'AlocacaoEquipe-PlansAtiv'),
-        retryWithBackoff(() => PlanejamentoDocumento.list(), 3, 2000, 'AlocacaoEquipe-PlansDoc'),
-        retryWithBackoff(() => Empreendimento.list(), 3, 2000, 'AlocacaoEquipe-Empreendimentos'),
-        retryWithBackoff(() => Documento.list(), 3, 2000, 'AlocacaoEquipe-Documentos'),
-        retryWithBackoff(() => Equipe.list(), 3, 2000, 'AlocacaoEquipe-Equipes'),
-        retryWithBackoff(() => Usuario.list(), 3, 2000, 'AlocacaoEquipe-Usuarios'),
-        retryWithBackoff(() => OSManual.list(), 3, 2000, 'AlocacaoEquipe-OSManual')
+        needsPlanejamentos ? retryWithBackoff(() => PlanejamentoAtividade.list(null, 5000), 3, 2000, 'AlocacaoEquipe-PlansAtiv') : Promise.resolve(null),
+        needsPlanejamentos ? retryWithBackoff(() => PlanejamentoDocumento.list(null, 5000), 3, 2000, 'AlocacaoEquipe-PlansDoc') : Promise.resolve(null),
+        needsEmpreendimentos ? retryWithBackoff(() => Empreendimento.list(null, 5000), 3, 2000, 'AlocacaoEquipe-Empreendimentos') : Promise.resolve(null),
+        needsDocumentos ? retryWithBackoff(() => Documento.list(null, 5000), 3, 2000, 'AlocacaoEquipe-Documentos') : Promise.resolve(null),
+        needsEquipes ? retryWithBackoff(() => Equipe.list(), 3, 2000, 'AlocacaoEquipe-Equipes') : Promise.resolve(null),
+        needsUsuarios ? retryWithBackoff(() => Usuario.list(), 3, 2000, 'AlocacaoEquipe-Usuarios') : Promise.resolve(null),
+        retryWithBackoff(() => OSManual.list(null, 5000), 3, 2000, 'AlocacaoEquipe-OSManual')
       ]);
-      
-      setPlanejamentosLocal([...(plansAtiv || []), ...(plansDoc || [])]);
-      setEmpreendimentosLocal(emps || []);
-      setDocumentosLocal(docs || []);
-      setEquipesLocal(teams || []);
-      setUsuariosLocal(users || []);
+
+      if (needsPlanejamentos) setPlanejamentosLocal([...(plansAtiv || []), ...(plansDoc || [])]);
+      if (needsEmpreendimentos) setEmpreendimentosLocal(emps || []);
+      if (needsDocumentos) setDocumentosLocal(docs || []);
+      if (needsEquipes) setEquipesLocal(teams || []);
+      if (needsUsuarios) setUsuariosLocal(users || []);
       
       // Carregar OS manuais
       const osManuaisMap = {};
@@ -190,7 +222,6 @@ export default function AlocacaoEquipeTab({
     
     try {
       await retryWithBackoff(() => Usuario.update(usuario.id, { equipe_id: newEquipeId }), 3, 1000, 'changeEquipe');
-      console.log('✅ Equipe alterada com sucesso');
     } catch (error) {
       console.error('Erro ao alterar equipe:', error);
       alert('Erro ao alterar equipe. Recarregando dados...');
@@ -230,7 +261,7 @@ export default function AlocacaoEquipeTab({
     }
 
     // Buscar empreendimento pela OS (opcional, só para pegar cor)
-    const emp = empreendimentos.find(e => e.os === os.trim());
+    const emp = empreendimentos.find(e => e.num_proposta === os.trim());
     
     let empCor = '#6B7280';
     let empNome = os.trim();
@@ -324,8 +355,8 @@ export default function AlocacaoEquipeTab({
       return;
     }
 
-    // Buscar empreendimento
-    const emp = empreendimentos.find(e => e.os === os.trim());
+    // Buscar empreendimento pela OS
+    const emp = empreendimentos.find(e => e.num_proposta === os.trim());
     let empCor = '#6B7280';
     let empNome = os.trim();
     
@@ -510,7 +541,7 @@ export default function AlocacaoEquipeTab({
             const empCor = coresEmpreendimentos[empId] || '#6B7280';
             
             // Usar número da OS do empreendimento como label
-            const label = emp?.os || empNome.substring(0, 4).toUpperCase();
+            const label = getOsLabel(emp) || empNome.substring(0, 4).toUpperCase();
             const exists = alocacao[executor].planejado[dataStr].find(i => i.label === label);
             if (!exists) {
               alocacao[executor].planejado[dataStr].push({ label, cor: empCor, empNome });
@@ -532,7 +563,7 @@ export default function AlocacaoEquipeTab({
             const empNome = emp?.nome || 'Sem Emp.';
             const empCor = coresEmpreendimentos[empId] || '#6B7280';
             
-            const label = emp?.os || empNome.substring(0, 4).toUpperCase();
+            const label = getOsLabel(emp) || empNome.substring(0, 4).toUpperCase();
             const exists = alocacao[executor].realizado[dataStr].find(i => i.label === label);
             if (!exists) {
               alocacao[executor].realizado[dataStr].push({ label, cor: empCor, empNome });
@@ -559,7 +590,7 @@ export default function AlocacaoEquipeTab({
                 const empNome = emp?.nome || 'Sem Emp.';
                 const empCor = coresEmpreendimentos[plan.empreendimento_id] || '#6B7280';
                 
-                const label = emp?.os || empNome.substring(0, 4).toUpperCase();
+                const label = getOsLabel(emp) || empNome.substring(0, 4).toUpperCase();
                 const exists = alocacao[executor].reprogramado[dataStr].find(i => i.label === label);
                 if (!exists) {
                   alocacao[executor].reprogramado[dataStr].push({ label, cor: empCor, empNome });
