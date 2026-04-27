@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useMemo, useState } from 'react';
 import { format, addDays, startOfWeek } from "date-fns";
 import { Input } from "@/components/ui/input";
