@@ -143,7 +143,7 @@ const calculateActivityStatus = (plano, allPlanejamentos = []) => {
 // --- Sub-componente de Filtros ---
 const CalendarFilters = ({
   users,
-  disciplines = [], // valor padrão seguro
+  disciplines,
   viewMode,
   onViewModeChange,
   filters,
@@ -218,7 +218,7 @@ const CalendarFilters = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas as Disciplinas</SelectItem>
-                {disciplinas.map(disc => (
+                {disciplines.map(disc => (
                   <SelectItem key={disc.id} value={disc.nome}>{disc.nome}</SelectItem>
                 ))}
               </SelectContent>
@@ -979,7 +979,7 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
 
   const canDragGroup = canReprogram &&
     empreendimentoNome !== 'Atividades Rápidas' &&
-    !atividades.some(a => a.status === 'concluido' || a.isLegacyExecution || normalizeActivityId(isReprogramando) === normalizeActivityId(a.id));
+    !atividades.some(a => a.status === 'concluido' || a.isLegacyExecution);
 
   return (
     <div
@@ -1127,7 +1127,7 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
 };
 
 // --- Sub-componente para Container de Atividades (reutilizável) ---
-const ActivityContainer = ({ activities, containerClass = "", disciplinas = [], dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
+const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
   const [expandedGroups, setExpandedGroups] = useState(new Set());
 
   const activityGroups = useMemo(() => {
@@ -1420,7 +1420,7 @@ const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDel
           <div className="flex-grow overflow-y-auto pr-1">
             <ActivityContainer
               activities={dayActivities}
-              disciplinas={safeDisciplinas}
+              disciplinas={disciplinas}
               dayKey={dayKey}
               onActivityDelete={onActivityDelete}
               onShowPrevisao={onShowPrevisao}
@@ -1442,8 +1442,7 @@ const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDel
 };
 
 // --- Sub-componente para a Visualização Mensal ---
-const MonthView = ({ date, activitiesByDay, disciplinas = [], onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
-  const safeDisciplinas = disciplinas || [];
+const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
   const monthDays = useMemo(() => {
     const start = startOfWeek(startOfMonth(date), { locale: ptBR });
     const end = endOfWeek(endOfMonth(date), { locale: ptBR });
@@ -1469,7 +1468,7 @@ const MonthView = ({ date, activitiesByDay, disciplinas = [], onActivityDelete, 
             dayActivities={dayActivities}
             date={date}
             isToday={isToday}
-            disciplinas={safeDisciplinas}
+            disciplinas={disciplinas}
             onActivityDelete={onActivityDelete}
             onShowPrevisao={onShowPrevisao}
             executorMap={executorMap}
@@ -1487,18 +1486,19 @@ const MonthView = ({ date, activitiesByDay, disciplinas = [], onActivityDelete, 
   );
 };
 
+
 // --- Sub-componente para a Visualização Semanal ---
-const WeekView = ({ date, activitiesByDay, disciplinas = [], onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
-  const safeDisciplinas = disciplinas || [];
+const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
+  // NOVO: Estado para controlar o dia expandido
+  const [expandedDay, setExpandedDay] = useState(null);
+
   const weekDays = useMemo(() => {
     const start = startOfWeek(date, { locale: ptBR });
     const end = endOfWeek(date, { locale: ptBR });
     return eachDayOfInterval({ start, end });
   }, [date]);
 
-  // NOVO: Estado para controlar o dia expandido
-  const [expandedDay, setExpandedDay] = useState(null);
-
+  // NOVO: Função para alternar a expansão
   const toggleExpand = (dayKey) => {
     setExpandedDay(prev => (prev === dayKey ? null : dayKey));
   };
@@ -1586,7 +1586,7 @@ const WeekView = ({ date, activitiesByDay, disciplinas = [], onActivityDelete, o
                 <div className={`flex-grow overflow-y-auto p-2`}>
                   <ActivityContainer
                     activities={dayActivities}
-                    disciplinas={safeDisciplinas}
+                    disciplinas={disciplinas}
                     dayKey={dayKey}
                     onActivityDelete={onActivityDelete}
                     onShowPrevisao={onShowPrevisao}
@@ -1610,9 +1610,9 @@ const WeekView = ({ date, activitiesByDay, disciplinas = [], onActivityDelete, o
   );
 };
 
+
 // --- Sub-componente para a Visualização Diária ---
-const DayView = ({ date, activitiesByDay, disciplinas = [], onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
-  const safeDisciplinas = disciplinas || [];
+const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
   const dayKey = format(date, 'yyyy-MM-dd');
   const activities = activitiesByDay[dayKey] || [];
 
@@ -1630,7 +1630,7 @@ const DayView = ({ date, activitiesByDay, disciplinas = [], onActivityDelete, on
               <ActivityContainer
                 activities={activities}
                 containerClass="space-y-4"
-                disciplinas={safeDisciplinas}
+                disciplinas={disciplinas}
                 dayKey={dayKey}
                 onActivityDelete={onActivityDelete}
                 onShowPrevisao={onShowPrevisao}
@@ -1657,9 +1657,9 @@ const DayView = ({ date, activitiesByDay, disciplinas = [], onActivityDelete, on
   );
 };
 
+
 // --- Componente Principal ---
-export default function CalendarioPlanejamento({ usuarios, disciplinas = [], onRefresh, isDashboardRefreshing }) {
-  const safeDisciplinas = disciplinas || [];
+export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefresh, isDashboardRefreshing }) {
   const { user, userProfile, isColaborador, isGestao, hasPermission, triggerUpdate, perfilAtual, updateKey } = useContext(ActivityTimerContext);
 
   const [currentDate, setCurrentDate] = useState(() => startOfWeek(new Date(), { locale: ptBR }));
@@ -1740,14 +1740,14 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas = [], onR
       }
 
       // Etapa 2: enriquecimento em paralelo (sem estado intermediário)
-      const empreendimentosIds = [...new Set(todosPlanejamentos.map(p => p.empreendimento_id).filter(Boolean))];
+      const empreendimentoIds = [...new Set(todosPlanejamentos.map(p => p.empreendimento_id).filter(Boolean))];
       const atividadeIds = [...new Set(todosPlanejamentos.map(p => p.atividade_id).filter(Boolean))];
       const documentoIdsArray = [...new Set(todosPlanejamentos.map(p => p.documento_id).filter(Boolean).map(String))];
 
       // Buscar documentos individualmente por ID para garantir que nenhum planejamento fique sem nome
       const [empreendimentosData, atividadesData, documentosData] = await Promise.all([
-        empreendimentosIds.length > 0 ? retryWithBackoff(() => Empreendimento.filter({ id: { $in: empreendimentosIds } }), 3, 1000, 'enrich.empreendimentos') : Promise.resolve([]),
-        atividadesIds.length > 0 ? retryWithBackoff(() => Atividade.filter({ id: { $in: atividadesIds } }), 3, 1000, 'enrich.atividades') : Promise.resolve([]),
+        empreendimentoIds.length > 0 ? retryWithBackoff(() => Empreendimento.filter({ id: { $in: empreendimentoIds } }), 3, 1000, 'enrich.empreendimentos') : Promise.resolve([]),
+        atividadeIds.length > 0 ? retryWithBackoff(() => Atividade.filter({ id: { $in: atividadeIds } }), 3, 1000, 'enrich.atividades') : Promise.resolve([]),
         documentoIdsArray.length > 0
           ? Promise.all(documentoIdsArray.map(docId =>
               retryWithBackoff(() => Documento.get(docId), 3, 1000, `enrich.documento.${docId}`).catch(() => null)
@@ -1772,81 +1772,35 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas = [], onR
           (horasExecutadasPorPlanejamento[exec.planejamento_id][diaExec] || 0) + tempoExec;
       });
 
+      const finalData = todosPlanejamentos.map(plano => {
+        const horasExec = horasExecutadasPorPlanejamento[plano.id] || {};
+        const doc = documentosMap.get(String(plano.documento_id)) || null;
+        let documentoEnriquecido = null;
+        if (doc) {
+          documentoEnriquecido = { ...doc };
+          const numero = String(doc.numero || '').trim();
+          const arquivo = String(doc.arquivo || doc.titulo || '').trim();
+          const parts = [];
+          if (numero) parts.push(numero);
+          if (arquivo) parts.push(arquivo);
+          documentoEnriquecido.numero_completo = parts.length ? parts.join(' - ') : (doc.titulo || doc.arquivo || null);
+        }
 
-      // Montar planejamentos "virtuais" para execuções rápidas SEM planejamento
-      const planejamentoIds = new Set(todosPlanejamentos.map(p => String(p.id)));
-      const execucoesSemPlanejamento = (execs || []).filter(exec => {
-        // Não tem planejamento_id OU não está nos planejamentos carregados
-        return !exec.planejamento_id || !planejamentoIds.has(String(exec.planejamento_id));
-      });
+        // Merge exec records (from execucoes table) with manually adjusted hours (stored on planejamento).
+        // Exec records take precedence per day; stored field fills days not covered by any execution.
+        const storedHoras = (typeof plano.horas_executadas_por_dia === 'object' && plano.horas_executadas_por_dia)
+          ? plano.horas_executadas_por_dia
+          : {};
+        const mergedHorasExec = Object.assign({}, storedHoras, horasExec);
 
-      // Criar planejamentos virtuais para execuções rápidas
-      const planejamentosVirtuais = execucoesSemPlanejamento.map(exec => {
-        const diaExec = format(parseLocalDate(exec.inicio), 'yyyy-MM-dd');
-        // Garantir status válido
-        let status = exec.status;
-        if (!status || typeof status !== 'string') status = 'concluido';
-        // Normalizar possíveis valores
-        status = status.toLowerCase();
-        if (status === 'finalizado') status = 'concluido';
-        if (status === 'iniciado') status = 'em_andamento';
-        if (status === 'pausada') status = 'pausado';
-        if (status === 'atrasada') status = 'atrasado';
         return {
-          id: `exec-${exec.id}`,
-          isLegacyExecution: true,
-          isQuickActivity: true,
-          tipo_planejamento: 'atividade',
-          executor_principal: exec.usuario,
-          status,
-          tempo_executado: Number(exec.tempo_total) || 0,
-          horas_executadas_por_dia: { [diaExec]: Number(exec.tempo_total) || 0 },
-          descritivo: exec.descritivo || 'Atividade Rápida',
-          empreendimento_id: exec.empreendimento_id || null,
-          empreendimento: exec.empreendimento_id ? (empreendimentosMap.get(String(exec.empreendimento_id)) || null) : null,
-          atividade_id: exec.atividade_id || null,
-          atividade: exec.atividade_id ? (atividadesMap.get(String(exec.atividade_id)) || null) : null,
-          documento_id: null,
-          documento: null,
-          inicio: exec.inicio,
-          termino: exec.termino,
-          created_at: exec.created_at,
-          updated_at: exec.updated_at,
+          ...plano,
+          empreendimento: empreendimentosMap.get(String(plano.empreendimento_id)) || null,
+          atividade: atividadesMap.get(String(plano.atividade_id)) || null,
+          documento: documentoEnriquecido,
+          horas_executadas_por_dia: mergedHorasExec,
         };
       });
-
-      const finalData = [
-        ...todosPlanejamentos.map(plano => {
-          const horasExec = horasExecutadasPorPlanejamento[plano.id] || {};
-          const doc = documentosMap.get(String(plano.documento_id)) || null;
-          let documentoEnriquecido = null;
-          if (doc) {
-            documentoEnriquecido = { ...doc };
-            const numero = String(doc.numero || '').trim();
-            const arquivo = String(doc.arquivo || doc.titulo || '').trim();
-            const parts = [];
-            if (numero) parts.push(numero);
-            if (arquivo) parts.push(arquivo);
-            documentoEnriquecido.numero_completo = parts.length ? parts.join(' - ') : (doc.titulo || doc.arquivo || null);
-          }
-
-          // Merge exec records (from execucoes table) with manually adjusted hours (stored on planejamento).
-          // Exec records take precedence per day; stored field fills days not covered by any execution.
-          const storedHoras = (typeof plano.horas_executadas_por_dia === 'object' && plano.horas_executadas_por_dia)
-            ? plano.horas_executadas_por_dia
-            : {};
-          const mergedHorasExec = Object.assign({}, storedHoras, horasExec);
-
-          return {
-            ...plano,
-            empreendimento: empreendimentosMap.get(String(plano.empreendimento_id)) || null,
-            atividade: atividadesMap.get(String(plano.atividade_id)) || null,
-            documento: documentoEnriquecido,
-            horas_executadas_por_dia: mergedHorasExec,
-          };
-        }),
-        ...planejamentosVirtuais
-      ];
 
       setEnrichedData(finalData);
 
@@ -2052,7 +2006,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas = [], onR
           alert(`✅ ${successCount} atividade(s) do dia foram reprogramadas com sucesso!${errorCount > 0 ? `\n⚠️ ${errorCount} falharam (veja o console)` : ''}`);
           clearSelection();
         } else {
-          alert(`❌ Nenhuma atividade pôde ser movida. Verifique o console.`);
+          alert(`❌ Nenhuma atividade pôde ser movida. Verifique o console para mais detalhes.`);
         }
       };
 
@@ -2185,7 +2139,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas = [], onR
         // Caso contrário, filtra pela disciplina da atividade.
         if (item.tipo_planejamento === 'documento' && item.atividade_id === null) {
           // If a document planning has no associated activity, its subdisciplinas are the primary categorisation.
-          // So, if discipline filter is active, we check if any of the document's subdisciplinas match.
+          // So, if discipline filter is active, we check if any of the document's subdisciplines match.
           if (item.documento?.subdisciplinas && item.documento.subdisciplinas.includes(filters.discipline)) {
             return true;
           }
@@ -2561,9 +2515,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas = [], onR
     const hasSelections = selectedActivities.size > 0;
 
     // **MODIFICADO**: Passa 'enrichedData' (que são todos) para as views em vez de 'planejamentos'
-    if (viewMode === 'month') return <MonthView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={safeDisciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} />;
-    if (viewMode === 'week') return <WeekView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={safeDisciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} />;
-    if (viewMode === 'day') return <DayView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={safeDisciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} />;
+    if (viewMode === 'month') return <MonthView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} />;
+    if (viewMode === 'week') return <WeekView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} />;
+    if (viewMode === 'day') return <DayView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} />;
     return null;
   };
 
@@ -2637,7 +2591,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas = [], onR
         </CardHeader>
         <CalendarFilters
           users={usuarios}
-          disciplines={safeDisciplinas}
+          disciplines={disciplinas}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           filters={filters}
@@ -2680,7 +2634,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas = [], onR
         <PrevisaoEntregaModal
           isOpen={showPrevisaoModal}
           onClose={() => setShowPrevisaoModal(false)}
-          planejamentos={planejamentosParaPrevisao.length > 0 && planejamentosParaPrevisao[0].executor_principal ? cargaDiariaPorUsuario[planejamentosParaPrevisao[0].executor_principal] || {} : {}}
+          planejamentos={planejamentosParaPrevisao.length > 0 ? planejamentosParaPrevisao : filteredPlanejamentos}
+          execucoes={[]} // execucoes are not relevant for future delivery forecast
+          cargaDiaria={planejamentosParaPrevisao.length > 0 && planejamentosParaPrevisao[0].executor_principal ? cargaDiariaPorUsuario[planejamentosParaPrevisao[0].executor_principal] || {} : {}}
         />
       )}
     </>
