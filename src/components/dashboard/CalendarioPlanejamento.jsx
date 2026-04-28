@@ -1442,7 +1442,8 @@ const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDel
 };
 
 // --- Sub-componente para a Visualização Mensal ---
-const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
+const MonthView = ({ date, activitiesByDay, disciplinas = [], onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
+  const safeDisciplinas = disciplinas || [];
   const monthDays = useMemo(() => {
     const start = startOfWeek(startOfMonth(date), { locale: ptBR });
     const end = endOfWeek(endOfMonth(date), { locale: ptBR });
@@ -1468,7 +1469,7 @@ const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onSho
             dayActivities={dayActivities}
             date={date}
             isToday={isToday}
-            disciplinas={disciplinas}
+            disciplinas={safeDisciplinas}
             onActivityDelete={onActivityDelete}
             onShowPrevisao={onShowPrevisao}
             executorMap={executorMap}
@@ -1486,19 +1487,18 @@ const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onSho
   );
 };
 
-
 // --- Sub-componente para a Visualização Semanal ---
-const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
-  // NOVO: Estado para controlar o dia expandido
-  const [expandedDay, setExpandedDay] = useState(null);
-
+const WeekView = ({ date, activitiesByDay, disciplinas = [], onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
+  const safeDisciplinas = disciplinas || [];
   const weekDays = useMemo(() => {
     const start = startOfWeek(date, { locale: ptBR });
     const end = endOfWeek(date, { locale: ptBR });
     return eachDayOfInterval({ start, end });
   }, [date]);
 
-  // NOVO: Função para alternar a expansão
+  // NOVO: Estado para controlar o dia expandido
+  const [expandedDay, setExpandedDay] = useState(null);
+
   const toggleExpand = (dayKey) => {
     setExpandedDay(prev => (prev === dayKey ? null : dayKey));
   };
@@ -1586,7 +1586,7 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
                 <div className={`flex-grow overflow-y-auto p-2`}>
                   <ActivityContainer
                     activities={dayActivities}
-                    disciplinas={disciplinas}
+                    disciplinas={safeDisciplinas}
                     dayKey={dayKey}
                     onActivityDelete={onActivityDelete}
                     onShowPrevisao={onShowPrevisao}
@@ -1610,9 +1610,9 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
   );
 };
 
-
 // --- Sub-componente para a Visualização Diária ---
-const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
+const DayView = ({ date, activitiesByDay, disciplinas = [], onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
+  const safeDisciplinas = disciplinas || [];
   const dayKey = format(date, 'yyyy-MM-dd');
   const activities = activitiesByDay[dayKey] || [];
 
@@ -1630,7 +1630,7 @@ const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowP
               <ActivityContainer
                 activities={activities}
                 containerClass="space-y-4"
-                disciplinas={disciplinas}
+                disciplinas={safeDisciplinas}
                 dayKey={dayKey}
                 onActivityDelete={onActivityDelete}
                 onShowPrevisao={onShowPrevisao}
@@ -1656,7 +1656,6 @@ const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowP
     </Droppable>
   );
 };
-
 
 // --- Componente Principal ---
 export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefresh, isDashboardRefreshing }) {
