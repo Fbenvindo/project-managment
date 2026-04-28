@@ -1734,11 +1734,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       const planosDocumentoComTipo = (planosDocumento || []).map(p => ({ ...p, tipo_planejamento: 'documento' }));
       const todosPlanejamentos = [...planosAtividadeComTipo, ...planosDocumentoComTipo];
 
-      if (todosPlanejamentos.length === 0) {
-        setEnrichedData([]);
-        return;
-      }
-
       // Etapa 2: enriquecimento em paralelo (sem estado intermediário)
       const empreendimentoIds = [...new Set(todosPlanejamentos.map(p => p.empreendimento_id).filter(Boolean))];
       const atividadeIds = [...new Set(todosPlanejamentos.map(p => p.atividade_id).filter(Boolean))];
@@ -1772,35 +1767,60 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           (horasExecutadasPorPlanejamento[exec.planejamento_id][diaExec] || 0) + tempoExec;
       });
 
-      const finalData = todosPlanejamentos.map(plano => {
-        const horasExec = horasExecutadasPorPlanejamento[plano.id] || {};
-        const doc = documentosMap.get(String(plano.documento_id)) || null;
-        let documentoEnriquecido = null;
-        if (doc) {
-          documentoEnriquecido = { ...doc };
-          const numero = String(doc.numero || '').trim();
-          const arquivo = String(doc.arquivo || doc.titulo || '').trim();
-          const parts = [];
-          if (numero) parts.push(numero);
-          if (arquivo) parts.push(arquivo);
-          documentoEnriquecido.numero_completo = parts.length ? parts.join(' - ') : (doc.titulo || doc.arquivo || null);
-        }
-
-        // Merge exec records (from execucoes table) with manually adjusted hours (stored on planejamento).
-        // Exec records take precedence per day; stored field fills days not covered by any execution.
-        const storedHoras = (typeof plano.horas_executadas_por_dia === 'object' && plano.horas_executadas_por_dia)
-          ? plano.horas_executadas_por_dia
-          : {};
-        const mergedHorasExec = Object.assign({}, storedHoras, horasExec);
-
+      // --- NOVO: incluir execuções sem planejamento_id como "atividades rápidas" ---
+      const execucoesSemPlanejamento = (execs || []).filter(exec => !exec.planejamento_id);
+      const atividadesVirtuais = execucoesSemPlanejamento.map(exec => {
+        const diaExec = exec.inicio ? format(parseLocalDate(exec.inicio), 'yyyy-MM-dd') : null;
         return {
-          ...plano,
-          empreendimento: empreendimentosMap.get(String(plano.empreendimento_id)) || null,
-          atividade: atividadesMap.get(String(plano.atividade_id)) || null,
-          documento: documentoEnriquecido,
-          horas_executadas_por_dia: mergedHorasExec,
+          id: `exec-${exec.id}`,
+          isLegacyExecution: true,
+          isQuickActivity: true,
+          tipo_planejamento: 'atividade',
+          descritivo: exec.descritivo || 'Execução Rápida',
+          tempo_executado: Number(exec.tempo_total) || 0,
+          executor_principal: exec.usuario,
+          status: 'concluido',
+          horas_executadas_por_dia: diaExec ? { [diaExec]: Number(exec.tempo_total) || 0 } : {},
+          empreendimento: null,
+          atividade: null,
+          documento: null,
+          os: exec.os || null,
+          observacao: exec.observacao || null,
         };
       });
+
+      const finalData = [
+        ...todosPlanejamentos.map(plano => {
+          const horasExec = horasExecutadasPorPlanejamento[plano.id] || {};
+          const doc = documentosMap.get(String(plano.documento_id)) || null;
+          let documentoEnriquecido = null;
+          if (doc) {
+            documentoEnriquecido = { ...doc };
+            const numero = String(doc.numero || '').trim();
+            const arquivo = String(doc.arquivo || doc.titulo || '').trim();
+            const parts = [];
+            if (numero) parts.push(numero);
+            if (arquivo) parts.push(arquivo);
+            documentoEnriquecido.numero_completo = parts.length ? parts.join(' - ') : (doc.titulo || doc.arquivo || null);
+          }
+
+          // Merge exec records (from execucoes table) with manually adjusted hours (stored on planejamento).
+          // Exec records take precedence per day; stored field fills days not covered by any execution.
+          const storedHoras = (typeof plano.horas_executadas_por_dia === 'object' && plano.horas_executadas_por_dia)
+            ? plano.horas_executadas_por_dia
+            : {};
+          const mergedHorasExec = Object.assign({}, storedHoras, horasExec);
+
+          return {
+            ...plano,
+            empreendimento: empreendimentosMap.get(String(plano.empreendimento_id)) || null,
+            atividade: atividadesMap.get(String(plano.atividade_id)) || null,
+            documento: documentoEnriquecido,
+            horas_executadas_por_dia: mergedHorasExec,
+          };
+        }),
+        ...atividadesVirtuais
+      ];
 
       setEnrichedData(finalData);
 
