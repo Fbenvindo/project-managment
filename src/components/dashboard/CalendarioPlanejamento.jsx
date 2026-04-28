@@ -1740,7 +1740,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       }
 
       // Etapa 2: enriquecimento em paralelo (sem estado intermediário)
-      const empreendimentoIds = [...new Set(todosPlanejamentos.map(p => p.empreendimento_id).filter(Boolean))];
+      const empreendimentosIds = [...new Set(todosPlanejamentos.map(p => p.empreendimento_id).filter(Boolean))];
       const atividadeIds = [...new Set(todosPlanejamentos.map(p => p.atividade_id).filter(Boolean))];
       const documentoIdsArray = [...new Set(todosPlanejamentos.map(p => p.documento_id).filter(Boolean).map(String))];
 
