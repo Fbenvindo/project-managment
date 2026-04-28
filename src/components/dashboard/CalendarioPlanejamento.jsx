@@ -218,7 +218,7 @@ const CalendarFilters = ({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas as Disciplinas</SelectItem>
-                {disciplines.map(disc => (
+                {disciplinas.map(disc => (
                   <SelectItem key={disc.id} value={disc.nome}>{disc.nome}</SelectItem>
                 ))}
               </SelectContent>
@@ -979,7 +979,7 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
 
   const canDragGroup = canReprogram &&
     empreendimentoNome !== 'Atividades Rápidas' &&
-    !atividades.some(a => a.status === 'concluido' || a.isLegacyExecution);
+    !atividades.some(a => a.status === 'concluido' || a.isLegacyExecution || normalizeActivityId(isReprogramando) === normalizeActivityId(a.id));
 
   return (
     <div
@@ -1746,8 +1746,8 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
 
       // Buscar documentos individualmente por ID para garantir que nenhum planejamento fique sem nome
       const [empreendimentosData, atividadesData, documentosData] = await Promise.all([
-        empreendimentoIds.length > 0 ? retryWithBackoff(() => Empreendimento.filter({ id: { $in: empreendimentoIds } }), 3, 1000, 'enrich.empreendimentos') : Promise.resolve([]),
-        atividadeIds.length > 0 ? retryWithBackoff(() => Atividade.filter({ id: { $in: atividadeIds } }), 3, 1000, 'enrich.atividades') : Promise.resolve([]),
+        empreendimentosIds.length > 0 ? retryWithBackoff(() => Empreendimento.filter({ id: { $in: empreendimentosIds } }), 3, 1000, 'enrich.empreendimentos') : Promise.resolve([]),
+        atividadesIds.length > 0 ? retryWithBackoff(() => Atividade.filter({ id: { $in: atividadesIds } }), 3, 1000, 'enrich.atividades') : Promise.resolve([]),
         documentoIdsArray.length > 0
           ? Promise.all(documentoIdsArray.map(docId =>
               retryWithBackoff(() => Documento.get(docId), 3, 1000, `enrich.documento.${docId}`).catch(() => null)
@@ -1783,13 +1783,22 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       // Criar planejamentos virtuais para execuções rápidas
       const planejamentosVirtuais = execucoesSemPlanejamento.map(exec => {
         const diaExec = format(parseLocalDate(exec.inicio), 'yyyy-MM-dd');
+        // Garantir status válido
+        let status = exec.status;
+        if (!status || typeof status !== 'string') status = 'concluido';
+        // Normalizar possíveis valores
+        status = status.toLowerCase();
+        if (status === 'finalizado') status = 'concluido';
+        if (status === 'iniciado') status = 'em_andamento';
+        if (status === 'pausada') status = 'pausado';
+        if (status === 'atrasada') status = 'atrasado';
         return {
           id: `exec-${exec.id}`,
           isLegacyExecution: true,
           isQuickActivity: true,
           tipo_planejamento: 'atividade',
           executor_principal: exec.usuario,
-          status: exec.status || 'concluido',
+          status,
           tempo_executado: Number(exec.tempo_total) || 0,
           horas_executadas_por_dia: { [diaExec]: Number(exec.tempo_total) || 0 },
           descritivo: exec.descritivo || 'Atividade Rápida',
@@ -2176,7 +2185,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         // Caso contrário, filtra pela disciplina da atividade.
         if (item.tipo_planejamento === 'documento' && item.atividade_id === null) {
           // If a document planning has no associated activity, its subdisciplinas are the primary categorisation.
-          // So, if discipline filter is active, we check if any of the document's subdisciplines match.
+          // So, if discipline filter is active, we check if any of the document's subdisciplinas match.
           if (item.documento?.subdisciplinas && item.documento.subdisciplinas.includes(filters.discipline)) {
             return true;
           }
@@ -2671,9 +2680,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         <PrevisaoEntregaModal
           isOpen={showPrevisaoModal}
           onClose={() => setShowPrevisaoModal(false)}
-          planejamentos={planejamentosParaPrevisao.length > 0 ? planejamentosParaPrevisao : filteredPlanejamentos}
-          execucoes={[]} // execucoes are not relevant for future delivery forecast
-          cargaDiaria={planejamentosParaPrevisao.length > 0 && planejamentosParaPrevisao[0].executor_principal ? cargaDiariaPorUsuario[planejamentosParaPrevisao[0].executor_principal] || {} : {}}
+          planejamentos={planejamentosParaPrevisao.length > 0 && planejamentosParaPrevisao[0].executor_principal ? cargaDiariaPorUsuario[planejamentosParaPrevisao[0].executor_principal] || {} : {}}
         />
       )}
     </>
