@@ -1,10 +1,10 @@
+// @ts-nocheck
 import React, { useState, useMemo, useEffect, useContext, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Calendar, Clock, User, Building2, Filter, Trash2, CalendarDays, View, Play, RefreshCw, LineChart, Users, PlusCircle, ListMusic, Loader2, Edit2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Clock, User, Filter, Trash2, CalendarDays, Play, RefreshCw, LineChart, Users, Loader2, Edit2 } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import {
   format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval,
@@ -64,6 +64,9 @@ const parseLocalDate = (dateString) => {
 };
 
 const normalizeActivityId = (value) => String(value ?? '');
+
+// Format hours: always 1 decimal place
+const formatHours = (h) => Number(h).toFixed(1);
 
 // Função para verificar se uma atividade está atrasada (agora usando a compartilhada)
 const isActivityOverdue = (plano) => {
@@ -295,16 +298,20 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   // **MODIFICADO**: Melhorar exibição do nome para documentos
   const displayName = useMemo(() => {
     if (plano.tipo_planejamento === 'documento') {
-      // Para planejamentos de documento, extrair número da folha do descritivo ou documento
-      const numeroFolha = plano.documento?.numero ||
-        (plano.descritivo && plano.descritivo.includes(' - ') ? plano.descritivo.split(' - ')[0] : null) ||
-        'Número';
-      const nomeArquivo = plano.documento?.arquivo ||
-        (plano.descritivo && plano.descritivo.includes(' - ') ? plano.descritivo.split(' - ')[1] : null) ||
-        'Documento';
       const etapa = plano.etapa || 'Sem Etapa';
-
-      return `${numeroFolha} - ${nomeArquivo} - ${etapa}`;
+      const numero = plano.documento?.numero;
+      const arquivo = plano.documento?.arquivo;
+      // Se documento enriquecido tem número ou arquivo, montar nome completo
+      if (numero || arquivo) {
+        return [numero, arquivo, etapa].filter(Boolean).join(' - ');
+      }
+      // Fallback: descritivo salvo ("001 - arquivo - etapa")
+      // Usar apenas se não for simplesmente a etapa repetida
+      const desc = plano.descritivo?.trim();
+      if (desc && desc !== etapa) {
+        return desc;
+      }
+      return etapa;
     }
     return plano.atividade?.atividade || plano.descritivo || 'Atividade não identificada';
   }, [plano]);
@@ -791,13 +798,13 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
                 title="Clique para ajustar o tempo (Coordenador ou superior)"
               >
                 <span className="font-semibold text-sm">
-                  {Math.ceil(horasAlocadasDia * 10) / 10}/{Math.ceil(horasExecutadasNoDia * 10) / 10}h{(plano.horas_por_dia && Object.keys(plano.horas_por_dia).length > 1 && Object.keys(plano.horas_por_dia).sort().indexOf(dayKey) < Object.keys(plano.horas_por_dia).length - 1) ? ' ...' : ''}
+                  {formatHours(horasAlocadasDia)}/{formatHours(horasExecutadasNoDia)}h{(plano.horas_por_dia && Object.keys(plano.horas_por_dia).length > 1 && Object.keys(plano.horas_por_dia).sort().indexOf(dayKey) < Object.keys(plano.horas_por_dia).length - 1) ? ' ...' : ''}
                 </span>
               </button>
             ) : (
               <div className="font-mono text-blue-600">
                 <span className="font-semibold text-sm" title={horasAlocadasDia > 0 && Object.keys(plano.horas_por_dia || {}).length > 1 ? "Planejado / Executado (continua em outros dias)" : "Planejado / Executado"}>
-                  {Math.ceil(horasAlocadasDia * 10) / 10}/{Math.ceil(horasExecutadasNoDia * 10) / 10}h{(plano.horas_por_dia && Object.keys(plano.horas_por_dia).length > 1 && Object.keys(plano.horas_por_dia).sort().indexOf(dayKey) < Object.keys(plano.horas_por_dia).length - 1) ? ' ...' : ''}
+                  {formatHours(horasAlocadasDia)}/{formatHours(horasExecutadasNoDia)}h{(plano.horas_por_dia && Object.keys(plano.horas_por_dia).length > 1 && Object.keys(plano.horas_por_dia).sort().indexOf(dayKey) < Object.keys(plano.horas_por_dia).length - 1) ? ' ...' : ''}
                 </span>
               </div>
             )}
@@ -920,7 +927,7 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
       soma += horasDoDia;
     });
 
-    return Math.ceil(soma * 10) / 10;
+    return soma;
   }, [atividades, dayKey]);
 
   const statusCounts = atividades.reduce((acc, atividade) => {
@@ -1059,7 +1066,7 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
                 className="px-1.5 py-0.5 rounded text-xs font-bold text-white"
                 style={{ backgroundColor: statusColor }}
               >
-                {totalHoras > 0 ? `${Math.ceil(totalHoras * 10) / 10}h` : '0h'}
+                {totalHoras > 0 ? `${formatHours(totalHoras)}h` : '0h'}
               </div>
               <p className="text-xs text-gray-500 mt-0.5">{atividades.length} ativ.</p>
             </div>
@@ -1568,7 +1575,7 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
 
                             total += horasDia;
                           });
-                          return `${Math.ceil(total * 10) / 10}h`;
+                          return `${formatHours(total)}h`;
                         })()}
                       </span>
                     </div>
@@ -1735,17 +1742,22 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       // Etapa 2: enriquecimento em paralelo (sem estado intermediário)
       const empreendimentoIds = [...new Set(todosPlanejamentos.map(p => p.empreendimento_id).filter(Boolean))];
       const atividadeIds = [...new Set(todosPlanejamentos.map(p => p.atividade_id).filter(Boolean))];
-      const documentoIds = [...new Set(todosPlanejamentos.map(p => p.documento_id).filter(Boolean))];
+      const documentoIdsArray = [...new Set(todosPlanejamentos.map(p => p.documento_id).filter(Boolean).map(String))];
 
+      // Buscar documentos individualmente por ID para garantir que nenhum planejamento fique sem nome
       const [empreendimentosData, atividadesData, documentosData] = await Promise.all([
         empreendimentoIds.length > 0 ? retryWithBackoff(() => Empreendimento.filter({ id: { $in: empreendimentoIds } }), 3, 1000, 'enrich.empreendimentos') : Promise.resolve([]),
         atividadeIds.length > 0 ? retryWithBackoff(() => Atividade.filter({ id: { $in: atividadeIds } }), 3, 1000, 'enrich.atividades') : Promise.resolve([]),
-        documentoIds.length > 0 ? retryWithBackoff(() => Documento.filter({ id: { $in: documentoIds } }), 3, 1000, 'enrich.documentos') : Promise.resolve([]),
+        documentoIdsArray.length > 0
+          ? Promise.all(documentoIdsArray.map(docId =>
+              retryWithBackoff(() => Documento.get(docId), 3, 1000, `enrich.documento.${docId}`).catch(() => null)
+            )).then(results => results.filter(Boolean))
+          : Promise.resolve([]),
       ]);
 
-      const empreendimentosMap = new Map((empreendimentosData || []).map(item => [item.id, item]));
-      const atividadesMap = new Map((atividadesData || []).map(item => [item.id, item]));
-      const documentosMap = new Map((documentosData || []).map(item => [item.id, item]));
+      const empreendimentosMap = new Map((empreendimentosData || []).map(item => [String(item.id), item]));
+      const atividadesMap = new Map((atividadesData || []).map(item => [String(item.id), item]));
+      const documentosMap = new Map((documentosData || []).map(item => [String(item.id), item]));
 
       // Agregar horas executadas por planejamento sem estado intermediário
       const horasExecutadasPorPlanejamento = {};
@@ -1760,35 +1772,72 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           (horasExecutadasPorPlanejamento[exec.planejamento_id][diaExec] || 0) + tempoExec;
       });
 
-      const finalData = todosPlanejamentos.map(plano => {
-        const horasExec = horasExecutadasPorPlanejamento[plano.id] || {};
-        const doc = documentosMap.get(plano.documento_id) || null;
-        let documentoEnriquecido = null;
-        if (doc) {
-          documentoEnriquecido = { ...doc };
-          const numero = String(doc.numero || '').trim();
-          const arquivo = String(doc.arquivo || doc.titulo || '').trim();
-          const parts = [];
-          if (numero) parts.push(numero);
-          if (arquivo) parts.push(arquivo);
-          documentoEnriquecido.numero_completo = parts.length ? parts.join(' - ') : (doc.titulo || doc.arquivo || null);
-        }
 
-        // Merge exec records (from execucoes table) with manually adjusted hours (stored on planejamento).
-        // Exec records take precedence per day; stored field fills days not covered by any execution.
-        const storedHoras = (typeof plano.horas_executadas_por_dia === 'object' && plano.horas_executadas_por_dia)
-          ? plano.horas_executadas_por_dia
-          : {};
-        const mergedHorasExec = Object.assign({}, storedHoras, horasExec);
+      // Montar planejamentos "virtuais" para execuções rápidas SEM planejamento
+      const planejamentoIds = new Set(todosPlanejamentos.map(p => String(p.id)));
+      const execucoesSemPlanejamento = (execs || []).filter(exec => {
+        // Não tem planejamento_id OU não está nos planejamentos carregados
+        return !exec.planejamento_id || !planejamentoIds.has(String(exec.planejamento_id));
+      });
 
+      // Criar planejamentos virtuais para execuções rápidas
+      const planejamentosVirtuais = execucoesSemPlanejamento.map(exec => {
+        const diaExec = format(parseLocalDate(exec.inicio), 'yyyy-MM-dd');
         return {
-          ...plano,
-          empreendimento: empreendimentosMap.get(plano.empreendimento_id) || null,
-          atividade: atividadesMap.get(plano.atividade_id) || null,
-          documento: documentoEnriquecido,
-          horas_executadas_por_dia: mergedHorasExec,
+          id: `exec-${exec.id}`,
+          isLegacyExecution: true,
+          isQuickActivity: true,
+          tipo_planejamento: 'atividade',
+          executor_principal: exec.usuario,
+          status: exec.status || 'concluido',
+          tempo_executado: Number(exec.tempo_total) || 0,
+          horas_executadas_por_dia: { [diaExec]: Number(exec.tempo_total) || 0 },
+          descritivo: exec.descritivo || 'Atividade Rápida',
+          empreendimento_id: exec.empreendimento_id || null,
+          empreendimento: exec.empreendimento_id ? (empreendimentosMap.get(String(exec.empreendimento_id)) || null) : null,
+          atividade_id: exec.atividade_id || null,
+          atividade: exec.atividade_id ? (atividadesMap.get(String(exec.atividade_id)) || null) : null,
+          documento_id: null,
+          documento: null,
+          inicio: exec.inicio,
+          termino: exec.termino,
+          created_at: exec.created_at,
+          updated_at: exec.updated_at,
         };
       });
+
+      const finalData = [
+        ...todosPlanejamentos.map(plano => {
+          const horasExec = horasExecutadasPorPlanejamento[plano.id] || {};
+          const doc = documentosMap.get(String(plano.documento_id)) || null;
+          let documentoEnriquecido = null;
+          if (doc) {
+            documentoEnriquecido = { ...doc };
+            const numero = String(doc.numero || '').trim();
+            const arquivo = String(doc.arquivo || doc.titulo || '').trim();
+            const parts = [];
+            if (numero) parts.push(numero);
+            if (arquivo) parts.push(arquivo);
+            documentoEnriquecido.numero_completo = parts.length ? parts.join(' - ') : (doc.titulo || doc.arquivo || null);
+          }
+
+          // Merge exec records (from execucoes table) with manually adjusted hours (stored on planejamento).
+          // Exec records take precedence per day; stored field fills days not covered by any execution.
+          const storedHoras = (typeof plano.horas_executadas_por_dia === 'object' && plano.horas_executadas_por_dia)
+            ? plano.horas_executadas_por_dia
+            : {};
+          const mergedHorasExec = Object.assign({}, storedHoras, horasExec);
+
+          return {
+            ...plano,
+            empreendimento: empreendimentosMap.get(String(plano.empreendimento_id)) || null,
+            atividade: atividadesMap.get(String(plano.atividade_id)) || null,
+            documento: documentoEnriquecido,
+            horas_executadas_por_dia: mergedHorasExec,
+          };
+        }),
+        ...planejamentosVirtuais
+      ];
 
       setEnrichedData(finalData);
 
@@ -2423,7 +2472,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       soma += horasDia;
     });
 
-    return Math.ceil(soma * 10) / 10;
+    return soma;
   }, [currentDate, activitiesByDay, viewMode]);
 
   const headerTitle = useMemo(() => {
@@ -2531,7 +2580,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
                   <span>{`Calendário - ${selectedUserName} (${filteredPlanejamentos.length})`}</span>
                   {viewMode === 'day' && (
                     <span className="text-sm font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">
-                      {horasDoDia}h planejadas
+                      {formatHours(horasDoDia)}h planejadas
                     </span>
                   )}
                 </div>
