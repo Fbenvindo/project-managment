@@ -1420,7 +1420,7 @@ const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDel
           <div className="flex-grow overflow-y-auto pr-1">
             <ActivityContainer
               activities={dayActivities}
-              disciplinas={disciplinas}
+              disciplinas={safeDisciplinas}
               dayKey={dayKey}
               onActivityDelete={onActivityDelete}
               onShowPrevisao={onShowPrevisao}
@@ -2052,7 +2052,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas = [], onR
           alert(`✅ ${successCount} atividade(s) do dia foram reprogramadas com sucesso!${errorCount > 0 ? `\n⚠️ ${errorCount} falharam (veja o console)` : ''}`);
           clearSelection();
         } else {
-          alert(`❌ Nenhuma atividade pôde ser movida. Verifique o console para mais detalhes.`);
+          alert(`❌ Nenhuma atividade pôde ser movida. Verifique o console.`);
         }
       };
 
@@ -2637,7 +2637,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas = [], onR
         </CardHeader>
         <CalendarFilters
           users={usuarios}
-          disciplines={disciplinas}
+          disciplines={safeDisciplinas}
           viewMode={viewMode}
           onViewModeChange={setViewMode}
           filters={filters}
