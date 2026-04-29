@@ -650,7 +650,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                     <SelectValue placeholder="Selecione o executor" />
                   </SelectTrigger>
                   <SelectContent>
-                    {usuarios.map(u => (
+                    {[...new Map(usuarios.map(u => [u.email, u])).values()].map(u => (
                       <SelectItem key={u.email} value={u.email}>
                         {u.nome || u.full_name || u.email}
                       </SelectItem>
