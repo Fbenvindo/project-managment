@@ -219,7 +219,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
         executor_principal: planejamentoForm.executor,
         executores: [planejamentoForm.executor],
         inicio_planejado: planejamentoForm.data || null,
-        tempo_planejado: itemParaPlanejar.tempo_atendimento || null,
+        tempo_planejado: Number(itemParaPlanejar.tempo_atendimento) || 0,
         empreendimento_id: empreendimento?.id || null,
         status: 'pendente',
         tipo_planejamento: 'individual',
