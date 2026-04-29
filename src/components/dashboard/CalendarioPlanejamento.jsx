@@ -56,7 +56,7 @@ const parseLocalDate = (dateString) => {
         return localDate;
       }
     } catch (e) {
-      console.error('Erro ao parsear data:', dateString, e);
+      // Log removido para otimização de desempenho
     }
   }
 
@@ -400,7 +400,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
         onDelete();
       }
     } catch (error) {
-      console.error("❌ Erro ao excluir atividade:", error);
+      // Log removido para otimização de desempenho
 
       const is404 = error.message?.includes("404") || (error.response && error.response.status === 404);
 
@@ -424,11 +424,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
         }
 
         alert(errorMessage);
-        console.error("📋 Detalhes completos do erro:", {
-          message: error.message,
-          response: error.response,
-          stack: error.stack
-        });
+        // Log removido para otimização de desempenho
       }
     } finally {
       setIsDeleting(false);
@@ -470,7 +466,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
         tipo_planejamento: plano.tipo_planejamento
       });
     } catch (error) {
-      console.error("Erro ao iniciar atividade:", error);
+      // Log removido para otimização de desempenho
       alert("Não foi possível iniciar a atividade. Verifique o console para mais detalhes.");
     } finally {
       setIsStarting(false);
@@ -528,7 +524,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
         onDelete();
       }
     } catch (error) {
-      console.error("Erro ao ajustar tempo:", error);
+      // Log removido para otimização de desempenho
       alert("Erro ao ajustar tempo. Tente novamente.");
     }
   };
@@ -585,7 +581,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
         onDelete();
       }
     } catch (error) {
-      console.error('Erro ao salvar descrição:', error);
+      // Log removido para otimização de desempenho
       alert('Erro ao atualizar descrição: ' + (error.message || 'Tente novamente.'));
     } finally {
       setIsEditLoading(false);
@@ -1828,7 +1824,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       setEnrichedData(finalData);
 
     } catch (error) {
-      console.error("❌ Erro ao carregar dados do calendário:", error);
+      // Log removido para otimização de desempenho
       setEnrichedData([]);
       alert("Erro ao carregar as atividades do calendário. Tente atualizar a página.");
     } finally {
@@ -1957,7 +1953,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       }
 
     } catch (error) {
-      console.error("❌ Erro ao reprogramar atividade:", error);
+      // Log removido para otimização de desempenho
       alert(`Erro ao reprogramar atividade: ${error.message}`);
       throw error; // Re-throw to allow catch in onDragEnd for bulk operations
     } finally {
@@ -2033,7 +2029,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
             }
           } catch (error) {
             errorCount++;
-            console.error(`   ❌ Erro ao mover atividade:`, error);
+            // Log removido para otimização de desempenho
           }
         }
 
@@ -2098,7 +2094,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
             await new Promise(resolve => setTimeout(resolve, 500));
           } catch (error) {
             errorCount++;
-            console.error("Erro ao mover atividade do grupo:", error);
+            // Log removido para otimização de desempenho
           }
         }
 
@@ -2146,7 +2142,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           await new Promise(resolve => setTimeout(resolve, 500));
         } catch (error) {
           errorCount++;
-          console.error("Erro ao mover atividade:", error);
+          // Log removido para otimização de desempenho
         }
       }
 
