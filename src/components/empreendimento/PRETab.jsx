@@ -214,15 +214,22 @@ export default function PRETab({ empreendimento, readOnly = false }) {
         itemParaPlanejar.assunto || itemParaPlanejar.descritiva || null,
       ].filter(Boolean).join(' - ');
 
+      const tempoPlanejado = Number(itemParaPlanejar.tempo_atendimento) || 0;
+      const horasPorDia = planejamentoForm.data && tempoPlanejado > 0
+        ? { [planejamentoForm.data]: tempoPlanejado }
+        : {};
+
       await retryWithBackoff(() => PlanejamentoAtividade.create({
         descritivo,
         executor_principal: planejamentoForm.executor,
         executores: [planejamentoForm.executor],
         inicio_planejado: planejamentoForm.data || null,
-        tempo_planejado: Number(itemParaPlanejar.tempo_atendimento) || 0,
+        termino_planejado: planejamentoForm.data || null,
+        tempo_planejado: tempoPlanejado,
+        horas_por_dia: horasPorDia,
         empreendimento_id: empreendimento?.id || null,
-        status: 'pendente',
-        tipo_planejamento: 'individual',
+        status: 'nao_iniciado',
+        tipo_planejamento: 'atividade',
       }), 3, 2000, 'PRE-Criar-Planejamento');
 
       const usuarioEncontrado = usuarios.find(u => u.email === planejamentoForm.executor);
