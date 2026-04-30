@@ -300,7 +300,12 @@ export default function PropostasPage() {
 
   const resumoMensal = useMemo(() => {
     const groups = {};
-    const getDateForGrouping = (p) => p.data_proposta || p.data_solicitacao || p.created_at || p.updated_date || p.updated_at || null;
+    // Para propostas aprovadas, agrupar pela data_aprovacao; para as demais, pela data_solicitacao
+    const getDateForGrouping = (p) => {
+      const status = normalizeStatus(p.status || 'solicitado');
+      if (status === 'aprovado' && p.data_aprovacao) return p.data_aprovacao;
+      return p.data_proposta || p.data_solicitacao || p.created_at || p.updated_date || p.updated_at || null;
+    };
 
     (propostas || []).forEach(p => {
       const raw = getDateForGrouping(p);
@@ -354,7 +359,11 @@ export default function PropostasPage() {
     };
     if (!resumoMensal || resumoMensal.length === 0) return res;
     const targetMonth = resumoMensal[0].month; // e.g. '2026-02' or 'Sem Data'
-    const getDateForGrouping = (p) => p.data_proposta || p.data_solicitacao || p.created_at || p.updated_date || p.updated_at || null;
+    const getDateForGrouping = (p) => {
+      const status = normalizeStatus(p.status || 'solicitado');
+      if (status === 'aprovado' && p.data_aprovacao) return p.data_aprovacao;
+      return p.data_proposta || p.data_solicitacao || p.created_at || p.updated_date || p.updated_at || null;
+    };
     (propostas || []).forEach(p => {
       let raw = getDateForGrouping(p);
       let monthKey = 'Sem Data';
@@ -381,7 +390,11 @@ export default function PropostasPage() {
   const reprovadoCandidates = useMemo(() => {
     if (!resumoMensal || resumoMensal.length === 0) return [];
     const target = resumoMensal[0].month;
-    const getDateForGrouping = (p) => p.data_proposta || p.data_solicitacao || p.created_at || p.updated_date || p.updated_at || null;
+    const getDateForGrouping = (p) => {
+      const status = normalizeStatus(p.status || 'solicitado');
+      if (status === 'aprovado' && p.data_aprovacao) return p.data_aprovacao;
+      return p.data_proposta || p.data_solicitacao || p.created_at || p.updated_date || p.updated_at || null;
+    };
     return (propostas || []).filter(p => {
       const raw = getDateForGrouping(p);
       let monthKey = 'Sem Data';
