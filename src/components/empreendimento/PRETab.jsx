@@ -967,16 +967,37 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                             }}
                             className="hidden"
                           />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            className="w-full"
-                            onClick={() => document.getElementById(`file-input-${item.id}`).click()}
-                          >
-                            <Upload className="w-3 h-3 mr-2" />
-                            Anexar Imagem ou PDF
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button
+                              type="button"
+                              variant="outline"
+                              size="sm"
+                              className="flex-1"
+                              onClick={() => document.getElementById(`file-input-${item.id}`).click()}
+                            >
+                              <Upload className="w-3 h-3 mr-2" />
+                              Anexar Imagem ou PDF
+                            </Button>
+                            <div
+                              className="flex-1 border border-dashed border-gray-300 rounded text-xs text-gray-400 flex items-center justify-center px-2 py-1 cursor-pointer hover:border-blue-400 hover:text-blue-500 hover:bg-blue-50 transition-colors"
+                              title="Clique aqui e cole com Ctrl+V"
+                              tabIndex={0}
+                              onPaste={(e) => {
+                                const items = e.clipboardData?.items;
+                                if (!items) return;
+                                for (const clipItem of items) {
+                                  if (clipItem.type.startsWith('image/')) {
+                                    const file = clipItem.getAsFile();
+                                    if (file) handleUploadImage(item.id, file);
+                                    break;
+                                  }
+                                }
+                              }}
+                              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') e.currentTarget.focus(); }}
+                            >
+                              Ctrl+V para colar
+                            </div>
+                          </div>
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {(item.imagens || []).map((imgUrl, idx) => (
