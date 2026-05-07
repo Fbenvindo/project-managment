@@ -726,7 +726,20 @@ export default function DocumentoItem({
           <TableCell colSpan={8} className="bg-gray-50">
             <div className="p-4">
               <div className="flex justify-between items-center mb-3">
-                <h4 className="font-semibold">Atividades da Folha: {doc.numero}</h4>
+                <div className="flex items-center gap-3">
+                  <h4 className="font-semibold">Atividades da Folha: {doc.numero}</h4>
+                  <label className="flex items-center gap-1.5 text-sm text-gray-600 cursor-pointer select-none">
+                    <Checkbox
+                      checked={atividadesDisponiveis.length > 0 && selectedAtividades.length === atividadesDisponiveis.length}
+                      onCheckedChange={(checked) => {
+                        if (checked) setSelectedAtividades(atividadesDisponiveis.map(a => a.id));
+                        else setSelectedAtividades([]);
+                      }}
+                      disabled={isUpdatingActivity || atividadesDisponiveis.length === 0}
+                    />
+                    Selecionar todos
+                  </label>
+                </div>
                 <div className="flex gap-2">
                   {etapaParaPlanejamento !== 'todas' && atividadesDisponiveis.filter(a => a.etapa === etapaParaPlanejamento && !a.estaConcluida).length > 0 && (
                     <Button size="sm" onClick={async () => {
