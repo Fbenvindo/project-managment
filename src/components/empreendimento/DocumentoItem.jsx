@@ -102,13 +102,15 @@ export default function DocumentoItem({
     });
 
     // Coletar IDs de atividades genéricas que têm override específico nesta folha
+    // Excluir marcadores de conclusão (tempo === 0) pois não devem suprimir a atividade original
     const idsComOverrideEspecifico = new Set();
     allAtividades.forEach(ativ => {
       if (
         ativ.empreendimento_id === empreendimento.id &&
         ativ.documento_id === doc.id &&
         ativ.id_atividade &&
-        ativ.tempo !== -999
+        ativ.tempo !== -999 &&
+        ativ.tempo !== 0  // marcadores de conclusão não suprimem a atividade genérica
       ) {
         idsComOverrideEspecifico.add(ativ.id_atividade);
       }
@@ -122,7 +124,8 @@ export default function DocumentoItem({
           Array.isArray(subdisciplinasDoc) && subdisciplinasDoc.includes(ativ.subdisciplina);
       }
       if (ativ.empreendimento_id === empreendimento.id && ativ.documento_id === doc.id && ativ.tempo !== -999) {
-        if (ativ.tempo === 0 && String(ativ.atividade || '').includes('Concluída na folha')) return false;
+        if (ativ.tempo === 0 && String(ativ.atividade || '').includes('Concluída na folha')) return false; // marcador interno, não exibir
+        if (ativ.tempo === -999) return false;
         return true;
       }
       return false;
@@ -144,7 +147,9 @@ export default function DocumentoItem({
     });
 
     atividadesGerais = atividadesGerais.filter(ativ =>
-      !atividadesExcluidasGlobal.has(ativ.id) && !atividadesExcluidasPorDoc.has(ativ.id)
+      !atividadesExcluidasGlobal.has(ativ.id) &&
+      !atividadesExcluidasPorDoc.has(ativ.id)
+      // Atividades concluídas (atividadesConcluidasPorDoc) devem CONTINUAR aparecendo
     );
 
     const pavimento = (pavimentos || []).find(p => p.id === doc.pavimento_id);
