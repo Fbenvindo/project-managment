@@ -232,6 +232,11 @@ export default function DocumentoItem({
     return atividadesFiltradas.reduce((total, ativ) => total + (ativ.tempoComFator || 0), 0);
   }, [atividadesDisponiveis, etapaParaPlanejamento]);
 
+  const todasAtividadesConcluidas = useMemo(() => {
+    if (atividadesDisponiveis.length === 0) return false;
+    return atividadesDisponiveis.every(a => a.estaConcluida || a.statusPlanejamento === 'concluido');
+  }, [atividadesDisponiveis]);
+
   const handleToggleAtividade = (atividadeId) => {
     setSelectedAtividades(prev =>
       prev.includes(atividadeId) ? prev.filter(id => id !== atividadeId) : [...prev, atividadeId]
@@ -492,13 +497,23 @@ export default function DocumentoItem({
 
   return (
     <>
-      <TableRow key={doc.id}>
+      <TableRow key={doc.id} className={todasAtividadesConcluidas ? 'bg-green-50' : ''}>
         <TableCell>
           <Button variant="ghost" size="icon" onClick={() => toggleRow(doc.id)} disabled={isDocLoading}>
             {expandedRows[doc.id] ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
           </Button>
         </TableCell>
-        <TableCell className="font-medium">{doc.numero}</TableCell>
+        <TableCell className="font-medium">
+          <div className="flex items-center gap-2">
+            {doc.numero}
+            {todasAtividadesConcluidas && (
+              <Badge className="bg-green-100 text-green-700 border border-green-300 text-xs flex items-center gap-1">
+                <CheckCircle2 className="w-3 h-3" />
+                Concluído
+              </Badge>
+            )}
+          </div>
+        </TableCell>
         <TableCell>{doc.arquivo}</TableCell>
         <TableCell className="text-sm text-gray-600 max-w-xs">
           {doc.descritivo
