@@ -16,10 +16,17 @@ import { base44 } from "@/api/base44Client";
 const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/577f93874_logo_Interativa_versao_final_sem_fundo_0002.png";
 
 const STATUS_COLORS = {
-  "Em andamento": "bg-yellow-200",
-  "Pendente": "bg-red-300",
-  "Concluído": "bg-green-200",
-  "Cancelado": "bg-red-200"
+  "Em andamento": "bg-yellow-300 text-yellow-900",
+  "Pendente": "bg-red-400 text-white",
+  "Concluído": "bg-green-500 text-white",
+  "Cancelado": "bg-gray-400 text-white"
+};
+
+const STATUS_TRIGGER_COLORS = {
+  "Em andamento": "bg-yellow-100 border-yellow-400 text-yellow-900",
+  "Pendente": "bg-red-100 border-red-400 text-red-900",
+  "Concluído": "bg-green-100 border-green-500 text-green-900",
+  "Cancelado": "bg-gray-100 border-gray-400 text-gray-700"
 };
 
 const printStyles = `
@@ -881,18 +888,18 @@ export default function PRETab({ empreendimento, readOnly = false }) {
               </Card>
             ) : (
               filteredItems.map((item) => (
-                <div key={item.id} className="flex gap-4 border border-gray-300 rounded-lg overflow-hidden bg-white">
+                <div key={item.id} className="flex gap-4 border border-gray-300 rounded-lg overflow-hidden bg-white shadow-sm">
                   {/* Container Principal (80%) */}
-                  <div className="w-4/5 p-4 space-y-4 border-r border-gray-300">
+                  <div className="w-4/5 p-4 space-y-4 border-r border-gray-200 bg-gray-50">
                     {/* De, Descritiva e Assunto - lado a lado */}
                     <div className="grid grid-cols-3 gap-3">
                       {/* De */}
                       <div>
-                        <label className="text-xs font-semibold text-gray-600 block mb-1">De</label>
+                        <label className="text-xs font-bold text-gray-700 block mb-1 uppercase tracking-wide">De</label>
                         <Textarea
                           value={item.de}
                           onChange={(e) => handleUpdateItem(item.id, 'de', e.target.value)}
-                          className="w-full text-sm print:border-none print:bg-transparent resize-none"
+                          className="w-full text-sm bg-white border-gray-300 print:border-none print:bg-transparent resize-none"
                           rows={3}
                           disabled={readOnly}
                           placeholder="De quem..."
@@ -901,11 +908,11 @@ export default function PRETab({ empreendimento, readOnly = false }) {
 
                       {/* Disciplina */}
                       <div>
-                        <label className="text-xs font-semibold text-gray-600 block mb-1">Disciplina</label>
+                        <label className="text-xs font-bold text-gray-700 block mb-1 uppercase tracking-wide">Disciplina</label>
                         <Textarea
                           value={item.descritiva}
                           onChange={(e) => handleUpdateItem(item.id, 'descritiva', e.target.value)}
-                          className="w-full text-sm print:border-none print:bg-transparent resize-none"
+                          className="w-full text-sm bg-white border-gray-300 print:border-none print:bg-transparent resize-none"
                           rows={3}
                           disabled={readOnly}
                           placeholder="Disciplina..."
@@ -914,11 +921,11 @@ export default function PRETab({ empreendimento, readOnly = false }) {
 
                       {/* Assunto */}
                       <div>
-                        <label className="text-xs font-semibold text-gray-600 block mb-1">Assunto</label>
+                        <label className="text-xs font-bold text-gray-700 block mb-1 uppercase tracking-wide">Assunto</label>
                         <Textarea
                           value={item.assunto}
                           onChange={(e) => handleUpdateItem(item.id, 'assunto', e.target.value)}
-                          className="w-full text-sm print:border-none print:bg-transparent resize-none"
+                          className="w-full text-sm bg-white border-gray-300 print:border-none print:bg-transparent resize-none"
                           rows={3}
                           disabled={readOnly}
                           placeholder="Assunto..."
@@ -928,11 +935,11 @@ export default function PRETab({ empreendimento, readOnly = false }) {
 
                     {/* Comentário */}
                     <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">Comentário</label>
+                      <label className="text-xs font-bold text-gray-700 block mb-1 uppercase tracking-wide">Comentário</label>
                       <Textarea
                         value={item.comentario}
                         onChange={(e) => handleUpdateItem(item.id, 'comentario', e.target.value)}
-                        className="w-full text-sm print:border-none print:bg-transparent resize-y"
+                        className="w-full text-sm bg-white border-gray-300 print:border-none print:bg-transparent resize-y"
                         rows={4}
                         disabled={readOnly}
                         placeholder="Comentários adicionais..."
@@ -941,11 +948,11 @@ export default function PRETab({ empreendimento, readOnly = false }) {
 
                     {/* Resposta */}
                     <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">Resposta</label>
+                      <label className="text-xs font-bold text-gray-700 block mb-1 uppercase tracking-wide">Resposta</label>
                       <Textarea
                         value={item.resposta}
                         onChange={(e) => handleUpdateItem(item.id, 'resposta', e.target.value)}
-                        className="w-full text-sm print:border-none print:bg-transparent resize-y"
+                        className="w-full text-sm bg-white border-gray-300 print:border-none print:bg-transparent resize-y"
                         rows={3}
                         placeholder="Resposta/Resolução..."
                       />
@@ -953,7 +960,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
 
                     {/* Imagens */}
                     <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-2">Imagens</label>
+                      <label className="text-xs font-bold text-gray-700 block mb-2 uppercase tracking-wide">Imagens</label>
                       <div className="space-y-2">
                         <div className="no-print">
                           <input
@@ -1048,10 +1055,10 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                   </div>
 
                   {/* Container Secundário (20%) */}
-                  <div className="w-1/5 p-4 space-y-4 flex flex-col min-h-0">
+                  <div className="w-1/5 p-4 space-y-4 flex flex-col min-h-0 bg-white">
                     {/* Item */}
                     <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">Item</label>
+                      <label className="text-xs font-bold text-gray-700 block mb-1 uppercase tracking-wide">Item</label>
                       {readOnly ? (
                         <div className="text-sm font-medium p-2 bg-gray-50 rounded">{item.item}</div>
                       ) : (
@@ -1065,7 +1072,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
 
                     {/* Data */}
                     <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">Data</label>
+                      <label className="text-xs font-bold text-gray-700 block mb-1 uppercase tracking-wide">Data</label>
                       {readOnly ? (
                         <div className="text-sm p-2 bg-gray-50 rounded">{item.data ? format(new Date(item.data), 'dd/MM/yyyy') : ''}</div>
                       ) : (
@@ -1080,7 +1087,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
 
                     {/* Localização */}
                     <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">Localização</label>
+                      <label className="text-xs font-bold text-gray-700 block mb-1 uppercase tracking-wide">Localização</label>
                       <Textarea
                         value={item.localizacao}
                         onChange={(e) => handleUpdateItem(item.id, 'localizacao', e.target.value)}
@@ -1093,7 +1100,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
 
                     {/* Tempo de Atendimento */}
                     <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">Tempo (horas)</label>
+                      <label className="text-xs font-bold text-gray-700 block mb-1 uppercase tracking-wide">Tempo (horas)</label>
                       <Input
                         type="number"
                         min="0"
@@ -1108,9 +1115,9 @@ export default function PRETab({ empreendimento, readOnly = false }) {
 
                      {/* Status */}
                     <div>
-                      <label className="text-xs font-semibold text-gray-600 block mb-1">Status</label>
+                      <label className="text-xs font-bold text-gray-700 block mb-1 uppercase tracking-wide">Status</label>
                       {readOnly ? (
-                        <div className={`text-sm p-2 rounded text-center font-medium ${STATUS_COLORS[item.status] || 'bg-gray-100'}`}>
+                        <div className={`text-sm p-2 rounded text-center font-semibold ${STATUS_COLORS[item.status] || 'bg-gray-100 text-gray-700'}`}>
                           {item.status || 'Sem status'}
                         </div>
                       ) : (
@@ -1118,7 +1125,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                           value={item.status}
                           onValueChange={(value) => handleUpdateItem(item.id, 'status', value)}
                         >
-                          <SelectTrigger className={`h-9 text-sm print:border-none print:bg-transparent ${STATUS_COLORS[item.status] || ''}`}>
+                          <SelectTrigger className={`h-9 text-sm font-semibold print:border-none print:bg-transparent ${STATUS_TRIGGER_COLORS[item.status] || 'bg-gray-50'}`}>
                             <SelectValue placeholder="Sem status" />
                           </SelectTrigger>
                           <SelectContent>
