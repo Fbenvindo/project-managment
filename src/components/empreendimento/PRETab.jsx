@@ -887,10 +887,10 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                 </CardContent>
               </Card>
             ) : (
-              filteredItems.map((item) => (
-                <div key={item.id} className="flex gap-4 border border-gray-300 rounded-lg overflow-hidden bg-white shadow-sm">
+              filteredItems.map((item, index) => (
+                <div key={item.id} className={`flex gap-4 border border-gray-300 rounded-lg overflow-hidden shadow-sm ${index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}`}>
                   {/* Container Principal (80%) */}
-                  <div className="w-4/5 p-4 space-y-4 border-r border-gray-200 bg-gray-50">
+                  <div className={`w-4/5 p-4 space-y-4 border-r border-gray-200 ${index % 2 === 0 ? 'bg-gray-50' : 'bg-gray-200'}`}>
                     {/* De, Descritiva e Assunto - lado a lado */}
                     <div className="grid grid-cols-3 gap-3">
                       {/* De */}
@@ -1055,7 +1055,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                   </div>
 
                   {/* Container Secundário (20%) */}
-                  <div className="w-1/5 p-4 space-y-4 flex flex-col min-h-0 bg-white">
+                  <div className={`w-1/5 p-4 space-y-4 flex flex-col min-h-0 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-100'}`}>
                     {/* Item */}
                     <div>
                       <label className="text-xs font-bold text-gray-700 block mb-1 uppercase tracking-wide">Item</label>
