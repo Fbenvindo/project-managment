@@ -697,140 +697,118 @@ export default function AlocacaoEquipeTab({
               </tr>
             </thead>
             <tbody>
-              {equipeOrdenadas.map((equipe) => {
+              {equipeOrdenadas.flatMap((equipe) => {
                 const usuariosEquipe = usuariosPorEquipe[equipe] || [];
-                return (
-                <React.Fragment key={equipe}>
-                  {/* Linha de cabeçalho da equipe */}
-                  <tr className="bg-gray-900 text-white font-bold">
+                const rows = [
+                  <tr key={`header-${equipe}`} className="bg-gray-900 text-white font-bold">
                     <td colSpan={2 + diasExibidos.length} className="border border-gray-600 p-1">
                       {equipe.toUpperCase()}
                     </td>
                   </tr>
-                  
-                  {/* Linhas de cada usuário */}
-                  {usuariosEquipe.map(usuario => {
-                    const email = usuario.email;
-                    const alocacaoUser = alocacaoPorUsuarioDia[email] || { planejado: {}, reprogramado: {}, realizado: {} };
-                    const osManuaisUser = osManuais[email] || {};
-                    
-                    return (
-                      <React.Fragment key={usuario.id}>
-                        {/* Linha Programado */}
-                        <tr className="bg-gray-100">
-                          <td className="border border-gray-300 p-1 sticky left-0 bg-gray-100 z-10" rowSpan={3}>
-                            <div className="font-medium">{usuario.nome || usuario.full_name}</div>
-                            <div className="text-gray-500 text-xs">{usuario.cargo || ''}</div>
+                ];
+                usuariosEquipe.forEach(usuario => {
+                  const email = usuario.email;
+                  const alocacaoUser = alocacaoPorUsuarioDia[email] || { planejado: {}, reprogramado: {}, realizado: {} };
+                  const osManuaisUser = osManuais[email] || {};
+
+                  rows.push(
+                    <tr key={`prog-${usuario.id}`} className="bg-gray-100">
+                      <td className="border border-gray-300 p-1 sticky left-0 bg-gray-100 z-10" rowSpan={3}>
+                        <div className="font-medium">{usuario.nome || usuario.full_name}</div>
+                        <div className="text-gray-500 text-xs">{usuario.cargo || ''}</div>
+                      </td>
+                      <td className="border border-gray-300 p-1 text-xs">Programado</td>
+                      {diasExibidos.map(dia => {
+                        const dataStr = format(dia, 'yyyy-MM-dd');
+                        const items = alocacaoUser.planejado[dataStr] || [];
+                        const hasItems = items.length > 0;
+                        return (
+                          <td
+                            key={dataStr}
+                            className={`border border-gray-300 p-0.5 text-center ${dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-200' : ''}`}
+                            style={hasItems ? { backgroundColor: '#D1FAE5' } : {}}
+                            title={hasItems ? items.map(i => `${i.label} (${i.empNome})`).join(', ') : ''}
+                          >
+                            <div className="flex flex-wrap gap-0.5 justify-center">
+                              {items.map((item, idx) => (
+                                <span key={idx} className="px-1 rounded text-white text-[10px] font-medium" style={{ backgroundColor: item.cor }}>
+                                  {item.label}
+                                </span>
+                              ))}
+                            </div>
                           </td>
-                          <td className="border border-gray-300 p-1 text-xs">Programado</td>
-                          {diasExibidos.map(dia => {
-                            const dataStr = format(dia, 'yyyy-MM-dd');
-                            const items = alocacaoUser.planejado[dataStr] || [];
-                            const hasItems = items.length > 0;
-                            
-                            return (
-                              <td 
-                                key={dataStr}
-                                className={`border border-gray-300 p-0.5 text-center ${
-                                  dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-200' : ''
-                                }`}
-                                style={hasItems ? { backgroundColor: '#D1FAE5' } : {}}
-                                title={hasItems ? items.map(i => `${i.label} (${i.empNome})`).join(', ') : ''}
-                              >
-                                <div className="flex flex-wrap gap-0.5 justify-center">
-                                  {items.map((item, idx) => (
-                                    <span 
-                                      key={idx} 
-                                      className="px-1 rounded text-white text-[10px] font-medium"
-                                      style={{ backgroundColor: item.cor }}
-                                    >
-                                      {item.label}
-                                    </span>
-                                  ))}
-                                </div>
-                              </td>
-                            );
-                          })}
-                        </tr>
+                        );
+                      })}
+                    </tr>
+                  );
 
-                        {/* Linha Previsto (OS Manuais) */}
-                        <tr className="bg-gray-50">
-                          <td className="border border-gray-300 p-1 text-xs">Previsto</td>
-                          {diasExibidos.map(dia => {
-                            const dataStr = format(dia, 'yyyy-MM-dd');
-                            const itemsManuais = osManuaisUser[dataStr] || [];
-                            const hasItems = itemsManuais.length > 0;
-                            
-                            return (
-                              <td 
-                                key={dataStr}
-                                className={`border border-gray-300 p-0.5 text-center cursor-pointer hover:bg-blue-100 ${
-                                  dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-200' : ''
-                                }`}
-                                style={hasItems ? { backgroundColor: '#DBEAFE' } : {}}
-                                title={hasItems ? itemsManuais.map(i => `${i.label} (${i.empNome})`).join(', ') : 'Clique para adicionar OS'}
-                                onClick={() => handleAddOS(usuario, dia)}
-                              >
-                                <div className="flex flex-wrap gap-0.5 justify-center">
-                                  {itemsManuais.map((item, idx) => (
-                                    <span 
-                                      key={`man-${idx}`} 
-                                      className="px-1 rounded text-white text-[10px] font-medium cursor-pointer hover:opacity-70"
-                                      style={{ backgroundColor: item.cor }}
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (window.confirm(`Remover OS "${item.os}" deste dia?`)) {
-                                          handleRemoveOS(usuario, dataStr, item.os);
-                                        }
-                                      }}
-                                      title="Clique para remover"
-                                    >
-                                      {item.label} ×
-                                    </span>
-                                  ))}
-                                </div>
-                              </td>
-                            );
-                          })}
-                        </tr>
+                  rows.push(
+                    <tr key={`prev-${usuario.id}`} className="bg-gray-50">
+                      <td className="border border-gray-300 p-1 text-xs">Previsto</td>
+                      {diasExibidos.map(dia => {
+                        const dataStr = format(dia, 'yyyy-MM-dd');
+                        const itemsManuais = osManuaisUser[dataStr] || [];
+                        const hasItems = itemsManuais.length > 0;
+                        return (
+                          <td
+                            key={dataStr}
+                            className={`border border-gray-300 p-0.5 text-center cursor-pointer hover:bg-blue-100 ${dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-200' : ''}`}
+                            style={hasItems ? { backgroundColor: '#DBEAFE' } : {}}
+                            title={hasItems ? itemsManuais.map(i => `${i.label} (${i.empNome})`).join(', ') : 'Clique para adicionar OS'}
+                            onClick={() => handleAddOS(usuario, dia)}
+                          >
+                            <div className="flex flex-wrap gap-0.5 justify-center">
+                              {itemsManuais.map((item, idx) => (
+                                <span
+                                  key={`man-${idx}`}
+                                  className="px-1 rounded text-white text-[10px] font-medium cursor-pointer hover:opacity-70"
+                                  style={{ backgroundColor: item.cor }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm(`Remover OS "${item.os}" deste dia?`)) {
+                                      handleRemoveOS(usuario, dataStr, item.os);
+                                    }
+                                  }}
+                                  title="Clique para remover"
+                                >
+                                  {item.label} ×
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
 
-                        {/* Linha Realizado */}
-                        <tr className="bg-white">
-                          <td className="border border-gray-300 p-1 text-xs font-medium">Realizado</td>
-                          {diasExibidos.map(dia => {
-                            const dataStr = format(dia, 'yyyy-MM-dd');
-                            const items = alocacaoUser.realizado[dataStr] || [];
-                            const hasItems = items.length > 0;
-                            
-                            return (
-                              <td 
-                                key={dataStr}
-                                className={`border border-gray-300 p-0.5 text-center ${
-                                  dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-200' : ''
-                                }`}
-                                style={hasItems ? { backgroundColor: '#FEF3C7' } : {}}
-                                title={hasItems ? items.map(i => `${i.label} (${i.empNome})`).join(', ') : ''}
-                              >
-                                <div className="flex flex-wrap gap-0.5 justify-center">
-                                  {items.map((item, idx) => (
-                                    <span 
-                                      key={idx} 
-                                      className="px-1 rounded text-white text-[10px] font-medium"
-                                      style={{ backgroundColor: item.cor }}
-                                    >
-                                      {item.label}
-                                    </span>
-                                  ))}
-                                </div>
-                              </td>
-                            );
-                          })}
-                        </tr>
-                      </React.Fragment>
-                    );
-                  })}
-                </React.Fragment>
-                );
+                  rows.push(
+                    <tr key={`real-${usuario.id}`} className="bg-white">
+                      <td className="border border-gray-300 p-1 text-xs font-medium">Realizado</td>
+                      {diasExibidos.map(dia => {
+                        const dataStr = format(dia, 'yyyy-MM-dd');
+                        const items = alocacaoUser.realizado[dataStr] || [];
+                        const hasItems = items.length > 0;
+                        return (
+                          <td
+                            key={dataStr}
+                            className={`border border-gray-300 p-0.5 text-center ${dia.getDay() === 0 || dia.getDay() === 6 ? 'bg-gray-200' : ''}`}
+                            style={hasItems ? { backgroundColor: '#FEF3C7' } : {}}
+                            title={hasItems ? items.map(i => `${i.label} (${i.empNome})`).join(', ') : ''}
+                          >
+                            <div className="flex flex-wrap gap-0.5 justify-center">
+                              {items.map((item, idx) => (
+                                <span key={idx} className="px-1 rounded text-white text-[10px] font-medium" style={{ backgroundColor: item.cor }}>
+                                  {item.label}
+                                </span>
+                              ))}
+                            </div>
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  );
+                });
+                return rows;
               })}
             </tbody>
           </table>
