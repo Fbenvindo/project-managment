@@ -624,14 +624,14 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
           </div>
         )}
 
-        {/* **NOVO**: Checkbox de Seleção - Sempre visível quando há seleções */}
-        {(hasSelections || isSelected) && plano.status !== 'concluido' && !plano.isLegacyExecution && (
-          <div className="absolute left-1 top-1 z-20">
+        {/* Checkbox de Seleção - visível ao hover OU quando há seleções ativas */}
+        {plano.status !== 'concluido' && !plano.isLegacyExecution && (
+          <div className={`absolute left-1 top-1 z-20 transition-opacity ${isSelected || hasSelections ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
             <input
               type="checkbox"
               checked={isSelected}
               onChange={(e) => {
-                e.stopPropagation(); // Prevent parent div click from being triggered
+                e.stopPropagation();
                 onToggleSelect(plano.id);
               }}
               className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
