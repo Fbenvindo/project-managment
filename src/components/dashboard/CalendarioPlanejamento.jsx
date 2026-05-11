@@ -626,7 +626,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
 
         {/* Checkbox de Seleção - visível ao hover OU quando há seleções ativas */}
         {plano.status !== 'concluido' && !plano.isLegacyExecution && (
-          <div className={`absolute left-1 top-1 z-20 transition-opacity ${isSelected || hasSelections ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+          <div className={`absolute right-1 top-1 z-20 transition-opacity ${isSelected || hasSelections ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
             <input
               type="checkbox"
               checked={isSelected}
