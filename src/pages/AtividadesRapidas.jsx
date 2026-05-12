@@ -35,6 +35,7 @@ export default function AtividadesRapidasPage() {
   const [isLoadingData, setIsLoadingData] = useState(true);
 
   // Filtro de perfil (para admins/líderes que querem ver atividades de outros perfis)
+  // Inicializa sempre como 'meu_perfil' — cada usuário vê as suas ao entrar
   const [filtroPerfil, setFiltroPerfil] = useState('meu_perfil');
 
   // Estados do modal de iniciar atividade
@@ -81,14 +82,28 @@ export default function AtividadesRapidasPage() {
     }
   };
 
-  // Filtrar atividades pelo perfil selecionado (ou perfil do usuário logado)
+  // Filtrar atividades:
+  // - "meu_perfil": mostra atividades criadas pelo próprio usuário OU que têm o perfil dele marcado OU sem perfil definido (globais)
+  // - "todos" (só gestores): mostra todas
+  // - perfil específico (só gestores): mostra as daquele perfil
   const atividadesFiltradas = atividadesGenericas.filter(atividade => {
     const perfisAtividade = atividade.perfis || [];
-    // Se não tem perfis definidos, aparece para todos
-    if (perfisAtividade.length === 0) return true;
+    const criadaPorMim = atividade.created_by === user?.email;
 
-    const perfilParaFiltrar = filtroPerfil === 'meu_perfil' ? (perfilAtual || 'user') : filtroPerfil;
-    return perfisAtividade.includes(perfilParaFiltrar);
+    if (filtroPerfil === 'meu_perfil') {
+      // Criadas pelo próprio usuário — sempre visíveis para ele
+      if (criadaPorMim) return true;
+      // Sem perfil definido = global, visível para todos
+      if (perfisAtividade.length === 0) return true;
+      // Com perfil definido: só se o perfil do usuário estiver na lista
+      return perfisAtividade.includes(perfilAtual || 'user');
+    }
+
+    if (filtroPerfil === 'todos') return true;
+
+    // Filtro por perfil específico (gestores)
+    if (perfisAtividade.length === 0) return true;
+    return perfisAtividade.includes(filtroPerfil);
   });
 
   // --- Handlers de iniciar atividade ---
