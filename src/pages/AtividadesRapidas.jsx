@@ -82,35 +82,20 @@ export default function AtividadesRapidasPage() {
     }
   };
 
-  // Perfis considerados "gestores" — podem criar atividades globais (sem perfil = visível para todos)
-  const PERFIS_GESTORES = ['admin', 'lider', 'direcao', 'gestao', 'coordenador'];
-  const criadaPorGestor = (atividade) => {
-    // Se não há informação de criador, considera global
-    if (!atividade.created_by) return true;
-    // Busca o usuário criador na lista de usuários
-    const criador = usuarios.find(u => u.email === atividade.created_by);
-    if (!criador) return true; // Se não encontrou, considera global
-    return PERFIS_GESTORES.includes(criador.perfil) || criador.role === 'admin';
-  };
-
   const atividadesFiltradas = atividadesGenericas.filter(atividade => {
     const perfisAtividade = atividade.perfis || [];
     const criadaPorMim = atividade.created_by === user?.email;
 
-    if (filtroPerfil === 'meu_perfil') {
-      // Sempre mostra as criadas pelo próprio usuário
-      if (criadaPorMim) return true;
-      // Com perfil definido: só se o perfil do usuário estiver na lista
-      if (perfisAtividade.length > 0) return perfisAtividade.includes(perfilAtual || 'user');
-      // Sem perfil definido: só é global se foi criada por um gestor
-      return criadaPorGestor(atividade);
-    }
-
     if (filtroPerfil === 'todos') return true;
 
-    // Filtro por perfil específico (gestores)
+    const perfilParaFiltrar = filtroPerfil === 'meu_perfil' ? (perfilAtual || 'user') : filtroPerfil;
+
+    // Sempre mostra as criadas pelo próprio usuário
+    if (criadaPorMim) return true;
+    // Sem perfis definidos = global (atividades legadas sem classificação)
     if (perfisAtividade.length === 0) return true;
-    return perfisAtividade.includes(filtroPerfil);
+    // Com perfis definidos: só mostra se o perfil do usuário estiver na lista
+    return perfisAtividade.includes(perfilParaFiltrar);
   });
 
   // --- Handlers de iniciar atividade ---
@@ -198,7 +183,9 @@ export default function AtividadesRapidasPage() {
   // --- Handlers de gerenciar atividades genéricas ---
   const handleOpenGerenciar = (atividade = null) => {
     setEditingAtividade(atividade);
-    setFormAtividade({ nome: atividade?.nome || '', perfis: atividade?.perfis || [] });
+    // Ao criar nova atividade, pré-seleciona o perfil atual do usuário
+    const perfisIniciais = atividade ? (atividade.perfis || []) : (perfilAtual ? [perfilAtual] : []);
+    setFormAtividade({ nome: atividade?.nome || '', perfis: perfisIniciais });
     setShowGerenciarModal(true);
   };
 
