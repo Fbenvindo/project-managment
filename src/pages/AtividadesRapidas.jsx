@@ -82,21 +82,28 @@ export default function AtividadesRapidasPage() {
     }
   };
 
-  // Filtrar atividades:
-  // - "meu_perfil": mostra atividades criadas pelo próprio usuário OU que têm o perfil dele marcado OU sem perfil definido (globais)
-  // - "todos" (só gestores): mostra todas
-  // - perfil específico (só gestores): mostra as daquele perfil
+  // Perfis considerados "gestores" — podem criar atividades globais (sem perfil = visível para todos)
+  const PERFIS_GESTORES = ['admin', 'lider', 'direcao', 'gestao', 'coordenador'];
+  const criadaPorGestor = (atividade) => {
+    // Se não há informação de criador, considera global
+    if (!atividade.created_by) return true;
+    // Busca o usuário criador na lista de usuários
+    const criador = usuarios.find(u => u.email === atividade.created_by);
+    if (!criador) return true; // Se não encontrou, considera global
+    return PERFIS_GESTORES.includes(criador.perfil) || criador.role === 'admin';
+  };
+
   const atividadesFiltradas = atividadesGenericas.filter(atividade => {
     const perfisAtividade = atividade.perfis || [];
     const criadaPorMim = atividade.created_by === user?.email;
 
     if (filtroPerfil === 'meu_perfil') {
-      // Criadas pelo próprio usuário — sempre visíveis para ele
+      // Sempre mostra as criadas pelo próprio usuário
       if (criadaPorMim) return true;
-      // Sem perfil definido = global, visível para todos
-      if (perfisAtividade.length === 0) return true;
       // Com perfil definido: só se o perfil do usuário estiver na lista
-      return perfisAtividade.includes(perfilAtual || 'user');
+      if (perfisAtividade.length > 0) return perfisAtividade.includes(perfilAtual || 'user');
+      // Sem perfil definido: só é global se foi criada por um gestor
+      return criadaPorGestor(atividade);
     }
 
     if (filtroPerfil === 'todos') return true;
