@@ -20,7 +20,9 @@ const calculateActivityStatus = (plano, allPlanejamentos = []) => {
   if (plano.isLegacyExecution) return plano.status;
 
   if (plano.status === 'concluido') {
-    const prazo = plano.termino_ajustado || plano.termino_planejado;
+    // Usar apenas termino_planejado como prazo de referência para evitar falsos positivos
+    // quando termino_ajustado é menor (replanejamentos internos)
+    const prazo = plano.termino_planejado;
     const terminoReal = plano.termino_real;
     if (prazo && terminoReal) {
       try {
