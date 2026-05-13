@@ -1,5 +1,7 @@
 import { createClientFromRequest } from 'npm:@base44/sdk@0.8.25';
 
+const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY");
+
 Deno.serve(async (req) => {
   try {
     const base44 = createClientFromRequest(req);
@@ -10,13 +12,35 @@ Deno.serve(async (req) => {
 
     const { to, nome, atividades } = await req.json();
 
-    const listaAtividades = atividades.map(a => `• ${a.nome} (${a.tempo}h)`).join('\n');
+    const listaHTML = atividades.map(a => `<li>${a.nome} <strong>(${a.tempo}h)</strong></li>`).join('');
 
-    await base44.integrations.Core.SendEmail({
-      to,
-      subject: `🔔 Atividades ocasionais para agendar esta semana`,
-      body: `Olá, ${nome}!\n\nVocê tem ${atividades.length} atividade(s) ocasional(is) para agendar esta semana:\n\n${listaAtividades}\n\nAcesse o sistema para escolher quando deseja realizar cada atividade.\n\nAté mais!`
+    const htmlBody = `
+      <p>Olá, <strong>${nome}</strong>!</p>
+      <p>Você tem <strong>${atividades.length}</strong> atividade(s) ocasional(is) para agendar esta semana:</p>
+      <ul>${listaHTML}</ul>
+      <p>Acesse o sistema para escolher quando deseja realizar cada atividade.</p>
+      <p>Até mais!</p>
+    `;
+
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: 'Gestão de Projetos <onboarding@resend.dev>',
+        to: [to],
+        subject: '🔔 Atividades ocasionais para agendar esta semana',
+        html: htmlBody
+      })
     });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      return Response.json({ error: data }, { status: 500 });
+    }
 
     return Response.json({ success: true, enviado_para: to });
   } catch (error) {
