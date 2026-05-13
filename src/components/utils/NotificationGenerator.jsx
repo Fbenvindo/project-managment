@@ -3,7 +3,6 @@ import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 import { NotificacaoAtividade, AtividadeFuncao } from '@/entities/all';
 import { retryWithBackoff } from './apiUtils';
 import { format, startOfWeek, isFriday } from 'date-fns';
-import { base44 } from '@/api/base44Client';
 
 /**
  * Hook que verifica e cria notificações de atividades ocasionais
@@ -55,10 +54,8 @@ export default function NotificationGenerator() {
           return;
         }
 
-        // Criar notificações para cada atividade ocasional e enviar email
+        // Criar notificações para cada atividade ocasional
         const notificacoesCriadas = [];
-        const atividadesParaEmail = [];
-
         for (const atividade of atividadesOcasionais) {
           try {
             const novaNotificacao = await retryWithBackoff(
@@ -73,29 +70,9 @@ export default function NotificationGenerator() {
               3, 1000, 'createNotification'
             );
             notificacoesCriadas.push(novaNotificacao);
-            atividadesParaEmail.push(atividade);
             console.log(`✅ Notificação criada: ${atividade.atividade} para ${user.email}`);
           } catch (error) {
             console.error(`❌ Erro ao criar notificação para ${atividade.atividade}:`, error);
-          }
-        }
-
-        // Enviar um único email consolidado com todas as atividades ocasionais
-        if (atividadesParaEmail.length > 0) {
-          try {
-            const nomeUsuario = user.full_name || user.email;
-            const listaAtividades = atividadesParaEmail
-              .map(a => `• ${a.atividade} (${a.tempo_estimado}h estimada)`)
-              .join('\n');
-
-            await base44.integrations.Core.SendEmail({
-              to: user.email,
-              subject: `🔔 Atividades ocasionais para agendar - ${hojeStr}`,
-              body: `Olá, ${nomeUsuario}!\n\nVocê tem atividades ocasionais pendentes para agendar esta semana:\n\n${listaAtividades}\n\nAcesse o sistema para escolher quando deseja executá-las.\n\nAtenciosamente,\nGestão de Projetos`
-            });
-            console.log(`📧 Email enviado para ${user.email} com ${atividadesParaEmail.length} atividade(s) ocasional(is)`);
-          } catch (emailError) {
-            console.error('❌ Erro ao enviar email de notificação:', emailError);
           }
         }
 
