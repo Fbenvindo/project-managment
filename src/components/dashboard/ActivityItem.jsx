@@ -6,8 +6,8 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Clock, Play, Trash2, RefreshCw, Edit2, Loader2 } from "lucide-react";
-import { format, parseISO, isValid, startOfDay, isAfter } from "date-fns";
+import { Clock, Play, Trash2, RefreshCw, Edit2, Loader2, CheckCircle } from "lucide-react";
+import { format, parseISO, isValid, startOfDay, isAfter, isBefore } from "date-fns";
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 import { PlanejamentoAtividade, PlanejamentoDocumento, Execucao, Empreendimento } from '@/entities/all';
 import { retryWithBackoff } from '../utils/apiUtils';
@@ -17,7 +17,21 @@ const isActivityOverdue = (p) => p.isLegacyExecution ? false : isOverdueShared(p
 
 const calculateActivityStatus = (plano, allPlanejamentos = []) => {
   if (plano.isLegacyExecution) return plano.status;
-  if (plano.status === 'concluido') return 'concluido';
+  if (plano.status === 'concluido') {
+    // Verifica se foi concluído com atraso
+    const prazo = plano.termino_ajustado || plano.termino_planejado;
+    const terminoReal = plano.termino_real;
+    if (prazo && terminoReal) {
+      try {
+        const prazoDate = startOfDay(parseISO(prazo));
+        const realDate = startOfDay(parseISO(terminoReal));
+        if (isValid(prazoDate) && isValid(realDate) && isAfter(realDate, prazoDate)) {
+          return 'concluido_atrasado';
+        }
+      } catch (e) {}
+    }
+    return 'concluido';
+  }
   if (plano.status === 'atrasado' || isActivityOverdue(plano)) return 'atrasado';
   if (plano.predecessora_id) {
     const pred = allPlanejamentos.find(p => p.id === plano.predecessora_id);
@@ -55,6 +69,7 @@ export default function ActivityItem({ plano, dayKey, onDelete, onUpdate, execut
       case 'em_andamento': return '#3b82f6';
       case 'pausado': return '#f59e0b';
       case 'concluido': return '#10b981';
+      case 'concluido_atrasado': return '#ef4444';
       case 'atrasado':
       case 'replanejado_atrasado': return '#ef4444';
       case 'impactado_por_atraso': return '#8b5cf6';
@@ -204,7 +219,7 @@ export default function ActivityItem({ plano, dayKey, onDelete, onUpdate, execut
           ...provided.draggableProps.style,
           borderLeft: `3px solid ${getStatusColor(realStatus)}`,
           backgroundColor: isSelected ? '#e0e7ff' :
-            realStatus === 'atrasado' || realStatus === 'replanejado_atrasado' ? '#fef2f2' :
+            realStatus === 'atrasado' || realStatus === 'replanejado_atrasado' || realStatus === 'concluido_atrasado' ? '#fef2f2' :
               realStatus === 'impactado_por_atraso' ? '#f5f3ff' :
                 realStatus === 'em_andamento' ? '#eff6ff' :
                   realStatus === 'concluido' ? '#f0fdf4' :
@@ -280,11 +295,18 @@ export default function ActivityItem({ plano, dayKey, onDelete, onUpdate, execut
         <div className="flex gap-2 mt-2 items-center justify-between">
           <div className="flex gap-2 items-center">
             <button onClick={handleStartActivity}
-              disabled={!!activeExecution || isStarting || realStatus === 'concluido'}
-              className={`p-1.5 rounded-md transition-colors ${activeExecution?.planejamento_id === plano.id ? 'bg-yellow-500 hover:bg-yellow-600 animate-pulse' : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado') ? 'bg-red-500 hover:bg-red-600' : 'bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed'}`}>
+              disabled={!!activeExecution || isStarting || realStatus === 'concluido' || realStatus === 'concluido_atrasado'}
+              className={`p-1.5 rounded-md transition-colors ${
+                activeExecution?.planejamento_id === plano.id ? 'bg-yellow-500 hover:bg-yellow-600 animate-pulse' :
+                realStatus === 'concluido' ? 'bg-green-600 cursor-default' :
+                realStatus === 'concluido_atrasado' ? 'bg-red-500 cursor-default' :
+                (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado') ? 'bg-red-500 hover:bg-red-600' :
+                'bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed'
+              }`}>
               {activeExecution?.planejamento_id === plano.id ? <Clock className="w-3.5 h-3.5 text-white" /> :
+                (realStatus === 'concluido' || realStatus === 'concluido_atrasado') ? <CheckCircle className="w-3.5 h-3.5 text-white" /> :
                 (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado') ? <span className="text-white text-xs font-bold">✕</span> :
-                  <Play className="w-3.5 h-3.5 text-white" fill="white" />}
+                <Play className="w-3.5 h-3.5 text-white" fill="white" />}
             </button>
             <button onClick={handleDeleteActivity} disabled={isDeleting || !!activeExecution}
               className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-100 hover:text-red-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
