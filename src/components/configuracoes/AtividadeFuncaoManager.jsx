@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { AtividadeFuncao } from '@/entities/all';
+import { AtividadeFuncao, PlanejamentoAtividade, Usuario } from '@/entities/all';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -9,10 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { PlusCircle, Edit, Trash2, Loader2, PackageOpen, Calendar as CalendarIcon, Bell, ChevronDown, ChevronRight } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, PackageOpen, Calendar as CalendarIcon, Bell, ChevronDown, ChevronRight, PlayCircle, CheckCircle } from 'lucide-react';
 import { retryWithBackoff } from '../utils/apiUtils';
 import { ptBR } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
+import { format, addDays, addWeeks, addMonths, isWeekend, parseISO, setDate } from 'date-fns';
+import { distribuirHorasSimples } from '../utils/DateCalculator';
 
 const DIAS_DA_SEMANA = [
   { value: 1, label: 'S' }, // Segunda
@@ -27,12 +29,21 @@ const DIAS_DA_SEMANA = [
 
 export default function AtividadeFuncaoManager() {
   const [atividadesFuncao, setAtividadesFuncao] = useState([]);
+  const [usuarios, setUsuarios] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [showForm, setShowForm] = useState(false);
   const [editingAtividade, setEditingAtividade] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [gruposColapsados, setGruposColapsados] = useState(null); // null = ainda não inicializado
+
+  // Modal de gerar planejamento
+  const [showPlanejamentoModal, setShowPlanejamentoModal] = useState(false);
+  const [funcaoSelecionada, setFuncaoSelecionada] = useState(null);
+  const [usuarioSelecionado, setUsuarioSelecionado] = useState('');
+  const [dataInicioPlanejamento, setDataInicioPlanejamento] = useState(null);
+  const [isGerandoPlanejamento, setIsGerandoPlanejamento] = useState(false);
+  const [resultadoPlanejamento, setResultadoPlanejamento] = useState(null);
 
   const [formData, setFormData] = useState({
     funcao: '',
@@ -42,6 +53,10 @@ export default function AtividadeFuncaoManager() {
     dias_semana: [1, 2, 3, 4, 5],
     dia_mes: 1,
   });
+
+  useEffect(() => {
+    Usuario.list().then(data => setUsuarios(data || [])).catch(console.error);
+  }, []);
 
   const loadAtividadesFuncao = useCallback(async () => {
     setIsLoading(true);
@@ -144,6 +159,81 @@ export default function AtividadeFuncaoManager() {
     }
   };
 
+  const handleAbrirPlanejamento = (funcao, e) => {
+    e.stopPropagation();
+    setFuncaoSelecionada(funcao);
+    setUsuarioSelecionado('');
+    setDataInicioPlanejamento(null);
+    setResultadoPlanejamento(null);
+    setShowPlanejamentoModal(true);
+  };
+
+  const calcularDataAtividade = (dataInicio, atividade) => {
+    const { frequencia, dias_semana, dia_mes } = atividade;
+    let data = new Date(dataInicio);
+
+    if (frequencia === 'diaria' || frequencia === 'semanal' || frequencia === 'quinzenal') {
+      // Encontrar o próximo dia da semana válido a partir da data de início
+      const diasValidos = dias_semana && dias_semana.length > 0 ? dias_semana : [1];
+      let tentativas = 0;
+      while (!diasValidos.includes(data.getDay()) && tentativas < 14) {
+        data = addDays(data, 1);
+        tentativas++;
+      }
+    } else if (frequencia === 'mensal') {
+      // Ir para o dia do mês
+      data = setDate(data, dia_mes || 1);
+      if (data < dataInicio) data = addMonths(data, 1);
+    }
+
+    // Se cair no fim de semana, avançar para segunda
+    while (isWeekend(data)) data = addDays(data, 1);
+    return data;
+  };
+
+  const handleGerarPlanejamento = async () => {
+    if (!usuarioSelecionado || !dataInicioPlanejamento || !funcaoSelecionada) return;
+
+    setIsGerandoPlanejamento(true);
+    setResultadoPlanejamento(null);
+
+    try {
+      const atividadesDaFuncao = gruposPorFuncao[funcaoSelecionada] || [];
+      // Excluir ocasionais (essas são geradas por notificação)
+      const atividadesParaPlanejar = atividadesDaFuncao.filter(a => a.frequencia !== 'ocasional');
+
+      let criadas = 0;
+      let erros = 0;
+
+      for (const atividade of atividadesParaPlanejar) {
+        const dataAtividade = calcularDataAtividade(dataInicioPlanejamento, atividade);
+        const { distribuicao, dataTermino } = distribuirHorasSimples(dataAtividade, atividade.tempo_estimado, 8);
+
+        await PlanejamentoAtividade.create({
+          descritivo: atividade.atividade,
+          base_descritivo: atividade.atividade,
+          tempo_planejado: atividade.tempo_estimado,
+          executor_principal: usuarioSelecionado,
+          executores: [usuarioSelecionado],
+          status: 'nao_iniciado',
+          inicio_planejado: format(dataAtividade, 'yyyy-MM-dd'),
+          termino_planejado: format(dataTermino, 'yyyy-MM-dd'),
+          horas_por_dia: distribuicao,
+          prioridade: 1,
+          etapa: 'Execução'
+        });
+        criadas++;
+      }
+
+      setResultadoPlanejamento({ criadas, erros, total: atividadesParaPlanejar.length });
+    } catch (err) {
+      console.error('Erro ao gerar planejamento:', err);
+      setResultadoPlanejamento({ erro: err.message });
+    } finally {
+      setIsGerandoPlanejamento(false);
+    }
+  };
+
   const formatFrequencia = (atividade) => {
     const { frequencia, dias_semana, dia_mes } = atividade;
     const diasMap = { 0: 'Dom', 1: 'Seg', 2: 'Ter', 3: 'Qua', 4: 'Qui', 5: 'Sex', 6: 'Sáb' };
@@ -224,10 +314,21 @@ export default function AtividadeFuncaoManager() {
                       onClick={() => toggleGrupo(funcao)}
                     >
                       <TableCell colSpan={5}>
-                        <div className="flex items-center gap-2 font-semibold text-gray-700">
-                          {colapsado ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-                          {funcao}
-                          <span className="text-xs font-normal text-gray-400 ml-1">({itens.length} {itens.length === 1 ? 'atividade' : 'atividades'})</span>
+                        <div className="flex items-center justify-between w-full">
+                          <div className="flex items-center gap-2 font-semibold text-gray-700">
+                            {colapsado ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            {funcao}
+                            <span className="text-xs font-normal text-gray-400 ml-1">({itens.length} {itens.length === 1 ? 'atividade' : 'atividades'})</span>
+                          </div>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-xs h-7 gap-1"
+                            onClick={(e) => handleAbrirPlanejamento(funcao, e)}
+                          >
+                            <PlayCircle className="w-3 h-3" />
+                            Gerar Planejamento
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -270,6 +371,80 @@ export default function AtividadeFuncaoManager() {
           </Table>
         )}
       </CardContent>
+
+      {/* Modal de Gerar Planejamento */}
+      <Dialog open={showPlanejamentoModal} onOpenChange={setShowPlanejamentoModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Gerar Planejamento — {funcaoSelecionada}</DialogTitle>
+          </DialogHeader>
+          {resultadoPlanejamento ? (
+            <div className="py-4 space-y-4">
+              {resultadoPlanejamento.erro ? (
+                <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                  Erro: {resultadoPlanejamento.erro}
+                </div>
+              ) : (
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-center">
+                  <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-2" />
+                  <p className="font-semibold text-green-800">{resultadoPlanejamento.criadas} de {resultadoPlanejamento.total} atividades planejadas com sucesso!</p>
+                  <p className="text-xs text-green-600 mt-1">Atividades ocasionais são agendadas via notificação toda sexta-feira.</p>
+                </div>
+              )}
+              <DialogFooter>
+                <Button onClick={() => setShowPlanejamentoModal(false)}>Fechar</Button>
+              </DialogFooter>
+            </div>
+          ) : (
+            <div className="space-y-4 py-4">
+              <div className="space-y-2">
+                <Label>Usuário</Label>
+                <Select value={usuarioSelecionado} onValueChange={setUsuarioSelecionado}>
+                  <SelectTrigger><SelectValue placeholder="Selecione o usuário..." /></SelectTrigger>
+                  <SelectContent>
+                    {usuarios.map(u => (
+                      <SelectItem key={u.id} value={u.email}>{u.nome} ({u.email})</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Data de Início</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-start text-left font-normal">
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {dataInicioPlanejamento ? format(dataInicioPlanejamento, 'dd/MM/yyyy') : 'Selecione a data...'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0">
+                    <Calendar
+                      mode="single"
+                      selected={dataInicioPlanejamento}
+                      onSelect={setDataInicioPlanejamento}
+                      locale={ptBR}
+                      disabled={(d) => isWeekend(d)}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+                Serão criados planejamentos para todas as atividades de <strong>{funcaoSelecionada}</strong> exceto as ocasionais (agendadas via notificação).
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowPlanejamentoModal(false)}>Cancelar</Button>
+                <Button
+                  onClick={handleGerarPlanejamento}
+                  disabled={!usuarioSelecionado || !dataInicioPlanejamento || isGerandoPlanejamento}
+                >
+                  {isGerandoPlanejamento ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Gerando...</> : 'Gerar Planejamento'}
+                </Button>
+              </DialogFooter>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={showForm} onOpenChange={setShowForm}>
         <DialogContent>
