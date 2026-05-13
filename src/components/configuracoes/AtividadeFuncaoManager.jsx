@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from 'react';
 import { AtividadeFuncao } from '@/entities/all';
 import { Button } from '@/components/ui/button';
@@ -10,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { PlusCircle, Edit, Trash2, Loader2, PackageOpen, Calendar as CalendarIcon, Bell } from 'lucide-react';
+import { PlusCircle, Edit, Trash2, Loader2, PackageOpen, Calendar as CalendarIcon, Bell, ChevronDown, ChevronRight } from 'lucide-react';
 import { retryWithBackoff } from '../utils/apiUtils';
 import { ptBR } from 'date-fns/locale';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +32,7 @@ export default function AtividadeFuncaoManager() {
   const [showForm, setShowForm] = useState(false);
   const [editingAtividade, setEditingAtividade] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [gruposColapsados, setGruposColapsados] = useState({});
 
   const [formData, setFormData] = useState({
     funcao: '',
@@ -164,6 +164,18 @@ export default function AtividadeFuncaoManager() {
     }
   };
 
+  // Agrupar atividades por função
+  const gruposPorFuncao = atividadesFuncao.reduce((acc, item) => {
+    const funcao = item.funcao || 'Sem função';
+    if (!acc[funcao]) acc[funcao] = [];
+    acc[funcao].push(item);
+    return acc;
+  }, {});
+
+  const toggleGrupo = (funcao) => {
+    setGruposColapsados(prev => ({ ...prev, [funcao]: !prev[funcao] }));
+  };
+
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
@@ -198,37 +210,59 @@ export default function AtividadeFuncaoManager() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {atividadesFuncao.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell className="font-medium">{item.funcao}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {item.frequencia === 'ocasional' && (
-                        <Bell className="w-4 h-4 text-amber-500" title="Atividade Ocasional" />
-                      )}
-                      {item.atividade}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {item.frequencia === 'ocasional' ? (
-                      <Badge className="bg-amber-100 text-amber-800">
-                        {formatFrequencia(item)}
-                      </Badge>
-                    ) : (
-                      formatFrequencia(item)
-                    )}
-                  </TableCell>
-                  <TableCell>{item.tempo_estimado}h</TableCell>
-                  <TableCell className="text-right">
-                    <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </TableCell>
-                </TableRow>
-              ))}
+              {Object.entries(gruposPorFuncao).map(([funcao, itens]) => {
+                const colapsado = !!gruposColapsados[funcao];
+                return (
+                  <>
+                    {/* Linha de cabeçalho do grupo */}
+                    <TableRow
+                      key={`group-${funcao}`}
+                      className="bg-gray-50 cursor-pointer hover:bg-gray-100"
+                      onClick={() => toggleGrupo(funcao)}
+                    >
+                      <TableCell colSpan={5}>
+                        <div className="flex items-center gap-2 font-semibold text-gray-700">
+                          {colapsado ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          {funcao}
+                          <span className="text-xs font-normal text-gray-400 ml-1">({itens.length} {itens.length === 1 ? 'atividade' : 'atividades'})</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                    {/* Linhas de atividades do grupo */}
+                    {!colapsado && itens.map((item) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="pl-8 text-gray-400 text-sm">{item.funcao}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            {item.frequencia === 'ocasional' && (
+                              <Bell className="w-4 h-4 text-amber-500" title="Atividade Ocasional" />
+                            )}
+                            {item.atividade}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          {item.frequencia === 'ocasional' ? (
+                            <Badge className="bg-amber-100 text-amber-800">
+                              {formatFrequencia(item)}
+                            </Badge>
+                          ) : (
+                            formatFrequencia(item)
+                          )}
+                        </TableCell>
+                        <TableCell>{item.tempo_estimado}h</TableCell>
+                        <TableCell className="text-right">
+                          <Button variant="ghost" size="icon" onClick={() => handleEdit(item)}>
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                          <Button variant="ghost" size="icon" onClick={() => handleDelete(item.id)}>
+                            <Trash2 className="h-4 w-4 text-red-500" />
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </>
+                );
+              })}
             </TableBody>
           </Table>
         )}
