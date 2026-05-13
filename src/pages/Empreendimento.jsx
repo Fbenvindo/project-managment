@@ -6,6 +6,7 @@ import {
   Disciplina,
   Atividade,
   PlanejamentoAtividade,
+  PlanejamentoDocumento,
   Usuario,
   Pavimento,
   Execucao
@@ -152,14 +153,7 @@ export default function EmpreendimentoPage() {
           const [documentosData, planejamentosAtividadeData, planejamentosDocumentoData] = await Promise.all([
             retryWithExtendedBackoff(() => Documento.filter({ empreendimento_id: empreendimentoId }), 'loadDocumentos'),
             retryWithExtendedBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }), 'loadPlanejamentosAtividade'),
-            (async () => {
-              try {
-                const { PlanejamentoDocumento } = await import('@/entities/all');
-                return await retryWithExtendedBackoff(() => PlanejamentoDocumento.filter({ empreendimento_id: empreendimentoId }), 'loadPlanejamentosDocumento');
-              } catch {
-                return [];
-              }
-            })()
+            retryWithExtendedBackoff(() => PlanejamentoDocumento.filter({ empreendimento_id: empreendimentoId }), 'loadPlanejamentosDocumento').catch(() => [])
           ]);
 
           data = {
