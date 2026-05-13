@@ -1,8 +1,9 @@
 import { useEffect, useContext } from 'react';
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
-import { NotificacaoAtividade, AtividadeFuncao } from '@/entities/all';
+import { NotificacaoAtividade, AtividadeFuncao, Usuario } from '@/entities/all';
 import { retryWithBackoff } from './apiUtils';
 import { format, startOfWeek, isFriday } from 'date-fns';
+import { base44 } from '@/api/base44Client';
 
 /**
  * Hook que verifica e cria notificações de atividades ocasionais
@@ -54,6 +55,20 @@ export default function NotificationGenerator() {
           return;
         }
 
+        // Buscar o email de notificação do usuário
+        let emailDestino = user.email;
+        try {
+          const usuariosCadastrados = await retryWithBackoff(
+            () => Usuario.filter({ email: user.email }, null, 1),
+            3, 1000, 'getUsuarioPerfil'
+          );
+          if (usuariosCadastrados?.[0]?.email_notificacao) {
+            emailDestino = usuariosCadastrados[0].email_notificacao;
+          }
+        } catch (e) {
+          console.warn('Não foi possível buscar email_notificacao, usando email padrão');
+        }
+
         // Criar notificações para cada atividade ocasional
         const notificacoesCriadas = [];
         for (const atividade of atividadesOcasionais) {
@@ -78,6 +93,18 @@ export default function NotificationGenerator() {
 
         if (notificacoesCriadas.length > 0) {
           console.log(`🔔 ${notificacoesCriadas.length} notificação(ões) criada(s) para ${user.email}`);
+          // Enviar email de notificação
+          try {
+            const nomeAtividades = notificacoesCriadas.map(n => `• ${n.atividade_nome} (${n.tempo_estimado}h)`).join('\n');
+            await base44.integrations.Core.SendEmail({
+              to: emailDestino,
+              subject: `🔔 Atividades ocasionais para agendar esta semana`,
+              body: `Olá${user.full_name ? `, ${user.full_name}` : ''}!\n\nVocê tem ${notificacoesCriadas.length} atividade(s) ocasional(is) para agendar esta semana:\n\n${nomeAtividades}\n\nAcesse o sistema para escolher quando deseja realizar cada atividade.\n\nAté mais!`
+            });
+            console.log(`📧 Email enviado para ${emailDestino}`);
+          } catch (emailError) {
+            console.error('❌ Erro ao enviar email de notificação:', emailError);
+          }
         }
 
       } catch (error) {

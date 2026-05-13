@@ -13,6 +13,7 @@ export default function UsuarioForm({ usuario, onSubmit, onCancel, allUsers, equ
   const [formData, setFormData] = useState({
     nome: usuario?.nome || "",
     email: usuario?.email || "",
+    email_notificacao: usuario?.email_notificacao || "",
     cargo: usuario?.cargo || "",
     departamento: usuario?.departamento || "",
     equipe_id: usuario?.equipe_id || "",
@@ -136,6 +137,18 @@ export default function UsuarioForm({ usuario, onSubmit, onCancel, allUsers, equ
                     required
                   />
                 </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email_notificacao">Email para Notificações</Label>
+                <Input
+                  id="email_notificacao"
+                  type="email"
+                  value={formData.email_notificacao}
+                  onChange={(e) => handleInputChange("email_notificacao", e.target.value)}
+                  placeholder="email.notificacoes@exemplo.com (se diferente do email acima)"
+                />
+                <p className="text-xs text-gray-500">Preencha apenas se o email para receber notificações for diferente do email de cadastro.</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
