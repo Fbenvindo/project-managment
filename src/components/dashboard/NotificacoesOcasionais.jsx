@@ -208,7 +208,12 @@ export default function NotificacoesOcasionais() {
                 onSelect={setSelectedDate}
                 locale={ptBR}
                 disabled={(date) => date < new Date() || date.getDay() === 0 || date.getDay() === 6}
-                className="rounded-md border w-full"
+                className="rounded-md border mx-auto"
+                classNames={{
+                  months: "flex justify-center",
+                  month: "w-full",
+                  table: "w-full",
+                }}
               />
             </div>
           </div>
