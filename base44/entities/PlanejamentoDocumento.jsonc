@@ -1,0 +1,249 @@
+{
+  "name": "PlanejamentoDocumento",
+  "type": "object",
+  "properties": {
+    "descritivo": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o do planejamento quando n\u00e3o h\u00e1 documento vinculado"
+    },
+    "documento_id": {
+      "type": "string",
+      "description": "ID do documento principal deste planejamento"
+    },
+    "empreendimento_id": {
+      "type": "string",
+      "description": "ID do empreendimento"
+    },
+    "etapa": {
+      "type": "string",
+      "description": "Etapa do planejamento, copiada do Documento"
+    },
+    "executores": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Lista de emails dos usu\u00e1rios executores"
+    },
+    "executor_principal": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Email do executor principal/respons\u00e1vel"
+    },
+    "predecessora_id": {
+      "type": "string",
+      "description": "ID do planejamento de documento predecessor"
+    },
+    "tempo_planejado": {
+      "type": "number",
+      "description": "Tempo planejado em horas"
+    },
+    "inicio_planejado": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de in\u00edcio planejada"
+    },
+    "termino_planejado": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de t\u00e9rmino planejada"
+    },
+    "horario_inicio": {
+      "type": "string",
+      "description": "Hor\u00e1rio de in\u00edcio da atividade (formato HH:mm)"
+    },
+    "horario_termino": {
+      "type": "string",
+      "description": "Hor\u00e1rio de t\u00e9rmino da atividade (formato HH:mm)"
+    },
+    "sobra_planejada": {
+      "type": "number",
+      "description": "Sobra de tempo planejada em horas"
+    },
+    "inicio_ajustado": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de in\u00edcio ajustada"
+    },
+    "termino_ajustado": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de t\u00e9rmino ajustada"
+    },
+    "sobra_ajustada": {
+      "type": "number",
+      "description": "Sobra de tempo ajustada em horas"
+    },
+    "inicio_real": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de in\u00edcio real"
+    },
+    "termino_real": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de t\u00e9rmino real"
+    },
+    "sobra_real": {
+      "type": "number",
+      "description": "Sobra de tempo real em horas"
+    },
+    "tempo_executado": {
+      "type": "number",
+      "description": "Tempo real executado em horas"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "nao_iniciado",
+        "em_andamento",
+        "concluido",
+        "atrasado",
+        "pausado"
+      ],
+      "default": "nao_iniciado",
+      "description": "Status do planejamento do documento"
+    },
+    "semana_ano": {
+      "type": "string",
+      "description": "Semana do ano no formato YYYY-WW (ex: 2024-03)"
+    },
+    "prioridade": {
+      "type": "number",
+      "default": 1,
+      "description": "Prioridade (1-5, sendo 5 a maior)"
+    },
+    "horas_por_dia": {
+      "type": "object",
+      "description": "Distribui\u00e7\u00e3o de horas por data espec\u00edfica",
+      "additionalProperties": {
+        "type": "number"
+      }
+    },
+    "horas_executadas_por_dia": {
+      "type": "object",
+      "description": "Distribui\u00e7\u00e3o de horas executadas por data",
+      "additionalProperties": {
+        "type": "number"
+      }
+    }
+  },
+  "required": [
+    "tempo_planejado",
+    "documento_id"
+  ],
+  "rls": {
+    "read": {},
+    "create": {
+      "$or": [
+        {
+          "data.executor_principal": "{{user.email}}"
+        },
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "lider"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "coordenador"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "gestao"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "direcao"
+          }
+        }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "data.executor_principal": "{{user.email}}"
+        },
+        {
+          "data.executores": {
+            "$in": [
+              "{{user.email}}"
+            ]
+          }
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "lider"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "coordenador"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "gestao"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "direcao"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "data.executor_principal": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "lider"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "coordenador"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "gestao"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "direcao"
+          }
+        }
+      ]
+    }
+  }
+}
