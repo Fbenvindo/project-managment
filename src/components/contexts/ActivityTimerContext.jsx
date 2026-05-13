@@ -168,7 +168,7 @@ export const ActivityTimerProvider = ({ children }) => {
 
             if (finalStatus === 'concluido') {
                 updateData.status = 'concluido';
-                updateData.termino_real = format(new Date(), 'yyyy-MM-dd');
+                updateData.termino_real = diaParaRegistrar;
                 if (!planejamento.inicio_real) {
                     updateData.inicio_real = diaParaRegistrar;
                 }
