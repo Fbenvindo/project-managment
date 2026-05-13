@@ -32,7 +32,7 @@ export default function AtividadeFuncaoManager() {
   const [showForm, setShowForm] = useState(false);
   const [editingAtividade, setEditingAtividade] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [gruposColapsados, setGruposColapsados] = useState({});
+  const [gruposColapsados, setGruposColapsados] = useState(null); // null = ainda não inicializado
 
   const [formData, setFormData] = useState({
     funcao: '',
@@ -172,8 +172,11 @@ export default function AtividadeFuncaoManager() {
     return acc;
   }, {});
 
+  // Inicializa todos os grupos como colapsados quando os dados chegam
+  const estadoColapsados = gruposColapsados ?? Object.fromEntries(Object.keys(gruposPorFuncao).map(f => [f, true]));
+
   const toggleGrupo = (funcao) => {
-    setGruposColapsados(prev => ({ ...prev, [funcao]: !prev[funcao] }));
+    setGruposColapsados(prev => ({ ...(prev ?? estadoColapsados), [funcao]: !(prev ?? estadoColapsados)[funcao] }));
   };
 
   return (
@@ -211,7 +214,7 @@ export default function AtividadeFuncaoManager() {
             </TableHeader>
             <TableBody>
               {Object.entries(gruposPorFuncao).map(([funcao, itens]) => {
-                const colapsado = !!gruposColapsados[funcao];
+                const colapsado = !!estadoColapsados[funcao];
                 return (
                   <>
                     {/* Linha de cabeçalho do grupo */}
