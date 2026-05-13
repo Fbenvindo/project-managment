@@ -164,10 +164,10 @@ export default function EmpreendimentoPage() {
 
           data = {
             documentos: documentosData || [],
-            planejamentos: [...(planejamentosAtividadeData || []), ...(planejamentosDocumentoData || [])].map(p => ({
-              ...p,
-              tipo_plano: p.documento_id && !p.atividade_id ? 'documento' : 'atividade'
-            })),
+            planejamentos: [
+              ...(planejamentosAtividadeData || []).map(p => ({ ...p, tipo_plano: 'atividade' })),
+              ...(planejamentosDocumentoData || []).map(p => ({ ...p, tipo_plano: 'documento' }))
+            ],
           };
           break;
 
