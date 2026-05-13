@@ -24,12 +24,13 @@ const calculateActivityStatus = (plano, allPlanejamentos = []) => {
     const terminoReal = plano.termino_real;
     if (prazo && terminoReal) {
       try {
-        // Parsear como data local (sem deslocamento de fuso) para evitar falsos positivos
+        // Extrair YYYY-MM-DD para evitar shift de timezone (TIMESTAMPTZ UTC → local)
         const parseLocalDate = (s) => {
-          if (typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s)) {
-            const [y, m, d] = s.split('-').map(Number);
-            return new Date(y, m - 1, d);
+          if (typeof s === 'string') {
+            const match = s.match(/^(\d{4})-(\d{2})-(\d{2})/);
+            if (match) return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
           }
+          if (s instanceof Date) return startOfDay(s);
           return parseISO(s);
         };
         const prazoDate = startOfDay(parseLocalDate(prazo));
@@ -47,8 +48,9 @@ const calculateActivityStatus = (plano, allPlanejamentos = []) => {
   let foiReplanejadaParaIniciarMaisTarde = false;
   if (plano.inicio_ajustado && plano.inicio_planejado) {
     try {
-      const ajustado = startOfDay(parseISO(plano.inicio_ajustado));
-      const planejado = startOfDay(parseISO(plano.inicio_planejado));
+      const parseLD = (s) => { const m = typeof s === 'string' && s.match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? new Date(+m[1], +m[2]-1, +m[3]) : startOfDay(parseISO(s)); };
+      const ajustado = parseLD(plano.inicio_ajustado);
+      const planejado = parseLD(plano.inicio_planejado);
       if (isValid(ajustado) && isValid(planejado) && isAfter(ajustado, planejado)) foiReplanejadaParaIniciarMaisTarde = true;
     } catch (e) {}
   }
@@ -64,8 +66,9 @@ const calculateActivityStatus = (plano, allPlanejamentos = []) => {
   let wasReplannedLaterTermino = false;
   if (plano.termino_ajustado && plano.termino_planejado) {
     try {
-      const aj = startOfDay(parseISO(plano.termino_ajustado));
-      const pl = startOfDay(parseISO(plano.termino_planejado));
+      const parseLD = (s) => { const m = typeof s === 'string' && s.match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? new Date(+m[1], +m[2]-1, +m[3]) : startOfDay(parseISO(s)); };
+      const aj = parseLD(plano.termino_ajustado);
+      const pl = parseLD(plano.termino_planejado);
       if (isValid(aj) && isValid(pl) && isAfter(aj, pl)) wasReplannedLaterTermino = true;
     } catch (e) {}
   }

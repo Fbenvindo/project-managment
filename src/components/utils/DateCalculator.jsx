@@ -65,9 +65,24 @@ export const calculateEndDate = (startDate, horasTotais, horasPorDia = 8) => {
   return dataAtual;
 };
 
+const parseLocalDateOnly = (value) => {
+  if (!value) return null;
+  if (value instanceof Date) return startOfDay(value);
+  if (typeof value === 'string') {
+    // Extrair apenas YYYY-MM-DD para evitar shift de timezone (TIMESTAMPTZ UTC → local)
+    const match = value.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      return new Date(Number(match[1]), Number(match[2]) - 1, Number(match[3]));
+    }
+    const parsed = parseISO(value);
+    return isValid(parsed) ? startOfDay(parsed) : null;
+  }
+  return null;
+};
+
 export const isActivityOverdue = (plano, hoje = new Date()) => {
   try {
-    if (!plano || plano.status === 'concluido') {
+    if (!plano || plano.status === 'concluido' || plano.status === 'concluido_atrasado') {
       return false;
     }
 
@@ -76,28 +91,13 @@ export const isActivityOverdue = (plano, hoje = new Date()) => {
     }
 
     // Usar apenas termino_planejado para verificar atraso.
-    // termino_ajustado pode ser menor que termino_planejado em replanejamentos internos,
-    // causando falso positivo de atraso no próprio dia do planejamento.
+    // Extrair YYYY-MM-DD da string para evitar shift de timezone (TIMESTAMPTZ UTC).
     const dataTermino = plano.termino_planejado;
-    
-    if (!dataTermino) {
-      return false;
-    }
+    if (!dataTermino) return false;
 
-    let dataTerminoObj;
-    if (typeof dataTermino === 'string') {
-      dataTerminoObj = parseISO(dataTermino);
-    } else if (dataTermino instanceof Date) {
-      dataTerminoObj = dataTermino;
-    } else {
-      return false;
-    }
+    const terminoMidnight = parseLocalDateOnly(dataTermino);
+    if (!terminoMidnight || !isValid(terminoMidnight)) return false;
 
-    if (!isValid(dataTerminoObj)) {
-      return false;
-    }
-
-    const terminoMidnight = startOfDay(dataTerminoObj);
     const hojeMidnight = startOfDay(hoje);
 
     return terminoMidnight < hojeMidnight;
