@@ -75,7 +75,10 @@ export const isActivityOverdue = (plano, hoje = new Date()) => {
       return false;
     }
 
-    const dataTermino = plano.termino_ajustado || plano.termino_planejado;
+    // Usar apenas termino_planejado para verificar atraso.
+    // termino_ajustado pode ser menor que termino_planejado em replanejamentos internos,
+    // causando falso positivo de atraso no próprio dia do planejamento.
+    const dataTermino = plano.termino_planejado;
     
     if (!dataTermino) {
       return false;

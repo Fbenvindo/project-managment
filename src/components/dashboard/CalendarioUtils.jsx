@@ -10,7 +10,8 @@ export const isActivityOverdueUtil = (plano) => {
   try {
     const termino = startOfDay(parseISO(plano.termino_planejado));
     const hoje = startOfDay(new Date());
-    return isValid(termino) && hoje > termino;
+    // Só é atraso se hoje for DEPOIS do dia de término (não no mesmo dia)
+    return isValid(termino) && isAfter(hoje, termino);
   } catch { return false; }
 };
 
