@@ -442,7 +442,7 @@ export default function AtividadeFuncaoManager() {
                   <SelectTrigger><SelectValue placeholder="Selecione o usuário..." /></SelectTrigger>
                   <SelectContent>
                     {usuarios.map(u => (
-                      <SelectItem key={u.id} value={u.email}>{u.nome} ({u.email})</SelectItem>
+                      <SelectItem key={u.id} value={u.email}>{u.nome}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
