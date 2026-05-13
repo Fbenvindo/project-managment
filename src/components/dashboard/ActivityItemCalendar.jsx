@@ -5,33 +5,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { User, Trash2, RefreshCw, Play, ListMusic, PlusCircle, Loader2, Edit2 } from "lucide-react";
+import { User, Trash2, RefreshCw, Play, ListMusic, PlusCircle, Loader2, Edit2, CheckCircle } from "lucide-react";
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 import FinalizarAtividadeButton from './FinalizarAtividadeButton';
 import { Execucao, PlanejamentoAtividade, PlanejamentoDocumento } from '@/entities/all';
 import { retryWithBackoff } from '../utils/apiUtils';
-import { format } from 'date-fns';
-
-// Import calculateActivityStatus from parent
-const calculateActivityStatus = (plano, allPlanejamentos = []) => {
-  if (plano.isLegacyExecution) {
-    return plano.status;
-  }
-
-  if (plano.status === 'concluido') {
-    return 'concluido';
-  }
-
-  // Import isActivityOverdue logic here or pass as prop
-  // For simplicity, using basic check
-  const isOverdue = false; // Placeholder - you'd need to import the actual function
-
-  if (plano.status === 'atrasado' || isOverdue) {
-    return 'atrasado';
-  }
-
-  return plano.status || 'nao_iniciado';
-};
+import { format, parseISO, isValid, startOfDay, isAfter } from 'date-fns';
 
 export default function ActivityItemCalendar({ 
   plano, 
@@ -55,26 +34,30 @@ export default function ActivityItemCalendar({
   const [editedDescritivo, setEditedDescritivo] = useState('');
 
   const realStatus = useMemo(() => {
-    // Verificar primeiro se está explicitamente marcada como concluída
     if (plano.status === 'concluido') {
+      // Verifica se foi concluído com atraso
+      const prazo = plano.termino_ajustado || plano.termino_planejado;
+      const terminoReal = plano.termino_real;
+      if (prazo && terminoReal) {
+        try {
+          const prazoDate = startOfDay(parseISO(prazo));
+          const realDate = startOfDay(parseISO(terminoReal));
+          if (isValid(prazoDate) && isValid(realDate) && isAfter(realDate, prazoDate)) {
+            return 'concluido_atrasado';
+          }
+        } catch (e) {}
+      }
       return 'concluido';
     }
-    
-    // Se tempo executado >= tempo planejado, considerar concluída
-    const tempoExec = Number(plano.tempo_executado) || 0;
-    const tempoPlanj = Number(plano.tempo_planejado) || 0;
-    if (tempoPlanj > 0 && tempoExec >= tempoPlanj) {
-      return 'concluido';
-    }
-    
     return plano.status || 'nao_iniciado';
-  }, [plano.status, plano.tempo_executado, plano.tempo_planejado]);
+  }, [plano.status, plano.termino_real, plano.termino_ajustado, plano.termino_planejado]);
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'em_andamento': return '#3b82f6';
       case 'pausado': return '#f59e0b';
       case 'concluido': return '#10b981';
+      case 'concluido_atrasado': return '#ef4444';
       case 'atrasado':
       case 'replanejado_atrasado': return '#ef4444';
       case 'impactado_por_atraso': return '#8b5cf6';
@@ -218,7 +201,7 @@ export default function ActivityItemCalendar({
     }
   };
 
-  const shouldShowStartButton = () => realStatus !== 'concluido' && !activeExecution && !plano.isLegacyExecution;
+  const shouldShowStartButton = () => realStatus !== 'concluido' && realStatus !== 'concluido_atrasado' && !activeExecution && !plano.isLegacyExecution;
   
   const shouldShowDeleteButton = () => {
     if (!user) return false;
@@ -277,7 +260,7 @@ export default function ActivityItemCalendar({
           ...provided.draggableProps.style,
           borderLeft: `3px solid ${getStatusColor(realStatus)}`,
           backgroundColor: isSelected ? '#e0e7ff' :
-                         realStatus === 'atrasado' ? '#fef2f2' :
+                         realStatus === 'atrasado' || realStatus === 'concluido_atrasado' ? '#fef2f2' :
                          realStatus === 'em_andamento' ? '#eff6ff' :
                          realStatus === 'concluido' ? '#f0fdf4' :
                          realStatus === 'pausado' ? '#fffbeb' : '#ffffff',
@@ -402,10 +385,12 @@ export default function ActivityItemCalendar({
                 <span className="text-blue-600 font-medium">{subdisciplina}</span>
               </div>
             )}
-            {realStatus === 'concluido' && (
+            {(realStatus === 'concluido' || realStatus === 'concluido_atrasado') && (
               <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <span className="text-green-600 font-medium">Concluída</span>
+                <div className={`w-2 h-2 rounded-full ${realStatus === 'concluido_atrasado' ? 'bg-red-500' : 'bg-green-500'}`}></div>
+                <span className={`font-medium ${realStatus === 'concluido_atrasado' ? 'text-red-600' : 'text-green-600'}`}>
+                  {realStatus === 'concluido_atrasado' ? 'Concluída c/ atraso' : 'Concluída'}
+                </span>
               </div>
             )}
           </div>
@@ -417,8 +402,8 @@ export default function ActivityItemCalendar({
               </span>
             </div>
             
-            {realStatus === 'concluido' && (
-              <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+            {(realStatus === 'concluido' || realStatus === 'concluido_atrasado') && (
+              <div className={`w-4 h-4 rounded-full flex items-center justify-center ${realStatus === 'concluido_atrasado' ? 'bg-red-500' : 'bg-green-500'}`}>
                 <span className="text-white text-xs font-bold">✓</span>
               </div>
             )}
