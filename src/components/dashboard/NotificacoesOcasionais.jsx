@@ -177,7 +177,7 @@ export default function NotificacoesOcasionais() {
 
   return (
     <Dialog open={showModal} onOpenChange={setShowModal}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-sm w-full">
         <DialogHeader>
           <div className="flex items-center gap-2">
             <Bell className="w-5 h-5 text-amber-500" />
@@ -201,14 +201,16 @@ export default function NotificacoesOcasionais() {
 
           <div className="space-y-2">
             <label className="text-sm font-medium">Quando você quer realizar esta atividade?</label>
-            <Calendar
-              mode="single"
-              selected={selectedDate}
-              onSelect={setSelectedDate}
-              locale={ptBR}
-              disabled={(date) => date < new Date() || date.getDay() === 0 || date.getDay() === 6}
-              className="rounded-md border"
-            />
+            <div className="flex justify-center">
+              <Calendar
+                mode="single"
+                selected={selectedDate}
+                onSelect={setSelectedDate}
+                locale={ptBR}
+                disabled={(date) => date < new Date() || date.getDay() === 0 || date.getDay() === 6}
+                className="rounded-md border w-full"
+              />
+            </div>
           </div>
         </div>
 
