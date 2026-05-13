@@ -42,6 +42,7 @@ export default function AtividadeFuncaoManager() {
   const [funcaoSelecionada, setFuncaoSelecionada] = useState(null);
   const [usuarioSelecionado, setUsuarioSelecionado] = useState('');
   const [dataInicioPlanejamento, setDataInicioPlanejamento] = useState(null);
+  const [numRecorrencias, setNumRecorrencias] = useState(1);
   const [isGerandoPlanejamento, setIsGerandoPlanejamento] = useState(false);
   const [resultadoPlanejamento, setResultadoPlanejamento] = useState(null);
 
@@ -164,15 +165,70 @@ export default function AtividadeFuncaoManager() {
     setFuncaoSelecionada(funcao);
     setUsuarioSelecionado('');
     setDataInicioPlanejamento(null);
+    setNumRecorrencias(1);
     setResultadoPlanejamento(null);
     setShowPlanejamentoModal(true);
   };
 
-  const calcularDataAtividade = (dataInicio) => {
-    let data = new Date(dataInicio);
-    // Se cair no fim de semana, avançar para segunda
-    while (isWeekend(data)) data = addDays(data, 1);
-    return data;
+  // Dado uma data de início e uma atividade, retorna as datas das N próximas ocorrências
+  const calcularDatasRecorrentes = (dataInicio, atividade, n) => {
+    const { frequencia, dias_semana, dia_mes } = atividade;
+    const datas = [];
+    let cursor = new Date(dataInicio);
+
+    if (frequencia === 'diaria') {
+      // Cada ocorrência = próximo dia útil
+      while (isWeekend(cursor)) cursor = addDays(cursor, 1);
+      for (let i = 0; i < n; i++) {
+        datas.push(new Date(cursor));
+        cursor = addDays(cursor, 1);
+        while (isWeekend(cursor)) cursor = addDays(cursor, 1);
+      }
+    } else if (frequencia === 'semanal' || frequencia === 'quinzenal') {
+      const diasValidos = dias_semana && dias_semana.length > 0 ? [...dias_semana].sort() : [1];
+      const intervaloSemanas = frequencia === 'quinzenal' ? 2 : 1;
+
+      // Para cada recorrência, encontrar o próximo dia válido a partir do cursor
+      for (let i = 0; i < n; i++) {
+        // Encontra o próximo dia da semana válido >= cursor
+        let tentativa = new Date(cursor);
+        let found = false;
+        for (let t = 0; t < 14; t++) {
+          if (diasValidos.includes(tentativa.getDay())) {
+            datas.push(new Date(tentativa));
+            // Próxima ocorrência: avançar intervaloSemanas semanas a partir da semana encontrada
+            cursor = addWeeks(tentativa, intervaloSemanas);
+            // Voltar ao início da semana do cursor para pegar o próximo dia válido
+            // Recomeça do início da semana de cursor
+            found = true;
+            break;
+          }
+          tentativa = addDays(tentativa, 1);
+        }
+        if (!found) {
+          cursor = addWeeks(cursor, intervaloSemanas);
+        }
+      }
+    } else if (frequencia === 'mensal') {
+      const dia = dia_mes || 1;
+      for (let i = 0; i < n; i++) {
+        let data = new Date(cursor.getFullYear(), cursor.getMonth(), dia);
+        if (data < cursor) data = new Date(data.getFullYear(), data.getMonth() + 1, dia);
+        while (isWeekend(data)) data = addDays(data, 1);
+        datas.push(data);
+        cursor = addMonths(data, 1);
+      }
+    } else {
+      // Fallback: usa a data diretamente
+      let data = new Date(cursor);
+      while (isWeekend(data)) data = addDays(data, 1);
+      for (let i = 0; i < n; i++) {
+        datas.push(new Date(data));
+        data = addDays(data, 7);
+      }
+    }
+
+    return datas;
   };
 
   const handleGerarPlanejamento = async () => {
@@ -183,33 +239,32 @@ export default function AtividadeFuncaoManager() {
 
     try {
       const atividadesDaFuncao = gruposPorFuncao[funcaoSelecionada] || [];
-      // Excluir ocasionais (essas são geradas por notificação)
       const atividadesParaPlanejar = atividadesDaFuncao.filter(a => a.frequencia !== 'ocasional');
 
       let criadas = 0;
-      let erros = 0;
 
       for (const atividade of atividadesParaPlanejar) {
-        const dataAtividade = calcularDataAtividade(dataInicioPlanejamento);
-        const { distribuicao, dataTermino } = distribuirHorasSimples(dataAtividade, atividade.tempo_estimado, 8);
-
-        await PlanejamentoAtividade.create({
-          descritivo: atividade.atividade,
-          base_descritivo: atividade.atividade,
-          tempo_planejado: atividade.tempo_estimado,
-          executor_principal: usuarioSelecionado,
-          executores: [usuarioSelecionado],
-          status: 'nao_iniciado',
-          inicio_planejado: format(dataAtividade, 'yyyy-MM-dd'),
-          termino_planejado: format(dataTermino, 'yyyy-MM-dd'),
-          horas_por_dia: distribuicao,
-          prioridade: 1,
-          etapa: 'Execução'
-        });
-        criadas++;
+        const datas = calcularDatasRecorrentes(dataInicioPlanejamento, atividade, numRecorrencias);
+        for (const dataAtividade of datas) {
+          const { distribuicao, dataTermino } = distribuirHorasSimples(dataAtividade, atividade.tempo_estimado, 8);
+          await PlanejamentoAtividade.create({
+            descritivo: atividade.atividade,
+            base_descritivo: atividade.atividade,
+            tempo_planejado: atividade.tempo_estimado,
+            executor_principal: usuarioSelecionado,
+            executores: [usuarioSelecionado],
+            status: 'nao_iniciado',
+            inicio_planejado: format(dataAtividade, 'yyyy-MM-dd'),
+            termino_planejado: format(dataTermino, 'yyyy-MM-dd'),
+            horas_por_dia: distribuicao,
+            prioridade: 1,
+            etapa: 'Execução'
+          });
+          criadas++;
+        }
       }
 
-      setResultadoPlanejamento({ criadas, erros, total: atividadesParaPlanejar.length });
+      setResultadoPlanejamento({ criadas, total: atividadesParaPlanejar.length * numRecorrencias });
     } catch (err) {
       console.error('Erro ao gerar planejamento:', err);
       setResultadoPlanejamento({ erro: err.message });
@@ -412,6 +467,17 @@ export default function AtividadeFuncaoManager() {
                     />
                   </PopoverContent>
                 </Popover>
+              </div>
+              <div className="space-y-2">
+                <Label>Número de Recorrências</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={52}
+                  value={numRecorrencias}
+                  onChange={(e) => setNumRecorrencias(Math.max(1, parseInt(e.target.value) || 1))}
+                />
+                <p className="text-xs text-gray-500">Quantas vezes cada atividade será planejada (respeitando a frequência configurada).</p>
               </div>
               <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
                 Serão criados planejamentos para todas as atividades de <strong>{funcaoSelecionada}</strong> exceto as ocasionais (agendadas via notificação).
