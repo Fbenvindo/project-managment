@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue, SelectGroup, SelectLabel } from "@/components/ui/select";
@@ -50,6 +50,8 @@ export default function NovoPlanejamentoModal({
   const [isRecorrente, setIsRecorrente] = useState(false);
   const [recorrencia, setRecorrencia] = useState({ tipo: 'semanal', repeticoes: 4 });
   const [activityFilters, setActivityFilters] = useState({ search: "", disciplina: "all" });
+  const [searchInput, setSearchInput] = useState(""); // valor imediato do input (sem debounce no estado)
+  const searchDebounceRef = useRef(null);
 
   // --- Estados para Planejamento por Função ---
   const [funcaoSelecionada, setFuncaoSelecionada] = useState('');
@@ -104,8 +106,10 @@ export default function NovoPlanejamentoModal({
     return Array.from(disciplinas).sort();
   }, [atividades]);
 
+  const ACTIVITY_DISPLAY_LIMIT = 100; // Nunca renderizar mais de 100 itens no dropdown
+
   const atividadesFiltradas = useMemo(() => {
-    let filtered = [...atividades];
+    let filtered = atividades;
     if (activityFilters.search) {
       const searchTerm = activityFilters.search.toLowerCase();
       filtered = filtered.filter(ativ => {
@@ -123,10 +127,22 @@ export default function NovoPlanejamentoModal({
     return filtered;
   }, [atividades, activityFilters]);
 
+  // Limitar renderização do dropdown para evitar lag com milhares de itens
+  const atividadesParaDropdown = useMemo(() => atividadesFiltradas.slice(0, ACTIVITY_DISPLAY_LIMIT), [atividadesFiltradas]);
+
   const groupedAtividades = useMemo(() => {
-    if (!atividadesFiltradas) return {};
-    return agruparAtividadesPorEtapa(atividadesFiltradas);
-  }, [atividadesFiltradas]);
+    if (!atividadesParaDropdown) return {};
+    return agruparAtividadesPorEtapa(atividadesParaDropdown);
+  }, [atividadesParaDropdown]);
+
+  const handleSearchChange = useCallback((e) => {
+    const val = e.target.value;
+    setSearchInput(val);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => {
+      setActivityFilters(prev => ({ ...prev, search: val }));
+    }, 300);
+  }, []);
 
   const cargosUnicos = useMemo(() => {
     const cargos = new Set(usuariosOrdenados.map(u => u.cargo).filter(Boolean));
@@ -150,6 +166,7 @@ export default function NovoPlanejamentoModal({
     setIsRecorrente(false);
     setRecorrencia({ tipo: 'semanal', repeticoes: 4 });
     setActivityFilters({ search: "", disciplina: "all" });
+    setSearchInput("");
   };
 
   const resetFuncaoForm = () => {
@@ -856,7 +873,7 @@ export default function NovoPlanejamentoModal({
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     <div className="relative">
                       <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <Input placeholder="Buscar atividade..." value={activityFilters.search} onChange={(e) => setActivityFilters(prev => ({ ...prev, search: e.target.value }))} className="pl-10 text-sm" />
+                      <Input placeholder="Buscar atividade..." value={searchInput} onChange={handleSearchChange} className="pl-10 text-sm" />
                     </div>
                     <Select value={activityFilters.disciplina} onValueChange={(value) => setActivityFilters(prev => ({ ...prev, disciplina: value }))}>
                       <SelectTrigger className="text-sm"><SelectValue placeholder="Todas as disciplinas" /></SelectTrigger>
@@ -867,7 +884,10 @@ export default function NovoPlanejamentoModal({
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="text-xs text-gray-500 pt-1">{atividadesFiltradas.length} atividade{atividadesFiltradas.length !== 1 ? 's' : ''} encontrada{atividadesFiltradas.length !== 1 ? 's' : ''}</div>
+                  <div className="text-xs text-gray-500 pt-1">
+                    {atividadesFiltradas.length} encontrada{atividadesFiltradas.length !== 1 ? 's' : ''}
+                    {atividadesFiltradas.length > ACTIVITY_DISPLAY_LIMIT && ` — exibindo ${ACTIVITY_DISPLAY_LIMIT}. Refine a busca para ver mais.`}
+                  </div>
                 </div>
                 <Select value={selectedActivityId} onValueChange={handleActivityChange}>
                   <SelectTrigger><SelectValue placeholder="Selecione para preencher automaticamente" /></SelectTrigger>
