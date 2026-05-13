@@ -168,24 +168,8 @@ export default function AtividadeFuncaoManager() {
     setShowPlanejamentoModal(true);
   };
 
-  const calcularDataAtividade = (dataInicio, atividade) => {
-    const { frequencia, dias_semana, dia_mes } = atividade;
+  const calcularDataAtividade = (dataInicio) => {
     let data = new Date(dataInicio);
-
-    if (frequencia === 'diaria' || frequencia === 'semanal' || frequencia === 'quinzenal') {
-      // Encontrar o próximo dia da semana válido a partir da data de início
-      const diasValidos = dias_semana && dias_semana.length > 0 ? dias_semana : [1];
-      let tentativas = 0;
-      while (!diasValidos.includes(data.getDay()) && tentativas < 14) {
-        data = addDays(data, 1);
-        tentativas++;
-      }
-    } else if (frequencia === 'mensal') {
-      // Ir para o dia do mês
-      data = setDate(data, dia_mes || 1);
-      if (data < dataInicio) data = addMonths(data, 1);
-    }
-
     // Se cair no fim de semana, avançar para segunda
     while (isWeekend(data)) data = addDays(data, 1);
     return data;
@@ -206,7 +190,7 @@ export default function AtividadeFuncaoManager() {
       let erros = 0;
 
       for (const atividade of atividadesParaPlanejar) {
-        const dataAtividade = calcularDataAtividade(dataInicioPlanejamento, atividade);
+        const dataAtividade = calcularDataAtividade(dataInicioPlanejamento);
         const { distribuicao, dataTermino } = distribuirHorasSimples(dataAtividade, atividade.tempo_estimado, 8);
 
         await PlanejamentoAtividade.create({
