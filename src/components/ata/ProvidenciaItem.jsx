@@ -42,18 +42,16 @@ const AutoResizeTextarea = memo(({ value, onChange, className, ...props }) => {
   );
 });
 
-// Input de resposta com debounce local
+// Input de resposta — sem debounce para garantir sincronismo com o auto-save
 const RespostaInput = memo(({ value, onChange, onRemove }) => {
   const [localValue, setLocalValue] = useState(value || '');
-  const timeoutRef = useRef(null);
 
   useEffect(() => { setLocalValue(value || ''); }, [value]);
 
   const handleChange = (e) => {
     const newValue = e.target.value;
     setLocalValue(newValue);
-    clearTimeout(timeoutRef.current);
-    timeoutRef.current = setTimeout(() => onChange(newValue), 300);
+    onChange(newValue);
   };
 
   return (
@@ -75,7 +73,6 @@ const RespostaInput = memo(({ value, onChange, onRemove }) => {
 const ProvidenciaItem = memo(({ prov, usuarios, onUpdate, onDelete, onInsertAfter }) => {
   // Estado local para campos de texto — evita re-render do pai a cada keystroke
   const [localProvidencias, setLocalProvidencias] = useState(prov.providencias || '');
-  const debounceRef = useRef(null);
 
   // Sincronizar se o valor externo mudar (ex: ao carregar)
   useEffect(() => {
@@ -85,10 +82,8 @@ const ProvidenciaItem = memo(({ prov, usuarios, onUpdate, onDelete, onInsertAfte
   const handleProvidenciasChange = (e) => {
     const val = e.target.value;
     setLocalProvidencias(val);
-    clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      onUpdate(prov.id, 'providencias', val);
-    }, 400);
+    // Atualiza o pai imediatamente para que o auto-save sempre leia o valor correto
+    onUpdate(prov.id, 'providencias', val);
   };
 
   const getStatusColor = (status) => {
