@@ -15,7 +15,8 @@ import { Plus } from "lucide-react";
 import { AnimatePresence } from "framer-motion";
 import DocumentoForm from "./DocumentoForm";
 import AtividadeFormModal from "./AtividadeFormModal";
-import DocumentoItem from "./DocumentoItem";
+import DocumentoItemBase from "./DocumentoItem";
+const MemoDocumentoItem = React.memo(DocumentoItemBase);
 import PlanejamentoDocumentoEtapaModal from './PlanejamentoDocumentoEtapaModal';
 import PlanejamentoDocumentoDataModal from './PlanejamentoDocumentoDataModal';
 import { ETAPAS_ORDER } from '../utils/PredecessoraValidator';
@@ -75,7 +76,15 @@ export default function DocumentosTab({
   const [localPlanejamentos, setLocalPlanejamentos] = useState(planejamentos);
   const [executorPreSelecionado, setExecutorPreSelecionado] = useState(null);
   const [cargaDiariaCache, setCargaDiariaCache] = useState({});
-  const [disciplinasMinimizadas, setDisciplinasMinimizadas] = useState({});
+  const [disciplinasMinimizadas, setDisciplinasMinimizadas] = useState(() => {
+    // Inicializar todas as disciplinas como colapsadas para não renderizar todos os itens de uma vez
+    const inicial = {};
+    documentos.forEach(doc => {
+      const d = doc.disciplina || 'Sem Disciplina';
+      inicial[d] = true;
+    });
+    return inicial;
+  });
 
   // Recarregar planejamentos quando triggerUpdate for chamado (ex: após execução/pause/finish)
   const reloadPlanejamentos = useCallback(async () => {
@@ -184,6 +193,9 @@ export default function DocumentosTab({
     const currentDocStateMap = new Map(localDocumentos.map(d => [d.id, { ...d }]));
     currentDocStateMap.set(startDoc.id, { ...startDoc });
 
+    // Usar atividades já filtradas para este empreendimento (evita iterar sobre tudo)
+    const atividadesEmp = allAtividades.filter(a => !a.empreendimento_id || a.empreendimento_id === empreendimento.id);
+
     try {
       while (docsToUpdateQueue.length > 0) {
         const currentDoc = docsToUpdateQueue.shift();
@@ -203,7 +215,7 @@ export default function DocumentosTab({
 
             const etapaOverridesChild = new Map();
             const tempoOverridesChild = new Map();
-            allAtividades.forEach(ativ => {
+            atividadesEmp.forEach(ativ => {
               if (ativ.empreendimento_id === empreendimento.id && ativ.id_atividade && ativ.tempo !== -999) {
                 etapaOverridesChild.set(ativ.id_atividade, ativ.etapa);
                 etapaOverridesChild.set(ativ.id, ativ.etapa);
@@ -212,14 +224,14 @@ export default function DocumentosTab({
               }
             });
 
-            let atividadesGeraisChild = allAtividades.filter(ativ => {
+            let atividadesGeraisChild = atividadesEmp.filter(ativ => {
               if (ativ.empreendimento_id) return false;
               return ativ.disciplina === disciplinaChild && Array.isArray(subdisciplinasChild) && subdisciplinasChild.includes(ativ.subdisciplina);
             });
 
             const atividadesExcluidasGlobalChild = new Set();
             const atividadesExcluidasPorDocChild = new Set();
-            allAtividades.forEach(ativ => {
+            atividadesEmp.forEach(ativ => {
               if (ativ.empreendimento_id === empreendimento.id && ativ.tempo === -999 && ativ.id_atividade) {
                 if (ativ.documento_id === child.id) atividadesExcluidasPorDocChild.add(ativ.id_atividade);
                 else if (!ativ.documento_id) atividadesExcluidasGlobalChild.add(ativ.id_atividade);
@@ -280,11 +292,13 @@ export default function DocumentosTab({
       const disciplinaDoc = documento.disciplina;
       const fatorDificuldade = documento.fator_dificuldade || 1;
 
+      // Usar apenas atividades deste empreendimento + genéricas (pre-filtrado)
+      const atividadesEmpAuto = allAtividades.filter(a => !a.empreendimento_id || a.empreendimento_id === empreendimento.id);
+
       const etapaOverrides = new Map();
       const tempoOverrides = new Map();
-      allAtividades.forEach(ativ => {
+      atividadesEmpAuto.forEach(ativ => {
         if (ativ.empreendimento_id === empreendimento.id && ativ.id_atividade && ativ.tempo !== -999) {
-          // Indexar tanto por id_atividade (para lookup por id genérico) como pelo id original
           etapaOverrides.set(ativ.id_atividade, ativ.etapa);
           etapaOverrides.set(ativ.id, ativ.etapa);
           tempoOverrides.set(ativ.id_atividade, ativ.tempo);
@@ -292,26 +306,19 @@ export default function DocumentosTab({
         }
       });
 
-      // IDs de documentos do empreendimento para lookup
-      const documentoIdsDoEmp = allAtividades
-        .filter(a => a.empreendimento_id === empreendimento.id && a.documento_id)
-        .map(a => a.documento_id);
-
       // IDs de atividades genéricas que têm override específico nesta folha (evitar dupla contagem)
       const idsComOverrideEspecifico = new Set();
-      allAtividades.forEach(ativ => {
+      atividadesEmpAuto.forEach(ativ => {
         if (ativ.empreendimento_id === empreendimento.id && ativ.documento_id === documento.id && ativ.id_atividade && ativ.tempo !== -999) {
           idsComOverrideEspecifico.add(ativ.id_atividade);
         }
       });
 
-      let atividadesGerais = allAtividades.filter(ativ => {
-        // Atividades genéricas (sem empreendimento) com disciplina/subdisciplina compatível
+      let atividadesGerais = atividadesEmpAuto.filter(ativ => {
         if (!ativ.empreendimento_id) {
-          if (idsComOverrideEspecifico.has(ativ.id)) return false; // já existe override específico
+          if (idsComOverrideEspecifico.has(ativ.id)) return false;
           return ativ.disciplina === disciplinaDoc && Array.isArray(subdisciplinasDoc) && subdisciplinasDoc.includes(ativ.subdisciplina);
         }
-        // Atividades específicas desta folha (vinculadas ao documento)
         if (ativ.empreendimento_id === empreendimento.id && ativ.documento_id === documento.id && ativ.tempo !== -999 && ativ.tempo !== 0) {
           return true;
         }
@@ -320,7 +327,7 @@ export default function DocumentosTab({
 
       const atividadesExcluidasGlobal = new Set();
       const atividadesExcluidasPorDoc = new Set();
-      allAtividades.forEach(ativ => {
+      atividadesEmpAuto.forEach(ativ => {
         if (ativ.empreendimento_id === empreendimento.id && ativ.tempo === -999 && ativ.id_atividade) {
           if (ativ.documento_id === documento.id) atividadesExcluidasPorDoc.add(ativ.id_atividade);
           else if (!ativ.documento_id) atividadesExcluidasGlobal.add(ativ.id_atividade);
@@ -763,6 +770,13 @@ export default function DocumentosTab({
     });
   }, [usuarios]);
 
+  // Pré-filtrar atividades: apenas genéricas + específicas deste empreendimento
+  // Isso reduz drasticamente o volume de iterações em cada DocumentoItem (400+ docs × N atividades)
+  const atividadesFiltradas = useMemo(() => {
+    if (!allAtividades) return [];
+    return allAtividades.filter(a => !a.empreendimento_id || a.empreendimento_id === empreendimento.id);
+  }, [allAtividades, empreendimento.id]);
+
   const sharedProps = {
     localDocumentos,
     localPlanejamentos,
@@ -779,6 +793,8 @@ export default function DocumentosTab({
     handleEditAtividade,
     atividadesEmpCache,
   };
+
+  // (MemoDocumentoItem é definido fora do componente, abaixo)
 
   return (
     <div className="space-y-6">
@@ -898,11 +914,11 @@ export default function DocumentosTab({
                           </thead>
                           <tbody>
                             {docs.map(doc => (
-                              <DocumentoItem
+                              <MemoDocumentoItem
                                 key={doc.id}
                                 doc={doc}
                                 planejamentos={localPlanejamentos}
-                                allAtividades={allAtividades}
+                                allAtividades={atividadesFiltradas}
                                 handleEdit={handleEdit}
                                 handleDelete={handleDelete}
                                 handleOpenDocEtapaModal={handleOpenDocEtapaModal}
