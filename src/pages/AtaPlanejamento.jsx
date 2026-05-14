@@ -1144,13 +1144,14 @@ export default function AtaPlanejamento() {
         ) : (
           <div className="space-y-6 p-2">
             {providenciasAgrupadas.map((grupo, gIdx) => {
-              const isMinimizado = projetosMinimizados[grupo.projeto];
+              // Por padrão colapsado (undefined = true), só expande se explicitamente false
+              const isMinimizado = projetosMinimizados[grupo.projeto] !== false;
               
               return (
               <div key={gIdx} className="border border-gray-400 rounded-lg overflow-hidden">
                 {/* Título do Projeto */}
                 <div className="bg-yellow-100 border-b border-gray-400 p-3 flex items-center justify-between cursor-pointer no-print hover:bg-yellow-200 transition-colors"
-                     onClick={() => setProjetosMinimizados(prev => ({...prev, [grupo.projeto]: !prev[grupo.projeto]}))}>
+                     onClick={() => setProjetosMinimizados(prev => ({...prev, [grupo.projeto]: prev[grupo.projeto] === false ? true : false}))}>
                   <h3 className="text-base font-bold text-gray-800">{grupo.projeto}</h3>
                   <button className="p-1 hover:bg-yellow-300 rounded">
                     {isMinimizado ? <ChevronRight className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
