@@ -611,7 +611,26 @@ export default function AtaPlanejamento() {
     }));
     
     setHasUnsavedChanges(true);
-    setProvidencias(prev => [...prev, ...novasProvidencias]);
+    setProvidencias(prev => {
+      // Encontrar o índice do último item com o mesmo projeto
+      const projeto = novaProvidencia.projeto;
+      let lastIndex = -1;
+      prev.forEach((p, i) => {
+        if (p.projeto === projeto) lastIndex = i;
+      });
+
+      if (lastIndex === -1) {
+        // Projeto novo: adicionar no final
+        return [...prev, ...novasProvidencias];
+      } else {
+        // Inserir após o último item do mesmo projeto
+        return [
+          ...prev.slice(0, lastIndex + 1),
+          ...novasProvidencias,
+          ...prev.slice(lastIndex + 1)
+        ];
+      }
+    });
     setNovaProvidencia({
       projeto: '',
       linhas: [{ providencias: '', respostas: [], responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
