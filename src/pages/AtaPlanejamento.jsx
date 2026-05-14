@@ -340,6 +340,17 @@ export default function AtaPlanejamento() {
     projeto: '',
     linhas: [{ providencias: '', respostas: [], responsaveis: [], dataReuniao: '', dataRetorno: '', status: 'pendente' }]
   });
+
+  // Refs para sempre ter os valores mais recentes no auto-save
+  const ataDataRef = React.useRef(ataData);
+  const providenciasRef = React.useRef(providencias);
+  const currentAtaIdRef = React.useRef(currentAtaId);
+  const viewModeRef = React.useRef(viewMode);
+
+  useEffect(() => { ataDataRef.current = ataData; }, [ataData]);
+  useEffect(() => { providenciasRef.current = providencias; }, [providencias]);
+  useEffect(() => { currentAtaIdRef.current = currentAtaId; }, [currentAtaId]);
+  useEffect(() => { viewModeRef.current = viewMode; }, [viewMode]);
   const [showSelectAtaModal, setShowSelectAtaModal] = useState(false);
   const [searchAta, setSearchAta] = useState('');
   const [filtroProjetoSelecionado, setFiltroProjetoSelecionado] = useState('todos');
@@ -353,47 +364,48 @@ export default function AtaPlanejamento() {
     loadData();
   }, []);
 
-  // Auto-save com debounce
+  // Auto-save com debounce — usa refs para sempre capturar os valores mais recentes
   useEffect(() => {
-    if (hasUnsavedChanges && (viewMode === 'edit' || viewMode === 'new')) {
-      if (autoSaveTimeoutRef.current) {
-        clearTimeout(autoSaveTimeoutRef.current);
-      }
-      
-      autoSaveTimeoutRef.current = setTimeout(async () => {
-        try {
-          const ataToSave = {
-            ...ataData,
-            providencias: providencias.map(p => ({
-              projeto: p.projeto || '',
-              providencias: p.providencias || '',
-              respostas: p.respostas || [],
-              responsaveis: p.responsaveis || [],
-              dataReuniao: p.dataReuniao || '',
-              dataRetorno: p.dataRetorno || '',
-              status: p.status || 'pendente'
-            }))
-          };
-          
-          if (currentAtaId) {
-            await AtaReuniao.update(currentAtaId, ataToSave);
-          } else {
-            const newAta = await AtaReuniao.create(ataToSave);
-            setCurrentAtaId(newAta.id);
-          }
-          setHasUnsavedChanges(false);
-        } catch (error) {
-          console.error('Erro no auto-save:', error);
-        }
-      }, 3000);
+    if (!hasUnsavedChanges) return;
+
+    if (autoSaveTimeoutRef.current) {
+      clearTimeout(autoSaveTimeoutRef.current);
     }
-    
+
+    autoSaveTimeoutRef.current = setTimeout(async () => {
+      if (viewModeRef.current !== 'edit' && viewModeRef.current !== 'new') return;
+      try {
+        const ataToSave = {
+          ...ataDataRef.current,
+          providencias: providenciasRef.current.map(p => ({
+            projeto: p.projeto || '',
+            providencias: p.providencias || '',
+            respostas: p.respostas || [],
+            responsaveis: p.responsaveis || [],
+            dataReuniao: p.dataReuniao || '',
+            dataRetorno: p.dataRetorno || '',
+            status: p.status || 'pendente'
+          }))
+        };
+
+        if (currentAtaIdRef.current) {
+          await AtaReuniao.update(currentAtaIdRef.current, ataToSave);
+        } else {
+          const newAta = await AtaReuniao.create(ataToSave);
+          setCurrentAtaId(newAta.id);
+        }
+        setHasUnsavedChanges(false);
+      } catch (error) {
+        console.error('Erro no auto-save:', error);
+      }
+    }, 3000);
+
     return () => {
       if (autoSaveTimeoutRef.current) {
         clearTimeout(autoSaveTimeoutRef.current);
       }
     };
-  }, [hasUnsavedChanges, ataData, providencias, currentAtaId, viewMode]);
+  }, [hasUnsavedChanges]);
 
   // Aviso ao sair com mudanças não salvas
   useEffect(() => {
