@@ -772,7 +772,12 @@ export default function AtaPlanejamento() {
       }
       grupos[key].items.push(p);
     });
-    return Object.values(grupos);
+    return Object.values(grupos).sort((a, b) => {
+      const numA = parseInt(a.projeto) || 0;
+      const numB = parseInt(b.projeto) || 0;
+      if (numA !== numB) return numA - numB;
+      return a.projeto.localeCompare(b.projeto);
+    });
   }, [providencias, filtroProjetoSelecionado, filtroUsuario, filtroDataInicio, filtroDataFim, ocultarConcluidos]);
 
   // Lista de projetos únicos para o filtro
