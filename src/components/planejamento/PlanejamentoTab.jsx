@@ -411,7 +411,21 @@ export default function PlanejamentoTab({ empreendimentoId }) {
   };
 
   const handlePrioridadeUpdate = (updatedPlano) => {
-    setEnrichedPlanejamentos(prev => prev.map(p => p.id === updatedPlano.id ? { ...p, prioridade: updatedPlano.prioridade } : p));
+    setEnrichedPlanejamentos(prev => {
+      const updated = prev.map(p => p.id === updatedPlano.id ? { ...p, prioridade: updatedPlano.prioridade } : p);
+      updated.sort((a, b) => {
+        const prioA = a.prioridade || 1;
+        const prioB = b.prioridade || 1;
+        if (prioB !== prioA) return prioB - prioA;
+        const indexA = ETAPAS_ORDER.indexOf(a.etapa);
+        const indexB = ETAPAS_ORDER.indexOf(b.etapa);
+        if (indexA === -1 && indexB === -1) return 0;
+        if (indexA === -1) return 1;
+        if (indexB === -1) return -1;
+        return indexA - indexB;
+      });
+      return updated;
+    });
   };
 
   const renderPlanejamentoCard = (plano) => {
