@@ -2,12 +2,14 @@ import React, { useState } from 'react';
 import { PlanejamentoAtividade, PlanejamentoDocumento } from '@/entities/all';
 
 const PRIORIDADES = [
-  { value: 5, label: '5 – Urgente', color: 'bg-red-500', textColor: 'text-red-700', bg: 'bg-red-50 border-red-300' },
-  { value: 4, label: '4 – Alta', color: 'bg-orange-500', textColor: 'text-orange-700', bg: 'bg-orange-50 border-orange-300' },
-  { value: 3, label: '3 – Média', color: 'bg-yellow-500', textColor: 'text-yellow-700', bg: 'bg-yellow-50 border-yellow-300' },
-  { value: 2, label: '2 – Baixa', color: 'bg-blue-400', textColor: 'text-blue-700', bg: 'bg-blue-50 border-blue-300' },
-  { value: 1, label: '1 – Normal', color: 'bg-gray-400', textColor: 'text-gray-600', bg: 'bg-gray-50 border-gray-300' },
+  { value: 5, label: '5 – Urgente', color: 'bg-red-500', textColor: 'text-red-700', bg: 'bg-red-50 border-red-300', bgColor: 'bg-red-100' },
+  { value: 4, label: '4 – Alta', color: 'bg-orange-500', textColor: 'text-orange-700', bg: 'bg-orange-50 border-orange-300', bgColor: 'bg-orange-100' },
+  { value: 3, label: '3 – Média', color: 'bg-yellow-500', textColor: 'text-yellow-700', bg: 'bg-yellow-50 border-yellow-300', bgColor: 'bg-yellow-100' },
+  { value: 2, label: '2 – Baixa', color: 'bg-blue-400', textColor: 'text-blue-700', bg: 'bg-blue-50 border-blue-300', bgColor: 'bg-blue-100' },
+  { value: 1, label: '1 – Normal', color: 'bg-gray-400', textColor: 'text-gray-600', bg: 'bg-gray-50 border-gray-300', bgColor: 'bg-gray-100' },
 ];
+
+export const PRIORIDADE_CONFIG = PRIORIDADES;
 
 export const getPrioridadeConfig = (value) => {
   return PRIORIDADES.find(p => p.value === value) || PRIORIDADES[4];

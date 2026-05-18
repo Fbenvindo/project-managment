@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { PlanejamentoAtividade, AtividadeFuncao, PlanejamentoDocumento, Documento } from "@/entities/all";
-import { Calendar as CalendarIcon, Plus, Users, Clock, FileText, Building2, Activity, Repeat, Search, Filter, BrainCircuit, Loader2, AlertCircle, File } from "lucide-react";
+import { Calendar as CalendarIcon, Plus, Users, Clock, FileText, Building2, Activity, Repeat, Search, Filter, BrainCircuit, Loader2, AlertCircle, File, Star } from "lucide-react";
+import { PRIORIDADE_CONFIG } from './PrioridadeSelector';
 import { format, addDays, addWeeks, addMonths, startOfDay, isBefore } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { distribuirHorasPorDias, getNextWorkingDay, isWorkingDay, ensureWorkingDay } from '../utils/DateCalculator';
@@ -73,6 +74,7 @@ export default function NovoPlanejamentoModal({
     tempo_planejado: "",
     horario_inicio: "",
     horario_termino: "",
+    prioridade: 1,
   });
   const [selectedDocumentoDate, setSelectedDocumentoDate] = useState(null);
 
@@ -187,6 +189,7 @@ export default function NovoPlanejamentoModal({
       tempo_planejado: "",
       horario_inicio: "",
       horario_termino: "",
+      prioridade: 1,
     });
     setSelectedDocumentoDate(null);
   };
@@ -803,7 +806,7 @@ export default function NovoPlanejamentoModal({
           termino_planejado: terminoPlanejadoStr,
           horario_inicio: documentoFormData.horario_inicio || null,
           horario_termino: documentoFormData.horario_termino || null,
-          prioridade: 1,
+          prioridade: Number(documentoFormData.prioridade) || 1,
           horas_por_dia: distribuicao,
           status: "nao_iniciado"
         };
@@ -993,6 +996,22 @@ export default function NovoPlanejamentoModal({
                 </div>
               </div>
               
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2"><Star className="w-4 h-4" />Prioridade</Label>
+                <div className="flex gap-2">
+                  {PRIORIDADE_CONFIG.map(p => (
+                    <button
+                      key={p.value}
+                      type="button"
+                      onClick={() => setFormData(prev => ({ ...prev, prioridade: p.value }))}
+                      className={`flex-1 py-1.5 rounded text-xs font-medium border transition-all ${formData.prioridade === p.value ? `${p.bgColor} ${p.textColor} border-current` : 'bg-gray-50 text-gray-400 border-gray-200 hover:border-gray-300'}`}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div className="space-y-2"><Label className="flex items-center gap-2"><CalendarIcon className="w-4 h-4" />Data de Início (opcional)</Label><Popover><PopoverTrigger asChild><Button variant="outline" className="w-full justify-start"><CalendarIcon className="mr-2 h-4 w-4" />{selectedDate ? format(selectedDate, 'PPP', { locale: ptBR }) : 'Selecionar data'}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} locale={ptBR} /></PopoverContent></Popover><p className="text-xs text-gray-500">Se não especificada, será usada a próxima data útil disponível.</p></div>
               <div className="space-y-2"><div className="flex items-center space-x-2"><input type="checkbox" id="recorrencia-toggle" checked={isRecorrente} onChange={(e) => setIsRecorrente(e.target.checked)} className="rounded" /><Label htmlFor="recorrencia-toggle" className="flex items-center gap-2 cursor-pointer"><Repeat className="w-4 h-4" />Criar Atividade Recorrente</Label></div></div>
               {isRecorrente && (<motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="p-4 border rounded-lg bg-gray-50/50 space-y-4"><div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label htmlFor="tipo-recorrencia">Frequência</Label><Select value={recorrencia.tipo} onValueChange={(value) => setRecorrencia(prev => ({...prev, tipo: value}))}><SelectTrigger id="tipo-recorrencia"><SelectValue placeholder="Selecione..." /></SelectTrigger><SelectContent><SelectItem value="mesmo_dia">Repetir no mesmo dia</SelectItem><Separator className="my-1" /><SelectItem value="diaria">Diária</SelectItem><SelectItem value="semanal">Semanal</SelectItem><SelectItem value="quinzenal">Quinzenal</SelectItem><SelectItem value="mensal">Mensal</SelectItem></SelectContent></Select></div><div className="space-y-2"><Label htmlFor="repeticoes-recorrencia">Repetições</Label><Input id="repeticoes-recorrencia" type="number" min="1" value={recorrencia.repeticoes} onChange={(e) => setRecorrencia(prev => ({...prev, repeticoes: parseInt(e.target.value, 10) || 1 }))} placeholder="Nº de vezes"/></div></div></motion.div>)}
@@ -1301,6 +1320,22 @@ export default function NovoPlanejamentoModal({
                       value={documentoFormData.horario_termino}
                       onChange={(e) => setDocumentoFormData(prev => ({ ...prev, horario_termino: e.target.value }))}
                     />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2"><Star className="w-4 h-4" />Prioridade</Label>
+                  <div className="flex gap-2">
+                    {PRIORIDADE_CONFIG.map(p => (
+                      <button
+                        key={p.value}
+                        type="button"
+                        onClick={() => setDocumentoFormData(prev => ({ ...prev, prioridade: p.value }))}
+                        className={`flex-1 py-1.5 rounded text-xs font-medium border transition-all ${documentoFormData.prioridade === p.value ? `${p.bgColor} ${p.textColor} border-current` : 'bg-gray-50 text-gray-400 border-gray-200 hover:border-gray-300'}`}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
