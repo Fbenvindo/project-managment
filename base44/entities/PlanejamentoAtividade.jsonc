@@ -1,14 +1,22 @@
 {
-  "name": "PlanejamentoDocumento",
+  "name": "PlanejamentoAtividade",
   "type": "object",
   "properties": {
     "descritivo": {
       "type": "string",
-      "description": "Descri\u00e7\u00e3o do planejamento quando n\u00e3o h\u00e1 documento vinculado"
+      "description": "Descri\u00e7\u00e3o da atividade quando n\u00e3o h\u00e1 anal\u00edtico vinculado"
+    },
+    "base_descritivo": {
+      "type": "string",
+      "description": "O nome original da atividade gen\u00e9rica, usado como 'DNA' para evitar duplicatas e identificar atividades r\u00e1pidas."
     },
     "documento_id": {
       "type": "string",
-      "description": "ID do documento principal deste planejamento"
+      "description": "ID do documento relacionado"
+    },
+    "atividade_id": {
+      "type": "string",
+      "description": "ID da atividade relacionada (herdado do Analitico)"
     },
     "empreendimento_id": {
       "type": "string",
@@ -16,7 +24,7 @@
     },
     "etapa": {
       "type": "string",
-      "description": "Etapa do planejamento, copiada do Documento"
+      "description": "Etapa da atividade, copiada da Atividade (herdado do Analitico)"
     },
     "executores": {
       "type": "array",
@@ -30,15 +38,15 @@
         "string",
         "null"
       ],
-      "description": "Email do executor principal/respons\u00e1vel"
+      "description": "Email do executor principal/respons\u00e1vel (pode ser null se ainda n\u00e3o definido)"
     },
     "predecessora_id": {
       "type": "string",
-      "description": "ID do planejamento de documento predecessor"
+      "description": "ID da atividade predecessora"
     },
     "tempo_planejado": {
       "type": "number",
-      "description": "Tempo planejado em horas"
+      "description": "Tempo planejado em horas (anteriormente 'tempo_real' no Analitico)"
     },
     "inicio_planejado": {
       "type": "string",
@@ -92,7 +100,7 @@
     },
     "tempo_executado": {
       "type": "number",
-      "description": "Tempo real executado em horas"
+      "description": "Tempo real executado em horas (anteriormente 'tempo_real_executado')"
     },
     "status": {
       "type": "string",
@@ -104,7 +112,7 @@
         "pausado"
       ],
       "default": "nao_iniciado",
-      "description": "Status do planejamento do documento"
+      "description": "Status da atividade"
     },
     "semana_ano": {
       "type": "string",
@@ -113,11 +121,11 @@
     "prioridade": {
       "type": "number",
       "default": 1,
-      "description": "Prioridade (1-5, sendo 5 a maior)"
+      "description": "Prioridade da atividade (1-5, sendo 5 a maior)"
     },
     "ordem": {
       "type": "number",
-      "description": "Ordem de exibi\u00e7\u00e3o do planejamento no calend\u00e1rio do executor (menor n\u00famero = aparece primeiro)"
+      "description": "Ordem de exibi\u00e7\u00e3o da atividade no calend\u00e1rio do executor (menor n\u00famero = aparece primeiro)"
     },
     "horas_por_dia": {
       "type": "object",
@@ -135,11 +143,9 @@
     }
   },
   "required": [
-    "tempo_planejado",
-    "documento_id"
+    "tempo_planejado"
   ],
   "rls": {
-    "read": {},
     "create": {
       "$or": [
         {
@@ -147,6 +153,45 @@
         },
         {
           "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "lider"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "coordenador"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "gestao"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "direcao"
+          }
+        }
+      ]
+    },
+    "read": {
+      "$or": [
+        {
+          "data.executor_principal": "{{user.email}}"
+        },
+        {
+          "data.executores": {
+            "$in": [
+              "{{user.email}}"
+            ]
+          }
         },
         {
           "user_condition": {

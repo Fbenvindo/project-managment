@@ -22,10 +22,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
 import { PlanejamentoAtividade, Atividade, Documento, Empreendimento, Execucao, PlanejamentoDocumento } from '@/entities/all';
-import { ChevronsUpDown } from 'lucide-react';
+import { ChevronsUpDown, ListOrdered } from 'lucide-react';
 import { isActivityOverdue as isOverdueShared, distribuirHorasPorDias } from '../utils/DateCalculator';
 import { retryWithBackoff } from '../utils/apiUtils';
 import CalendarioActivityItem, { calculateActivityStatus } from './CalendarioActivityItem';
+import OrdemPlanejamentoModal from '../planejamento/OrdemPlanejamentoModal';
 
 // Função para converter string de data para Date local corretamente
 const parseLocalDate = (dateString) => {
@@ -877,6 +878,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   const [planejamentosParaPrevisao, setPlanejamentosParaPrevisao] = useState([]);
   const [isReprogramando, setIsReprogramando] = useState(null);
   const [viewType, setViewType] = useState('analitico'); // 'sintetico' ou 'analitico'
+  const [showOrdemModal, setShowOrdemModal] = useState(false);
 
   const hasSelectedUser = !!filters.user;
   const isViewingAllUsers = filters.user === 'all';
@@ -1551,7 +1553,8 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     // 2. Execuções antigas sem planejamento são ignoradas para evitar entradas fantasmas.
 
 
-    // Ordenar atividades dentro de cada dia pela ordem em que foram programadas (created_date)
+    // Ordenar atividades dentro de cada dia: primeiro por `ordem` (campo definido manualmente),
+    // depois por data de criação como fallback.
     for (const dayKey in grouped) {
       grouped[dayKey].sort((a, b) => {
         // Atividades legadas por último
@@ -1564,7 +1567,12 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         if (statusA === 'concluido' && statusB !== 'concluido') return 1;
         if (statusA !== 'concluido' && statusB === 'concluido') return -1;
 
-        // Ordenar pela data de criação (ordem em que foram programadas)
+        // Ordenar por `ordem` definida manualmente (null/undefined = sem ordem, vai para o final)
+        const ordemA = a.ordem ?? 9999;
+        const ordemB = b.ordem ?? 9999;
+        if (ordemA !== ordemB) return ordemA - ordemB;
+
+        // Fallback: data de criação
         const criadoA = a.created_date ? new Date(a.created_date).getTime() : 0;
         const criadoB = b.created_date ? new Date(b.created_date).getTime() : 0;
         return criadoA - criadoB;
@@ -1787,6 +1795,12 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
                       Previsão de Entrega
                     </Button>
                   )}
+                  {canReprogram && !isViewingAllUsers && (
+                    <Button variant="outline" onClick={() => setShowOrdemModal(true)} className="border-indigo-300 text-indigo-700 hover:bg-indigo-50">
+                      <ListOrdered className="w-4 h-4 mr-2" />
+                      Reordenar
+                    </Button>
+                  )}
                   <Button variant="outline" onClick={refreshAll} disabled={totalLoading}>
                     <RefreshCw className={`w-4 h-4 mr-2 ${totalLoading ? 'animate-spin' : ''}`} />
                     {totalLoading ? "Atualizando..." : "Atualizar"}
@@ -1848,6 +1862,22 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           planejamentos={planejamentosParaPrevisao.length > 0 ? planejamentosParaPrevisao : filteredPlanejamentos}
           execucoes={[]} // execucoes are not relevant for future delivery forecast
           cargaDiaria={planejamentosParaPrevisao.length > 0 && planejamentosParaPrevisao[0].executor_principal ? cargaDiariaPorUsuario[planejamentosParaPrevisao[0].executor_principal] || {} : {}}
+        />
+      )}
+
+      {showOrdemModal && (
+        <OrdemPlanejamentoModal
+          isOpen={showOrdemModal}
+          onClose={() => setShowOrdemModal(false)}
+          atividades={filteredPlanejamentos.filter(p => !p.isLegacyExecution && p.status !== 'concluido')}
+          title={`Reordenar Atividades — ${selectedUserName}`}
+          onSave={(updatedItems) => {
+            // Atualizar enrichedData localmente para refletir a nova ordem sem reload
+            setEnrichedData(prev => prev.map(item => {
+              const updated = updatedItems.find(u => String(u.id) === String(item.id));
+              return updated ? { ...item, ordem: updated.ordem } : item;
+            }));
+          }}
         />
       )}
     </>
