@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useContext, useMemo, useCallback } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -13,6 +12,7 @@ import { ptBR } from 'date-fns/locale';
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 import { retryWithBackoff, delay } from '../utils/apiUtils';
 import PlanejamentoAtividadeModal from '../empreendimento/PlanejamentoAtividadeModal';
+import PrioridadeSelector, { PrioridadeBadge } from './PrioridadeSelector';
 
 import CurvaSPlanejamento from './CurvaSPlanejamento';
 import ExecutorSelector from './ExecutorSelector';
@@ -132,13 +132,17 @@ export default function PlanejamentoTab({ empreendimentoId }) {
       });
 
       enriched.sort((a, b) => {
+        // Primeiro por prioridade (maior primeiro)
+        const prioA = a.prioridade || 1;
+        const prioB = b.prioridade || 1;
+        if (prioB !== prioA) return prioB - prioA;
+
+        // Depois por etapa
         const indexA = ETAPAS_ORDER.indexOf(a.etapa);
         const indexB = ETAPAS_ORDER.indexOf(b.etapa);
-        
         if (indexA === -1 && indexB === -1) return 0;
         if (indexA === -1) return 1;
         if (indexB === -1) return -1;
-        
         return indexA - indexB;
       });
 
@@ -406,6 +410,10 @@ export default function PlanejamentoTab({ empreendimentoId }) {
     }
   };
 
+  const handlePrioridadeUpdate = (updatedPlano) => {
+    setEnrichedPlanejamentos(prev => prev.map(p => p.id === updatedPlano.id ? { ...p, prioridade: updatedPlano.prioridade } : p));
+  };
+
   const renderPlanejamentoCard = (plano) => {
     return (
       <div key={plano.id} className="flex items-start gap-4 border border-gray-200 rounded-lg p-4 bg-white hover:bg-gray-50 transition-colors">
@@ -417,7 +425,7 @@ export default function PlanejamentoTab({ empreendimentoId }) {
         <div className="flex-1">
             <div className="flex items-start justify-between mb-3">
               <div className="flex-1">
-                <div className="flex items-center gap-2 mb-1">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <h4 className="font-bold text-gray-900">{plano.atividade}</h4>
                   <Badge className={`${statusColors[plano.status]} text-xs`}>
                     {statusLabels[plano.status]}
@@ -427,6 +435,7 @@ export default function PlanejamentoTab({ empreendimentoId }) {
                       Folha
                     </Badge>
                   )}
+                  <PrioridadeBadge prioridade={plano.prioridade || 1} />
                 </div>
                 <p className="text-xs text-gray-500">
                   {plano.tipo === 'documento' ? `Folha: ${plano.documentoNumero} - ${plano.documentoArquivo}` : `Atividade de Projeto`}
@@ -489,6 +498,13 @@ export default function PlanejamentoTab({ empreendimentoId }) {
                   {plano.executorPrincipalObj?.nome || plano.executor_principal}
                 </span>
               </div>
+            </div>
+            <div className="mt-3 pt-3 border-t border-gray-100">
+              <PrioridadeSelector
+                planejamento={plano}
+                tipo={plano.tipo}
+                onUpdate={handlePrioridadeUpdate}
+              />
             </div>
         </div>
       </div>
