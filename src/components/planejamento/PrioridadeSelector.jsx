@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { PlanejamentoAtividade, PlanejamentoDocumento } from '@/entities/all';
+import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 
 const PRIORIDADES = [
   { value: 5, label: '5 – Urgente', color: 'bg-red-500', textColor: 'text-red-700', bg: 'bg-red-50 border-red-300', bgColor: 'bg-red-100' },
@@ -27,6 +28,7 @@ export const PrioridadeBadge = ({ prioridade }) => {
 
 export default function PrioridadeSelector({ planejamento, tipo, onUpdate, compact = false }) {
   const [loading, setLoading] = useState(false);
+  const { triggerUpdate } = useContext(ActivityTimerContext);
   const prioridade = planejamento?.prioridade || 1;
   const config = getPrioridadeConfig(prioridade);
 
@@ -37,6 +39,7 @@ export default function PrioridadeSelector({ planejamento, tipo, onUpdate, compa
       const entity = tipo === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
       await entity.update(planejamento.id, { prioridade: novaP });
       if (onUpdate) onUpdate({ ...planejamento, prioridade: novaP });
+      if (triggerUpdate) triggerUpdate();
     } finally {
       setLoading(false);
     }

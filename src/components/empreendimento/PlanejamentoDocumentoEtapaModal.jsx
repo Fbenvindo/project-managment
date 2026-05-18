@@ -5,7 +5,8 @@ import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Loader2, CalendarIcon, AlertCircle, CheckCircle } from "lucide-react";
+import { Loader2, CalendarIcon, AlertCircle, CheckCircle, Star } from "lucide-react";
+import { PRIORIDADE_CONFIG } from '../planejamento/PrioridadeSelector';
 import { format, addDays, parseISO, isValid } from "date-fns";
 import { ptBR } from 'date-fns/locale';
 import { PlanejamentoDocumento, PlanejamentoAtividade } from "@/entities/all";
@@ -26,6 +27,7 @@ export default function PlanejamentoDocumentoEtapaModal({
 }) {
   const [etapasSelecionadas, setEtapasSelecionadas] = useState([]);
   const [executoresPorEtapa, setExecutoresPorEtapa] = useState({});
+  const [prioridade, setPrioridade] = useState(1);
   const [dataInicioState, setDataInicioState] = useState(null);
   const [dataManualInput, setDataManualInput] = useState('');
   const [metodoData, setMetodoData] = useState('agenda');
@@ -171,6 +173,7 @@ export default function PlanejamentoDocumentoEtapaModal({
     if (isOpen) {
       setEtapasSelecionadas([]);
       setExecutoresPorEtapa({});
+      setPrioridade(1);
       setIsCalculatingDate(false);
       setCargaDiariaPorExecutor({});
 
@@ -534,7 +537,7 @@ export default function PlanejamentoDocumentoEtapaModal({
           termino_planejado: plano.fim,
           horas_por_dia: horasPorDia,
           status: 'nao_iniciado',
-          prioridade: 1,
+          prioridade: prioridade,
           atividades_ids: atividades_ids
         };
 
@@ -688,6 +691,22 @@ export default function PlanejamentoDocumentoEtapaModal({
             </div>
           </div>
         )}
+
+        <div className="space-y-2">
+          <Label className="flex items-center gap-2"><Star className="w-4 h-4" />Prioridade</Label>
+          <div className="flex gap-2">
+            {PRIORIDADE_CONFIG.map(p => (
+              <button
+                key={p.value}
+                type="button"
+                onClick={() => setPrioridade(p.value)}
+                className={`flex-1 py-1.5 rounded text-xs font-medium border transition-all ${prioridade === p.value ? `${p.bgColor} ${p.textColor} border-current` : 'bg-gray-50 text-gray-400 border-gray-200 hover:border-gray-300'}`}
+              >
+                {p.label}
+              </button>
+            ))}
+          </div>
+        </div>
 
         <div className="space-y-4">
           <div className="flex items-center justify-between">
