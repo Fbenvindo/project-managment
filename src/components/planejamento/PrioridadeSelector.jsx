@@ -1,6 +1,91 @@
 import React, { useState, useContext } from 'react';
 import { PlanejamentoAtividade, PlanejamentoDocumento } from '@/entities/all';
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
+import { distribuirHorasPorDias } from '../utils/DateCalculator';
+import { format, parseISO, isValid } from 'date-fns';
+
+const parseLocalDate = (s) => {
+  if (!s) return null;
+  if (s instanceof Date) return s;
+  const m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  const p = parseISO(s);
+  return isValid(p) ? p : null;
+};
+
+const redistribuirPlanejamentosExecutor = async (executorEmail, planejamentoIdAlterado, novaPrioridade) => {
+  // Buscar todos os planejamentos não concluídos do executor (ambos tipos)
+  const [plansAtiv, plansDoc] = await Promise.all([
+    PlanejamentoAtividade.filter({ executor_principal: executorEmail }),
+    PlanejamentoDocumento.filter({ executor_principal: executorEmail }),
+  ]);
+
+  const todos = [
+    ...(plansAtiv || []).map(p => ({ ...p, _tipo: 'atividade' })),
+    ...(plansDoc || []).map(p => ({ ...p, _tipo: 'documento' })),
+  ].filter(p => p.status !== 'concluido' && p.tempo_planejado > 0 && p.horas_por_dia && Object.keys(p.horas_por_dia).length > 0);
+
+  if (todos.length === 0) return;
+
+  // Aplicar a nova prioridade localmente para ordenação
+  const comPrioridade = todos.map(p => ({
+    ...p,
+    prioridade: p.id === planejamentoIdAlterado ? novaPrioridade : (p.prioridade || 1),
+  }));
+
+  // Encontrar a data de início mais cedo do grupo
+  let dataInicioGlobal = null;
+  comPrioridade.forEach(p => {
+    const d = parseLocalDate(p.inicio_planejado);
+    if (d && (!dataInicioGlobal || d < dataInicioGlobal)) dataInicioGlobal = d;
+  });
+
+  if (!dataInicioGlobal) return;
+
+  // Ordenar: prioridade maior primeiro, depois por data de início original
+  comPrioridade.sort((a, b) => {
+    const pDiff = (b.prioridade || 1) - (a.prioridade || 1);
+    if (pDiff !== 0) return pDiff;
+    const dA = parseLocalDate(a.inicio_planejado);
+    const dB = parseLocalDate(b.inicio_planejado);
+    if (dA && dB) return dA - dB;
+    return 0;
+  });
+
+  // Redistribuir em sequência
+  const cargaAcumulada = {};
+  const updates = [];
+
+  for (const plano of comPrioridade) {
+    const { distribuicao, dataTermino } = distribuirHorasPorDias(
+      dataInicioGlobal,
+      plano.tempo_planejado,
+      8,
+      cargaAcumulada
+    );
+
+    const diasSorted = Object.keys(distribuicao).sort();
+    const novoInicio = diasSorted[0];
+    const novoTermino = format(dataTermino, 'yyyy-MM-dd');
+
+    // Acumular carga para próximo planejamento
+    Object.entries(distribuicao).forEach(([dia, h]) => {
+      cargaAcumulada[dia] = (cargaAcumulada[dia] || 0) + h;
+    });
+
+    updates.push({ plano, novoInicio, novoTermino, distribuicao });
+  }
+
+  // Salvar todas as atualizações em paralelo
+  await Promise.all(updates.map(({ plano, novoInicio, novoTermino, distribuicao }) => {
+    const entity = plano._tipo === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
+    return entity.update(plano.id, {
+      inicio_planejado: novoInicio,
+      termino_planejado: novoTermino,
+      horas_por_dia: distribuicao,
+    });
+  }));
+};
 
 const PRIORIDADES = [
   { value: 5, label: '5 – Urgente', color: 'bg-red-500', textColor: 'text-red-700', bg: 'bg-red-50 border-red-300', bgColor: 'bg-red-100' },
@@ -38,6 +123,13 @@ export default function PrioridadeSelector({ planejamento, tipo, onUpdate, compa
     try {
       const entity = tipo === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
       await entity.update(planejamento.id, { prioridade: novaP });
+
+      // Redistribuir planejamentos do executor respeitando a nova prioridade
+      const executorEmail = planejamento.executor_principal;
+      if (executorEmail) {
+        await redistribuirPlanejamentosExecutor(executorEmail, planejamento.id, novaP);
+      }
+
       if (onUpdate) onUpdate({ ...planejamento, prioridade: novaP });
       if (triggerUpdate) triggerUpdate();
     } finally {
