@@ -11,7 +11,6 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Plus, Search, Edit, Trash2, ChevronDown, ChevronRight, CalendarDays, FileText, Loader2, Users2, Check, CheckCircle2 } from "lucide-react";
 import { ETAPAS_ORDER } from '../utils/PredecessoraValidator';
-import PrioridadeSelector, { PrioridadeBadge } from '../planejamento/PrioridadeSelector';
 import { distribuirHorasPorDias, isWorkingDay, calculateEndDate, ensureWorkingDay } from '../utils/DateCalculator';
 import { format, isValid, parseISO, addDays } from 'date-fns';
 import { retryWithBackoff, retryWithExtendedBackoff } from '../utils/apiUtils';
@@ -869,30 +868,6 @@ export default function DocumentoItem({
                   <div className="flex justify-between items-center text-sm text-gray-600">
                     <span>Total: {atividadesDisponiveis.length} atividades | Planejadas: {atividadesDisponiveis.filter(a => a.jaFoiPlanejada).length}</span>
                     <span>Tempo total: {atividadesDisponiveis.reduce((sum, a) => sum + a.tempoComFator, 0).toFixed(1)}h</span>
-                  </div>
-                </div>
-              )}
-
-              {planejamentosDoDocumento.length > 0 && !readOnly && (
-                <div className="mt-3 pt-3 border-t border-gray-200">
-                  <p className="text-xs font-semibold text-gray-600 mb-2">Prioridade dos Planejamentos:</p>
-                  <div className="space-y-2">
-                    {planejamentosDoDocumento.map(p => (
-                      <div key={p.id} className="flex items-center justify-between gap-2 bg-white border border-gray-200 rounded px-3 py-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <PrioridadeBadge prioridade={p.prioridade || 1} />
-                          <span className="text-xs text-gray-700 truncate">{p.etapa || p.descritivo || 'Planejamento'}</span>
-                        </div>
-                        <PrioridadeSelector
-                          planejamento={p}
-                          tipo={p.tipo_plano || 'documento'}
-                          compact
-                          onUpdate={(updated) => {
-                            setLocalPlanejamentos(prev => prev.map(lp => lp.id === updated.id ? { ...lp, prioridade: updated.prioridade } : lp));
-                          }}
-                        />
-                      </div>
-                    ))}
                   </div>
                 </div>
               )}

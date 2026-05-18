@@ -1551,7 +1551,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     // 2. Execuções antigas sem planejamento são ignoradas para evitar entradas fantasmas.
 
 
-    // Ordenar atividades dentro de cada dia: prioridade (maior primeiro), depois created_date
+    // Ordenar atividades dentro de cada dia pela ordem em que foram programadas (created_date)
     for (const dayKey in grouped) {
       grouped[dayKey].sort((a, b) => {
         // Atividades legadas por último
@@ -1564,12 +1564,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         if (statusA === 'concluido' && statusB !== 'concluido') return 1;
         if (statusA !== 'concluido' && statusB === 'concluido') return -1;
 
-        // Prioridade maior primeiro
-        const prioA = a.prioridade || 1;
-        const prioB = b.prioridade || 1;
-        if (prioB !== prioA) return prioB - prioA;
-
-        // Desempate: data de criação
+        // Ordenar pela data de criação (ordem em que foram programadas)
         const criadoA = a.created_date ? new Date(a.created_date).getTime() : 0;
         const criadoB = b.created_date ? new Date(b.created_date).getTime() : 0;
         return criadoA - criadoB;
