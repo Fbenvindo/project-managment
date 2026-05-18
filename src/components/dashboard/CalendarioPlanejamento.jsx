@@ -1807,23 +1807,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
                       Previsão de Entrega
                     </Button>
                   )}
-                  {canReprogram && !isViewingAllUsers && (
-                    <Button
-                      variant="outline"
-                      onClick={() => {
-                        // Na visão de dia, usa o dia atual; nas demais, usa o dia de hoje como padrão
-                        const diaParaOrdenar = viewMode === 'day'
-                          ? format(currentDate, 'yyyy-MM-dd')
-                          : format(new Date(), 'yyyy-MM-dd');
-                        setOrdemDiaSelecionado(diaParaOrdenar);
-                        setShowOrdemModal(true);
-                      }}
-                      className="border-indigo-300 text-indigo-700 hover:bg-indigo-50"
-                    >
-                      <ListOrdered className="w-4 h-4 mr-2" />
-                      Reordenar
-                    </Button>
-                  )}
+
                   <Button variant="outline" onClick={refreshAll} disabled={totalLoading}>
                     <RefreshCw className={`w-4 h-4 mr-2 ${totalLoading ? 'animate-spin' : ''}`} />
                     {totalLoading ? "Atualizando..." : "Atualizar"}
