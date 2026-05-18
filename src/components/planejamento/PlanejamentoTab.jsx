@@ -46,7 +46,7 @@ export default function PlanejamentoTab({ empreendimentoId }) {
   const [allUsers, setAllUsers] = useState([]);
   const [allSobras, setAllSobras] = useState([]);
   const [selectedIds, setSelectedIds] = useState(new Set());
-  const { refreshTrigger } = useContext(ActivityTimerContext);
+  const { refreshTrigger, hasPermission, perfilAtual, isAdmin } = useContext(ActivityTimerContext);
 
   const [planejandoAtividade, setPlanejandoAtividade] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -574,7 +574,7 @@ export default function PlanejamentoTab({ empreendimentoId }) {
               Atividades Planejadas ({filteredPlanejamentos.length})
             </CardTitle>
             <div className="flex items-center gap-2">
-              {filteredPlanejamentos.length > 1 && (
+              {filteredPlanejamentos.length > 1 && (hasPermission('coordenador') || perfilAtual === 'direcao' || isAdmin || perfilAtual === 'lider') && (
                 <Button
                   variant="outline"
                   size="sm"

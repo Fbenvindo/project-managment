@@ -862,7 +862,7 @@ const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowP
 
 // --- Componente Principal ---
 export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefresh, isDashboardRefreshing }) {
-  const { user, userProfile, isColaborador, isGestao, hasPermission, triggerUpdate, perfilAtual, updateKey, allUsers } = useContext(ActivityTimerContext);
+  const { user, userProfile, isColaborador, isGestao, hasPermission, triggerUpdate, perfilAtual, updateKey, allUsers, isAdmin } = useContext(ActivityTimerContext);
 
   const [currentDate, setCurrentDate] = useState(() => startOfWeek(new Date(), { locale: ptBR }));
   const [viewMode, setViewMode] = useState('week');
@@ -1712,8 +1712,8 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   // **MODIFICADO**: Usa o estado de loading do calendário
   const totalLoading = isDashboardRefreshing || isCalendarLoading;
 
-  // **MODIFICADO**: Permissão para replanejamento agora usa o hook hasPermission
-  const canReprogram = hasPermission('admin');
+  // Permissão para reordenar: direção, coordenador, lider e admin
+  const canReprogram = isAdmin || perfilAtual === 'direcao' || perfilAtual === 'lider' || perfilAtual === 'coordenador' || hasPermission('coordenador');
 
   // **MODIFICADO**: renderContent para passar props de seleção
   const renderContent = () => {
