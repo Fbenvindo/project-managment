@@ -679,7 +679,7 @@ const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onSho
 
 
 // --- Sub-componente para a Visualização Semanal ---
-const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
+const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, onReordenarDia }) => {
   // NOVO: Estado para controlar o dia expandido
   const [expandedDay, setExpandedDay] = useState(null);
 
@@ -724,7 +724,18 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
                 >
                   <div className="flex items-center justify-between">
                     <h3 className="font-semibold text-gray-700 capitalize">{format(day, 'EEE, d', { locale: ptBR })}</h3>
-                    <ChevronsUpDown className="w-4 h-4 text-gray-400" />
+                    <div className="flex items-center gap-1">
+                      {canReprogram && onReordenarDia && dayActivities.filter(a => !a.isLegacyExecution && a.status !== 'concluido').length > 1 && (
+                        <button
+                          onClick={(e) => { e.stopPropagation(); onReordenarDia(dayKey); }}
+                          className="p-0.5 rounded hover:bg-indigo-100 text-indigo-400 hover:text-indigo-600 transition-colors"
+                          title="Reordenar atividades deste dia"
+                        >
+                          <ListOrdered className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                      <ChevronsUpDown className="w-4 h-4 text-gray-400" />
+                    </div>
                   </div>
                   {dayActivities.length > 0 && (
                     <div className="mt-1 text-xs text-gray-600 font-medium">
@@ -879,6 +890,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   const [isReprogramando, setIsReprogramando] = useState(null);
   const [viewType, setViewType] = useState('analitico'); // 'sintetico' ou 'analitico'
   const [showOrdemModal, setShowOrdemModal] = useState(false);
+  const [ordemDiaSelecionado, setOrdemDiaSelecionado] = useState(null);
 
   const hasSelectedUser = !!filters.user;
   const isViewingAllUsers = filters.user === 'all';
@@ -1735,7 +1747,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
 
     // **MODIFICADO**: Passa 'enrichedData' (que são todos) para as views em vez de 'planejamentos'
     if (viewMode === 'month') return <MonthView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} />;
-    if (viewMode === 'week') return <WeekView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} />;
+    if (viewMode === 'week') return <WeekView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} onReordenarDia={(dayKey) => { setOrdemDiaSelecionado(dayKey); setShowOrdemModal(true); }} />;
     if (viewMode === 'day') return <DayView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} />;
     return null;
   };
@@ -1796,7 +1808,18 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
                     </Button>
                   )}
                   {canReprogram && !isViewingAllUsers && (
-                    <Button variant="outline" onClick={() => setShowOrdemModal(true)} className="border-indigo-300 text-indigo-700 hover:bg-indigo-50">
+                    <Button
+                      variant="outline"
+                      onClick={() => {
+                        // Na visão de dia, usa o dia atual; nas demais, usa o dia de hoje como padrão
+                        const diaParaOrdenar = viewMode === 'day'
+                          ? format(currentDate, 'yyyy-MM-dd')
+                          : format(new Date(), 'yyyy-MM-dd');
+                        setOrdemDiaSelecionado(diaParaOrdenar);
+                        setShowOrdemModal(true);
+                      }}
+                      className="border-indigo-300 text-indigo-700 hover:bg-indigo-50"
+                    >
                       <ListOrdered className="w-4 h-4 mr-2" />
                       Reordenar
                     </Button>
@@ -1865,21 +1888,31 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         />
       )}
 
-      {showOrdemModal && (
-        <OrdemPlanejamentoModal
-          isOpen={showOrdemModal}
-          onClose={() => setShowOrdemModal(false)}
-          atividades={filteredPlanejamentos.filter(p => !p.isLegacyExecution && p.status !== 'concluido')}
-          title={`Reordenar Atividades — ${selectedUserName}`}
-          onSave={(updatedItems) => {
-            // Atualizar enrichedData localmente para refletir a nova ordem sem reload
-            setEnrichedData(prev => prev.map(item => {
-              const updated = updatedItems.find(u => String(u.id) === String(item.id));
-              return updated ? { ...item, ordem: updated.ordem } : item;
-            }));
-          }}
-        />
-      )}
+      {showOrdemModal && (() => {
+        // Atividades do dia selecionado (excluindo legadas e concluídas)
+        const atividadesDoDia = ordemDiaSelecionado
+          ? (activitiesByDay[ordemDiaSelecionado] || []).filter(p => !p.isLegacyExecution && p.status !== 'concluido')
+          : filteredPlanejamentos.filter(p => !p.isLegacyExecution && p.status !== 'concluido');
+
+        const diaTitulo = ordemDiaSelecionado
+          ? format(parseISO(ordemDiaSelecionado), "d 'de' MMMM", { locale: ptBR })
+          : '';
+
+        return (
+          <OrdemPlanejamentoModal
+            isOpen={showOrdemModal}
+            onClose={() => setShowOrdemModal(false)}
+            atividades={atividadesDoDia}
+            title={`Reordenar — ${selectedUserName}${diaTitulo ? ` · ${diaTitulo}` : ''}`}
+            onSave={(updatedItems) => {
+              setEnrichedData(prev => prev.map(item => {
+                const updated = updatedItems.find(u => String(u.id) === String(item.id));
+                return updated ? { ...item, ordem: updated.ordem } : item;
+              }));
+            }}
+          />
+        );
+      })()}
     </>
   );
 }
