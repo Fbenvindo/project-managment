@@ -10,7 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Card, CardContent } from "@/components/ui/card";
 import { PlanejamentoAtividade, AtividadeFuncao, PlanejamentoDocumento, Documento } from "@/entities/all";
-import { Calendar as CalendarIcon, Plus, Users, Clock, FileText, Building2, Activity, Repeat, Search, Filter, BrainCircuit, Loader2, AlertCircle, File } from "lucide-react";
+import { Calendar as CalendarIcon, Plus, Users, Clock, FileText, Building2, Activity, Repeat, Search, Filter, BrainCircuit, Loader2, AlertCircle, File, ListOrdered } from "lucide-react";
 import { format, addDays, addWeeks, addMonths, startOfDay, isBefore } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { distribuirHorasPorDias, getNextWorkingDay, isWorkingDay, ensureWorkingDay } from '../utils/DateCalculator';
@@ -43,7 +43,8 @@ export default function NovoPlanejamentoModal({
     horario_inicio: "",
     horario_termino: "",
     status: "nao_iniciado",
-    prioridade: 1
+    prioridade: 1,
+    ordem: ""
   });
   const [selectedDate, setSelectedDate] = useState(null);
   const [selectedActivityId, setSelectedActivityId] = useState("");
@@ -73,6 +74,7 @@ export default function NovoPlanejamentoModal({
     tempo_planejado: "",
     horario_inicio: "",
     horario_termino: "",
+    ordem: ""
   });
   const [selectedDocumentoDate, setSelectedDocumentoDate] = useState(null);
 
@@ -159,7 +161,7 @@ export default function NovoPlanejamentoModal({
     setFormData({
       empreendimento_id: "", descritivo: "", executores: [], executor_principal: "",
       tempo_planejado: "", inicio_planejado: "", horario_inicio: "", horario_termino: "",
-      status: "nao_iniciado", prioridade: 1
+      status: "nao_iniciado", prioridade: 1, ordem: ""
     });
     setSelectedDate(null);
     setSelectedActivityId("");
@@ -187,6 +189,7 @@ export default function NovoPlanejamentoModal({
       tempo_planejado: "",
       horario_inicio: "",
       horario_termino: "",
+      ordem: ""
     });
     setSelectedDocumentoDate(null);
   };
@@ -526,7 +529,8 @@ export default function NovoPlanejamentoModal({
       inicio_planejado: inicioPlanejado, termino_planejado: terminoPlanejadoStr,
       horario_inicio: formData.horario_inicio || null,
       horario_termino: formData.horario_termino || null,
-      prioridade: Number(formData.prioridade), horas_por_dia: distribuicao, status: "nao_iniciado"
+      prioridade: Number(formData.prioridade), horas_por_dia: distribuicao, status: "nao_iniciado",
+      ...(formData.ordem !== "" && !isNaN(Number(formData.ordem)) ? { ordem: Number(formData.ordem) } : {})
     };
 
     await PlanejamentoAtividade.create(dadosPlanejamento);
@@ -805,7 +809,8 @@ export default function NovoPlanejamentoModal({
           horario_termino: documentoFormData.horario_termino || null,
           prioridade: 1,
           horas_por_dia: distribuicao,
-          status: "nao_iniciado"
+          status: "nao_iniciado",
+          ...(documentoFormData.ordem !== "" && !isNaN(Number(documentoFormData.ordem)) ? { ordem: Number(documentoFormData.ordem) } : {})
         };
 
         await PlanejamentoDocumento.create(dadosPlanejamento);
@@ -996,6 +1001,22 @@ export default function NovoPlanejamentoModal({
               <div className="space-y-2"><Label className="flex items-center gap-2"><CalendarIcon className="w-4 h-4" />Data de Início (opcional)</Label><Popover><PopoverTrigger asChild><Button variant="outline" className="w-full justify-start"><CalendarIcon className="mr-2 h-4 w-4" />{selectedDate ? format(selectedDate, 'PPP', { locale: ptBR }) : 'Selecionar data'}</Button></PopoverTrigger><PopoverContent className="w-auto p-0"><Calendar mode="single" selected={selectedDate} onSelect={setSelectedDate} locale={ptBR} /></PopoverContent></Popover><p className="text-xs text-gray-500">Se não especificada, será usada a próxima data útil disponível.</p></div>
               <div className="space-y-2"><div className="flex items-center space-x-2"><input type="checkbox" id="recorrencia-toggle" checked={isRecorrente} onChange={(e) => setIsRecorrente(e.target.checked)} className="rounded" /><Label htmlFor="recorrencia-toggle" className="flex items-center gap-2 cursor-pointer"><Repeat className="w-4 h-4" />Criar Atividade Recorrente</Label></div></div>
               {isRecorrente && (<motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} transition={{ duration: 0.2 }} className="p-4 border rounded-lg bg-gray-50/50 space-y-4"><div className="grid grid-cols-2 gap-4"><div className="space-y-2"><Label htmlFor="tipo-recorrencia">Frequência</Label><Select value={recorrencia.tipo} onValueChange={(value) => setRecorrencia(prev => ({...prev, tipo: value}))}><SelectTrigger id="tipo-recorrencia"><SelectValue placeholder="Selecione..." /></SelectTrigger><SelectContent><SelectItem value="mesmo_dia">Repetir no mesmo dia</SelectItem><Separator className="my-1" /><SelectItem value="diaria">Diária</SelectItem><SelectItem value="semanal">Semanal</SelectItem><SelectItem value="quinzenal">Quinzenal</SelectItem><SelectItem value="mensal">Mensal</SelectItem></SelectContent></Select></div><div className="space-y-2"><Label htmlFor="repeticoes-recorrencia">Repetições</Label><Input id="repeticoes-recorrencia" type="number" min="1" value={recorrencia.repeticoes} onChange={(e) => setRecorrencia(prev => ({...prev, repeticoes: parseInt(e.target.value, 10) || 1 }))} placeholder="Nº de vezes"/></div></div></motion.div>)}
+
+              <div className="space-y-2">
+                <Label className="flex items-center gap-2">
+                  <ListOrdered className="w-4 h-4" />
+                  Ordem no Calendário (opcional)
+                </Label>
+                <Input
+                  type="number"
+                  min="1"
+                  step="1"
+                  value={formData.ordem}
+                  onChange={(e) => setFormData(prev => ({ ...prev, ordem: e.target.value }))}
+                  placeholder="Ex: 1 (menor número = aparece primeiro)"
+                />
+                <p className="text-xs text-gray-500">Define a posição desta atividade no calendário do executor. Itens sem ordem aparecem após os ordenados.</p>
+              </div>
             </div>
           </TabsContent>
 
@@ -1318,6 +1339,22 @@ export default function NovoPlanejamentoModal({
                     </PopoverContent>
                   </Popover>
                   <p className="text-xs text-gray-500">Se não especificada, será usada a próxima data útil disponível.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <ListOrdered className="w-4 h-4" />
+                    Ordem no Calendário (opcional)
+                  </Label>
+                  <Input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={documentoFormData.ordem}
+                    onChange={(e) => setDocumentoFormData(prev => ({ ...prev, ordem: e.target.value }))}
+                    placeholder="Ex: 1 (menor número = aparece primeiro)"
+                  />
+                  <p className="text-xs text-gray-500">Define a posição desta atividade no calendário do executor.</p>
                 </div>
               </CardContent>
             </Card>
