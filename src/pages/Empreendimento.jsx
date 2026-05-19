@@ -220,7 +220,7 @@ export default function EmpreendimentoPage() {
       loadSharedData();
     }
 
-    if (newTab !== 'gestao' && !tabData[newTab]?.loaded && !tabData[newTab]?.loading) {
+    if (newTab !== 'gestao' && newTab !== 'checklist' && newTab !== 'cadastro' && newTab !== 'pre' && !tabData[newTab]?.loaded && !tabData[newTab]?.loading) {
       loadTabData(newTab);
     }
 
