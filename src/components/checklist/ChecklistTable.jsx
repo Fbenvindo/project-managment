@@ -269,18 +269,18 @@ export default function ChecklistTable({ secao, items, checklist, onUpdate }) {
           <Table>
             <TableHeader>
               <TableRow className="bg-gray-100">
-                <TableHead className="w-12 border text-center">Item</TableHead>
-                <TableHead className="min-w-[250px] border">Descrição</TableHead>
-                <TableHead className="w-20 border text-center">Contribuição</TableHead>
-                <TableHead className="w-16 border text-center">Tempo</TableHead>
-                <TableHead colSpan={periodos.length} className="border text-center font-bold">STATUS</TableHead>
-                <TableHead className="min-w-[150px] border">Observações</TableHead>
-                <TableHead className="w-20 border">Ações</TableHead>
+                <TableHead className="w-10 border text-center text-xs px-1">Item</TableHead>
+                <TableHead className="border text-xs">Descrição</TableHead>
+                <TableHead className="w-16 border text-center text-xs px-1">Contrib.</TableHead>
+                <TableHead className="w-14 border text-center text-xs px-1">Tempo</TableHead>
+                <TableHead colSpan={periodos.length} className="border text-center text-xs font-bold">STATUS</TableHead>
+                <TableHead className="w-36 border text-xs">Observações</TableHead>
+                <TableHead className="w-16 border text-xs">Ações</TableHead>
               </TableRow>
               <TableRow className="bg-gray-50">
                 <TableHead colSpan="4" className="border"></TableHead>
                 {periodos.map((periodo, idx) => (
-                  <TableHead key={idx} className="w-12 border text-center text-xs font-normal">
+                  <TableHead key={idx} className="w-10 border text-center text-xs font-normal px-0.5">
                     {periodo}
                   </TableHead>
                 ))}
@@ -298,16 +298,16 @@ export default function ChecklistTable({ secao, items, checklist, onUpdate }) {
               ) : (
                 items.map((item) => (
                   <TableRow key={item.id} className="hover:bg-gray-50">
-                    <TableCell className="border font-medium text-center text-sm">
+                    <TableCell className="border font-medium text-center text-xs px-1 py-1">
                       {item.numero_item}
                     </TableCell>
-                    <TableCell className="border text-sm">
+                    <TableCell className="border text-xs py-1 px-2">
                       {item.descricao}
                     </TableCell>
-                    <TableCell className="border text-center text-sm">
+                    <TableCell className="border text-center text-xs px-1 py-1">
                       {item.contribuicao || '-'}
                     </TableCell>
-                    <TableCell className="border text-center text-sm">
+                    <TableCell className="border text-center text-xs px-1 py-1">
                       {item.tempo || '-'}
                     </TableCell>
                     {periodos.map((periodo, idx) => {
@@ -321,7 +321,7 @@ export default function ChecklistTable({ secao, items, checklist, onUpdate }) {
                             value={status}
                             onValueChange={(value) => handleStatusChange(item, periodo, value === '-' ? '' : value)}
                           >
-                            <SelectTrigger className="h-7 text-xs border-0 bg-transparent rounded-none">
+                            <SelectTrigger className="h-6 text-xs border-0 bg-transparent rounded-none px-0.5">
                               <SelectValue />
                             </SelectTrigger>
                             <SelectContent>
@@ -335,26 +335,26 @@ export default function ChecklistTable({ secao, items, checklist, onUpdate }) {
                         </TableCell>
                       );
                     })}
-                    <TableCell className="border text-sm text-gray-600">
+                    <TableCell className="border text-xs text-gray-600 py-1 px-2">
                       {item.observacoes || '-'}
                     </TableCell>
-                    <TableCell className="border">
-                      <div className="flex gap-1">
+                    <TableCell className="border p-0">
+                      <div className="flex gap-0">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8"
+                          className="h-7 w-7"
                           onClick={() => handleEdit(item)}
                         >
-                          <Edit2 className="w-4 h-4" />
+                          <Edit2 className="w-3 h-3" />
                         </Button>
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-8 w-8 text-red-600 hover:text-red-700"
+                          className="h-7 w-7 text-red-600 hover:text-red-700"
                           onClick={() => handleDelete(item.id)}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          <Trash2 className="w-3 h-3" />
                         </Button>
                       </div>
                     </TableCell>
