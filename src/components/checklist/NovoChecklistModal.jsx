@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { base44 } from '@/api/base44Client';
+import { ActivityTimerContext } from '@/components/contexts/ActivityTimerContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,6 +18,7 @@ const SECOES_PADRAO = [
 
 export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreendimentos, defaultEmpreendimentoId }) {
   const [isSaving, setIsSaving] = useState(false);
+  const { userProfile, user } = useContext(ActivityTimerContext);
 
   const getDefaultsFromEmpreendimento = (empId) => {
     const emp = empreendimentos?.find(e => e.id === empId);
@@ -26,17 +28,29 @@ export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreen
     };
   };
 
+  const getDefaultPeriodos = () => {
+    const now = new Date();
+    const mes = String(now.getMonth() + 1).padStart(2, '0');
+    const ano = now.getFullYear();
+    return {
+      inicio: `${mes}/${ano}`,
+      fim: `12/${ano}`
+    };
+  };
+
   const defaultEmpDefaults = getDefaultsFromEmpreendimento(defaultEmpreendimentoId);
+  const defaultPeriodos = getDefaultPeriodos();
+  const defaultTecnico = userProfile?.nome || user?.full_name || '';
 
   const [formData, setFormData] = useState({
     tipo: 'Elétrica',
     empreendimento_id: defaultEmpreendimentoId || '',
-    tecnico_responsavel: '',
+    tecnico_responsavel: defaultTecnico,
     numero_os: defaultEmpDefaults.numero_os,
     cliente: defaultEmpDefaults.cliente,
     data_entrega: '',
-    periodos_inicio: '',
-    periodos_fim: ''
+    periodos_inicio: defaultPeriodos.inicio,
+    periodos_fim: defaultPeriodos.fim
   });
 
   const handleEmpreendimentoChange = (empId) => {
