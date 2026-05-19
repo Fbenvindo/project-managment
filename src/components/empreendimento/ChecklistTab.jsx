@@ -34,6 +34,16 @@ export default function ChecklistTab({ empreendimento }) {
     enabled: !!selectedChecklist?.id
   });
 
+  const { data: documentos = [] } = useQuery({
+    queryKey: ['documentos-checklist', empreendimento?.id],
+    queryFn: async () => {
+      if (!empreendimento?.id) return [];
+      const data = await base44.entities.Documento.filter({ empreendimento_id: empreendimento.id });
+      return (data || []).sort((a, b) => (a.numero || '').localeCompare(b.numero || ''));
+    },
+    enabled: !!empreendimento?.id
+  });
+
   const handleChecklistCreated = async () => {
     await queryClient.invalidateQueries(['checklists', empreendimento?.id]);
     setShowNovoModal(false);
@@ -147,6 +157,7 @@ export default function ChecklistTab({ empreendimento }) {
                     secao={secao}
                     items={secaoItems}
                     checklist={selectedChecklist}
+                    documentos={documentos}
                     onUpdate={handleItemsUpdated}
                   />
                 ))

@@ -29,18 +29,7 @@ export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreen
     };
   };
 
-  const getDefaultPeriodos = () => {
-    const now = new Date();
-    const mes = String(now.getMonth() + 1).padStart(2, '0');
-    const ano = now.getFullYear();
-    return {
-      inicio: `${mes}/${ano}`,
-      fim: `12/${ano}`
-    };
-  };
-
   const defaultEmpDefaults = getDefaultsFromEmpreendimento(defaultEmpreendimentoId);
-  const defaultPeriodos = getDefaultPeriodos();
   const defaultTecnico = userProfile?.nome || user?.full_name || '';
 
   const [formData, setFormData] = useState({
@@ -49,9 +38,7 @@ export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreen
     tecnico_responsavel: defaultTecnico,
     numero_os: defaultEmpDefaults.numero_os,
     cliente: defaultEmpDefaults.cliente,
-    data_entrega: '',
-    periodos_inicio: defaultPeriodos.inicio,
-    periodos_fim: defaultPeriodos.fim
+    data_entrega: ''
   });
 
   const handleEmpreendimentoChange = (empId) => {
@@ -64,43 +51,11 @@ export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreen
     }));
   };
 
-  const generatePeriodos = (inicio, fim) => {
-    if (!inicio || !fim) return [];
-    
-    const periodos = [];
-    const [mesInicio, anoInicio] = inicio.split('/').map(Number);
-    const [mesFim, anoFim] = fim.split('/').map(Number);
-    
-    let mesAtual = mesInicio;
-    let anoAtual = anoInicio;
-    
-    while (anoAtual < anoFim || (anoAtual === anoFim && mesAtual <= mesFim)) {
-      const mesStr = mesAtual.toString().padStart(2, '0');
-      periodos.push(`${mesStr}/${anoAtual}`);
-      
-      mesAtual++;
-      if (mesAtual > 12) {
-        mesAtual = 1;
-        anoAtual++;
-      }
-    }
-    
-    return periodos;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSaving(true);
 
     try {
-      const periodos = generatePeriodos(formData.periodos_inicio, formData.periodos_fim);
-      
-      if (periodos.length === 0) {
-        alert('Por favor, defina os períodos (formato MM/AAAA)');
-        setIsSaving(false);
-        return;
-      }
-
       const checklistData = {
         tipo: formData.tipo,
         empreendimento_id: formData.empreendimento_id || null,
@@ -108,7 +63,7 @@ export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreen
         numero_os: formData.numero_os,
         cliente: formData.cliente,
         data_entrega: formData.data_entrega || null,
-        periodos: periodos,
+        periodos: [],
         status: 'em_andamento'
       };
 
@@ -229,34 +184,11 @@ export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreen
               />
             </div>
 
-            <div>
-              <Label>Período Início (MM/AAAA) *</Label>
-              <Input
-                placeholder="Ex: 01/2026"
-                value={formData.periodos_inicio}
-                onChange={(e) => setFormData({ ...formData, periodos_inicio: e.target.value })}
-                required
-              />
-            </div>
 
-            <div>
-              <Label>Período Fim (MM/AAAA) *</Label>
-              <Input
-                placeholder="Ex: 12/2026"
-                value={formData.periodos_fim}
-                onChange={(e) => setFormData({ ...formData, periodos_fim: e.target.value })}
-                required
-              />
-            </div>
           </div>
 
           <div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-800">
-            <strong>Seções que serão criadas automaticamente:</strong>
-            <ul className="mt-2 ml-4 list-disc space-y-1">
-              {SECOES_PADRAO.map((secao) => (
-                <li key={secao}>{secao}</li>
-              ))}
-            </ul>
+            As colunas de STATUS serão geradas automaticamente com base nos documentos/folhas cadastrados no empreendimento.
           </div>
 
           <div className="flex justify-end gap-2">
