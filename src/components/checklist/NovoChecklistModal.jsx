@@ -15,11 +15,11 @@ const SECOES_PADRAO = [
   'Elétrica'
 ];
 
-export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreendimentos }) {
+export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreendimentos, defaultEmpreendimentoId }) {
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState({
     tipo: 'Elétrica',
-    empreendimento_id: '',
+    empreendimento_id: defaultEmpreendimentoId || '',
     tecnico_responsavel: '',
     numero_os: '',
     cliente: '',
