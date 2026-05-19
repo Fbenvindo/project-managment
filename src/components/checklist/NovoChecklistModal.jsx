@@ -17,16 +17,37 @@ const SECOES_PADRAO = [
 
 export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreendimentos, defaultEmpreendimentoId }) {
   const [isSaving, setIsSaving] = useState(false);
+
+  const getDefaultsFromEmpreendimento = (empId) => {
+    const emp = empreendimentos?.find(e => e.id === empId);
+    return {
+      cliente: emp?.cliente || '',
+      numero_os: emp?.os || ''
+    };
+  };
+
+  const defaultEmpDefaults = getDefaultsFromEmpreendimento(defaultEmpreendimentoId);
+
   const [formData, setFormData] = useState({
     tipo: 'Elétrica',
     empreendimento_id: defaultEmpreendimentoId || '',
     tecnico_responsavel: '',
-    numero_os: '',
-    cliente: '',
+    numero_os: defaultEmpDefaults.numero_os,
+    cliente: defaultEmpDefaults.cliente,
     data_entrega: '',
     periodos_inicio: '',
     periodos_fim: ''
   });
+
+  const handleEmpreendimentoChange = (empId) => {
+    const defaults = getDefaultsFromEmpreendimento(empId);
+    setFormData(prev => ({
+      ...prev,
+      empreendimento_id: empId,
+      cliente: defaults.cliente,
+      numero_os: defaults.numero_os
+    }));
+  };
 
   const generatePeriodos = (inicio, fim) => {
     if (!inicio || !fim) return [];
@@ -132,7 +153,7 @@ export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreen
               <Label>Empreendimento</Label>
               <Select
                 value={formData.empreendimento_id}
-                onValueChange={(value) => setFormData({ ...formData, empreendimento_id: value })}
+                onValueChange={handleEmpreendimentoChange}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione (opcional)" />
