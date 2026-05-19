@@ -97,9 +97,9 @@ export default function ChecklistTab({ empreendimento }) {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+      <div className="flex gap-4">
         {/* Lista lateral */}
-        <div className="lg:col-span-1 space-y-2">
+        <div className="w-44 shrink-0 space-y-2">
           {isLoading ? (
             <div className="flex justify-center py-8">
               <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
@@ -133,7 +133,7 @@ export default function ChecklistTab({ empreendimento }) {
         </div>
 
         {/* Conteúdo do checklist */}
-        <div className="lg:col-span-3">
+        <div className="flex-1 min-w-0">
           {selectedChecklist ? (
             <div className="space-y-4">
               <div className="flex justify-between items-center">
