@@ -272,17 +272,13 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
 
         <div className="flex items-start justify-between mb-1.5">
           <div className="flex-1 mr-2 overflow-hidden">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              {ordemIndex != null && (
-                <span className="flex-shrink-0 w-4 h-4 rounded-full bg-blue-500 text-white text-[9px] font-bold flex items-center justify-center select-none leading-none">
-                  {ordemIndex}
-                </span>
-              )}
-              {plano.empreendimento?.nome && (
-                <p className="text-xs text-gray-500 font-medium truncate">📋 {plano.empreendimento.nome}</p>
-              )}
-            </div>
-            <p className="font-medium text-gray-800 leading-tight truncate" title={displayName}>{displayName}</p>
+            {plano.empreendimento?.nome && (
+              <p className="text-xs text-gray-500 mb-0.5 font-medium truncate">📋 {plano.empreendimento.nome}</p>
+            )}
+            <p className="font-medium text-gray-800 leading-tight truncate" title={displayName}>
+              {ordemIndex != null && <span className="text-gray-400 font-normal mr-0.5">{ordemIndex}</span>}
+              {displayName}
+            </p>
             <div className="flex flex-wrap gap-1 mt-1">
               {plano.isQuickActivity && <Badge variant="outline" className="px-1 py-0.5 text-xs bg-gray-100 text-gray-600 border-gray-300">Execução Rápida</Badge>}
               {plano.tipo_planejamento === 'documento' && <Badge variant="outline" className="px-1 py-0.5 text-xs bg-blue-100 text-blue-600 border-blue-300">Planejamento Doc.</Badge>}
