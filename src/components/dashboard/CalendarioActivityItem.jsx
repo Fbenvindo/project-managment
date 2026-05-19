@@ -79,7 +79,7 @@ const calculateActivityStatus = (plano, allPlanejamentos = []) => {
 
 export { calculateActivityStatus };
 
-export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpdate, executorMap, allPlanejamentos, provided, isDragging, isReprogramando, isSelected, onToggleSelect, hasSelections }) {
+export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpdate, executorMap, allPlanejamentos, provided, isDragging, isReprogramando, isSelected, onToggleSelect, hasSelections, ordemIndex }) {
   const { activeExecution, startExecution, user, playlist, addToPlaylist, removeFromPlaylist, triggerUpdate, hasPermission } = useContext(ActivityTimerContext);
 
   const [isStarting, setIsStarting] = useState(false);
@@ -253,6 +253,12 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
               className="w-4 h-4 rounded border-gray-300 text-indigo-600 cursor-pointer"
             />
           </div>
+        )}
+
+        {ordemIndex != null && (
+          <span className="absolute top-1.5 left-1.5 text-[10px] font-semibold text-gray-400 leading-none select-none z-10">
+            #{ordemIndex}
+          </span>
         )}
 
         <div {...provided.dragHandleProps}

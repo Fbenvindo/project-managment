@@ -306,7 +306,7 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
             {atividades.map((atividade, index) => (
               <Draggable key={atividade.id} draggableId={`${atividade.id}`} index={index} isDragDisabled={!canReprogram || atividade.status === 'concluido' || atividade.isLegacyExecution || normalizeActivityId(isReprogramando) === normalizeActivityId(atividade.id)}>
                 {(provided, snapshot) => (
-                  <ActivityItem plano={atividade} dayKey={dayKey} onDelete={onActivityDelete} executorMap={executorMap} allPlanejamentos={allPlanejamentos} provided={provided} isDragging={snapshot.isDragging} isReprogramando={normalizeActivityId(isReprogramando) === normalizeActivityId(atividade.id)} isSelected={selectedActivities.has(normalizeActivityId(atividade.id))} onToggleSelect={onToggleSelect} hasSelections={hasSelections} />
+                  <ActivityItem plano={atividade} dayKey={dayKey} onDelete={onActivityDelete} executorMap={executorMap} allPlanejamentos={allPlanejamentos} provided={provided} isDragging={snapshot.isDragging} isReprogramando={normalizeActivityId(isReprogramando) === normalizeActivityId(atividade.id)} isSelected={selectedActivities.has(normalizeActivityId(atividade.id))} onToggleSelect={onToggleSelect} hasSelections={hasSelections} ordemIndex={index + 1} />
                 )}
               </Draggable>
             ))}
@@ -398,17 +398,18 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
           >
             {(provided, snapshot) => (
               <ActivityItem
-                plano={atividade}
-                dayKey={dayKey}
-                onDelete={onActivityDelete}
-                executorMap={executorMap}
-                allPlanejamentos={allPlanejamentos}
-                provided={provided}
-                isDragging={snapshot.isDragging}
-                isReprogramando={normalizeActivityId(isReprogramando) === normalizeActivityId(atividade.id)}
-                isSelected={selectedActivities.has(normalizeActivityId(atividade.id))}
-                onToggleSelect={onToggleSelect}
-                hasSelections={hasSelections}
+               plano={atividade}
+               dayKey={dayKey}
+               onDelete={onActivityDelete}
+               executorMap={executorMap}
+               allPlanejamentos={allPlanejamentos}
+               provided={provided}
+               isDragging={snapshot.isDragging}
+               isReprogramando={normalizeActivityId(isReprogramando) === normalizeActivityId(atividade.id)}
+               isSelected={selectedActivities.has(normalizeActivityId(atividade.id))}
+               onToggleSelect={onToggleSelect}
+               hasSelections={hasSelections}
+               ordemIndex={index + 1}
               />
             )}
           </Draggable>
