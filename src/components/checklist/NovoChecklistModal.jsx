@@ -1,6 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { base44 } from '@/api/base44Client';
 import { ActivityTimerContext } from '@/components/contexts/ActivityTimerContext';
+import { CHECKLIST_TEMPLATES } from './checklistTemplates';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -113,15 +114,29 @@ export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreen
 
       const novoChecklist = await base44.entities.ChecklistPlanejamento.create(checklistData);
 
-      // Criar apenas a seção correspondente ao tipo selecionado
-      await base44.entities.ChecklistItem.create({
-        checklist_id: novoChecklist.id,
-        secao: formData.tipo,
-        numero_item: '1.0',
-        descricao: 'Seção criada automaticamente - adicione itens abaixo',
-        ordem: 0,
-        status_por_periodo: {}
-      });
+      // Criar itens a partir do template ou uma seção padrão vazia
+      const templateItems = CHECKLIST_TEMPLATES[formData.tipo];
+      if (templateItems && templateItems.length > 0) {
+        for (let i = 0; i < templateItems.length; i++) {
+          await base44.entities.ChecklistItem.create({
+            checklist_id: novoChecklist.id,
+            secao: templateItems[i].secao,
+            numero_item: templateItems[i].numero_item,
+            descricao: templateItems[i].descricao,
+            ordem: i,
+            status_por_periodo: {}
+          });
+        }
+      } else {
+        await base44.entities.ChecklistItem.create({
+          checklist_id: novoChecklist.id,
+          secao: formData.tipo,
+          numero_item: '1.0',
+          descricao: 'Seção criada automaticamente - adicione itens abaixo',
+          ordem: 0,
+          status_por_periodo: {}
+        });
+      }
 
       onSuccess();
     } catch (error) {
