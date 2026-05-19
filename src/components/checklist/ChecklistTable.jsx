@@ -22,6 +22,8 @@ export default function ChecklistTable({ secao, items, checklist, documentos = [
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingSecao, setEditingSecao] = useState(false);
   const [novoNomeSecao, setNovoNomeSecao] = useState(secao);
+  // Estado local otimista: { [itemId]: { [colKey]: status } }
+  const [localStatus, setLocalStatus] = useState({});
   const [formData, setFormData] = useState({
     numero_item: '',
     descricao: '',
@@ -31,8 +33,9 @@ export default function ChecklistTable({ secao, items, checklist, documentos = [
   });
 
   // Usa documentos do empreendimento como colunas; fallback para periodos legados
+  // Usa d.id como key para garantir unicidade absoluta
   const colunas = documentos.length > 0
-    ? documentos.map(d => ({ key: d.numero || d.id, label: d.arquivo || d.numero || d.descritivo || d.id }))
+    ? documentos.map(d => ({ key: d.id, label: d.arquivo || d.numero || d.descritivo || d.id }))
     : (checklist.periodos || []).map(p => ({ key: p, label: p }));
 
   const handleSubmit = async (e) => {
@@ -90,19 +93,29 @@ export default function ChecklistTable({ secao, items, checklist, documentos = [
     }
   };
 
-  const handleStatusChange = async (item, periodo, novoStatus) => {
+  const handleStatusChange = async (item, colKey, novoStatus) => {
+    // Atualiza otimisticamente no estado local para evitar re-render/scroll
+    setLocalStatus(prev => ({
+      ...prev,
+      [item.id]: { ...(prev[item.id] || {}), [colKey]: novoStatus }
+    }));
     try {
       const statusAtualizado = {
         ...(item.status_por_periodo || {}),
-        [periodo]: novoStatus
+        [colKey]: novoStatus
       };
       await base44.entities.ChecklistItem.update(item.id, {
         status_por_periodo: statusAtualizado
       });
-      onUpdate();
+      // Não chama onUpdate() para não causar re-render/scroll da tabela
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
-      alert('Erro ao atualizar status');
+      // Reverte o estado local em caso de erro
+      setLocalStatus(prev => {
+        const updated = { ...prev };
+        if (updated[item.id]) delete updated[item.id][colKey];
+        return updated;
+      });
     }
   };
 
@@ -314,7 +327,7 @@ export default function ChecklistTable({ secao, items, checklist, documentos = [
                       {item.tempo || '-'}
                     </TableCell>
                     {colunas.map((col, idx) => {
-                      const status = item.status_por_periodo?.[col.key] || '-';
+                      const status = localStatus[item.id]?.[col.key] ?? item.status_por_periodo?.[col.key] ?? '-';
                       return (
                         <TableCell 
                           key={idx} 
