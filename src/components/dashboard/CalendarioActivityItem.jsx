@@ -79,7 +79,7 @@ const calculateActivityStatus = (plano, allPlanejamentos = []) => {
 
 export { calculateActivityStatus };
 
-export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpdate, executorMap, allPlanejamentos, provided, isDragging, isReprogramando, isSelected, onToggleSelect, hasSelections }) {
+export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpdate, executorMap, allPlanejamentos, provided, isDragging, isReprogramando, isSelected, onToggleSelect, hasSelections, ordemIndex }) {
   const { activeExecution, startExecution, user, playlist, addToPlaylist, removeFromPlaylist, triggerUpdate, hasPermission } = useContext(ActivityTimerContext);
 
   const [isStarting, setIsStarting] = useState(false);
@@ -255,6 +255,12 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
           </div>
         )}
 
+        {ordemIndex != null && (
+          <span className="absolute top-1.5 left-1.5 text-[10px] font-semibold text-gray-400 leading-none select-none z-10">
+            #{ordemIndex}
+          </span>
+        )}
+
         <div {...provided.dragHandleProps}
           className={`absolute top-0 bottom-9 w-6 flex items-center justify-center cursor-move opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-r from-gray-100 to-transparent ${hasSelections || isSelected ? 'left-6' : 'left-0'}`}>
           <svg className="w-3.5 h-3.5 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
@@ -272,9 +278,16 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
 
         <div className="flex items-start justify-between mb-1.5">
           <div className="flex-1 mr-2 overflow-hidden">
-            {plano.empreendimento?.nome && (
-              <p className="text-xs text-gray-500 mb-0.5 font-medium truncate">📋 {plano.empreendimento.nome}</p>
-            )}
+            <div className="flex items-center gap-1.5 mb-0.5">
+              {ordemIndex != null && (
+                <span className="flex-shrink-0 w-4 h-4 rounded-full bg-blue-500 text-white text-[9px] font-bold flex items-center justify-center select-none leading-none">
+                  {ordemIndex}
+                </span>
+              )}
+              {plano.empreendimento?.nome && (
+                <p className="text-xs text-gray-500 font-medium truncate">📋 {plano.empreendimento.nome}</p>
+              )}
+            </div>
             <p className="font-medium text-gray-800 leading-tight truncate" title={displayName}>{displayName}</p>
             <div className="flex flex-wrap gap-1 mt-1">
               {plano.isQuickActivity && <Badge variant="outline" className="px-1 py-0.5 text-xs bg-gray-100 text-gray-600 border-gray-300">Execução Rápida</Badge>}
