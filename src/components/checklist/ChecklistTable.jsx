@@ -320,7 +320,7 @@ export default function ChecklistTable({ secao, items, checklist, onUpdate }) {
                           <select
                             value={status}
                             onChange={(e) => handleStatusChange(item, periodo, e.target.value)}
-                            className="w-full h-8 text-xs text-center bg-transparent border-0 cursor-pointer outline-none appearance-none"
+                            style={{ width: '100%', height: '32px', fontSize: '12px', textAlign: 'center', background: 'transparent', border: 'none', cursor: 'pointer', outline: 'none' }}
                           >
                             {STATUS_OPTIONS.map((opt) => (
                               <option key={opt} value={opt}>{opt}</option>
