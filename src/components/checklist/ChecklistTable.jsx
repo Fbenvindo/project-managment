@@ -315,23 +315,17 @@ export default function ChecklistTable({ secao, items, checklist, onUpdate }) {
                       return (
                         <TableCell 
                           key={idx} 
-                          className={`border ${STATUS_COLORS[status]} p-0`}
+                          className={`border p-0 text-center ${STATUS_COLORS[status]}`}
                         >
-                          <Select
+                          <select
                             value={status}
-                            onValueChange={(value) => handleStatusChange(item, periodo, value === '-' ? '' : value)}
+                            onChange={(e) => handleStatusChange(item, periodo, e.target.value)}
+                            className="w-full h-8 text-xs text-center bg-transparent border-0 cursor-pointer outline-none appearance-none"
                           >
-                            <SelectTrigger className="h-7 text-xs border-0 bg-transparent rounded-none">
-                              <SelectValue />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {STATUS_OPTIONS.map((opt) => (
-                                <SelectItem key={opt} value={opt}>
-                                  {opt}
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
+                            {STATUS_OPTIONS.map((opt) => (
+                              <option key={opt} value={opt}>{opt}</option>
+                            ))}
+                          </select>
                         </TableCell>
                       );
                     })}
