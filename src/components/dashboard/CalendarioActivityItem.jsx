@@ -255,12 +255,6 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
           </div>
         )}
 
-        {ordemIndex != null && (
-          <span className="absolute top-1.5 left-1.5 text-[10px] font-semibold text-gray-400 leading-none select-none z-10">
-            #{ordemIndex}
-          </span>
-        )}
-
         <div {...provided.dragHandleProps}
           className={`absolute top-0 bottom-9 w-6 flex items-center justify-center cursor-move opacity-0 group-hover:opacity-100 transition-opacity bg-gradient-to-r from-gray-100 to-transparent ${hasSelections || isSelected ? 'left-6' : 'left-0'}`}>
           <svg className="w-3.5 h-3.5 text-gray-500" viewBox="0 0 24 24" fill="currentColor">
