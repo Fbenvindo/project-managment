@@ -129,7 +129,7 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
     return [plano.documento.numero_completo, plano.documento.arquivo, plano.documento.numero].filter(Boolean)[0] || 'Sem documento';
   };
   const documentoDisplay = getDocumentoDisplay();
-  const observacao = plano.observacao || null;
+  const observacao = plano.observacao || plano.observacoes || null;
 
   const handleDeleteActivity = async () => {
     if (!window.confirm(`Tem certeza que deseja excluir "${displayName}"? Esta ação é irreversível.`)) return;
