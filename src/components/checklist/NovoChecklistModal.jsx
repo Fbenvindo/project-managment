@@ -113,17 +113,15 @@ export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreen
 
       const novoChecklist = await base44.entities.ChecklistPlanejamento.create(checklistData);
 
-      // Criar seções padrão
-      for (let i = 0; i < SECOES_PADRAO.length; i++) {
-        await base44.entities.ChecklistItem.create({
-          checklist_id: novoChecklist.id,
-          secao: SECOES_PADRAO[i],
-          numero_item: `${i + 1}.0`,
-          descricao: 'Seção criada automaticamente - adicione itens abaixo',
-          ordem: 0,
-          status_por_periodo: {}
-        });
-      }
+      // Criar apenas a seção correspondente ao tipo selecionado
+      await base44.entities.ChecklistItem.create({
+        checklist_id: novoChecklist.id,
+        secao: formData.tipo,
+        numero_item: '1.0',
+        descricao: 'Seção criada automaticamente - adicione itens abaixo',
+        ordem: 0,
+        status_por_periodo: {}
+      });
 
       onSuccess();
     } catch (error) {
