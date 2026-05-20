@@ -195,9 +195,12 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       etapasUnion.forEach(etapa => {
         const revisoesEtapaSet = revisoesMap[etapa];
         
+        const CHAVES_METADADO_GLOBAL = new Set(['_excluida', '_revisoes_excluidas', '_revisoes_existentes', 'revisoes_excluidas', 'revisoes_existentes', 'meta']);
+        const isRevValida = (r) => r && !CHAVES_METADADO_GLOBAL.has(r) && !r.startsWith('_') && !/^RNaN$/i.test(r);
+
         let todasRevisoes = revisoesEtapaSet && revisoesEtapaSet.size > 0
-          ? Array.from(revisoesEtapaSet).sort((a, b) => {
-              // Ordenar R00 < R01 < R02 ... < RNaN (nomeados) por último
+          ? Array.from(revisoesEtapaSet).filter(isRevValida).sort((a, b) => {
+              // Ordenar R00 < R01 < R02 por último
               const numA = parseInt(a.substring(1));
               const numB = parseInt(b.substring(1));
               if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
