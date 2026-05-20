@@ -27,8 +27,10 @@ export default function NovoPlanejamentoModal({
   atividades = [],
   onSuccess,
   descritivo_inicial = "",
-  tempo_planejado_inicial = null
+  tempo_planejado_inicial = null,
+  planoParaEditar = null  // Se presente, abre em modo edição
 }) {
+  const isEditMode = !!planoParaEditar;
   const [planningMode, setPlanningMode] = useState('individual');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -195,6 +197,28 @@ export default function NovoPlanejamentoModal({
   };
 
   useEffect(() => {
+    if (isOpen && planoParaEditar) {
+      // Modo edição: pré-preencher com dados do plano existente
+      const plano = planoParaEditar;
+      setPlanningMode('individual');
+      setFormData({
+        empreendimento_id: plano.empreendimento_id || "",
+        descritivo: plano.descritivo || "",
+        executores: plano.executores || (plano.executor_principal ? [plano.executor_principal] : []),
+        executor_principal: plano.executor_principal || "",
+        tempo_planejado: plano.tempo_planejado != null ? String(plano.tempo_planejado) : "",
+        inicio_planejado: plano.inicio_planejado || "",
+        horario_inicio: plano.horario_inicio || "",
+        horario_termino: plano.horario_termino || "",
+        status: plano.status || "nao_iniciado",
+        prioridade: plano.prioridade || 1,
+        ordem: plano.ordem != null ? String(plano.ordem) : ""
+      });
+      if (plano.inicio_planejado) {
+        try { setSelectedDate(new Date(plano.inicio_planejado + 'T00:00:00')); } catch {}
+      }
+      return;
+    }
     if (isOpen && (descritivo_inicial || tempo_planejado_inicial)) {
       setFormData(prev => ({
         ...prev,
@@ -209,7 +233,7 @@ export default function NovoPlanejamentoModal({
       resetDocumentoForm();
       setPlanningMode('individual');
     }
-  }, [isOpen, descritivo_inicial, tempo_planejado_inicial]);
+  }, [isOpen, descritivo_inicial, tempo_planejado_inicial, planoParaEditar]);
 
   useEffect(() => {
     const fetchFuncaoData = async () => {
@@ -543,6 +567,34 @@ export default function NovoPlanejamentoModal({
         return;
     }
 
+    // Modo edição: apenas atualizar os campos editáveis
+    if (isEditMode) {
+      setIsSubmitting(true);
+      try {
+        const entity = planoParaEditar.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
+        const updateData = {
+          descritivo: formData.descritivo,
+          empreendimento_id: formData.empreendimento_id || null,
+          executor_principal: formData.executor_principal,
+          executores: formData.executores.length > 0 ? formData.executores : [formData.executor_principal],
+          tempo_planejado: Number(formData.tempo_planejado),
+          horario_inicio: formData.horario_inicio || null,
+          horario_termino: formData.horario_termino || null,
+          prioridade: Number(formData.prioridade) || 1,
+          ...(formData.ordem !== "" && !isNaN(Number(formData.ordem)) ? { ordem: Number(formData.ordem) } : { ordem: null }),
+          ...(selectedDate ? { inicio_planejado: format(selectedDate, 'yyyy-MM-dd') } : {}),
+        };
+        await entity.update(planoParaEditar.id, updateData);
+        if (onSuccess) onSuccess({ success: true });
+        onClose();
+      } catch (error) {
+        alert("Erro ao salvar alterações: " + (error.message || "Tente novamente."));
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       const tempoTotal = Number(formData.tempo_planejado);
@@ -847,25 +899,27 @@ export default function NovoPlanejamentoModal({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Plus className="w-5 h-5 text-purple-600" />
-            Novo Planejamento
+            {isEditMode ? "Editar Planejamento" : "Novo Planejamento"}
           </DialogTitle>
         </DialogHeader>
 
         <Tabs value={planningMode} onValueChange={setPlanningMode} className="w-full mt-4">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="individual">
-              <Users className="w-4 h-4 mr-2" />
-              Individual
-            </TabsTrigger>
-            <TabsTrigger value="funcao">
-              <BrainCircuit className="w-4 h-4 mr-2" />
-              Departamento
-            </TabsTrigger>
-            <TabsTrigger value="documento">
-              <File className="w-4 h-4 mr-2" />
-              Por Documento
-            </TabsTrigger>
-          </TabsList>
+          {!isEditMode && (
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="individual">
+                <Users className="w-4 h-4 mr-2" />
+                Individual
+              </TabsTrigger>
+              <TabsTrigger value="funcao">
+                <BrainCircuit className="w-4 h-4 mr-2" />
+                Departamento
+              </TabsTrigger>
+              <TabsTrigger value="documento">
+                <File className="w-4 h-4 mr-2" />
+                Por Documento
+              </TabsTrigger>
+            </TabsList>
+          )}
 
           {/* Aba de Planejamento Individual */}
           <TabsContent value="individual">
@@ -1375,8 +1429,9 @@ export default function NovoPlanejamentoModal({
             className="bg-purple-600 hover:bg-purple-700"
           >
             {isSubmitting ? (
-              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Gerando...</>
-            ) : planningMode === 'individual' ? "Criar Planejamento" :
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {isEditMode ? "Salvando..." : "Gerando..."}</>
+            ) : isEditMode ? "Salvar Alterações" :
+               planningMode === 'individual' ? "Criar Planejamento" :
                planningMode === 'funcao' ? "Gerar Planejamento por Função" :
                "Criar Planejamento de Documento"}
           </Button>
