@@ -141,12 +141,11 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                   revisoesExcluidasMap[etapa] = new Set();
                 }
 
-                // Adicionar revisões que têm dados preenchidos
+                // Adicionar revisões que têm dados preenchidos (excluindo metadados)
                 Object.keys(etapaData).forEach(rev => {
-                 if (rev !== '_excluida' && rev !== '_revisoes_excluidas' && rev !== '_revisoes_existentes') {
-                   const valor = etapaData[rev];
-                   revisoesMap[etapa].add(rev);
-                 }
+                  if (rev !== '_excluida' && rev !== '_revisoes_excluidas' && rev !== '_revisoes_existentes') {
+                    revisoesMap[etapa].add(rev);
+                  }
                 });
 
                 // Carregar revisões que foram criadas (mesmo sem dados)
@@ -190,18 +189,31 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         const indexB = ETAPAS.findIndex(e => e.toLowerCase() === b.toLowerCase());
         return (indexA !== -1 ? indexA : 999) - (indexB !== -1 ? indexB : 999);
       });
+      // Contar quantos documentos têm dados para saber quais revisões são "globais"
+      const totalDocumentosComDados = data ? data.filter(item => item.documento_id && item.datas).length : 0;
+
       const revisoesCompletas = {};
       etapasUnion.forEach(etapa => {
-        // Usar APENAS as revisões mapeadas (dados + _revisoes_existentes)
-        // NÃO usar DEFAULT_REVISOES como fallback, pois pode sobrescrever revisões criadas
         const revisoesEtapaSet = revisoesMap[etapa];
         
         let todasRevisoes = revisoesEtapaSet && revisoesEtapaSet.size > 0
-          ? Array.from(revisoesEtapaSet).sort()
+          ? Array.from(revisoesEtapaSet).sort((a, b) => {
+              // Ordenar R00 < R01 < R02 ... < RNaN (nomeados) por último
+              const numA = parseInt(a.substring(1));
+              const numB = parseInt(b.substring(1));
+              if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
+              if (!isNaN(numA)) return -1;
+              if (!isNaN(numB)) return 1;
+              return a.localeCompare(b);
+            })
           : [...DEFAULT_REVISOES];
 
+        // Uma revisão só deve ser excluída globalmente se TODOS os documentos que têm dados
+        // para esta etapa a marcaram como excluída (ou seja, foi uma exclusão intencional)
+        // Para ser seguro, não excluir revisões que têm dados reais em algum documento
         const revisoesExcluidas = revisoesExcluidasMap[etapa] || new Set();
-        const filtradas = todasRevisoes.filter(rev => !revisoesExcluidas.has(rev));
+        // Não excluir revisões que têm dados reais (apenas as que estão em _excluidas mas não em dados)
+        const filtradas = todasRevisoes.filter(rev => !revisoesExcluidas.has(rev) || revisoesEtapaSet?.has(rev));
         revisoesCompletas[etapa] = filtradas;
       });
       
