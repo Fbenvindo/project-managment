@@ -142,10 +142,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 }
 
                 // Adicionar revisões que têm dados preenchidos (excluindo metadados)
-                // Revisões válidas começam com 'R' seguido de dígito, ou são strings não-internas
-                const META_KEYS = new Set(['_excluida', '_revisoes_excluidas', '_revisoes_existentes', 'meta']);
                 Object.keys(etapaData).forEach(rev => {
-                  if (!META_KEYS.has(rev) && !rev.startsWith('_')) {
+                  if (rev !== '_excluida' && rev !== '_revisoes_excluidas' && rev !== '_revisoes_existentes') {
                     revisoesMap[etapa].add(rev);
                   }
                 });
