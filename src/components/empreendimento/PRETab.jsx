@@ -110,6 +110,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     arquivo: ''
   });
   const saveTimeoutRef = React.useRef(/** @type {ReturnType<typeof setTimeout> | null} */ (null));
+  const isSavingRef = React.useRef(false);
 
   useEffect(() => {
     if (empreendimento) {
@@ -122,10 +123,13 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     }
   }, [empreendimento?.id]);
 
-  // AutoSave com debounce — só para itens já persistidos (sem temp-)
+  // AutoSave com debounce — só dispara quando há itens persistidos E sem save em andamento
   useEffect(() => {
     const hasPersistedItems = /** @type {any[]} */ (items).some(i => !String(i.id).startsWith('temp-'));
     if (!hasPersistedItems) return;
+
+    // Não agenda novo save se acabou de substituir IDs temp (evita loop)
+    if (isSavingRef.current) return;
 
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -362,15 +366,41 @@ export default function PRETab({ empreendimento, readOnly = false }) {
   }, []);
 
   const handleAutoSave = async () => {
-    if (isSaving) return;
+    if (isSavingRef.current) return;
 
-    // Captura snapshot dos itens no momento do save para não sobrescrever edições posteriores
+    isSavingRef.current = true;
+    setIsSaving(true);
+
+    // Captura snapshot dos itens no momento do save
     const itemsSnapshot = items;
 
-    setIsSaving(true);
     try {
       const saveResults = await Promise.all(
         itemsSnapshot.map(async (item) => {
+          // Se o item já tem ID real, apenas atualiza
+          if (!String(item.id).startsWith('temp-') && !item.isNew) {
+            const itemData = {
+              empreendimento_id: empreendimento.id,
+              item: item.item,
+              data: item.data,
+              de: item.de,
+              descritiva: item.descritiva,
+              localizacao: item.localizacao,
+              assunto: item.assunto,
+              comentario: item.comentario,
+              disciplina: item.disciplina,
+              status: item.status || '',
+              resposta: item.resposta,
+              imagens: item.imagens || [],
+              tempo_atendimento: item.tempo_atendimento ?? null,
+              planejamento_executor: item.planejamento_executor ?? null,
+              planejamento_executor_nome: item.planejamento_executor_nome ?? null,
+            };
+            await retryWithBackoff(() => ItemPRE.update(item.id, itemData), 3, 2000, `PRE-Update-${item.id}`);
+            return { tempId: null, realId: null };
+          }
+
+          // Item novo (temp): cria uma única vez
           const itemData = {
             empreendimento_id: empreendimento.id,
             item: item.item,
@@ -388,18 +418,12 @@ export default function PRETab({ empreendimento, readOnly = false }) {
             planejamento_executor: item.planejamento_executor ?? null,
             planejamento_executor_nome: item.planejamento_executor_nome ?? null,
           };
-
-          if (item.isNew || item.id.toString().startsWith('temp-')) {
-            const created = await retryWithBackoff(() => ItemPRE.create(itemData), 3, 2000, 'PRE-Create');
-            return { tempId: item.id, realId: created?.id ?? null };
-          } else {
-            await retryWithBackoff(() => ItemPRE.update(item.id, itemData), 3, 2000, `PRE-Update-${item.id}`);
-            return { tempId: null, realId: null };
-          }
+          const created = await retryWithBackoff(() => ItemPRE.create(itemData), 3, 2000, 'PRE-Create');
+          return { tempId: item.id, realId: created?.id ?? null };
         })
       );
 
-      // Substitui IDs temporários pelos reais sem sobrescrever edições em andamento
+      // Substitui IDs temporários pelos reais — sem re-disparar o autoSave (isSavingRef ainda true aqui)
       setItems(prev => prev.map(item => {
         const result = saveResults.find(r => r.tempId === item.id);
         if (result?.realId) {
@@ -411,6 +435,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
       setLastSaved(new Date());
     } catch {
     } finally {
+      isSavingRef.current = false;
       setIsSaving(false);
     }
   };
