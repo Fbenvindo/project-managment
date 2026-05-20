@@ -94,6 +94,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
   const dragStart = React.useRef(/** @type {{ x: number; y: number } | null} */ (null));
   const [items, setItems] = useState(/** @type {any[]} */ ([]));
   const [lastSaved, setLastSaved] = useState(/** @type {Date | null} */ (null));
+  const dirtyItemIds = React.useRef(/** @type {Set<string>} */ (new Set()));
   const [isImporting, setIsImporting] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importSelectedFile, setImportSelectedFile] = useState(null);
@@ -137,7 +138,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
 
     saveTimeoutRef.current = setTimeout(() => {
       handleAutoSave();
-    }, 8000);
+    }, 30000);
 
     return () => {
       if (saveTimeoutRef.current) {
@@ -291,6 +292,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
   };
 
   const handleUpdateItem = useCallback((id, field, value) => {
+    dirtyItemIds.current.add(String(id));
     setItems(prev => prev.map(item => 
       item.id === id ? { ...item, [field]: value } : item
     ));
@@ -373,10 +375,21 @@ export default function PRETab({ empreendimento, readOnly = false }) {
 
     // Captura snapshot dos itens no momento do save
     const itemsSnapshot = items;
+    const dirtySnapshot = new Set(dirtyItemIds.current);
+    dirtyItemIds.current.clear();
 
     try {
+      // Salva apenas os itens que foram modificados ou são novos
+      const itemsToSave = itemsSnapshot.filter(item =>
+        String(item.id).startsWith('temp-') || item.isNew || dirtySnapshot.has(String(item.id))
+      );
+      if (itemsToSave.length === 0) {
+        isSavingRef.current = false;
+        setIsSaving(false);
+        return;
+      }
       const saveResults = await Promise.all(
-        itemsSnapshot.map(async (item) => {
+        itemsToSave.map(async (item) => {
           // Se o item já tem ID real, apenas atualiza
           if (!String(item.id).startsWith('temp-') && !item.isNew) {
             const itemData = {
@@ -441,6 +454,8 @@ export default function PRETab({ empreendimento, readOnly = false }) {
   };
 
   const handleSave = async () => {
+    // Marca todos os itens como dirty para o save manual salvar tudo
+    items.forEach(item => dirtyItemIds.current.add(String(item.id)));
     await handleAutoSave();
     alert('Dados salvos com sucesso!');
   };
