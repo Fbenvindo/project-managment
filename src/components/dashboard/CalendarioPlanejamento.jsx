@@ -15,11 +15,11 @@ import { ptBR } from "date-fns/locale";
 import { motion, AnimatePresence } from 'framer-motion';
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 import PrevisaoEntregaModal from './PrevisaoEntregaModal';
+import EditActivityModal from './EditActivityModal';
 
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 
 import { PlanejamentoAtividade, Atividade, Documento, Empreendimento, Execucao, PlanejamentoDocumento } from '@/entities/all';
 import { ChevronsUpDown } from 'lucide-react';
@@ -278,10 +278,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
   const [isDeleting, setIsDeleting] = useState(false);
   const [showTimeAdjustModal, setShowTimeAdjustModal] = useState(false);
   const [adjustedTime, setAdjustedTime] = useState('');
-  const [showObservacoes, setShowObservacoes] = useState(false);
   const [showEditDescricaoModal, setShowEditDescricaoModal] = useState(false);
-  const [editDescricao, setEditDescricao] = useState('');
-  const [isEditLoading, setIsEditLoading] = useState(false);
 
   const realStatus = calculateActivityStatus(plano, allPlanejamentos);
 
@@ -557,45 +554,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
     return (hasPermission('admin') || hasPermission('lider') || hasPermission('direcao')) && (plano.status === 'concluido' || plano.status === 'concluido_com_atraso' || plano.status === 'nao_iniciado');
   };
 
-  const handleOpenEditDescricao = () => {
-    setEditDescricao(plano.descritivo || '');
-    setShowEditDescricaoModal(true);
-  };
-
-  const handleSaveDescricao = async () => {
-    if (!editDescricao.trim()) {
-      alert('Descrição não pode estar vazia');
-      return;
-    }
-
-    setIsEditLoading(true);
-    try {
-      // Se for execução legada, extrair o ID real e atualizar Execucao
-      if (plano.isLegacyExecution) {
-        const execId = plano.id.split('-')[1]; // Extrair ID original do ID virtual "exec-{id}"
-        await Execucao.update(execId, {
-          descritivo: editDescricao.trim()
-        });
-      } else {
-        // Para atividades normais, usar a entidade correta
-        const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
-        await entityToUpdate.update(plano.id, {
-          descritivo: editDescricao.trim()
-        });
-      }
-
-      alert('✅ Descrição atualizada com sucesso!');
-      setShowEditDescricaoModal(false);
-      if (onDelete) {
-        onDelete();
-      }
-    } catch (error) {
-      // Log removido para otimização de desempenho
-      alert('Erro ao atualizar descrição: ' + (error.message || 'Tente novamente.'));
-    } finally {
-      setIsEditLoading(false);
-    }
-  };
+  const handleOpenEditDescricao = () => setShowEditDescricaoModal(true);
 
   // **NOVO**: Buscar observação do planejamento ou das execuções
   const observacao = useMemo(() => {
@@ -869,39 +828,13 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
         </DialogContent>
       </Dialog>
 
-      {/* Modal para editar descrição */}
-      <Dialog open={showEditDescricaoModal} onOpenChange={setShowEditDescricaoModal}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Editar Descrição da Atividade</DialogTitle>
-          </DialogHeader>
-          <div className="py-4 space-y-4">
-            <div>
-              <p className="text-sm text-gray-600 mb-2"><strong>Atividade:</strong> {displayName}</p>
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="editDescricao">Descrição</Label>
-              <Textarea
-                id="editDescricao"
-                value={editDescricao}
-                onChange={(e) => setEditDescricao(e.target.value)}
-                placeholder="Digite a descrição da atividade"
-                className="min-h-24"
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDescricaoModal(false)}>Cancelar</Button>
-            <Button
-              onClick={handleSaveDescricao}
-              disabled={isEditLoading}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              {isEditLoading ? 'Salvando...' : 'Salvar'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <EditActivityModal
+        plano={plano}
+        displayName={displayName}
+        isOpen={showEditDescricaoModal}
+        onClose={() => setShowEditDescricaoModal(false)}
+        onSave={() => { if (onDelete) onDelete(); }}
+      />
     </>
   );
 };
