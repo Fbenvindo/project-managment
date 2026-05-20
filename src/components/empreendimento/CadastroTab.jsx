@@ -142,20 +142,28 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 }
 
                 // Adicionar revisões que têm dados preenchidos (excluindo metadados)
+                // Revisões válidas começam com R seguido de dígitos (ex: R00, R01, R02)
                 Object.keys(etapaData).forEach(rev => {
-                  if (rev !== '_excluida' && rev !== '_revisoes_excluidas' && rev !== '_revisoes_existentes') {
-                    revisoesMap[etapa].add(rev);
+                  if (rev.startsWith('_')) return; // ignorar metadados
+                  if (/^R\d+$/i.test(rev) || (!rev.startsWith('_'))) {
+                    // Apenas adicionar se NÃO for uma chave de metadado
+                    const isMetadata = ['_excluida', '_revisoes_excluidas', '_revisoes_existentes', 'meta'].includes(rev) || rev.startsWith('_');
+                    if (!isMetadata) {
+                      revisoesMap[etapa].add(rev);
+                    }
                   }
                 });
 
                 // Carregar revisões que foram criadas (mesmo sem dados)
                 if ('_revisoes_existentes' in etapaData) {
-                 if (Array.isArray(etapaData._revisoes_existentes)) {
-                   etapaData._revisoes_existentes.forEach(rev => {
-                     revisoesMap[etapa].add(rev);
-                   });
-                 } else {
-                 }
+                  if (Array.isArray(etapaData._revisoes_existentes)) {
+                    etapaData._revisoes_existentes.forEach(rev => {
+                      // Só adicionar revisões válidas (não metadados)
+                      if (rev && !rev.startsWith('_') && rev !== 'meta') {
+                        revisoesMap[etapa].add(rev);
+                      }
+                    });
+                  }
                 }
 
                 // Detectar revisões excluídas
