@@ -93,6 +93,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = React.useRef(/** @type {{ x: number; y: number } | null} */ (null));
   const [items, setItems] = useState(/** @type {any[]} */ ([]));
+  const itemsRef = React.useRef(/** @type {any[]} */ ([]));
   const [lastSaved, setLastSaved] = useState(/** @type {Date | null} */ (null));
   const dirtyItemIds = React.useRef(/** @type {Set<string>} */ (new Set()));
   const [isImporting, setIsImporting] = useState(false);
@@ -124,12 +125,9 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     }
   }, [empreendimento?.id]);
 
-  // AutoSave com debounce — só dispara quando há itens persistidos E sem save em andamento
+  // AutoSave com debounce — só dispara quando há itens dirty E sem save em andamento
   useEffect(() => {
-    const hasPersistedItems = /** @type {any[]} */ (items).some(i => !String(i.id).startsWith('temp-'));
-    if (!hasPersistedItems) return;
-
-    // Não agenda novo save se acabou de substituir IDs temp (evita loop)
+    if (dirtyItemIds.current.size === 0) return;
     if (isSavingRef.current) return;
 
     if (saveTimeoutRef.current) {
@@ -173,6 +171,9 @@ export default function PRETab({ empreendimento, readOnly = false }) {
 
 
 
+
+  // Mantém ref sincronizada com state para callbacks sem re-criação
+  React.useEffect(() => { itemsRef.current = items; }, [items]);
 
   const loadItems = async (empId) => {
     try {
@@ -316,8 +317,8 @@ export default function PRETab({ empreendimento, readOnly = false }) {
       setIsSaving(true);
       const { file_url } = await base44.integrations.Core.UploadFile({ file });
       
-      // Encontra o item e atualiza com a nova imagem
-      const itemToUpdate = items.find(item => item.id === itemId);
+      // Encontra o item via ref (sem re-criar o callback a cada mudança)
+      const itemToUpdate = itemsRef.current.find(item => item.id === itemId);
       if (!itemToUpdate) return;
       
       const updatedItem = {
@@ -357,7 +358,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     } finally {
       setIsSaving(false);
     }
-  }, [empreendimento, items]);
+  }, [empreendimento]);
 
   const handleRemoveImage = useCallback((itemId, imageUrl) => {
     setItems(prev => prev.map(item => 
@@ -373,8 +374,8 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     isSavingRef.current = true;
     setIsSaving(true);
 
-    // Captura snapshot dos itens no momento do save
-    const itemsSnapshot = items;
+    // Captura snapshot dos itens no momento do save (via ref para não re-criar handleAutoSave)
+    const itemsSnapshot = itemsRef.current;
     const dirtySnapshot = new Set(dirtyItemIds.current);
     dirtyItemIds.current.clear();
 
