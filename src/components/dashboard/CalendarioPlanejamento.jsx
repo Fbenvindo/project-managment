@@ -391,8 +391,8 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
       <div className={`space-y-1 ${containerClass}`}>
         {activitiesComHoras.map((atividade, index) => (
           <Draggable
-            key={atividade.id}
-            draggableId={`${atividade.id}`}
+            key={`${atividade.id}-${dayKey}`}
+            draggableId={`${atividade.id}__${dayKey}`}
             index={index}
             isDragDisabled={!canReprogram || atividade.status === 'concluido' || atividade.isLegacyExecution || normalizeActivityId(isReprogramando) === normalizeActivityId(atividade.id)}
           >
@@ -1319,9 +1319,12 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     }
 
     // **EXISTENTE**: Lógica para arrastar atividades individuais ou múltiplas selecionadas
-    const activitiesToMove = selectedActivities.has(draggableId) && selectedActivities.size > 1
+    // draggableId pode ser "id__dayKey" (view analítica) — extrair apenas o id real
+    const realDraggableId = draggableId.includes('__') ? draggableId.split('__')[0] : draggableId;
+    const normalizedDraggableId = normalizeActivityId(realDraggableId);
+    const activitiesToMove = selectedActivities.has(normalizedDraggableId) && selectedActivities.size > 1
       ? Array.from(selectedActivities)
-      : [draggableId];
+      : [normalizedDraggableId];
 
 
     const invalidActivities = activitiesToMove.filter(id => {
