@@ -100,6 +100,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
   const importFileRef = useRef(/** @type {HTMLInputElement | null} */ (null));
   const [disciplinas, setDisciplinas] = useState(/** @type {any[]} */ ([]));
   const [filtroDispline, setFiltroDispline] = useState('todas');
+  const [filtroStatus, setFiltroStatus] = useState('todos');
   const [headerData, setHeaderData] = useState({
     cliente: empreendimento?.cliente || '',
     obra: empreendimento?.nome || '',
@@ -563,9 +564,12 @@ export default function PRETab({ empreendimento, readOnly = false }) {
   }, []);
 
   const filteredItems = useMemo(() => {
-    if (filtroDispline === 'todas') return items;
-    return items.filter(item => item.descritiva === filtroDispline);
-  }, [items, filtroDispline]);
+    return items.filter(item => {
+      const matchDisciplina = filtroDispline === 'todas' || item.descritiva === filtroDispline;
+      const matchStatus = filtroStatus === 'todos' || item.status === filtroStatus;
+      return matchDisciplina && matchStatus;
+    });
+  }, [items, filtroDispline, filtroStatus]);
 
   return (
     <>
@@ -876,7 +880,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                 />
               </div>
             </div>
-            <div className="no-print flex items-center gap-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="no-print flex flex-wrap items-center gap-4 bg-blue-50 border border-blue-200 rounded-lg p-3">
               <label className="text-sm font-semibold text-gray-700 whitespace-nowrap">Filtrar por Disciplina:</label>
               <Select value={filtroDispline} onValueChange={setFiltroDispline}>
                 <SelectTrigger className="w-[250px]">
@@ -891,9 +895,22 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                   ))}
                 </SelectContent>
               </Select>
-              {filtroDispline !== 'todas' && (
+              <label className="text-sm font-semibold text-gray-700 whitespace-nowrap">Filtrar por Status:</label>
+              <Select value={filtroStatus} onValueChange={setFiltroStatus}>
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Todos os status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os status</SelectItem>
+                  <SelectItem value="Em andamento">Em andamento</SelectItem>
+                  <SelectItem value="Pendente">Pendente</SelectItem>
+                  <SelectItem value="Concluído">Concluído</SelectItem>
+                  <SelectItem value="Cancelado">Cancelado</SelectItem>
+                </SelectContent>
+              </Select>
+              {(filtroDispline !== 'todas' || filtroStatus !== 'todos') && (
                 <span className="text-sm text-blue-700 font-medium">
-                  ({filteredItems.length})
+                  ({filteredItems.length} item{filteredItems.length !== 1 ? 's' : ''})
                 </span>
               )}
             </div>
