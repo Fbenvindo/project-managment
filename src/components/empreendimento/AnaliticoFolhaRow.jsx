@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ChevronRight, CheckCircle2, CheckCircle, Loader2, Calendar } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
-import { PlanejamentoAtividade } from '@/entities/all';
+import { PlanejamentoAtividade, Atividade } from '@/entities/all';
 import { retryWithBackoff } from '../utils/apiUtils';
 
 export default function AnaliticoFolhaRow({
@@ -38,15 +38,23 @@ export default function AnaliticoFolhaRow({
       );
 
       if (isConcluida) {
-        // reverter
+        // reverter: atualizar PlanejamentoAtividade e remover marcador de conclusão no Documento
         if (planos.length > 0) {
           await retryWithBackoff(
             () => PlanejamentoAtividade.update(planos[0].id, { status: 'nao_iniciado', termino_real: null }),
             3, 500, `reverterFolha-${planos[0].id}`
           );
         }
+        // Remover marcador de conclusão (tempo: 0) na entidade Atividade
+        const marcadores = await retryWithBackoff(
+          () => Atividade.filter({ empreendimento_id: empreendimentoId, id_atividade: atividadeId, documento_id: docId, tempo: 0 }),
+          3, 500, `getMarcadorConclusao-${docId}-${atividadeId}`
+        );
+        for (const m of marcadores) {
+          await retryWithBackoff(() => Atividade.delete(m.id), 3, 500, `deleteMarcadorConclusao-${m.id}`);
+        }
       } else {
-        // concluir
+        // concluir: atualizar PlanejamentoAtividade
         if (planos.length > 0) {
           await retryWithBackoff(
             () => PlanejamentoAtividade.update(planos[0].id, { status: 'concluido', termino_real: hoje }),
@@ -66,6 +74,26 @@ export default function AnaliticoFolhaRow({
               horas_por_dia: {}
             }),
             3, 500, `createConcluirFolha-${docId}-${atividadeId}`
+          );
+        }
+        // Criar marcador de conclusão (tempo: 0) na entidade Atividade para o DocumentoItem exibir corretamente
+        const marcadoresExistentes = await retryWithBackoff(
+          () => Atividade.filter({ empreendimento_id: empreendimentoId, id_atividade: atividadeId, documento_id: docId, tempo: 0 }),
+          3, 500, `checkMarcadorConclusao-${docId}-${atividadeId}`
+        );
+        if (!marcadoresExistentes || marcadoresExistentes.length === 0) {
+          await retryWithBackoff(
+            () => Atividade.create({
+              etapa: folha.etapa,
+              disciplina: folha.disciplina,
+              subdisciplina: folha.subdisciplina,
+              atividade: `(Concluída na folha ${folha.source_documento_numero || docId}) ${String(folha.atividade || '')}`,
+              empreendimento_id: empreendimentoId,
+              id_atividade: atividadeId,
+              documento_id: docId,
+              tempo: 0
+            }),
+            3, 500, `createMarcadorConclusao-${docId}-${atividadeId}`
           );
         }
       }
