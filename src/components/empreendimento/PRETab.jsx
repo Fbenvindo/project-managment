@@ -368,6 +368,24 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     ));
   }, []);
 
+  const buildItemData = (item) => ({
+    empreendimento_id: empreendimento.id,
+    item: item.item,
+    data: item.data,
+    de: item.de,
+    descritiva: item.descritiva,
+    localizacao: item.localizacao,
+    assunto: item.assunto,
+    comentario: item.comentario,
+    disciplina: item.disciplina,
+    status: item.status || '',
+    resposta: item.resposta,
+    imagens: item.imagens || [],
+    tempo_atendimento: item.tempo_atendimento ?? null,
+    planejamento_executor: item.planejamento_executor ?? null,
+    planejamento_executor_nome: item.planejamento_executor_nome ?? null,
+  });
+
   const handleAutoSave = async () => {
     if (isSavingRef.current) return;
 
@@ -385,59 +403,24 @@ export default function PRETab({ empreendimento, readOnly = false }) {
         String(item.id).startsWith('temp-') || item.isNew || dirtySnapshot.has(String(item.id))
       );
       if (itemsToSave.length === 0) {
-        isSavingRef.current = false;
-        setIsSaving(false);
         return;
       }
-      const saveResults = await Promise.all(
-        itemsToSave.map(async (item) => {
-          // Se o item já tem ID real, apenas atualiza
-          if (!String(item.id).startsWith('temp-') && !item.isNew) {
-            const itemData = {
-              empreendimento_id: empreendimento.id,
-              item: item.item,
-              data: item.data,
-              de: item.de,
-              descritiva: item.descritiva,
-              localizacao: item.localizacao,
-              assunto: item.assunto,
-              comentario: item.comentario,
-              disciplina: item.disciplina,
-              status: item.status || '',
-              resposta: item.resposta,
-              imagens: item.imagens || [],
-              tempo_atendimento: item.tempo_atendimento ?? null,
-              planejamento_executor: item.planejamento_executor ?? null,
-              planejamento_executor_nome: item.planejamento_executor_nome ?? null,
-            };
-            await retryWithBackoff(() => ItemPRE.update(item.id, itemData), 3, 2000, `PRE-Update-${item.id}`);
-            return { tempId: null, realId: null };
-          }
 
-          // Item novo (temp): cria uma única vez
-          const itemData = {
-            empreendimento_id: empreendimento.id,
-            item: item.item,
-            data: item.data,
-            de: item.de,
-            descritiva: item.descritiva,
-            localizacao: item.localizacao,
-            assunto: item.assunto,
-            comentario: item.comentario,
-            disciplina: item.disciplina,
-            status: item.status || '',
-            resposta: item.resposta,
-            imagens: item.imagens || [],
-            tempo_atendimento: item.tempo_atendimento ?? null,
-            planejamento_executor: item.planejamento_executor ?? null,
-            planejamento_executor_nome: item.planejamento_executor_nome ?? null,
-          };
-          const created = await retryWithBackoff(() => ItemPRE.create(itemData), 3, 2000, 'PRE-Create');
-          return { tempId: item.id, realId: created?.id ?? null };
-        })
-      );
+      // Processar sequencialmente para evitar race conditions com IDs temporários
+      const saveResults = [];
+      for (const item of itemsToSave) {
+        if (!String(item.id).startsWith('temp-') && !item.isNew) {
+          // Item existente: atualiza
+          await retryWithBackoff(() => ItemPRE.update(item.id, buildItemData(item)), 3, 2000, `PRE-Update-${item.id}`);
+          saveResults.push({ tempId: null, realId: null });
+        } else {
+          // Item novo (temp): cria
+          const created = await retryWithBackoff(() => ItemPRE.create(buildItemData(item)), 3, 2000, 'PRE-Create');
+          saveResults.push({ tempId: item.id, realId: created?.id ?? null });
+        }
+      }
 
-      // Substitui IDs temporários pelos reais — sem re-disparar o autoSave (isSavingRef ainda true aqui)
+      // Substitui IDs temporários pelos reais
       setItems(prev => prev.map(item => {
         const result = saveResults.find(r => r.tempId === item.id);
         if (result?.realId) {
@@ -447,7 +430,10 @@ export default function PRETab({ empreendimento, readOnly = false }) {
       }));
 
       setLastSaved(new Date());
-    } catch {
+    } catch (err) {
+      console.error('Erro no autoSave PRE:', err);
+      // Recoloca os itens como dirty para tentar novamente
+      dirtySnapshot.forEach(id => dirtyItemIds.current.add(id));
     } finally {
       isSavingRef.current = false;
       setIsSaving(false);
@@ -455,8 +441,20 @@ export default function PRETab({ empreendimento, readOnly = false }) {
   };
 
   const handleSave = async () => {
-    // Marca todos os itens como dirty para o save manual salvar tudo
-    items.forEach(item => dirtyItemIds.current.add(String(item.id)));
+    // Força save de todos os itens (inclusive os que não foram modificados via dirty)
+    // Usa itemsRef para garantir dados atualizados mesmo com filtro ativo
+    const currentItems = itemsRef.current;
+    currentItems.forEach(item => dirtyItemIds.current.add(String(item.id)));
+
+    // Se já está salvando, aguarda terminar antes de iniciar novo save
+    if (isSavingRef.current) {
+      let waited = 0;
+      while (isSavingRef.current && waited < 10000) {
+        await new Promise(r => setTimeout(r, 200));
+        waited += 200;
+      }
+    }
+
     await handleAutoSave();
     alert('Dados salvos com sucesso!');
   };
