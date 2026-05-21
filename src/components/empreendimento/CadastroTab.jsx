@@ -177,11 +177,42 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       // Inicializar revisões para TODAS as etapas encontradas nos dados do banco + etapas do empreendimento
       // Priorizar chaves do banco (onde os dados realmente estão), deduplicando case-insensitive
       const etapasDoBanco = Object.keys(revisoesMap);
-      const etapasNormalizadas = [...etapasDoBanco];
-      ETAPAS.forEach(etapaConfig => {
-        const jaExiste = etapasDoBanco.some(e => e.toLowerCase() === etapaConfig.toLowerCase());
-        if (!jaExiste) etapasNormalizadas.push(etapaConfig);
+      
+      // Para cada etapa do banco, mapear para a versão canônica de ETAPAS (se existir),
+      // evitando duplicatas quando o banco salva com casing diferente
+      const canonicalMap = new Map(); // lowercase -> versão canônica
+      ETAPAS.forEach(e => canonicalMap.set(e.toLowerCase(), e));
+      
+      // Construir lista sem duplicatas: priorizar a chave do banco (tem dados),
+      // mas normalizar para o nome canônico de ETAPAS quando possível
+      const etapasVistas = new Set();
+      const etapasNormalizadas = [];
+      
+      // Primeiro, adicionar etapas do banco (mapeando para canônico se possível)
+      etapasDoBanco.forEach(etapaBanco => {
+        const key = etapaBanco.toLowerCase();
+        const canonical = canonicalMap.get(key) || etapaBanco;
+        if (!etapasVistas.has(key)) {
+          etapasVistas.add(key);
+          etapasNormalizadas.push(canonical);
+          // Se a chave canônica difere da chave do banco, migrar os dados no revisoesMap
+          if (canonical !== etapaBanco && revisoesMap[etapaBanco]) {
+            revisoesMap[canonical] = revisoesMap[canonical] || new Set();
+            revisoesMap[etapaBanco].forEach(r => revisoesMap[canonical].add(r));
+            delete revisoesMap[etapaBanco];
+          }
+        }
       });
+      
+      // Depois, adicionar etapas de ETAPAS que ainda não foram incluídas
+      ETAPAS.forEach(etapaConfig => {
+        const key = etapaConfig.toLowerCase();
+        if (!etapasVistas.has(key)) {
+          etapasVistas.add(key);
+          etapasNormalizadas.push(etapaConfig);
+        }
+      });
+      
       // Ordenar etapas na sequência correta (baseado em ETAPAS)
       const etapasUnion = etapasNormalizadas.sort((a, b) => {
         const indexA = ETAPAS.findIndex(e => e.toLowerCase() === a.toLowerCase());
@@ -220,6 +251,25 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       });
       
       
+      // Normalizar chaves de datas nos registros do banco para o casing canônico
+      // (evita que "estudo preliminar" e "ESTUDO PRELIMINAR" coexistam nos dados)
+      if (data && data.length > 0) {
+        data.forEach(item => {
+          if (!item.datas) return;
+          const datasNormalizadas = {};
+          Object.entries(item.datas).forEach(([etapa, etapaData]) => {
+            const canonical = canonicalMap.get(etapa.toLowerCase()) || etapa;
+            if (datasNormalizadas[canonical]) {
+              // Mesclar se já existe versão canônica
+              datasNormalizadas[canonical] = { ...datasNormalizadas[canonical], ...etapaData };
+            } else {
+              datasNormalizadas[canonical] = etapaData;
+            }
+          });
+          item.datas = datasNormalizadas;
+        });
+      }
+
       // Montar linhas baseado nos registros do DataCadastro (fonte primária),
       // depois adicionar documentos que ainda não têm registro.
       const docIdSet = new Set(sortedDocs.map(d => d.id));
