@@ -36,6 +36,10 @@ const PREItemRow = memo(function PREItemRow({
   onPlanejar,
   onRemoveExecutor,
 }) {
+  const etapasBase = ['Estudo Preliminar', 'Ante-Projeto', 'Projeto Básico', 'Projeto Executivo', 'Liberado para Obra', 'Concepção', 'Planejamento'];
+  const etapasDisponiveis = empreendimento?.etapas?.length > 0
+    ? [...new Set([...empreendimento.etapas, ...etapasBase])]
+    : etapasBase;
   const isEven = index % 2 === 0;
   const mainBg = isEven ? 'bg-gray-50' : 'bg-gray-200';
   const sideBg = isEven ? 'bg-white' : 'bg-gray-100';
@@ -319,6 +323,29 @@ const PREItemRow = memo(function PREItemRow({
               onChange={(e) => onUpdate(item.id, 'data', e.target.value)}
               className="h-9 text-sm print:border-none print:bg-transparent"
             />
+          )}
+        </div>
+
+        {/* Etapa */}
+        <div>
+          <label className="text-xs font-bold text-gray-700 block mb-1 uppercase tracking-wide">Etapa</label>
+          {readOnly ? (
+            <div className="text-sm p-2 bg-gray-50 rounded">{item.etapa_adicional || '-'}</div>
+          ) : (
+            <Select
+              value={item.etapa_adicional || ''}
+              onValueChange={(value) => onUpdate(item.id, 'etapa_adicional', value || null)}
+            >
+              <SelectTrigger className="h-9 text-sm">
+                <SelectValue placeholder="Sem etapa..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={null}>Sem etapa</SelectItem>
+                {etapasDisponiveis.map(e => (
+                  <SelectItem key={e} value={e}>{e}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           )}
         </div>
 
