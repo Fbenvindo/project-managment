@@ -397,7 +397,16 @@ export default function EmpreendimentoPage() {
           </TabsContent>
 
           <TabsContent value="pre">
-            <PRETab empreendimento={empreendimento} readOnly={!canEdit} />
+            <PRETab
+              empreendimento={empreendimento}
+              readOnly={!canEdit}
+              onAfterSave={() => {
+                setTabData(prev => ({
+                  ...prev,
+                  documentos: { data: [], loaded: false, loading: false }
+                }));
+              }}
+            />
           </TabsContent>
 
           <TabsContent value="controle_os">

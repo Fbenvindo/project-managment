@@ -80,7 +80,7 @@ const printStyles = `
 }
 `;
 
-export default function PRETab({ empreendimento, readOnly = false }) {
+export default function PRETab({ empreendimento, readOnly = false, onAfterSave }) {
   const [isSaving, setIsSaving] = useState(false);
   const [lightboxImg, setLightboxImg] = useState(null);
   const [showPlanejamentoModal, setShowPlanejamentoModal] = useState(false);
@@ -502,6 +502,9 @@ export default function PRETab({ empreendimento, readOnly = false }) {
 
     // Atualizar tempo nos documentos vinculados (recalcula do zero)
     await atualizarTempoDocumentos();
+
+    // Notifica o pai para recarregar os documentos com os novos tempo_pre
+    if (onAfterSave) onAfterSave();
 
     alert('Dados salvos com sucesso!');
   };
