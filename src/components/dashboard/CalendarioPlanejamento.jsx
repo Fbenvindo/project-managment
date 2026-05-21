@@ -26,8 +26,7 @@ import { ChevronsUpDown } from 'lucide-react';
 import { isActivityOverdue as isOverdueShared, distribuirHorasPorDias, getNextWorkingDay } from '../utils/DateCalculator';
 import { retryWithBackoff } from '../utils/apiUtils';
 
-// ActivityItem is now in its own file with history support
-import ActivityItem from './CalendarioActivityItem2.jsx';
+import ActivityItem from './CalendarioActivityItem';
 
 const parseLocalDate = (dateString) => {
   if (!dateString) return null;
