@@ -83,10 +83,6 @@ export default function AtividadesRapidasPage() {
   };
 
   const atividadesFiltradas = atividadesGenericas.filter(atividade => {
-    // Filtrar apenas: Reunião Interna, Reunião Externa, Leitura de Email
-    const nomesPermitidos = ['Reunião Interna', 'Reunião Externa', 'Leitura de Email'];
-    if (!nomesPermitidos.includes(atividade.nome)) return false;
-
     const perfisAtividade = atividade.perfis || [];
     const criadaPorMim = atividade.created_by === user?.email;
 
