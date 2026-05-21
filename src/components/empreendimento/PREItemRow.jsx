@@ -155,7 +155,8 @@ const PREItemRow = memo(function PREItemRow({
                           onClick={() => toggleDocumento(doc.id)}
                         >
                           <input type="checkbox" checked={isSelected} onChange={() => {}} className="w-3 h-3 flex-shrink-0" />
-                          <span className="font-mono font-medium text-gray-700 shrink-0">{doc.numero || doc.arquivo}</span>
+                          <span className="font-mono font-medium text-gray-700 shrink-0">{doc.numero}</span>
+                          {doc.arquivo && <span className="text-gray-600 shrink-0">{doc.arquivo}</span>}
                           {doc.descritivo && <span className="text-gray-500 truncate">{doc.descritivo}</span>}
                         </div>
                       );
