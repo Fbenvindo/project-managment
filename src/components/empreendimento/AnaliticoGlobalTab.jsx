@@ -68,7 +68,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     return new Map((documentos || []).map(doc => [doc.id, doc]));
   }, [documentos]);
 
-  const [planejamentos, setPlanejamentos] = useState([]);
+  const [planejamentos, setPlanejamentos] = useState([]); const [empreendimentoObj, setEmpreendimentoObj] = useState(null);
 
   const [allEmpreendimentos, setAllEmpreendimentos] = useState([]);
 
@@ -104,7 +104,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       ]);
 
       setDocumentos(documentosData || []);
-      setEmpreendimentoNome((empreendimentoData && empreendimentoData[0]?.nome) || "");
+      setEmpreendimentoNome((empreendimentoData && empreendimentoData[0]?.nome) || ""); setEmpreendimentoObj(empreendimentoData?.[0] || null);
       setAlteracoesEtapa(alteracoesData || []);
       setUsuarios(usuariosData || []);
       setPlanejamentos(planejamentosData || []);
@@ -3245,28 +3245,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         />
       )}
 
-      <EtapaEditModal 
-        isOpen={isEtapaModalOpen}
-        onClose={() => setIsEtapaModalOpen(false)}
-        atividade={selectedAtividade}
-        documentos={documentos}
-        onSave={handleSaveEtapa}
-      />
+      <EtapaEditModal isOpen={isEtapaModalOpen} onClose={() => setIsEtapaModalOpen(false)} atividade={selectedAtividade} documentos={documentos} onSave={handleSaveEtapa} empreendimento={empreendimentoObj} />
 
-      <EditarEtapaEmFolhasModal
-        isOpen={isEditarEtapaEmFolhasModalOpen}
-        onClose={() => {
-          setIsEditarEtapaEmFolhasModalOpen(false);
-          setSelectedAtividade(null);
-        }}
-        atividade={selectedAtividade}
-        documentos={documentos}
-        empreendimentoId={empreendimentoId}
-        onSuccess={() => {
-          fetchData();
-          if (onUpdate) onUpdate();
-        }}
-      />
+      <EditarEtapaEmFolhasModal isOpen={isEditarEtapaEmFolhasModalOpen} onClose={() => { setIsEditarEtapaEmFolhasModalOpen(false); setSelectedAtividade(null); }} atividade={selectedAtividade} documentos={documentos} empreendimentoId={empreendimentoId} empreendimento={empreendimentoObj} onSuccess={() => { fetchData(); if (onUpdate) onUpdate(); }} />
 
       <ExcluirDeFolhasModal
         isOpen={isExcluirDeFolhasModalOpen}

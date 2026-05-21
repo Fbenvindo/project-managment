@@ -12,13 +12,22 @@ import { base44 } from '@/api/base44Client';
 
 const PlanejamentoAtividadeEntity = base44.entities.PlanejamentoAtividade;
 
-export const EtapaEditModal = ({ isOpen, onClose, atividade, onSave, documentos }) => {
+export const EtapaEditModal = ({ isOpen, onClose, atividade, onSave, documentos, empreendimento }) => {
   const [newEtapa, setNewEtapa] = useState('');
   const [escopo, setEscopo] = useState('empreendimento');
   const [selectedFolha, setSelectedFolha] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   
-  const etapas = ['Estudo Preliminar', 'Ante-Projeto', 'Projeto Básico', 'Projeto Executivo', 'Liberado para Obra', 'Concepção', 'Planejamento'];
+  const etapasBase = ['Estudo Preliminar', 'Ante-Projeto', 'Projeto Básico', 'Projeto Executivo', 'Liberado para Obra', 'Concepção', 'Planejamento'];
+  const etapas = useMemo(() => {
+    if (empreendimento?.etapas && empreendimento.etapas.length > 0) {
+      // Merge: etapas do empreendimento + etapas base que não estejam já incluídas
+      const merged = [...empreendimento.etapas];
+      etapasBase.forEach(e => { if (!merged.includes(e)) merged.push(e); });
+      return merged;
+    }
+    return etapasBase;
+  }, [empreendimento?.etapas]);
 
   const folhasComAtividade = useMemo(() => {
     if (!atividade || !documentos) return [];
@@ -128,12 +137,20 @@ export const EtapaEditModal = ({ isOpen, onClose, atividade, onSave, documentos 
   );
 };
 
-export const EditarEtapaEmFolhasModal = ({ isOpen, onClose, atividade, documentos, empreendimentoId, onSuccess }) => {
+export const EditarEtapaEmFolhasModal = ({ isOpen, onClose, atividade, documentos, empreendimentoId, onSuccess, empreendimento }) => {
   const [selectedDocumentos, setSelectedDocumentos] = useState(new Set());
   const [novaEtapa, setNovaEtapa] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  const etapas = ['Estudo Preliminar', 'Ante-Projeto', 'Projeto Básico', 'Projeto Executivo', 'Liberado para Obra', 'Concepção', 'Planejamento'];
+  const etapasBase = ['Estudo Preliminar', 'Ante-Projeto', 'Projeto Básico', 'Projeto Executivo', 'Liberado para Obra', 'Concepção', 'Planejamento'];
+  const etapas = useMemo(() => {
+    if (empreendimento?.etapas && empreendimento.etapas.length > 0) {
+      const merged = [...empreendimento.etapas];
+      etapasBase.forEach(e => { if (!merged.includes(e)) merged.push(e); });
+      return merged;
+    }
+    return etapasBase;
+  }, [empreendimento?.etapas]);
 
   const documentosComAtividade = useMemo(() => {
     if (!documentos || !atividade) return [];
