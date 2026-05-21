@@ -18,7 +18,6 @@ import {
 } from "@/components/ui/sidebar";
 import { ActivityTimerProvider, ActivityTimerContext } from "@/components/contexts/ActivityTimerContext";
 import GlobalTimer from "@/components/layout/GlobalTimer";
-import PlaylistTrigger from "@/components/playlist/PlaylistTrigger";
 import NotificacoesOcasionais from "@/components/dashboard/NotificacoesOcasionais";
 import NotificationGenerator from "@/components/utils/NotificationGenerator";
 
@@ -26,7 +25,7 @@ const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/pub
 
 const LayoutComponent = ({ children, currentPageName }) => {
   const location = useLocation();
-  const { user, isLoading, userProfile, hasPermission, isAdmin, perfilAtual, allPlanejamentos, isLoadingPlanejamentos, atividadesGenericas, allEmpreendimentos, allUsers } = useContext(ActivityTimerContext);
+  const { user, isLoading, userProfile, hasPermission, isAdmin, perfilAtual } = useContext(ActivityTimerContext);
   
   const getNavigationItems = (hasPermission, perfilAtual, isAdmin) => {
     const items = [
@@ -106,15 +105,7 @@ const LayoutComponent = ({ children, currentPageName }) => {
       });
     }
 
-    // Atividades Rápidas: todos EXCETO consultor
-    if (perfilAtual !== 'consultor') {
-      items.push({
-        title: "Atividades Rápidas",
-        url: createPageUrl("AtividadesRapidas"),
-        icon: Zap,
-        show: true
-      });
-    }
+    // Atividades Rápidas: oculto para todos os usuários
 
     // Usuários: apenas para Lider, Direção e Admin (não para Gestão)
     if (isAdmin || perfilAtual === 'lider' || perfilAtual === 'direcao') {
@@ -226,13 +217,7 @@ const LayoutComponent = ({ children, currentPageName }) => {
         </main>
         
         <GlobalTimer />
-        <PlaylistTrigger 
-          allPlanejamentos={allPlanejamentos} 
-          isLoading={isLoadingPlanejamentos}
-          atividadesGenericas={atividadesGenericas}
-          empreendimentos={allEmpreendimentos}
-          usuarios={allUsers}
-        />
+        {/* PlaylistTrigger ocultado para usuários */}
         <NotificacoesOcasionais />
         <NotificationGenerator />
       </div>
