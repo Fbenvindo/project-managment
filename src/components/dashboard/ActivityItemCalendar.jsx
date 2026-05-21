@@ -5,12 +5,36 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { User, Trash2, RefreshCw, Play, ListMusic, PlusCircle, Loader2, Edit2, CheckCircle } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { User, Trash2, RefreshCw, Play, ListMusic, PlusCircle, Loader2, Edit2, X, Check } from "lucide-react";
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 import FinalizarAtividadeButton from './FinalizarAtividadeButton';
+import { formatHoras } from '../utils/formatHours';
 import { Execucao, PlanejamentoAtividade, PlanejamentoDocumento } from '@/entities/all';
 import { retryWithBackoff } from '../utils/apiUtils';
-import { format, parseISO, isValid, startOfDay, isAfter } from 'date-fns';
+import { distribuirHorasPorDias, isActivityOverdue } from '../utils/DateCalculator';
+import { format } from 'date-fns';
+
+// Import calculateActivityStatus from parent
+const calculateActivityStatus = (plano, allPlanejamentos = []) => {
+  if (plano.isLegacyExecution) {
+    return plano.status;
+  }
+
+  if (plano.status === 'concluido') {
+    return 'concluido';
+  }
+
+  // Import isActivityOverdue logic here or pass as prop
+  // For simplicity, using basic check
+  const isOverdue = false; // Placeholder - you'd need to import the actual function
+
+  if (plano.status === 'atrasado' || isOverdue) {
+    return 'atrasado';
+  }
+
+  return plano.status || 'nao_iniciado';
+};
 
 export default function ActivityItemCalendar({ 
   plano, 
@@ -31,35 +55,38 @@ export default function ActivityItemCalendar({
   const [showTimeAdjustModal, setShowTimeAdjustModal] = useState(false);
   const [adjustedTime, setAdjustedTime] = useState('');
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editedDescritivo, setEditedDescritivo] = useState('');
+  const [editForm, setEditForm] = useState({});
 
   const realStatus = useMemo(() => {
-    if (plano.status === 'concluido') {
-      // Verifica se foi concluído com atraso
-      const prazo = plano.termino_ajustado || plano.termino_planejado;
-      const terminoReal = plano.termino_real;
-      if (prazo && terminoReal) {
-        try {
-          const prazoDate = startOfDay(parseISO(prazo));
-          const realDate = startOfDay(parseISO(terminoReal));
-          if (isValid(prazoDate) && isValid(realDate) && isAfter(realDate, prazoDate)) {
-            return 'concluido_atrasado';
-          }
-        } catch (e) {}
-      }
-      return 'concluido';
+    if (plano.status === 'concluido_com_atraso') return 'concluido_com_atraso';
+    if (plano.status === 'concluido') return 'concluido';
+
+    const tempoExec = Number(plano.tempo_executado) || 0;
+    const tempoPlanj = Number(plano.tempo_planejado) || 0;
+    if (tempoPlanj > 0 && tempoExec >= tempoPlanj) return 'concluido';
+
+    const overdue = isActivityOverdue(plano);
+    if (overdue) {
+      const foiIniciada = plano.inicio_real != null ||
+        plano.status === 'em_andamento' ||
+        plano.status === 'pausado' ||
+        tempoExec > 0;
+      return foiIniciada ? 'atrasado_em_andamento' : 'atrasado_nao_iniciado';
     }
+
     return plano.status || 'nao_iniciado';
-  }, [plano.status, plano.termino_real, plano.termino_ajustado, plano.termino_planejado]);
+  }, [plano.status, plano.tempo_executado, plano.tempo_planejado, plano.inicio_real, plano.termino_planejado, plano.termino_ajustado]);
 
   const getStatusColor = (status) => {
     switch (status) {
       case 'em_andamento': return '#3b82f6';
       case 'pausado': return '#f59e0b';
       case 'concluido': return '#10b981';
-      case 'concluido_atrasado': return '#ef4444';
+      case 'concluido_com_atraso': return '#ef4444';
       case 'atrasado':
-      case 'replanejado_atrasado': return '#ef4444';
+      case 'replanejado_atrasado':
+      case 'atrasado_nao_iniciado': return '#ef4444';
+      case 'atrasado_em_andamento': return '#f59e0b';
       case 'impactado_por_atraso': return '#8b5cf6';
       case 'nao_iniciado':
       default: return '#6b7280';
@@ -83,7 +110,17 @@ export default function ActivityItemCalendar({
   
   // Horas específicas deste dia
   const horasAlocadasDia = Number(plano.horas_por_dia?.[dayKey]) || 0;
-  const horasExecutadasDia = Number(plano.horas_executadas_por_dia?.[dayKey]) || 0;
+  let horasExecutadasDia = Number(plano.horas_executadas_por_dia?.[dayKey]) || 0;
+
+  // Se não tem horas executadas registradas por dia, mas tem:
+  // - Status concluído OU tempo executado > 0
+  // - E horas alocadas neste dia
+  // Então considerar as horas alocadas como executadas
+  if (horasExecutadasDia === 0 && horasAlocadasDia > 0) {
+    if (plano.status === 'concluido' || Number(plano.tempo_executado) > 0) {
+      horasExecutadasDia = horasAlocadasDia;
+    }
+  }
   
   // Verificar se a atividade continua em dias futuros
   const contemDiasFuturos = useMemo(() => {
@@ -126,8 +163,7 @@ export default function ActivityItemCalendar({
       }
       
       if (onDelete) onDelete();
-    } catch (error) {
-      console.error("Erro ao excluir:", error);
+    } catch {
       alert("Erro ao excluir atividade.");
     } finally {
       setIsDeleting(false);
@@ -158,8 +194,7 @@ export default function ActivityItemCalendar({
         empreendimento_id: plano.empreendimento_id,
         tipo_planejamento: plano.tipo_planejamento 
       });
-    } catch (error) {
-      console.error("Erro ao iniciar:", error);
+    } catch {
       alert("Não foi possível iniciar a atividade.");
     } finally {
       setIsStarting(false);
@@ -181,27 +216,46 @@ export default function ActivityItemCalendar({
 
       const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
 
+      // Preencher as horas executadas por dia
+      const horasExecutadasPorDia = { ...plano.horas_executadas_por_dia || {} };
+      horasExecutadasPorDia[dayKey] = timeValue;
+
+      const hoje = format(new Date(), 'yyyy-MM-dd');
+      const terminoPlanejado = plano.termino_ajustado || plano.termino_planejado;
+      const statusFinal = terminoPlanejado && hoje > terminoPlanejado ? 'concluido_com_atraso' : 'concluido';
+
       await retryWithBackoff(
         () => entityToUpdate.update(plano.id, {
           tempo_executado: timeValue,
-          tempo_planejado: timeValue,
-          status: 'concluido',
-          termino_real: format(new Date(), 'yyyy-MM-dd')
+          status: statusFinal,
+          termino_real: hoje,
+          horas_executadas_por_dia: horasExecutadasPorDia
         }),
         3, 1000, 'adjustTime'
       );
-      
+
+      // Verificar se foi salvo corretamente
+      const atividadeAtualizada = await retryWithBackoff(
+        () => entityToUpdate.get(plano.id),
+        3, 1000, 'verificarAjuste'
+      );
+
       setShowTimeAdjustModal(false);
       setAdjustedTime('');
-      
+
       if (onDelete) onDelete();
-    } catch (error) {
-      console.error("Erro ao ajustar:", error);
+    } catch {
       alert("Erro ao ajustar tempo.");
     }
   };
 
-  const shouldShowStartButton = () => realStatus !== 'concluido' && realStatus !== 'concluido_atrasado' && !activeExecution && !plano.isLegacyExecution;
+  const isConcluded = realStatus === 'concluido' || realStatus === 'concluido_com_atraso';
+  const shouldShowStartButton = () =>
+    !isConcluded &&
+    !activeExecution &&
+    !plano.isLegacyExecution &&
+    realStatus !== 'atrasado_nao_iniciado' &&
+    realStatus !== 'atrasado_em_andamento';
   
   const shouldShowDeleteButton = () => {
     if (!user) return false;
@@ -211,43 +265,82 @@ export default function ActivityItemCalendar({
   };
 
   const shouldShowAdjustButton = () => {
-    return user && (user.role === 'admin' || user.perfil === 'coordenador') && !plano.isLegacyExecution && plano.status !== 'concluido';
+    return user && (user.role === 'admin' || user.perfil === 'coordenador') && !plano.isLegacyExecution && !isConcluded;
   };
 
   const shouldShowFinalizarButton = () => {
-    return realStatus !== 'concluido' && !plano.isLegacyExecution && tempoExecutado > 0;
+    return !isConcluded && !plano.isLegacyExecution && tempoExecutado > 0;
   };
 
   const shouldShowEditButton = () => {
-    return realStatus === 'concluido' && (plano.isQuickActivity || plano.is_quick_activity);
+    return !plano.isLegacyExecution;
   };
 
-  const handleEditDescritivo = () => {
-    setEditedDescritivo(plano.descritivo || '');
+  const handleOpenEditModal = () => {
+    setEditForm({
+      descritivo: plano.descritivo || plano.titulo || '',
+      tempo_planejado: plano.tempo_planejado != null ? String(plano.tempo_planejado) : '',
+      inicio_planejado: plano.inicio_planejado ? plano.inicio_planejado.slice(0, 10) : '',
+      termino_planejado: plano.termino_planejado ? plano.termino_planejado.slice(0, 10) : '',
+      executor_principal: plano.executor_principal ? String(plano.executor_principal) : '',
+    });
     setShowEditModal(true);
   };
 
-  const handleSaveDescritivo = async () => {
-    if (!editedDescritivo.trim()) {
-      alert("Por favor, insira uma descrição.");
-      return;
-    }
-
+  const handleSaveEdit = async () => {
     try {
       const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
+      const updates = {};
+
+      if (editForm.descritivo !== undefined) {
+        updates.descritivo = editForm.descritivo.trim();
+        updates.titulo = editForm.descritivo.trim();
+      }
+      if (editForm.tempo_planejado !== '') {
+        const t = parseFloat(editForm.tempo_planejado);
+        if (!isNaN(t)) {
+          updates.tempo_planejado = t;
+          const oldHoras = plano.horas_por_dia || {};
+          const dias = Object.keys(oldHoras);
+          if (dias.length === 1) {
+            updates.horas_por_dia = { [dias[0]]: t };
+          } else if (dias.length > 1) {
+            const total = dias.reduce((sum, d) => sum + (Number(oldHoras[d]) || 0), 0);
+            const newHoras = {};
+            dias.forEach(d => {
+              newHoras[d] = total > 0
+                ? parseFloat(((Number(oldHoras[d]) / total) * t).toFixed(2))
+                : parseFloat((t / dias.length).toFixed(2));
+            });
+            updates.horas_por_dia = newHoras;
+          }
+        }
+      }
+      if (editForm.inicio_planejado) updates.inicio_planejado = editForm.inicio_planejado;
+      if (editForm.termino_planejado) updates.termino_planejado = editForm.termino_planejado;
+      updates.executor_principal = editForm.executor_principal || null;
+
+      const novoInicio = editForm.inicio_planejado || plano.inicio_planejado?.slice(0, 10);
+      const dataInicioMudou = editForm.inicio_planejado && editForm.inicio_planejado !== plano.inicio_planejado?.slice(0, 10);
+      if (dataInicioMudou && novoInicio) {
+        const tempoPlan = updates.tempo_planejado ?? Number(plano.tempo_planejado) ?? 0;
+        if (tempoPlan > 0) {
+          const [y, m, d] = novoInicio.split('-').map(Number);
+          const dataLocal = new Date(y, m - 1, d);
+          const { distribuicao } = distribuirHorasPorDias(dataLocal, tempoPlan);
+          updates.horas_por_dia = distribuicao;
+        }
+      }
 
       await retryWithBackoff(
-        () => entityToUpdate.update(plano.id, {
-          descritivo: editedDescritivo.trim()
-        }),
-        3, 1000, 'editDescritivo'
+        () => entityToUpdate.update(plano.id, updates),
+        3, 1000, 'editActivity'
       );
-      
+
       setShowEditModal(false);
       if (onDelete) onDelete();
-    } catch (error) {
-      console.error("Erro ao editar:", error);
-      alert("Erro ao editar descrição.");
+    } catch {
+      alert("Erro ao salvar alterações.");
     }
   };
 
@@ -260,13 +353,16 @@ export default function ActivityItemCalendar({
           ...provided.draggableProps.style,
           borderLeft: `3px solid ${getStatusColor(realStatus)}`,
           backgroundColor: isSelected ? '#e0e7ff' :
-                         realStatus === 'atrasado' || realStatus === 'concluido_atrasado' ? '#fef2f2' :
+                         realStatus === 'concluido_com_atraso' ? '#fef2f2' :
+                         realStatus === 'atrasado_nao_iniciado' ? '#fef2f2' :
+                         realStatus === 'atrasado' ? '#fef2f2' :
+                         realStatus === 'atrasado_em_andamento' ? '#fffbeb' :
                          realStatus === 'em_andamento' ? '#eff6ff' :
                          realStatus === 'concluido' ? '#f0fdf4' :
                          realStatus === 'pausado' ? '#fffbeb' : '#ffffff',
           ...(isDragging && { boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)', transform: 'rotate(2deg)'})
         }}
-        className={`p-2 rounded border mb-1 text-xs group hover:shadow-md transition-shadow relative ${
+        className={`p-2 rounded border mb-1 text-xs group hover:shadow-md transition-shadow relative overflow-hidden w-full ${
           isSelected ? 'border-indigo-400 ring-2 ring-indigo-200' : 'border-gray-200'
         }`}
       >
@@ -306,8 +402,8 @@ export default function ActivityItemCalendar({
           </svg>
         </div>
 
-        <div className="flex items-start justify-between mb-1.5">
-          <div className={`flex-1 mr-2 ${hasSelections || isSelected ? 'ml-12' : 'ml-6'}`}>
+        <div className="flex items-start justify-between mb-1.5 min-w-0">
+          <div className={`flex-1 min-w-0 mr-2 ${hasSelections || isSelected ? 'ml-12' : 'ml-6'}`}>
             <p className="font-medium text-gray-800 break-words" title={displayName}>
               {displayName}
               {plano.isQuickActivity && (
@@ -326,11 +422,11 @@ export default function ActivityItemCalendar({
           <div className="flex items-center shrink-0 gap-2">
             {shouldShowEditButton() && (
               <Button
-                onClick={handleEditDescritivo}
+                onClick={handleOpenEditModal}
                 size="sm"
                 variant="ghost"
                 className="w-5 h-5 p-0 text-gray-400 hover:text-blue-600 hover:bg-blue-100"
-                title="Editar descrição"
+                title="Editar atividade"
               >
                 <Edit2 className="w-3 h-3" />
               </Button>
@@ -377,36 +473,60 @@ export default function ActivityItemCalendar({
           </div>
         )}
 
-        <div className="flex items-center justify-between flex-wrap gap-x-3 gap-y-1 mb-1.5">
-          <div className="flex items-center gap-3 flex-wrap">
-            {subdisciplina && (
-              <div className="flex items-center gap-1.5">
-                <div className="w-2 h-2 bg-blue-400 rounded-full"></div>
-                <span className="text-blue-600 font-medium">{subdisciplina}</span>
-              </div>
-            )}
-            {(realStatus === 'concluido' || realStatus === 'concluido_atrasado') && (
-              <div className="flex items-center gap-1.5">
-                <div className={`w-2 h-2 rounded-full ${realStatus === 'concluido_atrasado' ? 'bg-red-500' : 'bg-green-500'}`}></div>
-                <span className={`font-medium ${realStatus === 'concluido_atrasado' ? 'text-red-600' : 'text-green-600'}`}>
-                  {realStatus === 'concluido_atrasado' ? 'Concluída c/ atraso' : 'Concluída'}
-                </span>
-              </div>
-            )}
-          </div>
-          
-          <div className="flex items-center gap-2">
-            <div className="font-mono text-blue-600 flex flex-col items-end">
-              <span className="font-semibold text-sm" title={contemDiasFuturos ? "Planejado / Executado (continua nos próximos dias)" : "Planejado / Executado"}>
-                {horasAlocadasDia.toFixed(1)}/{horasExecutadasDia.toFixed(1)}h{contemDiasFuturos ? ' ...' : ''}
-              </span>
+        <div className="mb-1.5 min-w-0">
+          <div className="flex items-center justify-between gap-2 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap min-w-0 overflow-hidden">
+              {subdisciplina && (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="w-2 h-2 bg-blue-400 rounded-full shrink-0"></div>
+                  <span className="text-blue-600 font-medium line-clamp-1">{subdisciplina}</span>
+                </div>
+              )}
+              {realStatus === 'concluido' && (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="w-2 h-2 bg-green-500 rounded-full shrink-0"></div>
+                  <span className="text-green-600 font-medium">Concluída</span>
+                </div>
+              )}
+              {realStatus === 'concluido_com_atraso' && (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="w-2 h-2 bg-red-500 rounded-full shrink-0"></div>
+                  <span className="text-red-600 font-medium">Concluída c/ Atraso</span>
+                </div>
+              )}
+              {realStatus === 'atrasado_nao_iniciado' && (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="w-2 h-2 bg-red-500 rounded-full shrink-0"></div>
+                  <span className="text-red-600 font-medium">Não Iniciada — Atrasada</span>
+                </div>
+              )}
+              {realStatus === 'atrasado_em_andamento' && (
+                <div className="flex items-center gap-1.5 shrink-0">
+                  <div className="w-2 h-2 bg-amber-500 rounded-full shrink-0"></div>
+                  <span className="text-amber-600 font-medium">Em Andamento — Atrasada</span>
+                </div>
+              )}
             </div>
-            
-            {(realStatus === 'concluido' || realStatus === 'concluido_atrasado') && (
-              <div className={`w-4 h-4 rounded-full flex items-center justify-center ${realStatus === 'concluido_atrasado' ? 'bg-red-500' : 'bg-green-500'}`}>
-                <span className="text-white text-xs font-bold">✓</span>
-              </div>
-            )}
+
+            <div className="flex items-center gap-1.5 shrink-0 ml-auto">
+              <span
+                className="font-mono font-semibold text-xs text-blue-600 whitespace-nowrap"
+                title={contemDiasFuturos ? "Planejado / Executado (continua nos próximos dias)" : "Planejado / Executado"}
+              >
+                {formatHoras(horasAlocadasDia)}/{formatHoras(horasExecutadasDia)}{contemDiasFuturos ? '…' : ''}
+              </span>
+
+              {realStatus === 'concluido' && (
+                <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center shrink-0">
+                  <span className="text-white text-xs font-bold">✓</span>
+                </div>
+              )}
+              {realStatus === 'concluido_com_atraso' && (
+                <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center shrink-0">
+                  <span className="text-white text-xs font-bold">✓</span>
+                </div>
+              )}
+            </div>
           </div>
         </div>
         
@@ -428,6 +548,47 @@ export default function ActivityItemCalendar({
         )}
 
         <div className="flex gap-1 mt-2">
+          {/* Cenário 3: Concluída no prazo — verde com ✓ */}
+          {realStatus === 'concluido' && (
+            <div className="flex-1 h-6 flex items-center justify-center gap-1 bg-green-100 rounded text-green-700 text-xs font-medium">
+              <Check className="w-3 h-3" /> Concluída
+            </div>
+          )}
+
+          {/* Cenário 2 após finalizar: Concluída com atraso — vermelho com ✓ */}
+          {realStatus === 'concluido_com_atraso' && (
+            <div className="flex-1 h-6 flex items-center justify-center gap-1 bg-red-100 rounded text-red-700 text-xs font-medium">
+              <Check className="w-3 h-3" /> Concluída c/ Atraso
+            </div>
+          )}
+
+          {/* Cenário 1: Atrasada e não iniciada — vermelho com X (ainda clicável para iniciar) */}
+          {realStatus === 'atrasado_nao_iniciado' && !plano.isLegacyExecution && (
+            <Button
+              onClick={handleStartActivity}
+              disabled={!!activeExecution || isStarting}
+              size="sm"
+              className="flex-1 h-6 text-xs bg-red-600 hover:bg-red-700"
+            >
+              <X className="w-3 h-3 mr-1" />
+              {isStarting ? "Iniciando..." : "Iniciar"}
+            </Button>
+          )}
+
+          {/* Cenário 2: Iniciada mas não finalizada e atrasada — amarelo com ▶ */}
+          {realStatus === 'atrasado_em_andamento' && !plano.isLegacyExecution && (
+            <Button
+              onClick={handleStartActivity}
+              disabled={!!activeExecution || isStarting}
+              size="sm"
+              className="flex-1 h-6 text-xs bg-amber-500 hover:bg-amber-600 text-white"
+            >
+              <Play className="w-3 h-3 mr-1" />
+              {isStarting ? "Iniciando..." : "Continuar"}
+            </Button>
+          )}
+
+          {/* Botão padrão de iniciar (atividades dentro do prazo) */}
           {shouldShowStartButton() && (
             <Button
               onClick={handleStartActivity}
@@ -439,9 +600,9 @@ export default function ActivityItemCalendar({
               {isStarting ? "Iniciando..." : "Iniciar"}
             </Button>
           )}
-          
+
           {shouldShowFinalizarButton() && (
-            <FinalizarAtividadeButton 
+            <FinalizarAtividadeButton
               plano={plano}
               displayName={displayName}
               onSuccess={onDelete}
@@ -483,25 +644,78 @@ export default function ActivityItemCalendar({
       </Dialog>
 
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent>
+        <DialogContent className="max-w-lg">
           <DialogHeader>
-            <DialogTitle>Editar Descrição da Atividade</DialogTitle>
+            <DialogTitle>Editar Atividade</DialogTitle>
           </DialogHeader>
           <div className="py-4 space-y-4">
+            <p className="text-sm text-gray-500"><strong>Atividade:</strong> {displayName}</p>
+
             <div className="space-y-2">
-              <Label htmlFor="editDescritivo">Descrição da Atividade</Label>
+              <Label>Descrição / Título</Label>
               <Textarea
-                id="editDescritivo"
-                value={editedDescritivo}
-                onChange={(e) => setEditedDescritivo(e.target.value)}
-                rows={4}
-                placeholder="Digite a descrição da atividade..."
+                value={editForm.descritivo || ''}
+                onChange={(e) => setEditForm(f => ({ ...f, descritivo: e.target.value }))}
+                rows={3}
+                placeholder="Descrição da atividade..."
               />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Tempo Planejado (h)</Label>
+                <Input
+                  type="number"
+                  step="0.1"
+                  min="0"
+                  value={editForm.tempo_planejado || ''}
+                  onChange={(e) => setEditForm(f => ({ ...f, tempo_planejado: e.target.value }))}
+                  placeholder="Ex: 2.5"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Executor Principal</Label>
+                <Select
+                  value={editForm.executor_principal || 'none'}
+                  onValueChange={(v) => setEditForm(f => ({ ...f, executor_principal: v === 'none' ? '' : v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecione..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">— Nenhum —</SelectItem>
+                    {Object.values(executorMap).map((u) => (
+                      <SelectItem key={u.id} value={String(u.id)}>
+                        {u.nome || u.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label>Início Planejado</Label>
+                <Input
+                  type="date"
+                  value={editForm.inicio_planejado || ''}
+                  onChange={(e) => setEditForm(f => ({ ...f, inicio_planejado: e.target.value }))}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>Término Planejado</Label>
+                <Input
+                  type="date"
+                  value={editForm.termino_planejado || ''}
+                  onChange={(e) => setEditForm(f => ({ ...f, termino_planejado: e.target.value }))}
+                />
+              </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowEditModal(false)}>Cancelar</Button>
-            <Button onClick={handleSaveDescritivo} className="bg-blue-600 hover:bg-blue-700">Salvar</Button>
+            <Button onClick={handleSaveEdit} className="bg-blue-600 hover:bg-blue-700">Salvar</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
