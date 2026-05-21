@@ -1,10 +1,11 @@
 // @ts-nocheck
-import React, { memo } from 'react';
+import React, { memo, useState } from 'react';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Trash2, Upload, X, File, ZoomIn, CalendarPlus } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Trash2, Upload, X, File, ZoomIn, CalendarPlus, Link, ChevronDown, ChevronUp } from "lucide-react";
 import { format } from "date-fns";
 
 const STATUS_COLORS = {
@@ -26,6 +27,7 @@ const PREItemRow = memo(function PREItemRow({
   index,
   readOnly,
   empreendimento,
+  documentos,
   onUpdate,
   onDelete,
   onUploadImage,
@@ -38,6 +40,26 @@ const PREItemRow = memo(function PREItemRow({
   const mainBg = isEven ? 'bg-gray-50' : 'bg-gray-200';
   const sideBg = isEven ? 'bg-white' : 'bg-gray-100';
   const rowBg = isEven ? 'bg-white' : 'bg-gray-100';
+  const [showDocSelector, setShowDocSelector] = useState(false);
+  const [docSearch, setDocSearch] = useState('');
+
+  const documentosVinculados = item.documentos_vinculados || [];
+
+  const toggleDocumento = (docId) => {
+    const current = item.documentos_vinculados || [];
+    const updated = current.includes(docId)
+      ? current.filter(id => id !== docId)
+      : [...current, docId];
+    onUpdate(item.id, 'documentos_vinculados', updated);
+  };
+
+  const docsFiltrados = (documentos || []).filter(doc => {
+    if (!docSearch) return true;
+    const q = docSearch.toLowerCase();
+    return (doc.numero || '').toLowerCase().includes(q) ||
+      (doc.arquivo || '').toLowerCase().includes(q) ||
+      (doc.descritivo || '').toLowerCase().includes(q);
+  });
 
   return (
     <div className={`flex gap-4 border border-gray-300 rounded-lg overflow-hidden shadow-sm ${rowBg}`}>
@@ -91,6 +113,90 @@ const PREItemRow = memo(function PREItemRow({
             disabled={readOnly}
             placeholder="Comentários adicionais..."
           />
+        </div>
+
+        {/* Documentos Vinculados */}
+        <div>
+          <label className="text-xs font-bold text-gray-700 block mb-1 uppercase tracking-wide">Documentos Vinculados</label>
+          {!readOnly && (
+            <div className="mb-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full text-left justify-between text-sm"
+                onClick={() => setShowDocSelector(v => !v)}
+              >
+                <span className="flex items-center gap-2">
+                  <Link className="w-3 h-3" />
+                  {documentosVinculados.length > 0 ? `${documentosVinculados.length} documento(s) vinculado(s)` : 'Vincular documentos...'}
+                </span>
+                {showDocSelector ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+              </Button>
+              {showDocSelector && (
+                <div className="border border-gray-300 rounded-md mt-1 bg-white shadow-sm max-h-48 overflow-y-auto">
+                  <div className="p-2 border-b border-gray-200 sticky top-0 bg-white">
+                    <Input
+                      value={docSearch}
+                      onChange={e => setDocSearch(e.target.value)}
+                      placeholder="Buscar documento..."
+                      className="h-7 text-xs"
+                    />
+                  </div>
+                  {docsFiltrados.length === 0 ? (
+                    <p className="text-xs text-gray-400 p-3 text-center">Nenhum documento encontrado</p>
+                  ) : (
+                    docsFiltrados.map(doc => {
+                      const isSelected = documentosVinculados.includes(doc.id);
+                      return (
+                        <div
+                          key={doc.id}
+                          className={`flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-blue-50 text-xs border-b border-gray-100 last:border-0 ${isSelected ? 'bg-blue-50' : ''}`}
+                          onClick={() => toggleDocumento(doc.id)}
+                        >
+                          <input type="checkbox" checked={isSelected} onChange={() => {}} className="w-3 h-3 flex-shrink-0" />
+                          <span className="font-mono font-medium text-gray-700 shrink-0">{doc.numero || doc.arquivo}</span>
+                          {doc.descritivo && <span className="text-gray-500 truncate">{doc.descritivo}</span>}
+                        </div>
+                      );
+                    })
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+          {documentosVinculados.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {documentosVinculados.map(docId => {
+                const doc = (documentos || []).find(d => d.id === docId);
+                return (
+                  <Badge key={docId} variant="outline" className="text-xs bg-blue-50 border-blue-300 text-blue-700 flex items-center gap-1">
+                    {doc ? (doc.numero || doc.arquivo) : docId}
+                    {!readOnly && (
+                      <button onClick={() => toggleDocumento(docId)} className="ml-1 hover:text-red-500">
+                        <X className="w-2.5 h-2.5" />
+                      </button>
+                    )}
+                  </Badge>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Etapa Adicional */}
+        <div>
+          <label className="text-xs font-bold text-gray-700 block mb-1 uppercase tracking-wide">Etapa Adicional no Projeto</label>
+          <Input
+            value={item.etapa_adicional || ''}
+            onChange={(e) => onUpdate(item.id, 'etapa_adicional', e.target.value)}
+            className="text-sm bg-white border-gray-300 print:border-none print:bg-transparent"
+            disabled={readOnly}
+            placeholder="Ex: Revisão do Executivo, Compatibilização R02..."
+          />
+          {item.etapa_adicional && (
+            <p className="text-xs text-amber-600 mt-1">⚠️ Esta etapa será adicionada ao documento no projeto</p>
+          )}
         </div>
 
         {/* Resposta */}

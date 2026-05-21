@@ -1,0 +1,93 @@
+{
+  "name": "ItemPRE",
+  "type": "object",
+  "properties": {
+    "empreendimento_id": {
+      "type": "string",
+      "description": "ID do empreendimento relacionado"
+    },
+    "item": {
+      "type": "string",
+      "description": "N\u00famero do item"
+    },
+    "data": {
+      "type": "string",
+      "format": "date",
+      "description": "Data do registro"
+    },
+    "de": {
+      "type": "string",
+      "description": "Remetente/Origem"
+    },
+    "descritiva": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o detalhada"
+    },
+    "localizacao": {
+      "type": "string",
+      "description": "Localiza\u00e7\u00e3o"
+    },
+    "assunto": {
+      "type": "string",
+      "description": "Assunto"
+    },
+    "comentario": {
+      "type": "string",
+      "description": "Coment\u00e1rio"
+    },
+    "disciplina": {
+      "type": "string",
+      "description": "Disciplina relacionada"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "Em andamento",
+        "Pendente",
+        "Conclu\u00eddo",
+        "Cancelado"
+      ],
+      "default": "Em andamento",
+      "description": "Status do item"
+    },
+    "resposta": {
+      "type": "string",
+      "description": "Resposta/A\u00e7\u00e3o tomada"
+    },
+    "imagens": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "URLs das imagens anexadas"
+    },
+    "tempo_atendimento": {
+      "type": "number",
+      "description": "Tempo estimado para atender o coment\u00e1rio (em horas)"
+    },
+    "documentos_vinculados": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs dos documentos vinculados a este coment\u00e1rio PRE"
+    },
+    "etapa_adicional": {
+      "type": "string",
+      "description": "Etapa adicional gerada pelo coment\u00e1rio (ex: Revis\u00e3o do Executivo)"
+    },
+    "planejamento_executor": {
+      "type": "string",
+      "description": "Email do executor vinculado ao planejamento criado pela PRE"
+    },
+    "planejamento_executor_nome": {
+      "type": "string",
+      "description": "Nome do executor vinculado ao planejamento criado pela PRE"
+    }
+  },
+  "required": [
+    "empreendimento_id",
+    "item",
+    "data"
+  ]
+}

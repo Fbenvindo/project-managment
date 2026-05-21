@@ -1,0 +1,159 @@
+{
+  "name": "Documento",
+  "type": "object",
+  "properties": {
+    "numero": {
+      "type": "string",
+      "description": "N\u00famero do documento"
+    },
+    "arquivo": {
+      "type": "string",
+      "description": "Nome do arquivo do documento"
+    },
+    "descritivo": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o detalhada do documento"
+    },
+    "area": {
+      "type": "string",
+      "description": "\u00c1rea ou pavimento relacionado"
+    },
+    "pavimento_id": {
+      "type": "string",
+      "description": "ID do pavimento vinculado para c\u00e1lculo de \u00e1rea"
+    },
+    "disciplina": {
+      "type": "string",
+      "description": "Disciplina do documento (mantido para compatibilidade)"
+    },
+    "disciplinas": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Lista de disciplinas (at\u00e9 2)"
+    },
+    "subdisciplinas": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Lista de subdisciplinas"
+    },
+    "escala": {
+      "type": "number",
+      "description": "Escala do documento"
+    },
+    "fator_dificuldade": {
+      "type": "number",
+      "description": "Fator de dificuldade"
+    },
+    "empreendimento_id": {
+      "type": "string",
+      "description": "ID do empreendimento relacionado"
+    },
+    "tempo_total": {
+      "type": "number",
+      "description": "Tempo total de todas as etapas (excluindo Concep\u00e7\u00e3o e Planejamento)"
+    },
+    "tempo_estudo_preliminar": {
+      "type": "number",
+      "description": "Tempo da etapa Estudo Preliminar"
+    },
+    "tempo_ante_projeto": {
+      "type": "number",
+      "description": "Tempo da etapa Ante-Projeto"
+    },
+    "tempo_projeto_basico": {
+      "type": "number",
+      "description": "Tempo da etapa Projeto B\u00e1sico"
+    },
+    "tempo_projeto_executivo": {
+      "type": "number",
+      "description": "Tempo da etapa Projeto Executivo"
+    },
+    "tempo_liberado_obra": {
+      "type": "number",
+      "description": "Tempo da etapa Liberado para Obra"
+    },
+    "tempo_concepcao": {
+      "type": "number",
+      "description": "Tempo da etapa Concep\u00e7\u00e3o"
+    },
+    "tempo_planejamento": {
+      "type": "number",
+      "description": "Tempo da etapa Planejamento"
+    },
+    "tempo_pre": {
+      "type": "number",
+      "description": "Tempo adicional acumulado de coment\u00e1rios PRE vinculados a este documento"
+    },
+    "etapas_adicionais_pre": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Lista de etapas adicionais geradas por coment\u00e1rios PRE (ex: Revis\u00e3o do Executivo)"
+    },
+    "tempo_execucao_total": {
+      "type": "number",
+      "description": "Tempo total executado de todas as etapas (excluindo Concep\u00e7\u00e3o e Planejamento)"
+    },
+    "tempo_execucao_estudo_preliminar": {
+      "type": "number",
+      "description": "Tempo executado da etapa Estudo Preliminar"
+    },
+    "tempo_execucao_ante_projeto": {
+      "type": "number",
+      "description": "Tempo executado da etapa Ante-Projeto"
+    },
+    "tempo_execucao_projeto_basico": {
+      "type": "number",
+      "description": "Tempo executado da etapa Projeto B\u00e1sico"
+    },
+    "tempo_execucao_projeto_executivo": {
+      "type": "number",
+      "description": "Tempo executado da etapa Projeto Executivo"
+    },
+    "tempo_execucao_liberado_obra": {
+      "type": "number",
+      "description": "Tempo executado da etapa Liberado para Obra"
+    },
+    "tempo_execucao_concepcao": {
+      "type": "number",
+      "description": "Tempo executado da etapa Concep\u00e7\u00e3o"
+    },
+    "tempo_execucao_planejamento": {
+      "type": "number",
+      "description": "Tempo executado da etapa Planejamento"
+    },
+    "predecessora_id": {
+      "type": "string",
+      "description": "ID do documento predecessor para c\u00e1lculo autom\u00e1tico de datas"
+    },
+    "inicio_planejado": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de in\u00edcio planejada para o documento (calculada ou manual)"
+    },
+    "termino_planejado": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de t\u00e9rmino planejada para o documento (calculada)"
+    },
+    "multiplos_executores": {
+      "type": "boolean",
+      "default": false,
+      "description": "Indica se o planejamento ser\u00e1 feito com m\u00faltiplos executores"
+    },
+    "executor_principal": {
+      "type": "string",
+      "description": "Email do executor principal quando n\u00e3o h\u00e1 m\u00faltiplos executores"
+    }
+  },
+  "required": [
+    "numero",
+    "arquivo",
+    "empreendimento_id"
+  ]
+}

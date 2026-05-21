@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Plus, Printer, Save, FileText, Loader2, X, ZoomIn, CalendarPlus, FileUp, Download } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
-import { ItemPRE, Disciplina, Usuario, PlanejamentoAtividade } from "@/entities/all";
+import { ItemPRE, Disciplina, Usuario, PlanejamentoAtividade, Documento } from "@/entities/all";
 import { format } from "date-fns";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { base44 } from "@/api/base44Client";
@@ -101,6 +101,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
   const [importSelectedFile, setImportSelectedFile] = useState(null);
   const importFileRef = useRef(/** @type {HTMLInputElement | null} */ (null));
   const [disciplinas, setDisciplinas] = useState(/** @type {any[]} */ ([]));
+  const [documentos, setDocumentos] = useState(/** @type {any[]} */ ([]));
   const [filtroDispline, setFiltroDispline] = useState('todas');
   const [filtroStatus, setFiltroStatus] = useState('todos');
   const [headerData, setHeaderData] = useState({
@@ -156,12 +157,14 @@ export default function PRETab({ empreendimento, readOnly = false }) {
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        const [discs, users] = await Promise.all([
+        const [discs, users, docs] = await Promise.all([
           retryWithBackoff(() => Disciplina.list(), 3, 2000, 'PRETab-Disciplinas'),
           retryWithBackoff(() => Usuario.list(), 3, 2000, 'PRETab-Usuarios'),
+          empreendimento?.id ? retryWithBackoff(() => Documento.filter({ empreendimento_id: empreendimento.id }), 3, 2000, 'PRETab-Documentos') : Promise.resolve([]),
         ]);
         setDisciplinas(discs || []);
         setUsuarios(users || []);
+        setDocumentos((docs || []).sort((a, b) => (a.numero || a.arquivo || '').localeCompare(b.numero || b.arquivo || '', 'pt-BR', { numeric: true })));
       } catch {
       }
     };
@@ -382,6 +385,8 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     resposta: item.resposta,
     imagens: item.imagens || [],
     tempo_atendimento: item.tempo_atendimento ?? null,
+    documentos_vinculados: item.documentos_vinculados || [],
+    etapa_adicional: item.etapa_adicional || null,
     planejamento_executor: item.planejamento_executor ?? null,
     planejamento_executor_nome: item.planejamento_executor_nome ?? null,
   });
@@ -440,6 +445,52 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     }
   };
 
+  // Acrescenta o tempo_atendimento e etapa_adicional do item ao(s) documento(s) vinculado(s)
+  const atualizarTempoDocumentos = async (itemsToProcess) => {
+    // Agrupa tempo e etapas adicionais por documento_id
+    const dadosPorDoc = {};
+    itemsToProcess.forEach(item => {
+      if (!item.documentos_vinculados?.length) return;
+      const tempo = Number(item.tempo_atendimento) || 0;
+      item.documentos_vinculados.forEach(docId => {
+        if (!dadosPorDoc[docId]) dadosPorDoc[docId] = { tempo: 0, etapas: [] };
+        dadosPorDoc[docId].tempo += tempo;
+        if (item.etapa_adicional?.trim()) {
+          dadosPorDoc[docId].etapas.push(item.etapa_adicional.trim());
+        }
+      });
+    });
+
+    const docIds = Object.keys(dadosPorDoc);
+    if (docIds.length === 0) return;
+
+    // Buscar documentos atuais e atualizar tempo_pre e etapas_adicionais_pre
+    for (const docId of docIds) {
+      try {
+        const doc = documentos.find(d => d.id === docId);
+        if (!doc) continue;
+        const tempoAtualPRE = Number(doc.tempo_pre) || 0;
+        const etapasAtuais = doc.etapas_adicionais_pre || [];
+        const novasEtapas = dadosPorDoc[docId].etapas.filter(e => !etapasAtuais.includes(e));
+        const updateData = {};
+        if (dadosPorDoc[docId].tempo > 0) {
+          updateData.tempo_pre = tempoAtualPRE + dadosPorDoc[docId].tempo;
+        }
+        if (novasEtapas.length > 0) {
+          updateData.etapas_adicionais_pre = [...etapasAtuais, ...novasEtapas];
+        }
+        if (Object.keys(updateData).length === 0) continue;
+        await retryWithBackoff(
+          () => Documento.update(docId, updateData),
+          3, 1500, `PRE-UpdateDoc-${docId}`
+        );
+        setDocumentos(prev => prev.map(d => d.id === docId ? { ...d, ...updateData } : d));
+      } catch {
+        // Ignora erros individuais - não bloqueia o save
+      }
+    }
+  };
+
   const handleSave = async () => {
     // Força save de todos os itens (inclusive os que não foram modificados via dirty)
     // Usa itemsRef para garantir dados atualizados mesmo com filtro ativo
@@ -456,6 +507,13 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     }
 
     await handleAutoSave();
+
+    // Atualizar tempo nos documentos vinculados (apenas itens com documentos_vinculados preenchidos)
+    const itensComDocs = itemsRef.current.filter(i => i.documentos_vinculados?.length > 0 && Number(i.tempo_atendimento) > 0);
+    if (itensComDocs.length > 0) {
+      await atualizarTempoDocumentos(itensComDocs);
+    }
+
     alert('Dados salvos com sucesso!');
   };
 
@@ -971,6 +1029,7 @@ export default function PRETab({ empreendimento, readOnly = false }) {
                   index={index}
                   readOnly={readOnly}
                   empreendimento={empreendimento}
+                  documentos={documentos}
                   onUpdate={handleUpdateItem}
                   onDelete={handleDeleteItem}
                   onUploadImage={handleUploadImage}
