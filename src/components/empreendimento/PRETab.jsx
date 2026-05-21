@@ -445,41 +445,33 @@ export default function PRETab({ empreendimento, readOnly = false }) {
     }
   };
 
-  // Acrescenta o tempo_atendimento e etapa_adicional do item ao(s) documento(s) vinculado(s)
-  const atualizarTempoDocumentos = async (itemsToProcess) => {
-    // Agrupa tempo e etapas adicionais por documento_id
-    const dadosPorDoc = {};
-    itemsToProcess.forEach(item => {
-      if (!item.documentos_vinculados?.length) return;
-      const tempo = Number(item.tempo_atendimento) || 0;
-      item.documentos_vinculados.forEach(docId => {
-        if (!dadosPorDoc[docId]) dadosPorDoc[docId] = { tempo: 0, etapas: [] };
-        dadosPorDoc[docId].tempo += tempo;
-        if (item.etapa_adicional?.trim()) {
-          dadosPorDoc[docId].etapas.push(item.etapa_adicional.trim());
-        }
-      });
+  // Recalcula o tempo_pre de cada documento do zero, somando todos os itens PRE vinculados
+  const atualizarTempoDocumentos = async () => {
+    const allItems = itemsRef.current;
+
+    // Coleta todos os docIds referenciados por qualquer item
+    const docIdsSet = new Set();
+    allItems.forEach(item => {
+      (item.documentos_vinculados || []).forEach(docId => docIdsSet.add(docId));
     });
 
-    const docIds = Object.keys(dadosPorDoc);
-    if (docIds.length === 0) return;
+    if (docIdsSet.size === 0) return;
 
-    // Buscar documentos atuais e atualizar tempo_pre e etapas_adicionais_pre
-    for (const docId of docIds) {
+    // Para cada documento, recalcula do zero
+    for (const docId of docIdsSet) {
       try {
         const doc = documentos.find(d => d.id === docId);
         if (!doc) continue;
-        const tempoAtualPRE = Number(doc.tempo_pre) || 0;
-        const etapasAtuais = doc.etapas_adicionais_pre || [];
-        const novasEtapas = dadosPorDoc[docId].etapas.filter(e => !etapasAtuais.includes(e));
-        const updateData = {};
-        if (dadosPorDoc[docId].tempo > 0) {
-          updateData.tempo_pre = tempoAtualPRE + dadosPorDoc[docId].tempo;
-        }
-        if (novasEtapas.length > 0) {
-          updateData.etapas_adicionais_pre = [...etapasAtuais, ...novasEtapas];
-        }
-        if (Object.keys(updateData).length === 0) continue;
+
+        // Soma todos os itens PRE que vinculam este documento
+        const tempoTotal = allItems.reduce((sum, item) => {
+          if ((item.documentos_vinculados || []).includes(docId)) {
+            return sum + (Number(item.tempo_atendimento) || 0);
+          }
+          return sum;
+        }, 0);
+
+        const updateData = { tempo_pre: tempoTotal };
         await retryWithBackoff(
           () => Documento.update(docId, updateData),
           3, 1500, `PRE-UpdateDoc-${docId}`
@@ -508,11 +500,8 @@ export default function PRETab({ empreendimento, readOnly = false }) {
 
     await handleAutoSave();
 
-    // Atualizar tempo nos documentos vinculados (apenas itens com documentos_vinculados preenchidos)
-    const itensComDocs = itemsRef.current.filter(i => i.documentos_vinculados?.length > 0 && Number(i.tempo_atendimento) > 0);
-    if (itensComDocs.length > 0) {
-      await atualizarTempoDocumentos(itensComDocs);
-    }
+    // Atualizar tempo nos documentos vinculados (recalcula do zero)
+    await atualizarTempoDocumentos();
 
     alert('Dados salvos com sucesso!');
   };
