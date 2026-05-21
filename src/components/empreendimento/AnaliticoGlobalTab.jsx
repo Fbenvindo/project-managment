@@ -1,5 +1,6 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { Atividade, Disciplina, PlanejamentoAtividade, Documento, AlteracaoEtapa, Empreendimento, Usuario, AtividadesDoProjeto, ItemPRE } from '@/entities/all';
+import AnaliticoRenderContent from './AnaliticoRenderContent';
 
 const PlanejamentoDocumento = base44.entities.PlanejamentoDocumento;
 import { Button } from '@/components/ui/button';
@@ -11,9 +12,7 @@ import { Label } from '@/components/ui/label';
 import { EtapaEditModal, EditarEtapaEmFolhasModal, ExcluirDeFolhasModal } from './AnaliticoModais';
 import { PlusCircle, Search, Filter, MoreHorizontal, Edit, Trash2, Loader2, PackageOpen, Layers, XCircle, FileX, RefreshCw, Edit2, ChevronRight, ChevronDown, Calendar, CheckCircle2, Users2, CheckCircle } from 'lucide-react';
 import PlanejamentoAtividadeModal from './PlanejamentoAtividadeModal';
-import AtividadeFormModal from './AtividadeFormModal';
-import AnaliticoFolhaRow from './AnaliticoFolhaRow';
-import AnaliticoRenderContent from './AnaliticoRenderContent';
+import AtividadeFormModal from './AtividadeFormModal';import AnaliticoFolhaRow from './AnaliticoFolhaRow';
 import { debounce } from 'lodash';
 import { Badge } from '@/components/ui/badge';
 import { retryWithBackoff, retryWithExtendedBackoff } from '../utils/apiUtils';
@@ -72,12 +71,27 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
   const [planejamentos, setPlanejamentos] = useState([]); const [empreendimentoObj, setEmpreendimentoObj] = useState(null);
   const [itensPRE, setItensPRE] = useState([]);
+
   const [allEmpreendimentos, setAllEmpreendimentos] = useState([]);
 
   const fetchData = useCallback(async () => {
     setIsLoading(true);
     try {
-      const [projectActivities, planejamentosData, allActivities, documentosData, disciplinasData, empreendimentoData, alteracoesData, usuariosData, todosEmpreendimentos, atividadesDoProjetoData, atividadesEmpreendimentoData, pavimentosData, itensPREData] = await Promise.all([
+      const [
+        projectActivities, 
+        planejamentosData,
+        allActivities,
+        documentosData,
+        disciplinasData,
+        empreendimentoData,
+        alteracoesData,
+        usuariosData,
+        todosEmpreendimentos,
+        atividadesDoProjetoData,
+        atividadesEmpreendimentoData,
+        pavimentosData,
+        itensPREData
+      ] = await Promise.all([
         retryWithBackoff(() => Atividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchProjectActivities'),
         retryWithBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchPlanejamentos'),
         retryWithBackoff(() => Atividade.list(), 3, 500, 'fetchAllActivities'),
@@ -94,12 +108,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       ]);
 
       setDocumentos(documentosData || []);
-      setItensPRE(itensPREData || []);
       setEmpreendimentoNome((empreendimentoData && empreendimentoData[0]?.nome) || ""); setEmpreendimentoObj(empreendimentoData?.[0] || null);
       setAlteracoesEtapa(alteracoesData || []);
       setUsuarios(usuariosData || []);
       setPlanejamentos(planejamentosData || []);
       setAllEmpreendimentos(todosEmpreendimentos || []);
+      setItensPRE(itensPREData || []);
       
       // Usar AtividadesDoProjeto se disponível, senão usar projectActivities
        const activitiesToProcess = (atividadesDoProjetoData && atividadesDoProjetoData.length > 0) 
@@ -1306,11 +1320,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     setIsRevertendoEtapa(true);
 
     try {
-      console.log(`\n🔄 ========================================`);
-      console.log(`🔄 REVERTER CONCLUSÃO DE ETAPA: ${etapa}`);
-      console.log(`🔄 ========================================`);
-      console.log(`   Total de atividades: ${atividadesDaEtapa.length}`);
-      console.log(`   Empreendimento: ${empreendimentoId}`);
+
 
       let totalPlanejamentosRevertidos = 0;
 
