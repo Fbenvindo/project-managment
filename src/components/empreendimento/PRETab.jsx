@@ -449,18 +449,22 @@ export default function PRETab({ empreendimento, readOnly = false }) {
   const atualizarTempoDocumentos = async () => {
     const allItems = itemsRef.current;
 
-    // Coleta todos os docIds referenciados por qualquer item
-    const docIdsSet = new Set();
+    // Coleta todos os docIds referenciados pelos itens atuais
+    const docIdsComVinculo = new Set();
     allItems.forEach(item => {
-      (item.documentos_vinculados || []).forEach(docId => docIdsSet.add(docId));
+      (item.documentos_vinculados || []).forEach(docId => docIdsComVinculo.add(docId));
     });
 
-    if (docIdsSet.size === 0) return;
+    // Também inclui documentos que já têm tempo_pre > 0 (para poder zerado se foram desvinculados)
+    const docIdsParaZerar = documentos.filter(d => Number(d.tempo_pre) > 0 && !docIdsComVinculo.has(d.id)).map(d => d.id);
 
-    // Para cada documento, recalcula do zero e atualiza diretamente (sem checar estado local)
-    for (const docId of docIdsSet) {
+    const todosDocIds = new Set([...docIdsComVinculo, ...docIdsParaZerar]);
+    if (todosDocIds.size === 0) return;
+
+    // Para cada documento, recalcula do zero e atualiza diretamente
+    for (const docId of todosDocIds) {
       try {
-        // Soma todos os itens PRE que vinculam este documento
+        // Soma todos os itens PRE que ainda vinculam este documento (0 se foi desvinculado)
         const tempoTotal = allItems.reduce((sum, item) => {
           if ((item.documentos_vinculados || []).includes(docId)) {
             return sum + (Number(item.tempo_atendimento) || 0);
