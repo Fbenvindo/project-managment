@@ -759,7 +759,12 @@ export default function DocumentosTab({
     return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
   }, [filteredDocumentos]);
 
-  const etapasDisponiveis = ['Estudo Preliminar', 'Ante-Projeto', 'Projeto Básico', 'Projeto Executivo', 'Liberado para Obra'];
+  const etapasDisponiveis = useMemo(() => {
+    if (empreendimento?.etapas && empreendimento.etapas.length > 0) {
+      return empreendimento.etapas;
+    }
+    return ['Estudo Preliminar', 'Ante-Projeto', 'Projeto Básico', 'Projeto Executivo', 'Liberado para Obra'];
+  }, [empreendimento?.etapas]);
 
   const usuariosOrdenados = useMemo(() => {
     const usuariosList = Array.isArray(usuarios) ? usuarios : [];

@@ -5,18 +5,16 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
-import { X, Upload, Save } from "lucide-react";
+import { X, Upload, Save, Plus, Trash2, GripVertical } from "lucide-react";
 import { motion } from "framer-motion";
 import { UploadFile } from "@/integrations/Core";
 
-const ETAPAS_PADRAO = [
-  "Etapa 1",
-  "Etapa 2",
-  "Etapa 3",
-  "Etapa 4",
-  "Etapa 5",
-  "Etapa 6",
-  "Etapa 7"
+const ETAPAS_DEFAULT = [
+  "Estudo Preliminar",
+  "Ante-Projeto",
+  "Projeto Básico",
+  "Projeto Executivo",
+  "Liberado para Obra"
 ];
 
 export default function EmpreendimentoForm({ empreendimento, onSubmit, onClose, onSuccess }) {
@@ -27,20 +25,12 @@ export default function EmpreendimentoForm({ empreendimento, onSubmit, onClose, 
     num_proposta: empreendimento?.num_proposta || "",
     status: empreendimento?.status || "em_planejamento",
     foto_url: empreendimento?.foto_url || "",
-    etapas: empreendimento?.etapas || [
-      "Estudo Preliminar",
-      "Ante-Projeto",
-      "Projeto Básico",
-      "Projeto Executivo",
-      "Liberado para Obra"
-    ]
+    etapas: empreendimento?.etapas || ETAPAS_DEFAULT
   });
   
-  const [etapasEditaveis, setEtapasEditaveis] = useState(() => {
-    // Inicializar com as etapas existentes ou 7 etapas vazias
-    const etapasAtuais = empreendimento?.etapas || [];
-    return ETAPAS_PADRAO.map((_, index) => etapasAtuais[index] || "");
-  });
+  const [etapasEditaveis, setEtapasEditaveis] = useState(
+    empreendimento?.etapas?.length > 0 ? empreendimento.etapas : ETAPAS_DEFAULT
+  );
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -52,8 +42,18 @@ export default function EmpreendimentoForm({ empreendimento, onSubmit, onClose, 
     const novasEtapas = [...etapasEditaveis];
     novasEtapas[index] = valor;
     setEtapasEditaveis(novasEtapas);
-    
-    // Atualizar formData apenas com etapas preenchidas
+    const etapasPreenchidas = novasEtapas.filter(e => e.trim() !== "");
+    setFormData(prev => ({ ...prev, etapas: etapasPreenchidas }));
+  };
+
+  const handleAddEtapa = () => {
+    const novasEtapas = [...etapasEditaveis, ""];
+    setEtapasEditaveis(novasEtapas);
+  };
+
+  const handleRemoveEtapa = (index) => {
+    const novasEtapas = etapasEditaveis.filter((_, i) => i !== index);
+    setEtapasEditaveis(novasEtapas);
     const etapasPreenchidas = novasEtapas.filter(e => e.trim() !== "");
     setFormData(prev => ({ ...prev, etapas: etapasPreenchidas }));
   };
@@ -186,25 +186,41 @@ export default function EmpreendimentoForm({ empreendimento, onSubmit, onClose, 
               </div>
 
               <div className="space-y-3">
-                <Label>Etapas do Empreendimento</Label>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                  {ETAPAS_PADRAO.map((etapaLabel, index) => (
-                    <div key={index} className="space-y-1">
-                      <Label htmlFor={`etapa-${index}`} className="text-xs font-medium text-gray-600">
-                        {etapaLabel}
-                      </Label>
+                <div className="flex items-center justify-between">
+                  <Label>Etapas do Empreendimento</Label>
+                  <Button type="button" variant="outline" size="sm" onClick={handleAddEtapa} className="text-xs h-7">
+                    <Plus className="w-3 h-3 mr-1" />
+                    Adicionar Etapa
+                  </Button>
+                </div>
+                <div className="space-y-2 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                  {etapasEditaveis.map((etapa, index) => (
+                    <div key={index} className="flex items-center gap-2">
+                      <span className="text-xs text-gray-400 w-5 text-right flex-shrink-0">{index + 1}.</span>
                       <Input
-                        id={`etapa-${index}`}
-                        value={etapasEditaveis[index]}
+                        value={etapa}
                         onChange={(e) => handleEtapaChange(index, e.target.value)}
-                        placeholder={`Ex: Estudo Preliminar, Projeto Executivo...`}
-                        className="h-9"
+                        placeholder="Ex: Revisão Executivo, Estudo Preliminar..."
+                        className="h-8 text-sm flex-1"
                       />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-red-500 hover:text-red-700 hover:bg-red-50 flex-shrink-0"
+                        onClick={() => handleRemoveEtapa(index)}
+                        title="Remover etapa"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
                     </div>
                   ))}
+                  {etapasEditaveis.length === 0 && (
+                    <p className="text-xs text-gray-400 text-center py-2">Nenhuma etapa configurada. Clique em "Adicionar Etapa".</p>
+                  )}
                 </div>
                 <p className="text-xs text-gray-500">
-                  Nomeie as etapas do empreendimento. Deixe em branco as que não forem utilizadas.
+                  Adicione quantas etapas precisar, incluindo revisões (ex: "Revisão Executivo").
                 </p>
               </div>
 
