@@ -457,12 +457,9 @@ export default function PRETab({ empreendimento, readOnly = false }) {
 
     if (docIdsSet.size === 0) return;
 
-    // Para cada documento, recalcula do zero
+    // Para cada documento, recalcula do zero e atualiza diretamente (sem checar estado local)
     for (const docId of docIdsSet) {
       try {
-        const doc = documentos.find(d => d.id === docId);
-        if (!doc) continue;
-
         // Soma todos os itens PRE que vinculam este documento
         const tempoTotal = allItems.reduce((sum, item) => {
           if ((item.documentos_vinculados || []).includes(docId)) {
@@ -471,12 +468,11 @@ export default function PRETab({ empreendimento, readOnly = false }) {
           return sum;
         }, 0);
 
-        const updateData = { tempo_pre: tempoTotal };
         await retryWithBackoff(
-          () => Documento.update(docId, updateData),
+          () => Documento.update(docId, { tempo_pre: tempoTotal }),
           3, 1500, `PRE-UpdateDoc-${docId}`
         );
-        setDocumentos(prev => prev.map(d => d.id === docId ? { ...d, ...updateData } : d));
+        setDocumentos(prev => prev.map(d => d.id === docId ? { ...d, tempo_pre: tempoTotal } : d));
       } catch {
         // Ignora erros individuais - não bloqueia o save
       }
