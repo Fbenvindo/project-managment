@@ -184,21 +184,6 @@ const PREItemRow = memo(function PREItemRow({
           )}
         </div>
 
-        {/* Etapa Adicional */}
-        <div>
-          <label className="text-xs font-bold text-gray-700 block mb-1 uppercase tracking-wide">Etapa Adicional no Projeto</label>
-          <Input
-            value={item.etapa_adicional || ''}
-            onChange={(e) => onUpdate(item.id, 'etapa_adicional', e.target.value)}
-            className="text-sm bg-white border-gray-300 print:border-none print:bg-transparent"
-            disabled={readOnly}
-            placeholder="Ex: Revisão do Executivo, Compatibilização R02..."
-          />
-          {item.etapa_adicional && (
-            <p className="text-xs text-amber-600 mt-1">⚠️ Esta etapa será adicionada ao documento no projeto</p>
-          )}
-        </div>
-
         {/* Resposta */}
         <div>
           <label className="text-xs font-bold text-gray-700 block mb-1 uppercase tracking-wide">Resposta</label>
