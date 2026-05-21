@@ -6,6 +6,7 @@ import DisciplinasManager from "../components/configuracoes/DisciplinasManager";
 import AtividadesManager from "../components/configuracoes/AtividadesManager";
 import AtividadeFuncaoManager from "../components/configuracoes/AtividadeFuncaoManager";
 import EquipesManager from "../components/configuracoes/EquipesManager";
+import HistoricoGeralTab from "../components/configuracoes/HistoricoGeralTab";
 
 export default function ConfiguracoesPage() {
   const [disciplinas, setDisciplinas] = useState([]);
@@ -40,11 +41,12 @@ export default function ConfiguracoesPage() {
       <div className="p-6 md:p-8 space-y-8">
         <h1 className="text-3xl font-bold text-gray-900">Configurações Gerais</h1>
         <Tabs defaultValue="disciplinas" className="w-full">
-          <TabsList className="grid w-full grid-cols-2 md:grid-cols-4">
+          <TabsList className="grid w-full grid-cols-2 md:grid-cols-5">
             <TabsTrigger value="disciplinas">Disciplinas</TabsTrigger>
             <TabsTrigger value="atividades">Catálogo de Atividades</TabsTrigger>
             <TabsTrigger value="atividades_funcao">Atividades por Departamento</TabsTrigger>
             <TabsTrigger value="equipes">Equipes</TabsTrigger>
+            <TabsTrigger value="historico">Histórico</TabsTrigger>
           </TabsList>
           <TabsContent value="disciplinas" className="mt-6">
             <DisciplinasManager 
@@ -66,6 +68,9 @@ export default function ConfiguracoesPage() {
           </TabsContent>
           <TabsContent value="equipes" className="mt-6">
             <EquipesManager />
+          </TabsContent>
+          <TabsContent value="historico" className="mt-6">
+            <HistoricoGeralTab />
           </TabsContent>
         </Tabs>
       </div>
