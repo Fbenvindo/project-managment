@@ -679,8 +679,11 @@ export default function DocumentoItem({
         {!readOnly && (
           <TableCell className="text-sm text-gray-700">
             <div className="flex flex-col">
-              <span className="font-medium">{`${tempoCalculadoPorEtapa.toFixed(1)}h`}</span>
+              <span className="font-medium">{`${(tempoCalculadoPorEtapa + (Number(doc.tempo_pre) || 0)).toFixed(1)}h`}</span>
               {etapaParaPlanejamento !== 'todas' && <span className="text-xs text-gray-500">({etapaParaPlanejamento})</span>}
+              {(Number(doc.tempo_pre) || 0) > 0 && (
+                <span className="text-xs text-orange-500" title="Inclui tempo de PRE vinculada">+{Number(doc.tempo_pre).toFixed(1)}h PRE</span>
+              )}
             </div>
           </TableCell>
         )}
