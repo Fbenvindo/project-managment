@@ -76,70 +76,39 @@ const isActivityOverdue = (plano) => {
   return isOverdueShared(plano);
 };
 
-// **CORRIGIDO**: Função para calcular o status real da atividade - PRIORIZAR CONCLUSÃO
+// Calcula status real: 3 cenários principais
 const calculateActivityStatus = (plano, allPlanejamentos = []) => {
-  // Se for uma atividade virtual (execução), seu status é direto
-  if (plano.isLegacyExecution) {
-    return plano.status;
-  }
+  if (plano.isLegacyExecution) return plano.status;
+  if (plano.status === 'concluido_com_atraso') return 'concluido_com_atraso';
+  if (plano.status === 'concluido') return 'concluido';
 
-  // **PRIORIDADE 1**: Se está marcada explicitamente como concluída (com ou sem atraso)
-  if (plano.status === 'concluido_com_atraso') {
-    return 'concluido_com_atraso';
-  }
-  if (plano.status === 'concluido') {
-    return 'concluido';
-  }
+  const dataRef = plano.termino_ajustado || plano.termino_planejado;
+  const hoje = format(new Date(), 'yyyy-MM-dd');
+  const estaAtrasada = dataRef && hoje > dataRef;
 
-  // **PRIORIDADE 2**: Se está marcada como atrasada manualmente OU automaticamente, retorna atrasado
-  if (plano.status === 'atrasado' || isActivityOverdue(plano)) {
-    return 'atrasado';
-  }
+  // Cenário 1: não iniciada e passou prazo → vermelho com ✕
+  if (estaAtrasada && (!plano.status || plano.status === 'nao_iniciado' || plano.status === 'atrasado')) return 'nao_iniciado_atrasado';
+  // Cenário 2: iniciada mas não finalizada e passou prazo → amarelo com ▶
+  if (estaAtrasada && (plano.status === 'em_andamento' || plano.status === 'pausado')) return 'em_andamento_atrasado';
+  // Compatibilidade legada
+  if (isActivityOverdue(plano)) return 'nao_iniciado_atrasado';
 
-  // **PRIORIDADE 3**: Verificar se foi replanejada para INICIAR mais tarde
-  let foiReplanejadaParaIniciarMaisTarde = false;
   if (plano.inicio_ajustado && plano.inicio_planejado) {
     try {
-      const ajustado = startOfDay(parseISO(plano.inicio_ajustado));
-      const planejado = startOfDay(parseISO(plano.inicio_planejado));
-      if (isValid(ajustado) && isValid(planejado) && isAfter(ajustado, planejado)) {
-        foiReplanejadaParaIniciarMaisTarde = true;
-      }
-    } catch (e) {
-    }
+      const aj = startOfDay(parseISO(plano.inicio_ajustado)), pl = startOfDay(parseISO(plano.inicio_planejado));
+      if (isValid(aj) && isValid(pl) && isAfter(aj, pl)) return 'impactado_por_atraso';
+    } catch (e) {}
   }
-
-  // Verificar se está em risco por causa de predecessora atrasada
-  let predecessoraAtrasada = false;
   if (plano.predecessora_id) {
-    const predecessora = allPlanejamentos.find(p => normalizeActivityId(p.id) === normalizeActivityId(plano.predecessora_id));
-    if (predecessora && isActivityOverdue(predecessora)) {
-      predecessoraAtrasada = true;
-    }
+    const pred = allPlanejamentos.find(p => normalizeActivityId(p.id) === normalizeActivityId(plano.predecessora_id));
+    if (pred && isActivityOverdue(pred)) return 'impactado_por_atraso';
   }
-
-  if (foiReplanejadaParaIniciarMaisTarde || predecessoraAtrasada) {
-    return 'impactado_por_atraso';
-  }
-
-  // Manter verificação de TÉRMINO para o status amarelo (replanejado_atrasado)
-  let wasReplannedLaterTermino = false;
   if (plano.termino_ajustado && plano.termino_planejado) {
     try {
-      const ajustado = startOfDay(parseISO(plano.termino_ajustado));
-      const planejado = startOfDay(parseISO(plano.termino_planejado));
-      if (isValid(ajustado) && isValid(planejado) && isAfter(ajustado, planejado)) {
-        wasReplannedLaterTermino = true;
-      }
-    } catch (e) {
-    }
+      const aj = startOfDay(parseISO(plano.termino_ajustado)), pl = startOfDay(parseISO(plano.termino_planejado));
+      if (isValid(aj) && isValid(pl) && isAfter(aj, pl)) return 'replanejado_atrasado';
+    } catch (e) {}
   }
-
-  if (wasReplannedLaterTermino) {
-    return 'replanejado_atrasado';
-  }
-
-  // Caso contrário, manter o status original ou 'nao_iniciado'
   return plano.status || 'nao_iniciado';
 };
 
@@ -282,19 +251,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
 
   const realStatus = calculateActivityStatus(plano, allPlanejamentos);
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'em_andamento': return '#3b82f6'; // Azul
-      case 'pausado': return '#f59e0b'; // Amarelo
-      case 'concluido': return '#10b981'; // Verde
-      case 'concluido_com_atraso': return '#ef4444'; // Vermelho (concluído com atraso)
-      case 'atrasado':
-      case 'replanejado_atrasado': return '#ef4444'; // Vermelho para atraso e replanejado com atraso
-      case 'impactado_por_atraso': return '#8b5cf6'; // Roxo (violet-500)
-      case 'nao_iniciado':
-      default: return '#6b7280'; // Cinza
-    }
-  };
+  const getStatusColor = (s) => ({ em_andamento:'#3b82f6', pausado:'#f59e0b', concluido:'#10b981', concluido_com_atraso:'#ef4444', nao_iniciado_atrasado:'#ef4444', atrasado:'#ef4444', replanejado_atrasado:'#ef4444', em_andamento_atrasado:'#f59e0b', impactado_por_atraso:'#8b5cf6' }[s] || '#6b7280');
 
   // **MODIFICADO**: Melhorar exibição do nome para documentos
   const displayName = useMemo(() => {
@@ -575,13 +532,12 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
         {...provided.draggableProps}
         style={{
           ...provided.draggableProps.style,
-          backgroundColor: isSelected ? '#e0e7ff' : // Destaque azul para selecionadas
-            realStatus === 'concluido_com_atraso' ? '#fef2f2' :
-            realStatus === 'atrasado' || realStatus === 'replanejado_atrasado' ? '#fef2f2' :
-              realStatus === 'impactado_por_atraso' ? '#f5f3ff' :
-                realStatus === 'em_andamento' ? '#eff6ff' :
-                  realStatus === 'concluido' ? '#f0fdf4' :
-                    realStatus === 'pausado' ? '#fffbeb' : '#ffffff',
+          backgroundColor: isSelected ? '#e0e7ff' :
+            (realStatus === 'concluido_com_atraso' || realStatus === 'nao_iniciado_atrasado' || realStatus === 'atrasado' || realStatus === 'replanejado_atrasado') ? '#fef2f2' :
+            (realStatus === 'em_andamento_atrasado' || realStatus === 'pausado') ? '#fffbeb' :
+            realStatus === 'impactado_por_atraso' ? '#f5f3ff' :
+            realStatus === 'em_andamento' ? '#eff6ff' :
+            realStatus === 'concluido' ? '#f0fdf4' : '#ffffff',
           ...(isDragging && { boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)' })
         }}
         className={`p-2 rounded border mb-1 text-xs group hover:shadow-md transition-shadow duration-200 relative overflow-visible ${isSelected ? 'border-indigo-400 ring-2 ring-indigo-200' : 'border-gray-200'
@@ -715,35 +671,26 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
             <button
               onClick={handleStartActivity}
               disabled={!!activeExecution || isStarting || isConcluded}
-              className={`p-1.5 rounded-md transition-colors ${activeExecution?.planejamento_id === plano.id
-                ? 'bg-yellow-500 hover:bg-yellow-600 animate-pulse'
-                : realStatus === 'concluido'
-                  ? 'bg-green-500 cursor-not-allowed'
-                  : realStatus === 'concluido_com_atraso'
-                    ? 'bg-red-500 cursor-not-allowed'
-                    : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado')
-                      ? 'bg-red-500 hover:bg-red-600'
-                      : 'bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed'
-                }`}
+              className={`p-1.5 rounded-md transition-colors ${
+                activeExecution?.planejamento_id === plano.id ? 'bg-yellow-500 hover:bg-yellow-600 animate-pulse' :
+                (realStatus === 'concluido' || realStatus === 'concluido_com_atraso') ? 'bg-green-500 cursor-not-allowed' :
+                realStatus === 'nao_iniciado_atrasado' ? 'bg-red-500 hover:bg-red-600' :
+                realStatus === 'em_andamento_atrasado' ? 'bg-yellow-500 hover:bg-yellow-600' :
+                'bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed'
+              }`}
               title={
-                activeExecution?.planejamento_id === plano.id
-                  ? "Atividade em andamento"
-                  : realStatus === 'concluido'
-                    ? "Atividade concluída"
-                    : realStatus === 'concluido_com_atraso'
-                      ? "Concluída com atraso"
-                      : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado')
-                        ? "Atividade atrasada"
-                        : isStarting ? "Iniciando..." : "Iniciar atividade"
+                activeExecution?.planejamento_id === plano.id ? "Em andamento" :
+                (realStatus === 'concluido' || realStatus === 'concluido_com_atraso') ? "Concluída" :
+                realStatus === 'nao_iniciado_atrasado' ? "Não iniciada – prazo vencido" :
+                realStatus === 'em_andamento_atrasado' ? "Em andamento – prazo vencido" :
+                isStarting ? "Iniciando..." : "Iniciar atividade"
               }
             >
               {activeExecution?.planejamento_id === plano.id ? (
                 <Clock className="w-3.5 h-3.5 text-white" />
-              ) : realStatus === 'concluido' ? (
+              ) : (realStatus === 'concluido' || realStatus === 'concluido_com_atraso') ? (
                 <span className="text-white text-xs font-bold">✓</span>
-              ) : realStatus === 'concluido_com_atraso' ? (
-                <span className="text-white text-xs font-bold">✓</span>
-              ) : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado') ? (
+              ) : realStatus === 'nao_iniciado_atrasado' ? (
                 <span className="text-white text-xs font-bold">✕</span>
               ) : (
                 <Play className="w-3.5 h-3.5 text-white" fill="white" />
@@ -907,28 +854,17 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
   }, [atividades, disciplinas]);
 
   const getGroupStatus = () => {
-    if (statusCounts['atrasado'] > 0 || statusCounts['replanejado_atrasado'] > 0) return 'atrasado';
+    if (statusCounts['nao_iniciado_atrasado'] > 0 || statusCounts['atrasado'] > 0 || statusCounts['replanejado_atrasado'] > 0) return 'nao_iniciado_atrasado';
+    if (statusCounts['em_andamento_atrasado'] > 0) return 'em_andamento_atrasado';
     if (statusCounts['impactado_por_atraso'] > 0) return 'impactado_por_atraso';
     if (statusCounts['em_andamento'] > 0) return 'em_andamento';
     const totalConcluidos = (statusCounts['concluido'] || 0) + (statusCounts['concluido_com_atraso'] || 0);
-    if (atividades.length > 0 && totalConcluidos === atividades.length) {
-      return statusCounts['concluido_com_atraso'] > 0 ? 'concluido_com_atraso' : 'concluido';
-    }
+    if (atividades.length > 0 && totalConcluidos === atividades.length) return statusCounts['concluido_com_atraso'] > 0 ? 'concluido_com_atraso' : 'concluido';
     if (statusCounts['pausado'] > 0) return 'pausado';
     return 'nao_iniciado';
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'em_andamento': return '#3b82f6';
-      case 'pausado': return '#f59e0b';
-      case 'concluido': return '#10b981';
-      case 'concluido_com_atraso': return '#ef4444';
-      case 'atrasado': return '#ef4444';
-      case 'impactado_por_atraso': return '#8b5cf6';
-      default: return '#6b7280';
-    }
-  };
+  const getStatusColor = (s) => ({ em_andamento:'#3b82f6', pausado:'#f59e0b', concluido:'#10b981', concluido_com_atraso:'#ef4444', nao_iniciado_atrasado:'#ef4444', atrasado:'#ef4444', replanejado_atrasado:'#ef4444', em_andamento_atrasado:'#f59e0b', impactado_por_atraso:'#8b5cf6' }[s] || '#6b7280');
 
   const groupStatus = getGroupStatus();
   const statusColor = getStatusColor(groupStatus);
@@ -968,12 +904,12 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
         style={{
           borderLeft: `6px solid ${statusColor}`,
           backgroundColor: isDragging ? '#e0e7ff' :
-            groupStatus === 'concluido_com_atraso' ? '#fff1f2' :
-            groupStatus === 'atrasado' ? '#fff1f2' :
-              groupStatus === 'impactado_por_atraso' ? '#f5f3ff' :
-                groupStatus === 'em_andamento' ? '#eff6ff' :
-                  groupStatus === 'concluido' ? '#f0fdf4' :
-                    groupStatus === 'pausado' ? '#fefce8' : '#f8fafc',
+            (groupStatus === 'concluido_com_atraso' || groupStatus === 'nao_iniciado_atrasado') ? '#fff1f2' :
+            groupStatus === 'em_andamento_atrasado' ? '#fefce8' :
+            groupStatus === 'impactado_por_atraso' ? '#f5f3ff' :
+            groupStatus === 'em_andamento' ? '#eff6ff' :
+            groupStatus === 'concluido' ? '#f0fdf4' :
+            groupStatus === 'pausado' ? '#fefce8' : '#f8fafc',
           cursor: 'pointer',
           ...(isDragging && {
             boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
@@ -2289,49 +2225,16 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         return;
       }
       const overdue = isActivityOverdue(plano);
-      if (plano.status === 'atrasado' || overdue) {
-        statusMap.set(normalizeActivityId(plano.id), 'atrasado');
-        return;
-      }
-
-      let foiReplanejadaParaIniciarMaisTarde = false;
-      if (plano.inicio_ajustado && plano.inicio_planejado) {
-        try {
-          const ajustado = startOfDay(parseISO(plano.inicio_ajustado));
-          const planejado = startOfDay(parseISO(plano.inicio_planejado));
-          if (isValid(ajustado) && isValid(planejado) && isAfter(ajustado, planejado)) {
-            foiReplanejadaParaIniciarMaisTarde = true;
-          }
-        } catch (_) {}
-      }
-
-      let predecessoraAtrasada = false;
-      if (plano.predecessora_id) {
-        const pred = planMap.get(normalizeActivityId(plano.predecessora_id));
-        if (pred && isActivityOverdue(pred)) predecessoraAtrasada = true;
-      }
-
-      if (foiReplanejadaParaIniciarMaisTarde || predecessoraAtrasada) {
-        statusMap.set(normalizeActivityId(plano.id), 'impactado_por_atraso');
-        return;
-      }
-
-      let wasReplannedLaterTermino = false;
-      if (plano.termino_ajustado && plano.termino_planejado) {
-        try {
-          const ajustado = startOfDay(parseISO(plano.termino_ajustado));
-          const planejado = startOfDay(parseISO(plano.termino_planejado));
-          if (isValid(ajustado) && isValid(planejado) && isAfter(ajustado, planejado)) {
-            wasReplannedLaterTermino = true;
-          }
-        } catch (_) {}
-      }
-
-      if (wasReplannedLaterTermino) {
-        statusMap.set(normalizeActivityId(plano.id), 'replanejado_atrasado');
-        return;
-      }
-
+      const dRef = plano.termino_ajustado || plano.termino_planejado;
+      const hj = format(new Date(), 'yyyy-MM-dd');
+      const atrasada = dRef && hj > dRef;
+      if (atrasada && (plano.status === 'em_andamento' || plano.status === 'pausado')) { statusMap.set(normalizeActivityId(plano.id), 'em_andamento_atrasado'); return; }
+      if (atrasada || plano.status === 'atrasado' || overdue) { statusMap.set(normalizeActivityId(plano.id), 'nao_iniciado_atrasado'); return; }
+      let impactado = false;
+      if (plano.inicio_ajustado && plano.inicio_planejado) { try { const aj=startOfDay(parseISO(plano.inicio_ajustado)),pl=startOfDay(parseISO(plano.inicio_planejado)); if(isValid(aj)&&isValid(pl)&&isAfter(aj,pl)) impactado=true; } catch(_){} }
+      if (!impactado && plano.predecessora_id) { const pred=planMap.get(normalizeActivityId(plano.predecessora_id)); if(pred&&isActivityOverdue(pred)) impactado=true; }
+      if (impactado) { statusMap.set(normalizeActivityId(plano.id), 'impactado_por_atraso'); return; }
+      if (plano.termino_ajustado && plano.termino_planejado) { try { const aj=startOfDay(parseISO(plano.termino_ajustado)),pl=startOfDay(parseISO(plano.termino_planejado)); if(isValid(aj)&&isValid(pl)&&isAfter(aj,pl)){ statusMap.set(normalizeActivityId(plano.id),'replanejado_atrasado'); return; } } catch(_){} }
       statusMap.set(normalizeActivityId(plano.id), plano.status || 'nao_iniciado');
     });
 
