@@ -1241,7 +1241,7 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
                 key={atividade.id}
                 draggableId={`${atividade.id}`}
                 index={index}
-                isDragDisabled={!canReprogram || atividade.status === 'concluido' || atividade.status === 'concluido_com_atraso' || atividade.isLegacyExecution || normalizeActivityId(isReprogramando) === normalizeActivityId(atividade.id)}
+                isDragDisabled={!canReprogram || atividade.status === 'concluido' || atividade.status === 'concluido_com_atraso' || atividade.isLegacyExecution || normalizeActivityId(isReprogramando) === normalizeActivityId(atividade.id) || ((atividade.termino_ajustado || atividade.termino_planejado) < '2026-05-20' && !!(atividade.termino_ajustado || atividade.termino_planejado))}
               >
                 {(provided, snapshot) => (
                   <ActivityItem
@@ -2221,19 +2221,16 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       const dayActivities = activitiesByDay[sourceDayKey] || [];
 
 
-      // Filtrar apenas atividades que podem ser movidas
+      // Filtrar atividades que podem ser movidas (não concluídas, não legadas, com término >= 20/05/2026)
+      const DRAG_CUTOFF = '2026-05-20';
       const movableActivities = dayActivities.filter(a => {
-        const canMove = !a.isLegacyExecution && a.status !== 'concluido' && a.status !== 'concluido_com_atraso';
-        return canMove;
+        if (a.isLegacyExecution || a.status === 'concluido' || a.status === 'concluido_com_atraso') return false;
+        const termino = a.termino_ajustado || a.termino_planejado;
+        return !termino || termino >= DRAG_CUTOFF;
       });
 
+      if (movableActivities.length === 0) { alert("Nenhuma atividade deste dia pode ser movida."); return; }
 
-      if (movableActivities.length === 0) {
-        alert("Nenhuma atividade deste dia pode ser movida (todas estão concluídas ou são execuções antigas).");
-        return;
-      }
-
-      // Confirmar ação
       const confirmed = window.confirm(
         `Deseja mover todas as ${movableActivities.length} atividade(s) de ${format(parseISO(sourceDayKey), 'd MMM', { locale: ptBR })} para ${format(parseISO(destination.droppableId), 'd MMM', { locale: ptBR })}?`
       );
@@ -2309,14 +2306,12 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       }
 
 
-      const invalidActivities = groupActivities.filter(a =>
-        a.isLegacyExecution || a.status === 'concluido' || a.status === 'concluido_com_atraso'
-      );
-
-      if (invalidActivities.length > 0) {
-        alert("Algumas atividades do grupo não podem ser reprogramadas (concluídas ou execuções antigas).");
-        return;
-      }
+      const invalidActivities = groupActivities.filter(a => {
+        if (a.isLegacyExecution || a.status === 'concluido' || a.status === 'concluido_com_atraso') return true;
+        const t = a.termino_ajustado || a.termino_planejado;
+        return t && t < '2026-05-20';
+      });
+      if (invalidActivities.length > 0) { alert("Algumas atividades do grupo não podem ser reprogramadas."); return; }
 
       const moveGroupActivities = async () => {
         let successCount = 0;
@@ -2352,14 +2347,12 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
 
 
     const invalidActivities = activitiesToMove.filter(id => {
-      const atividade = (enrichedData || []).find(p => normalizeActivityId(p.id) === normalizeActivityId(id));
-      return !atividade || atividade.isLegacyExecution || atividade.status === 'concluido' || atividade.status === 'concluido_com_atraso';
+      const a = (enrichedData || []).find(p => normalizeActivityId(p.id) === normalizeActivityId(id));
+      if (!a || a.isLegacyExecution || a.status === 'concluido' || a.status === 'concluido_com_atraso') return true;
+      const t = a.termino_ajustado || a.termino_planejado;
+      return t && t < '2026-05-20';
     });
-
-    if (invalidActivities.length > 0) {
-      alert("Algumas atividades selecionadas não podem ser reprogramadas (concluídas, execuções antigas, ou não são planejamentos).");
-      return;
-    }
+    if (invalidActivities.length > 0) { alert("Algumas atividades não podem ser reprogramadas (concluídas ou com término anterior a 20/05/2026)."); return; }
 
     const moveActivities = async () => {
       let successCount = 0;
