@@ -235,8 +235,15 @@ export default React.memo(AnaliticoFolhaRow, (prev, next) => {
     prev.folhasSelecionadas.has(prev.folha.source_documento_id) !==
     next.folhasSelecionadas.has(next.folha.source_documento_id)
   ) return false;
+  // Field-level comparison for folha — object identity is always unstable across renders
+  if (prev.folha.source_documento_id !== next.folha.source_documento_id) return false;
+  if (prev.folha.base_atividade_id !== next.folha.base_atividade_id) return false;
+  if (prev.folha.status !== next.folha.status) return false;
+  if (prev.folha.tempo !== next.folha.tempo) return false;
+  if (prev.folha.etapa !== next.folha.etapa) return false;
+  if (prev.folha.source_documento_numero !== next.folha.source_documento_numero) return false;
+  if (prev.folha.source_documento_arquivo !== next.folha.source_documento_arquivo) return false;
   // Re-render when data that affects the visual output changes
-  if (prev.folha !== next.folha) return false;
   if (prev.planejamentos !== next.planejamentos) return false;
   if (prev.usuarios !== next.usuarios) return false;
   if (prev.hasCheckboxColumn !== next.hasCheckboxColumn) return false;
