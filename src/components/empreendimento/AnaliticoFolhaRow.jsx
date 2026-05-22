@@ -9,7 +9,7 @@ import { PlanejamentoAtividade, Atividade } from '@/entities/all';
 import { retryWithBackoff } from '../utils/apiUtils';
 import PlanejamentoFolhaUnicaModal from './PlanejamentoFolhaUnicaModal';
 
-export default function AnaliticoFolhaRow({
+function AnaliticoFolhaRow({
   folha,
   hasCheckboxColumn,
   planejamentos,
