@@ -347,7 +347,7 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
       case 'concluido': return '#10b981';
       case 'concluido_com_atraso': return '#ef4444';
       case 'atrasado': return '#ef4444';
-      case 'impactado_por_atraso': return '#8b5cf6';
+      case 'impactado_por_atraso': return '#6b7280';
       default: return '#6b7280';
     }
   };
@@ -392,7 +392,7 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
           backgroundColor: isDragging ? '#e0e7ff' :
             groupStatus === 'concluido_com_atraso' ? '#fff1f2' :
             groupStatus === 'atrasado' ? '#fff1f2' :
-              groupStatus === 'impactado_por_atraso' ? '#f5f3ff' :
+              groupStatus === 'impactado_por_atraso' ? '#f8fafc' :
                 groupStatus === 'em_andamento' ? '#eff6ff' :
                   groupStatus === 'concluido' ? '#f0fdf4' :
                     groupStatus === 'pausado' ? '#fefce8' : '#f8fafc',
