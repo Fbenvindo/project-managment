@@ -477,12 +477,11 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
           </div>
           <div className="flex items-center gap-2">
             <div className="text-right">
-              <div
-                className="px-1.5 py-0.5 rounded text-xs font-bold text-white"
-                style={{ backgroundColor: statusColor }}
-              >
-                {totalHoras > 0 ? `${formatHours(totalHoras)}h` : '0h'}
-              </div>
+            <div
+              className="px-1.5 py-0.5 rounded text-xs font-bold text-white bg-gray-500"
+            >
+              {totalHoras > 0 ? `${formatHours(totalHoras)}h` : '0h'}
+            </div>
               <p className="text-xs text-gray-500 mt-0.5">{atividades.length} ativ.</p>
             </div>
             <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
