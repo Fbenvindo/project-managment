@@ -106,8 +106,8 @@ const LayoutComponent = ({ children, currentPageName }) => {
       });
     }
 
-    // Atividades Rápidas: todos EXCETO consultor e apoio
-    if (perfilAtual !== 'consultor' && perfilAtual !== 'apoio') {
+    // Atividades Rápidas: todos EXCETO consultor
+    if (perfilAtual !== 'consultor') {
       items.push({
         title: "Atividades Rápidas",
         url: createPageUrl("AtividadesRapidas"),
