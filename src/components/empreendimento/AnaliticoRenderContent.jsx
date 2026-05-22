@@ -274,9 +274,8 @@ export default function AnaliticoRenderContent({
                               const genericAtividadeIdToExclude = ativ.base_atividade_id || ativ.id;
                               const isDeleting = isDeletingActivity[genericAtividadeIdToExclude];
 
-                              return (
-                                <React.Fragment key={key}>
-                                  <TableRow className="hover:bg-gray-50 group">
+                              return [
+                                <TableRow key={`${key}-row`} className="hover:bg-gray-50 group">
                                     {hasCheckboxColumn && (
                                       <TableCell>
                                         {ativ.isEditable && (
@@ -336,17 +335,16 @@ export default function AnaliticoRenderContent({
                                     <TableCell>
                                       {renderDropdownCell(ativ, isDeleting)}
                                     </TableCell>
-                                  </TableRow>
-                                  {isExpanded && grupo.folhas.map(folha => (
+                                  </TableRow>,
+                                  ...(isExpanded ? grupo.folhas.map(folha => (
                                     <AnaliticoFolhaRow
-                                      key={folha.uniqueId}
+                                      key={`${key}-${folha.uniqueId}`}
                                       folha={folha}
                                       showExcluirCheckbox={true}
                                       {...folhaRowProps}
                                     />
-                                  ))}
-                                </React.Fragment>
-                              );
+                                  )) : [])
+                                ];
                             })}
                           </TableBody>
                         </Table>
@@ -390,9 +388,8 @@ export default function AnaliticoRenderContent({
                       const uniqueKey = ativ.source_documento_id ? `${genericAtividadeIdToExclude}-${ativ.source_documento_id}` : genericAtividadeIdToExclude;
                       const isDeleting = isDeletingActivity[uniqueKey] || isDeletingActivity[genericAtividadeIdToExclude];
 
-                      return (
-                        <React.Fragment key={key}>
-                          <TableRow className="hover:bg-gray-50 group">
+                      return [
+                        <TableRow key={`${key}-row`} className="hover:bg-gray-50 group">
                             {hasCheckboxColumn && (
                               <TableCell>
                                 {ativ.isEditable && (
@@ -472,17 +469,16 @@ export default function AnaliticoRenderContent({
                               {!ativ.isEditable && renderAcoesCell(ativ, genericAtividadeIdToExclude, isDeleting)}
                             </TableCell>
                             <TableCell>{renderDropdownCell(ativ, isDeleting)}</TableCell>
-                          </TableRow>
-                          {isExpanded && grupo.folhas.map(folha => (
+                          </TableRow>,
+                          ...(isExpanded ? grupo.folhas.map(folha => (
                             <AnaliticoFolhaRow
-                              key={folha.uniqueId}
+                              key={`${key}-${folha.uniqueId}`}
                               folha={folha}
                               showExcluirCheckbox={false}
                               {...folhaRowProps}
                             />
-                          ))}
-                        </React.Fragment>
-                      );
+                          )) : [])
+                        ];
                     })}
                   </TableBody>
                 </Table>
