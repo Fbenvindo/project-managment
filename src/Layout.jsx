@@ -86,8 +86,8 @@ const LayoutComponent = ({ children, currentPageName }) => {
       });
     }
 
-    // ATA de Reunião: coordenador e consultor
-    if (hasPermission('coordenador') || perfilAtual === 'consultor') {
+    // ATA de Reunião: coordenador, consultor e gestão
+    if (hasPermission('coordenador') || perfilAtual === 'consultor' || perfilAtual === 'gestao') {
       items.push({
         title: "ATA de Reunião",
         url: createPageUrl("AtaPlanejamento"),
