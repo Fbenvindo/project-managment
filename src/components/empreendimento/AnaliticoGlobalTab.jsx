@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+// @ts-nocheck
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Atividade, Disciplina, PlanejamentoAtividade, Documento, AlteracaoEtapa, Empreendimento, Usuario, AtividadesDoProjeto, ItemPRE } from '@/entities/all';
 import AnaliticoRenderContent from './AnaliticoRenderContent';
-
-const PlanejamentoDocumento = base44.entities.PlanejamentoDocumento;
+import AnaliticoFolhaRow from './AnaliticoFolhaRow';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -12,12 +12,13 @@ import { Label } from '@/components/ui/label';
 import { EtapaEditModal, EditarEtapaEmFolhasModal, ExcluirDeFolhasModal } from './AnaliticoModais';
 import { PlusCircle, Search, Filter, MoreHorizontal, Edit, Trash2, Loader2, PackageOpen, Layers, XCircle, FileX, RefreshCw, Edit2, ChevronRight, ChevronDown, Calendar, CheckCircle2, Users2, CheckCircle } from 'lucide-react';
 import PlanejamentoAtividadeModal from './PlanejamentoAtividadeModal';
-import AtividadeFormModal from './AtividadeFormModal';import AnaliticoFolhaRow from './AnaliticoFolhaRow';
+import AtividadeFormModal from './AtividadeFormModal';
 import { debounce } from 'lodash';
 import { Badge } from '@/components/ui/badge';
 import { retryWithBackoff, retryWithExtendedBackoff } from '../utils/apiUtils';
 import { Checkbox } from "@/components/ui/checkbox";
 import { base44 } from '@/api/base44Client';
+const PlanejamentoDocumento = base44.entities.PlanejamentoDocumento;
 import PDFListaDesenvolvimento from '../configuracoes/PDFListaDesenvolvimento';
 import { getNextWorkingDay, distribuirHorasPorDias, isWorkingDay, calculateEndDate, ensureWorkingDay } from '../utils/DateCalculator';
 import { format, isValid, parseISO, addDays } from 'date-fns';
@@ -25,7 +26,7 @@ import { ptBR } from 'date-fns/locale';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 
-export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
+export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeTab }) {
   const [combinedActivities, setCombinedActivities] = useState([]);
   const [disciplinas, setDisciplinas] = useState([]);
   const [documentos, setDocumentos] = useState([]);
@@ -62,8 +63,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const [etapaMudancaGlobal, setEtapaMudancaGlobal] = useState('');
   const [editandoTempo, setEditandoTempo] = useState({});
   const [novosTempoPadrao, setNovosTempoPadrao] = useState({});
+  const [atividadesSelecionadasParaExcluir, setAtividadesSelecionadasParaExcluir] = useState(new Set());
   const [isExcluindoMultiplasFolhas, setIsExcluindoMultiplasFolhas] = useState(false);
-  const [folhasSelecionadas, setFolhasSelecionadas] = useState(new Set());
+  const [datasInicioFolha, setDatasInicioFolha] = useState({});
+  const [isSavingFolhaExecutor, setIsSavingFolhaExecutor] = useState({});
 
   const documentosMap = useMemo(() => {
     return new Map((documentos || []).map(doc => [doc.id, doc]));
@@ -363,6 +366,16 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     }
   }, [fetchData, empreendimentoId]);
 
+  const _isFirstActiveTab = useRef(true);
+  useEffect(() => {
+    if (_isFirstActiveTab.current) { _isFirstActiveTab.current = false; return; }
+    if (activeTab !== 'atividades_projeto' || !empreendimentoId) return;
+    retryWithBackoff(
+      () => ItemPRE.filter({ empreendimento_id: empreendimentoId }),
+      3, 500, 'refreshItensPRE'
+    ).then(data => setItensPRE(data || [])).catch(() => {});
+  }, [activeTab, empreendimentoId]);
+
   const debouncedSetSearch = useCallback(debounce((value) => {
     setFilters(prev => ({ ...prev, search: value }));
   }, 300), []);
@@ -553,7 +566,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         const alteracoes = await AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId });
         setAlteracoesEtapa(alteracoes || []);
         fetchData();
-        setFolhasSelecionadas(new Set());
         setIsEtapaModalOpen(false);
         return;
       }
@@ -856,6 +868,155 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
 
   const handleRestaurarExclusoesGlobais = async () => {};
 
+  const handleToggleFolhaConcluida = async (folha, concluir) => {
+    const chave = `${folha.source_documento_id}-${folha.base_atividade_id}`;
+    setIsConcluindo(prev => ({ ...prev, [chave]: true }));
+    try {
+      const planos = await retryWithBackoff(
+        () => PlanejamentoAtividade.filter({
+          empreendimento_id: empreendimentoId,
+          documento_id: folha.source_documento_id,
+          atividade_id: folha.base_atividade_id
+        }),
+        3, 500, `findPlanosToggleFolha-${chave}`
+      );
+      if (concluir) {
+        if (planos.length > 0) {
+          await Promise.all(planos.map(p => retryWithBackoff(() => PlanejamentoAtividade.update(p.id, { status: 'concluido' }), 3, 500, `concluirFolha-${p.id}`)));
+        } else {
+          const baseAtiv = combinedActivities.find(a => a.id === folha.base_atividade_id);
+          const descritivo = baseAtiv?.atividade || folha.source_documento_arquivo || '';
+          await retryWithBackoff(() => PlanejamentoAtividade.create({
+            empreendimento_id: empreendimentoId,
+            documento_id: folha.source_documento_id,
+            atividade_id: folha.base_atividade_id,
+            etapa: folha.etapa || '',
+            descritivo,
+            tempo_planejado: folha.tempo || 0,
+            status: 'concluido',
+            termino_real: format(new Date(), 'yyyy-MM-dd'),
+            horas_por_dia: {}
+          }), 3, 500, `criarPlanoConcluidoFolha-${chave}`);
+        }
+      } else {
+        await Promise.all(planos.map(p => {
+          if (p.inicio_planejado && p.termino_planejado) {
+            return retryWithBackoff(() => PlanejamentoAtividade.update(p.id, { status: 'nao_iniciado', termino_real: null }), 3, 500, `reverterFolha-${p.id}`);
+          }
+          return retryWithBackoff(() => PlanejamentoAtividade.delete(p.id), 3, 500, `deletarPlanoConcluidoFolha-${p.id}`);
+        }));
+      }
+      await fetchData();
+    } catch (error) {
+      console.error('Erro ao alterar status da folha:', error);
+      alert('Não foi possível alterar o status desta folha. Tente novamente.');
+    } finally {
+      setIsConcluindo(prev => ({ ...prev, [chave]: false }));
+    }
+  };
+
+  const handleSaveFolhaExecutor = async (folha, executorEmail, dataInicioCustom = null) => {
+    const folhaKey = `${folha.source_documento_id}-${folha.base_atividade_id}`;
+    setIsSavingFolhaExecutor(prev => ({ ...prev, [folhaKey]: true }));
+    try {
+      const atividadeId = folha.base_atividade_id;
+      const atividadeOriginalArr = await retryWithBackoff(
+        () => Atividade.filter({ id: atividadeId }),
+        3, 500, `getFolhaAtiv-${atividadeId}`
+      );
+      if (!atividadeOriginalArr || atividadeOriginalArr.length === 0) throw new Error('Atividade não encontrada.');
+      const atividadeOriginal = atividadeOriginalArr[0];
+
+      // Check for existing plan
+      const planejamentosExistentes = await retryWithBackoff(
+        () => PlanejamentoAtividade.filter({
+          empreendimento_id: empreendimentoId,
+          atividade_id: atividadeId,
+          documento_id: folha.source_documento_id,
+        }),
+        3, 500, `checkFolhaPlan-${folhaKey}`
+      );
+      if (planejamentosExistentes && planejamentosExistentes.length > 0) {
+        await retryWithBackoff(() => PlanejamentoAtividade.update(planejamentosExistentes[0].id, { executor_principal: executorEmail, executores: [executorEmail] }), 3, 500, `updateFolhaPlan-${folhaKey}`);
+        setDatasInicioFolha(prev => ({ ...prev, [folhaKey]: null }));
+        await fetchData();
+        return;
+      }
+
+      // Load executor existing plans to compute daily load
+      const [planosAtiv, planosDoc] = await Promise.all([
+        retryWithExtendedBackoff(() => PlanejamentoAtividade.filter({ executor_principal: executorEmail }), 'loadAtivForFolha'),
+        retryWithExtendedBackoff(() => PlanejamentoDocumento.filter({ executor_principal: executorEmail }), 'loadDocForFolha'),
+      ]);
+      const hoje = new Date();
+      const hojeMidnight = new Date(hoje.getFullYear(), hoje.getMonth(), hoje.getDate());
+      const cargaDiaria = {};
+      [...(planosAtiv || []), ...(planosDoc || [])].forEach(plano => {
+        if (plano.horas_por_dia && typeof plano.horas_por_dia === 'object') {
+          Object.entries(plano.horas_por_dia).forEach(([data, horas]) => {
+            try {
+              const dataObj = parseISO(data);
+              if (isValid(dataObj) && dataObj >= hojeMidnight) {
+                const diaKey = format(dataObj, 'yyyy-MM-dd');
+                const h = Number(horas) || 0;
+                if (h > 0 && h <= 12) cargaDiaria[diaKey] = (cargaDiaria[diaKey] || 0) + h;
+              }
+            } catch {}
+          });
+        }
+      });
+
+      const doc = documentosMap.get(folha.source_documento_id);
+      const fator = doc?.fator_dificuldade || 1;
+      // folha.tempo is already the per-folha calculated time; fall back to atividade base * fator
+      const tempoCalculado = Number(folha.tempo) || (Number(atividadeOriginal.tempo) * fator) || 0;
+      if (tempoCalculado <= 0) {
+        throw new Error('Esta atividade não possui tempo configurado. Defina o tempo padrão antes de planejar.');
+      }
+
+      let dataInicio = dataInicioCustom ? new Date(dataInicioCustom) : new Date(hojeMidnight);
+      if (dataInicioCustom) {
+        if (!isWorkingDay(dataInicio)) dataInicio = getNextWorkingDay(dataInicio);
+      } else {
+        let t = 0;
+        while (t < 365) {
+          if (isWorkingDay(dataInicio) && (8 - (cargaDiaria[format(dataInicio, 'yyyy-MM-dd')] || 0)) >= 0.5) break;
+          dataInicio = addDays(dataInicio, 1);
+          t++;
+        }
+        if (t >= 365) throw new Error('Sem data disponível para o executor.');
+      }
+
+      const resultado = distribuirHorasPorDias(dataInicio, tempoCalculado, 8, cargaDiaria, false);
+      if (!resultado?.distribuicao || !Object.keys(resultado.distribuicao).length) throw new Error('Não foi possível distribuir as horas.');
+      const { distribuicao, dataTermino } = resultado;
+      const diasUtilizados = Object.keys(distribuicao).sort();
+      const descritivo = [doc?.numero, doc?.arquivo, atividadeOriginal.atividade].filter(Boolean).join(' - ');
+
+      await retryWithBackoff(() => PlanejamentoAtividade.create({
+        empreendimento_id: empreendimentoId,
+        atividade_id: atividadeId,
+        documento_id: folha.source_documento_id,
+        etapa: folha.etapa || atividadeOriginal.etapa || '',
+        descritivo,
+        tempo_planejado: tempoCalculado,
+        executor_principal: executorEmail,
+        executores: [executorEmail],
+        inicio_planejado: diasUtilizados[0],
+        termino_planejado: format(dataTermino, 'yyyy-MM-dd'),
+        horas_por_dia: distribuicao,
+        status: 'nao_iniciado',
+      }), 3, 500, `createFolhaPlan-${folhaKey}`);
+
+      setDatasInicioFolha(prev => ({ ...prev, [folhaKey]: null }));
+      await fetchData();
+    } catch (error) {
+      console.error('Erro ao planejar folha:', error);
+      alert(`Erro ao planejar folha: ${error.message}`);
+    } finally {
+      setIsSavingFolhaExecutor(prev => ({ ...prev, [folhaKey]: false }));
+    }
+  };
 
   const renderContent = () => (
     <AnaliticoRenderContent
@@ -863,6 +1024,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       handleOpenModal={handleOpenModal} selectedIds={selectedIds} isDeletingMultiple={isDeletingMultiple}
       handleSelectAll={handleSelectAll} handleDeleteSelected={handleDeleteSelected}
       atividadesSelecionadasParaPlanejar={atividadesSelecionadasParaPlanejar} setAtividadesSelecionadasParaPlanejar={setAtividadesSelecionadasParaPlanejar}
+      atividadesSelecionadasParaExcluir={atividadesSelecionadasParaExcluir} setAtividadesSelecionadasParaExcluir={setAtividadesSelecionadasParaExcluir}
       handleExcluirMultiplas={handleExcluirMultiplas} isExcluindoMultiplasFolhas={isExcluindoMultiplasFolhas}
       expandedAtividades={expandedAtividades} toggleAtividadeExpansion={toggleAtividadeExpansion}
       isDeletingActivity={isDeletingActivity} isConcluindo={isConcluindo} isSavingExecutor={isSavingExecutor}
@@ -870,10 +1032,14 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       handleSelectItem={handleSelectItem} handleOpenEtapaModal={handleOpenEtapaModal} handleOpenEditarEtapaEmFolhasModal={handleOpenEditarEtapaEmFolhasModal}
       handleConcluirEmTodasFolhas={handleConcluirEmTodasFolhas} handleOpenExcluirDeFolhasModal={handleOpenExcluirDeFolhasModal}
       handleExcluirAtividade={handleExcluirAtividade} handleDelete={handleDelete} handleSaveExecutor={handleSaveExecutor}
-      handlePlanejarMultiplas={handlePlanejarMultiplas} usuarios={usuarios} editandoTempo={editandoTempo}
+      handlePlanejarMultiplas={handlePlanejarMultiplas} handleToggleFolhaConcluida={handleToggleFolhaConcluida}
+      usuarios={usuarios} editandoTempo={editandoTempo}
       novosTempoPadrao={novosTempoPadrao} setNovosTempoPadrao={setNovosTempoPadrao} setEditandoTempo={setEditandoTempo}
       handleSalvarTempoPadrao={handleSalvarTempoPadrao} itensPRE={itensPRE}
-      folhasSelecionadas={folhasSelecionadas} setFolhasSelecionadas={setFolhasSelecionadas}
+      handleSaveFolhaExecutor={handleSaveFolhaExecutor}
+      datasInicioFolha={datasInicioFolha} setDatasInicioFolha={setDatasInicioFolha}
+      isSavingFolhaExecutor={isSavingFolhaExecutor}
+      fetchData={fetchData}
     />
   );
 
@@ -891,14 +1057,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         const atividadeOriginal = atividadeOriginalArr[0];
         const documentosComAtividade = documentos.filter(doc => doc.disciplina === atividadeOriginal.disciplina && (doc.subdisciplinas || []).includes(atividadeOriginal.subdisciplina));
         for (const doc of documentosComAtividade) {
-          await new Promise(resolve => setTimeout(resolve, 120));
           await retryWithBackoff(() => PlanejamentoAtividade.create({ empreendimento_id: empreendimentoId, atividade_id: atividadeId, documento_id: doc.id, etapa: atividadeOriginal.etapa, descritivo: atividadeOriginal.atividade, tempo_planejado: atividadeOriginal.tempo || 0, status: 'concluido', termino_real: hoje, horas_por_dia: {} }), 3, 500, `createConcludedPlan-${doc.id}-${atividadeId}`);
           concluidos++;
         }
       } else {
         for (const plano of plans) {
           if (plano.status === 'concluido') { jaFinalizados++; continue; }
-          await new Promise(resolve => setTimeout(resolve, 120));
           await retryWithBackoff(() => PlanejamentoAtividade.update(plano.id, { status: 'concluido', termino_real: hoje }), 3, 500, `concluirPlan-${plano.id}`);
           concluidos++;
         }
@@ -1497,12 +1661,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   };
 
   const handleExcluirMultiplas = async (folhaSelecionada = null) => {
-    if (folhasSelecionadas.size === 0) {
-      alert("Selecione pelo menos uma folha.");
+    if (atividadesSelecionadasParaExcluir.size === 0) {
+      alert("Selecione pelo menos uma atividade.");
       return;
     }
 
-    const atividadesParaExcluir = Array.from(folhasSelecionadas);
+    const atividadesParaExcluir = Array.from(atividadesSelecionadasParaExcluir);
     const atividadesEncontradas = combinedActivities.filter(a => 
       atividadesParaExcluir.includes(a.base_atividade_id || a.id)
     );
@@ -1560,7 +1724,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         }
 
         alert(`✅ ${deletados} atividade(s) excluída(s) de todas as folhas do empreendimento`);
-        setFolhasSelecionadas(new Set());
+        setAtividadesSelecionadasParaExcluir(new Set());
         await fetchData();
         if (onUpdate) onUpdate();
       } catch (error) {
@@ -1626,7 +1790,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         }
 
         alert(`✅ ${deletados} atividade(s) excluída(s) da folha ${folhaObj?.numero}`);
-        setFolhasSelecionadas(new Set());
+        setAtividadesSelecionadasParaExcluir(new Set());
         await fetchData();
         if (onUpdate) onUpdate();
       } catch (error) {
@@ -1663,6 +1827,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     setIsMudandoEtapaGlobal(true);
 
     try {
+      console.log(`\n🔀 ========================================`);
+      console.log(`🔀 MOVER ETAPA GLOBAL: ${etapaMudancaGlobal} → ${novaEtapa}`);
+      console.log(`🔀 ========================================`);
+      console.log(`   Empreendimento: ${empreendimentoId}`);
+      console.log(`   Atividades: ${totalAtividades}`);
 
       const user = await base44.auth.me();
       let atividadesMudadas = 0;
