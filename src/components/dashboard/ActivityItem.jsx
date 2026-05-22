@@ -55,12 +55,13 @@ export default function ActivityItem({ plano, dayKey, onDelete, onUpdate, execut
   const [isStarting, setIsStarting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [showTimeAdjustModal, setShowTimeAdjustModal] = useState(false);
-  const [adjustedTime, setAdjustedTime] = useState('');
-  const [showEditDescricaoModal, setShowEditDescricaoModal] = useState(false);
-  const [editDescricao, setEditDescricao] = useState('');
-  const [isEditLoading, setIsEditLoading] = useState(false);
-  const [empreendimentosList, setEmpreendimentosList] = useState([]);
-  const [selectedEmpreendimento, setSelectedEmpreendimento] = useState('none');
+   const [adjustedTime, setAdjustedTime] = useState('');
+   const [observacao, setObservacao] = useState('');
+   const [showEditDescricaoModal, setShowEditDescricaoModal] = useState(false);
+   const [editDescricao, setEditDescricao] = useState('');
+   const [isEditLoading, setIsEditLoading] = useState(false);
+   const [empreendimentosList, setEmpreendimentosList] = useState([]);
+   const [selectedEmpreendimento, setSelectedEmpreendimento] = useState('none');
 
   const realStatus = calculateActivityStatus(plano, allPlanejamentos);
 
@@ -151,31 +152,33 @@ export default function ActivityItem({ plano, dayKey, onDelete, onUpdate, execut
   };
 
   const handleAdjustTime = async () => {
-    const timeValue = parseFloat(adjustedTime);
-    if (isNaN(timeValue) || timeValue < 0) { alert("Tempo inválido."); return; }
-    try {
-      if (plano.isLegacyExecution) { alert("Não é possível ajustar atividades antigas."); return; }
-      const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
-      const diasPlanejados = Object.keys(plano.horas_por_dia || {});
-      const novasHorasPorDia = {};
-      if (diasPlanejados.length > 0) {
-        const hpd = timeValue / diasPlanejados.length;
-        diasPlanejados.forEach(d => novasHorasPorDia[d] = hpd);
-      } else {
-        novasHorasPorDia[format(new Date(), 'yyyy-MM-dd')] = timeValue;
-      }
-      await retryWithBackoff(() => entityToUpdate.update(plano.id, {
-        tempo_executado: timeValue, tempo_planejado: timeValue,
-        horas_por_dia: novasHorasPorDia, status: 'concluido',
-        termino_real: format(new Date(), 'yyyy-MM-dd')
-      }), 3, 1000, 'adjustTime');
-      setShowTimeAdjustModal(false);
-      setAdjustedTime('');
-      if (onDelete) onDelete();
-    } catch (error) {
-      alert("Erro ao ajustar tempo.");
-    }
-  };
+     const timeValue = parseFloat(adjustedTime);
+     if (isNaN(timeValue) || timeValue < 0) { alert("Tempo inválido."); return; }
+     try {
+       if (plano.isLegacyExecution) { alert("Não é possível ajustar atividades antigas."); return; }
+       const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
+       const diasPlanejados = Object.keys(plano.horas_por_dia || {});
+       const novasHorasPorDia = {};
+       if (diasPlanejados.length > 0) {
+         const hpd = timeValue / diasPlanejados.length;
+         diasPlanejados.forEach(d => novasHorasPorDia[d] = hpd);
+       } else {
+         novasHorasPorDia[format(new Date(), 'yyyy-MM-dd')] = timeValue;
+       }
+       await retryWithBackoff(() => entityToUpdate.update(plano.id, {
+         tempo_executado: timeValue, tempo_planejado: timeValue,
+         horas_por_dia: novasHorasPorDia, status: 'concluido',
+         termino_real: format(new Date(), 'yyyy-MM-dd'),
+         observacao: observacao || undefined
+       }), 3, 1000, 'adjustTime');
+       setShowTimeAdjustModal(false);
+       setAdjustedTime('');
+       setObservacao('');
+       if (onDelete) onDelete();
+     } catch (error) {
+       alert("Erro ao ajustar tempo.");
+     }
+   };
 
   const handleOpenEditDescricao = () => {
     setEditDescricao(plano.descritivo || '');
@@ -208,7 +211,7 @@ export default function ActivityItem({ plano, dayKey, onDelete, onUpdate, execut
   };
 
   const shouldShowAdjustButton = () => hasPermission('coordenador') && !plano.isLegacyExecution && plano.status !== 'concluido';
-  const observacao = plano.observacao || null;
+   const observacaoExistente = plano.observacao || null;
 
   return (
     <>
@@ -286,9 +289,9 @@ export default function ActivityItem({ plano, dayKey, onDelete, onUpdate, execut
 
         {plano.os && <p className="text-blue-600 font-semibold text-xs mb-1.5">OS: {plano.os}</p>}
 
-        {observacao && (realStatus === 'concluido' || realStatus === 'concluido_atrasado') && (
+        {observacaoExistente && (realStatus === 'concluido' || realStatus === 'concluido_atrasado') && (
           <div className="mt-1.5 p-2 bg-amber-50 border border-amber-200 rounded text-xs">
-            <p className="text-amber-900 italic"><span className="font-semibold text-amber-700">💬 Obs:</span> {observacao}</p>
+            <p className="text-amber-900 italic"><span className="font-semibold text-amber-700">💬 Obs:</span> {observacaoExistente}</p>
           </div>
         )}
 
@@ -340,25 +343,29 @@ export default function ActivityItem({ plano, dayKey, onDelete, onUpdate, execut
       </div>
 
       <Dialog open={showTimeAdjustModal} onOpenChange={setShowTimeAdjustModal}>
-        <DialogContent>
-          <DialogHeader><DialogTitle>Ajustar Tempo Executado</DialogTitle></DialogHeader>
-          <div className="py-4 space-y-4">
-            <p className="text-sm text-gray-600"><strong>Atividade:</strong> {displayName}</p>
-            <p className="text-sm text-gray-600">Tempo atual: {tempoExecutado.toFixed(1)}h</p>
-            <div className="space-y-2">
-              <Label htmlFor="adjustedTime">Novo Tempo (horas)</Label>
-              <Input id="adjustedTime" type="number" step="0.1" min="0" value={adjustedTime} onChange={(e) => setAdjustedTime(e.target.value)} />
-            </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-              <p className="text-blue-700 text-sm">A atividade será marcada como <strong>concluída</strong>.</p>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowTimeAdjustModal(false)}>Cancelar</Button>
-            <Button onClick={handleAdjustTime} className="bg-blue-600 hover:bg-blue-700">Ajustar e Finalizar</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+         <DialogContent>
+           <DialogHeader><DialogTitle>Ajustar Tempo Executado</DialogTitle></DialogHeader>
+           <div className="py-4 space-y-4">
+             <p className="text-sm text-gray-600"><strong>Atividade:</strong> {displayName}</p>
+             <p className="text-sm text-gray-600">Tempo atual: {tempoExecutado.toFixed(1)}h</p>
+             <div className="space-y-2">
+               <Label htmlFor="adjustedTime">Novo Tempo (horas)</Label>
+               <Input id="adjustedTime" type="number" step="0.1" min="0" value={adjustedTime} onChange={(e) => setAdjustedTime(e.target.value)} />
+             </div>
+             <div className="space-y-2">
+               <Label htmlFor="observacao">Observações (opcional)</Label>
+               <Textarea id="observacao" placeholder="Adicione observações sobre a conclusão..." value={observacao} onChange={(e) => setObservacao(e.target.value)} className="min-h-20" />
+             </div>
+             <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+               <p className="text-blue-700 text-sm">A atividade será marcada como <strong>concluída</strong>.</p>
+             </div>
+           </div>
+           <DialogFooter>
+             <Button variant="outline" onClick={() => setShowTimeAdjustModal(false)}>Cancelar</Button>
+             <Button onClick={handleAdjustTime} className="bg-blue-600 hover:bg-blue-700">Ajustar e Finalizar</Button>
+           </DialogFooter>
+         </DialogContent>
+       </Dialog>
 
       <Dialog open={showEditDescricaoModal} onOpenChange={setShowEditDescricaoModal}>
         <DialogContent>
