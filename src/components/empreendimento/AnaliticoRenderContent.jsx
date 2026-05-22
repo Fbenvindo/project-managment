@@ -41,7 +41,6 @@ export default function AnaliticoRenderContent({
   datasInicio,
   setDatasInicio,
   planejamentos,
-  empreendimentoId,
   handleSelectItem,
   handleOpenEtapaModal,
   handleOpenEditarEtapaEmFolhasModal,
@@ -63,6 +62,7 @@ export default function AnaliticoRenderContent({
   datasInicioFolha,
   setDatasInicioFolha,
   isSavingFolhaExecutor,
+  empreendimentoId,
   fetchData,
 }) {
   // folhasSelecionadas lives here so checkbox clicks don't re-render the entire parent
