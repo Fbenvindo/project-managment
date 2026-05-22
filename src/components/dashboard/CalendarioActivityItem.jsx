@@ -204,10 +204,10 @@ export default function ActivityItem({ plano, dayKey, onDelete, onUpdate, execut
             realStatus === 'concluido' ? '#f0fdf4' : '#ffffff',
           ...(isDragging && { boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)' })
         }}
-        className={`p-2 rounded border mb-1 text-xs group hover:shadow-md transition-shadow duration-200 relative overflow-visible ${isSelected ? 'border-indigo-400 ring-2 ring-indigo-200' : 'border-gray-200'}`}
+        className={`p-2 rounded border mb-1 text-xs group hover:shadow-md transition-shadow duration-200 relative ${isSelected ? 'border-indigo-400 ring-2 ring-indigo-200' : 'border-gray-200'}`}
       >
         {orderIndex !== undefined && (
-          <span className="absolute -left-3 -top-3 z-20 w-9 h-9 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center shadow-md pointer-events-none leading-none">{orderIndex + 1}</span>
+          <span className="absolute -left-1 -top-1 z-20 w-9 h-9 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center shadow-md pointer-events-none leading-none border-2 border-white">{orderIndex + 1}</span>
         )}
         {isReprogramando && (
           <div className="absolute inset-0 bg-white/70 flex items-center justify-center rounded z-10">
