@@ -480,22 +480,50 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
       )}
 
       <div className="flex justify-between items-center">
-        <div>
-          <h3 className="text-lg font-semibold">Atividades do Projeto</h3>
-          <p className="text-sm text-gray-500">
-            Gerencie as atividades deste empreendimento.
-          </p>
-        </div>
-        <div className="flex gap-2">
-           <Button onClick={() => { 
-             setEditingAtividade(null); 
-             setShowForm(true); 
-           }}>
-             <Plus className="w-4 h-4 mr-2" />
-             Nova Atividade
-           </Button>
+         <div>
+           <h3 className="text-lg font-semibold">Atividades do Projeto</h3>
+           <p className="text-sm text-gray-500">
+             {selectedAtividades.length > 0 
+               ? `${selectedAtividades.length} atividade(s) selecionada(s)`
+               : 'Gerencie as atividades deste empreendimento.'}
+           </p>
          </div>
-      </div>
+         <div className="flex gap-2">
+           {selectedAtividades.length > 0 && (
+             <>
+               <Button 
+                 onClick={() => alert('Funcionalidade em desenvolvimento')}
+                 variant="outline"
+                 className="border-green-500 text-green-600 hover:bg-green-50"
+               >
+                 Concluir Etapa Completa
+               </Button>
+               <Button 
+                 onClick={() => alert('Funcionalidade em desenvolvimento')}
+                 variant="outline"
+                 className="border-blue-500 text-blue-600 hover:bg-blue-50"
+               >
+                 Mover Etapa
+               </Button>
+               <Button 
+                 onClick={handleExcluirMultiplas}
+                 disabled={isDeleting}
+                 variant="outline"
+                 className="border-red-500 text-red-600 hover:bg-red-50"
+               >
+                 Excluir Etapa
+               </Button>
+             </>
+           )}
+           <Button onClick={() => { 
+              setEditingAtividade(null); 
+              setShowForm(true); 
+            }}>
+              <Plus className="w-4 h-4 mr-2" />
+              Nova Atividade
+            </Button>
+          </div>
+       </div>
 
       <AtividadesProjetoFilters
         searchTerm={searchTerm}
