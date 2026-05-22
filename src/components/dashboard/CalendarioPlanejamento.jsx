@@ -660,7 +660,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
           }`}
       >
         {orderIndex !== undefined && (
-          <div className="absolute -left-3 -top-3 z-20 min-w-[26px] h-[26px] flex items-center justify-center bg-indigo-700 text-white text-xs font-bold rounded-full pointer-events-none shadow-md border-2 border-white px-1">
+          <div className="absolute left-1.5 top-1.5 z-20 bg-indigo-100 text-indigo-700 text-xs font-bold rounded px-1.5 py-0.5 pointer-events-none border border-indigo-200 leading-none">
             {orderIndex + 1}
           </div>
         )}
@@ -712,7 +712,7 @@ const ActivityItem = ({ plano, dayKey, onDelete, onUpdate, executorMap, allPlane
 
         {/* Top Row: Activity Name + Action Icons */}
         <div className="flex items-start justify-between mb-1.5">
-          <div className="flex-1 mr-2 overflow-hidden">
+          <div className={`flex-1 mr-2 overflow-hidden${orderIndex !== undefined ? ' pl-6' : ''}`}>
             {plano.empreendimento?.nome && (
               <p className="text-xs text-gray-500 mb-0.5 font-medium truncate" title={plano.empreendimento.nome}>
                 📋 {plano.empreendimento.nome}
