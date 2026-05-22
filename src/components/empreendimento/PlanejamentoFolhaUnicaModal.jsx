@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { PlanejamentoAtividade, PlanejamentoDocumento } from '@/entities/all';
+import { PlanejamentoAtividade, PlanejamentoDocumento, Atividade, Documento } from '@/entities/all';
 import { Loader2, Calendar as CalendarIcon } from 'lucide-react';
 import { retryWithBackoff } from '../utils/apiUtils';
 import { format, parseISO, isValid } from 'date-fns';
@@ -120,6 +120,26 @@ export default function PlanejamentoFolhaUnicaModal({
         }),
         3, 1000, `createPlanejamentoFolha-${folha.source_documento_id}`
       );
+
+      // Atualizar status_planejamento na entidade Atividade
+      const atividadeId = folha.base_atividade_id || atividade?.id;
+      if (atividadeId) {
+        await retryWithBackoff(
+          () => Atividade.update(atividadeId, { status_planejamento: 'planejada' }),
+          3, 500, `updateAtividadePlanejada-${atividadeId}`
+        );
+      }
+
+      // Atualizar status no Documento (inicio_planejado / termino_planejado)
+      if (folha.source_documento_id) {
+        await retryWithBackoff(
+          () => Documento.update(folha.source_documento_id, {
+            inicio_planejado: dadosCalculo.dataInicio,
+            termino_planejado: dadosCalculo.dataTermino,
+          }),
+          3, 500, `updateDocumentoPlanejado-${folha.source_documento_id}`
+        );
+      }
 
       if (onSuccess) onSuccess();
       onClose();
