@@ -42,7 +42,7 @@ const calculateActivityStatus = (plano, allPlanejamentos = []) => {
 };
 
 export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpdate, executorMap, allPlanejamentos, provided, isDragging, isReprogramando, isSelected, onToggleSelect, hasSelections, orderIndex }) {
-  const { activeExecution, startExecution, user, playlist, hasPermission, isAdmin, perfilAtual } = useContext(ActivityTimerContext);
+  const { activeExecution, startExecution, user, playlist, hasPermission, isAdmin, perfilAtual, allEmpreendimentos } = useContext(ActivityTimerContext);
   const canEditDelete = isAdmin || perfilAtual === 'direcao' || perfilAtual === 'coordenador';
 
   const [isStarting, setIsStarting] = useState(false);
@@ -159,6 +159,7 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
       inicio_planejado: plano.inicio_planejado ? plano.inicio_planejado.slice(0, 10) : '',
       termino_planejado: plano.termino_planejado ? plano.termino_planejado.slice(0, 10) : '',
       executor_principal: plano.executor_principal ? String(plano.executor_principal) : '',
+      empreendimento_id: plano.empreendimento_id || '',
     });
     setShowEditDescricaoModal(true);
   };
@@ -191,6 +192,7 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
         if (editForm.inicio_planejado) updates.inicio_planejado = editForm.inicio_planejado;
         if (editForm.termino_planejado) updates.termino_planejado = editForm.termino_planejado;
         updates.executor_principal = editForm.executor_principal || null;
+        updates.empreendimento_id = editForm.empreendimento_id || null;
         const dataInicioMudou = editForm.inicio_planejado && editForm.inicio_planejado !== plano.inicio_planejado?.slice(0, 10);
         if (dataInicioMudou) {
           const tempoPlan = updates.tempo_planejado ?? Number(plano.tempo_planejado) ?? 0;
@@ -338,6 +340,18 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
             <div className="space-y-2">
               <Label>Descrição / Título</Label>
               <Textarea value={editForm.descritivo || ''} onChange={(e) => setEditForm(f => ({ ...f, descritivo: e.target.value }))} rows={3} placeholder="Descrição..." />
+            </div>
+            <div className="space-y-2">
+              <Label>Empreendimento</Label>
+              <Select value={editForm.empreendimento_id || 'none'} onValueChange={(v) => setEditForm(f => ({ ...f, empreendimento_id: v === 'none' ? '' : v }))}>
+                <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">— Nenhum —</SelectItem>
+                  {(allEmpreendimentos || []).sort((a,b) => (a.nome||'').localeCompare(b.nome||'')).map(emp => (
+                    <SelectItem key={emp.id} value={emp.id}>{emp.nome} - {emp.cliente}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
