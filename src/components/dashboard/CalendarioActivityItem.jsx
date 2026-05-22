@@ -207,7 +207,7 @@ export default function ActivityItem({ plano, dayKey, onDelete, onUpdate, execut
         className={`p-2 rounded border mb-1 text-xs group hover:shadow-md transition-shadow duration-200 relative overflow-visible ${isSelected ? 'border-indigo-400 ring-2 ring-indigo-200' : 'border-gray-200'}`}
       >
         {orderIndex !== undefined && (
-          <span className="absolute left-1 top-1 z-20 text-[8px] text-gray-400 font-medium pointer-events-none leading-none">{orderIndex + 1}.</span>
+          <span className="absolute -left-2 -top-2 z-20 w-5 h-5 rounded-full bg-blue-600 text-white text-[10px] font-bold flex items-center justify-center shadow pointer-events-none leading-none">{orderIndex + 1}</span>
         )}
         {isReprogramando && (
           <div className="absolute inset-0 bg-white/70 flex items-center justify-center rounded z-10">
