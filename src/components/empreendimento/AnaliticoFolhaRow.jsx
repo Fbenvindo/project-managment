@@ -42,13 +42,12 @@ function AnaliticoFolhaRow({
 
   const handleToggleSelecao = useCallback((checked) => {
     setFolhasSelecionadas(prev => {
-      if (checked === prev.has(folha.source_documento_id)) return prev;
       const newSet = new Set(prev);
       if (checked) newSet.add(folha.source_documento_id);
       else newSet.delete(folha.source_documento_id);
       return newSet;
     });
-  }, [folha.source_documento_id]);
+  }, [folha.source_documento_id, setFolhasSelecionadas]);
 
   const handleToggleConclusao = useCallback(async () => {
     setIsConc(true);
