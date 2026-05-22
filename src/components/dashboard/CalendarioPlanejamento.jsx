@@ -2191,12 +2191,12 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     if (destination.droppableId === source.droppableId) {
       if (!modoOrdenacao) return;
       const dayKey = source.droppableId;
-      const dayActivities = [...(activitiesByDay[dayKey] || [])];
-      const [moved] = dayActivities.splice(source.index, 1);
-      dayActivities.splice(destination.index, 0, moved);
-      const newOrder = dayActivities.map(a => String(a.id));
       setActivityOrder(prev => {
-        const updated = { ...prev, [dayKey]: newOrder };
+        // Ler a ordem salva atual para este dia, ou montar a partir das atividades visíveis
+        const currentOrder = prev[dayKey] ? [...prev[dayKey]] : (activitiesByDay[dayKey] || []).map(a => String(a.id));
+        const [moved] = currentOrder.splice(source.index, 1);
+        currentOrder.splice(destination.index, 0, moved);
+        const updated = { ...prev, [dayKey]: currentOrder };
         localStorage.setItem('calendar-activity-order', JSON.stringify(updated));
         return updated;
       });
