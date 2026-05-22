@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import React, { useState, useCallback } from 'react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -127,6 +127,7 @@ export default function AnaliticoFolhaRow({
     p.atividade_id === folha.base_atividade_id
   );
   const isConcluida = folha.status === 'Concluída';
+  const isSelected = folhasSelecionadas.has(folha.source_documento_id);
 
   return (
     <>
@@ -134,7 +135,7 @@ export default function AnaliticoFolhaRow({
       {hasCheckboxColumn && (
         <TableCell>
           <Checkbox
-            checked={folhasSelecionadas.has(folha.source_documento_id)}
+            checked={isSelected}
             onCheckedChange={handleToggleSelecao}
           />
         </TableCell>
@@ -223,3 +224,12 @@ export default function AnaliticoFolhaRow({
   </>
   );
 }
+
+export default React.memo(AnaliticoFolhaRow, (prevProps, nextProps) => {
+  return (
+    prevProps.folha.source_documento_id === nextProps.folha.source_documento_id &&
+    prevProps.folhasSelecionadas.has(prevProps.folha.source_documento_id) === 
+    nextProps.folhasSelecionadas.has(nextProps.folha.source_documento_id) &&
+    prevProps.planejamentos === nextProps.planejamentos
+  );
+});

@@ -874,7 +874,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       novosTempoPadrao={novosTempoPadrao} setNovosTempoPadrao={setNovosTempoPadrao} setEditandoTempo={setEditandoTempo}
       handleSalvarTempoPadrao={handleSalvarTempoPadrao} itensPRE={itensPRE}
       folhasSelecionadas={folhasSelecionadas} setFolhasSelecionadas={setFolhasSelecionadas}
-      isExcluindoMultiplasFolhas={isExcluindoMultiplasFolhas} handleExcluirMultiplas={handleExcluirMultiplas}
     />
   );
 
