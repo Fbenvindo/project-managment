@@ -890,12 +890,14 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         const atividadeOriginal = atividadeOriginalArr[0];
         const documentosComAtividade = documentos.filter(doc => doc.disciplina === atividadeOriginal.disciplina && (doc.subdisciplinas || []).includes(atividadeOriginal.subdisciplina));
         for (const doc of documentosComAtividade) {
+          await new Promise(resolve => setTimeout(resolve, 120));
           await retryWithBackoff(() => PlanejamentoAtividade.create({ empreendimento_id: empreendimentoId, atividade_id: atividadeId, documento_id: doc.id, etapa: atividadeOriginal.etapa, descritivo: atividadeOriginal.atividade, tempo_planejado: atividadeOriginal.tempo || 0, status: 'concluido', termino_real: hoje, horas_por_dia: {} }), 3, 500, `createConcludedPlan-${doc.id}-${atividadeId}`);
           concluidos++;
         }
       } else {
         for (const plano of plans) {
           if (plano.status === 'concluido') { jaFinalizados++; continue; }
+          await new Promise(resolve => setTimeout(resolve, 120));
           await retryWithBackoff(() => PlanejamentoAtividade.update(plano.id, { status: 'concluido', termino_real: hoje }), 3, 500, `concluirPlan-${plano.id}`);
           concluidos++;
         }
@@ -1660,11 +1662,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
     setIsMudandoEtapaGlobal(true);
 
     try {
-      console.log(`\n🔀 ========================================`);
-      console.log(`🔀 MOVER ETAPA GLOBAL: ${etapaMudancaGlobal} → ${novaEtapa}`);
-      console.log(`🔀 ========================================`);
-      console.log(`   Empreendimento: ${empreendimentoId}`);
-      console.log(`   Atividades: ${totalAtividades}`);
 
       const user = await base44.auth.me();
       let atividadesMudadas = 0;
