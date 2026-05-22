@@ -207,7 +207,11 @@ export default function ActivityItem({ plano, dayKey, onDelete, onUpdate, execut
         className={`p-2 rounded border mb-1 text-xs group hover:shadow-md transition-shadow duration-200 relative ${isSelected ? 'border-indigo-400 ring-2 ring-indigo-200' : 'border-gray-200'}`}
       >
         {orderIndex !== undefined && (
-          <span className="absolute -left-1 -top-1 z-20 w-9 h-9 rounded-full bg-blue-600 text-white text-sm font-bold flex items-center justify-center shadow-md pointer-events-none leading-none border-2 border-white">{orderIndex + 1}</span>
+          <div className="absolute left-0 top-0 z-20 flex items-center pointer-events-none">
+            <div className="bg-blue-600 text-white font-bold text-base leading-none flex items-center justify-center rounded-br-lg rounded-tl-sm shadow-md min-w-[2rem] h-8 px-2 border-b-2 border-r-2 border-blue-800">
+              {orderIndex + 1}
+            </div>
+          </div>
         )}
         {isReprogramando && (
           <div className="absolute inset-0 bg-white/70 flex items-center justify-center rounded z-10">
@@ -224,7 +228,7 @@ export default function ActivityItem({ plano, dayKey, onDelete, onUpdate, execut
             <circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" /><circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" /><circle cx="9" cy="18" r="1.5" /><circle cx="15" cy="18" r="1.5" />
           </svg>
         </div>
-        <div className="flex items-start justify-between mb-1.5">
+        <div className="flex items-start justify-between mb-1.5" style={{ paddingLeft: orderIndex !== undefined ? '2.2rem' : undefined }}>
           <div className="flex-1 mr-2 overflow-hidden">
             {plano.empreendimento?.nome && (
               <p className="text-xs text-gray-500 mb-0.5 font-medium truncate" title={plano.empreendimento.nome}>📋 {plano.empreendimento.nome}</p>
