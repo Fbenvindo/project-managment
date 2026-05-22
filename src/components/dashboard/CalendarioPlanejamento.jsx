@@ -478,7 +478,8 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
           <div className="flex items-center gap-2">
             <div className="text-right">
             <div
-              className="px-1.5 py-0.5 rounded text-xs font-bold text-white bg-gray-500"
+              className="px-1.5 py-0.5 rounded text-xs font-bold text-white"
+              style={{ backgroundColor: statusColor }}
             >
               {totalHoras > 0 ? `${formatHours(totalHoras)}h` : '0h'}
             </div>
