@@ -659,8 +659,8 @@ export default function DocumentosTab({
     setExecutorPreSelecionado(null);
   }, [empreendimento.id, handleCloseDocEtapaModal]);
 
-  const toggleRow = useCallback((id) => {
-    setExpandedRows(prev => ({ ...prev, [id]: !prev[id] }));
+  const toggleRow = useCallback((docId) => {
+    setExpandedRows(prev => ({ ...prev, [docId]: !prev[docId] }));
   }, []);
 
   const handlePredecessoraChange = useCallback(async (documentoId, predecessoraId) => {
