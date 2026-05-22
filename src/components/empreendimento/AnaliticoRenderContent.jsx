@@ -157,7 +157,7 @@ export default function AnaliticoRenderContent({
             </DropdownMenu>
           </TableCell>
         </TableRow>
-        {isExpanded && grupo.folhas.map(folha => (<AnaliticoFolhaRow key={folha.uniqueId} folha={folha} hasCheckboxColumn={hasCheckboxColumn} planejamentos={planejamentos} atividadesSelecionadasParaExcluir={atividadesSelecionadasParaExcluir} setAtividadesSelecionadasParaExcluir={setAtividadesSelecionadasParaExcluir} empreendimentoId={empreendimentoId} onConcluirFolha={() => {}} />))}
+        {isExpanded && grupo.folhas.map(folha => (<AnaliticoFolhaRow key={folha.uniqueId} folha={folha} hasCheckboxColumn={hasCheckboxColumn} planejamentos={planejamentos} atividadesSelecionadasParaExcluir={atividadesSelecionadasParaExcluir} setAtividadesSelecionadasParaExcluir={setAtividadesSelecionadasParaExcluir} empreendimentoId={empreendimentoId} onConcluirFolha={() => {}} usuarios={usuarios} atividade={ativ} />))}
       </React.Fragment>
     );
   };

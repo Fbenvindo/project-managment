@@ -3,10 +3,11 @@ import { TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ChevronRight, CheckCircle2, CheckCircle, Loader2, Calendar } from 'lucide-react';
+import { ChevronRight, CheckCircle2, CheckCircle, Loader2, Calendar, CalendarPlus } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { PlanejamentoAtividade, Atividade } from '@/entities/all';
 import { retryWithBackoff } from '../utils/apiUtils';
+import PlanejamentoFolhaUnicaModal from './PlanejamentoFolhaUnicaModal';
 
 export default function AnaliticoFolhaRow({
   folha,
@@ -16,8 +17,11 @@ export default function AnaliticoFolhaRow({
   setAtividadesSelecionadasParaExcluir,
   empreendimentoId,
   onConcluirFolha,
+  usuarios,
+  atividade,
 }) {
   const [isConc, setIsConc] = useState(false);
+  const [showPlanejamentoModal, setShowPlanejamentoModal] = useState(false);
 
   const handleToggleConclusao = async () => {
     setIsConc(true);
@@ -113,6 +117,7 @@ export default function AnaliticoFolhaRow({
   const isConcluida = folha.status === 'Concluída';
 
   return (
+    <>
     <TableRow key={folha.uniqueId} className={isConcluida ? 'bg-blue-50/80' : 'bg-blue-50/30'}>
       {hasCheckboxColumn && <TableCell></TableCell>}
       <TableCell className="pl-12">
@@ -146,19 +151,32 @@ export default function AnaliticoFolhaRow({
       <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
       <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
       <TableCell>
-        <Button
-          size="icon"
-          variant="outline"
-          onClick={handleToggleConclusao}
-          disabled={isConc}
-          title={isConcluida ? 'Reverter conclusão desta folha' : 'Concluir esta folha'}
-          className={isConcluida
-            ? 'border-blue-500 text-blue-600 hover:bg-blue-50 h-7 w-7'
-            : 'border-gray-300 text-gray-400 hover:border-green-500 hover:text-green-600 h-7 w-7'
-          }
-        >
-          {isConc ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
-        </Button>
+        <div className="flex items-center gap-1">
+          {folha.status !== 'Planejada' && folha.status !== 'Concluída' && (
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={() => setShowPlanejamentoModal(true)}
+              title="Planejar esta folha"
+              className="border-purple-400 text-purple-600 hover:bg-purple-50 h-7 w-7"
+            >
+              <CalendarPlus className="w-3 h-3" />
+            </Button>
+          )}
+          <Button
+            size="icon"
+            variant="outline"
+            onClick={handleToggleConclusao}
+            disabled={isConc}
+            title={isConcluida ? 'Reverter conclusão desta folha' : 'Concluir esta folha'}
+            className={isConcluida
+              ? 'border-blue-500 text-blue-600 hover:bg-blue-50 h-7 w-7'
+              : 'border-gray-300 text-gray-400 hover:border-green-500 hover:text-green-600 h-7 w-7'
+            }
+          >
+            {isConc ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle className="w-3 h-3" />}
+          </Button>
+        </div>
       </TableCell>
       <TableCell>
         <Checkbox
@@ -175,5 +193,17 @@ export default function AnaliticoFolhaRow({
       </TableCell>
       <TableCell></TableCell>
     </TableRow>
+    {showPlanejamentoModal && (
+      <PlanejamentoFolhaUnicaModal
+        isOpen={showPlanejamentoModal}
+        onClose={() => setShowPlanejamentoModal(false)}
+        folha={folha}
+        atividade={atividade}
+        usuarios={usuarios || []}
+        empreendimentoId={empreendimentoId}
+        onSuccess={() => { setShowPlanejamentoModal(false); if (onConcluirFolha) onConcluirFolha(); }}
+      />
+    )}
+  </>
   );
 }
