@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,18 @@ export default function AnaliticoFolhaRow({
 }) {
   const [isConc, setIsConc] = useState(false);
   const [showPlanejamentoModal, setShowPlanejamentoModal] = useState(false);
+
+  const handleToggleSelecao = useCallback((checked) => {
+    setFolhasSelecionadas(prev => {
+      const newSet = new Set(prev);
+      if (checked) {
+        newSet.add(folha.source_documento_id);
+      } else {
+        newSet.delete(folha.source_documento_id);
+      }
+      return newSet;
+    });
+  }, [folha.source_documento_id, setFolhasSelecionadas]);
 
   const handleToggleConclusao = async () => {
     setIsConc(true);
@@ -123,14 +135,7 @@ export default function AnaliticoFolhaRow({
         <TableCell>
           <Checkbox
             checked={folhasSelecionadas.has(folha.source_documento_id)}
-            onCheckedChange={(checked) => {
-              setFolhasSelecionadas(prev => {
-                const newSet = new Set(prev);
-                if (checked) newSet.add(folha.source_documento_id);
-                else newSet.delete(folha.source_documento_id);
-                return newSet;
-              });
-            }}
+            onCheckedChange={handleToggleSelecao}
           />
         </TableCell>
       )}
