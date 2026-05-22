@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useState, useCallback, useMemo } from 'react';
+import React, { useState, useCallback, useMemo, useTransition } from 'react';
 import { TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,7 @@ function AnaliticoFolhaRow({
 }) {
   const [isConc, setIsConc] = useState(false);
   const [showPlanejamentoModal, setShowPlanejamentoModal] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const isConcluida = folha.status === 'Concluída';
   const isSelected = folhasSelecionadas.has(folha.source_documento_id);
@@ -41,11 +42,13 @@ function AnaliticoFolhaRow({
   }, [plano?.executor_principal, usuarios]);
 
   const handleToggleSelecao = useCallback((checked) => {
-    setFolhasSelecionadas(prev => {
-      const newSet = new Set(prev);
-      if (checked) newSet.add(folha.source_documento_id);
-      else newSet.delete(folha.source_documento_id);
-      return newSet;
+    startTransition(() => {
+      setFolhasSelecionadas(prev => {
+        const newSet = new Set(prev);
+        if (checked) newSet.add(folha.source_documento_id);
+        else newSet.delete(folha.source_documento_id);
+        return newSet;
+      });
     });
   }, [folha.source_documento_id, setFolhasSelecionadas]);
 
@@ -143,7 +146,7 @@ function AnaliticoFolhaRow({
       <TableRow className={isConcluida ? 'bg-blue-50/80' : 'bg-blue-50/30'}>
         {hasCheckboxColumn && (
           <TableCell>
-            <Checkbox checked={isSelected} onCheckedChange={handleToggleSelecao} />
+            <Checkbox checked={isSelected} onCheckedChange={handleToggleSelecao} disabled={isPending} />
           </TableCell>
         )}
         <TableCell className="pl-12">
