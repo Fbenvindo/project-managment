@@ -329,7 +329,9 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
   }, [atividades, disciplinas]);
 
   const getGroupStatus = () => {
-    if (statusCounts['atrasado'] > 0 || statusCounts['replanejado_atrasado'] > 0) return 'atrasado';
+    // Verificar também atividades _isExtended (atrasadas que aparecem hoje)
+    const temAtividadeAtrasadaExtendida = atividades.some(a => a._isExtended);
+    if (temAtividadeAtrasadaExtendida || statusCounts['atrasado'] > 0 || statusCounts['replanejado_atrasado'] > 0) return 'atrasado';
     if (statusCounts['impactado_por_atraso'] > 0) return 'impactado_por_atraso';
     if (statusCounts['em_andamento'] > 0) return 'em_andamento';
     const totalConcluidos = (statusCounts['concluido'] || 0) + (statusCounts['concluido_com_atraso'] || 0);
