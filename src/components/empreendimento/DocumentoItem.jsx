@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import React, { useMemo, useState, useContext, useEffect } from "react";
 import { Atividade, PlanejamentoAtividade, PlanejamentoDocumento, Documento } from "@/entities/all";
 import { base44 } from '@/api/base44Client';
 import { Button } from "@/components/ui/button";
@@ -71,7 +72,12 @@ export default function DocumentoItem({
   // atividadesEmpCache é recebido do pai (DocumentosTab) para evitar N requisições individuais
 
   const [searchPredecessor, setSearchPredecessor] = useState('');
-  const [selectedAtividades, setSelectedAtividades] = useState([]);
+  const [selectedAtividades, setSelectedAtividades] = useState(() => []);
+
+  // Resetar seleção ao mudar de documento
+  useEffect(() => {
+    setSelectedAtividades([]);
+  }, [doc.id]);
 
   const [showExecutorDialog, setShowExecutorDialog] = useState(false);
   const [pendingExecutor, setPendingExecutor] = useState(null);
