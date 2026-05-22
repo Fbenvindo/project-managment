@@ -230,23 +230,39 @@ function AnaliticoFolhaRow({
 }
 
 export default React.memo(AnaliticoFolhaRow, (prev, next) => {
-  // For folhasSelecionadas (a Set), only re-render if THIS row's selection changed
-  if (
-    prev.folhasSelecionadas.has(prev.folha.source_documento_id) !==
-    next.folhasSelecionadas.has(next.folha.source_documento_id)
-  ) return false;
-  // Field-level comparison for folha — object identity is always unstable across renders
+  const prevSelected = prev.folhasSelecionadas.has(prev.folha.source_documento_id);
+  const nextSelected = next.folhasSelecionadas.has(next.folha.source_documento_id);
+  if (prevSelected !== nextSelected) return false;
+  
   if (prev.folha.source_documento_id !== next.folha.source_documento_id) return false;
   if (prev.folha.base_atividade_id !== next.folha.base_atividade_id) return false;
   if (prev.folha.status !== next.folha.status) return false;
   if (prev.folha.tempo !== next.folha.tempo) return false;
   if (prev.folha.etapa !== next.folha.etapa) return false;
-  if (prev.folha.source_documento_numero !== next.folha.source_documento_numero) return false;
-  if (prev.folha.source_documento_arquivo !== next.folha.source_documento_arquivo) return false;
-  // Re-render when data that affects the visual output changes
-  if (prev.planejamentos !== next.planejamentos) return false;
-  if (prev.usuarios !== next.usuarios) return false;
+  
+  // Planejamentos comparison — only check relevant planning for this folha
+  const prevPlan = prev.planejamentos?.find(p => 
+    p.documento_id === prev.folha.source_documento_id && 
+    p.atividade_id === prev.folha.base_atividade_id
+  );
+  const nextPlan = next.planejamentos?.find(p => 
+    p.documento_id === next.folha.source_documento_id && 
+    p.atividade_id === next.folha.base_atividade_id
+  );
+  
+  if (prevPlan?.executor_principal !== nextPlan?.executor_principal) return false;
+  if (prevPlan?.inicio_planejado !== nextPlan?.inicio_planejado) return false;
+  if (prevPlan?.termino_planejado !== nextPlan?.termino_planejado) return false;
+  
+  // Check usuarios only if executor changed
+  if (prevPlan?.executor_principal || nextPlan?.executor_principal) {
+    const prevUser = prev.usuarios?.find(u => u.email === prevPlan?.executor_principal);
+    const nextUser = next.usuarios?.find(u => u.email === nextPlan?.executor_principal);
+    if (prevUser?.nome !== nextUser?.nome) return false;
+  }
+  
   if (prev.hasCheckboxColumn !== next.hasCheckboxColumn) return false;
   if (prev.empreendimentoId !== next.empreendimentoId) return false;
+  
   return true;
 });
