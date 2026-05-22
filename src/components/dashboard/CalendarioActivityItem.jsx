@@ -350,7 +350,7 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
                   <SelectTrigger><SelectValue placeholder="Selecione..." /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="none">— Nenhum —</SelectItem>
-                    {Object.values(executorMap || {}).map((u) => (<SelectItem key={u.email} value={String(u.email)}>{u.nome || u.email}</SelectItem>))}
+                    {Object.values(executorMap || {}).map((u) => (<SelectItem key={u.id} value={String(u.id)}>{u.nome || u.email}</SelectItem>))}
                   </SelectContent>
                 </Select>
               </div>
