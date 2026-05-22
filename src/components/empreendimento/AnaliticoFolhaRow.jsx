@@ -137,7 +137,18 @@ export default function AnaliticoFolhaRow({
         }
       </TableCell>
       <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
-      <TableCell></TableCell>
+      <TableCell>
+        {plano?.executor_principal ? (
+          <div className="flex items-center gap-1">
+            <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+            <span className="text-xs font-medium text-green-800 truncate max-w-[120px]">
+              {(usuarios || []).find(u => u.email === plano.executor_principal)?.nome || plano.executor_principal}
+            </span>
+          </div>
+        ) : (
+          <span className="text-xs text-gray-400">-</span>
+        )}
+      </TableCell>
       <TableCell>
         {(folha.status === 'Planejada' || isConcluida) && plano?.inicio_planejado && plano?.termino_planejado ? (
           <div className="flex items-center gap-1 text-gray-600 text-xs">
