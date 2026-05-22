@@ -1203,11 +1203,15 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     try {
       const execFilter = userFilter !== 'all' ? { usuario: userFilter } : {};
 
-      const [planosAtividade, planosDocumento, execs] = await Promise.all([
-        userFilter !== 'all' ? retryWithBackoff(() => PlanejamentoAtividade.filter({ executor_principal: userFilter }), 3, 1500, 'cal.ativ') : retryWithBackoff(() => PlanejamentoAtividade.list(), 3, 1500, 'cal.ativ'),
-        userFilter !== 'all' ? retryWithBackoff(() => PlanejamentoDocumento.filter({ executor_principal: userFilter }), 3, 1500, 'cal.doc') : retryWithBackoff(() => PlanejamentoDocumento.list(), 3, 1500, 'cal.doc'),
-        retryWithBackoff(() => Execucao.filter(execFilter), 3, 1500, 'cal.exec'),
+      const [_ap,_ae,_dp,_de,execs] = await Promise.all([
+        userFilter!=='all'?retryWithBackoff(()=>PlanejamentoAtividade.filter({executor_principal:userFilter}),3,1500,'c.ap'):retryWithBackoff(()=>PlanejamentoAtividade.list(),3,1500,'c.al'),
+        userFilter!=='all'?retryWithBackoff(()=>PlanejamentoAtividade.filter({executores:{$in:[userFilter]}}),3,1500,'c.ae').catch(()=>[]):Promise.resolve([]),
+        userFilter!=='all'?retryWithBackoff(()=>PlanejamentoDocumento.filter({executor_principal:userFilter}),3,1500,'c.dp'):retryWithBackoff(()=>PlanejamentoDocumento.list(),3,1500,'c.dl'),
+        userFilter!=='all'?retryWithBackoff(()=>PlanejamentoDocumento.filter({executores:{$in:[userFilter]}}),3,1500,'c.de').catch(()=>[]):Promise.resolve([]),
+        retryWithBackoff(()=>Execucao.filter(execFilter),3,1500,'cal.exec'),
       ]);
+      const _mg=(a,b)=>{const m=new Map((a||[]).map(p=>[p.id,p]));(b||[]).forEach(p=>{if(!m.has(p.id))m.set(p.id,p);});return Array.from(m.values());};
+      const planosAtividade=_mg(_ap,_ae),planosDocumento=_mg(_dp,_de);
       const planosAtividadeComTipo = (planosAtividade || []).map(p => ({ ...p, tipo_planejamento: 'atividade' }));
       const planosDocumentoComTipo = (planosDocumento || []).map(p => ({ ...p, tipo_planejamento: 'documento' }));
       const todosPlanejamentos = [...planosAtividadeComTipo, ...planosDocumentoComTipo];
@@ -1840,13 +1844,8 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     ? 'Todos os Usuários'
     : executorMap[filters.user]?.nome || filters.user;
 
-  // **MODIFICADO**: Usa o estado de loading do calendário
   const totalLoading = isDashboardRefreshing || isCalendarLoading;
-
-  // **MODIFICADO**: Permissão para replanejamento agora usa o hook hasPermission
   const canReprogram = hasPermission('admin');
-
-  // **MODIFICADO**: renderContent para passar props de seleção
   const renderContent = () => {
     if (!hasSelectedUser) {
       return (
