@@ -12,11 +12,13 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import {
   Loader2, PackageOpen, PlusCircle, ChevronRight, ChevronDown, Trash2, Edit, Edit2,
-  Calendar, CheckCircle2, XCircle, FileX, Layers, Users2, CheckCircle, MoreHorizontal
+  Calendar, CheckCircle2, XCircle, FileX, Layers, Users2, CheckCircle, MoreHorizontal, RotateCcw
 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import AnaliticoFolhaRow from './AnaliticoFolhaRow';
+import { PlanejamentoAtividade, Atividade } from '@/entities/all';
+import { retryWithBackoff } from '../utils/apiUtils';
 
 export default function AnaliticoRenderContent({
   isLoading,
@@ -67,10 +69,205 @@ export default function AnaliticoRenderContent({
 }) {
   // folhasSelecionadas lives here so checkbox clicks don't re-render the entire parent
   const [folhasSelecionadas, setFolhasSelecionadas] = useState(new Set());
+  const [isConcluindoFolhas, setIsConcluindoFolhas] = useState(false);
+  const [isReverendoFolhas, setIsReverendoFolhas] = useState(false);
+  const [isExcluindoFolhas, setIsExcluindoFolhas] = useState(false);
 
   const handleConcluirFolha = useCallback(() => {
     if (fetchData) fetchData();
   }, [fetchData]);
+
+  const handleConcluirFolhasSelecionadas = useCallback(async () => {
+    if (folhasSelecionadas.size === 0) return;
+    setIsConcluindoFolhas(true);
+    const hoje = format(new Date(), 'yyyy-MM-dd');
+
+    // Collect all folha objects matching selected ids
+    const folhasParaConcluir = [];
+    for (const grupo of (atividadesAgrupadas || [])) {
+      for (const folha of (grupo.folhas || [])) {
+        if (folhasSelecionadas.has(folha.source_documento_id) && folha.status !== 'Concluída') {
+          folhasParaConcluir.push(folha);
+        }
+      }
+    }
+
+    let erros = 0;
+    for (const folha of folhasParaConcluir) {
+      try {
+        const atividadeId = folha.base_atividade_id;
+        const docId = folha.source_documento_id;
+
+        const planos = await retryWithBackoff(
+          () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId, atividade_id: atividadeId, documento_id: docId }),
+          3, 300, `plano-${docId}-${atividadeId}`
+        );
+
+        if (planos.length > 0) {
+          await retryWithBackoff(
+            () => PlanejamentoAtividade.update(planos[0].id, { status: 'concluido', termino_real: hoje }),
+            3, 300, `concluir-${planos[0].id}`
+          );
+        } else {
+          await retryWithBackoff(
+            () => PlanejamentoAtividade.create({
+              empreendimento_id: empreendimentoId,
+              atividade_id: atividadeId,
+              documento_id: docId,
+              etapa: folha.etapa,
+              descritivo: folha.atividade,
+              tempo_planejado: folha.tempo || 0,
+              status: 'concluido',
+              termino_real: hoje,
+              horas_por_dia: {},
+            }),
+            3, 300, `criarConcluir-${docId}`
+          );
+        }
+
+        const marcadores = await retryWithBackoff(
+          () => Atividade.filter({ empreendimento_id: empreendimentoId, id_atividade: atividadeId, documento_id: docId, tempo: 0 }),
+          3, 300, `marcador-${docId}`
+        );
+        if (!marcadores || marcadores.length === 0) {
+          await retryWithBackoff(
+            () => Atividade.create({
+              etapa: folha.etapa,
+              disciplina: folha.disciplina,
+              subdisciplina: folha.subdisciplina,
+              atividade: `(Concluída na folha ${folha.source_documento_numero || docId}) ${String(folha.atividade || '')}`,
+              empreendimento_id: empreendimentoId,
+              id_atividade: atividadeId,
+              documento_id: docId,
+              tempo: 0,
+            }),
+            3, 300, `criarMarcador-${docId}`
+          );
+        }
+      } catch {
+        erros++;
+      }
+    }
+
+    setFolhasSelecionadas(new Set());
+    setIsConcluindoFolhas(false);
+    if (erros > 0) alert(`${erros} folha(s) não puderam ser concluídas. Verifique o console.`);
+    if (fetchData) fetchData();
+  }, [folhasSelecionadas, atividadesAgrupadas, empreendimentoId, fetchData]);
+
+  const handleReverterFolhasSelecionadas = useCallback(async () => {
+    if (folhasSelecionadas.size === 0) return;
+    setIsReverendoFolhas(true);
+
+    const folhasParaReverter = [];
+    for (const grupo of (atividadesAgrupadas || [])) {
+      for (const folha of (grupo.folhas || [])) {
+        if (folhasSelecionadas.has(folha.source_documento_id)) {
+          folhasParaReverter.push(folha);
+        }
+      }
+    }
+
+    let erros = 0;
+    for (const folha of folhasParaReverter) {
+      try {
+        const atividadeId = folha.base_atividade_id;
+        const docId = folha.source_documento_id;
+
+        const planos = await retryWithBackoff(
+          () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId, atividade_id: atividadeId, documento_id: docId }),
+          3, 300, `planoReverter-${docId}-${atividadeId}`
+        );
+        for (const plano of planos) {
+          await retryWithBackoff(
+            () => PlanejamentoAtividade.delete(plano.id),
+            3, 300, `deletePlanoReverter-${plano.id}`
+          );
+        }
+
+        const marcadores = await retryWithBackoff(
+          () => Atividade.filter({ empreendimento_id: empreendimentoId, id_atividade: atividadeId, documento_id: docId, tempo: 0 }),
+          3, 300, `marcadoresReverter-${docId}`
+        );
+        for (const m of marcadores) {
+          await retryWithBackoff(() => Atividade.delete(m.id), 3, 300, `deleteMarcadorReverter-${m.id}`);
+        }
+      } catch {
+        erros++;
+      }
+    }
+
+    setFolhasSelecionadas(new Set());
+    setIsReverendoFolhas(false);
+    if (erros > 0) alert(`${erros} folha(s) não puderam ser revertidas.`);
+    if (fetchData) fetchData();
+  }, [folhasSelecionadas, atividadesAgrupadas, empreendimentoId, fetchData]);
+
+  const handleExcluirFolhasSelecionadas = useCallback(async () => {
+    if (folhasSelecionadas.size === 0) return;
+    if (!confirm(`Excluir ${folhasSelecionadas.size} folha(s) selecionada(s) do empreendimento? Esta ação não pode ser desfeita.`)) return;
+    setIsExcluindoFolhas(true);
+
+    const folhasParaExcluir = [];
+    for (const grupo of (atividadesAgrupadas || [])) {
+      for (const folha of (grupo.folhas || [])) {
+        if (folhasSelecionadas.has(folha.source_documento_id)) {
+          folhasParaExcluir.push(folha);
+        }
+      }
+    }
+
+    let erros = 0;
+    for (const folha of folhasParaExcluir) {
+      try {
+        const atividadeId = folha.base_atividade_id;
+        const docId = folha.source_documento_id;
+
+        const planos = await retryWithBackoff(
+          () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId, atividade_id: atividadeId, documento_id: docId }),
+          3, 300, `planoExcluir-${docId}-${atividadeId}`
+        );
+        for (const plano of planos) {
+          await retryWithBackoff(() => PlanejamentoAtividade.delete(plano.id), 3, 300, `deletePlano-${plano.id}`);
+        }
+
+        const marcadores = await retryWithBackoff(
+          () => Atividade.filter({ empreendimento_id: empreendimentoId, id_atividade: atividadeId, documento_id: docId, tempo: 0 }),
+          3, 300, `marcadoresExcluir-${docId}`
+        );
+        for (const m of marcadores) {
+          await retryWithBackoff(() => Atividade.delete(m.id), 3, 300, `deleteMarcadorExcluir-${m.id}`);
+        }
+
+        const existingExclusion = await retryWithBackoff(
+          () => Atividade.filter({ empreendimento_id: empreendimentoId, id_atividade: atividadeId, documento_id: docId, tempo: -999 }),
+          3, 300, `checkExclusaoFolha-${docId}`
+        );
+        if (!existingExclusion || existingExclusion.length === 0) {
+          await retryWithBackoff(
+            () => Atividade.create({
+              empreendimento_id: empreendimentoId,
+              id_atividade: atividadeId,
+              documento_id: docId,
+              etapa: folha.etapa,
+              disciplina: folha.disciplina,
+              subdisciplina: folha.subdisciplina,
+              atividade: `(Excluída) ${String(folha.atividade || '')}`,
+              tempo: -999,
+            }),
+            3, 300, `createExclusaoFolha-${docId}`
+          );
+        }
+      } catch {
+        erros++;
+      }
+    }
+
+    setFolhasSelecionadas(new Set());
+    setIsExcluindoFolhas(false);
+    if (erros > 0) alert(`${erros} folha(s) não puderam ser excluídas.`);
+    if (fetchData) fetchData();
+  }, [folhasSelecionadas, atividadesAgrupadas, empreendimentoId, fetchData]);
 
   // Deduplicate users by email — the API can return the same user twice
   const usuariosSemDuplicatas = useMemo(() => {
@@ -166,6 +363,61 @@ export default function AnaliticoRenderContent({
               )}
             </Button>
           )}
+        </div>
+      )}
+
+      {folhasSelecionadas.size > 0 && (
+        <div className="flex items-center justify-between p-4 border-2 border-green-500 rounded-lg bg-green-50 shadow-sm flex-wrap gap-3">
+          <div className="flex items-center gap-3">
+            <Badge className="bg-green-600 text-white">
+              {folhasSelecionadas.size} folha{folhasSelecionadas.size > 1 ? 's' : ''} selecionada{folhasSelecionadas.size > 1 ? 's' : ''}
+            </Badge>
+            <span className="text-sm text-gray-700">Ações em lote para as folhas selecionadas</span>
+          </div>
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              onClick={handleReverterFolhasSelecionadas}
+              variant="outline"
+              className="border-blue-500 text-blue-600 hover:bg-blue-50"
+              disabled={isConcluindoFolhas || isReverendoFolhas || isExcluindoFolhas}
+              size="sm"
+            >
+              {isReverendoFolhas
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Revertendo...</>
+                : <><RotateCcw className="w-4 h-4 mr-2" />Disponível Novamente</>
+              }
+            </Button>
+            <Button
+              onClick={handleConcluirFolhasSelecionadas}
+              className="bg-green-600 hover:bg-green-700"
+              disabled={isConcluindoFolhas || isReverendoFolhas || isExcluindoFolhas}
+              size="sm"
+            >
+              {isConcluindoFolhas
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Concluindo...</>
+                : <><CheckCircle2 className="w-4 h-4 mr-2" />Concluir Selecionadas</>
+              }
+            </Button>
+            <Button
+              onClick={handleExcluirFolhasSelecionadas}
+              variant="destructive"
+              disabled={isConcluindoFolhas || isReverendoFolhas || isExcluindoFolhas}
+              size="sm"
+            >
+              {isExcluindoFolhas
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Excluindo...</>
+                : <><Trash2 className="w-4 h-4 mr-2" />Excluir</>
+              }
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setFolhasSelecionadas(new Set())}
+              disabled={isConcluindoFolhas || isReverendoFolhas || isExcluindoFolhas}
+            >
+              Cancelar
+            </Button>
+          </div>
         </div>
       )}
 
@@ -274,8 +526,9 @@ export default function AnaliticoRenderContent({
                               const genericAtividadeIdToExclude = ativ.base_atividade_id || ativ.id;
                               const isDeleting = isDeletingActivity[genericAtividadeIdToExclude];
 
-                              return [
-                                <TableRow key={`${key}-row`} className="hover:bg-gray-50 group">
+                              return (
+                                <React.Fragment key={key}>
+                                  <TableRow className="hover:bg-gray-50 group">
                                     {hasCheckboxColumn && (
                                       <TableCell>
                                         {ativ.isEditable && (
@@ -335,16 +588,17 @@ export default function AnaliticoRenderContent({
                                     <TableCell>
                                       {renderDropdownCell(ativ, isDeleting)}
                                     </TableCell>
-                                  </TableRow>,
-                                  ...(isExpanded ? grupo.folhas.map(folha => (
+                                  </TableRow>
+                                  {isExpanded && grupo.folhas.map(folha => (
                                     <AnaliticoFolhaRow
-                                      key={`${key}-${folha.uniqueId}`}
+                                      key={folha.uniqueId}
                                       folha={folha}
                                       showExcluirCheckbox={true}
                                       {...folhaRowProps}
                                     />
-                                  )) : [])
-                                ];
+                                  ))}
+                                </React.Fragment>
+                              );
                             })}
                           </TableBody>
                         </Table>
@@ -388,8 +642,9 @@ export default function AnaliticoRenderContent({
                       const uniqueKey = ativ.source_documento_id ? `${genericAtividadeIdToExclude}-${ativ.source_documento_id}` : genericAtividadeIdToExclude;
                       const isDeleting = isDeletingActivity[uniqueKey] || isDeletingActivity[genericAtividadeIdToExclude];
 
-                      return [
-                        <TableRow key={`${key}-row`} className="hover:bg-gray-50 group">
+                      return (
+                        <React.Fragment key={key}>
+                          <TableRow className="hover:bg-gray-50 group">
                             {hasCheckboxColumn && (
                               <TableCell>
                                 {ativ.isEditable && (
@@ -469,16 +724,17 @@ export default function AnaliticoRenderContent({
                               {!ativ.isEditable && renderAcoesCell(ativ, genericAtividadeIdToExclude, isDeleting)}
                             </TableCell>
                             <TableCell>{renderDropdownCell(ativ, isDeleting)}</TableCell>
-                          </TableRow>,
-                          ...(isExpanded ? grupo.folhas.map(folha => (
+                          </TableRow>
+                          {isExpanded && grupo.folhas.map(folha => (
                             <AnaliticoFolhaRow
-                              key={`${key}-${folha.uniqueId}`}
+                              key={folha.uniqueId}
                               folha={folha}
                               showExcluirCheckbox={false}
                               {...folhaRowProps}
                             />
-                          )) : [])
-                        ];
+                          ))}
+                        </React.Fragment>
+                      );
                     })}
                   </TableBody>
                 </Table>
