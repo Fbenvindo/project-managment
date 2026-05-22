@@ -13,8 +13,6 @@ export default function AnaliticoFolhaRow({
   folha,
   hasCheckboxColumn,
   planejamentos,
-  atividadesSelecionadasParaExcluir,
-  setAtividadesSelecionadasParaExcluir,
   empreendimentoId,
   onConcluirFolha,
   usuarios,
@@ -205,20 +203,6 @@ export default function AnaliticoFolhaRow({
           </Button>
         </div>
       </TableCell>
-      <TableCell>
-        <Checkbox
-          checked={atividadesSelecionadasParaExcluir.has(folha.base_atividade_id || folha.id)}
-          onCheckedChange={(checked) => {
-            setAtividadesSelecionadasParaExcluir(prev => {
-              const newSet = new Set(prev);
-              const id = folha.base_atividade_id || folha.id;
-              if (checked) newSet.add(id); else newSet.delete(id);
-              return newSet;
-            });
-          }}
-        />
-      </TableCell>
-      <TableCell></TableCell>
     </TableRow>
     {showPlanejamentoModal && (
       <PlanejamentoFolhaUnicaModal

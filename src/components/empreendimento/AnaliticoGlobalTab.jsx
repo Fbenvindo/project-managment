@@ -62,7 +62,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const [etapaMudancaGlobal, setEtapaMudancaGlobal] = useState('');
   const [editandoTempo, setEditandoTempo] = useState({});
   const [novosTempoPadrao, setNovosTempoPadrao] = useState({});
-  const [atividadesSelecionadasParaExcluir, setAtividadesSelecionadasParaExcluir] = useState(new Set());
   const [isExcluindoMultiplasFolhas, setIsExcluindoMultiplasFolhas] = useState(false);
   const [folhasSelecionadas, setFolhasSelecionadas] = useState(new Set());
 
@@ -864,7 +863,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       handleOpenModal={handleOpenModal} selectedIds={selectedIds} isDeletingMultiple={isDeletingMultiple}
       handleSelectAll={handleSelectAll} handleDeleteSelected={handleDeleteSelected}
       atividadesSelecionadasParaPlanejar={atividadesSelecionadasParaPlanejar} setAtividadesSelecionadasParaPlanejar={setAtividadesSelecionadasParaPlanejar}
-      atividadesSelecionadasParaExcluir={atividadesSelecionadasParaExcluir} setAtividadesSelecionadasParaExcluir={setAtividadesSelecionadasParaExcluir}
       handleExcluirMultiplas={handleExcluirMultiplas} isExcluindoMultiplasFolhas={isExcluindoMultiplasFolhas}
       expandedAtividades={expandedAtividades} toggleAtividadeExpansion={toggleAtividadeExpansion}
       isDeletingActivity={isDeletingActivity} isConcluindo={isConcluindo} isSavingExecutor={isSavingExecutor}
@@ -876,6 +874,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       novosTempoPadrao={novosTempoPadrao} setNovosTempoPadrao={setNovosTempoPadrao} setEditandoTempo={setEditandoTempo}
       handleSalvarTempoPadrao={handleSalvarTempoPadrao} itensPRE={itensPRE}
       folhasSelecionadas={folhasSelecionadas} setFolhasSelecionadas={setFolhasSelecionadas}
+      isExcluindoMultiplasFolhas={isExcluindoMultiplasFolhas} handleExcluirMultiplas={handleExcluirMultiplas}
     />
   );
 
@@ -1499,12 +1498,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   };
 
   const handleExcluirMultiplas = async (folhaSelecionada = null) => {
-    if (atividadesSelecionadasParaExcluir.size === 0) {
-      alert("Selecione pelo menos uma atividade.");
+    if (folhasSelecionadas.size === 0) {
+      alert("Selecione pelo menos uma folha.");
       return;
     }
 
-    const atividadesParaExcluir = Array.from(atividadesSelecionadasParaExcluir);
+    const atividadesParaExcluir = Array.from(folhasSelecionadas);
     const atividadesEncontradas = combinedActivities.filter(a => 
       atividadesParaExcluir.includes(a.base_atividade_id || a.id)
     );
@@ -1562,7 +1561,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         }
 
         alert(`✅ ${deletados} atividade(s) excluída(s) de todas as folhas do empreendimento`);
-        setAtividadesSelecionadasParaExcluir(new Set());
+        setFolhasSelecionadas(new Set());
         await fetchData();
         if (onUpdate) onUpdate();
       } catch (error) {
@@ -1628,7 +1627,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         }
 
         alert(`✅ ${deletados} atividade(s) excluída(s) da folha ${folhaObj?.numero}`);
-        setAtividadesSelecionadasParaExcluir(new Set());
+        setFolhasSelecionadas(new Set());
         await fetchData();
         if (onUpdate) onUpdate();
       } catch (error) {

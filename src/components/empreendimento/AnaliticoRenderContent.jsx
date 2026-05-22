@@ -17,14 +17,12 @@ export default function AnaliticoRenderContent({
   isLoading, atividadesAgrupadas, atividadesPorDisciplina, handleOpenModal,
   selectedIds, editableActivities: editableActivitiesProp, isDeletingMultiple, handleSelectAll, handleDeleteSelected,
   atividadesSelecionadasParaPlanejar, setAtividadesSelecionadasParaPlanejar,
-  atividadesSelecionadasParaExcluir, setAtividadesSelecionadasParaExcluir, handleExcluirMultiplas, isExcluindoMultiplasFolhas,
   expandedAtividades, toggleAtividadeExpansion, isDeletingActivity, isConcluindo, isSavingExecutor,
   datasInicio, setDatasInicio, planejamentos, empreendimentoId,
-  handleSelectItem, handleOpenEtapaModal, handleOpenEditarEtapaEmFolhasModal, handleConcluirEmTodasFolhas,
-  handleOpenExcluirDeFolhasModal, handleExcluirAtividade, handleOpenModal: handleOpenModalEdit,
+  handleSelectItem, handleOpenEtapaModal, handleOpenEditarEtapaEmFolhasModal, handleConcluirEmTodasFolhas, handleOpenExcluirDeFolhasModal, handleExcluirAtividade,
   handleDelete, handleSaveExecutor, handlePlanejarMultiplas, usuarios,
   editandoTempo, novosTempoPadrao, setNovosTempoPadrao, setEditandoTempo, handleSalvarTempoPadrao,
-  itensPRE, folhasSelecionadas = new Set(), setFolhasSelecionadas = () => {},
+  itensPRE, folhasSelecionadas = new Set(), setFolhasSelecionadas = () => {}, isExcluindoMultiplasFolhas, handleExcluirMultiplas, handleConcluirFolhasSelecionadas,
 }) {
   if (isLoading) {
     return (
@@ -50,7 +48,7 @@ export default function AnaliticoRenderContent({
   }
 
   const editableActivities = atividadesAgrupadas.filter(grupo => grupo.baseAtividade.isEditable);
-  const hasCheckboxColumn = editableActivities.length > 0;
+  const hasCheckboxColumn = true; // Sempre mostrar checkbox para folhas
 
   // Agrupar itens PRE com etapa por disciplina virtual "PRE"
   const itensPREComEtapa = (itensPRE || []).filter(item => item.etapa_adicional);
@@ -67,7 +65,7 @@ export default function AnaliticoRenderContent({
       <React.Fragment key={key}>
         <TableRow className="hover:bg-gray-50">
           {hasCheckboxColumn && (<TableCell>{ativ.isEditable && (<Checkbox checked={selectedIds.has(ativ.uniqueId)} onCheckedChange={() => handleSelectItem(ativ.uniqueId)} disabled={isDeletingMultiple} />)}</TableCell>)}
-          <TableCell>{!ativ.isEditable && <Checkbox checked={atividadesSelecionadasParaExcluir.has(ativ.base_atividade_id || ativ.id)} onCheckedChange={(checked) => { setAtividadesSelecionadasParaExcluir(prev => { const ns = new Set(prev); const id = ativ.base_atividade_id || ativ.id; if (checked) ns.add(id); else ns.delete(id); return ns; }); }} />}</TableCell>
+          <TableCell></TableCell>
           <TableCell>{grupo.folhas.length > 0 && (<Button variant="ghost" size="icon" onClick={() => toggleAtividadeExpansion(key)} className="h-8 w-8">{isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}</Button>)}</TableCell>
           <TableCell className="font-medium">
             <div>{String(ativ.atividade || '')}</div>
@@ -157,7 +155,7 @@ export default function AnaliticoRenderContent({
             </DropdownMenu>
           </TableCell>
         </TableRow>
-        {isExpanded && grupo.folhas.map(folha => (<AnaliticoFolhaRow key={folha.uniqueId} folha={folha} hasCheckboxColumn={hasCheckboxColumn} planejamentos={planejamentos} atividadesSelecionadasParaExcluir={atividadesSelecionadasParaExcluir} setAtividadesSelecionadasParaExcluir={setAtividadesSelecionadasParaExcluir} empreendimentoId={empreendimentoId} onConcluirFolha={() => {}} usuarios={usuarios} atividade={ativ} folhasSelecionadas={folhasSelecionadas} setFolhasSelecionadas={setFolhasSelecionadas} />))}
+        {isExpanded && grupo.folhas.map(folha => (<AnaliticoFolhaRow key={folha.uniqueId} folha={folha} hasCheckboxColumn={true} planejamentos={planejamentos} empreendimentoId={empreendimentoId} onConcluirFolha={() => {}} usuarios={usuarios} atividade={ativ} folhasSelecionadas={folhasSelecionadas} setFolhasSelecionadas={setFolhasSelecionadas} />))}
       </React.Fragment>
     );
   };
@@ -199,10 +197,10 @@ export default function AnaliticoRenderContent({
         </div>
       )}
 
-      {atividadesSelecionadasParaExcluir.size > 0 && (
-        <div className="flex items-center justify-between p-4 border-2 border-red-500 rounded-lg bg-red-50 shadow-sm">
-          <div className="flex items-center gap-3"><Badge className="bg-red-600 text-white">{atividadesSelecionadasParaExcluir.size} atividade{atividadesSelecionadasParaExcluir.size > 1 ? 's' : ''} selecionada{atividadesSelecionadasParaExcluir.size > 1 ? 's' : ''}</Badge><span className="text-sm text-gray-700">Excluir selecionadas</span></div>
-          <div className="flex gap-2"><Button onClick={() => handleExcluirMultiplas()} className="bg-red-600 hover:bg-red-700" disabled={isExcluindoMultiplasFolhas} size="sm"><Trash2 className="w-4 h-4 mr-2" />Excluir do Empreendimento</Button><Button variant="outline" size="sm" onClick={() => setAtividadesSelecionadasParaExcluir(new Set())}>Cancelar</Button></div>
+      {folhasSelecionadas.size > 0 && (
+        <div className="flex items-center justify-between p-4 border-2 border-amber-500 rounded-lg bg-amber-50 shadow-sm">
+          <div className="flex items-center gap-3"><Badge className="bg-amber-600 text-white">{folhasSelecionadas.size} folha{folhasSelecionadas.size > 1 ? 's' : ''} selecionada{folhasSelecionadas.size > 1 ? 's' : ''}</Badge><span className="text-sm text-gray-700">Ações em lote</span></div>
+          <div className="flex gap-2"><Button onClick={() => handleExcluirMultiplas()} className="bg-red-600 hover:bg-red-700" disabled={isExcluindoMultiplasFolhas} size="sm"><Trash2 className="w-4 h-4 mr-2" />Excluir</Button><Button className="bg-green-600 hover:bg-green-700" disabled={isExcluindoMultiplasFolhas} size="sm" onClick={() => handleConcluirFolhasSelecionadas && handleConcluirFolhasSelecionadas()}><CheckCircle className="w-4 h-4 mr-2" />Concluir</Button><Button variant="outline" size="sm" onClick={() => setFolhasSelecionadas(new Set())}>Cancelar</Button></div>
         </div>
       )}
 
@@ -229,7 +227,7 @@ export default function AnaliticoRenderContent({
                         <TableHeader className="bg-white">
                           <TableRow>
                             {hasCheckboxColumn && <TableHead className="w-[50px]"></TableHead>}
-                            <TableHead className="w-[50px]"><Checkbox checked={atividadesSelecionadasParaExcluir.size > 0 && atividadesSubgrupo.every(g => atividadesSelecionadasParaExcluir.has(g.baseAtividade.base_atividade_id || g.baseAtividade.id))} onCheckedChange={(checked) => { const ids = atividadesSubgrupo.map(g => g.baseAtividade.base_atividade_id || g.baseAtividade.id); setAtividadesSelecionadasParaExcluir(prev => { const ns = new Set(prev); ids.forEach(id => { if (checked) ns.add(id); else ns.delete(id); }); return ns; }); }} /></TableHead>
+                              <TableHead className="w-[50px]"></TableHead>
                             {tableHeaders(false).props.children.slice(2)}
                           </TableRow>
                         </TableHeader>
@@ -243,7 +241,7 @@ export default function AnaliticoRenderContent({
                   <TableHeader className="bg-gray-50">
                     <TableRow>
                       {hasCheckboxColumn && <TableHead className="w-[50px]"></TableHead>}
-                      <TableHead className="w-[50px]"><Checkbox checked={atividadesSelecionadasParaExcluir.size > 0 && grupos.every(g => atividadesSelecionadasParaExcluir.has(g.baseAtividade.base_atividade_id || g.baseAtividade.id))} onCheckedChange={(checked) => { const ids = grupos.map(g => g.baseAtividade.base_atividade_id || g.baseAtividade.id); setAtividadesSelecionadasParaExcluir(prev => { const ns = new Set(prev); ids.forEach(id => { if (checked) ns.add(id); else ns.delete(id); }); return ns; }); }} /></TableHead>
+                      <TableHead className="w-[50px]"></TableHead>
                       <TableHead className="w-[50px]"></TableHead>
                       <TableHead>Atividade</TableHead><TableHead>Folhas</TableHead><TableHead>Status</TableHead><TableHead>Etapa</TableHead><TableHead>Executor</TableHead><TableHead>Datas Planejadas</TableHead><TableHead>Tempo Padrão</TableHead><TableHead>Tempo Total</TableHead><TableHead className="text-center w-[120px]">Ações</TableHead><TableHead className="w-[50px]"></TableHead>
                     </TableRow>
