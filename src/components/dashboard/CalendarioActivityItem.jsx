@@ -217,7 +217,7 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
   const getStatusBg = () => {
     if (isSelected) return '#e0e7ff';
     if (realStatus === 'concluido_com_atraso' || realStatus === 'atrasado' || realStatus === 'replanejado_atrasado') return '#fef2f2';
-    if (realStatus === 'impactado_por_atraso') return '#f5f3ff';
+    if (realStatus === 'impactado_por_atraso') return '#ffffff';
     if (realStatus === 'em_andamento') return '#eff6ff';
     if (realStatus === 'concluido') return '#f0fdf4';
     if (realStatus === 'pausado') return '#fffbeb';
