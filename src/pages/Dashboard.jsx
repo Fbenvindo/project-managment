@@ -34,6 +34,7 @@ export default function Dashboard() {
     isLoadingPlanejamentos,
     hasPermission,
     isAdmin,
+    isGestao,
     nivelUsuario,
     perfilAtual,
     triggerUpdate
@@ -47,7 +48,7 @@ export default function Dashboard() {
   const [showNovoPlanejamentoModal, setShowNovoPlanejamentoModal] = useState(false);
 
   const isColaboradorView = nivelUsuario === 1 && !isAdmin;
-  const canCreatePlanning = (isAdmin || perfilAtual === 'direcao' || perfilAtual === 'coordenador') && perfilAtual !== 'gestao';
+  const canCreatePlanning = !isGestao && (isAdmin || perfilAtual === 'direcao' || perfilAtual === 'coordenador');
 
   const isLoadingRef = useRef(false);
   const hasLoadedOnce = useRef(false);
