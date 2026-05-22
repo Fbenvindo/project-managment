@@ -496,7 +496,7 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
                  variant="outline"
                  className="border-green-500 text-green-600 hover:bg-green-50"
                >
-                 Concluir Etapa Completa
+                 Concluir apenas essas folhas
                </Button>
                <Button 
                  onClick={() => alert('Funcionalidade em desenvolvimento')}
