@@ -35,6 +35,7 @@ export default function Dashboard() {
     hasPermission,
     isAdmin,
     nivelUsuario,
+    perfilAtual,
     triggerUpdate
   } = useContext(ActivityTimerContext);
 
@@ -46,7 +47,6 @@ export default function Dashboard() {
   const [showNovoPlanejamentoModal, setShowNovoPlanejamentoModal] = useState(false);
 
   const isColaboradorView = nivelUsuario === 1 && !isAdmin;
-  const { perfilAtual } = useContext(ActivityTimerContext);
   const canCreatePlanning = isAdmin || perfilAtual === 'direcao' || perfilAtual === 'coordenador';
 
   const isLoadingRef = useRef(false);
