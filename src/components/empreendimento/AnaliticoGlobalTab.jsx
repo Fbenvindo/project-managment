@@ -64,6 +64,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
   const [novosTempoPadrao, setNovosTempoPadrao] = useState({});
   const [atividadesSelecionadasParaExcluir, setAtividadesSelecionadasParaExcluir] = useState(new Set());
   const [isExcluindoMultiplasFolhas, setIsExcluindoMultiplasFolhas] = useState(false);
+  const [folhasSelecionadas, setFolhasSelecionadas] = useState(new Set());
 
   const documentosMap = useMemo(() => {
     return new Map((documentos || []).map(doc => [doc.id, doc]));
@@ -553,6 +554,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
         const alteracoes = await AlteracaoEtapa.filter({ empreendimento_id: empreendimentoId });
         setAlteracoesEtapa(alteracoes || []);
         fetchData();
+        setFolhasSelecionadas(new Set());
         setIsEtapaModalOpen(false);
         return;
       }
@@ -873,6 +875,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate }) {
       handlePlanejarMultiplas={handlePlanejarMultiplas} usuarios={usuarios} editandoTempo={editandoTempo}
       novosTempoPadrao={novosTempoPadrao} setNovosTempoPadrao={setNovosTempoPadrao} setEditandoTempo={setEditandoTempo}
       handleSalvarTempoPadrao={handleSalvarTempoPadrao} itensPRE={itensPRE}
+      folhasSelecionadas={folhasSelecionadas} setFolhasSelecionadas={setFolhasSelecionadas}
     />
   );
 

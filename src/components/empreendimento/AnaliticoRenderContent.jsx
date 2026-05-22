@@ -24,7 +24,7 @@ export default function AnaliticoRenderContent({
   handleOpenExcluirDeFolhasModal, handleExcluirAtividade, handleOpenModal: handleOpenModalEdit,
   handleDelete, handleSaveExecutor, handlePlanejarMultiplas, usuarios,
   editandoTempo, novosTempoPadrao, setNovosTempoPadrao, setEditandoTempo, handleSalvarTempoPadrao,
-  itensPRE,
+  itensPRE, folhasSelecionadas = new Set(), setFolhasSelecionadas = () => {},
 }) {
   if (isLoading) {
     return (
@@ -157,7 +157,7 @@ export default function AnaliticoRenderContent({
             </DropdownMenu>
           </TableCell>
         </TableRow>
-        {isExpanded && grupo.folhas.map(folha => (<AnaliticoFolhaRow key={folha.uniqueId} folha={folha} hasCheckboxColumn={hasCheckboxColumn} planejamentos={planejamentos} atividadesSelecionadasParaExcluir={atividadesSelecionadasParaExcluir} setAtividadesSelecionadasParaExcluir={setAtividadesSelecionadasParaExcluir} empreendimentoId={empreendimentoId} onConcluirFolha={() => {}} usuarios={usuarios} atividade={ativ} />))}
+        {isExpanded && grupo.folhas.map(folha => (<AnaliticoFolhaRow key={folha.uniqueId} folha={folha} hasCheckboxColumn={hasCheckboxColumn} planejamentos={planejamentos} atividadesSelecionadasParaExcluir={atividadesSelecionadasParaExcluir} setAtividadesSelecionadasParaExcluir={setAtividadesSelecionadasParaExcluir} empreendimentoId={empreendimentoId} onConcluirFolha={() => {}} usuarios={usuarios} atividade={ativ} folhasSelecionadas={folhasSelecionadas} setFolhasSelecionadas={setFolhasSelecionadas} />))}
       </React.Fragment>
     );
   };

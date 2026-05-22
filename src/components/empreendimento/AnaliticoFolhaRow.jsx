@@ -19,6 +19,8 @@ export default function AnaliticoFolhaRow({
   onConcluirFolha,
   usuarios,
   atividade,
+  folhasSelecionadas = new Set(),
+  setFolhasSelecionadas = () => {},
 }) {
   const [isConc, setIsConc] = useState(false);
   const [showPlanejamentoModal, setShowPlanejamentoModal] = useState(false);
@@ -119,7 +121,21 @@ export default function AnaliticoFolhaRow({
   return (
     <>
     <TableRow key={folha.uniqueId} className={isConcluida ? 'bg-blue-50/80' : 'bg-blue-50/30'}>
-      {hasCheckboxColumn && <TableCell></TableCell>}
+      {hasCheckboxColumn && (
+        <TableCell>
+          <Checkbox
+            checked={folhasSelecionadas.has(folha.source_documento_id)}
+            onCheckedChange={(checked) => {
+              setFolhasSelecionadas(prev => {
+                const newSet = new Set(prev);
+                if (checked) newSet.add(folha.source_documento_id);
+                else newSet.delete(folha.source_documento_id);
+                return newSet;
+              });
+            }}
+          />
+        </TableCell>
+      )}
       <TableCell className="pl-12">
         <ChevronRight className="w-3 h-3 text-gray-400 inline mr-1" />
       </TableCell>
