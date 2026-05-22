@@ -13,6 +13,7 @@ import { ptBR } from "date-fns/locale";
 import { Empreendimento, Usuario, Documento, AtaReuniao } from "@/entities/all";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import ProvidenciaItem from "@/components/ata/ProvidenciaItem";
+import { base44 } from "@/api/base44Client";
 
 const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/577f93874_logo_Interativa_versao_final_sem_fundo_0002.png";
 
@@ -235,16 +236,17 @@ const printStyles = `
 `;
 
 export default function AtaPlanejamento() {
-  const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
-  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  const [empreendimentos, setEmpreendimentos] = useState([]);
-  const [usuarios, setUsuarios] = useState([]);
-  const [documentos, setDocumentos] = useState([]);
-  const [atasRegistradas, setAtasRegistradas] = useState([]);
-  const [viewMode, setViewMode] = useState('list'); // 'list', 'edit', 'new'
-  const [currentAtaId, setCurrentAtaId] = useState(null);
-  const autoSaveTimeoutRef = React.useRef(null);
+   const [isLoading, setIsLoading] = useState(true);
+   const [isSaving, setIsSaving] = useState(false);
+   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+   const [empreendimentos, setEmpreendimentos] = useState([]);
+   const [usuarios, setUsuarios] = useState([]);
+   const [documentos, setDocumentos] = useState([]);
+   const [atasRegistradas, setAtasRegistradas] = useState([]);
+   const [viewMode, setViewMode] = useState('list'); // 'list', 'edit', 'new'
+   const [currentAtaId, setCurrentAtaId] = useState(null);
+   const [userProfile, setUserProfile] = useState(null);
+   const autoSaveTimeoutRef = React.useRef(null);
   
   // Dados da ATA
   const [ataData, setAtaData] = useState({
@@ -288,7 +290,19 @@ export default function AtaPlanejamento() {
 
   useEffect(() => {
     loadData();
+    loadUserProfile();
   }, []);
+
+  const loadUserProfile = async () => {
+    try {
+      const me = await base44.auth.me();
+      const users = await Usuario.list();
+      const currentUser = users.find(u => u.email === me.email);
+      setUserProfile(currentUser);
+    } catch (error) {
+      console.error('Erro ao carregar perfil do usuário:', error);
+    }
+  };
 
   // Auto-save com debounce — usa refs para sempre capturar os valores mais recentes
   useEffect(() => {
@@ -778,9 +792,11 @@ export default function AtaPlanejamento() {
                       <FolderOpen className="w-4 h-4 mr-1" />
                       Abrir
                     </Button>
-                    <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700" onClick={() => handleDeleteAta(ata.id)}>
-                      <Trash2 className="w-4 h-4" />
-                    </Button>
+                    {userProfile?.perfil !== 'apoio' && (
+                      <Button variant="ghost" size="sm" className="text-red-500 hover:text-red-700" onClick={() => handleDeleteAta(ata.id)}>
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
                   </div>
                 </div>
               ))}
@@ -873,19 +889,21 @@ export default function AtaPlanejamento() {
                               )}
                             </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={handleSaveAta} disabled={isSaving}>
-            {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-            Salvar
-          </Button>
-          <Button variant="outline" onClick={handlePrint}>
-            <Printer className="w-4 h-4 mr-2" />
-            Imprimir
-          </Button>
-          <Button onClick={() => setShowAddModal(true)}>
-            <Plus className="w-4 h-4 mr-2" />
-            Adicionar Providência
-          </Button>
-        </div>
+           <Button variant="outline" onClick={handleSaveAta} disabled={isSaving}>
+             {isSaving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+             Salvar
+           </Button>
+           <Button variant="outline" onClick={handlePrint}>
+             <Printer className="w-4 h-4 mr-2" />
+             Imprimir
+           </Button>
+           {userProfile?.perfil !== 'apoio' && (
+             <Button onClick={() => setShowAddModal(true)}>
+               <Plus className="w-4 h-4 mr-2" />
+               Adicionar Providência
+             </Button>
+           )}
+         </div>
       </div>
 
       {/* Documento ATA - Formato A4 Paisagem */}
@@ -1165,19 +1183,20 @@ export default function AtaPlanejamento() {
 
                 {/* Itens do Projeto */}
                 {!isMinimizado && (
-                <div className="space-y-2 p-2">
-                  {grupo.items.map((prov) => (
-                    <ProvidenciaItem
-                      key={prov.id}
-                      prov={prov}
-                      usuarios={usuarios}
-                      onUpdate={handleUpdateProvidencia}
-                      onDelete={handleDeleteProvidencia}
-                      onInsertAfter={handleInsertProvidenciaAfterCb}
-                    />
-                  ))}
-                </div>
-                )}
+                 <div className="space-y-2 p-2">
+                   {grupo.items.map((prov) => (
+                     <ProvidenciaItem
+                       key={prov.id}
+                       prov={prov}
+                       usuarios={usuarios}
+                       onUpdate={handleUpdateProvidencia}
+                       onDelete={handleDeleteProvidencia}
+                       onInsertAfter={handleInsertProvidenciaAfterCb}
+                       userPerfil={userProfile?.perfil}
+                     />
+                   ))}
+                 </div>
+                 )}
               </div>
               );
             })}

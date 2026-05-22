@@ -70,7 +70,7 @@ const RespostaInput = memo(({ value, onChange, onRemove }) => {
 });
 
 // Item de providência completamente isolado com estado local para os campos de texto
-const ProvidenciaItem = memo(({ prov, usuarios, onUpdate, onDelete, onInsertAfter }) => {
+const ProvidenciaItem = memo(({ prov, usuarios, onUpdate, onDelete, onInsertAfter, userPerfil }) => {
   // Estado local para campos de texto — evita re-render do pai a cada keystroke
   const [localProvidencias, setLocalProvidencias] = useState(prov.providencias || '');
 
@@ -103,11 +103,15 @@ const ProvidenciaItem = memo(({ prov, usuarios, onUpdate, onDelete, onInsertAfte
         {/* Providências */}
         <div className="flex gap-2">
           <label className="text-xs font-medium text-gray-600 min-w-[80px] pt-1">Providências:</label>
-          <AutoResizeTextarea
-            value={localProvidencias}
-            onChange={handleProvidenciasChange}
-            className="text-sm print:hidden flex-1 resize-none overflow-hidden min-h-[60px]"
-          />
+          {userPerfil === 'apoio' ? (
+            <span className="text-sm flex-1 whitespace-pre-wrap">{prov.providencias}</span>
+          ) : (
+            <AutoResizeTextarea
+              value={localProvidencias}
+              onChange={handleProvidenciasChange}
+              className="text-sm print:hidden flex-1 resize-none overflow-hidden min-h-[60px]"
+            />
+          )}
           <span className="hidden print:inline text-[6px] flex-1 whitespace-pre-wrap">{prov.providencias}</span>
         </div>
 
@@ -116,32 +120,38 @@ const ProvidenciaItem = memo(({ prov, usuarios, onUpdate, onDelete, onInsertAfte
           <label className="text-xs font-medium text-gray-600 min-w-[80px] pt-1">Respostas:</label>
           <div className="flex-1 space-y-2">
             {(prov.respostas || []).map((resp, rIdx) => (
-              <RespostaInput
-                key={rIdx}
-                value={resp}
-                onChange={(newValue) => {
-                  const novasRespostas = [...(prov.respostas || [])];
-                  novasRespostas[rIdx] = newValue;
-                  onUpdate(prov.id, 'respostas', novasRespostas);
-                }}
-                onRemove={() => {
-                  const novasRespostas = (prov.respostas || []).filter((_, i) => i !== rIdx);
-                  onUpdate(prov.id, 'respostas', novasRespostas);
-                }}
-              />
+              userPerfil === 'apoio' ? (
+                <div key={rIdx} className="text-sm">{resp}</div>
+              ) : (
+                <RespostaInput
+                  key={rIdx}
+                  value={resp}
+                  onChange={(newValue) => {
+                    const novasRespostas = [...(prov.respostas || [])];
+                    novasRespostas[rIdx] = newValue;
+                    onUpdate(prov.id, 'respostas', novasRespostas);
+                  }}
+                  onRemove={() => {
+                    const novasRespostas = (prov.respostas || []).filter((_, i) => i !== rIdx);
+                    onUpdate(prov.id, 'respostas', novasRespostas);
+                  }}
+                />
+              )
             ))}
             <div className="hidden print:block text-[6px] whitespace-pre-wrap">
               {(prov.respostas || []).map((resp, rIdx) => (
                 <div key={rIdx} className="mb-1">• {resp}</div>
               ))}
             </div>
-            <button
-              onClick={() => onUpdate(prov.id, 'respostas', [...(prov.respostas || []), ''])}
-              className="text-blue-600 hover:text-blue-800 text-xs flex items-center gap-1 print:hidden"
-            >
-              <Plus className="w-3 h-3" />
-              Adicionar Resposta
-            </button>
+            {userPerfil !== 'apoio' && (
+              <button
+                onClick={() => onUpdate(prov.id, 'respostas', [...(prov.respostas || []), ''])}
+                className="text-blue-600 hover:text-blue-800 text-xs flex items-center gap-1 print:hidden"
+              >
+                <Plus className="w-3 h-3" />
+                Adicionar Resposta
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -217,22 +227,24 @@ const ProvidenciaItem = memo(({ prov, usuarios, onUpdate, onDelete, onInsertAfte
         </div>
 
         {/* Ações */}
-        <div className="flex gap-1 pt-2 border-t border-gray-300 no-print">
-          <button
-            onClick={() => onInsertAfter(prov.id)}
-            className="flex-1 text-green-600 hover:text-green-800 hover:bg-green-50 p-1 rounded"
-            title="Inserir providência após esta"
-          >
-            <Plus className="w-3 h-3 mx-auto" />
-          </button>
-          <button
-            onClick={() => onDelete(prov.id)}
-            className="flex-1 text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded"
-            title="Excluir"
-          >
-            <Trash2 className="w-3 h-3 mx-auto" />
-          </button>
-        </div>
+        {userPerfil !== 'apoio' && (
+          <div className="flex gap-1 pt-2 border-t border-gray-300 no-print">
+            <button
+              onClick={() => onInsertAfter(prov.id)}
+              className="flex-1 text-green-600 hover:text-green-800 hover:bg-green-50 p-1 rounded"
+              title="Inserir providência após esta"
+            >
+              <Plus className="w-3 h-3 mx-auto" />
+            </button>
+            <button
+              onClick={() => onDelete(prov.id)}
+              className="flex-1 text-red-500 hover:text-red-700 hover:bg-red-50 p-1 rounded"
+              title="Excluir"
+            >
+              <Trash2 className="w-3 h-3 mx-auto" />
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
