@@ -42,7 +42,8 @@ const calculateActivityStatus = (plano, allPlanejamentos = []) => {
 };
 
 export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpdate, executorMap, allPlanejamentos, provided, isDragging, isReprogramando, isSelected, onToggleSelect, hasSelections, orderIndex }) {
-  const { activeExecution, startExecution, user, playlist, hasPermission } = useContext(ActivityTimerContext);
+  const { activeExecution, startExecution, user, playlist, hasPermission, isAdmin, perfilAtual } = useContext(ActivityTimerContext);
+  const canEditDelete = isAdmin || perfilAtual === 'direcao' || perfilAtual === 'coordenador';
 
   const [isStarting, setIsStarting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -211,7 +212,7 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
     }
   };
 
-  const shouldShowAdjustButton = () => hasPermission('coordenador') && !plano.isLegacyExecution && plano.status !== 'concluido';
+  const shouldShowAdjustButton = () => canEditDelete && !plano.isLegacyExecution && plano.status !== 'concluido';
   const observacao = plano.observacao || null;
 
   const getStatusBg = () => {
@@ -285,12 +286,16 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
               className={`p-1.5 rounded-md transition-colors ${activeExecution?.planejamento_id === plano.id ? 'bg-yellow-500 animate-pulse' : realStatus === 'concluido' ? 'bg-green-500 cursor-not-allowed' : realStatus === 'concluido_com_atraso' ? 'bg-red-500 cursor-not-allowed' : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado') ? 'bg-red-500 hover:bg-red-600' : 'bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed'}`}>
               {activeExecution?.planejamento_id === plano.id ? <Clock className="w-3.5 h-3.5 text-white" /> : isConcluded ? <span className="text-white text-xs font-bold">✓</span> : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado') ? <span className="text-white text-xs font-bold">✕</span> : <Play className="w-3.5 h-3.5 text-white" fill="white" />}
             </button>
-            <button onClick={handleDeleteActivity} disabled={isDeleting || !!activeExecution} className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-100 hover:text-red-600 disabled:opacity-50 transition-colors">
-              {isDeleting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-            </button>
-            <button onClick={handleOpenEditDescricao} className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-100 transition-colors">
-              <Edit2 className="w-3.5 h-3.5 text-gray-600" />
-            </button>
+            {canEditDelete && (
+              <button onClick={handleDeleteActivity} disabled={isDeleting || !!activeExecution} className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-100 hover:text-red-600 disabled:opacity-50 transition-colors">
+                {isDeleting ? <RefreshCw className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+              </button>
+            )}
+            {canEditDelete && (
+              <button onClick={handleOpenEditDescricao} className="p-1.5 rounded-md border border-gray-300 hover:bg-gray-100 transition-colors">
+                <Edit2 className="w-3.5 h-3.5 text-gray-600" />
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {shouldShowAdjustButton() ? (
