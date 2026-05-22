@@ -689,7 +689,7 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
 
           if (atividade.isLegacyExecution) return tempoExecutado >= 0.05;
           if (atividade.isQuickActivity || atividade.is_quick_activity) {
-            return horasExecutadas >= 0.05 || horasAlocadas >= 0.05 || atividade.status === 'concluido' || atividade.status === 'em_andamento';
+            return horasExecutadas >= 0.05 || horasAlocadas >= 0.05 || atividade.status === 'concluido' || atividade.status === 'concluido_com_atraso' || atividade.status === 'em_andamento';
           }
           return horasAlocadas >= 0.05 || horasExecutadas >= 0.05 || atividade._isExtended || atividade._isPushed;
         });
