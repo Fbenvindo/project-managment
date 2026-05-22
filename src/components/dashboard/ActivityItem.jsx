@@ -286,9 +286,9 @@ export default function ActivityItem({ plano, dayKey, onDelete, onUpdate, execut
 
         {plano.os && <p className="text-blue-600 font-semibold text-xs mb-1.5">OS: {plano.os}</p>}
 
-        {observacao && (
-          <div className="mt-1.5 p-2 bg-gray-50 border border-gray-200 rounded text-xs">
-            <p className="text-gray-700 italic"><span className="font-semibold text-gray-600">💬 Obs:</span> {observacao}</p>
+        {observacao && (realStatus === 'concluido' || realStatus === 'concluido_atrasado') && (
+          <div className="mt-1.5 p-2 bg-amber-50 border border-amber-200 rounded text-xs">
+            <p className="text-amber-900 italic"><span className="font-semibold text-amber-700">💬 Obs:</span> {observacao}</p>
           </div>
         )}
 
