@@ -1166,10 +1166,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     }, {});
   }, [effectiveUsuarios]);
 
-  // **NOVO**: Estado para seleção múltipla
   const [selectedActivities, setSelectedActivities] = useState(new Set());
-
-  // **NOVO**: Modo de ordenação manual de atividades por dia
   const [modoOrdenacao, setModoOrdenacao] = useState(false);
   const [activityOrder, setActivityOrder] = useState(() => {
     try { return JSON.parse(localStorage.getItem('calendar-activity-order') || '{}'); }
@@ -1203,15 +1200,21 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     try {
       const execFilter = userFilter !== 'all' ? { usuario: userFilter } : {};
 
-      const [_ap,_ae,_dp,_de,execs] = await Promise.all([
-        userFilter!=='all'?retryWithBackoff(()=>PlanejamentoAtividade.filter({executor_principal:userFilter}),3,1500,'c.ap'):retryWithBackoff(()=>PlanejamentoAtividade.list(),3,1500,'c.al'),
-        userFilter!=='all'?retryWithBackoff(()=>PlanejamentoAtividade.filter({executores:{$in:[userFilter]}}),3,1500,'c.ae').catch(()=>[]):Promise.resolve([]),
-        userFilter!=='all'?retryWithBackoff(()=>PlanejamentoDocumento.filter({executor_principal:userFilter}),3,1500,'c.dp'):retryWithBackoff(()=>PlanejamentoDocumento.list(),3,1500,'c.dl'),
-        userFilter!=='all'?retryWithBackoff(()=>PlanejamentoDocumento.filter({executores:{$in:[userFilter]}}),3,1500,'c.de').catch(()=>[]):Promise.resolve([]),
+      const fetchPlanos = async (Entity, tag) => {
+        if (userFilter === 'all') return retryWithBackoff(() => Entity.list(), 3, 1500, tag);
+        const [byPrincipal, allList] = await Promise.all([
+          retryWithBackoff(() => Entity.filter({ executor_principal: userFilter }), 3, 1500, tag+'p').catch(() => []),
+          retryWithBackoff(() => Entity.list(), 3, 1500, tag+'l').catch(() => []),
+        ]);
+        const m = new Map((byPrincipal||[]).map(p=>[p.id,p]));
+        (allList||[]).filter(p=>Array.isArray(p.executores)&&p.executores.includes(userFilter)).forEach(p=>{if(!m.has(p.id))m.set(p.id,p);});
+        return Array.from(m.values());
+      };
+      const [planosAtividade, planosDocumento, execs] = await Promise.all([
+        fetchPlanos(PlanejamentoAtividade,'ca'),
+        fetchPlanos(PlanejamentoDocumento,'cd'),
         retryWithBackoff(()=>Execucao.filter(execFilter),3,1500,'cal.exec'),
       ]);
-      const _mg=(a,b)=>{const m=new Map((a||[]).map(p=>[p.id,p]));(b||[]).forEach(p=>{if(!m.has(p.id))m.set(p.id,p);});return Array.from(m.values());};
-      const planosAtividade=_mg(_ap,_ae),planosDocumento=_mg(_dp,_de);
       const planosAtividadeComTipo = (planosAtividade || []).map(p => ({ ...p, tipo_planejamento: 'atividade' }));
       const planosDocumentoComTipo = (planosDocumento || []).map(p => ({ ...p, tipo_planejamento: 'documento' }));
       const todosPlanejamentos = [...planosAtividadeComTipo, ...planosDocumentoComTipo];
@@ -1280,8 +1283,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     }
   }, [filters.user]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Recarregar quando updateKey mudar, mas com debounce de 3s para evitar reloads
-  // causados por ações de timer (start/stop/pause) que disparam updateKey frequentemente
   const prevUpdateKeyRef = useRef(updateKey);
   useEffect(() => {
     if (updateKey === prevUpdateKeyRef.current) return;
@@ -1293,7 +1294,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     return () => clearTimeout(timer);
   }, [updateKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Recarregar imediatamente quando uma atividade for finalizada via timer (sem debounce)
   const prevCompletionKeyRef = useRef(completionKey);
   useEffect(() => {
     if (completionKey === prevCompletionKeyRef.current) return;
