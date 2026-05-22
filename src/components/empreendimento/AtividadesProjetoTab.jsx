@@ -129,12 +129,19 @@ const AtividadeFormDialog = ({ open, setOpen, empreendimentoId, disciplinas, onU
         setOpen(false);
       } else {
         // CRIAÇÃO: Cria atividade vinculada às folhas selecionadas
+        // Se nenhuma folha selecionada, NÃO vincula a documento algum (não aparece em nenhuma folha automaticamente)
         const payload = { 
           ...atividade, 
           tempo: Number(atividade.tempo) || 0, 
-          empreendimento_id: empreendimentoId,
-          documento_ids: selectedDocumentoIds.length > 0 ? selectedDocumentoIds : []
+          empreendimento_id: empreendimentoId
         };
+        
+        // Só adiciona documento_ids se houver folhas selecionadas
+        if (selectedDocumentoIds.length > 0) {
+          payload.documento_ids = selectedDocumentoIds;
+        }
+        // Se selectedDocumentoIds.length === 0, não adiciona documento_ids, então a atividade existe mas não aparece em folha alguma
+        
         await Atividade.create(payload);
         onUpdate();
         setOpen(false);
