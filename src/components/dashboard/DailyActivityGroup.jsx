@@ -1,12 +1,23 @@
 // @ts-nocheck
 import React, { useMemo } from 'react';
 import { Button } from "@/components/ui/button";
-import { ChevronRight, LineChart, User } from "lucide-react";
+import { User, LineChart, ChevronRight } from "lucide-react";
 import { Draggable } from "@hello-pangea/dnd";
 import { motion, AnimatePresence } from 'framer-motion';
-import { formatHours, normalizeActivityId, calculateActivityStatus } from './CalendarioUtils';
+import CalendarioActivityItem from './CalendarioActivityItem';
 
-const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, onToggle, disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, groupKey, provided, isDragging, ActivityItem }) => {
+const ActivityItem = (p) => <CalendarioActivityItem {...p} />;
+const normalizeActivityId = (value) => String(value ?? '');
+const formatHours = (h) => Number(h).toFixed(1);
+
+const calculateActivityStatus = (plano, allPlanejamentos = []) => {
+  if (plano.isLegacyExecution) return plano.status;
+  if (plano.status === 'concluido_com_atraso') return 'concluido_com_atraso';
+  if (plano.status === 'concluido') return 'concluido';
+  return plano.status || 'nao_iniciado';
+};
+
+export default function DailyActivityGroup({ empreendimento, executor, atividades, isExpanded, onToggle, disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, groupKey, provided, isDragging }) {
   const totalHoras = useMemo(() => {
     if (!dayKey) return 0;
     let soma = 0;
@@ -15,14 +26,23 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
       const horasExecutadasNoDia = Number(atividade.horas_executadas_por_dia?.[dayKey]) || 0;
       const tempoExecutado = Number(atividade.tempo_executado) || 0;
       let horasDoDia = 0;
-      if (atividade.isLegacyExecution) { horasDoDia = tempoExecutado; }
-      else if (atividade.isQuickActivity || atividade.is_quick_activity) { horasDoDia = horasExecutadasNoDia > 0 ? horasExecutadasNoDia : horasAlocadasDia; }
-      else {
-        if (horasExecutadasNoDia > 0) { horasDoDia = horasExecutadasNoDia; }
-        else if (atividade.status === 'concluido' && tempoExecutado > 0 && Object.keys(atividade.horas_executadas_por_dia || {}).length === 0) {
+      if (atividade.isLegacyExecution) {
+        horasDoDia = tempoExecutado;
+      } else if (atividade.isQuickActivity || atividade.is_quick_activity) {
+        horasDoDia = horasExecutadasNoDia > 0 ? horasExecutadasNoDia : horasAlocadasDia;
+      } else {
+        if (horasExecutadasNoDia > 0) {
+          horasDoDia = horasExecutadasNoDia;
+        } else if ((atividade.status === 'concluido' || atividade.status === 'concluido_com_atraso') && tempoExecutado > 0 && Object.keys(atividade.horas_executadas_por_dia || {}).length === 0) {
           const diasPlanejados = Object.keys(atividade.horas_por_dia || {});
-          horasDoDia = (diasPlanejados.length > 0 && diasPlanejados.includes(dayKey)) ? tempoExecutado / diasPlanejados.length : tempoExecutado;
-        } else { horasDoDia = horasAlocadasDia; }
+          if (diasPlanejados.length > 0 && diasPlanejados.includes(dayKey)) {
+            horasDoDia = tempoExecutado / diasPlanejados.length;
+          } else {
+            horasDoDia = tempoExecutado;
+          }
+        } else {
+          horasDoDia = horasAlocadasDia;
+        }
       }
       soma += horasDoDia;
     });
@@ -42,10 +62,14 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
   }, [atividades, disciplinas]);
 
   const getGroupStatus = () => {
-    if (statusCounts['atrasado'] > 0 || statusCounts['replanejado_atrasado'] > 0) return 'atrasado';
+    const temAtividadeAtrasadaExtendida = atividades.some(a => a._isExtended);
+    if (temAtividadeAtrasadaExtendida || statusCounts['atrasado'] > 0 || statusCounts['replanejado_atrasado'] > 0) return 'atrasado';
     if (statusCounts['impactado_por_atraso'] > 0) return 'impactado_por_atraso';
     if (statusCounts['em_andamento'] > 0) return 'em_andamento';
-    if (atividades.length > 0 && statusCounts['concluido'] === atividades.length) return 'concluido';
+    const totalConcluidos = (statusCounts['concluido'] || 0) + (statusCounts['concluido_com_atraso'] || 0);
+    if (atividades.length > 0 && totalConcluidos === atividades.length) {
+      return statusCounts['concluido_com_atraso'] > 0 ? 'concluido_com_atraso' : 'concluido';
+    }
     if (statusCounts['pausado'] > 0) return 'pausado';
     return 'nao_iniciado';
   };
@@ -55,25 +79,27 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
       case 'em_andamento': return '#3b82f6';
       case 'pausado': return '#f59e0b';
       case 'concluido': return '#10b981';
+      case 'concluido_com_atraso': return '#ef4444';
       case 'atrasado': return '#ef4444';
-      case 'impactado_por_atraso': return '#8b5cf6';
+      case 'impactado_por_atraso': return '#6b7280';
       default: return '#6b7280';
     }
   };
 
   const groupStatus = getGroupStatus();
   const statusColor = getStatusColor(groupStatus);
+  const isConcluded = groupStatus === 'concluido' || groupStatus === 'concluido_com_atraso';
+
   const empreendimentoNome = empreendimento?.nome || empreendimento?.nome_fantasia || 'Sem Empreendimento';
   const planoExecutor = executor?.email ? executorMap[executor.email] : null;
   const executorNome = planoExecutor?.nome || planoExecutor?.email || 'Sem Executor';
 
   const canDragGroup = canReprogram &&
     empreendimentoNome !== 'Atividades Rápidas' &&
-    !atividades.some(a => a.status === 'concluido' || a.isLegacyExecution);
+    !atividades.some(a => a.status === 'concluido' || a.status === 'concluido_com_atraso' || a.isLegacyExecution);
 
-  // Checkbox de grupo: selecionar/deselecionar todas as atividades do grupo
   const selectableIds = atividades
-    .filter(a => a.status !== 'concluido' && !a.isLegacyExecution)
+    .filter(a => a.status !== 'concluido' && a.status !== 'concluido_com_atraso' && !a.isLegacyExecution)
     .map(a => normalizeActivityId(a.id));
   const isGroupSelected = selectableIds.length > 0 && selectableIds.every(id => selectedActivities.has(id));
   const isGroupPartial = !isGroupSelected && selectableIds.some(id => selectedActivities.has(id));
@@ -83,7 +109,7 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
     if (isGroupSelected) {
       selectableIds.forEach(id => { if (selectedActivities.has(id)) onToggleSelect(id); });
     } else {
-      selectableIds.filter(id => !selectedActivities.has(id)).forEach(id => onToggleSelect(id));
+      selectableIds.forEach(id => { if (!selectedActivities.has(id)) onToggleSelect(id); });
     }
   };
 
@@ -94,34 +120,36 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
         style={{
           borderLeft: `6px solid ${statusColor}`,
           backgroundColor: isDragging ? '#e0e7ff' :
+            groupStatus === 'concluido_com_atraso' ? '#fff1f2' :
             groupStatus === 'atrasado' ? '#fff1f2' :
-              groupStatus === 'impactado_por_atraso' ? '#f5f3ff' :
+              groupStatus === 'impactado_por_atraso' ? '#f8fafc' :
                 groupStatus === 'em_andamento' ? '#eff6ff' :
                   groupStatus === 'concluido' ? '#f0fdf4' :
                     groupStatus === 'pausado' ? '#fefce8' : '#f8fafc',
           cursor: 'pointer',
           ...(isDragging && {
-            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
+            boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1)',
             transform: 'rotate(1deg) scale(1.02)',
             transition: 'all 0.2s ease'
           })
         }}
-        className={`p-2 rounded-lg hover:shadow-md transition-shadow duration-200 border relative ${isDragging ? 'border-indigo-400 ring-2 ring-indigo-200' : 'border-gray-200'}`}
+        className={`p-2 rounded-lg hover:shadow-md transition-shadow duration-200 border relative ${isDragging ? 'border-indigo-400 ring-2 ring-indigo-200' : isGroupSelected ? 'border-indigo-400 ring-2 ring-indigo-200' : 'border-gray-200'}`}
       >
-        {/* Checkbox do grupo - canto superior direito, visível no hover ou quando há seleções */}
-        {canReprogram && selectableIds.length > 0 && (
-          <div className={`absolute right-1 top-1 z-20 transition-opacity ${isGroupSelected || isGroupPartial || hasSelections ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}>
+        {selectableIds.length > 0 && (
+          <div
+            className={`absolute right-1 top-1 z-20 transition-opacity ${isGroupSelected || isGroupPartial || hasSelections ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'}`}
+            onClick={handleGroupCheckbox}
+          >
             <input
               type="checkbox"
               checked={isGroupSelected}
               ref={el => { if (el) el.indeterminate = isGroupPartial; }}
-              onChange={handleGroupCheckbox}
+              onChange={() => {}}
               className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
-              title={isGroupSelected ? "Desselecionar todas do grupo" : "Selecionar todas do grupo"}
+              title={isGroupSelected ? 'Desmarcar grupo' : 'Selecionar grupo'}
             />
           </div>
         )}
-
         <div className="flex items-center justify-between gap-2">
           {canDragGroup && (
             <div
@@ -138,18 +166,13 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
               </svg>
             </div>
           )}
-
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-1.5 mb-1.5">
               {disciplineColors.map(d => (
                 <div key={d.name} className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: d.color }} title={d.name}></div>
               ))}
-              <Button
-                variant="ghost" size="icon"
-                className="w-5 h-5 ml-auto text-purple-500 hover:bg-purple-100"
-                onClick={(e) => { e.stopPropagation(); onShowPrevisao(atividades); }}
-                title="Ver Previsão de Entrega"
-              >
+              <Button variant="ghost" size="icon" className="w-5 h-5 ml-auto text-purple-500 hover:bg-purple-100"
+                onClick={(e) => { e.stopPropagation(); onShowPrevisao(atividades); }} title="Ver Previsão de Entrega">
                 <LineChart className="w-3.5 h-3.5" />
               </Button>
             </div>
@@ -163,8 +186,12 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
           </div>
           <div className="flex items-center gap-2">
             <div className="text-right">
-              <div className="px-1.5 py-0.5 rounded text-xs font-bold text-white" style={{ backgroundColor: statusColor }}>
+              <div
+                className="px-1.5 py-0.5 rounded text-xs font-bold text-white flex items-center gap-0.5"
+                style={{ backgroundColor: statusColor }}
+              >
                 {totalHoras > 0 ? `${formatHours(totalHoras)}h` : '0h'}
+                {isConcluded && <span className="font-bold">✓</span>}
               </div>
               <p className="text-xs text-gray-500 mt-0.5">{atividades.length} ativ.</p>
             </div>
@@ -198,7 +225,7 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
                 key={atividade.id}
                 draggableId={`${atividade.id}`}
                 index={index}
-                isDragDisabled={!canReprogram || atividade.status === 'concluido' || atividade.isLegacyExecution || normalizeActivityId(isReprogramando) === normalizeActivityId(atividade.id)}
+                isDragDisabled={!canReprogram || atividade.status === 'concluido' || atividade.status === 'concluido_com_atraso' || atividade.isLegacyExecution || normalizeActivityId(isReprogramando) === normalizeActivityId(atividade.id)}
               >
                 {(provided, snapshot) => (
                   <ActivityItem
@@ -222,6 +249,4 @@ const DailyActivityGroup = ({ empreendimento, executor, atividades, isExpanded, 
       </AnimatePresence>
     </div>
   );
-};
-
-export default DailyActivityGroup;
+}
