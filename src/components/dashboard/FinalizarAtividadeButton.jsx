@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle, Loader2, Calendar } from "lucide-react";
 import { Execucao, PlanejamentoAtividade, PlanejamentoDocumento } from '@/entities/all';
 import { retryWithBackoff } from '../utils/apiUtils';
-import { realocarAtividadesDoDiaSeguinte } from '../utils/ReagendamentoAutomatico';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";

@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { User, Trash2, RefreshCw, Play, ListMusic, PlusCircle, Loader2, Edit2, X, Check, Eye } from "lucide-react";
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 import FinalizarAtividadeButton from './FinalizarAtividadeButton';
-import { formatHoras } from '../utils/formatHours';
+const formatHoras = (h) => Number(h).toFixed(1);
 import { Atividade, Documento, Execucao, PlanejamentoAtividade, PlanejamentoDocumento, AtividadesEmpreendimento } from '@/entities/all';
 import { retryWithBackoff } from '../utils/apiUtils';
 import { distribuirHorasPorDias, isActivityOverdue } from '../utils/DateCalculator';
