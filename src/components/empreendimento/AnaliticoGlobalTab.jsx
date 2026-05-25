@@ -1132,30 +1132,16 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
         }
         
         // Atualizar combinedActivities de forma otimista e completa
-        setCombinedActivities(prev => {
-          return prev.map(ativ => {
-            if (ativ.base_atividade_id === atividadeId || ativ.id === atividadeId) {
-              return { 
-                ...ativ, 
-                executor_principal: null,
-                status: 'Disponível'
-              };
-            }
-            return ativ;
-          });
-        });
-        
-        // Atualizar planejamentos em background silenciosamente (sem onUpdate)
-        setTimeout(() => {
-          retryWithBackoff(
-            () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }),
-            3, 500, 'refreshPlanejamentosAfterRemove'
-          ).then(planejamentosAtualizados => {
-            setPlanejamentos(planejamentosAtualizados || []);
-          }).catch(err => {
-            console.warn("Erro ao atualizar planejamentos após remoção:", err);
-          });
-        }, 100);
+        setCombinedActivities(prev => prev.map(ativ => {
+          if (ativ.base_atividade_id === atividadeId || ativ.id === atividadeId) {
+            return { ...ativ, executor_principal: null, status: 'Disponível' };
+          }
+          return ativ;
+        }));
+
+        // Remover os planejamentos desta atividade do estado imediatamente
+        const idsRemovidos = new Set((planejamentosParaRemover || []).map(p => p.id));
+        setPlanejamentos(prev => prev.filter(p => !idsRemovidos.has(p.id)));
         return;
       }
       
