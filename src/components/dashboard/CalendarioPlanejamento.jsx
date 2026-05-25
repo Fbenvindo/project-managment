@@ -1347,8 +1347,8 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
             });
           }
 
-          // Extensão automática: atividade atrasada recente aparece no dia atual
-          if (isActivityOverdue(plano)) {
+          // Extensão automática: atividade atrasada recente aparece no dia atual (apenas não concluídas)
+          if (plano.status !== 'concluido' && plano.status !== 'concluido_com_atraso' && isActivityOverdue(plano)) {
             const terminoRef = plano.termino_ajustado || plano.termino_planejado;
             if (terminoRef) {
               const terminoDate = parseLocalDate(terminoRef);
