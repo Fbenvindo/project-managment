@@ -1433,68 +1433,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     });
 
 
-    for (const dayKey in grouped) {
-      grouped[dayKey].sort((a, b) => {
-        if (a.isLegacyExecution && !b.isLegacyExecution) return 1;
-        if (!a.isLegacyExecution && b.isLegacyExecution) return -1;
-        const statusA = activityStatusMap.get(normalizeActivityId(a.id)) || a.status || 'nao_iniciado';
-        const statusB = activityStatusMap.get(normalizeActivityId(b.id)) || b.status || 'nao_iniciado';
-        const isConcludedA = statusA === 'concluido' || statusA === 'concluido_com_atraso';
-        const isConcludedB = statusB === 'concluido' || statusB === 'concluido_com_atraso';
-        if (isConcludedA && !isConcludedB) return 1;
-        if (!isConcludedA && isConcludedB) return -1;
-        if (statusA === 'pausado' && statusB === 'em_andamento') return 1;
-        if (statusA !== 'pausado' && statusB === 'em_andamento') return -1;
-        const inicioA = a.inicio_planejado ? parseISO(a.inicio_planejado) : null;
-        const inicioB = b.inicio_planejado ? parseISO(b.inicio_planejado) : null;
-        if (inicioA && inicioB) { if (inicioA.getTime() < inicioB.getTime()) return -1; if (inicioA.getTime() > inicioB.getTime()) return 1; }
-        else if (inicioA) return -1;
-        else if (inicioB) return 1;
-        const nameA = a.atividade?.atividade || a.documento?.numero_completo || a.descritivo || '';
-        const nameB = b.atividade?.atividade || b.documento?.numero_completo || b.descritivo || '';
-        return nameA.localeCompare(nameB, 'pt-BR', { sensitivity: 'base' });
-      });
-    }
-
-    for (const dayKey in grouped) {
-      const activities = grouped[dayKey];
-      const docIndices = [];
-      const docs = [];
-      activities.forEach((a, i) => {
-        if (a.tipo_planejamento === 'documento') {
-          docIndices.push(i);
-          docs.push(a);
-        }
-      });
-      if (docs.length < 2) continue;
-
-      const docIdMap = new Map(docs.map(d => [normalizeActivityId(d.id), d]));
-      const depths = new Map();
-
-      const getDepth = (doc, seen = new Set()) => {
-        const id = normalizeActivityId(doc.id);
-        if (depths.has(id)) return depths.get(id);
-        if (seen.has(id)) { depths.set(id, 0); return 0; } // ciclo → profundidade 0
-        seen.add(id);
-        if (!doc.predecessora_id) { depths.set(id, 0); return 0; }
-        const pred = docIdMap.get(normalizeActivityId(doc.predecessora_id));
-        if (!pred) { depths.set(id, 0); return 0; }
-        const d = 1 + getDepth(pred, seen);
-        depths.set(id, d);
-        return d;
-      };
-
-      docs.forEach(d => getDepth(d));
-
-      const sorted = [...docs].sort((a, b) =>
-        (depths.get(normalizeActivityId(a.id)) || 0) - (depths.get(normalizeActivityId(b.id)) || 0)
-      );
-
-      // Reinsere os documentos ordenados nas mesmas posições que ocupavam
-      docIndices.forEach((pos, i) => { activities[pos] = sorted[i]; });
-    }
-
-    // Aplicar ordem customizada por dia como ORDEM PRIMÁRIA absoluta
+    // **PASSO 1**: Aplicar ordem customizada PRIMEIRO como ORDEM PRIMÁRIA absoluta
     for (const dayKey in grouped) {
       const customOrder = activityOrder[dayKey];
       if (customOrder && customOrder.length > 0) {
@@ -1509,9 +1448,79 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
             outOfOrder.push(item);
           }
         });
-        // Sort itens em ordem: primeiro os da ordem customizada, depois os demais (mantendo ordem original)
+        // Sort itens em ordem: primeiro os da ordem customizada, depois os demais
         inOrder.sort((a, b) => (orderMap.get(String(a.id)) ?? 9999) - (orderMap.get(String(b.id)) ?? 9999));
         grouped[dayKey] = [...inOrder, ...outOfOrder];
+      }
+    }
+
+    // **PASSO 2**: Se NÃO há ordem customizada, então aplicar os sorts automáticos
+    for (const dayKey in grouped) {
+      const customOrder = activityOrder[dayKey];
+      // Só aplicar sort automático se NÃO há ordem customizada
+      if (!customOrder || customOrder.length === 0) {
+        grouped[dayKey].sort((a, b) => {
+          if (a.isLegacyExecution && !b.isLegacyExecution) return 1;
+          if (!a.isLegacyExecution && b.isLegacyExecution) return -1;
+          const statusA = activityStatusMap.get(normalizeActivityId(a.id)) || a.status || 'nao_iniciado';
+          const statusB = activityStatusMap.get(normalizeActivityId(b.id)) || b.status || 'nao_iniciado';
+          const isConcludedA = statusA === 'concluido' || statusA === 'concluido_com_atraso';
+          const isConcludedB = statusB === 'concluido' || statusB === 'concluido_com_atraso';
+          if (isConcludedA && !isConcludedB) return 1;
+          if (!isConcludedA && isConcludedB) return -1;
+          if (statusA === 'pausado' && statusB === 'em_andamento') return 1;
+          if (statusA !== 'pausado' && statusB === 'em_andamento') return -1;
+          const inicioA = a.inicio_planejado ? parseISO(a.inicio_planejado) : null;
+          const inicioB = b.inicio_planejado ? parseISO(b.inicio_planejado) : null;
+          if (inicioA && inicioB) { if (inicioA.getTime() < inicioB.getTime()) return -1; if (inicioA.getTime() > inicioB.getTime()) return 1; }
+          else if (inicioA) return -1;
+          else if (inicioB) return 1;
+          const nameA = a.atividade?.atividade || a.documento?.numero_completo || a.descritivo || '';
+          const nameB = b.atividade?.atividade || b.documento?.numero_completo || b.descritivo || '';
+          return nameA.localeCompare(nameB, 'pt-BR', { sensitivity: 'base' });
+        });
+      }
+    }
+
+    // **PASSO 3**: Ordenar documentos por predecessora (apenas itens ainda não ordenados manualmente)
+    for (const dayKey in grouped) {
+      const customOrder = activityOrder[dayKey];
+      // Só aplicar ordenação de documentos se NÃO há ordem customizada
+      if (!customOrder || customOrder.length === 0) {
+        const activities = grouped[dayKey];
+        const docIndices = [];
+        const docs = [];
+        activities.forEach((a, i) => {
+          if (a.tipo_planejamento === 'documento') {
+            docIndices.push(i);
+            docs.push(a);
+          }
+        });
+        if (docs.length >= 2) {
+          const docIdMap = new Map(docs.map(d => [normalizeActivityId(d.id), d]));
+          const depths = new Map();
+
+          const getDepth = (doc, seen = new Set()) => {
+            const id = normalizeActivityId(doc.id);
+            if (depths.has(id)) return depths.get(id);
+            if (seen.has(id)) { depths.set(id, 0); return 0; }
+            seen.add(id);
+            if (!doc.predecessora_id) { depths.set(id, 0); return 0; }
+            const pred = docIdMap.get(normalizeActivityId(doc.predecessora_id));
+            if (!pred) { depths.set(id, 0); return 0; }
+            const d = 1 + getDepth(pred, seen);
+            depths.set(id, d);
+            return d;
+          };
+
+          docs.forEach(d => getDepth(d));
+
+          const sorted = [...docs].sort((a, b) =>
+            (depths.get(normalizeActivityId(a.id)) || 0) - (depths.get(normalizeActivityId(b.id)) || 0)
+          );
+
+          docIndices.forEach((pos, i) => { activities[pos] = sorted[i]; });
+        }
       }
     }
 
