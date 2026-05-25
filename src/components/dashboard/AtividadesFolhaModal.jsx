@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, FileText, CheckCircle2, Clock, AlertCircle, Circle } from "lucide-react";
-import { PlanejamentoAtividade } from '@/entities/all';
+import { PlanejamentoAtividade, Atividade } from '@/entities/all';
 import { retryWithBackoff } from '../utils/apiUtils';
 
 const STATUS_CONFIG = {
@@ -28,52 +28,43 @@ export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocu
     if (!isOpen || !documentoId) return;
     setIsLoading(true);
 
-    // 1. Filtrar dos dados já carregados no calendário (evita RLS)
-    const local = (allPlanejamentos || []).filter(p =>
-      p.tipo_planejamento === 'atividade' && p.documento_id === documentoId
-    );
-    if (local.length > 0) {
-      setAtividades(local);
-      setIsLoading(false);
-      return;
-    }
+    const carregar = async () => {
+      // 1. Filtrar dos dados já carregados no calendário (sem RLS)
+      const local = (allPlanejamentos || []).filter(p =>
+        p.tipo_planejamento === 'atividade' && p.documento_id === documentoId
+      );
+      if (local.length > 0) {
+        setAtividades(local);
+        return;
+      }
 
-    // 2. Buscar da API: por documento_id + por empreendimento_id (filtrando depois)
-    // O RLS pode bloquear por executor, mas buscar por empreendimento costuma funcionar
-    const executores = planejamentoDocumento?.executores?.length > 0
-      ? planejamentoDocumento.executores
-      : planejamentoDocumento?.executor_principal
-        ? [planejamentoDocumento.executor_principal]
-        : [];
+      // 2. Buscar Atividades (analítico) vinculadas a este documento — sem RLS restritivo
+      const atividadesDoDoc = await retryWithBackoff(
+        () => Atividade.filter({ documento_ids: { $in: [documentoId] } }),
+        2, 800, 'af.ativ'
+      ).catch(() => []);
 
-    const queries = [
-      // Busca direta por documento_id (pode falhar por RLS se não for o executor)
-      retryWithBackoff(() => PlanejamentoAtividade.filter({ documento_id: documentoId }), 2, 800, 'af1').catch(() => []),
-      // Busca por empreendimento + documento (RLS mais permissivo em alguns casos)
-      empreendimentoId
-        ? retryWithBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId, documento_id: documentoId }), 2, 800, 'af2').catch(() => [])
-        : Promise.resolve([]),
-      // Busca por cada executor individualmente
-      ...executores.map(exec =>
-        retryWithBackoff(() => PlanejamentoAtividade.filter({ executor_principal: exec, documento_id: documentoId }), 2, 800, 'af3').catch(() => [])
-      ),
-      // Fallback: buscar todas do empreendimento e filtrar localmente
-      empreendimentoId
-        ? retryWithBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }), 2, 800, 'af4')
-            .then(lista => (lista || []).filter(p => p.documento_id === documentoId))
-            .catch(() => [])
-        : Promise.resolve([]),
-    ];
+      // IDs das atividades analíticas vinculadas ao documento
+      const atividadeIds = (atividadesDoDoc || []).map(a => a.id);
 
-    Promise.all(queries)
-      .then(resultados => {
-        const mapa = new Map();
-        resultados.flat().forEach(a => { if (a?.id) mapa.set(a.id, a); });
-        setAtividades(Array.from(mapa.values()));
-      })
-      .catch(() => setAtividades([]))
-      .finally(() => setIsLoading(false));
-  }, [isOpen, documentoId, empreendimentoId, allPlanejamentos]);
+      // 3. Buscar PlanejamentoAtividade pelo atividade_id (visível para o usuário logado)
+      const queries = [
+        // Por documento_id direto (funciona para admins/líderes)
+        retryWithBackoff(() => PlanejamentoAtividade.filter({ documento_id: documentoId }), 2, 800, 'af.doc').catch(() => []),
+        // Por cada atividade_id (acessa planejamentos vinculados às atividades do documento)
+        ...atividadeIds.map(aid =>
+          retryWithBackoff(() => PlanejamentoAtividade.filter({ atividade_id: aid }), 2, 800, 'af.aid').catch(() => [])
+        ),
+      ];
+
+      const resultados = await Promise.all(queries);
+      const mapa = new Map();
+      resultados.flat().forEach(a => { if (a?.id) mapa.set(a.id, a); });
+      setAtividades(Array.from(mapa.values()));
+    };
+
+    carregar().catch(() => setAtividades([])).finally(() => setIsLoading(false));
+  }, [isOpen, documentoId, allPlanejamentos]);
 
   const titulo = (() => {
     const num = planejamentoDocumento?.documento?.numero;
