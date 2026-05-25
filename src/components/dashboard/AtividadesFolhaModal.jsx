@@ -1,6 +1,6 @@
 // @ts-nocheck
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, FileText, CheckCircle2, Clock, AlertCircle, Circle } from "lucide-react";
 import { PlanejamentoAtividade } from '@/entities/all';
@@ -28,22 +28,36 @@ export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocu
     if (!isOpen || !documentoId) return;
     setIsLoading(true);
 
-    // Primeiro: tentar filtrar dos dados já carregados no calendário (evita RLS)
-    if (allPlanejamentos && allPlanejamentos.length > 0) {
-      const local = allPlanejamentos.filter(p =>
-        p.tipo_planejamento === 'atividade' &&
-        p.documento_id === documentoId
-      );
-      if (local.length > 0) {
-        setAtividades(local);
-        setIsLoading(false);
-        return;
-      }
+    // Tentar filtrar dos dados já carregados no calendário (evita RLS)
+    const local = (allPlanejamentos || []).filter(p =>
+      p.tipo_planejamento === 'atividade' && p.documento_id === documentoId
+    );
+    if (local.length > 0) {
+      setAtividades(local);
+      setIsLoading(false);
+      return;
     }
 
-    // Fallback: buscar da API (funciona para admins/lideres)
-    retryWithBackoff(() => PlanejamentoAtividade.filter({ documento_id: documentoId }), 3, 1000, 'atividadesFolha')
-      .then(data => setAtividades(data || []))
+    // Buscar da API com múltiplos executores possíveis
+    const executores = planejamentoDocumento?.executores?.length > 0
+      ? planejamentoDocumento.executores
+      : planejamentoDocumento?.executor_principal
+        ? [planejamentoDocumento.executor_principal]
+        : [];
+
+    const queries = [
+      retryWithBackoff(() => PlanejamentoAtividade.filter({ documento_id: documentoId }), 3, 1000, 'af1').catch(() => []),
+      ...executores.map(exec =>
+        retryWithBackoff(() => PlanejamentoAtividade.filter({ documento_id: documentoId, executor_principal: exec }), 3, 1000, 'af2').catch(() => [])
+      )
+    ];
+
+    Promise.all(queries)
+      .then(resultados => {
+        const mapa = new Map();
+        resultados.flat().forEach(a => { if (a?.id) mapa.set(a.id, a); });
+        setAtividades(Array.from(mapa.values()));
+      })
       .catch(() => setAtividades([]))
       .finally(() => setIsLoading(false));
   }, [isOpen, documentoId, allPlanejamentos]);
@@ -63,7 +77,7 @@ export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocu
             <FileText className="w-5 h-5 text-blue-600" />
             Atividades da Folha
           </DialogTitle>
-          <p className="text-sm text-gray-500 mt-0.5 font-medium">{titulo}</p>
+          <DialogDescription className="text-sm text-gray-500 mt-0.5 font-medium">{titulo}</DialogDescription>
           {planejamentoDocumento?.etapa && (
             <Badge variant="outline" className="self-start text-xs mt-1">{planejamentoDocumento.etapa}</Badge>
           )}
