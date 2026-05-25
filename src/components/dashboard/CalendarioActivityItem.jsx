@@ -50,6 +50,7 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
   const [isDeleting, setIsDeleting] = useState(false);
   const [showTimeAdjustModal, setShowTimeAdjustModal] = useState(false);
   const [adjustedTime, setAdjustedTime] = useState('');
+  const [conclusionDate, setConclusionDate] = useState('');
   const [showEditDescricaoModal, setShowEditDescricaoModal] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [isEditLoading, setIsEditLoading] = useState(false);
@@ -134,20 +135,21 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
     try {
       if (plano.isLegacyExecution) { alert("Não é possível ajustar execuções antigas."); return; }
       const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
+      const dataConc = conclusionDate || format(new Date(), 'yyyy-MM-dd');
       const diasPlanejados = Object.keys(plano.horas_por_dia || {});
       const novasHorasPorDia = {};
       if (diasPlanejados.length > 0) {
         const hpd = timeValue / diasPlanejados.length;
         diasPlanejados.forEach(d => { novasHorasPorDia[d] = hpd; });
       } else {
-        novasHorasPorDia[format(new Date(), 'yyyy-MM-dd')] = timeValue;
+        novasHorasPorDia[dataConc] = timeValue;
       }
-      const hoje = format(new Date(), 'yyyy-MM-dd');
       const terminoPlanejado = plano.termino_ajustado || plano.termino_planejado;
-      const statusFinal = terminoPlanejado && hoje > terminoPlanejado ? 'concluido_com_atraso' : 'concluido';
-      await retryWithBackoff(() => entityToUpdate.update(plano.id, { tempo_executado: timeValue, horas_executadas_por_dia: novasHorasPorDia, status: statusFinal, termino_real: hoje }), 3, 1000, 'adjustTime');
+      const statusFinal = terminoPlanejado && dataConc > terminoPlanejado ? 'concluido_com_atraso' : 'concluido';
+      await retryWithBackoff(() => entityToUpdate.update(plano.id, { tempo_executado: timeValue, horas_executadas_por_dia: novasHorasPorDia, status: statusFinal, termino_real: dataConc }), 3, 1000, 'adjustTime');
       setShowTimeAdjustModal(false);
       setAdjustedTime('');
+      setConclusionDate('');
       if (onDelete) onDelete({ id: plano.id, status: statusFinal, tempo_executado: timeValue, horas_executadas_por_dia: novasHorasPorDia });
     } catch (error) {
       alert("Erro ao ajustar tempo.");
@@ -311,7 +313,7 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
           </div>
           <div className="flex items-center gap-2">
             {shouldShowAdjustButton() ? (
-              <button onClick={() => { setAdjustedTime(tempoExecutado.toString()); setShowTimeAdjustModal(true); }} className="font-mono text-blue-600 hover:text-blue-800 hover:underline cursor-pointer">
+              <button onClick={() => { setAdjustedTime(tempoExecutado.toString()); setConclusionDate(format(new Date(), 'yyyy-MM-dd')); setShowTimeAdjustModal(true); }} className="font-mono text-blue-600 hover:text-blue-800 hover:underline cursor-pointer">
                 <span className="font-semibold text-sm">{formatHours(horasAlocadasDia)}/{formatHours(horasExecutadasNoDia)}h{(plano.horas_por_dia && Object.keys(plano.horas_por_dia).length > 1 && Object.keys(plano.horas_por_dia).sort().indexOf(dayKey) < Object.keys(plano.horas_por_dia).length - 1) ? ' ...' : ''}</span>
               </button>
             ) : (
@@ -323,7 +325,7 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
         </div>
       </div>
 
-      <Dialog open={showTimeAdjustModal} onOpenChange={setShowTimeAdjustModal}>
+      <Dialog open={showTimeAdjustModal} onOpenChange={(open) => { setShowTimeAdjustModal(open); if (!open) { setAdjustedTime(''); setConclusionDate(''); } }}>
         <DialogContent>
           <DialogHeader><DialogTitle>Ajustar Tempo Executado</DialogTitle></DialogHeader>
           <div className="py-4 space-y-4">
@@ -333,7 +335,23 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
               <Label htmlFor="adjustedTime">Novo Tempo (horas)</Label>
               <Input id="adjustedTime" type="number" step="0.1" min="0" value={adjustedTime} onChange={(e) => setAdjustedTime(e.target.value)} placeholder="Ex: 2.5" />
             </div>
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3"><p className="text-blue-700 text-sm">A atividade será marcada como <strong>concluída</strong>.</p></div>
+            <div className="space-y-2">
+              <Label htmlFor="conclusionDate">Data de Conclusão</Label>
+              <Input id="conclusionDate" type="date" value={conclusionDate} onChange={(e) => setConclusionDate(e.target.value)} />
+              <p className="text-xs text-gray-400">Deixe em branco para usar a data de hoje.</p>
+            </div>
+            {(() => {
+              const dataConc = conclusionDate || format(new Date(), 'yyyy-MM-dd');
+              const terminoPlanejado = plano.termino_ajustado || plano.termino_planejado;
+              const seraAtraso = terminoPlanejado && dataConc > terminoPlanejado;
+              return (
+                <div className={`border rounded-lg p-3 ${seraAtraso ? 'bg-orange-50 border-orange-200' : 'bg-blue-50 border-blue-200'}`}>
+                  <p className={`text-sm ${seraAtraso ? 'text-orange-700' : 'text-blue-700'}`}>
+                    A atividade será marcada como <strong>{seraAtraso ? 'concluída com atraso' : 'concluída'}</strong>.
+                  </p>
+                </div>
+              );
+            })()}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowTimeAdjustModal(false)}>Cancelar</Button>
