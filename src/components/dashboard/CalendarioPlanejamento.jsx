@@ -990,29 +990,30 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       setEnrichedData(finalData);
 
       // Reconstruir activityOrder a partir do campo `ordem` salvo no banco
-      // Agrupa por dia e ordena pelo campo `ordem`, depois persiste no localStorage
+      // Coleta todos os planejamentos que têm ordem definida e os agrupa por todos os dias que aparecem
       const orderByDay = {};
       finalData.forEach(plano => {
         if (plano.isLegacyExecution || plano.ordem == null) return;
-        const dias = Object.keys(plano.horas_por_dia || {}).filter(d => Number(plano.horas_por_dia[d]) >= 0.05);
-        dias.forEach(dayKey => {
+        const diasSet = new Set([
+          ...Object.keys(plano.horas_por_dia || {}).filter(d => Number(plano.horas_por_dia[d]) >= 0.05),
+          ...Object.keys(plano.horas_executadas_por_dia || {}).filter(d => Number(plano.horas_executadas_por_dia[d]) >= 0.05),
+        ]);
+        diasSet.forEach(dayKey => {
           if (!orderByDay[dayKey]) orderByDay[dayKey] = [];
-          orderByDay[dayKey].push({ id: String(plano.id), ordem: Number(plano.ordem) });
+          // Evitar duplicatas
+          if (!orderByDay[dayKey].some(x => x.id === String(plano.id))) {
+            orderByDay[dayKey].push({ id: String(plano.id), ordem: Number(plano.ordem) });
+          }
         });
       });
       const newActivityOrder = {};
       for (const dayKey in orderByDay) {
         const sorted = orderByDay[dayKey].sort((a, b) => a.ordem - b.ordem);
-        // Só sobrescrever se todos os itens do dia tiverem ordem definida (> 0)
-        const todosTemOrdem = sorted.every(x => x.ordem > 0);
-        if (todosTemOrdem) {
-          newActivityOrder[dayKey] = sorted.map(x => x.id);
-        }
+        newActivityOrder[dayKey] = sorted.map(x => x.id);
       }
-      if (Object.keys(newActivityOrder).length > 0) {
-        localStorage.setItem('calendar-activity-order', JSON.stringify(newActivityOrder));
-        setActivityOrder(newActivityOrder);
-      }
+      // Sempre atualizar o estado e localStorage com a ordem do banco (fonte da verdade)
+      localStorage.setItem('calendar-activity-order', JSON.stringify(newActivityOrder));
+      setActivityOrder(newActivityOrder);
 
     } catch (error) {
       // Log removido para otimização de desempenho
