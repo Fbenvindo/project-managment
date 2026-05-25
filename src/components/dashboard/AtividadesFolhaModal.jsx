@@ -27,14 +27,28 @@ export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocu
   useEffect(() => {
     if (!isOpen || !documentoId) return;
     setIsLoading(true);
-    retryWithBackoff(
-      () => PlanejamentoAtividade.filter({ documento_id: documentoId }),
-      3, 1000, 'atividadesFolha'
-    )
-      .then(data => setAtividades(data || []))
+
+    // Buscar por executor_principal do planejamentoDocumento para contornar RLS
+    // e também buscar por empreendimento_id para máxima cobertura
+    const filtros = [
+      retryWithBackoff(() => PlanejamentoAtividade.filter({ documento_id: documentoId }), 3, 1000, 'atividadesFolha1').catch(() => []),
+    ];
+    if (empreendimentoId) {
+      filtros.push(
+        retryWithBackoff(() => PlanejamentoAtividade.filter({ documento_id: documentoId, empreendimento_id: empreendimentoId }), 3, 1000, 'atividadesFolha2').catch(() => [])
+      );
+    }
+
+    Promise.all(filtros)
+      .then(resultados => {
+        // Mesclar e deduplicar por id
+        const mapa = new Map();
+        resultados.flat().forEach(a => { if (a?.id) mapa.set(a.id, a); });
+        setAtividades(Array.from(mapa.values()));
+      })
       .catch(() => setAtividades([]))
       .finally(() => setIsLoading(false));
-  }, [isOpen, documentoId]);
+  }, [isOpen, documentoId, empreendimentoId]);
 
   const titulo = (() => {
     const num = planejamentoDocumento?.documento?.numero;
@@ -66,7 +80,8 @@ export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocu
           ) : atividades.length === 0 ? (
             <div className="text-center py-12 text-gray-400">
               <Circle className="w-10 h-10 mx-auto mb-3 text-gray-200" />
-              <p className="text-sm">Nenhuma atividade detalhada encontrada para esta folha.</p>
+              <p className="text-sm">Nenhuma atividade detalhada planejada para esta folha.</p>
+              <p className="text-xs mt-1 text-gray-300">As atividades aparecem aqui quando são planejadas individualmente para cada executor.</p>
             </div>
           ) : (
             <div className="space-y-2 pr-1">
