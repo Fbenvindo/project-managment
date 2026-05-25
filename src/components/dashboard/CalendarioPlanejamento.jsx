@@ -263,7 +263,7 @@ const CalendarFilters = ({
 
 
 // --- Sub-componente para Container de Atividades (reutilizável) ---
-const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, modoOrdenacao, onClearDayOrder }) => {
+const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, modoOrdenacao, onClearDayOrder, activityOrder }) => {
   const [expandedGroups, setExpandedGroups] = useState(new Set());
 
   const activityGroups = useMemo(() => {
@@ -331,10 +331,8 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
         atividade._isExtended || atividade._isPushed;
     });
 
-    const temOrdemCustomizada = activities.length > 0 && (() => {
-      try { const stored = JSON.parse(localStorage.getItem('calendar-activity-order') || '{}'); return !!stored[dayKey]; }
-      catch { return false; }
-    })();
+    // modoOrdenacao e presença de itens já implica que há ordem customizada se o pai passou activityOrder
+    const temOrdemCustomizada = !!(activities.length > 0 && activityOrder?.[dayKey]);
 
     return (
       <div className={`space-y-1 ${containerClass}`}>
@@ -643,7 +641,7 @@ const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onSho
 
 
 // --- Sub-componente para a Visualização Semanal ---
-const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, modoOrdenacao, onClearDayOrder, onToggleModoOrdenacao }) => {
+const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, modoOrdenacao, onClearDayOrder, onToggleModoOrdenacao, activityOrder }) => {
   // NOVO: Estado para controlar o dia expandido
   const [expandedDay, setExpandedDay] = useState(null);
 
@@ -764,6 +762,7 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
                     viewType={viewType}
                     modoOrdenacao={modoOrdenacao}
                     onClearDayOrder={onClearDayOrder}
+                    activityOrder={activityOrder}
                   />
                   {provided.placeholder}
                 </div>
@@ -778,7 +777,7 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
 
 
 // --- Sub-componente para a Visualização Diária ---
-const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, modoOrdenacao, onClearDayOrder, onToggleModoOrdenacao }) => {
+const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, modoOrdenacao, onClearDayOrder, onToggleModoOrdenacao, activityOrder }) => {
   const dayKey = format(date, 'yyyy-MM-dd');
   const activities = activitiesByDay[dayKey] || [];
 
@@ -819,6 +818,7 @@ const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowP
                 viewType={viewType}
                 modoOrdenacao={modoOrdenacao}
                 onClearDayOrder={onClearDayOrder}
+                activityOrder={activityOrder}
               />
             ) : (
               <div className="text-center py-12 text-gray-500">
@@ -887,21 +887,35 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
 
   const [selectedActivities, setSelectedActivities] = useState(new Set());
   const [modoOrdenacao, setModoOrdenacao] = useState(false);
-  const [activityOrder, setActivityOrder] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('calendar-activity-order') || '{}'); }
-    catch { return {}; }
-  });
+  // Chave do localStorage inclui o email do usuário para evitar conflito entre sessões
+  const getStorageKey = useCallback((userEmail) => {
+    return `calendar-activity-order-${userEmail || 'default'}`;
+  }, []);
+
+  const [activityOrder, setActivityOrder] = useState({});
 
 
+
+  // Carregar ordem do localStorage quando o usuário filtrado muda
+  useEffect(() => {
+    const storageKey = getStorageKey(filters.user);
+    try {
+      const stored = JSON.parse(localStorage.getItem(storageKey) || '{}');
+      setActivityOrder(stored);
+    } catch {
+      setActivityOrder({});
+    }
+  }, [filters.user, getStorageKey]);
 
   const clearDayOrder = useCallback((dayKey) => {
+    const storageKey = getStorageKey(filters.user);
     setActivityOrder(prev => {
       const updated = { ...prev };
       delete updated[dayKey];
-      localStorage.setItem('calendar-activity-order', JSON.stringify(updated));
+      localStorage.setItem(storageKey, JSON.stringify(updated));
       return updated;
     });
-  }, []);
+  }, [filters.user, getStorageKey]);
 
   const toggleModoOrdenacao = useCallback(() => {
     setModoOrdenacao(prev => {
@@ -916,6 +930,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       setEnrichedData([]);
       return;
     }
+    const storageKey = `calendar-activity-order-${userFilter}`;
 
     setIsCalendarLoading(true);
     try {
@@ -1023,9 +1038,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         }
       });
 
-      // Mesclar com o localStorage existente: localStorage tem prioridade (já reflete ações do usuário)
+      // Mesclar com o localStorage existente (por usuário): localStorage tem prioridade
       const existingOrder = (() => {
-        try { return JSON.parse(localStorage.getItem('calendar-activity-order') || '{}'); } catch { return {}; }
+        try { return JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch { return {}; }
       })();
       const newActivityOrder = { ...existingOrder };
       for (const dayKey in orderByDay) {
@@ -1036,7 +1051,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
             .map(x => x.id);
         }
       }
-      localStorage.setItem('calendar-activity-order', JSON.stringify(newActivityOrder));
+      localStorage.setItem(storageKey, JSON.stringify(newActivityOrder));
       setActivityOrder(newActivityOrder);
 
     } catch (error) {
@@ -1163,7 +1178,8 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       const [movedId] = reorderedIds.splice(source.index, 1);
       reorderedIds.splice(destination.index, 0, movedId);
       const newOrder = { ...activityOrder, [dayKey]: reorderedIds };
-      localStorage.setItem('calendar-activity-order', JSON.stringify(newOrder));
+      const storageKey = getStorageKey(filters.user);
+      localStorage.setItem(storageKey, JSON.stringify(newOrder));
       setActivityOrder(newOrder);
       // Salvar ordem no banco usando ordem_por_dia (por dayKey) para suportar atividades multi-dia
       reorderedIds.forEach((id, idx) => {
@@ -1668,8 +1684,8 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
 
     // **MODIFICADO**: Passa 'enrichedData' (que são todos) para as views em vez de 'planejamentos'
     if (viewMode === 'month') return <MonthView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} />;
-    if (viewMode === 'week') return <WeekView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} modoOrdenacao={modoOrdenacao} onClearDayOrder={clearDayOrder} onToggleModoOrdenacao={toggleModoOrdenacao} />;
-    if (viewMode === 'day') return <DayView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} modoOrdenacao={modoOrdenacao} onClearDayOrder={clearDayOrder} onToggleModoOrdenacao={toggleModoOrdenacao} />;
+    if (viewMode === 'week') return <WeekView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} modoOrdenacao={modoOrdenacao} onClearDayOrder={clearDayOrder} onToggleModoOrdenacao={toggleModoOrdenacao} activityOrder={activityOrder} />;
+    if (viewMode === 'day') return <DayView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} modoOrdenacao={modoOrdenacao} onClearDayOrder={clearDayOrder} onToggleModoOrdenacao={toggleModoOrdenacao} activityOrder={activityOrder} />;
     return null;
   };
 
