@@ -77,9 +77,9 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
 
   const getDocumentoDisplay = () => {
     if (!plano.documento_id) return null;
-    if (!plano.documento) return null;
+    if (!plano.documento) return 'Carregando...';
     const campos = [plano.documento.numero_completo, plano.documento.arquivo, plano.documento.numero].filter(Boolean);
-    return campos.length > 0 ? campos[0] : null;
+    return campos.length > 0 ? campos[0] : 'Sem documento';
   };
 
   const documentoDisplay = getDocumentoDisplay();
