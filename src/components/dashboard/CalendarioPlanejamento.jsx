@@ -1293,6 +1293,10 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   const activitiesByDay = useMemo(() => {
     if (!hasSelectedUser) return {};
 
+    // Debug: verificar se activityOrder está carregado
+    console.log('[CalendarioPlanejamento] activityOrder:', activityOrder);
+    console.log('[CalendarioPlanejamento] filters.user:', filters.user);
+
     const grouped = {};
     const processedPlanIds = new Set(); // Para não duplicar com execuções
     const hojeDate = startOfDay(new Date());
@@ -1434,9 +1438,11 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
 
 
     // **PASSO 1**: Aplicar ordem customizada PRIMEIRO como ORDEM PRIMÁRIA absoluta
+    console.log('[CalendarioPlanejamento] Aplicando ordem customizada:', activityOrder);
     for (const dayKey in grouped) {
       const customOrder = activityOrder[dayKey];
       if (customOrder && customOrder.length > 0) {
+        console.log(`[CalendarioPlanejamento] Dia ${dayKey}: ordem customizada com ${customOrder.length} itens`, customOrder);
         const orderMap = new Map(customOrder.map((id, i) => [String(id), i]));
         // Separar itens em: (1) na ordem customizada, (2) fora dela
         const inOrder = [];
@@ -1448,9 +1454,13 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
             outOfOrder.push(item);
           }
         });
+        console.log(`[CalendarioPlanejamento] Dia ${dayKey}: ${inOrder.length} na ordem, ${outOfOrder.length} fora`);
         // Sort itens em ordem: primeiro os da ordem customizada, depois os demais
         inOrder.sort((a, b) => (orderMap.get(String(a.id)) ?? 9999) - (orderMap.get(String(b.id)) ?? 9999));
         grouped[dayKey] = [...inOrder, ...outOfOrder];
+        console.log(`[CalendarioPlanejamento] Dia ${dayKey}: ordem final aplicada`, grouped[dayKey].map(a => a.id));
+      } else {
+        console.log(`[CalendarioPlanejamento] Dia ${dayKey}: SEM ordem customizada`);
       }
     }
 
