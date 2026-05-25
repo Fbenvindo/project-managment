@@ -28,7 +28,7 @@ export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocu
     if (!isOpen || !documentoId) return;
     setIsLoading(true);
 
-    // Tentar filtrar dos dados já carregados no calendário (evita RLS)
+    // 1. Filtrar dos dados já carregados no calendário (evita RLS)
     const local = (allPlanejamentos || []).filter(p =>
       p.tipo_planejamento === 'atividade' && p.documento_id === documentoId
     );
@@ -38,7 +38,8 @@ export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocu
       return;
     }
 
-    // Buscar da API com múltiplos executores possíveis
+    // 2. Buscar da API: por documento_id + por empreendimento_id (filtrando depois)
+    // O RLS pode bloquear por executor, mas buscar por empreendimento costuma funcionar
     const executores = planejamentoDocumento?.executores?.length > 0
       ? planejamentoDocumento.executores
       : planejamentoDocumento?.executor_principal
@@ -46,10 +47,22 @@ export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocu
         : [];
 
     const queries = [
-      retryWithBackoff(() => PlanejamentoAtividade.filter({ documento_id: documentoId }), 3, 1000, 'af1').catch(() => []),
+      // Busca direta por documento_id (pode falhar por RLS se não for o executor)
+      retryWithBackoff(() => PlanejamentoAtividade.filter({ documento_id: documentoId }), 2, 800, 'af1').catch(() => []),
+      // Busca por empreendimento + documento (RLS mais permissivo em alguns casos)
+      empreendimentoId
+        ? retryWithBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId, documento_id: documentoId }), 2, 800, 'af2').catch(() => [])
+        : Promise.resolve([]),
+      // Busca por cada executor individualmente
       ...executores.map(exec =>
-        retryWithBackoff(() => PlanejamentoAtividade.filter({ documento_id: documentoId, executor_principal: exec }), 3, 1000, 'af2').catch(() => [])
-      )
+        retryWithBackoff(() => PlanejamentoAtividade.filter({ executor_principal: exec, documento_id: documentoId }), 2, 800, 'af3').catch(() => [])
+      ),
+      // Fallback: buscar todas do empreendimento e filtrar localmente
+      empreendimentoId
+        ? retryWithBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }), 2, 800, 'af4')
+            .then(lista => (lista || []).filter(p => p.documento_id === documentoId))
+            .catch(() => [])
+        : Promise.resolve([]),
     ];
 
     Promise.all(queries)
@@ -60,7 +73,7 @@ export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocu
       })
       .catch(() => setAtividades([]))
       .finally(() => setIsLoading(false));
-  }, [isOpen, documentoId, allPlanejamentos]);
+  }, [isOpen, documentoId, empreendimentoId, allPlanejamentos]);
 
   const titulo = (() => {
     const num = planejamentoDocumento?.documento?.numero;
