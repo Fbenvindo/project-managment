@@ -314,8 +314,8 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
 
   // **NOVO**: No modo analítico, mostrar atividades diretamente sem grupos
   if (viewType === 'analitico') {
-    // Em modo de ordenação, mostrar todas as atividades; caso contrário, filtrar por horas
-    const activitiesParaRenderizar = modoOrdenacao ? activities : activities.filter(atividade => {
+    // Filtrar sempre por horas do dia (mesmo em modo ordenação, para consistência de índices com onDragEnd)
+    const activitiesParaRenderizar = activities.filter(atividade => {
       const horasAlocadas = Number(atividade.horas_por_dia?.[dayKey]) || 0;
       const horasExecutadas = Number(atividade.horas_executadas_por_dia?.[dayKey]) || 0;
       const tempoExecutado = Number(atividade.tempo_executado) || 0;
