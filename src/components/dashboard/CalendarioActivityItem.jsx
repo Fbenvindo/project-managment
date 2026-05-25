@@ -7,12 +7,13 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Clock, Play, Trash2, RefreshCw, Edit2, Loader2 } from "lucide-react";
+import { Clock, Play, Trash2, RefreshCw, Edit2, Loader2, List } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 import { PlanejamentoAtividade, Execucao, PlanejamentoDocumento, Documento } from '@/entities/all';
 import { retryWithBackoff } from '../utils/apiUtils';
 import { distribuirHorasPorDias } from '../utils/DateCalculator';
+import AtividadesFolhaModal from './AtividadesFolhaModal';
 
 const parseLocalDate = (dateString) => {
   if (!dateString) return null;
@@ -52,6 +53,7 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
   const [showEditDescricaoModal, setShowEditDescricaoModal] = useState(false);
   const [editForm, setEditForm] = useState({});
   const [isEditLoading, setIsEditLoading] = useState(false);
+  const [showAtividadesFolhaModal, setShowAtividadesFolhaModal] = useState(false);
 
   const realStatus = calculateActivityStatus(plano, allPlanejamentos);
 
@@ -298,6 +300,15 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
                 <Edit2 className="w-3.5 h-3.5 text-gray-600" />
               </button>
             )}
+            {plano.tipo_planejamento === 'documento' && plano.documento_id && (
+              <button
+                onClick={() => setShowAtividadesFolhaModal(true)}
+                className="p-1.5 rounded-md border border-blue-300 bg-blue-50 hover:bg-blue-100 transition-colors"
+                title="Ver atividades detalhadas desta folha"
+              >
+                <List className="w-3.5 h-3.5 text-blue-600" />
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-2">
             {shouldShowAdjustButton() ? (
@@ -331,6 +342,13 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <AtividadesFolhaModal
+        isOpen={showAtividadesFolhaModal}
+        onClose={() => setShowAtividadesFolhaModal(false)}
+        planejamentoDocumento={plano}
+        executorMap={executorMap}
+      />
 
       <Dialog open={showEditDescricaoModal} onOpenChange={setShowEditDescricaoModal}>
         <DialogContent className="max-w-lg">
