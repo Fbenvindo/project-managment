@@ -90,33 +90,7 @@ export default function FinalizarAtividadeButton({ plano, displayName, onSuccess
       }
 
       const horasLiberadas = plano.tempo_planejado - tempoTotalExecutado;
-      
-      console.log(`✅ Atividade finalizada manualmente! Horas liberadas: ${horasLiberadas.toFixed(2)}h`);
-
-      // **REALOCAÇÃO AUTOMÁTICA**: Tentar antecipar atividades do dia seguinte
-      let atividadesMovidas = [];
-      if (horasLiberadas > 0.1 && plano.executor_principal && plano.inicio_planejado) {
-        console.log(`\n🎯 Iniciando realocação automática inteligente...`);
-        atividadesMovidas = await realocarAtividadesDoDiaSeguinte(
-          plano.executor_principal,
-          plano.inicio_planejado,
-          horasLiberadas
-        );
-      }
-
-      // Mensagem de sucesso aprimorada
-      let mensagem = `✅ Atividade finalizada com sucesso!\n\n📊 Resumo:\n• Tempo executado: ${tempoTotalExecutado.toFixed(1)}h\n• Tempo planejado: ${plano.tempo_planejado.toFixed(1)}h\n• Horas liberadas: ${horasLiberadas.toFixed(1)}h`;
-      
-      if (atividadesMovidas.length > 0) {
-        mensagem += `\n\n🚀 Realocação Automática:\n✓ ${atividadesMovidas.length} atividade(s) antecipada(s) automaticamente:`;
-        atividadesMovidas.forEach(ativ => {
-          mensagem += `\n  • ${ativ.nome} (+${ativ.horas.toFixed(1)}h)`;
-        });
-        mensagem += '\n\n💡 Seu cronograma foi otimizado!';
-      } else if (horasLiberadas > 0.1) {
-        mensagem += '\n\nℹ️ Não havia atividades disponíveis para antecipar.';
-      }
-      
+      const mensagem = `✅ Atividade finalizada com sucesso!\n\n📊 Resumo:\n• Tempo executado: ${tempoTotalExecutado.toFixed(1)}h\n• Tempo planejado: ${plano.tempo_planejado.toFixed(1)}h\n• Horas liberadas: ${horasLiberadas.toFixed(1)}h`;
       alert(mensagem);
       
     } catch (error) {
