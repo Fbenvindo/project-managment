@@ -990,22 +990,29 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       setEnrichedData(finalData);
 
       // Reconstruir activityOrder a partir do campo `ordem` salvo no banco
-      // Agrupa por dia e ordena pelo campo `ordem`, depois persiste no localStorage
+      // Considera todos os planejamentos que aparecem em cada dia
       const orderByDay = {};
       finalData.forEach(plano => {
-        if (plano.isLegacyExecution || plano.ordem == null) return;
-        const dias = Object.keys(plano.horas_por_dia || {}).filter(d => Number(plano.horas_por_dia[d]) >= 0.05);
+        if (plano.isLegacyExecution) return;
+        // Coletar todos os dias em que este plano aparece
+        const dias = new Set();
+        Object.keys(plano.horas_por_dia || {}).forEach(d => {
+          if (Number(plano.horas_por_dia[d]) >= 0.05) dias.add(d);
+        });
+        Object.keys(plano.horas_executadas_por_dia || {}).forEach(d => {
+          if (Number(plano.horas_executadas_por_dia[d]) >= 0.05) dias.add(d);
+        });
         dias.forEach(dayKey => {
           if (!orderByDay[dayKey]) orderByDay[dayKey] = [];
-          orderByDay[dayKey].push({ id: String(plano.id), ordem: Number(plano.ordem) });
+          orderByDay[dayKey].push({ id: String(plano.id), ordem: Number(plano.ordem) || 99999 });
         });
       });
       const newActivityOrder = {};
       for (const dayKey in orderByDay) {
-        const sorted = orderByDay[dayKey].sort((a, b) => a.ordem - b.ordem);
-        // Só sobrescrever se todos os itens do dia tiverem ordem definida (> 0)
-        const todosTemOrdem = sorted.every(x => x.ordem > 0);
-        if (todosTemOrdem) {
+        const comOrdem = orderByDay[dayKey].filter(x => x.ordem < 99999);
+        // Só aplicar se pelo menos um item tiver ordem definida no banco
+        if (comOrdem.length > 0) {
+          const sorted = orderByDay[dayKey].sort((a, b) => a.ordem - b.ordem);
           newActivityOrder[dayKey] = sorted.map(x => x.id);
         }
       }
