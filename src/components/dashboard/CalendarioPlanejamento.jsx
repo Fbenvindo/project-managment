@@ -1096,7 +1096,15 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       if (!modoOrdenacao) return;
       const dayKey = source.droppableId;
       const dayActivities = activitiesByDay[dayKey] || [];
-      const reorderedIds = dayActivities.map(a => String(a.id));
+      // Usar apenas atividades que realmente têm horas neste dia (não as estendidas/pushed de outros dias)
+      const activitiesDesteDir = dayActivities.filter(a => {
+        const horasAlocadas = Number(a.horas_por_dia?.[dayKey]) || 0;
+        const horasExecutadas = Number(a.horas_executadas_por_dia?.[dayKey]) || 0;
+        const tempoExecutado = Number(a.tempo_executado) || 0;
+        if (a.isLegacyExecution) return tempoExecutado >= 0.05;
+        return horasAlocadas >= 0.05 || horasExecutadas >= 0.05 || a.status === 'concluido' || a.status === 'concluido_com_atraso';
+      });
+      const reorderedIds = activitiesDesteDir.map(a => String(a.id));
       const [movedId] = reorderedIds.splice(source.index, 1);
       reorderedIds.splice(destination.index, 0, movedId);
       const newOrder = { ...activityOrder, [dayKey]: reorderedIds };
