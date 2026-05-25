@@ -348,6 +348,7 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
         onClose={() => setShowAtividadesFolhaModal(false)}
         planejamentoDocumento={plano}
         executorMap={executorMap}
+        allPlanejamentos={allPlanejamentos}
       />
 
       <Dialog open={showEditDescricaoModal} onOpenChange={setShowEditDescricaoModal}>

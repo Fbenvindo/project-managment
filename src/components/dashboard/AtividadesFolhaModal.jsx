@@ -17,7 +17,7 @@ const STATUS_CONFIG = {
 
 const getStatusConfig = (status) => STATUS_CONFIG[status] || STATUS_CONFIG['nao_iniciado'];
 
-export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocumento, executorMap }) {
+export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocumento, executorMap, allPlanejamentos }) {
   const [atividades, setAtividades] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -25,38 +25,28 @@ export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocu
   const empreendimentoId = planejamentoDocumento?.empreendimento_id;
 
   useEffect(() => {
-    if (!isOpen) return;
-    
-    console.log('[AtividadesFolhaModal] planejamentoDocumento:', planejamentoDocumento);
-    console.log('[AtividadesFolhaModal] documentoId:', documentoId, 'empreendimentoId:', empreendimentoId);
-    
-    if (!documentoId && !empreendimentoId) return;
+    if (!isOpen || !documentoId) return;
     setIsLoading(true);
 
-    const queries = [];
-    if (documentoId) {
-      queries.push(
-        retryWithBackoff(() => PlanejamentoAtividade.filter({ documento_id: documentoId }), 3, 1000, 'atividadesFolha1').catch(e => { console.error('query1 error:', e); return []; })
+    // Primeiro: tentar filtrar dos dados já carregados no calendário (evita RLS)
+    if (allPlanejamentos && allPlanejamentos.length > 0) {
+      const local = allPlanejamentos.filter(p =>
+        p.tipo_planejamento === 'atividade' &&
+        p.documento_id === documentoId
       );
+      if (local.length > 0) {
+        setAtividades(local);
+        setIsLoading(false);
+        return;
+      }
     }
-    if (empreendimentoId && documentoId) {
-      queries.push(
-        retryWithBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId, documento_id: documentoId }), 3, 1000, 'atividadesFolha2').catch(e => { console.error('query2 error:', e); return []; })
-      );
-    }
-    if (queries.length === 0) { setIsLoading(false); return; }
 
-    Promise.all(queries)
-      .then(resultados => {
-        const mapa = new Map();
-        resultados.flat().forEach(a => { if (a?.id) mapa.set(a.id, a); });
-        const arr = Array.from(mapa.values());
-        console.log('[AtividadesFolhaModal] resultados encontrados:', arr.length, arr);
-        setAtividades(arr);
-      })
-      .catch(e => { console.error('AtividadesFolhaModal error:', e); setAtividades([]); })
+    // Fallback: buscar da API (funciona para admins/lideres)
+    retryWithBackoff(() => PlanejamentoAtividade.filter({ documento_id: documentoId }), 3, 1000, 'atividadesFolha')
+      .then(data => setAtividades(data || []))
+      .catch(() => setAtividades([]))
       .finally(() => setIsLoading(false));
-  }, [isOpen, documentoId, empreendimentoId]);
+  }, [isOpen, documentoId, allPlanejamentos]);
 
   const titulo = (() => {
     const num = planejamentoDocumento?.documento?.numero;
@@ -77,7 +67,7 @@ export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocu
           {planejamentoDocumento?.etapa && (
             <Badge variant="outline" className="self-start text-xs mt-1">{planejamentoDocumento.etapa}</Badge>
           )}
-          <p className="text-xs text-gray-300 mt-0.5">doc_id: {documentoId || 'null'} | emp_id: {empreendimentoId || 'null'}</p>
+
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto mt-2">
