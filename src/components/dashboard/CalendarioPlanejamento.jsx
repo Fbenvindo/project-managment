@@ -595,7 +595,7 @@ const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDel
 };
 
 // --- Sub-componente para a Visualização Mensal ---
-const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
+const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, modoOrdenacao, onClearDayOrder, activityOrder }) => {
   const monthDays = useMemo(() => {
     const start = startOfWeek(startOfMonth(date), { locale: ptBR });
     const end = endOfWeek(endOfMonth(date), { locale: ptBR });
@@ -897,7 +897,12 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
 
 
   // Carregar ordem do localStorage quando o usuário filtrado muda
+  // IMPORTANTE: Fazer com prioridade MÁXIMA para que esteja disponível ao calcular activitiesByDay
   useEffect(() => {
+    if (!filters.user) {
+      setActivityOrder({});
+      return;
+    }
     const storageKey = getStorageKey(filters.user);
     try {
       const stored = JSON.parse(localStorage.getItem(storageKey) || '{}');
@@ -1044,13 +1049,15 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       })();
       const newActivityOrder = { ...existingOrder };
       for (const dayKey in orderByDay) {
-        // Só usar a ordem do banco se NÃO houver ordem local salva para esse dia
+        // Sempre atualizar a ordem do banco para cada dia
+        // Se houver ordem local, mantê-la; senão, usar a do banco
         if (!newActivityOrder[dayKey] || newActivityOrder[dayKey].length === 0) {
           newActivityOrder[dayKey] = orderByDay[dayKey]
             .sort((a, b) => a.ordem - b.ordem)
             .map(x => x.id);
         }
       }
+      // **CRÍTICO**: Salvar no localStorage E atualizar o estado ATOMICAMENTE
       localStorage.setItem(storageKey, JSON.stringify(newActivityOrder));
       setActivityOrder(newActivityOrder);
 
@@ -1487,14 +1494,16 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       docIndices.forEach((pos, i) => { activities[pos] = sorted[i]; });
     }
 
-    // Aplicar ordem customizada por dia, se existir
+    // Aplicar ordem customizada por dia como ORDEM PRIMÁRIA
     for (const dayKey in grouped) {
       const customOrder = activityOrder[dayKey];
       if (customOrder && customOrder.length > 0) {
         const orderMap = new Map(customOrder.map((id, i) => [String(id), i]));
         grouped[dayKey].sort((a, b) => {
-          const idxA = orderMap.has(String(a.id)) ? orderMap.get(String(a.id)) : 9999;
-          const idxB = orderMap.has(String(b.id)) ? orderMap.get(String(b.id)) : 9999;
+          const idxA = orderMap.get(String(a.id)) ?? (Number.MAX_SAFE_INTEGER - 1); // Itens não na ordem customizada vão para o fim
+          const idxB = orderMap.get(String(b.id)) ?? (Number.MAX_SAFE_INTEGER - 1);
+          // Se ambos estão fora da ordem customizada, manter ordem anterior
+          if (idxA === Number.MAX_SAFE_INTEGER - 1 && idxB === Number.MAX_SAFE_INTEGER - 1) return 0;
           return idxA - idxB;
         });
       }
@@ -1689,7 +1698,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     const hasSelections = selectedActivities.size > 0;
 
     // **MODIFICADO**: Passa 'enrichedData' (que são todos) para as views em vez de 'planejamentos'
-    if (viewMode === 'month') return <MonthView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} />;
+    if (viewMode === 'month') return <MonthView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} modoOrdenacao={modoOrdenacao} onClearDayOrder={clearDayOrder} activityOrder={activityOrder} />;
     if (viewMode === 'week') return <WeekView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} modoOrdenacao={modoOrdenacao} onClearDayOrder={clearDayOrder} onToggleModoOrdenacao={toggleModoOrdenacao} activityOrder={activityOrder} />;
     if (viewMode === 'day') return <DayView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} modoOrdenacao={modoOrdenacao} onClearDayOrder={clearDayOrder} onToggleModoOrdenacao={toggleModoOrdenacao} activityOrder={activityOrder} />;
     return null;
