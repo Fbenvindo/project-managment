@@ -348,8 +348,8 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
         )}
         {activitiesParaRenderizar.map((atividade, index) => (
           <Draggable
-            key={atividade.id}
-            draggableId={`${atividade.id}`}
+            key={`${atividade.id}-${dayKey}`}
+            draggableId={`${atividade.id}-${dayKey}`}
             index={index}
             isDragDisabled={
               modoOrdenacao
@@ -1157,6 +1157,11 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   const onDragEnd = (result) => {
     const { source, destination, draggableId } = result;
     if (!destination) return;
+    // draggableId tem formato "${id}-${dayKey}" — extrair o id real removendo o sufixo do dia
+    const extractRealId = (dId, dKey) => {
+      const suffix = `-${dKey}`;
+      return dId.endsWith(suffix) ? dId.slice(0, -suffix.length) : dId;
+    };
     if (destination.droppableId === source.droppableId) {
       if (!modoOrdenacao) return;
       const dayKey = source.droppableId;
@@ -1228,7 +1233,8 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       })();
       return;
     }
-    const activitiesToMove = selectedActivities.has(draggableId) && selectedActivities.size > 1 ? Array.from(selectedActivities) : [draggableId];
+    const realDraggableId = extractRealId(draggableId, source.droppableId);
+    const activitiesToMove = selectedActivities.has(realDraggableId) && selectedActivities.size > 1 ? Array.from(selectedActivities) : [realDraggableId];
     if (activitiesToMove.some(id => { const a = (enrichedData || []).find(p => normalizeActivityId(p.id) === normalizeActivityId(id)); return !a || a.isLegacyExecution || a.status === 'concluido' || a.status === 'concluido_com_atraso'; })) { alert("Algumas atividades não podem ser reprogramadas."); return; }
     (async () => {
       let ok = 0, err = 0;
