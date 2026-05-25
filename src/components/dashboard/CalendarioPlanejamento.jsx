@@ -951,12 +951,17 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       const documentosMap = new Map((documentosData || []).map(item => [String(item.id), item]));
 
       const horasExecutadasPorPlanejamento = {};
+      const observacaoPorPlanejamento = {};
       (execs || []).forEach(exec => {
         if (!exec.planejamento_id || !exec.inicio) return;
         const diaExec = format(parseLocalDate(exec.inicio), 'yyyy-MM-dd');
         const tempoExec = Number(exec.tempo_total) || 0;
         if (!horasExecutadasPorPlanejamento[exec.planejamento_id]) horasExecutadasPorPlanejamento[exec.planejamento_id] = {};
         horasExecutadasPorPlanejamento[exec.planejamento_id][diaExec] = (horasExecutadasPorPlanejamento[exec.planejamento_id][diaExec] || 0) + tempoExec;
+        // Guardar a última observação de execução para cada planejamento
+        if (exec.observacao) {
+          observacaoPorPlanejamento[exec.planejamento_id] = exec.observacao;
+        }
       });
       const atividadesVirtuais = (execs || []).filter(exec => !exec.planejamento_id).map(exec => {
         const diaExec = exec.inicio ? format(parseLocalDate(exec.inicio), 'yyyy-MM-dd') : null;
@@ -976,7 +981,8 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           }
           const storedHoras = (typeof plano.horas_executadas_por_dia === 'object' && plano.horas_executadas_por_dia) ? plano.horas_executadas_por_dia : {};
           const mergedHorasExec = Object.assign({}, storedHoras, horasExec);
-          return { ...plano, empreendimento: empreendimentosMap.get(String(plano.empreendimento_id)) || null, atividade: atividadesMap.get(String(plano.atividade_id)) || null, documento: documentoEnriquecido, horas_executadas_por_dia: mergedHorasExec };
+          const observacaoExec = observacaoPorPlanejamento[plano.id] || null;
+          return { ...plano, empreendimento: empreendimentosMap.get(String(plano.empreendimento_id)) || null, atividade: atividadesMap.get(String(plano.atividade_id)) || null, documento: documentoEnriquecido, horas_executadas_por_dia: mergedHorasExec, observacao: observacaoExec };
         }),
         ...atividadesVirtuais
       ];
