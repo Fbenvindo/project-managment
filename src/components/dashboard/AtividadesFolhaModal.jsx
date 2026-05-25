@@ -110,13 +110,30 @@ export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocu
         });
 
         const tempoField = etapaFiltro ? ETAPA_TEMPO_MAP[etapaFiltro] : null;
+        const fatorDificuldade = Number(docRecord.fator_dificuldade) || 1;
+        const area = Number(docRecord.area) || (docRecord.pavimento_id ? 0 : 0);
+        // Usar os campos tempo_* do Documento (já têm área aplicada), multiplicar pelo fator de dificuldade
+        // Fallback: ativ.tempo (h/m²) * area * fator, ou plan.tempo_planejado
+        const tempoBaseDoc = tempoField ? Number(docRecord[tempoField]) || 0 : 0;
 
         const result = allActivities.map(ativ => {
           const plan = planByAtiv[String(ativ.id)];
           const executor = plan?.executor_principal ? executorMap?.[plan.executor_principal] : null;
-          const tempoPlanejado = (tempoField && ativ[tempoField])
-            ? Number(ativ[tempoField])
-            : (plan?.tempo_planejado || ativ.tempo || 0);
+
+          let tempoPlanejado;
+          if (plan?.tempo_planejado) {
+            // Se já tem planejamento criado, usar o tempo planejado real
+            tempoPlanejado = Number(plan.tempo_planejado);
+          } else if (tempoField && ativ[tempoField]) {
+            // Campo de tempo da atividade para esta etapa (h/m²) * area * fator
+            tempoPlanejado = Number(ativ[tempoField]) * fatorDificuldade;
+          } else if (ativ.tempo && ativ.tempo > 0) {
+            // tempo genérico (h/m²) * area * fator — area pode ser 0 se não vinculada a pavimento
+            const areaDoc = Number(docRecord.area) || 0;
+            tempoPlanejado = Number(ativ.tempo) * (areaDoc || 1) * fatorDificuldade;
+          } else {
+            tempoPlanejado = 0;
+          }
 
           return {
             key: String(ativ.id),
