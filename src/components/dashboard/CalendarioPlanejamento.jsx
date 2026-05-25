@@ -892,6 +892,8 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     catch { return {}; }
   });
 
+
+
   const clearDayOrder = useCallback((dayKey) => {
     setActivityOrder(prev => {
       const updated = { ...prev };
@@ -989,30 +991,51 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
 
       setEnrichedData(finalData);
 
-      // Reconstruir activityOrder a partir do campo `ordem` salvo no banco
-      // Coleta todos os planejamentos que têm ordem definida e os agrupa por todos os dias que aparecem
+      // Reconstruir activityOrder a partir do campo `ordem_por_dia` salvo no banco
+      // O campo ordem_por_dia é um objeto { [dayKey]: ordem } para suportar atividades multi-dia
+      // Fallback: campo `ordem` (legado, aplica a todos os dias da atividade)
       const orderByDay = {};
       finalData.forEach(plano => {
-        // Só considerar planejamentos com ordem definida (1-based, > 0)
-        if (plano.isLegacyExecution || !plano.ordem || Number(plano.ordem) < 1) return;
-        const diasSet = new Set([
-          ...Object.keys(plano.horas_por_dia || {}).filter(d => Number(plano.horas_por_dia[d]) >= 0.05),
-          ...Object.keys(plano.horas_executadas_por_dia || {}).filter(d => Number(plano.horas_executadas_por_dia[d]) >= 0.05),
-        ]);
-        diasSet.forEach(dayKey => {
-          if (!orderByDay[dayKey]) orderByDay[dayKey] = [];
-          if (!orderByDay[dayKey].some(x => x.id === String(plano.id))) {
-            orderByDay[dayKey].push({ id: String(plano.id), ordem: Number(plano.ordem) });
+        if (plano.isLegacyExecution) return;
+
+        // Tentar usar ordem_por_dia (por dia específico) primeiro
+        if (plano.ordem_por_dia && typeof plano.ordem_por_dia === 'object') {
+          Object.entries(plano.ordem_por_dia).forEach(([dayKey, ordemDia]) => {
+            const ord = Number(ordemDia);
+            if (ord < 1) return;
+            if (!orderByDay[dayKey]) orderByDay[dayKey] = [];
+            if (!orderByDay[dayKey].some(x => x.id === String(plano.id))) {
+              orderByDay[dayKey].push({ id: String(plano.id), ordem: ord });
+            }
+          });
+        } else if (plano.ordem && Number(plano.ordem) >= 1) {
+          // Legado: campo `ordem` único — aplica apenas ao PRIMEIRO dia da atividade para evitar conflito
+          const diasSet = Object.keys(plano.horas_por_dia || {})
+            .filter(d => Number(plano.horas_por_dia[d]) >= 0.05)
+            .sort();
+          if (diasSet.length > 0) {
+            const primeirodia = diasSet[0];
+            if (!orderByDay[primeirodia]) orderByDay[primeirodia] = [];
+            if (!orderByDay[primeirodia].some(x => x.id === String(plano.id))) {
+              orderByDay[primeirodia].push({ id: String(plano.id), ordem: Number(plano.ordem) });
+            }
           }
-        });
+        }
       });
-      const newActivityOrder = {};
+
+      // Mesclar com o localStorage existente: localStorage tem prioridade (já reflete ações do usuário)
+      const existingOrder = (() => {
+        try { return JSON.parse(localStorage.getItem('calendar-activity-order') || '{}'); } catch { return {}; }
+      })();
+      const newActivityOrder = { ...existingOrder };
       for (const dayKey in orderByDay) {
-        newActivityOrder[dayKey] = orderByDay[dayKey]
-          .sort((a, b) => a.ordem - b.ordem)
-          .map(x => x.id);
+        // Só usar a ordem do banco se NÃO houver ordem local salva para esse dia
+        if (!newActivityOrder[dayKey] || newActivityOrder[dayKey].length === 0) {
+          newActivityOrder[dayKey] = orderByDay[dayKey]
+            .sort((a, b) => a.ordem - b.ordem)
+            .map(x => x.id);
+        }
       }
-      // Sempre atualizar o estado e localStorage com a ordem do banco (fonte da verdade)
       localStorage.setItem('calendar-activity-order', JSON.stringify(newActivityOrder));
       setActivityOrder(newActivityOrder);
 
@@ -1142,12 +1165,14 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       const newOrder = { ...activityOrder, [dayKey]: reorderedIds };
       localStorage.setItem('calendar-activity-order', JSON.stringify(newOrder));
       setActivityOrder(newOrder);
-      // Salvar ordem no banco com índice 1-based para evitar confusão com "sem ordem" (null/0)
+      // Salvar ordem no banco usando ordem_por_dia (por dayKey) para suportar atividades multi-dia
       reorderedIds.forEach((id, idx) => {
         const plano = dayActivities.find(a => String(a.id) === id);
         if (!plano || plano.isLegacyExecution) return;
         const entity = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
-        entity.update(id, { ordem: idx + 1 }).catch(() => {});
+        const ordemPorDiaAtual = (typeof plano.ordem_por_dia === 'object' && plano.ordem_por_dia) ? { ...plano.ordem_por_dia } : {};
+        ordemPorDiaAtual[dayKey] = idx + 1;
+        entity.update(id, { ordem_por_dia: ordemPorDiaAtual }).catch(() => {});
       });
       return;
     }

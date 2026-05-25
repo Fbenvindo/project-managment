@@ -26,11 +26,8 @@
       "description": "Lista de emails dos usu\u00e1rios executores"
     },
     "executor_principal": {
-      "type": [
-        "string",
-        "null"
-      ],
-      "description": "Email do executor principal/respons\u00e1vel"
+      "type": "string",
+      "description": "Email do executor principal quando n\u00e3o h\u00e1 m\u00faltiplos executores"
     },
     "predecessora_id": {
       "type": "string",
@@ -117,7 +114,14 @@
     },
     "ordem": {
       "type": "number",
-      "description": "Ordem de exibi\u00e7\u00e3o do planejamento no calend\u00e1rio do executor (menor n\u00famero = aparece primeiro)"
+      "description": "Ordem de exibi\u00e7\u00e3o global (legado - use ordem_por_dia)"
+    },
+    "ordem_por_dia": {
+      "type": "object",
+      "description": "Ordem de exibi\u00e7\u00e3o por dia espec\u00edfico (chave: yyyy-MM-dd, valor: posi\u00e7\u00e3o 1-based). Suporta atividades que aparecem em m\u00faltiplos dias com ordem diferente em cada um.",
+      "additionalProperties": {
+        "type": "number"
+      }
     },
     "horas_por_dia": {
       "type": "object",
@@ -132,6 +136,11 @@
       "additionalProperties": {
         "type": "number"
       }
+    },
+    "multiplos_executores": {
+      "type": "boolean",
+      "default": false,
+      "description": "Indica se o planejamento ser\u00e1 feito com m\u00faltiplos executores"
     }
   },
   "required": [
