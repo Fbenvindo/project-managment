@@ -943,7 +943,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       const [empreendimentosData, atividadesData, documentosData] = await Promise.all([
         empreendimentoIds.length > 0 ? retryWithBackoff(() => Empreendimento.filter({ id: { $in: empreendimentoIds } }), 3, 1000, 'enr.emp') : Promise.resolve([]),
         atividadeIds.length > 0 ? retryWithBackoff(() => Atividade.filter({ id: { $in: atividadeIds } }), 3, 1000, 'enr.ativ') : Promise.resolve([]),
-        documentoIdsArray.length > 0 ? Promise.all(documentoIdsArray.map(docId => retryWithBackoff(() => Documento.get(docId), 3, 1000, `enr.doc`).catch(() => null))).then(results => results.filter(Boolean)) : Promise.resolve([]),
+        documentoIdsArray.length > 0 ? retryWithBackoff(() => Documento.filter({ id: { $in: documentoIdsArray } }), 3, 1000, 'enr.docs') : Promise.resolve([]),
       ]);
 
       const empreendimentosMap = new Map((empreendimentosData || []).map(item => [String(item.id), item]));
