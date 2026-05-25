@@ -1084,6 +1084,29 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     return () => clearTimeout(timer);
   }, [updateKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Subscription em tempo real para detectar mudanças de ordem (ordem_por_dia)
+  useEffect(() => {
+    if (!filters.user) return;
+
+    const reloadIfOrdemChanged = (event) => {
+      // Recarregar apenas se o campo ordem_por_dia foi alterado
+      if (event.type === 'update') {
+        const changedData = event.data;
+        if (changedData && 'ordem_por_dia' in changedData) {
+          loadCalendarData(filters.user);
+        }
+      }
+    };
+
+    const unsubAtividade = PlanejamentoAtividade.subscribe(reloadIfOrdemChanged);
+    const unsubDocumento = PlanejamentoDocumento.subscribe(reloadIfOrdemChanged);
+
+    return () => {
+      unsubAtividade();
+      unsubDocumento();
+    };
+  }, [filters.user]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const prevCompletionKeyRef = useRef(completionKey);
   useEffect(() => {
     if (completionKey === prevCompletionKeyRef.current) return;
