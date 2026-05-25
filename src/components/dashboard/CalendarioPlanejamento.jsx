@@ -1293,10 +1293,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   const activitiesByDay = useMemo(() => {
     if (!hasSelectedUser) return {};
 
-    // Debug: verificar se activityOrder está carregado
-    console.log('[CalendarioPlanejamento] activityOrder:', activityOrder);
-    console.log('[CalendarioPlanejamento] filters.user:', filters.user);
-
     const grouped = {};
     const processedPlanIds = new Set(); // Para não duplicar com execuções
     const hojeDate = startOfDay(new Date());
@@ -1438,11 +1434,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
 
 
     // **PASSO 1**: Aplicar ordem customizada PRIMEIRO como ORDEM PRIMÁRIA absoluta
-    console.log('[CalendarioPlanejamento] Aplicando ordem customizada:', activityOrder);
     for (const dayKey in grouped) {
       const customOrder = activityOrder[dayKey];
       if (customOrder && customOrder.length > 0) {
-        console.log(`[CalendarioPlanejamento] Dia ${dayKey}: ordem customizada com ${customOrder.length} itens`, customOrder);
         const orderMap = new Map(customOrder.map((id, i) => [String(id), i]));
         // Separar itens em: (1) na ordem customizada, (2) fora dela
         const inOrder = [];
@@ -1454,13 +1448,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
             outOfOrder.push(item);
           }
         });
-        console.log(`[CalendarioPlanejamento] Dia ${dayKey}: ${inOrder.length} na ordem, ${outOfOrder.length} fora`);
         // Sort itens em ordem: primeiro os da ordem customizada, depois os demais
         inOrder.sort((a, b) => (orderMap.get(String(a.id)) ?? 9999) - (orderMap.get(String(b.id)) ?? 9999));
         grouped[dayKey] = [...inOrder, ...outOfOrder];
-        console.log(`[CalendarioPlanejamento] Dia ${dayKey}: ordem final aplicada`, grouped[dayKey].map(a => a.id));
-      } else {
-        console.log(`[CalendarioPlanejamento] Dia ${dayKey}: SEM ordem customizada`);
       }
     }
 
@@ -1534,54 +1524,53 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       }
     }
 
-    // Push: quando uma atividade se estende para hoje E o dia está com 8h cheias,
-    // arrasta a última da fila de prioridade para o próximo dia útil.
-    // Se o dia tiver capacidade livre, a atividade apenas se estende sem expulsar ninguém.
+    // Extensão com particionamento: quando uma atividade se estende para hoje E o dia está cheio,
+    // particionamos a atividade estendida para caber no espaço disponível.
+    // Se houver espaço, apenas estende. Se não, cria uma partição com o saldo no próximo dia.
     if (grouped[hojeKey] && grouped[hojeKey].some(a => a._isExtended)) {
       const cargaHojeOriginal = grouped[hojeKey].reduce((sum, a) => {
-        if (a._isExtended) return sum; // não contar as próprias extensões na carga
+        if (a._isExtended) return sum; // não contar as próprias extensões na carga original
         return sum + (Number(a.horas_por_dia?.[hojeKey]) || 0);
       }, 0);
 
-      const diaEstaLotado = cargaHojeOriginal >= 7.95; // margem de 0.05h (~3min)
+      const capacidadeDisponivel = 8 - cargaHojeOriginal; // horas livres no dia
 
-      const elegiveisPush = diaEstaLotado ? grouped[hojeKey].filter(a => {
-        const st = activityStatusMap.get(normalizeActivityId(a.id)) || a.status || 'nao_iniciado';
-        return (
-          !a._isExtended &&
-          !a.isLegacyExecution &&
-          !a.isQuickActivity &&
-          st !== 'concluido' &&
-          st !== 'concluido_com_atraso'
-        );
-      }) : [];
+      // Encontrar a atividade estendida
+      const atividadeEstendida = grouped[hojeKey].find(a => a._isExtended);
+      if (atividadeEstendida) {
+        const horasEstendidaNodia = Number(atividadeEstendida.horas_por_dia?.[hojeKey]) || 0;
 
-      if (elegiveisPush.length > 0) {
-        const ultimaAtividade = elegiveisPush[elegiveisPush.length - 1];
+        // Se não cabe, particionar
+        if (horasEstendidaNodia > capacidadeDisponivel && capacidadeDisponivel > 0) {
+          const horasQueCabem = capacidadeDisponivel;
+          const horasSobram = horasEstendidaNodia - horasQueCabem;
 
-        // Remover do dia atual
-        grouped[hojeKey] = grouped[hojeKey].filter(a => a.id !== ultimaAtividade.id);
+          // Ajustar a atividade estendida para caber apenas as horas que cabem
+          const atividadeParticionada = { ...atividadeEstendida };
+          atividadeParticionada.horas_por_dia = { ...atividadeParticionada.horas_por_dia };
+          atividadeParticionada.horas_por_dia[hojeKey] = horasQueCabem;
 
-        // Adicionar ao próximo dia útil
-        const proximoDiaUtil = getNextWorkingDay(hojeDate);
-        const proximoDiaKey = format(proximoDiaUtil, 'yyyy-MM-dd');
-        if (!grouped[proximoDiaKey]) grouped[proximoDiaKey] = [];
-        if (!grouped[proximoDiaKey].some(a => a.id === ultimaAtividade.id)) {
-          grouped[proximoDiaKey].push({ ...ultimaAtividade, _isPushed: true });
+          // Substituir na lista do dia
+          grouped[hojeKey] = grouped[hojeKey].map(a => a.id === atividadeEstendida.id ? atividadeParticionada : a);
 
-          // Re-ordenar o próximo dia para encaixar a atividade na posição certa
-          grouped[proximoDiaKey].sort((a, b) => {
-            const statusA = activityStatusMap.get(normalizeActivityId(a.id)) || a.status || 'nao_iniciado';
-            const statusB = activityStatusMap.get(normalizeActivityId(b.id)) || b.status || 'nao_iniciado';
-            const isConcA = statusA === 'concluido' || statusA === 'concluido_com_atraso';
-            const isConcB = statusB === 'concluido' || statusB === 'concluido_com_atraso';
-            if (isConcA && !isConcB) return 1;
-            if (!isConcA && isConcB) return -1;
-            const inicioA = a.inicio_planejado ? parseISO(a.inicio_planejado) : null;
-            const inicioB = b.inicio_planejado ? parseISO(b.inicio_planejado) : null;
-            if (inicioA && inicioB) return inicioA.getTime() - inicioB.getTime();
-            return 0;
-          });
+          // Adicionar o saldo ao próximo dia
+          const proximoDiaUtil = getNextWorkingDay(hojeDate);
+          const proximoDiaKey = format(proximoDiaUtil, 'yyyy-MM-dd');
+          if (!grouped[proximoDiaKey]) grouped[proximoDiaKey] = [];
+
+          // Criar uma "continuação" da atividade no próximo dia com o saldo
+          const atividadeSaldo = {
+            ...atividadeEstendida,
+            horas_por_dia: { ...atividadeEstendida.horas_por_dia, [proximoDiaKey]: horasSobram },
+            _isPushed: true,
+            _isPartitioned: true // marcar como partição
+          };
+          if (!grouped[proximoDiaKey].some(a => a.id === atividadeEstendida.id && a._isPartitioned)) {
+            grouped[proximoDiaKey].push(atividadeSaldo);
+          }
+        } else if (horasEstendidaNodia <= 0 && capacidadeDisponivel > 0) {
+          // Atividade estendida com 0h planejadas — remover, pois não cabe nem nada
+          grouped[hojeKey] = grouped[hojeKey].filter(a => a.id !== atividadeEstendida.id);
         }
       }
     }
