@@ -1235,7 +1235,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
           await retryWithBackoff(() => PlanejamentoAtividade.update(planejamentosExistentes[0].id, { executor_principal: executorEmail, executores: [executorEmail] }), 3, 500, `updatePlanExecutor-${planejamentosExistentes[0].id}`);
           planejamentosJaExistentes++;
         } else {
-          const fatorDificuldade = doc.fator_dificuldade || 1;
+          const fatorDificuldade = atividade.isEditable ? 1 : (doc.fator_dificuldade || 1);
           const tempoCalculado = (atividadeOriginal.tempo || 0) * fatorDificuldade;
           let dataInicio = dataInicioCustom ? new Date(dataInicioCustom) : new Date(hojeMidnight);
           if (dataInicioCustom) { if (!isWorkingDay(dataInicio)) dataInicio = getNextWorkingDay(dataInicio); }
