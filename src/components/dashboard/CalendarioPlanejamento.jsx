@@ -993,14 +993,14 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       // Coleta todos os planejamentos que têm ordem definida e os agrupa por todos os dias que aparecem
       const orderByDay = {};
       finalData.forEach(plano => {
-        if (plano.isLegacyExecution || plano.ordem == null) return;
+        // Só considerar planejamentos com ordem definida (1-based, > 0)
+        if (plano.isLegacyExecution || !plano.ordem || Number(plano.ordem) < 1) return;
         const diasSet = new Set([
           ...Object.keys(plano.horas_por_dia || {}).filter(d => Number(plano.horas_por_dia[d]) >= 0.05),
           ...Object.keys(plano.horas_executadas_por_dia || {}).filter(d => Number(plano.horas_executadas_por_dia[d]) >= 0.05),
         ]);
         diasSet.forEach(dayKey => {
           if (!orderByDay[dayKey]) orderByDay[dayKey] = [];
-          // Evitar duplicatas
           if (!orderByDay[dayKey].some(x => x.id === String(plano.id))) {
             orderByDay[dayKey].push({ id: String(plano.id), ordem: Number(plano.ordem) });
           }
@@ -1008,8 +1008,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       });
       const newActivityOrder = {};
       for (const dayKey in orderByDay) {
-        const sorted = orderByDay[dayKey].sort((a, b) => a.ordem - b.ordem);
-        newActivityOrder[dayKey] = sorted.map(x => x.id);
+        newActivityOrder[dayKey] = orderByDay[dayKey]
+          .sort((a, b) => a.ordem - b.ordem)
+          .map(x => x.id);
       }
       // Sempre atualizar o estado e localStorage com a ordem do banco (fonte da verdade)
       localStorage.setItem('calendar-activity-order', JSON.stringify(newActivityOrder));
@@ -1122,13 +1123,18 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       if (!modoOrdenacao) return;
       const dayKey = source.droppableId;
       const dayActivities = activitiesByDay[dayKey] || [];
-      // Usar apenas atividades que realmente têm horas neste dia (não as estendidas/pushed de outros dias)
+      // Usar EXATAMENTE o mesmo filtro que o ActivityContainer usa para renderizar os Draggables
       const activitiesDesteDir = dayActivities.filter(a => {
         const horasAlocadas = Number(a.horas_por_dia?.[dayKey]) || 0;
         const horasExecutadas = Number(a.horas_executadas_por_dia?.[dayKey]) || 0;
         const tempoExecutado = Number(a.tempo_executado) || 0;
         if (a.isLegacyExecution) return tempoExecutado >= 0.05;
-        return horasAlocadas >= 0.05 || horasExecutadas >= 0.05 || a.status === 'concluido' || a.status === 'concluido_com_atraso';
+        if (a.isQuickActivity || a.is_quick_activity) {
+          return horasExecutadas >= 0.05 || horasAlocadas >= 0.05 || a.status === 'concluido' || a.status === 'concluido_com_atraso' || a.status === 'em_andamento';
+        }
+        return horasAlocadas >= 0.05 || horasExecutadas >= 0.05 ||
+          ((a.status === 'concluido' || a.status === 'concluido_com_atraso') && !a.atividade_id) ||
+          a._isExtended || a._isPushed;
       });
       const reorderedIds = activitiesDesteDir.map(a => String(a.id));
       const [movedId] = reorderedIds.splice(source.index, 1);
@@ -1136,11 +1142,12 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       const newOrder = { ...activityOrder, [dayKey]: reorderedIds };
       localStorage.setItem('calendar-activity-order', JSON.stringify(newOrder));
       setActivityOrder(newOrder);
+      // Salvar ordem no banco com índice 1-based para evitar confusão com "sem ordem" (null/0)
       reorderedIds.forEach((id, idx) => {
         const plano = dayActivities.find(a => String(a.id) === id);
         if (!plano || plano.isLegacyExecution) return;
         const entity = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
-        entity.update(id, { ordem: idx }).catch(() => {});
+        entity.update(id, { ordem: idx + 1 }).catch(() => {});
       });
       return;
     }
