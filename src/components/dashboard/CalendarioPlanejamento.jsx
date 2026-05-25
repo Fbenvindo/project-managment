@@ -989,6 +989,31 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
 
       setEnrichedData(finalData);
 
+      // Reconstruir activityOrder a partir do campo `ordem` salvo no banco
+      // Agrupa por dia e ordena pelo campo `ordem`, depois persiste no localStorage
+      const orderByDay = {};
+      finalData.forEach(plano => {
+        if (plano.isLegacyExecution || plano.ordem == null) return;
+        const dias = Object.keys(plano.horas_por_dia || {}).filter(d => Number(plano.horas_por_dia[d]) >= 0.05);
+        dias.forEach(dayKey => {
+          if (!orderByDay[dayKey]) orderByDay[dayKey] = [];
+          orderByDay[dayKey].push({ id: String(plano.id), ordem: Number(plano.ordem) });
+        });
+      });
+      const newActivityOrder = {};
+      for (const dayKey in orderByDay) {
+        const sorted = orderByDay[dayKey].sort((a, b) => a.ordem - b.ordem);
+        // Só sobrescrever se todos os itens do dia tiverem ordem definida (> 0)
+        const todosTemOrdem = sorted.every(x => x.ordem > 0);
+        if (todosTemOrdem) {
+          newActivityOrder[dayKey] = sorted.map(x => x.id);
+        }
+      }
+      if (Object.keys(newActivityOrder).length > 0) {
+        localStorage.setItem('calendar-activity-order', JSON.stringify(newActivityOrder));
+        setActivityOrder(newActivityOrder);
+      }
+
     } catch (error) {
       // Log removido para otimização de desempenho
       setEnrichedData([]);
