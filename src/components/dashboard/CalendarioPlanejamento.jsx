@@ -1524,53 +1524,59 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       }
     }
 
-    // Extensão com particionamento: quando uma atividade se estende para hoje E o dia está cheio,
-    // particionamos a atividade estendida para caber no espaço disponível.
-    // Se houver espaço, apenas estende. Se não, cria uma partição com o saldo no próximo dia.
-    if (grouped[hojeKey] && grouped[hojeKey].some(a => a._isExtended)) {
-      const cargaHojeOriginal = grouped[hojeKey].reduce((sum, a) => {
-        if (a._isExtended) return sum; // não contar as próprias extensões na carga original
-        return sum + (Number(a.horas_por_dia?.[hojeKey]) || 0);
-      }, 0);
+    // Garantir que nenhum dia ultrapasse 8h: particionar atividades se necessário
+    for (const dayKey in grouped) {
+      let cargaTotal = 0;
+      const atividades = grouped[dayKey];
 
-      const capacidadeDisponivel = 8 - cargaHojeOriginal; // horas livres no dia
+      // Calcular carga total do dia
+      atividades.forEach(a => {
+        cargaTotal += Number(a.horas_por_dia?.[dayKey]) || 0;
+      });
 
-      // Encontrar a atividade estendida
-      const atividadeEstendida = grouped[hojeKey].find(a => a._isExtended);
-      if (atividadeEstendida) {
-        const horasEstendidaNodia = Number(atividadeEstendida.horas_por_dia?.[hojeKey]) || 0;
+      // Se ultrapassa 8h, remover/particionar as atividades estendidas primeiro
+      if (cargaTotal > 8) {
+        const atividadesEstendidas = atividades.filter(a => a._isExtended);
+        const atividadesNormais = atividades.filter(a => !a._isExtended);
 
-        // Se não cabe, particionar
-        if (horasEstendidaNodia > capacidadeDisponivel && capacidadeDisponivel > 0) {
-          const horasQueCabem = capacidadeDisponivel;
-          const horasSobram = horasEstendidaNodia - horasQueCabem;
+        let cargaNormal = atividadesNormais.reduce((sum, a) => sum + (Number(a.horas_por_dia?.[dayKey]) || 0), 0);
+        const capacidadeDisponivelParaEstendidas = 8 - cargaNormal;
 
-          // Ajustar a atividade estendida para caber apenas as horas que cabem
-          const atividadeParticionada = { ...atividadeEstendida };
-          atividadeParticionada.horas_por_dia = { ...atividadeParticionada.horas_por_dia };
-          atividadeParticionada.horas_por_dia[hojeKey] = horasQueCabem;
+        if (atividadesEstendidas.length > 0) {
+          const atividadeEstendida = atividadesEstendidas[0];
+          const horasEstendida = Number(atividadeEstendida.horas_por_dia?.[dayKey]) || 0;
 
-          // Substituir na lista do dia
-          grouped[hojeKey] = grouped[hojeKey].map(a => a.id === atividadeEstendida.id ? atividadeParticionada : a);
+          if (horasEstendida > capacidadeDisponivelParaEstendidas) {
+            // Particionar: manter apenas o que cabe
+            const horasQueCabem = Math.max(0, capacidadeDisponivelParaEstendidas);
+            const horasSobram = horasEstendida - horasQueCabem;
 
-          // Adicionar o saldo ao próximo dia
-          const proximoDiaUtil = getNextWorkingDay(hojeDate);
-          const proximoDiaKey = format(proximoDiaUtil, 'yyyy-MM-dd');
-          if (!grouped[proximoDiaKey]) grouped[proximoDiaKey] = [];
+            if (horasQueCabem > 0) {
+              // Ajustar a atividade estendida
+              atividadeEstendida.horas_por_dia = { ...atividadeEstendida.horas_por_dia };
+              atividadeEstendida.horas_por_dia[dayKey] = horasQueCabem;
+            } else {
+              // Se nem 1 minuto cabe, remover do dia
+              atividades.splice(atividades.indexOf(atividadeEstendida), 1);
+            }
 
-          // Criar uma "continuação" da atividade no próximo dia com o saldo
-          const atividadeSaldo = {
-            ...atividadeEstendida,
-            horas_por_dia: { ...atividadeEstendida.horas_por_dia, [proximoDiaKey]: horasSobram },
-            _isPushed: true,
-            _isPartitioned: true // marcar como partição
-          };
-          if (!grouped[proximoDiaKey].some(a => a.id === atividadeEstendida.id && a._isPartitioned)) {
-            grouped[proximoDiaKey].push(atividadeSaldo);
+            // Enviar saldo para próximo dia
+            if (horasSobram > 0) {
+              const proximoDiaUtil = getNextWorkingDay(parseISO(dayKey));
+              const proximoDiaKey = format(proximoDiaUtil, 'yyyy-MM-dd');
+              if (!grouped[proximoDiaKey]) grouped[proximoDiaKey] = [];
+
+              const atividadeSaldo = {
+                ...atividadeEstendida,
+                horas_por_dia: { ...atividadeEstendida.horas_por_dia, [proximoDiaKey]: horasSobram },
+                _isPushed: true,
+                _isPartitioned: true
+              };
+              if (!grouped[proximoDiaKey].some(a => a.id === atividadeEstendida.id && a._isPartitioned)) {
+                grouped[proximoDiaKey].push(atividadeSaldo);
+              }
+            }
           }
-        } else if (horasEstendidaNodia <= 0 && capacidadeDisponivel > 0) {
-          // Atividade estendida com 0h planejadas — remover, pois não cabe nem nada
-          grouped[hojeKey] = grouped[hojeKey].filter(a => a.id !== atividadeEstendida.id);
         }
       }
     }
