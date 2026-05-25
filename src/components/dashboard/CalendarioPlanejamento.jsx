@@ -1494,18 +1494,24 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       docIndices.forEach((pos, i) => { activities[pos] = sorted[i]; });
     }
 
-    // Aplicar ordem customizada por dia como ORDEM PRIMÁRIA
+    // Aplicar ordem customizada por dia como ORDEM PRIMÁRIA absoluta
     for (const dayKey in grouped) {
       const customOrder = activityOrder[dayKey];
       if (customOrder && customOrder.length > 0) {
         const orderMap = new Map(customOrder.map((id, i) => [String(id), i]));
-        grouped[dayKey].sort((a, b) => {
-          const idxA = orderMap.get(String(a.id)) ?? (Number.MAX_SAFE_INTEGER - 1); // Itens não na ordem customizada vão para o fim
-          const idxB = orderMap.get(String(b.id)) ?? (Number.MAX_SAFE_INTEGER - 1);
-          // Se ambos estão fora da ordem customizada, manter ordem anterior
-          if (idxA === Number.MAX_SAFE_INTEGER - 1 && idxB === Number.MAX_SAFE_INTEGER - 1) return 0;
-          return idxA - idxB;
+        // Separar itens em: (1) na ordem customizada, (2) fora dela
+        const inOrder = [];
+        const outOfOrder = [];
+        grouped[dayKey].forEach(item => {
+          if (orderMap.has(String(item.id))) {
+            inOrder.push(item);
+          } else {
+            outOfOrder.push(item);
+          }
         });
+        // Sort itens em ordem: primeiro os da ordem customizada, depois os demais (mantendo ordem original)
+        inOrder.sort((a, b) => (orderMap.get(String(a.id)) ?? 9999) - (orderMap.get(String(b.id)) ?? 9999));
+        grouped[dayKey] = [...inOrder, ...outOfOrder];
       }
     }
 
