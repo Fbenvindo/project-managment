@@ -25,28 +25,36 @@ export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocu
   const empreendimentoId = planejamentoDocumento?.empreendimento_id;
 
   useEffect(() => {
-    if (!isOpen || !documentoId) return;
+    if (!isOpen) return;
+    
+    console.log('[AtividadesFolhaModal] planejamentoDocumento:', planejamentoDocumento);
+    console.log('[AtividadesFolhaModal] documentoId:', documentoId, 'empreendimentoId:', empreendimentoId);
+    
+    if (!documentoId && !empreendimentoId) return;
     setIsLoading(true);
 
-    // Buscar por executor_principal do planejamentoDocumento para contornar RLS
-    // e também buscar por empreendimento_id para máxima cobertura
-    const filtros = [
-      retryWithBackoff(() => PlanejamentoAtividade.filter({ documento_id: documentoId }), 3, 1000, 'atividadesFolha1').catch(() => []),
-    ];
-    if (empreendimentoId) {
-      filtros.push(
-        retryWithBackoff(() => PlanejamentoAtividade.filter({ documento_id: documentoId, empreendimento_id: empreendimentoId }), 3, 1000, 'atividadesFolha2').catch(() => [])
+    const queries = [];
+    if (documentoId) {
+      queries.push(
+        retryWithBackoff(() => PlanejamentoAtividade.filter({ documento_id: documentoId }), 3, 1000, 'atividadesFolha1').catch(e => { console.error('query1 error:', e); return []; })
       );
     }
+    if (empreendimentoId && documentoId) {
+      queries.push(
+        retryWithBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId, documento_id: documentoId }), 3, 1000, 'atividadesFolha2').catch(e => { console.error('query2 error:', e); return []; })
+      );
+    }
+    if (queries.length === 0) { setIsLoading(false); return; }
 
-    Promise.all(filtros)
+    Promise.all(queries)
       .then(resultados => {
-        // Mesclar e deduplicar por id
         const mapa = new Map();
         resultados.flat().forEach(a => { if (a?.id) mapa.set(a.id, a); });
-        setAtividades(Array.from(mapa.values()));
+        const arr = Array.from(mapa.values());
+        console.log('[AtividadesFolhaModal] resultados encontrados:', arr.length, arr);
+        setAtividades(arr);
       })
-      .catch(() => setAtividades([]))
+      .catch(e => { console.error('AtividadesFolhaModal error:', e); setAtividades([]); })
       .finally(() => setIsLoading(false));
   }, [isOpen, documentoId, empreendimentoId]);
 
@@ -69,6 +77,7 @@ export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocu
           {planejamentoDocumento?.etapa && (
             <Badge variant="outline" className="self-start text-xs mt-1">{planejamentoDocumento.etapa}</Badge>
           )}
+          <p className="text-xs text-gray-300 mt-0.5">doc_id: {documentoId || 'null'} | emp_id: {empreendimentoId || 'null'}</p>
         </DialogHeader>
 
         <div className="flex-1 overflow-y-auto mt-2">
