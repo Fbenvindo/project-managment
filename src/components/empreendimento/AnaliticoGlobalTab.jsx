@@ -1195,9 +1195,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
         }
       });
       
-      const documentosComAtividade = documentos.filter(doc => {
-        return doc.disciplina === atividadeOriginal.disciplina && (doc.subdisciplinas || []).includes(atividadeOriginal.subdisciplina);
-      });
+      const docIdsVinculados = atividade.documento_ids?.length > 0 ? atividade.documento_ids : (atividade.documento_id ? [atividade.documento_id] : null);
+      const documentosComAtividade = docIdsVinculados ? documentos.filter(doc => docIdsVinculados.includes(doc.id)) : documentos.filter(doc => doc.disciplina === atividadeOriginal.disciplina && (doc.subdisciplinas || []).includes(atividadeOriginal.subdisciplina));
       
       // Criar planejamentos para cada documento (ou um planejamento geral se não houver documentos)
       let planejamentosCriados = 0;
