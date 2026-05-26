@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, useContext } from 'react';
 import { ActivityTimerContext } from '@/components/contexts/ActivityTimerContext';
 import { Documento, Disciplina, Atividade, Execucao, Usuario, PlanejamentoAtividade, PlanejamentoDocumento, DataCadastro } from "@/entities/all";
-import { base44, getApiOrigin } from '@/api/base44Client';
+import { base44 } from '@/api/base44Client';
+import { getMediasPlanejamentos } from '@/functions/getMediasPlanejamentos';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -124,13 +125,11 @@ export default function DocumentosTab({
 
   // Carregar médias históricas de documentos e atividades UMA VEZ
   useEffect(() => {
-    fetch(`${getApiOrigin()}/api/planejamento_documentos/medias`)
-      .then(r => r.ok ? r.json() : [])
-      .then(data => setMediasDocumentos(Array.isArray(data) ? data : []))
+    getMediasPlanejamentos({ tipo: 'documentos' })
+      .then(res => setMediasDocumentos(Array.isArray(res.data) ? res.data : []))
       .catch(() => {});
-    fetch(`${getApiOrigin()}/api/planejamentos/medias`)
-      .then(r => r.ok ? r.json() : [])
-      .then(data => setMediasAtividades(Array.isArray(data) ? data : []))
+    getMediasPlanejamentos({ tipo: 'atividades' })
+      .then(res => setMediasAtividades(Array.isArray(res.data) ? res.data : []))
       .catch(() => {});
   }, []);
 
