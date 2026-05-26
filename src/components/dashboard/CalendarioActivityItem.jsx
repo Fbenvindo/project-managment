@@ -35,14 +35,7 @@ const parseLocalDate = (dateString) => {
 
 const formatHours = (h) => Number(h).toFixed(1);
 
-const calculateActivityStatus = (plano, allPlanejamentos = []) => {
-  if (plano.isLegacyExecution) return plano.status;
-  if (plano.status === 'concluido_com_atraso') return 'concluido_com_atraso';
-  if (plano.status === 'concluido') return 'concluido';
-  return plano.status || 'nao_iniciado';
-};
-
-export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpdate, executorMap, allPlanejamentos, provided, isDragging, isReprogramando, isSelected, onToggleSelect, hasSelections, orderIndex }) {
+export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpdate, executorMap, allPlanejamentos, provided, isDragging, isReprogramando, isSelected, onToggleSelect, hasSelections, orderIndex, realStatusOverride }) {
   const { activeExecution, startExecution, user, playlist, hasPermission, isAdmin, perfilAtual, allEmpreendimentos } = useContext(ActivityTimerContext);
   const canEditDelete = isAdmin || perfilAtual === 'direcao' || perfilAtual === 'coordenador';
 
@@ -56,7 +49,7 @@ export default function CalendarioActivityItem({ plano, dayKey, onDelete, onUpda
   const [isEditLoading, setIsEditLoading] = useState(false);
   const [showAtividadesFolhaModal, setShowAtividadesFolhaModal] = useState(false);
 
-  const realStatus = calculateActivityStatus(plano, allPlanejamentos);
+  const realStatus = realStatusOverride || plano.status || 'nao_iniciado';
 
   const displayName = useMemo(() => {
     if (plano.tipo_planejamento === 'documento') {

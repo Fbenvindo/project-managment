@@ -263,7 +263,7 @@ const CalendarFilters = ({
 
 
 // --- Sub-componente para Container de Atividades (reutilizável) ---
-const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, modoOrdenacao, onClearDayOrder, activityOrder }) => {
+const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, modoOrdenacao, onClearDayOrder, activityOrder, activityStatusMap }) => {
   const [expandedGroups, setExpandedGroups] = useState(new Set());
 
   const activityGroups = useMemo(() => {
@@ -371,6 +371,7 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
                 onToggleSelect={onToggleSelect}
                 hasSelections={hasSelections}
                 orderIndex={index}
+                realStatusOverride={activityStatusMap?.get(normalizeActivityId(atividade.id))}
               />
             )}
           </Draggable>
@@ -486,7 +487,7 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
 };
 
 // --- Sub-componente para Container de Atividades (reutilizável) ---
-const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType }) => {
+const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, activityStatusMap }) => {
   const dayKey = format(day, 'yyyy-MM-dd');
 
   // **NOVO**: Verificar se pode arrastar o dia inteiro
@@ -585,6 +586,7 @@ const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDel
               onToggleSelect={onToggleSelect}
               hasSelections={hasSelections}
               viewType={viewType}
+              activityStatusMap={activityStatusMap}
             />
             {provided.placeholder}
           </div>
@@ -595,7 +597,7 @@ const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDel
 };
 
 // --- Sub-componente para a Visualização Mensal ---
-const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, modoOrdenacao, onClearDayOrder, activityOrder }) => {
+const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, modoOrdenacao, onClearDayOrder, activityOrder, activityStatusMap }) => {
   const monthDays = useMemo(() => {
     const start = startOfWeek(startOfMonth(date), { locale: ptBR });
     const end = endOfWeek(endOfMonth(date), { locale: ptBR });
@@ -632,6 +634,7 @@ const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onSho
             onToggleSelect={onToggleSelect}
             hasSelections={hasSelections}
             viewType={viewType}
+            activityStatusMap={activityStatusMap}
           />
         );
       })}
@@ -641,7 +644,7 @@ const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onSho
 
 
 // --- Sub-componente para a Visualização Semanal ---
-const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, modoOrdenacao, onClearDayOrder, onToggleModoOrdenacao, activityOrder }) => {
+const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, modoOrdenacao, onClearDayOrder, onToggleModoOrdenacao, activityOrder, activityStatusMap }) => {
   // NOVO: Estado para controlar o dia expandido
   const [expandedDay, setExpandedDay] = useState(null);
 
@@ -763,6 +766,7 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
                     modoOrdenacao={modoOrdenacao}
                     onClearDayOrder={onClearDayOrder}
                     activityOrder={activityOrder}
+                    activityStatusMap={activityStatusMap}
                   />
                   {provided.placeholder}
                 </div>
@@ -777,7 +781,7 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
 
 
 // --- Sub-componente para a Visualização Diária ---
-const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, modoOrdenacao, onClearDayOrder, onToggleModoOrdenacao, activityOrder }) => {
+const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, modoOrdenacao, onClearDayOrder, onToggleModoOrdenacao, activityOrder, activityStatusMap }) => {
   const dayKey = format(date, 'yyyy-MM-dd');
   const activities = activitiesByDay[dayKey] || [];
 
@@ -819,6 +823,7 @@ const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowP
                 modoOrdenacao={modoOrdenacao}
                 onClearDayOrder={onClearDayOrder}
                 activityOrder={activityOrder}
+                activityStatusMap={activityStatusMap}
               />
             ) : (
               <div className="text-center py-12 text-gray-500">
@@ -1718,9 +1723,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     const hasSelections = selectedActivities.size > 0;
 
     // **MODIFICADO**: Passa 'enrichedData' (que são todos) para as views em vez de 'planejamentos'
-    if (viewMode === 'month') return <MonthView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} modoOrdenacao={modoOrdenacao} onClearDayOrder={clearDayOrder} activityOrder={activityOrder} />;
-    if (viewMode === 'week') return <WeekView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} modoOrdenacao={modoOrdenacao} onClearDayOrder={clearDayOrder} onToggleModoOrdenacao={toggleModoOrdenacao} activityOrder={activityOrder} />;
-    if (viewMode === 'day') return <DayView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} modoOrdenacao={modoOrdenacao} onClearDayOrder={clearDayOrder} onToggleModoOrdenacao={toggleModoOrdenacao} activityOrder={activityOrder} />;
+    if (viewMode === 'month') return <MonthView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} modoOrdenacao={modoOrdenacao} onClearDayOrder={clearDayOrder} activityOrder={activityOrder} activityStatusMap={activityStatusMap} />;
+    if (viewMode === 'week') return <WeekView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} modoOrdenacao={modoOrdenacao} onClearDayOrder={clearDayOrder} onToggleModoOrdenacao={toggleModoOrdenacao} activityOrder={activityOrder} activityStatusMap={activityStatusMap} />;
+    if (viewMode === 'day') return <DayView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} modoOrdenacao={modoOrdenacao} onClearDayOrder={clearDayOrder} onToggleModoOrdenacao={toggleModoOrdenacao} activityOrder={activityOrder} activityStatusMap={activityStatusMap} />;
     return null;
   };
 
