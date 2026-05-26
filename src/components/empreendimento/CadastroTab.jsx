@@ -277,9 +277,16 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       // Mapa de índices dos documentos para reordenação
       const docIndexMap = new Map(sortedDocs.map((doc, idx) => [doc.id, idx]));
 
-      // Linhas com DataCadastro existente
-      const linhasComData = (data || [])
-        .filter(item => item.documento_id);
+      // Linhas com DataCadastro existente - deduplicar por documento_id (manter o mais recente)
+      const dataComDocId = (data || []).filter(item => item.documento_id);
+      const deduplicadoMap = new Map();
+      dataComDocId.forEach(item => {
+        const existing = deduplicadoMap.get(item.documento_id);
+        if (!existing || new Date(item.updated_date) > new Date(existing.updated_date)) {
+          deduplicadoMap.set(item.documento_id, item);
+        }
+      });
+      const linhasComData = Array.from(deduplicadoMap.values());
 
       const documento_idsComData = new Set(linhasComData.map(l => l.documento_id));
 
