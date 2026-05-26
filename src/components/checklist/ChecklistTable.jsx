@@ -9,10 +9,10 @@ import { Plus, Trash2, Edit2, Save, X, FolderX, Pencil, Check, Link } from 'luci
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 
-const STATUS_OPTIONS = ['-', 'E', 'C', 'NA'];
+const STATUS_OPTIONS = ['-', 'A', 'P', 'NA'];
 const STATUS_COLORS = {
-  'E': 'bg-yellow-100',
-  'C': 'bg-green-100',
+  'A': 'bg-green-100',
+  'P': 'bg-yellow-100',
   'NA': 'bg-gray-100',
   '-': 'bg-white'
 };
@@ -113,7 +113,7 @@ export default function ChecklistTable({ secao, items, checklist, documentos = [
         const colLabel = colunas.find(c => c.key === colKey)?.label || colKey;
         const descricaoPRE = `[Checklist ${checklist.tipo || ''}] ${secao} - Item ${item.numero_item}: ${item.descricao}`;
 
-        if (novoStatus === 'E' && !preItemId) {
+        if (novoStatus === 'P' && !preItemId) {
           // Criar item na PRE com status "Pendente"
           const criado = await base44.entities.ItemPRE.create({
             empreendimento_id: empreendimento.id,
@@ -128,10 +128,10 @@ export default function ChecklistTable({ secao, items, checklist, documentos = [
             imagens: [],
           });
           preItemId = criado.id;
-        } else if (novoStatus === 'C' && preItemId) {
+        } else if (novoStatus === 'A' && preItemId) {
           // Marcar item PRE como Concluído
           await base44.entities.ItemPRE.update(preItemId, { status: 'Concluído' });
-        } else if (novoStatus === 'C' && !preItemId) {
+        } else if (novoStatus === 'A' && !preItemId) {
           // Criar item PRE já como Concluído (caso não existia pendente)
           const criado = await base44.entities.ItemPRE.create({
             empreendimento_id: empreendimento.id,
