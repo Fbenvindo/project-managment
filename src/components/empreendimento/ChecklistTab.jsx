@@ -66,7 +66,11 @@ export default function ChecklistTab({ empreendimento }) {
       try { await base44.entities.ChecklistItem.delete(item.id); } catch {}
       await new Promise(r => setTimeout(r, 150));
     }
-    await base44.entities.ChecklistPlanejamento.delete(selectedChecklist.id);
+    try {
+      await base44.entities.ChecklistPlanejamento.delete(selectedChecklist.id);
+    } catch (e) {
+      // já deletado ou não encontrado — continuar normalmente
+    }
     setSelectedChecklist(null);
     await queryClient.invalidateQueries(['checklists', empreendimento?.id]);
   };
