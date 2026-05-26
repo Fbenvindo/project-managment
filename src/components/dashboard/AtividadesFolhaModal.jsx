@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Badge } from "@/components/ui/badge";
 import { base44 } from '@/api/base44Client';
 import { Loader2 } from 'lucide-react';
 
@@ -10,37 +9,41 @@ export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocu
 
   useEffect(() => {
     if (!isOpen || !planejamentoDocumento) return;
+    setAtividadesVinculadas([]);
 
-    const docId = planejamentoDocumento.documento_id || planejamentoDocumento.id;
-    const etapa = planejamentoDocumento.etapa;
-
-    // Primeiro tenta filtrar de allPlanejamentos (que já está carregado no contexto)
-    // Atividades de tipo 'atividade' vinculadas a este documento via documento_id
-    const fromContext = (allPlanejamentos || []).filter(p => {
-      if (p.tipo_planejamento === 'documento') return false;
-      // Vinculação por documento_id direto
-      if (p.documento_id && p.documento_id === docId) return true;
-      // Vinculação pelo campo documento_ids (array)
-      if (Array.isArray(p.documento_ids) && p.documento_ids.includes(docId)) return true;
-      return false;
-    });
-
-    if (fromContext.length > 0) {
-      setAtividadesVinculadas(fromContext);
+    // Caso 1: PlanejamentoDocumento tem atividades_ids → buscar diretamente
+    const atividadesIds = planejamentoDocumento.atividades_ids;
+    if (Array.isArray(atividadesIds) && atividadesIds.length > 0) {
+      setIsLoading(true);
+      Promise.all(
+        atividadesIds.map(id => base44.entities.Atividade.filter({ id }).catch(() => []))
+      ).then(results => {
+        const todas = results.flatMap(r => r || []);
+        setAtividadesVinculadas(todas);
+      }).catch(() => setAtividadesVinculadas([]))
+        .finally(() => setIsLoading(false));
       return;
     }
 
-    // Fallback: buscar do banco diretamente
+    // Caso 2: Buscar Atividade com documento_id ou documento_ids contendo o docId
+    const docId = planejamentoDocumento.documento_id || planejamentoDocumento.id;
+    const etapa = planejamentoDocumento.etapa;
+
     setIsLoading(true);
     Promise.all([
-      base44.entities.PlanejamentoAtividade.filter({ documento_id: docId }),
-    ]).then(([ativs]) => {
-      const filtradas = etapa ? (ativs || []).filter(a => !a.etapa || a.etapa === etapa) : (ativs || []);
+      base44.entities.Atividade.filter({ documento_id: docId }).catch(() => []),
+      base44.entities.Atividade.filter({ documento_ids: docId }).catch(() => []),
+    ]).then(([porDocId, porDocIds]) => {
+      const merged = [...(porDocId || [])];
+      (porDocIds || []).forEach(a => {
+        if (!merged.find(m => m.id === a.id)) merged.push(a);
+      });
+      const filtradas = etapa ? merged.filter(a => !a.etapa || a.etapa === etapa) : merged;
       setAtividadesVinculadas(filtradas);
-    }).catch(() => {
-      setAtividadesVinculadas([]);
-    }).finally(() => setIsLoading(false));
-  }, [isOpen, planejamentoDocumento?.id, planejamentoDocumento?.documento_id]);
+    }).catch(() => setAtividadesVinculadas([]))
+      .finally(() => setIsLoading(false));
+
+  }, [isOpen, planejamentoDocumento?.id, planejamentoDocumento?.documento_id, planejamentoDocumento?.etapa]);
 
   if (!planejamentoDocumento) return null;
 
@@ -49,15 +52,6 @@ export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocu
     ? [doc.numero, doc.arquivo, planejamentoDocumento.etapa].filter(Boolean).join(' - ')
     : planejamentoDocumento.descritivo || 'Documento';
 
-  const statusLabel = {
-    nao_iniciado: { label: 'Não Iniciado', color: 'bg-gray-100 text-gray-600' },
-    em_andamento: { label: 'Em Andamento', color: 'bg-blue-100 text-blue-700' },
-    concluido: { label: 'Concluído', color: 'bg-green-100 text-green-700' },
-    concluido_com_atraso: { label: 'Concluído c/ Atraso', color: 'bg-red-100 text-red-700' },
-    atrasado: { label: 'Atrasado', color: 'bg-red-100 text-red-700' },
-    pausado: { label: 'Pausado', color: 'bg-amber-100 text-amber-700' },
-  };
-
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-lg">
@@ -65,34 +59,38 @@ export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocu
           <DialogTitle className="text-base">Atividades da Folha</DialogTitle>
         </DialogHeader>
         <div className="py-2">
-          <p className="text-sm font-medium text-gray-800 mb-4">{titulo}</p>
+          <p className="text-sm font-medium text-gray-800 mb-1">{titulo}</p>
+          {planejamentoDocumento.etapa && (
+            <p className="text-xs text-gray-500 mb-3">Etapa: {planejamentoDocumento.etapa}</p>
+          )}
+          {Number(planejamentoDocumento.tempo_planejado) > 0 && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+              <span className="text-sm text-blue-700 font-medium">Tempo total planejado:</span>
+              <span className="text-sm font-bold text-blue-800">{Number(planejamentoDocumento.tempo_planejado).toFixed(1)}h</span>
+            </div>
+          )}
           {isLoading ? (
             <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
           ) : atividadesVinculadas.length === 0 ? (
             <p className="text-sm text-gray-500 text-center py-6">Nenhuma atividade vinculada encontrada.</p>
           ) : (
             <div className="space-y-2 max-h-80 overflow-y-auto">
-              {atividadesVinculadas.map(ativ => {
-                const executor = ativ.executor_principal ? executorMap?.[ativ.executor_principal] : null;
-                const st = statusLabel[ativ.status] || statusLabel['nao_iniciado'];
-                return (
-                  <div key={ativ.id} className="p-3 border border-gray-200 rounded-lg bg-gray-50">
-                    <div className="flex items-start justify-between gap-2">
-                      <p className="text-sm font-medium text-gray-800 flex-1">
-                        {ativ.atividade?.atividade || ativ.descritivo || 'Atividade'}
-                      </p>
-                      <Badge className={`text-xs px-1.5 py-0.5 shrink-0 ${st.color}`}>{st.label}</Badge>
+              {atividadesVinculadas.map(ativ => (
+                <div key={ativ.id} className="p-3 border border-gray-200 rounded-lg bg-gray-50">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1">
+                      <p className="text-sm font-medium text-gray-800">{ativ.atividade || 'Atividade'}</p>
+                      {ativ.subdisciplina && <p className="text-xs text-gray-500 mt-0.5">{ativ.subdisciplina}</p>}
                     </div>
-                    <div className="flex items-center gap-3 mt-1.5 text-xs text-gray-500">
-                      {executor && <span>👤 {executor.nome || executor.email}</span>}
-                      <span>⏱ {Number(ativ.tempo_planejado || 0).toFixed(1)}h planejado</span>
-                      {Number(ativ.tempo_executado) > 0 && (
-                        <span>✅ {Number(ativ.tempo_executado).toFixed(1)}h exec.</span>
-                      )}
-                    </div>
+                    <span className="text-xs font-mono text-gray-600 shrink-0">{Number(ativ.tempo || 0).toFixed(1)}h</span>
                   </div>
-                );
-              })}
+                </div>
+              ))}
+              <div className="pt-2 border-t border-gray-200 flex justify-end">
+                <span className="text-xs text-gray-500">
+                  Total: <strong>{atividadesVinculadas.reduce((s, a) => s + Number(a.tempo || 0), 0).toFixed(1)}h</strong> ({atividadesVinculadas.length} atividades)
+                </span>
+              </div>
             </div>
           )}
         </div>
