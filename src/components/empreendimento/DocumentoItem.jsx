@@ -506,12 +506,12 @@ export default function DocumentoItem({
 
   const mediaDoc = useMemo(() => {
     if (!mediasDocumentos.length) return null;
-    const docIdNum = Number(doc.id);
+    const docIdStr = String(doc.id);
     const comEtapa = etapaParaPlanejamento
-      ? mediasDocumentos.find(m => Number(m.documento_id) === docIdNum && m.etapa === etapaParaPlanejamento)
+      ? mediasDocumentos.find(m => String(m.documento_id) === docIdStr && m.etapa === etapaParaPlanejamento)
       : null;
     if (comEtapa) return comEtapa;
-    const semEtapa = mediasDocumentos.filter(m => Number(m.documento_id) === docIdNum);
+    const semEtapa = mediasDocumentos.filter(m => String(m.documento_id) === docIdStr);
     if (!semEtapa.length) return null;
     const totalExec = semEtapa.reduce((s, m) => s + Number(m.total), 0);
     const mediaGeral = semEtapa.reduce((s, m) => s + Number(m.media) * Number(m.total), 0) / totalExec;
@@ -873,7 +873,7 @@ export default function DocumentoItem({
                           {`${atividade.tempoComFator.toFixed(1)}h`}
                         </div>
                         {(() => {
-                          const mediaAtiv = mediasAtividades.find(m => Number(m.atividade_id) === Number(atividade.id));
+                          const mediaAtiv = mediasAtividades.find(m => String(m.atividade_id) === String(atividade.id));
                           return mediaAtiv ? (
                             <span
                               className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200 text-xs font-medium"
