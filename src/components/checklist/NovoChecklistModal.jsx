@@ -3,18 +3,49 @@ import { base44 } from '@/api/base44Client';
 import { ActivityTimerContext } from '@/components/contexts/ActivityTimerContext';
 import {
   ITEMS_ELETRICA_COMERCIAL,
+  ITEMS_ELETRICA_RESIDENCIAL,
+  ITEMS_ELETRICA_GALPAO,
   ITEMS_HIDRAULICA_COMERCIAL,
+  ITEMS_HIDRAULICA_RESIDENCIAL,
+  ITEMS_HIDRAULICA_GALPAO,
   ITEMS_HVAC_COMERCIAL,
+  ITEMS_HVAC_RESIDENCIAL,
   ITEMS_COMPATIBILIZACAO,
   ITEMS_INICIO_DE_PROJETO,
+  ITEMS_BASES_E_FOLHAS,
 } from './checklistTemplates';
 
 const CHECKLIST_TEMPLATES = {
-  'Elétrica': ITEMS_ELETRICA_COMERCIAL,
-  'Hidráulica': ITEMS_HIDRAULICA_COMERCIAL,
-  'HVAC': ITEMS_HVAC_COMERCIAL,
-  'Incêndio': ITEMS_COMPATIBILIZACAO,
-  'Sistemas Eletrônicos': ITEMS_INICIO_DE_PROJETO,
+  'Residencial': {
+    'Elétrica': ITEMS_ELETRICA_RESIDENCIAL,
+    'Hidráulica': ITEMS_HIDRAULICA_RESIDENCIAL,
+    'HVAC': ITEMS_HVAC_RESIDENCIAL,
+    'Incêndio': ITEMS_COMPATIBILIZACAO,
+    'Sistemas Eletrônicos': ITEMS_INICIO_DE_PROJETO,
+    'Planejamento - INÍCIO DE PROJETO': ITEMS_INICIO_DE_PROJETO,
+    'Planejamento - BASES E FOLHAS': ITEMS_BASES_E_FOLHAS,
+    'Planejamento - COMPATIBILIZAÇÃO': ITEMS_COMPATIBILIZACAO,
+  },
+  'Comercial': {
+    'Elétrica': ITEMS_ELETRICA_COMERCIAL,
+    'Hidráulica': ITEMS_HIDRAULICA_COMERCIAL,
+    'HVAC': ITEMS_HVAC_COMERCIAL,
+    'Incêndio': ITEMS_COMPATIBILIZACAO,
+    'Sistemas Eletrônicos': ITEMS_INICIO_DE_PROJETO,
+    'Planejamento - INÍCIO DE PROJETO': ITEMS_INICIO_DE_PROJETO,
+    'Planejamento - BASES E FOLHAS': ITEMS_BASES_E_FOLHAS,
+    'Planejamento - COMPATIBILIZAÇÃO': ITEMS_COMPATIBILIZACAO,
+  },
+  'Galpão Logístico': {
+    'Elétrica': ITEMS_ELETRICA_GALPAO,
+    'Hidráulica': ITEMS_HIDRAULICA_GALPAO,
+    'HVAC': ITEMS_HVAC_COMERCIAL,
+    'Incêndio': ITEMS_COMPATIBILIZACAO,
+    'Sistemas Eletrônicos': ITEMS_INICIO_DE_PROJETO,
+    'Planejamento - INÍCIO DE PROJETO': ITEMS_INICIO_DE_PROJETO,
+    'Planejamento - BASES E FOLHAS': ITEMS_BASES_E_FOLHAS,
+    'Planejamento - COMPATIBILIZAÇÃO': ITEMS_COMPATIBILIZACAO,
+  },
 };
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -31,6 +62,8 @@ const SECOES_PADRAO = [
   'Elétrica'
 ];
 
+const ALL_TIPOS = ['Elétrica', 'Hidráulica', 'HVAC', 'Incêndio', 'Sistemas Eletrônicos', 'Planejamento - INÍCIO DE PROJETO', 'Planejamento - BASES E FOLHAS', 'Planejamento - COMPATIBILIZAÇÃO'];
+
 export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreendimentos, defaultEmpreendimentoId }) {
   const [isSaving, setIsSaving] = useState(false);
   const { userProfile, user } = useContext(ActivityTimerContext);
@@ -39,7 +72,8 @@ export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreen
     const emp = empreendimentos?.find(e => e.id === empId);
     return {
       cliente: emp?.cliente || '',
-      numero_os: emp?.os || ''
+      numero_os: emp?.os || '',
+      disciplinas: emp?.disciplinas_checklist?.length > 0 ? emp.disciplinas_checklist : ALL_TIPOS
     };
   };
 
@@ -47,21 +81,24 @@ export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreen
   const defaultTecnico = userProfile?.nome || user?.full_name || '';
 
   const [formData, setFormData] = useState({
-    tipo: 'Elétrica',
+    tipo: defaultEmpDefaults.disciplinas[0] || 'Elétrica',
     empreendimento_id: defaultEmpreendimentoId || '',
     tecnico_responsavel: defaultTecnico,
     numero_os: defaultEmpDefaults.numero_os,
     cliente: defaultEmpDefaults.cliente,
     data_entrega: ''
   });
+  const [tiposDisponiveis, setTiposDisponiveis] = useState(defaultEmpDefaults.disciplinas);
 
   const handleEmpreendimentoChange = (empId) => {
     const defaults = getDefaultsFromEmpreendimento(empId);
+    setTiposDisponiveis(defaults.disciplinas);
     setFormData(prev => ({
       ...prev,
       empreendimento_id: empId,
       cliente: defaults.cliente,
-      numero_os: defaults.numero_os
+      numero_os: defaults.numero_os,
+      tipo: defaults.disciplinas[0] || prev.tipo
     }));
   };
 
@@ -84,7 +121,10 @@ export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreen
       const novoChecklist = await base44.entities.ChecklistPlanejamento.create(checklistData);
 
       // Criar itens a partir do template ou uma seção padrão vazia
-      const templateItems = CHECKLIST_TEMPLATES[formData.tipo];
+      const emp = empreendimentos?.find(e => e.id === formData.empreendimento_id);
+      const tipoEmp = emp?.tipo_empreendimento_checklist || 'Comercial';
+      const templatesPorTipo = CHECKLIST_TEMPLATES[tipoEmp] || CHECKLIST_TEMPLATES['Comercial'];
+      const templateItems = templatesPorTipo[formData.tipo];
       if (templateItems && templateItems.length > 0) {
         const itemsToCreate = templateItems.map((t, i) => ({
           checklist_id: novoChecklist.id,
@@ -135,11 +175,9 @@ export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreen
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="Elétrica">Elétrica</SelectItem>
-                  <SelectItem value="Hidráulica">Hidráulica</SelectItem>
-                  <SelectItem value="HVAC">HVAC</SelectItem>
-                  <SelectItem value="Incêndio">Incêndio</SelectItem>
-                  <SelectItem value="Sistemas Eletrônicos">Sistemas Eletrônicos</SelectItem>
+                  {tiposDisponiveis.map(tipo => (
+                    <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
