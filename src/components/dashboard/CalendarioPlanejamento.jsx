@@ -925,7 +925,17 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       localStorage.setItem(storageKey, JSON.stringify(updated));
       return updated;
     });
-  }, [filters.user, getStorageKey]);
+    // Limpar ordem_por_dia no banco para todas as atividades deste dia
+    const dayActivities = enrichedData.filter(p =>
+      !p.isLegacyExecution && p.horas_por_dia?.[dayKey] >= 0.05
+    );
+    dayActivities.forEach(plano => {
+      const entity = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
+      const ordemAtual = (typeof plano.ordem_por_dia === 'object' && plano.ordem_por_dia) ? { ...plano.ordem_por_dia } : {};
+      delete ordemAtual[dayKey];
+      entity.update(plano.id, { ordem_por_dia: ordemAtual }).catch(() => {});
+    });
+  }, [filters.user, getStorageKey, enrichedData]);
 
   const toggleModoOrdenacao = useCallback(() => {
     setModoOrdenacao(prev => {
@@ -1048,21 +1058,15 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         }
       });
 
-      // Mesclar com o localStorage existente (por usuário): localStorage tem prioridade
-      const existingOrder = (() => {
-        try { return JSON.parse(localStorage.getItem(storageKey) || '{}'); } catch { return {}; }
-      })();
-      const newActivityOrder = { ...existingOrder };
+      // O banco é a fonte de verdade para ordem_por_dia.
+      // Sempre reconstruir a ordem a partir do banco ao carregar, ignorando cache local.
+      const newActivityOrder = {};
       for (const dayKey in orderByDay) {
-        // Sempre atualizar a ordem do banco para cada dia
-        // Se houver ordem local, mantê-la; senão, usar a do banco
-        if (!newActivityOrder[dayKey] || newActivityOrder[dayKey].length === 0) {
-          newActivityOrder[dayKey] = orderByDay[dayKey]
-            .sort((a, b) => a.ordem - b.ordem)
-            .map(x => x.id);
-        }
+        newActivityOrder[dayKey] = orderByDay[dayKey]
+          .sort((a, b) => a.ordem - b.ordem)
+          .map(x => x.id);
       }
-      // **CRÍTICO**: Salvar no localStorage E atualizar o estado ATOMICAMENTE
+      // Atualizar cache local e estado
       localStorage.setItem(storageKey, JSON.stringify(newActivityOrder));
       setActivityOrder(newActivityOrder);
 
