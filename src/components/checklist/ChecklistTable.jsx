@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, Edit2, Save, X, FolderX, Pencil, Check } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, FolderX, Pencil, Check, Link } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { format } from 'date-fns';
 
 const STATUS_OPTIONS = ['-', 'E', 'C', 'NA'];
 const STATUS_COLORS = {
@@ -16,7 +17,7 @@ const STATUS_COLORS = {
   '-': 'bg-white'
 };
 
-export default function ChecklistTable({ secao, items, checklist, documentos = [], onUpdate }) {
+export default function ChecklistTable({ secao, items, checklist, documentos = [], onUpdate, empreendimento }) {
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -104,9 +105,63 @@ export default function ChecklistTable({ secao, items, checklist, documentos = [
         ...(item.status_por_periodo || {}),
         [colKey]: novoStatus
       };
+
+      let preItemId = item.pre_item_id || null;
+
+      // Integração com PRE
+      if (empreendimento?.id) {
+        const colLabel = colunas.find(c => c.key === colKey)?.label || colKey;
+        const descricaoPRE = `[Checklist ${checklist.tipo || ''}] ${secao} - Item ${item.numero_item}: ${item.descricao}`;
+
+        if (novoStatus === 'E' && !preItemId) {
+          // Criar item na PRE com status "Pendente"
+          const criado = await base44.entities.ItemPRE.create({
+            empreendimento_id: empreendimento.id,
+            item: `CK-${item.numero_item}`,
+            data: format(new Date(), 'yyyy-MM-dd'),
+            de: `Checklist: ${checklist.tipo || ''}`,
+            descritiva: secao,
+            assunto: item.descricao,
+            comentario: `Coluna: ${colLabel}`,
+            status: 'Pendente',
+            resposta: '',
+            imagens: [],
+          });
+          preItemId = criado.id;
+        } else if (novoStatus === 'C' && preItemId) {
+          // Marcar item PRE como Concluído
+          await base44.entities.ItemPRE.update(preItemId, { status: 'Concluído' });
+        } else if (novoStatus === 'C' && !preItemId) {
+          // Criar item PRE já como Concluído (caso não existia pendente)
+          const criado = await base44.entities.ItemPRE.create({
+            empreendimento_id: empreendimento.id,
+            item: `CK-${item.numero_item}`,
+            data: format(new Date(), 'yyyy-MM-dd'),
+            de: `Checklist: ${checklist.tipo || ''}`,
+            descritiva: secao,
+            assunto: item.descricao,
+            comentario: `Coluna: ${colLabel}`,
+            status: 'Concluído',
+            resposta: '',
+            imagens: [],
+          });
+          preItemId = criado.id;
+        } else if ((novoStatus === '-' || novoStatus === 'NA') && preItemId) {
+          // Se voltou para sem pendência, cancelar item PRE
+          await base44.entities.ItemPRE.update(preItemId, { status: 'Cancelado' });
+          preItemId = null;
+        }
+      }
+
       await base44.entities.ChecklistItem.update(item.id, {
-        status_por_periodo: statusAtualizado
+        status_por_periodo: statusAtualizado,
+        ...(preItemId !== item.pre_item_id ? { pre_item_id: preItemId } : {})
       });
+
+      // Atualiza o pre_item_id local para reatividade
+      if (preItemId !== item.pre_item_id) {
+        item.pre_item_id = preItemId;
+      }
       // Não chama onUpdate() para não causar re-render/scroll da tabela
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
@@ -346,7 +401,15 @@ export default function ChecklistTable({ secao, items, checklist, documentos = [
                       );
                     })}
                     <TableCell className="border text-sm text-gray-600">
-                      {item.observacoes || '-'}
+                      <div className="flex flex-col gap-1">
+                        <span>{item.observacoes || '-'}</span>
+                        {item.pre_item_id && (
+                          <span className="inline-flex items-center gap-1 text-xs text-orange-600 font-medium">
+                            <Link className="w-3 h-3" />
+                            PRE vinculada
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="border">
                       <div className="flex gap-1">

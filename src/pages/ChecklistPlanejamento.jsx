@@ -233,6 +233,7 @@ export default function ChecklistPlanejamentoPage() {
                       items={secaoItems}
                       checklist={selectedChecklist}
                       onUpdate={handleItemsUpdated}
+                      empreendimento={empreendimentos.find(e => e.id === selectedChecklist.empreendimento_id) || null}
                     />
                   ))
                 ) : (

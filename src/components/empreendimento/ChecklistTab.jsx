@@ -159,6 +159,7 @@ export default function ChecklistTab({ empreendimento }) {
                     checklist={selectedChecklist}
                     documentos={documentos}
                     onUpdate={handleItemsUpdated}
+                    empreendimento={empreendimento}
                   />
                 ))
               ) : (
