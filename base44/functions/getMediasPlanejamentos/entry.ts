@@ -8,8 +8,16 @@ Deno.serve(async (req) => {
       return Response.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Suporta tanto query param quanto body (SDK envia via body)
     const url = new URL(req.url);
-    const tipo = url.searchParams.get('tipo') || 'documentos'; // 'documentos' ou 'atividades'
+    let tipo = url.searchParams.get('tipo');
+    if (!tipo) {
+      try {
+        const body = await req.json();
+        tipo = body?.tipo;
+      } catch (_) {}
+    }
+    tipo = tipo || 'documentos';
 
     if (tipo === 'documentos') {
       // Média histórica por documento_id + etapa usando PlanejamentoDocumento
@@ -43,20 +51,21 @@ Deno.serve(async (req) => {
     }
 
     if (tipo === 'atividades') {
-      // Média histórica por atividade_id usando PlanejamentoAtividade
+      // Média histórica por base_descritivo usando PlanejamentoAtividade
+      // base_descritivo é o "DNA" da atividade genérica (nome original), que é consistente entre documentos
       const todos = await base44.asServiceRole.entities.PlanejamentoAtividade.filter(
-        { status: ['concluido'] }
+        { status: 'concluido' }
       );
 
       const grupos = {};
       for (const p of (todos || [])) {
-        if (!p.atividade_id) continue;
+        const chave = p.atividade_id ? String(p.atividade_id) : null;
+        if (!chave) continue;
         const tempoUsado = (p.tempo_executado && p.tempo_executado > 0)
           ? p.tempo_executado
           : p.tempo_planejado;
         if (!tempoUsado || tempoUsado <= 0) continue;
 
-        const chave = String(p.atividade_id);
         if (!grupos[chave]) {
           grupos[chave] = { atividade_id: p.atividade_id, tempos: [] };
         }
