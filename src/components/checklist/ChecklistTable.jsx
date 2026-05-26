@@ -1,30 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { ItemPRE } from '@/entities/all';
+import { format } from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Trash2, Edit2, Save, X, FolderX, Pencil, Check, Link } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, FolderX, Pencil, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { format } from 'date-fns';
 
-const STATUS_OPTIONS = ['-', 'A', 'P', 'NA'];
+const STATUS_OPTIONS = ['-', 'Atendido', 'Pendente', 'Não se Aplica'];
+const DOCS_PER_PAGE = 5;
 const STATUS_COLORS = {
-  'A': 'bg-green-100',
-  'P': 'bg-yellow-100',
-  'NA': 'bg-gray-100',
+  'Atendido': 'bg-green-100',
+  'Pendente': 'bg-yellow-100',
+  'Não se Aplica': 'bg-gray-100',
   '-': 'bg-white'
 };
 
-export default function ChecklistTable({ secao, items, checklist, documentos = [], onUpdate, empreendimento }) {
+export default function ChecklistTable({ secao, items, checklist, documentos = [], onUpdate }) {
+  const [docPage, setDocPage] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [editingSecao, setEditingSecao] = useState(false);
   const [novoNomeSecao, setNovoNomeSecao] = useState(secao);
-  // Estado local otimista: { [itemId]: { [colKey]: status } }
-  const [localStatus, setLocalStatus] = useState({});
+  const [optimisticStatus, setOptimisticStatus] = useState({});
+  // Tracks the latest saved status_por_periodo per item to avoid stale-closure overwrites
+  const liveStatusRef = useRef({});
+  // Maps `${itemId}_${docId}` → PRE item id for items linked to PRE
+  const preItemsMapRef = useRef({});
+  useEffect(() => {
+    items.forEach(item => {
+      if (!liveStatusRef.current[item.id]) {
+        liveStatusRef.current[item.id] = { ...(item.status_por_periodo || {}) };
+      }
+    });
+  }, [items]);
   const [formData, setFormData] = useState({
     numero_item: '',
     descricao: '',
@@ -33,11 +46,6 @@ export default function ChecklistTable({ secao, items, checklist, documentos = [
     observacoes: ''
   });
 
-  // Usa documentos do empreendimento como colunas; fallback para periodos legados
-  // Usa d.id como key para garantir unicidade absoluta
-  const colunas = documentos.length > 0
-    ? documentos.map(d => ({ key: d.id, label: d.arquivo || d.numero || d.descritivo || d.id }))
-    : (checklist.periodos || []).map(p => ({ key: p, label: p }));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -89,89 +97,91 @@ export default function ChecklistTable({ secao, items, checklist, documentos = [
       await base44.entities.ChecklistItem.delete(itemId);
       onUpdate();
     } catch (error) {
-      console.error('Erro ao excluir item:', error);
-      alert('Erro ao excluir item');
+      if (error.message?.includes('Not found')) {
+        onUpdate();
+      } else {
+        console.error('Erro ao excluir item:', error);
+        alert('Erro ao excluir item');
+      }
     }
   };
 
-  const handleStatusChange = async (item, colKey, novoStatus) => {
-    // Atualiza otimisticamente no estado local para evitar re-render/scroll
-    setLocalStatus(prev => ({
-      ...prev,
-      [item.id]: { ...(prev[item.id] || {}), [colKey]: novoStatus }
-    }));
-    try {
-      const statusAtualizado = {
-        ...(item.status_por_periodo || {}),
-        [colKey]: novoStatus
+  const syncPreFromChecklist = (item, docId, novoStatus, prevStatus) => {
+    const mapKey = `${item.id}_${docId}`;
+    if (novoStatus === 'Pendente') {
+      const preId = preItemsMapRef.current[mapKey];
+      if (preId) {
+        ItemPRE.update(preId, { status: 'Em andamento' }).catch(() => {});
+        return;
+      }
+      ItemPRE.filter({ checklist_item_id: item.id, checklist_doc_id: String(docId) })
+        .then(existing => {
+          if (existing && existing.length > 0) {
+            preItemsMapRef.current[mapKey] = existing[0].id;
+            ItemPRE.update(existing[0].id, { status: 'Em andamento' }).catch(() => {});
+          } else {
+            const doc = documentos.find(d => d.id === docId);
+            return ItemPRE.create({
+              empreendimento_id: checklist?.empreendimento_id,
+              item: item.numero_item,
+              data: format(new Date(), 'yyyy-MM-dd'),
+              de: doc ? (doc.numero || doc.arquivo || String(docId)) : String(docId),
+              descritiva: checklist?.tipo || '',
+              assunto: item.descricao,
+              localizacao: item.secao || secao,
+              status: 'Em andamento',
+              checklist_item_id: item.id,
+              checklist_doc_id: String(docId),
+              documentos_vinculados: doc ? [doc.id] : [],
+            }).then(created => {
+              if (created?.id) preItemsMapRef.current[mapKey] = created.id;
+            });
+          }
+        })
+        .catch(err => console.error('Erro ao criar item PRE:', err));
+    } else if (prevStatus === 'Pendente') {
+      const resolvePreId = () => {
+        const preId = preItemsMapRef.current[mapKey];
+        if (preId) return Promise.resolve(preId);
+        return ItemPRE.filter({ checklist_item_id: item.id, checklist_doc_id: String(docId) })
+          .then(existing => {
+            if (existing && existing.length > 0) {
+              preItemsMapRef.current[mapKey] = existing[0].id;
+              return existing[0].id;
+            }
+            return null;
+          });
       };
-
-      let preItemId = item.pre_item_id || null;
-
-      // Integração com PRE
-      if (empreendimento?.id) {
-        const colLabel = colunas.find(c => c.key === colKey)?.label || colKey;
-        const descricaoPRE = `[Checklist ${checklist.tipo || ''}] ${secao} - Item ${item.numero_item}: ${item.descricao}`;
-
-        if (novoStatus === 'P' && !preItemId) {
-          // Criar item na PRE com status "Pendente"
-          const criado = await base44.entities.ItemPRE.create({
-            empreendimento_id: empreendimento.id,
-            item: `CK-${item.numero_item}`,
-            data: format(new Date(), 'yyyy-MM-dd'),
-            de: `Checklist: ${checklist.tipo || ''}`,
-            descritiva: secao,
-            assunto: item.descricao,
-            comentario: `Coluna: ${colLabel}`,
-            status: 'Pendente',
-            resposta: '',
-            imagens: [],
-          });
-          preItemId = criado.id;
-        } else if (novoStatus === 'A' && preItemId) {
-          // Marcar item PRE como Concluído
-          await base44.entities.ItemPRE.update(preItemId, { status: 'Concluído' });
-        } else if (novoStatus === 'A' && !preItemId) {
-          // Criar item PRE já como Concluído (caso não existia pendente)
-          const criado = await base44.entities.ItemPRE.create({
-            empreendimento_id: empreendimento.id,
-            item: `CK-${item.numero_item}`,
-            data: format(new Date(), 'yyyy-MM-dd'),
-            de: `Checklist: ${checklist.tipo || ''}`,
-            descritiva: secao,
-            assunto: item.descricao,
-            comentario: `Coluna: ${colLabel}`,
-            status: 'Concluído',
-            resposta: '',
-            imagens: [],
-          });
-          preItemId = criado.id;
-        } else if ((novoStatus === '-' || novoStatus === 'NA') && preItemId) {
-          // Se voltou para sem pendência, cancelar item PRE
-          await base44.entities.ItemPRE.update(preItemId, { status: 'Cancelado' });
-          preItemId = null;
-        }
-      }
-
-      await base44.entities.ChecklistItem.update(item.id, {
-        status_por_periodo: statusAtualizado,
-        ...(preItemId !== item.pre_item_id ? { pre_item_id: preItemId } : {})
-      });
-
-      // Atualiza o pre_item_id local para reatividade
-      if (preItemId !== item.pre_item_id) {
-        item.pre_item_id = preItemId;
-      }
-      // Não chama onUpdate() para não causar re-render/scroll da tabela
-    } catch (error) {
-      console.error('Erro ao atualizar status:', error);
-      // Reverte o estado local em caso de erro
-      setLocalStatus(prev => {
-        const updated = { ...prev };
-        if (updated[item.id]) delete updated[item.id][colKey];
-        return updated;
-      });
+      resolvePreId()
+        .then(preId => { if (preId) return ItemPRE.update(preId, { status: 'Concluído' }); })
+        .catch(err => console.error('Erro ao atualizar item PRE:', err));
     }
+  };
+
+  const handleStatusChange = (item, periodo, novoStatus) => {
+    const key = `${item.id}_${periodo}`;
+    // Ensure ref is initialized for this item
+    if (!liveStatusRef.current[item.id]) {
+      liveStatusRef.current[item.id] = { ...(item.status_por_periodo || {}) };
+    }
+    // Read prevStatus AFTER initialization but BEFORE updating ref
+    const prevStatus = liveStatusRef.current[item.id][periodo] ?? '';
+    // Update ref immediately so subsequent calls within the same render cycle see the latest value
+    liveStatusRef.current[item.id] = { ...liveStatusRef.current[item.id], [periodo]: novoStatus };
+    const statusAtualizado = { ...liveStatusRef.current[item.id] };
+
+    setOptimisticStatus(prev => ({ ...prev, [key]: novoStatus }));
+
+    base44.entities.ChecklistItem.update(item.id, { status_por_periodo: statusAtualizado })
+      .then(() => {
+        syncPreFromChecklist(item, periodo, novoStatus, prevStatus);
+        onUpdate();
+      })
+      .catch(error => {
+        console.error('Erro ao atualizar status:', error);
+        liveStatusRef.current[item.id][periodo] = item.status_por_periodo?.[periodo] ?? '';
+        setOptimisticStatus(prev => { const next = { ...prev }; delete next[key]; return next; });
+      });
   };
 
   const handleDeleteSecao = async () => {
@@ -180,7 +190,11 @@ export default function ChecklistTable({ secao, items, checklist, documentos = [
     setIsDeleting(true);
     try {
       for (const item of items) {
-        await base44.entities.ChecklistItem.delete(item.id);
+        try {
+          await base44.entities.ChecklistItem.delete(item.id);
+        } catch (err) {
+          if (!err.message?.includes('Not found')) throw err;
+        }
       }
       onUpdate();
     } catch (error) {
@@ -210,6 +224,9 @@ export default function ChecklistTable({ secao, items, checklist, documentos = [
       alert('Erro ao renomear seção');
     }
   };
+
+  const totalPages = Math.ceil(documentos.length / DOCS_PER_PAGE);
+  const documentosVisiveis = documentos.slice(docPage * DOCS_PER_PAGE, (docPage + 1) * DOCS_PER_PAGE);
 
   return (
     <Card>
@@ -336,23 +353,35 @@ export default function ChecklistTable({ secao, items, checklist, documentos = [
           </form>
         )}
 
-        <div className="overflow-x-auto">
-          <Table>
+        <div>
+          <Table className="w-full table-fixed">
             <TableHeader>
               <TableRow className="bg-gray-100">
                 <TableHead className="w-12 border text-center">Item</TableHead>
                 <TableHead className="min-w-[250px] border">Descrição</TableHead>
                 <TableHead className="w-20 border text-center">Contribuição</TableHead>
                 <TableHead className="w-16 border text-center">Tempo</TableHead>
-                <TableHead colSpan={colunas.length} className="border text-center font-bold">STATUS</TableHead>
+                <TableHead colSpan={documentosVisiveis.length || 1} className="border text-center font-bold">
+                  <div className="flex items-center justify-center gap-2">
+                    <button onClick={() => setDocPage(p => Math.max(0, p - 1))} disabled={docPage === 0} className="p-0.5 rounded hover:bg-gray-200 disabled:opacity-30">
+                      <ChevronLeft className="w-3 h-3" />
+                    </button>
+                    <span>STATUS {totalPages > 1 ? `(${docPage + 1}/${totalPages})` : ''}</span>
+                    <button onClick={() => setDocPage(p => Math.min(totalPages - 1, p + 1))} disabled={docPage >= totalPages - 1} className="p-0.5 rounded hover:bg-gray-200 disabled:opacity-30">
+                      <ChevronRight className="w-3 h-3" />
+                    </button>
+                  </div>
+                </TableHead>
                 <TableHead className="min-w-[150px] border">Observações</TableHead>
                 <TableHead className="w-20 border">Ações</TableHead>
               </TableRow>
               <TableRow className="bg-gray-50">
                 <TableHead colSpan="4" className="border"></TableHead>
-                {colunas.map((col, idx) => (
-                  <TableHead key={idx} className="min-w-[80px] max-w-[120px] border text-center text-xs font-normal">
-                    <div className="truncate" title={col.label}>{col.label}</div>
+                {documentosVisiveis.map((doc) => (
+                  <TableHead key={doc.id} className="border text-xs font-normal p-1 text-center">
+                    <div className="break-words whitespace-normal leading-tight">
+                      {doc.numero}{doc.arquivo ? ` - ${doc.arquivo}` : ''}
+                    </div>
                   </TableHead>
                 ))}
                 <TableHead className="border"></TableHead>
@@ -362,7 +391,7 @@ export default function ChecklistTable({ secao, items, checklist, documentos = [
             <TableBody>
               {items.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={colunas.length + 4} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={documentosVisiveis.length + 5} className="text-center py-8 text-gray-500">
                     Nenhum item adicionado. Clique em "Adicionar Item" para começar.
                   </TableCell>
                 </TableRow>
@@ -381,35 +410,35 @@ export default function ChecklistTable({ secao, items, checklist, documentos = [
                     <TableCell className="border text-center text-sm">
                       {item.tempo || '-'}
                     </TableCell>
-                    {colunas.map((col, idx) => {
-                      const status = localStatus[item.id]?.[col.key] ?? item.status_por_periodo?.[col.key] ?? '-';
+                    {documentosVisiveis.map((doc) => {
+                      const key = `${item.id}_${doc.id}`;
+                      const status = optimisticStatus[key] ?? item.status_por_periodo?.[doc.id] ?? '-';
+                      const displayStatus = status || '-';
                       return (
-                        <TableCell 
-                          key={idx} 
-                          className={`border p-0 text-center ${STATUS_COLORS[status]}`}
+                        <TableCell
+                          key={doc.id}
+                          className={`border ${STATUS_COLORS[displayStatus]} p-0`}
                         >
-                          <select
-                            value={status}
-                            onChange={(e) => handleStatusChange(item, col.key, e.target.value)}
-                            style={{ width: '100%', height: '32px', fontSize: '12px', textAlign: 'center', background: 'transparent', border: 'none', cursor: 'pointer', outline: 'none' }}
+                          <Select
+                            value={displayStatus}
+                            onValueChange={(value) => handleStatusChange(item, doc.id, value === '-' ? '' : value)}
                           >
-                            {STATUS_OPTIONS.map((opt) => (
-                              <option key={opt} value={opt}>{opt}</option>
-                            ))}
-                          </select>
+                            <SelectTrigger className="h-7 text-xs border-0 bg-transparent rounded-none">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {STATUS_OPTIONS.map((opt) => (
+                                <SelectItem key={opt} value={opt}>
+                                  {opt}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                         </TableCell>
                       );
                     })}
                     <TableCell className="border text-sm text-gray-600">
-                      <div className="flex flex-col gap-1">
-                        <span>{item.observacoes || '-'}</span>
-                        {item.pre_item_id && (
-                          <span className="inline-flex items-center gap-1 text-xs text-orange-600 font-medium">
-                            <Link className="w-3 h-3" />
-                            PRE vinculada
-                          </span>
-                        )}
-                      </div>
+                      {item.observacoes || '-'}
                     </TableCell>
                     <TableCell className="border">
                       <div className="flex gap-1">
