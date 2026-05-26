@@ -4,9 +4,9 @@ import { Button } from "@/components/ui/button";
 import { User, LineChart, ChevronRight } from "lucide-react";
 import { Draggable } from "@hello-pangea/dnd";
 import { motion, AnimatePresence } from 'framer-motion';
-import CalendarioActivityItem from './CalendarioActivityItem';
+import ActivityItemCalendar from './ActivityItemCalendar';
 
-const ActivityItem = (p) => <CalendarioActivityItem {...p} />;
+const ActivityItem = (p) => <ActivityItemCalendar {...p} />;
 const normalizeActivityId = (value) => String(value ?? '');
 const formatHours = (h) => Number(h).toFixed(1);
 

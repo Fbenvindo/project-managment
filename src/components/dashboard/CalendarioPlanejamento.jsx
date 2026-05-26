@@ -15,9 +15,9 @@ import { PlanejamentoAtividade, Atividade, Documento, Empreendimento, Execucao, 
 import { ChevronsUpDown } from 'lucide-react';
 import { isActivityOverdue as isOverdueShared, distribuirHorasPorDias, getNextWorkingDay } from '../utils/DateCalculator';
 import { retryWithBackoff } from '../utils/apiUtils';
-import CalendarioActivityItem from './CalendarioActivityItem';
+import ActivityItemCalendar from './ActivityItemCalendar';
 import DailyActivityGroup from './DailyActivityGroup';
-const ActivityItem = (p) => <CalendarioActivityItem {...p} />;
+const ActivityItem = (p) => <ActivityItemCalendar {...p} />;
 
 // Função para converter string de data para Date local corretamente
 const parseLocalDate = (dateString) => {
