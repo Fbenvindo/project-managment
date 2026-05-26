@@ -63,6 +63,8 @@ export default function DocumentoItem({
   pavimentos,
   handleEditAtividade,
   atividadesEmpCache = [],
+  mediasDocumentos = [],
+  mediasAtividades = [],
 }) {
   const [isUpdatingActivity, setIsUpdatingActivity] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
