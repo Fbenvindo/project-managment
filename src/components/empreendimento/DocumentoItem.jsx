@@ -501,6 +501,21 @@ export default function DocumentoItem({
     return docs.filter(d => d.numero?.toLowerCase().includes(search) || d.arquivo?.toLowerCase().includes(search)).slice(0, 50);
   }, [localDocumentos, doc.id, searchPredecessor]);
 
+  const mediaDoc = useMemo(() => {
+    if (!mediasDocumentos.length) return null;
+    const docIdNum = Number(doc.id);
+    const comEtapa = etapaParaPlanejamento
+      ? mediasDocumentos.find(m => Number(m.documento_id) === docIdNum && m.etapa === etapaParaPlanejamento)
+      : null;
+    if (comEtapa) return comEtapa;
+    const semEtapa = mediasDocumentos.filter(m => Number(m.documento_id) === docIdNum);
+    if (!semEtapa.length) return null;
+    const totalExec = semEtapa.reduce((s, m) => s + Number(m.total), 0);
+    const mediaGeral = semEtapa.reduce((s, m) => s + Number(m.media) * Number(m.total), 0) / totalExec;
+    return { media: Math.round(mediaGeral * 10) / 10, total: totalExec, etapa: null };
+  }, [mediasDocumentos, doc.id, etapaParaPlanejamento]);
+
+
   return (
     <>
       <TableRow key={doc.id} className={todasAtividadesConcluidas ? 'bg-green-50' : ''}>
