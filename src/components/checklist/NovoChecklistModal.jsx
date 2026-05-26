@@ -86,16 +86,15 @@ export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreen
       // Criar itens a partir do template ou uma seção padrão vazia
       const templateItems = CHECKLIST_TEMPLATES[formData.tipo];
       if (templateItems && templateItems.length > 0) {
-        for (let i = 0; i < templateItems.length; i++) {
-          await base44.entities.ChecklistItem.create({
-            checklist_id: novoChecklist.id,
-            secao: templateItems[i].secao,
-            numero_item: templateItems[i].numero_item,
-            descricao: templateItems[i].descricao,
-            ordem: i,
-            status_por_periodo: {}
-          });
-        }
+        const itemsToCreate = templateItems.map((t, i) => ({
+          checklist_id: novoChecklist.id,
+          secao: t.secao || formData.tipo,
+          numero_item: t.numero_item,
+          descricao: t.descricao,
+          ordem: i,
+          status_por_periodo: {}
+        }));
+        await base44.entities.ChecklistItem.bulkCreate(itemsToCreate);
       } else {
         await base44.entities.ChecklistItem.create({
           checklist_id: novoChecklist.id,
