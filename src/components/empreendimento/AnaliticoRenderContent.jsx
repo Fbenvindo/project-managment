@@ -72,6 +72,7 @@ export default function AnaliticoRenderContent({
   const [isConcluindoFolhas, setIsConcluindoFolhas] = useState(false);
   const [isReverendoFolhas, setIsReverendoFolhas] = useState(false);
   const [isExcluindoFolhas, setIsExcluindoFolhas] = useState(false);
+  const [isConcluindoAtividades, setIsConcluindoAtividades] = useState(false);
 
   const handleConcluirFolha = useCallback(() => {
     if (fetchData) fetchData();
@@ -202,6 +203,33 @@ export default function AnaliticoRenderContent({
     if (erros > 0) alert(`${erros} folha(s) não puderam ser revertidas.`);
     if (fetchData) fetchData();
   }, [folhasSelecionadas, atividadesAgrupadas, empreendimentoId, fetchData]);
+
+  const handleConcluirAtividadesSelecionadas = useCallback(async () => {
+    if (atividadesSelecionadasParaExcluir.size === 0) return;
+    if (!confirm(`Concluir ${atividadesSelecionadasParaExcluir.size} atividade(s) selecionada(s) em todas as suas folhas?`)) return;
+    setIsConcluindoAtividades(true);
+    const hoje = format(new Date(), 'yyyy-MM-dd');
+    let erros = 0;
+    for (const atividadeId of Array.from(atividadesSelecionadasParaExcluir)) {
+      try {
+        const planos = await retryWithBackoff(
+          () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId, atividade_id: atividadeId }),
+          3, 300, `concluirAtiv-${atividadeId}`
+        );
+        if (planos.length > 0) {
+          for (const plano of planos) {
+            if (plano.status !== 'concluido') {
+              await retryWithBackoff(() => PlanejamentoAtividade.update(plano.id, { status: 'concluido', termino_real: hoje }), 3, 300, `updatePlano-${plano.id}`);
+            }
+          }
+        }
+      } catch { erros++; }
+    }
+    setAtividadesSelecionadasParaExcluir(new Set());
+    setIsConcluindoAtividades(false);
+    if (erros > 0) alert(`${erros} atividade(s) não puderam ser concluídas.`);
+    if (fetchData) fetchData();
+  }, [atividadesSelecionadasParaExcluir, empreendimentoId, fetchData]);
 
   const handleExcluirFolhasSelecionadas = useCallback(async () => {
     if (folhasSelecionadas.size === 0) return;
@@ -443,17 +471,28 @@ export default function AnaliticoRenderContent({
             </Badge>
             <span className="text-sm text-gray-700">Excluir selecionadas</span>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-wrap">
+            <Button
+              onClick={handleConcluirAtividadesSelecionadas}
+              className="bg-green-600 hover:bg-green-700"
+              disabled={isExcluindoMultiplasFolhas || isConcluindoAtividades}
+              size="sm"
+            >
+              {isConcluindoAtividades
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Concluindo...</>
+                : <><CheckCircle2 className="w-4 h-4 mr-2" />Concluir Selecionadas</>
+              }
+            </Button>
             <Button
               onClick={() => handleExcluirMultiplas()}
               className="bg-red-600 hover:bg-red-700"
-              disabled={isExcluindoMultiplasFolhas}
+              disabled={isExcluindoMultiplasFolhas || isConcluindoAtividades}
               size="sm"
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Excluir do Empreendimento
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setAtividadesSelecionadasParaExcluir(new Set())}>
+            <Button variant="outline" size="sm" onClick={() => setAtividadesSelecionadasParaExcluir(new Set())} disabled={isConcluindoAtividades}>
               Cancelar
             </Button>
           </div>
