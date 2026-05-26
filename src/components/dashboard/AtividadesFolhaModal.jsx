@@ -11,36 +11,29 @@ export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocu
     if (!isOpen || !planejamentoDocumento) return;
     setAtividadesVinculadas([]);
 
-    // Caso 1: PlanejamentoDocumento tem atividades_ids → buscar diretamente
-    const atividadesIds = planejamentoDocumento.atividades_ids;
-    if (Array.isArray(atividadesIds) && atividadesIds.length > 0) {
-      setIsLoading(true);
-      Promise.all(
-        atividadesIds.map(id => base44.entities.Atividade.filter({ id }).catch(() => []))
-      ).then(results => {
-        const todas = results.flatMap(r => r || []);
-        setAtividadesVinculadas(todas);
-      }).catch(() => setAtividadesVinculadas([]))
-        .finally(() => setIsLoading(false));
+    const etapa = planejamentoDocumento.etapa;
+    const doc = planejamentoDocumento.documento;
+    const disciplina = doc?.disciplina || (Array.isArray(doc?.disciplinas) ? doc.disciplinas[0] : null);
+    const subdisciplinas = doc?.subdisciplinas || [];
+    const fator = doc?.fator_dificuldade || 1;
+
+    if (!disciplina) {
+      // Sem documento populado, não é possível filtrar
       return;
     }
 
-    // Caso 2: Buscar Atividade com documento_id ou documento_ids contendo o docId
-    const docId = planejamentoDocumento.documento_id || planejamentoDocumento.id;
-    const etapa = planejamentoDocumento.etapa;
-
     setIsLoading(true);
-    Promise.all([
-      base44.entities.Atividade.filter({ documento_id: docId }).catch(() => []),
-      base44.entities.Atividade.filter({ documento_ids: docId }).catch(() => []),
-    ]).then(([porDocId, porDocIds]) => {
-      const merged = [...(porDocId || [])];
-      (porDocIds || []).forEach(a => {
-        if (!merged.find(m => m.id === a.id)) merged.push(a);
-      });
-      const filtradas = etapa ? merged.filter(a => !a.etapa || a.etapa === etapa) : merged;
-      setAtividadesVinculadas(filtradas);
-    }).catch(() => setAtividadesVinculadas([]))
+    base44.entities.Atividade.filter({ disciplina })
+      .then(todasAtividades => {
+        let filtradas = (todasAtividades || []).filter(a => {
+          if (a.empreendimento_id) return false; // apenas genéricas
+          if (!subdisciplinas.includes(a.subdisciplina)) return false;
+          if (etapa && a.etapa && a.etapa !== etapa) return false;
+          return true;
+        });
+        setAtividadesVinculadas(filtradas);
+      })
+      .catch(() => setAtividadesVinculadas([]))
       .finally(() => setIsLoading(false));
 
   }, [isOpen, planejamentoDocumento?.id, planejamentoDocumento?.documento_id, planejamentoDocumento?.etapa]);
@@ -48,18 +41,19 @@ export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocu
   if (!planejamentoDocumento) return null;
 
   const doc = planejamentoDocumento.documento;
+  const fator = doc?.fator_dificuldade || 1;
   const titulo = doc
     ? [doc.numero, doc.arquivo, planejamentoDocumento.etapa].filter(Boolean).join(' - ')
     : planejamentoDocumento.descritivo || 'Documento';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg" aria-describedby="atividades-folha-desc">
         <DialogHeader>
           <DialogTitle className="text-base">Atividades da Folha</DialogTitle>
         </DialogHeader>
-        <div className="py-2">
-          <p className="text-sm font-medium text-gray-800 mb-1">{titulo}</p>
+        <p id="atividades-folha-desc" className="text-sm font-medium text-gray-800 mb-1">{titulo}</p>
+        <div className="py-1">
           {planejamentoDocumento.etapa && (
             <p className="text-xs text-gray-500 mb-3">Etapa: {planejamentoDocumento.etapa}</p>
           )}
@@ -75,20 +69,29 @@ export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocu
             <p className="text-sm text-gray-500 text-center py-6">Nenhuma atividade vinculada encontrada.</p>
           ) : (
             <div className="space-y-2 max-h-80 overflow-y-auto">
-              {atividadesVinculadas.map(ativ => (
-                <div key={ativ.id} className="p-3 border border-gray-200 rounded-lg bg-gray-50">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1">
-                      <p className="text-sm font-medium text-gray-800">{ativ.atividade || 'Atividade'}</p>
-                      {ativ.subdisciplina && <p className="text-xs text-gray-500 mt-0.5">{ativ.subdisciplina}</p>}
+              {atividadesVinculadas.map(ativ => {
+                const isConfeccaoA = ativ.atividade && String(ativ.atividade).trim().startsWith('Confecção de A-');
+                const horas = (Number(ativ.tempo) || 0) * (isConfeccaoA ? 1 : fator);
+                return (
+                  <div key={ativ.id} className="p-3 border border-gray-200 rounded-lg bg-gray-50">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-gray-800">{ativ.atividade || 'Atividade'}</p>
+                        {ativ.subdisciplina && <p className="text-xs text-gray-500 mt-0.5">{ativ.subdisciplina}</p>}
+                      </div>
+                      <span className="text-xs font-mono text-gray-600 shrink-0">{horas.toFixed(1)}h</span>
                     </div>
-                    <span className="text-xs font-mono text-gray-600 shrink-0">{Number(ativ.tempo || 0).toFixed(1)}h</span>
                   </div>
-                </div>
-              ))}
+                );
+              })}
               <div className="pt-2 border-t border-gray-200 flex justify-end">
                 <span className="text-xs text-gray-500">
-                  Total: <strong>{atividadesVinculadas.reduce((s, a) => s + Number(a.tempo || 0), 0).toFixed(1)}h</strong> ({atividadesVinculadas.length} atividades)
+                  Total: <strong>
+                    {atividadesVinculadas.reduce((s, a) => {
+                      const isConfeccaoA = a.atividade && String(a.atividade).trim().startsWith('Confecção de A-');
+                      return s + (Number(a.tempo) || 0) * (isConfeccaoA ? 1 : fator);
+                    }, 0).toFixed(1)}h
+                  </strong> ({atividadesVinculadas.length} atividades)
                 </span>
               </div>
             </div>
