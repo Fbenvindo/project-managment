@@ -1,21 +1,53 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Badge } from "@/components/ui/badge";
+import { base44 } from '@/api/base44Client';
+import { Loader2 } from 'lucide-react';
 
 export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocumento, executorMap, allPlanejamentos }) {
+  const [atividadesVinculadas, setAtividadesVinculadas] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || !planejamentoDocumento) return;
+
+    const docId = planejamentoDocumento.documento_id || planejamentoDocumento.id;
+    const etapa = planejamentoDocumento.etapa;
+
+    // Primeiro tenta filtrar de allPlanejamentos (que já está carregado no contexto)
+    // Atividades de tipo 'atividade' vinculadas a este documento via documento_id
+    const fromContext = (allPlanejamentos || []).filter(p => {
+      if (p.tipo_planejamento === 'documento') return false;
+      // Vinculação por documento_id direto
+      if (p.documento_id && p.documento_id === docId) return true;
+      // Vinculação pelo campo documento_ids (array)
+      if (Array.isArray(p.documento_ids) && p.documento_ids.includes(docId)) return true;
+      return false;
+    });
+
+    if (fromContext.length > 0) {
+      setAtividadesVinculadas(fromContext);
+      return;
+    }
+
+    // Fallback: buscar do banco diretamente
+    setIsLoading(true);
+    Promise.all([
+      base44.entities.PlanejamentoAtividade.filter({ documento_id: docId }),
+    ]).then(([ativs]) => {
+      const filtradas = etapa ? (ativs || []).filter(a => !a.etapa || a.etapa === etapa) : (ativs || []);
+      setAtividadesVinculadas(filtradas);
+    }).catch(() => {
+      setAtividadesVinculadas([]);
+    }).finally(() => setIsLoading(false));
+  }, [isOpen, planejamentoDocumento?.id, planejamentoDocumento?.documento_id]);
+
   if (!planejamentoDocumento) return null;
 
   const doc = planejamentoDocumento.documento;
   const titulo = doc
     ? [doc.numero, doc.arquivo, planejamentoDocumento.etapa].filter(Boolean).join(' - ')
     : planejamentoDocumento.descritivo || 'Documento';
-
-  // Atividades vinculadas a este documento
-  const atividadesVinculadas = (allPlanejamentos || []).filter(p =>
-    p.tipo_planejamento !== 'documento' &&
-    p.documento_id === planejamentoDocumento.documento_id &&
-    p.etapa === planejamentoDocumento.etapa
-  );
 
   const statusLabel = {
     nao_iniciado: { label: 'Não Iniciado', color: 'bg-gray-100 text-gray-600' },
@@ -34,7 +66,9 @@ export default function AtividadesFolhaModal({ isOpen, onClose, planejamentoDocu
         </DialogHeader>
         <div className="py-2">
           <p className="text-sm font-medium text-gray-800 mb-4">{titulo}</p>
-          {atividadesVinculadas.length === 0 ? (
+          {isLoading ? (
+            <div className="flex justify-center py-8"><Loader2 className="w-5 h-5 animate-spin text-gray-400" /></div>
+          ) : atividadesVinculadas.length === 0 ? (
             <p className="text-sm text-gray-500 text-center py-6">Nenhuma atividade vinculada encontrada.</p>
           ) : (
             <div className="space-y-2 max-h-80 overflow-y-auto">
