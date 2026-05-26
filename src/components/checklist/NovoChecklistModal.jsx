@@ -1,7 +1,21 @@
 import React, { useState, useContext } from 'react';
 import { base44 } from '@/api/base44Client';
 import { ActivityTimerContext } from '@/components/contexts/ActivityTimerContext';
-import { CHECKLIST_TEMPLATES } from './checklistTemplates';
+import {
+  ITEMS_ELETRICA_COMERCIAL,
+  ITEMS_HIDRAULICA_COMERCIAL,
+  ITEMS_HVAC_COMERCIAL,
+  ITEMS_COMPATIBILIZACAO,
+  ITEMS_INICIO_DE_PROJETO,
+} from './checklistTemplates';
+
+const CHECKLIST_TEMPLATES = {
+  'Elétrica': ITEMS_ELETRICA_COMERCIAL,
+  'Hidráulica': ITEMS_HIDRAULICA_COMERCIAL,
+  'HVAC': ITEMS_HVAC_COMERCIAL,
+  'Incêndio': ITEMS_COMPATIBILIZACAO,
+  'Sistemas Eletrônicos': ITEMS_INICIO_DE_PROJETO,
+};
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
