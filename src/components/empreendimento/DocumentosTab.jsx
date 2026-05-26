@@ -811,6 +811,8 @@ export default function DocumentosTab({
     pavimentos,
     handleEditAtividade,
     atividadesEmpCache,
+    mediasDocumentos,
+    mediasAtividades,
   };
 
   // (MemoDocumentoItem é definido fora do componente, abaixo)
@@ -948,8 +950,6 @@ export default function DocumentosTab({
                                 empreendimento={empreendimento}
                                 onUpdate={onUpdate}
                                 readOnly={readOnly}
-                                mediasDocumentos={mediasDocumentos}
-                                mediasAtividades={mediasAtividades}
                                 {...sharedProps}
                               />
                             ))}
