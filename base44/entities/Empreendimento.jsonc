@@ -1,0 +1,111 @@
+{
+  "name": "Empreendimento",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome do Empreendimento"
+    },
+    "cliente": {
+      "type": "string",
+      "description": "Nome do Cliente"
+    },
+    "foto_url": {
+      "type": "string",
+      "description": "URL da foto do empreendimento"
+    },
+    "endereco": {
+      "type": "string",
+      "description": "Endere\u00e7o completo do empreendimento"
+    },
+    "os": {
+      "type": "string",
+      "description": "N\u00famero da OS (Ordem de Servi\u00e7o)"
+    },
+    "num_proposta": {
+      "type": "string",
+      "description": "N\u00famero da Proposta"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "ativo",
+        "em_planejamento",
+        "concluido",
+        "pausado"
+      ],
+      "default": "em_planejamento",
+      "description": "Status atual do empreendimento"
+    },
+    "etapas": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [
+        "Estudo Preliminar",
+        "Ante-Projeto",
+        "Projeto B\u00e1sico",
+        "Projeto Executivo",
+        "Liberado para Obra"
+      ],
+      "description": "Etapas ativas neste empreendimento"
+    },
+    "tipo_empreendimento_checklist": {
+      "type": "string",
+      "enum": [
+        "Residencial",
+        "Comercial",
+        "Galp\u00e3o Log\u00edstico"
+      ],
+      "description": "Tipo do empreendimento para sele\u00e7\u00e3o do template de checklist"
+    },
+    "disciplinas_checklist": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Disciplinas selecionadas para os checklists deste empreendimento"
+    }
+  },
+  "required": [
+    "nome",
+    "cliente"
+  ],
+  "rls": {
+    "read": {},
+    "write": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "lider"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "coordenador"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "gestao"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "direcao"
+          }
+        }
+      ]
+    }
+  }
+}

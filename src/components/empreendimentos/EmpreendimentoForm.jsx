@@ -25,7 +25,9 @@ export default function EmpreendimentoForm({ empreendimento, onSubmit, onClose, 
     num_proposta: empreendimento?.num_proposta || "",
     status: empreendimento?.status || "em_planejamento",
     foto_url: empreendimento?.foto_url || "",
-    etapas: empreendimento?.etapas || ETAPAS_DEFAULT
+    etapas: empreendimento?.etapas || ETAPAS_DEFAULT,
+    tipo_empreendimento_checklist: empreendimento?.tipo_empreendimento_checklist || "",
+    disciplinas_checklist: empreendimento?.disciplinas_checklist || []
   });
   
   const [etapasEditaveis, setEtapasEditaveis] = useState(
@@ -222,6 +224,76 @@ export default function EmpreendimentoForm({ empreendimento, onSubmit, onClose, 
                 <p className="text-xs text-gray-500">
                   Adicione quantas etapas precisar, incluindo revisões (ex: "Revisão Executivo").
                 </p>
+              </div>
+
+              {/* Configuração de Checklist */}
+              <div className="space-y-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <h3 className="text-sm font-semibold text-gray-700">Configuração de Checklist</h3>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tipo_checklist">Tipo de Empreendimento</Label>
+                  <Select
+                    value={formData.tipo_empreendimento_checklist}
+                    onValueChange={(value) => handleInputChange("tipo_empreendimento_checklist", value)}
+                  >
+                    <SelectTrigger id="tipo_checklist">
+                      <SelectValue placeholder="Selecione o tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Residencial">Residencial</SelectItem>
+                      <SelectItem value="Comercial">Comercial</SelectItem>
+                      <SelectItem value="Galpão Logístico">Galpão Logístico</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-gray-500">Define qual template de checklist será usado para cada disciplina.</p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Disciplinas do Checklist</Label>
+                  <div className="border border-gray-200 rounded-md p-3 bg-white space-y-3">
+                    <div>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Disciplinas Técnicas</p>
+                      <div className="grid grid-cols-2 gap-2">
+                        {['Elétrica', 'Hidráulica', 'HVAC', 'Incêndio', 'Sistemas Eletrônicos'].map(disc => (
+                          <div key={disc} className="flex items-center gap-2">
+                            <Checkbox
+                              id={`disc-${disc}`}
+                              checked={formData.disciplinas_checklist.includes(disc)}
+                              onCheckedChange={(checked) => {
+                                const atual = formData.disciplinas_checklist;
+                                handleInputChange("disciplinas_checklist",
+                                  checked ? [...atual, disc] : atual.filter(d => d !== disc)
+                                );
+                              }}
+                            />
+                            <label htmlFor={`disc-${disc}`} className="text-sm cursor-pointer">{disc}</label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Planejamento</p>
+                      <div className="space-y-2">
+                        {['Planejamento - INÍCIO DE PROJETO', 'Planejamento - BASES E FOLHAS', 'Planejamento - COMPATIBILIZAÇÃO'].map(disc => (
+                          <div key={disc} className="flex items-center gap-2">
+                            <Checkbox
+                              id={`disc-${disc}`}
+                              checked={formData.disciplinas_checklist.includes(disc)}
+                              onCheckedChange={(checked) => {
+                                const atual = formData.disciplinas_checklist;
+                                handleInputChange("disciplinas_checklist",
+                                  checked ? [...atual, disc] : atual.filter(d => d !== disc)
+                                );
+                              }}
+                            />
+                            <label htmlFor={`disc-${disc}`} className="text-sm cursor-pointer">{disc}</label>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <p className="text-xs text-gray-500">Selecione as disciplinas que serão utilizadas nos checklists deste empreendimento.</p>
+                </div>
               </div>
 
               <div className="space-y-2">
