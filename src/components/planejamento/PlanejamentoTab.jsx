@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, User, Search, Filter, Edit, Trash2, CheckCircle, AlertCircle, TrendingUp, ListOrdered } from "lucide-react";
+import { Calendar, Clock, User, Search, Filter, Edit, Trash2, CheckCircle, AlertCircle, TrendingUp } from "lucide-react";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Atividade, Documento, PlanejamentoAtividade, PlanejamentoDocumento, Execucao, SobraUsuario, Usuario } from "@/entities/all";
 import { format, parseISO, isAfter, isBefore, isToday } from 'date-fns';
@@ -14,7 +14,6 @@ import { retryWithBackoff, delay } from '../utils/apiUtils';
 import PlanejamentoAtividadeModal from '../empreendimento/PlanejamentoAtividadeModal';
 
 import CurvaSPlanejamento from './CurvaSPlanejamento';
-import OrdemPlanejamentoModal from './OrdemPlanejamentoModal';
 import ExecutorSelector from './ExecutorSelector';
 import { canStartActivity } from '../utils/PredecessoraValidator';
 import { ETAPAS_ORDER } from '../utils/PredecessoraValidator';
@@ -51,8 +50,7 @@ export default function PlanejamentoTab({ empreendimentoId }) {
   const [planejandoAtividade, setPlanejandoAtividade] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [planningError, setPlanningError] = useState(null);
-  const [showOrdemModal, setShowOrdemModal] = useState(false);
-  const [ordemUserFilter, setOrdemUserFilter] = useState(null);
+
 
   const enrichPlanejamentos = useCallback(async () => {
     setIsLoading(true);
@@ -574,20 +572,7 @@ export default function PlanejamentoTab({ empreendimentoId }) {
               Atividades Planejadas ({filteredPlanejamentos.length})
             </CardTitle>
             <div className="flex items-center gap-2">
-              {filteredPlanejamentos.length > 1 && (hasPermission('coordenador') || perfilAtual === 'direcao' || isAdmin || perfilAtual === 'lider') && (
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => {
-                    setOrdemUserFilter(userFilter !== 'todos' ? userFilter : null);
-                    setShowOrdemModal(true);
-                  }}
-                  className="border-indigo-300 text-indigo-700 hover:bg-indigo-50"
-                >
-                  <ListOrdered className="w-4 h-4 mr-2" />
-                  Reordenar
-                </Button>
-              )}
+
               {selectedIds.size > 0 && (
                 <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
                   <Trash2 className="w-4 h-4 mr-2" />
@@ -650,26 +635,7 @@ export default function PlanejamentoTab({ empreendimentoId }) {
         />
       )}
 
-      {showOrdemModal && (
-        <OrdemPlanejamentoModal
-          isOpen={showOrdemModal}
-          onClose={() => setShowOrdemModal(false)}
-          atividades={filteredPlanejamentos.filter(p => {
-            if (ordemUserFilter) return p.executor_principal === ordemUserFilter;
-            return true;
-          })}
-          title={ordemUserFilter
-            ? `Reordenar — ${allUsers.find(u => u.email === ordemUserFilter)?.nome || ordemUserFilter}`
-            : 'Reordenar Atividades Planejadas'}
-          onSave={(updatedItems) => {
-            // Atualizar ordem localmente no estado enriquecido
-            setEnrichedPlanejamentos(prev => prev.map(item => {
-              const updated = updatedItems.find(u => String(u.id) === String(item.id));
-              return updated ? { ...item, ordem: updated.ordem } : item;
-            }));
-          }}
-        />
-      )}
+
     </div>
   );
 }
