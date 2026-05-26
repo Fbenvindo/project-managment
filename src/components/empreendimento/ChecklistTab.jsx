@@ -61,9 +61,7 @@ export default function ChecklistTab({ empreendimento }) {
   const handleDeleteChecklist = async () => {
     if (!selectedChecklist) return;
     if (!window.confirm(`Tem certeza que deseja excluir o checklist "${selectedChecklist.tipo}" e todos os seus itens?`)) return;
-    for (const item of items) {
-      await base44.entities.ChecklistItem.delete(item.id);
-    }
+    await Promise.allSettled(items.map(item => base44.entities.ChecklistItem.delete(item.id)));
     await base44.entities.ChecklistPlanejamento.delete(selectedChecklist.id);
     setSelectedChecklist(null);
     await queryClient.invalidateQueries(['checklists', empreendimento?.id]);
