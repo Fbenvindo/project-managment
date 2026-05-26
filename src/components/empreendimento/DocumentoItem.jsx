@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useMemo, useState, useContext, useEffect } from "react";
 import { Atividade, PlanejamentoAtividade, PlanejamentoDocumento, Documento } from "@/entities/all";
 import { base44 } from '@/api/base44Client';
@@ -94,7 +95,7 @@ export default function DocumentoItem({
 
   const atividadesDisponiveis = useMemo(() => {
     const subdisciplinasDoc = doc.subdisciplinas || [];
-    const disciplinaDoc = doc.disciplina;
+    const disciplinaDoc = doc.disciplina || (Array.isArray(doc.disciplinas) && doc.disciplinas.length > 0 ? doc.disciplinas[0] : null);
 
     const etapaOverrides = new Map();
     const tempoOverrides = new Map();
@@ -685,7 +686,7 @@ export default function DocumentoItem({
                 <span className="text-xs text-gray-500 w-12">Início:</span>
                 <Input
                   type="date"
-                  value={doc.inicio_planejado || ''}
+                  value={doc.inicio_planejado ? doc.inicio_planejado.split('T')[0] : ''}
                   onChange={(e) => handleDataInicioChange(doc.id, e.target.value || null)}
                   disabled={isDocLoading}
                   className="h-6 text-xs px-1 w-32"
@@ -706,6 +707,14 @@ export default function DocumentoItem({
               {etapaParaPlanejamento !== 'todas' && <span className="text-xs text-gray-500">({etapaParaPlanejamento})</span>}
               {(Number(doc.tempo_pre) || 0) > 0 && (
                 <span className="text-xs text-orange-500" title="Inclui tempo de PRE vinculada">+{Number(doc.tempo_pre).toFixed(1)}h PRE</span>
+              )}
+              {mediaDoc && (
+                <span
+                  className="inline-flex items-center gap-1 mt-1 px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200 text-xs font-medium"
+                  title={`Média histórica de ${mediaDoc.total} execução${mediaDoc.total === 1 ? '' : 'ões'}${mediaDoc.etapa ? ` na etapa ${mediaDoc.etapa}` : ''}`}
+                >
+                  ⌀ {mediaDoc.media}h
+                </span>
               )}
             </div>
           </TableCell>
@@ -823,7 +832,7 @@ export default function DocumentoItem({
                       <Check className="w-4 h-4 mr-2" />Concluir {selectedAtividades.length} Selecionada(s)
                     </Button>
                   )}
-                  <Button size="sm" onClick={() => handleEditAtividade({ empreendimento_id: empreendimento.id, documento_id: doc.id, documento_ids: [doc.id], disciplina: doc.disciplina, subdisciplinas: doc.subdisciplinas || [] })} className="bg-blue-600 hover:bg-blue-700 text-white">
+                  <Button size="sm" onClick={() => handleEditAtividade({ empreendimento_id: empreendimento.id, documento_id: doc.id, documento_ids: [doc.id], disciplina: doc.disciplina || (Array.isArray(doc.disciplinas) && doc.disciplinas[0]) || '', subdisciplinas: doc.subdisciplinas || [] })} className="bg-blue-600 hover:bg-blue-700 text-white">
                     <Plus className="w-4 h-4 mr-2" />Nova Atividade
                   </Button>
                 </div>
@@ -863,6 +872,17 @@ export default function DocumentoItem({
                         <div className={`text-sm font-medium ${atividade.estaConcluida || atividade.statusPlanejamento === 'concluido' ? 'line-through text-gray-400' : ''}`}>
                           {`${atividade.tempoComFator.toFixed(1)}h`}
                         </div>
+                        {(() => {
+                          const mediaAtiv = mediasAtividades.find(m => Number(m.atividade_id) === Number(atividade.id));
+                          return mediaAtiv ? (
+                            <span
+                              className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-blue-100 text-blue-700 border border-blue-200 text-xs font-medium"
+                              title={`Média histórica de ${mediaAtiv.total} execução${mediaAtiv.total === 1 ? '' : 'ões'}`}
+                            >
+                              ⌀ {mediaAtiv.media}h
+                            </span>
+                          ) : null;
+                        })()}
                         {atividade.statusPlanejamento === 'concluido' && <div className="text-xs text-green-600">Finalizado no planejamento</div>}
                         {atividade.estaConcluida && atividade.statusPlanejamento !== 'concluido' && <div className="text-xs text-gray-500">Concluída manualmente</div>}
                         {atividade.statusPlanejamento === 'em_andamento' && !atividade.estaConcluida && <div className="text-xs text-blue-600">Em execução</div>}
@@ -883,7 +903,7 @@ export default function DocumentoItem({
                     <div className="flex flex-col items-center gap-2">
                       <FileText className="w-16 h-16 text-gray-300" />
                       <p>Nenhuma atividade encontrada para esta disciplina/subdisciplinas</p>
-                      <p className="text-xs">Disciplina: {doc.disciplina} | Subdisciplinas: {(doc.subdisciplinas || []).join(', ') || 'Nenhuma'}</p>
+                      <p className="text-xs">Disciplina: {doc.disciplina || (Array.isArray(doc.disciplinas) ? doc.disciplinas[0] : '') || ''} | Subdisciplinas: {(doc.subdisciplinas || []).join(', ') || 'Nenhuma'}</p>
                     </div>
                   </div>
                 )}
