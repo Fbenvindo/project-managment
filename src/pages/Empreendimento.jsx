@@ -279,6 +279,20 @@ export default function EmpreendimentoPage() {
     }
   }, [empreendimento, activeTab, handleTabChange]);
 
+  // Recarregar atividades em tempo real quando marcadores de conclusão forem criados/deletados no Analítico
+  useEffect(() => {
+    if (!empreendimentoId) return;
+    const unsubscribe = Atividade.subscribe((event) => {
+      // Apenas recarrega se for um marcador relacionado a este empreendimento
+      if (event.data?.empreendimento_id === empreendimentoId || event.type === 'delete') {
+        Atividade.list().then(atividadesData => {
+          setSharedData(prev => ({ ...prev, atividades: atividadesData || [] }));
+        }).catch(() => {});
+      }
+    });
+    return unsubscribe;
+  }, [empreendimentoId]);
+
   if (isLoadingEmpreendimento) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
