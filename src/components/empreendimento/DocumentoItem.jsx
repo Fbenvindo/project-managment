@@ -238,7 +238,10 @@ export default function DocumentoItem({
     const atividadesFiltradas = etapaParaPlanejamento === 'todas'
       ? atividadesDisponiveis
       : atividadesDisponiveis.filter(ativ => ativ.etapa === etapaParaPlanejamento);
-    return atividadesFiltradas.reduce((total, ativ) => total + (ativ.tempoComFator || 0), 0);
+    // Não contar atividades já concluídas (por marcador manual ou por planejamento)
+    return atividadesFiltradas
+      .filter(ativ => !ativ.estaConcluida && ativ.statusPlanejamento !== 'concluido')
+      .reduce((total, ativ) => total + (ativ.tempoComFator || 0), 0);
   }, [atividadesDisponiveis, etapaParaPlanejamento]);
 
   const todasAtividadesConcluidas = useMemo(() => {
