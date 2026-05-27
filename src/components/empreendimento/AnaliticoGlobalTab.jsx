@@ -160,6 +160,14 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
       
       const planejamentosMap = new Map((planejamentosData || []).map(p => [`${(p.documento_id === undefined || p.documento_id === null || p.documento_id === 'null') ? 'null' : p.documento_id}-${p.atividade_id}`, p]));
 
+      // Mapa de marcadores de conclusão (entidade Atividade com tempo=0) por "docId|atividadeId"
+      // Necessário para refletir conclusões feitas na aba Documentos que não criaram PlanejamentoAtividade
+      const marcadoresConclusaoSet = new Set(
+        (projectActivities || [])
+          .filter(pa => pa.tempo === 0 && pa.id_atividade && pa.documento_id)
+          .map(pa => `${pa.documento_id}|${pa.id_atividade}`)
+      );
+
       // Buscar etapas cadastradas no empreendimento
       const empreendimento = (empreendimentoData && empreendimentoData[0]) || null;
       const etapasCadastradas = empreendimento?.etapas || [];
@@ -269,6 +277,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
               base_atividade_id: atividadeVinculada.id,
             });
           } else {
+            const isConcluidaVinc = marcadoresConclusaoSet.has(`${doc.id}|${atividadeVinculada.id}`);
             documentActivities.push({
               ...atividadeVinculada,
               uniqueId: `avail-${doc.id}-${atividadeVinculada.id}`,
@@ -278,7 +287,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
               source_documento_id: doc.id,
               source_documento_numero: doc.numero,
               source_documento_arquivo: doc.arquivo,
-              status: 'Disponível',
+              status: isConcluidaVinc ? 'Concluída' : 'Disponível',
               isEditable: false,
               etapa: atividadeVinculada.etapa,
               base_atividade_id: atividadeVinculada.id,
@@ -322,27 +331,30 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
                   base_atividade_id: baseAtividade.id,
                 });
               } else {
-                // Aplicar override de tempo se existir
-                const tempoComOverride = override?.tempo !== undefined && override?.tempo !== null
-                  ? override.tempo
-                  : (baseAtividade.tempo || 0);
-                const tempoFinal = tempoComOverride * fatorDificuldade;
+                 // Aplicar override de tempo se existir
+                 const tempoComOverride = override?.tempo !== undefined && override?.tempo !== null
+                   ? override.tempo
+                   : (baseAtividade.tempo || 0);
+                 const tempoFinal = tempoComOverride * fatorDificuldade;
 
-                documentActivities.push({
-                    ...baseAtividade,
-                    uniqueId: `avail-${doc.id}-${baseAtividade.id}`,
-                    id: baseAtividade.id,
-                    tempo: tempoFinal,
-                    source: sourceDisplay,
-                    source_documento_id: doc.id,
-                    source_documento_numero: doc.numero,
-                    source_documento_arquivo: doc.arquivo,
-                    status: 'Disponível',
-                    isEditable: false,
-                    etapa: etapaCorreta,
-                    executor_principal: executorPrincipal,
-                    base_atividade_id: baseAtividade.id,
-                  });
+                 // Verificar se existe marcador de conclusão manual (entidade Atividade com tempo=0)
+                 const isConcluida = marcadoresConclusaoSet.has(`${doc.id}|${baseAtividade.id}`);
+
+                 documentActivities.push({
+                     ...baseAtividade,
+                     uniqueId: `avail-${doc.id}-${baseAtividade.id}`,
+                     id: baseAtividade.id,
+                     tempo: tempoFinal,
+                     source: sourceDisplay,
+                     source_documento_id: doc.id,
+                     source_documento_numero: doc.numero,
+                     source_documento_arquivo: doc.arquivo,
+                     status: isConcluida ? 'Concluída' : 'Disponível',
+                     isEditable: false,
+                     etapa: etapaCorreta,
+                     executor_principal: executorPrincipal,
+                     base_atividade_id: baseAtividade.id,
+                   });
               }
           }
         });
