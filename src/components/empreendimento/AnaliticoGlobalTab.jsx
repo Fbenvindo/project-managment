@@ -325,9 +325,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
                    : (baseAtividade.tempo || 0);
                  const tempoFinal = tempoComOverride * fatorDificuldade;
 
-                 const planDoc = planejamentosDocumentoMap.get(`${doc.id}|${etapaCorreta}`);
                  const isConcluida = marcadoresConclusaoSet.has(`${doc.id}|${baseAtividade.id}`) && !override;
-                 const statusAtiv = isConcluida ? 'Concluída' : planDoc ? 'Planejada' : 'Disponível';
+                 const statusAtiv = isConcluida ? 'Concluída' : 'Disponível';
 
                  documentActivities.push({
                      ...baseAtividade,
