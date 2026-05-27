@@ -266,7 +266,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
             });
           } else {
             const planDocVinc = planejamentosDocumentoMap.get(`${doc.id}|${atividadeVinculada.etapa}`);
-            const isConcluidaVinc = marcadoresConclusaoSet.has(`${doc.id}|${atividadeVinculada.id}`) || planDocVinc?.status === 'concluido';
+            const isConcluidaVinc = marcadoresConclusaoSet.has(`${doc.id}|${atividadeVinculada.id}`);
             const statusVinc = isConcluidaVinc ? 'Concluída' : planDocVinc ? 'Planejada' : 'Disponível';
             documentActivities.push({
              ...atividadeVinculada,
@@ -327,7 +327,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
                  const tempoFinal = tempoComOverride * fatorDificuldade;
 
                  const planDoc = planejamentosDocumentoMap.get(`${doc.id}|${etapaCorreta}`);
-                 const isConcluida = marcadoresConclusaoSet.has(`${doc.id}|${baseAtividade.id}`) || planDoc?.status === 'concluido';
+                 const isConcluida = marcadoresConclusaoSet.has(`${doc.id}|${baseAtividade.id}`) && !override;
                  const statusAtiv = isConcluida ? 'Concluída' : planDoc ? 'Planejada' : 'Disponível';
 
                  documentActivities.push({
