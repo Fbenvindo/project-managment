@@ -855,15 +855,26 @@ export default function DocumentoItem({
               </div>
 
               <div className="space-y-2">
-                {atividadesDisponiveis.length > 0 ? atividadesDisponiveis.map(atividade => (
-                  <div key={atividade.id} className={`flex justify-between items-center p-3 rounded border ${
-                    atividade.statusPlanejamento === 'concluido' ? 'bg-green-50 border-green-200' :
-                    atividade.estaConcluida ? 'bg-gray-50 border-gray-200' :
-                    atividade.statusPlanejamento === 'em_andamento' ? 'bg-blue-50 border-blue-200' :
-                    atividade.statusPlanejamento === 'pausado' ? 'bg-yellow-50 border-yellow-200' :
-                    atividade.statusPlanejamento === 'nao_iniciado' ? 'bg-blue-50 border-blue-200' :
-                    'bg-white border-gray-200'
-                  }`}>
+                {atividadesDisponiveis.length > 0 ? (() => {
+                   // Agrupar atividades com documento_ids: mostrar apenas UMA entrada por atividade com múltiplas folhas
+                   const atividadesAgrupadas = [];
+                   const idsProcessados = new Set();
+
+                   atividadesDisponiveis.forEach(atividade => {
+                     if (idsProcessados.has(atividade.id)) return;
+                     idsProcessados.add(atividade.id);
+                     atividadesAgrupadas.push(atividade);
+                   });
+
+                   return atividadesAgrupadas.map(atividade => (
+                   <div key={atividade.id} className={`flex justify-between items-center p-3 rounded border ${
+                     atividade.statusPlanejamento === 'concluido' ? 'bg-green-50 border-green-200' :
+                     atividade.estaConcluida ? 'bg-gray-50 border-gray-200' :
+                     atividade.statusPlanejamento === 'em_andamento' ? 'bg-blue-50 border-blue-200' :
+                     atividade.statusPlanejamento === 'pausado' ? 'bg-yellow-50 border-yellow-200' :
+                     atividade.statusPlanejamento === 'nao_iniciado' ? 'bg-blue-50 border-blue-200' :
+                     'bg-white border-gray-200'
+                   }`}>
                     <div className="flex items-center gap-3 flex-1 pr-2">
                       <Checkbox checked={selectedAtividades.includes(atividade.id)} onCheckedChange={() => handleToggleAtividade(atividade.id)} disabled={isUpdatingActivity} />
                       <div className="flex-1">
@@ -913,9 +924,10 @@ export default function DocumentoItem({
                         {isUpdatingActivity ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                       </Button>
                     </div>
-                  </div>
-                )) : (
-                  <div className="text-center text-gray-500 p-4">
+                    </div>
+                    ));
+                    })() : (
+                    <div className="text-center text-gray-500 p-4">
                     <div className="flex flex-col items-center gap-2">
                       <FileText className="w-16 h-16 text-gray-300" />
                       <p>Nenhuma atividade encontrada para esta disciplina/subdisciplinas</p>
