@@ -819,12 +819,29 @@ export default function DocumentosTab({
     });
   }, [usuarios]);
 
+  // Atividades locais: sincronizadas em tempo real via subscribe (para refletir marcadores do Analítico)
+  const [localAtividades, setLocalAtividades] = useState(allAtividades || []);
+  useEffect(() => { setLocalAtividades(allAtividades || []); }, [allAtividades]);
+
+  useEffect(() => {
+    if (!empreendimento?.id) return;
+    const unsubscribe = Atividade.subscribe((event) => {
+      // Só recarrega para marcadores deste empreendimento (tempo=0 ou tempo=-999)
+      const isMarker = event.data?.empreendimento_id === empreendimento.id &&
+        (event.data?.tempo === 0 || event.data?.tempo === -999);
+      if (isMarker || event.type === 'delete') {
+        Atividade.list().then(data => setLocalAtividades(data || [])).catch(() => {});
+      }
+    });
+    return unsubscribe;
+  }, [empreendimento?.id]);
+
   // Pré-filtrar atividades: apenas genéricas + específicas deste empreendimento
   // Isso reduz drasticamente o volume de iterações em cada DocumentoItem (400+ docs × N atividades)
   const atividadesFiltradas = useMemo(() => {
-    if (!allAtividades) return [];
-    return allAtividades.filter(a => !a.empreendimento_id || a.empreendimento_id === empreendimento.id);
-  }, [allAtividades, empreendimento.id]);
+    if (!localAtividades) return [];
+    return localAtividades.filter(a => !a.empreendimento_id || a.empreendimento_id === empreendimento.id);
+  }, [localAtividades, empreendimento.id]);
 
   const sharedProps = {
     localDocumentos,
