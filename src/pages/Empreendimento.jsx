@@ -44,6 +44,10 @@ export default function EmpreendimentoPage() {
     controle_os: { data: [], loaded: false, loading: false }
   });
 
+  // Planejamentos em tempo real — mantidos na página pai para sobreviver à troca de abas
+  const [planejamentosRealtime, setPlanejamentosRealtime] = useState([]);
+  const [planejamentosRealtimeLoaded, setPlanejamentosRealtimeLoaded] = useState(false);
+
   const [sharedData, setSharedData] = useState({
     disciplinas: [],
     usuarios: [],
@@ -283,13 +287,40 @@ export default function EmpreendimentoPage() {
   useEffect(() => {
     if (!empreendimentoId) return;
     const unsubscribe = Atividade.subscribe((event) => {
-      // Apenas recarrega se for um marcador relacionado a este empreendimento
       if (event.data?.empreendimento_id === empreendimentoId || event.type === 'delete') {
         Atividade.list().then(atividadesData => {
           setSharedData(prev => ({ ...prev, atividades: atividadesData || [] }));
         }).catch(() => {});
       }
     });
+    return unsubscribe;
+  }, [empreendimentoId]);
+
+  // Subscribe em PlanejamentoAtividade na página pai — sempre ativo, mesmo quando aba Documentos não está visível
+  useEffect(() => {
+    if (!empreendimentoId) return;
+    const reloadPlans = () => {
+      Promise.all([
+        PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }).catch(() => []),
+        PlanejamentoDocumento.filter({ empreendimento_id: empreendimentoId }).catch(() => []),
+      ]).then(([plansAtiv, plansDoc]) => {
+        const merged = [
+          ...(Array.isArray(plansAtiv) ? plansAtiv : []).map(p => ({ ...p, tipo_plano: 'atividade' })),
+          ...(Array.isArray(plansDoc) ? plansDoc : []).map(p => ({ ...p, tipo_plano: 'documento' })),
+        ];
+        setPlanejamentosRealtime(merged);
+        setPlanejamentosRealtimeLoaded(true);
+        // Atualizar tabData.documentos.data.planejamentos também
+        setTabData(prev => ({
+          ...prev,
+          documentos: {
+            ...prev.documentos,
+            data: { ...prev.documentos.data, planejamentos: merged }
+          }
+        }));
+      });
+    };
+    const unsubscribe = PlanejamentoAtividade.subscribe(reloadPlans);
     return unsubscribe;
   }, [empreendimentoId]);
 
