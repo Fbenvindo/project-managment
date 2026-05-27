@@ -387,6 +387,22 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
     }
   }, [fetchData, empreendimentoId]);
 
+  // Recarregar automaticamente quando marcadores de conclusão ou planejamentos mudarem
+  useEffect(() => {
+    if (!empreendimentoId) return;
+    const unsub1 = Atividade.subscribe((event) => {
+      if (event.data?.empreendimento_id === empreendimentoId || event.type === 'delete') {
+        fetchData();
+      }
+    });
+    const unsub2 = PlanejamentoAtividade.subscribe((event) => {
+      if (event.data?.empreendimento_id === empreendimentoId || event.type === 'delete') {
+        fetchData();
+      }
+    });
+    return () => { unsub1(); unsub2(); };
+  }, [empreendimentoId, fetchData]);
+
   const _isFirstActiveTab = useRef(true);
   useEffect(() => {
     if (_isFirstActiveTab.current) { _isFirstActiveTab.current = false; return; }
@@ -696,8 +712,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
     setIsDeletingActivity(prev => ({ ...prev, [genericAtividadeIdToExclude]: true }));
 
     try {
-      console.log(`🗑️ Marcando atividade genérica ${genericAtividadeIdToExclude} como excluída para empreendimento ${empreendimentoId}`);
-      
+
       const existingMarkers = await retryWithBackoff(
         () => Atividade.filter({ 
           empreendimento_id: empreendimentoId,
@@ -737,8 +752,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
         3, 500, `createExclusionMarker-${genericAtividadeIdToExclude}`
       );
 
-      console.log(`✅ Marcador de exclusão criado com sucesso para atividade genérica ${genericAtividadeIdToExclude}`);
-      
       // Registrar exclusão em AtividadesEmpreendimento
       try {
         const atividadesEmp = await retryWithBackoff(
@@ -760,7 +773,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
             3, 500, `updateAtividadeEmpExclusao-${atividadeEmp.id}`
           );
         }
-        console.log(`   📋 ${atividadesEmp.length} registro(s) marcado(s) como excluído(s) em AtividadesEmpreendimento`);
       } catch (error) {
         console.warn(`   ⚠️ Erro ao atualizar AtividadesEmpreendimento:`, error);
       }
@@ -1392,12 +1404,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
     }
 
     try {
-      console.log(`\n⏱️ ========================================`);
-      console.log(`⏱️ ATUALIZAR TEMPO PADRÃO`);
-      console.log(`⏱️ ========================================`);
-      console.log(`   Atividade ID: ${atividadeId}`);
-      console.log(`   Atividade: ${atividade.atividade}`);
-      console.log(`   Novo Tempo: ${novoTempo}h`);
+
       
       // Buscar atividade original
       const atividadeOriginalArr = await retryWithBackoff(
@@ -1423,8 +1430,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
       );
       
       if (existingOverrides && existingOverrides.length > 0) {
-        console.log(`📝 Atualizando ${existingOverrides.length} override(s) global com novo tempo`);
-        await Promise.all(
+          await Promise.all(
           existingOverrides.map(override =>
             retryWithBackoff(
               () => Atividade.update(override.id, { tempo: novoTempo }),
@@ -1433,8 +1439,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
           )
         );
       } else {
-        console.log(`📝 Criando novo override com tempo customizado`);
-        await retryWithBackoff(
+          await retryWithBackoff(
           () => Atividade.create({
             ...atividadeOriginal,
             id: undefined,
@@ -1448,7 +1453,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
       }
 
       // Atualizar também overrides específicos de documento para a mesma atividade
-      console.log(`📝 Buscando overrides específicos de documento...`);
       const documentOverrides = await retryWithBackoff(
         () => Atividade.filter({
           empreendimento_id: empreendimentoId,
@@ -1460,8 +1464,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
       );
 
       if (documentOverrides && documentOverrides.length > 0) {
-        console.log(`📝 Atualizando ${documentOverrides.length} override(s) de documento com novo tempo`);
-        await Promise.all(
+          await Promise.all(
           documentOverrides.map(override =>
             retryWithBackoff(
               () => Atividade.update(override.id, { tempo: novoTempo }),
@@ -1471,7 +1474,6 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
         );
       }
       
-      console.log(`✅ Tempo padrão atualizado com sucesso`);
 
       // Fechar edição
       setEditandoTempo(prev => ({ ...prev, [atividadeId]: false }));
