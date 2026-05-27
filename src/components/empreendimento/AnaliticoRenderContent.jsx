@@ -900,9 +900,22 @@ export default function AnaliticoRenderContent({
         </button>
       );
     }
+    const todasConcluidas = grupo.folhas.length > 0 && grupo.folhas.every(f => f.status === 'Concluída');
     return (
       <div className="flex gap-1 flex-wrap">
-        {grupo.folhas.some(f => f.status === 'Concluída') && <Badge className="bg-blue-600 text-white font-semibold shadow-md flex items-center gap-1 w-fit"><CheckCircle2 className="w-4 h-4" />Concluída</Badge>}
+        {grupo.folhas.some(f => f.status === 'Concluída') && (
+          todasConcluidas ? (
+            <button
+              onClick={() => handleReverterAtividade(genericId)}
+              title="Clique para reverter conclusão de todas as folhas"
+              className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors cursor-pointer"
+            >
+              <RotateCcw className="w-3 h-3" />Concluída
+            </button>
+          ) : (
+            <Badge className="bg-blue-600 text-white font-semibold shadow-md flex items-center gap-1 w-fit"><CheckCircle2 className="w-4 h-4" />Concluída</Badge>
+          )
+        )}
         {grupo.folhas.some(f => f.status === 'Planejada') && <Badge className="bg-green-600 text-white font-semibold shadow-md flex items-center gap-1 w-fit"><CheckCircle2 className="w-4 h-4" />Planejada</Badge>}
         {grupo.folhas.some(f => f.status === 'Disponível') && <Badge variant="outline" className="text-gray-600">Disponível</Badge>}
       </div>
