@@ -217,9 +217,47 @@ export default function AnaliticoRenderContent({
           3, 300, `concluirAtiv-${atividadeId}`
         );
         if (planos.length > 0) {
+          // Atualizar planos existentes
           for (const plano of planos) {
             if (plano.status !== 'concluido') {
               await retryWithBackoff(() => PlanejamentoAtividade.update(plano.id, { status: 'concluido', termino_real: hoje }), 3, 300, `updatePlano-${plano.id}`);
+            }
+          }
+        } else {
+          // Sem planejamentos: criar um planejamento concluído para cada folha da atividade
+          const grupo = (atividadesAgrupadas || []).find(g =>
+            (g.baseAtividade.base_atividade_id || g.baseAtividade.id) === atividadeId
+          );
+          if (grupo) {
+            const ativ = grupo.baseAtividade;
+            if (grupo.folhas.length > 0) {
+              // Criar para cada folha vinculada
+              for (const folha of grupo.folhas) {
+                await retryWithBackoff(() => PlanejamentoAtividade.create({
+                  empreendimento_id: empreendimentoId,
+                  atividade_id: atividadeId,
+                  documento_id: folha.source_documento_id,
+                  etapa: folha.etapa || ativ.etapa || '',
+                  descritivo: ativ.atividade || '',
+                  tempo_planejado: folha.tempo || ativ.tempo || 0,
+                  status: 'concluido',
+                  termino_real: hoje,
+                  horas_por_dia: {},
+                }), 3, 300, `criarConcluidoFolha-${folha.source_documento_id}-${atividadeId}`);
+              }
+            } else {
+              // Atividade sem folhas (ex: Documentação): criar planejamento geral
+              await retryWithBackoff(() => PlanejamentoAtividade.create({
+                empreendimento_id: empreendimentoId,
+                atividade_id: atividadeId,
+                documento_id: null,
+                etapa: ativ.etapa || '',
+                descritivo: ativ.atividade || '',
+                tempo_planejado: ativ.tempo || 0,
+                status: 'concluido',
+                termino_real: hoje,
+                horas_por_dia: {},
+              }), 3, 300, `criarConcluidoGeral-${atividadeId}`);
             }
           }
         }
@@ -229,7 +267,7 @@ export default function AnaliticoRenderContent({
     setIsConcluindoAtividades(false);
     if (erros > 0) alert(`${erros} atividade(s) não puderam ser concluídas.`);
     if (fetchData) fetchData();
-  }, [atividadesSelecionadasParaExcluir, empreendimentoId, fetchData]);
+  }, [atividadesSelecionadasParaExcluir, atividadesAgrupadas, empreendimentoId, fetchData]);
 
   const handleExcluirFolhasSelecionadas = useCallback(async () => {
     if (folhasSelecionadas.size === 0) return;
