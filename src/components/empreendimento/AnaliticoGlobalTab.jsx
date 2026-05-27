@@ -169,10 +169,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
           .filter(pa => pa.tempo === 0 && pa.id_atividade && pa.documento_id)
           .map(pa => `${pa.documento_id}|${pa.id_atividade}`)
       );
-      const planejamentosDocumentoConcluidos = new Set(
+      const planejamentosDocumentoMap = new Map(
         (planejamentosDocumentoData || [])
-          .filter(p => p.status === 'concluido' && p.documento_id && p.etapa)
-          .map(p => `${p.documento_id}|${p.etapa}`)
+          .filter(p => p.documento_id && p.etapa)
+          .map(p => [`${p.documento_id}|${p.etapa}`, p])
       );
 
       // Buscar etapas cadastradas no empreendimento
@@ -284,17 +284,19 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
               base_atividade_id: atividadeVinculada.id,
             });
           } else {
-            const isConcluidaVinc = marcadoresConclusaoSet.has(`${doc.id}|${atividadeVinculada.id}`);
+            const planDocVinc = planejamentosDocumentoMap.get(`${doc.id}|${atividadeVinculada.etapa}`);
+            const isConcluidaVinc = marcadoresConclusaoSet.has(`${doc.id}|${atividadeVinculada.id}`) || planDocVinc?.status === 'concluido';
+            const statusVinc = isConcluidaVinc ? 'Concluída' : planDocVinc ? 'Planejada' : 'Disponível';
             documentActivities.push({
-              ...atividadeVinculada,
-              uniqueId: `avail-${doc.id}-${atividadeVinculada.id}`,
-              id: atividadeVinculada.id,
-              tempo: atividadeVinculada.tempo || 0,
-              source: sourceDisplay,
-              source_documento_id: doc.id,
-              source_documento_numero: doc.numero,
-              source_documento_arquivo: doc.arquivo,
-              status: isConcluidaVinc ? 'Concluída' : 'Disponível',
+             ...atividadeVinculada,
+             uniqueId: `avail-${doc.id}-${atividadeVinculada.id}`,
+             id: atividadeVinculada.id,
+             tempo: atividadeVinculada.tempo || 0,
+             source: sourceDisplay,
+             source_documento_id: doc.id,
+             source_documento_numero: doc.numero,
+             source_documento_arquivo: doc.arquivo,
+             status: statusVinc,
               isEditable: false,
               etapa: atividadeVinculada.etapa,
               base_atividade_id: atividadeVinculada.id,
@@ -338,15 +340,14 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
                   base_atividade_id: baseAtividade.id,
                 });
               } else {
-                 // Aplicar override de tempo se existir
                  const tempoComOverride = override?.tempo !== undefined && override?.tempo !== null
                    ? override.tempo
                    : (baseAtividade.tempo || 0);
                  const tempoFinal = tempoComOverride * fatorDificuldade;
 
-                 // Verificar se existe marcador de conclusão manual (entidade Atividade com tempo=0)
-                 // ou se o PlanejamentoDocumento desta etapa/folha está concluído
-                 const isConcluida = marcadoresConclusaoSet.has(`${doc.id}|${baseAtividade.id}`);
+                 const planDoc = planejamentosDocumentoMap.get(`${doc.id}|${etapaCorreta}`);
+                 const isConcluida = marcadoresConclusaoSet.has(`${doc.id}|${baseAtividade.id}`) || planDoc?.status === 'concluido';
+                 const statusAtiv = isConcluida ? 'Concluída' : planDoc ? 'Planejada' : 'Disponível';
 
                  documentActivities.push({
                      ...baseAtividade,
@@ -357,7 +358,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
                      source_documento_id: doc.id,
                      source_documento_numero: doc.numero,
                      source_documento_arquivo: doc.arquivo,
-                     status: isConcluida ? 'Concluída' : 'Disponível',
+                     status: statusAtiv,
                      isEditable: false,
                      etapa: etapaCorreta,
                      executor_principal: executorPrincipal,
