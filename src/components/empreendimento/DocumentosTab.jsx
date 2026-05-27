@@ -360,7 +360,16 @@ export default function DocumentosTab({
         const temDocumentoEspecifico = ativ.documento_id === documento.id ||
           (Array.isArray(ativ.documento_ids) && ativ.documento_ids.includes(documento.id));
         if (ativ.empreendimento_id === empreendimento.id && temDocumentoEspecifico && ativ.tempo !== -999 && ativ.tempo !== 0) {
-          return true;
+          // Se é uma atividade com múltiplos documentos, só mostrar se documento_ids estar preenchido
+          // (evita mostrar separadamente cada atividade criada por folha)
+          if (Array.isArray(ativ.documento_ids) && ativ.documento_ids.length > 0) {
+            return true;
+          }
+          // Senão, se é documento_id específico
+          if (ativ.documento_id === documento.id) {
+            return true;
+          }
+          return false;
         }
         return false;
       });

@@ -194,37 +194,21 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
         };
         await Atividade.update(atividade.id, dataToSave);
       } else {
-        // Criação - criar uma atividade para cada subdisciplina + documento
+        // Criação - criar uma atividade por subdisciplina com múltiplas folhas
         const createPromises = [];
 
-        // Se múltiplas folhas selecionadas, criar uma atividade para cada folha (evita divisão de tempo)
-        // Se nenhuma folha selecionada, criar uma por subdisciplina (genérica)
-        if (selectedDocumentoIds.length > 0) {
-          selectedSubdisciplinas.forEach(subdisciplina => {
-            selectedDocumentoIds.forEach(documentoId => {
-              const dataToSave = {
-                ...formData,
-                subdisciplina: subdisciplina,
-                tempo: formData.tempo ? Number(formData.tempo) : null,
-                documento_id: documentoId,
-                documento_ids: [], // Não usar array - criar registros individuais
-              };
-              createPromises.push(Atividade.create(dataToSave));
-            });
-          });
-        } else {
-          // Sem documentos específicos, criar genéricas
-          selectedSubdisciplinas.forEach(subdisciplina => {
-            const dataToSave = {
-              ...formData,
-              subdisciplina: subdisciplina,
-              tempo: formData.tempo ? Number(formData.tempo) : null,
-              documento_ids: [],
-              documento_id: null,
-            };
-            createPromises.push(Atividade.create(dataToSave));
-          });
-        }
+        // Criar uma atividade para cada subdisciplina
+        selectedSubdisciplinas.forEach(subdisciplina => {
+          const dataToSave = {
+            ...formData,
+            subdisciplina: subdisciplina,
+            tempo: formData.tempo ? Number(formData.tempo) : null,
+            documento_ids: selectedDocumentoIds.length > 0 ? selectedDocumentoIds : [],
+            documento_id: selectedDocumentoIds[0] || null, // Compatibilidade
+          };
+          console.log("📝 Criando atividade com dados:", dataToSave);
+          createPromises.push(Atividade.create(dataToSave));
+        });
 
         await Promise.all(createPromises);
       }
