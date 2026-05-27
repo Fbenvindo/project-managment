@@ -1,8 +1,8 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit, Trash2, Search, Calendar } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Calendar, ChevronDown, CheckCircle2, Circle, Clock } from "lucide-react";
 import { Atividade } from "@/entities/all";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -327,6 +327,15 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
     );
   };
 
+  const handleChangeStatus = useCallback(async (atividade, novoStatus) => {
+    try {
+      await Atividade.update(atividade.id, { status_planejamento: novoStatus });
+      onUpdate();
+    } catch (error) {
+      console.error("Erro ao atualizar status:", error);
+    }
+  }, [onUpdate]);
+
   const handleExcluirMultiplas = async () => {
     if (selectedAtividades.length === 0) {
       alert("Selecione pelo menos uma atividade");
@@ -638,9 +647,34 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
                             )}
                           </TableCell>
                           <TableCell>
-                            <Badge variant="outline" className="text-gray-600">
-                              {atividade.status_planejamento === 'planejada' ? 'Planejada' : 'Disponível'}
-                            </Badge>
+                            <Popover>
+                              <PopoverTrigger asChild>
+                                <button className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold border cursor-pointer transition-colors ${
+                                  atividade.status_planejamento === 'concluida'
+                                    ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200'
+                                    : atividade.status_planejamento === 'planejada'
+                                    ? 'bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200'
+                                    : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
+                                }`}>
+                                  {atividade.status_planejamento === 'concluida' ? <CheckCircle2 className="w-3 h-3" /> : atividade.status_planejamento === 'planejada' ? <Clock className="w-3 h-3" /> : <Circle className="w-3 h-3" />}
+                                  {atividade.status_planejamento === 'concluida' ? 'Concluída' : atividade.status_planejamento === 'planejada' ? 'Planejada' : 'Disponível'}
+                                  <ChevronDown className="w-3 h-3" />
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent className="w-44 p-1" align="start">
+                                <div className="flex flex-col gap-0.5">
+                                  <button onClick={() => handleChangeStatus(atividade, 'nao_planejada')} className="flex items-center gap-2 px-3 py-2 text-sm rounded hover:bg-gray-100 text-left w-full">
+                                    <Circle className="w-3 h-3 text-gray-500" /> Disponível
+                                  </button>
+                                  <button onClick={() => handleChangeStatus(atividade, 'planejada')} className="flex items-center gap-2 px-3 py-2 text-sm rounded hover:bg-blue-50 text-blue-700 text-left w-full">
+                                    <Clock className="w-3 h-3" /> Planejada
+                                  </button>
+                                  <button onClick={() => handleChangeStatus(atividade, 'concluida')} className="flex items-center gap-2 px-3 py-2 text-sm rounded hover:bg-green-50 text-green-700 text-left w-full">
+                                    <CheckCircle2 className="w-3 h-3" /> Concluída
+                                  </button>
+                                </div>
+                              </PopoverContent>
+                            </Popover>
                           </TableCell>
                           <TableCell>{atividade.etapa}</TableCell>
                           <TableCell>{atividade.tempo}h</TableCell>

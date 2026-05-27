@@ -1,0 +1,69 @@
+{
+  "name": "Atividade",
+  "type": "object",
+  "properties": {
+    "id_atividade": {
+      "type": "string",
+      "description": "ID customizado da atividade"
+    },
+    "etapa": {
+      "type": "string",
+      "description": "Etapa do projeto (Ex: Planejamento, Concep\u00e7\u00e3o)"
+    },
+    "disciplina": {
+      "type": "string",
+      "description": "Disciplina da atividade (Ex: Geral, El\u00e9trica)"
+    },
+    "subdisciplina": {
+      "type": "string",
+      "description": "Subdisciplina da atividade (Ex: Compat, BIM)"
+    },
+    "atividade": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o da atividade"
+    },
+    "predecessora": {
+      "type": "string",
+      "description": "ID da atividade predecessora"
+    },
+    "tempo": {
+      "type": "number",
+      "description": "Tempo estimado POR METRO QUADRADO (h/m\u00b2)"
+    },
+    "funcao": {
+      "type": "string",
+      "description": "Fun\u00e7\u00e3o respons\u00e1vel pela atividade (Ex: Projetista, Coordenador)"
+    },
+    "empreendimento_id": {
+      "type": "string",
+      "description": "ID do empreendimento, se for uma atividade espec\u00edfica do projeto"
+    },
+    "documento_id": {
+      "type": "string",
+      "description": "ID do documento/folha espec\u00edfico (legacy - use documento_ids para m\u00faltiplas folhas)"
+    },
+    "documento_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "IDs dos documentos/folhas vinculados a esta atividade"
+    },
+    "status_planejamento": {
+      "type": "string",
+      "enum": [
+        "nao_planejada",
+        "planejada",
+        "concluida"
+      ],
+      "default": "nao_planejada",
+      "description": "Status do planejamento da atividade"
+    }
+  },
+  "required": [
+    "etapa",
+    "disciplina",
+    "subdisciplina",
+    "atividade"
+  ]
+}
