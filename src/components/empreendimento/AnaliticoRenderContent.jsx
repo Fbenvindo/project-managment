@@ -204,6 +204,30 @@ export default function AnaliticoRenderContent({
     if (fetchData) fetchData();
   }, [folhasSelecionadas, atividadesAgrupadas, empreendimentoId, fetchData]);
 
+  const [isRevertendoAtividades, setIsRevertendoAtividades] = useState(false);
+
+  const handleReverterAtividadesSelecionadas = useCallback(async () => {
+    if (atividadesSelecionadasParaExcluir.size === 0) return;
+    if (!confirm(`Deixar ${atividadesSelecionadasParaExcluir.size} atividade(s) disponível(is) novamente? Os planejamentos existentes serão removidos.`)) return;
+    setIsRevertendoAtividades(true);
+    let erros = 0;
+    for (const atividadeId of Array.from(atividadesSelecionadasParaExcluir)) {
+      try {
+        const planos = await retryWithBackoff(
+          () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId, atividade_id: atividadeId }),
+          3, 300, `reverterAtiv-${atividadeId}`
+        );
+        for (const plano of planos) {
+          await retryWithBackoff(() => PlanejamentoAtividade.delete(plano.id), 3, 300, `deletePlanoAtiv-${plano.id}`);
+        }
+      } catch { erros++; }
+    }
+    setAtividadesSelecionadasParaExcluir(new Set());
+    setIsRevertendoAtividades(false);
+    if (erros > 0) alert(`${erros} atividade(s) não puderam ser revertidas.`);
+    if (fetchData) fetchData();
+  }, [atividadesSelecionadasParaExcluir, empreendimentoId, fetchData]);
+
   const handleConcluirAtividadesSelecionadas = useCallback(async () => {
     if (atividadesSelecionadasParaExcluir.size === 0) return;
     if (!confirm(`Concluir ${atividadesSelecionadasParaExcluir.size} atividade(s) selecionada(s) em todas as suas folhas?`)) return;
@@ -511,9 +535,21 @@ export default function AnaliticoRenderContent({
           </div>
           <div className="flex gap-2 flex-wrap">
             <Button
+              onClick={handleReverterAtividadesSelecionadas}
+              variant="outline"
+              className="border-blue-500 text-blue-600 hover:bg-blue-50"
+              disabled={isExcluindoMultiplasFolhas || isConcluindoAtividades || isRevertendoAtividades}
+              size="sm"
+            >
+              {isRevertendoAtividades
+                ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Revertendo...</>
+                : <><RotateCcw className="w-4 h-4 mr-2" />Disponível Novamente</>
+              }
+            </Button>
+            <Button
               onClick={handleConcluirAtividadesSelecionadas}
               className="bg-green-600 hover:bg-green-700"
-              disabled={isExcluindoMultiplasFolhas || isConcluindoAtividades}
+              disabled={isExcluindoMultiplasFolhas || isConcluindoAtividades || isRevertendoAtividades}
               size="sm"
             >
               {isConcluindoAtividades
@@ -524,13 +560,13 @@ export default function AnaliticoRenderContent({
             <Button
               onClick={() => handleExcluirMultiplas()}
               className="bg-red-600 hover:bg-red-700"
-              disabled={isExcluindoMultiplasFolhas || isConcluindoAtividades}
+              disabled={isExcluindoMultiplasFolhas || isConcluindoAtividades || isRevertendoAtividades}
               size="sm"
             >
               <Trash2 className="w-4 h-4 mr-2" />
               Excluir do Empreendimento
             </Button>
-            <Button variant="outline" size="sm" onClick={() => setAtividadesSelecionadasParaExcluir(new Set())} disabled={isConcluindoAtividades}>
+            <Button variant="outline" size="sm" onClick={() => setAtividadesSelecionadasParaExcluir(new Set())} disabled={isConcluindoAtividades || isRevertendoAtividades}>
               Cancelar
             </Button>
           </div>
