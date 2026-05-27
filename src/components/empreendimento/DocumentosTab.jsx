@@ -261,7 +261,17 @@ export default function DocumentosTab({
               return etapaParaPlanejamento === "todas" || (etapaBase || '').toLowerCase() === (etapaParaPlanejamento || '').toLowerCase();
             });
 
+            // Excluir atividades já concluídas para este documento/etapa do cálculo em cascata
+            const atividadesConcluidasIdsChild = new Set(
+              localPlanejamentos
+                .filter(p => p.documento_id === child.id && p.status === 'concluido' &&
+                  (etapaParaPlanejamento === 'todas' || (p.etapa || '').toLowerCase() === (etapaParaPlanejamento || '').toLowerCase()))
+                .map(p => p.atividade_id)
+                .filter(Boolean)
+            );
+
             const tempoTotalChild = atividadesParaCalculoChild.reduce((total, ativ) => {
+              if (atividadesConcluidasIdsChild.has(ativ.id)) return total;
               const tempoBase = tempoOverridesChild.has(ativ.id) ? parseFloat(tempoOverridesChild.get(ativ.id)) || 0 : parseFloat(ativ.tempo) || 0;
               const isConfeccaoA = ativ.atividade && String(ativ.atividade).trim().startsWith('Confecção de A-');
               return total + tempoBase * (isConfeccaoA ? 1 : fatorDificuldadeChild);
@@ -365,7 +375,17 @@ export default function DocumentosTab({
 
       if (atividadesDaEtapa.length === 0) { console.warn(`Nenhuma atividade encontrada para a etapa "${etapa}" no documento ${documento.numero}. Pulando.`); return; }
 
+      // Buscar IDs de atividades já concluídas para este documento/etapa (não contabilizar no tempo)
+      const atividadesConcluidasIds = new Set(
+        localPlanejamentos
+          .filter(p => p.documento_id === documento.id && p.etapa === etapa && p.status === 'concluido')
+          .map(p => p.atividade_id)
+          .filter(Boolean)
+      );
+
       const tempoTotal = atividadesDaEtapa.reduce((total, ativ) => {
+        // Não contar atividades já concluídas
+        if (atividadesConcluidasIds.has(ativ.id)) return total;
         const tempoBase = tempoOverrides.has(ativ.id) ? parseFloat(tempoOverrides.get(ativ.id)) || 0 : parseFloat(ativ.tempo) || 0;
         const isConfeccaoA = ativ.atividade && String(ativ.atividade).trim().startsWith('Confecção de A-');
         return total + tempoBase * (isConfeccaoA ? 1 : fatorDificuldade);
