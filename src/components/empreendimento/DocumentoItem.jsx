@@ -113,9 +113,11 @@ export default function DocumentoItem({
     // Excluir marcadores de conclusão (tempo === 0) pois não devem suprimir a atividade original
     const idsComOverrideEspecifico = new Set();
     allAtividades.forEach(ativ => {
+      const temDocumentoEspecifico = ativ.documento_id === doc.id ||
+        (Array.isArray(ativ.documento_ids) && ativ.documento_ids.includes(doc.id));
       if (
         ativ.empreendimento_id === empreendimento.id &&
-        ativ.documento_id === doc.id &&
+        temDocumentoEspecifico &&
         ativ.id_atividade &&
         ativ.tempo !== -999 &&
         ativ.tempo !== 0  // marcadores de conclusão não suprimem a atividade genérica
@@ -131,7 +133,9 @@ export default function DocumentoItem({
         return ativ.disciplina === disciplinaDoc &&
           Array.isArray(subdisciplinasDoc) && subdisciplinasDoc.includes(ativ.subdisciplina);
       }
-      if (ativ.empreendimento_id === empreendimento.id && ativ.documento_id === doc.id && ativ.tempo !== -999) {
+      const temDocumentoEspecifico = ativ.documento_id === doc.id ||
+        (Array.isArray(ativ.documento_ids) && ativ.documento_ids.includes(doc.id));
+      if (ativ.empreendimento_id === empreendimento.id && temDocumentoEspecifico && ativ.tempo !== -999) {
         if (ativ.tempo === 0 && String(ativ.atividade || '').includes('Concluída na folha')) return false; // marcador interno, não exibir
         if (ativ.tempo === -999) return false;
         return true;
@@ -145,10 +149,12 @@ export default function DocumentoItem({
 
     allAtividades.forEach(ativ => {
       if (ativ.empreendimento_id === empreendimento.id && ativ.id_atividade) {
+        const temDocumentoEspecifico = ativ.documento_id === doc.id ||
+          (Array.isArray(ativ.documento_ids) && ativ.documento_ids.includes(doc.id));
         if (ativ.tempo === -999) {
-          if (ativ.documento_id === doc.id) atividadesExcluidasPorDoc.add(ativ.id_atividade);
-          else if (!ativ.documento_id) atividadesExcluidasGlobal.add(ativ.id_atividade);
-        } else if (ativ.tempo === 0 && ativ.documento_id === doc.id && String(ativ.atividade || '').includes('Concluída na folha')) {
+          if (temDocumentoEspecifico) atividadesExcluidasPorDoc.add(ativ.id_atividade);
+          else if (!ativ.documento_id && (!Array.isArray(ativ.documento_ids) || ativ.documento_ids.length === 0)) atividadesExcluidasGlobal.add(ativ.id_atividade);
+        } else if (ativ.tempo === 0 && temDocumentoEspecifico && String(ativ.atividade || '').includes('Concluída na folha')) {
           atividadesConcluidasPorDoc.add(ativ.id_atividade);
         }
       }
