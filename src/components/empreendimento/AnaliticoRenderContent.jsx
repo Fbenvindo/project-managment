@@ -66,6 +66,7 @@ export default function AnaliticoRenderContent({
   setDatasInicioFolha,
   isSavingFolhaExecutor,
   fetchData,
+  handleReverterAtividade,
 }) {
   // folhasSelecionadas lives here so checkbox clicks don't re-render the entire parent
   const [folhasSelecionadas, setFolhasSelecionadas] = useState(new Set());
@@ -864,12 +865,12 @@ export default function AnaliticoRenderContent({
       if (ativ.status === 'Concluída') {
         return (
           <button
-            onClick={() => handleConcluirEmTodasFolhas(ativ)}
+            onClick={() => handleReverterAtividade(genericId)}
             disabled={isConc}
-            title="Clique para reverter conclusão"
+            title="Clique para reverter para Disponível"
             className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-60"
           >
-            {isConc ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+            {isConc ? <Loader2 className="w-3 h-3 animate-spin" /> : <RotateCcw className="w-3 h-3" />}
             Concluída
           </button>
         );

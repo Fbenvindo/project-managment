@@ -19,7 +19,7 @@ import { retryWithBackoff, retryWithExtendedBackoff } from '../utils/apiUtils';
 import { Checkbox } from "@/components/ui/checkbox";
 import { base44 } from '@/api/base44Client';
 const PlanejamentoDocumento = base44.entities.PlanejamentoDocumento;
-import { concluirEtapaCompleta, reverterConclusaoEtapa, concluirEmTodasFolhas } from './AnaliticoHandlers';
+import { concluirEtapaCompleta, reverterConclusaoEtapa, concluirEmTodasFolhas, reverterAtividades } from './AnaliticoHandlers';
 import PDFListaDesenvolvimento from '../configuracoes/PDFListaDesenvolvimento';
 import { getNextWorkingDay, distribuirHorasPorDias, isWorkingDay, calculateEndDate, ensureWorkingDay } from '../utils/DateCalculator';
 import { format, isValid, parseISO, addDays } from 'date-fns';
@@ -1078,6 +1078,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
       datasInicioFolha={datasInicioFolha} setDatasInicioFolha={setDatasInicioFolha}
       isSavingFolhaExecutor={isSavingFolhaExecutor}
       fetchData={fetchData}
+      handleReverterAtividade={(atividadeId) => reverterAtividades({ atividadeIds: [atividadeId], empreendimentoId, fetchData, onUpdate })}
     />
   );
 

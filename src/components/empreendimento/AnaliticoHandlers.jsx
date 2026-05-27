@@ -252,3 +252,40 @@ export async function reverterConclusaoEtapa({
     setIsRevertendoEtapa(false);
   }
 }
+
+export async function reverterAtividades({
+  atividadeIds, empreendimentoId, fetchData, onUpdate
+}) {
+  if (!atividadeIds || atividadeIds.length === 0) return;
+  if (!window.confirm(`Reverter ${atividadeIds.length} atividade(s) para "Disponível"? Os planejamentos serão removidos.`)) return;
+  
+  try {
+    for (const atividadeId of atividadeIds) {
+      const planos = await retryWithBackoff(
+        () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId, atividade_id: atividadeId }),
+        3, 500, `getPlanosReverter-${atividadeId}`
+      );
+      for (const plano of planos) {
+        if (plano.status === 'concluido') {
+          await retryWithBackoff(
+            () => PlanejamentoAtividade.update(plano.id, { status: 'nao_iniciado', termino_real: null }),
+            3, 500, `reverterPlano-${plano.id}`
+          );
+        }
+      }
+      // Remover marcadores de conclusão
+      const marcadores = await retryWithBackoff(
+        () => Atividade.filter({ empreendimento_id: empreendimentoId, id_atividade: atividadeId, tempo: 0 }),
+        3, 500, `getMarcadoresReverter-${atividadeId}`
+      );
+      for (const m of (marcadores || [])) {
+        await retryWithBackoff(() => Atividade.delete(m.id), 3, 500, `deletarMarcador-${m.id}`);
+      }
+    }
+    await fetchData();
+    if (onUpdate) onUpdate();
+    alert(`✅ ${atividadeIds.length} atividade(s) revertida(s) para "Disponível".`);
+  } catch (error) {
+    alert("Erro ao reverter atividades: " + error.message);
+  }
+}
