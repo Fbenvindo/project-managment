@@ -284,8 +284,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
               base_atividade_id: atividadeVinculada.id,
             });
           } else {
-            const isConcluidaVinc = marcadoresConclusaoSet.has(`${doc.id}|${atividadeVinculada.id}`)
-              || planejamentosDocumentoConcluidos.has(`${doc.id}|${atividadeVinculada.etapa}`);
+            const isConcluidaVinc = marcadoresConclusaoSet.has(`${doc.id}|${atividadeVinculada.id}`);
             documentActivities.push({
               ...atividadeVinculada,
               uniqueId: `avail-${doc.id}-${atividadeVinculada.id}`,
@@ -347,8 +346,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
 
                  // Verificar se existe marcador de conclusão manual (entidade Atividade com tempo=0)
                  // ou se o PlanejamentoDocumento desta etapa/folha está concluído
-                 const isConcluida = marcadoresConclusaoSet.has(`${doc.id}|${baseAtividade.id}`)
-                   || planejamentosDocumentoConcluidos.has(`${doc.id}|${etapaCorreta}`);
+                 const isConcluida = marcadoresConclusaoSet.has(`${doc.id}|${baseAtividade.id}`);
 
                  documentActivities.push({
                      ...baseAtividade,
