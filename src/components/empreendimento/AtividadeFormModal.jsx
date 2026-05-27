@@ -194,28 +194,22 @@ export default function AtividadeFormModal({ isOpen, onClose, empreendimentoId, 
         };
         await Atividade.update(atividade.id, dataToSave);
       } else {
-        // Criação - criar uma atividade POR SUBDISCIPLINA (não por folha)
-        // Todas as folhas selecionadas vão em documento_ids de UMA ÚNICA atividade
+        // Criação - criar uma atividade por subdisciplina com múltiplas folhas
         const createPromises = [];
 
+        // Criar uma atividade para cada subdisciplina
         selectedSubdisciplinas.forEach(subdisciplina => {
           const dataToSave = {
             ...formData,
             subdisciplina: subdisciplina,
             tempo: formData.tempo ? Number(formData.tempo) : null,
-            // IMPORTANTE: Se múltiplas folhas são selecionadas, ir em documento_ids
-            // Senão, deixar em documento_id para compatibilidade
-            ...(selectedDocumentoIds.length > 1 
-              ? { documento_ids: selectedDocumentoIds, documento_id: null }
-              : selectedDocumentoIds.length === 1
-              ? { documento_id: selectedDocumentoIds[0], documento_ids: [] }
-              : { documento_ids: [], documento_id: null }
-            )
+            documento_ids: selectedDocumentoIds.length > 0 ? selectedDocumentoIds : [],
+            documento_id: selectedDocumentoIds[0] || null, // Compatibilidade
           };
           console.log("📝 Criando atividade com dados:", dataToSave);
           createPromises.push(Atividade.create(dataToSave));
         });
-
+        
         await Promise.all(createPromises);
       }
       onSuccess();

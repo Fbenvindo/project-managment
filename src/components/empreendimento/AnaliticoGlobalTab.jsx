@@ -19,7 +19,7 @@ import { retryWithBackoff, retryWithExtendedBackoff } from '../utils/apiUtils';
 import { Checkbox } from "@/components/ui/checkbox";
 import { base44 } from '@/api/base44Client';
 const PlanejamentoDocumento = base44.entities.PlanejamentoDocumento;
-import { concluirEtapaCompleta, reverterConclusaoEtapa, concluirEmTodasFolhas, reverterEmTodasFolhas } from './AnaliticoHandlers';
+import { concluirEtapaCompleta, reverterConclusaoEtapa, concluirEmTodasFolhas } from './AnaliticoHandlers';
 import PDFListaDesenvolvimento from '../configuracoes/PDFListaDesenvolvimento';
 import { getNextWorkingDay, distribuirHorasPorDias, isWorkingDay, calculateEndDate, ensureWorkingDay } from '../utils/DateCalculator';
 import { format, isValid, parseISO, addDays } from 'date-fns';
@@ -284,9 +284,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
               base_atividade_id: atividadeVinculada.id,
             });
           } else {
-            const temPlanAtivVinc = planejamentosMap.has(`${doc.id}-${atividadeVinculada.id}`);
-            const isConcluidaVinc = marcadoresConclusaoSet.has(`${doc.id}|${atividadeVinculada.id}`);
-            const statusVinc = isConcluidaVinc ? 'Concluída' : temPlanAtivVinc ? 'Planejada' : 'Disponível';
+            const planDocVinc = planejamentosDocumentoMap.get(`${doc.id}|${atividadeVinculada.etapa}`);
+            const isConcluidaVinc = marcadoresConclusaoSet.has(`${doc.id}|${atividadeVinculada.id}`) || planDocVinc?.status === 'concluido';
+            const statusVinc = isConcluidaVinc ? 'Concluída' : planDocVinc ? 'Planejada' : 'Disponível';
             documentActivities.push({
              ...atividadeVinculada,
              uniqueId: `avail-${doc.id}-${atividadeVinculada.id}`,
@@ -346,10 +346,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
                  const tempoFinal = tempoComOverride * fatorDificuldade;
 
                  const planDoc = planejamentosDocumentoMap.get(`${doc.id}|${etapaCorreta}`);
-                 const temMarcadorConclusao = marcadoresConclusaoSet.has(`${doc.id}|${baseAtividade.id}`);
-                 const temPlanAtiv = planejamentosMap.has(`${doc.id}-${baseAtividade.id}`);
-                 // Atividades sem planejamento próprio não herdam status de PlanejamentoDocumento
-                 const statusAtiv = temMarcadorConclusao ? 'Concluída' : temPlanAtiv ? 'Planejada' : 'Disponível';
+                 const isConcluida = marcadoresConclusaoSet.has(`${doc.id}|${baseAtividade.id}`) || planDoc?.status === 'concluido';
+                 const statusAtiv = isConcluida ? 'Concluída' : planDoc ? 'Planejada' : 'Disponível';
 
                  documentActivities.push({
                      ...baseAtividade,
@@ -1083,13 +1081,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
     />
   );
 
-  const handleConcluirEmTodasFolhas = (atividade) => {
-    if (atividade.status === 'Concluída') {
-      reverterEmTodasFolhas({ atividade, empreendimentoId, setIsConcluindo, fetchData, onUpdate });
-    } else {
-      concluirEmTodasFolhas({ atividade, empreendimentoId, documentos, setIsConcluindo, fetchData, onUpdate });
-    }
-  };
+  const handleConcluirEmTodasFolhas = (atividade) => concluirEmTodasFolhas({
+    atividade, empreendimentoId, documentos, setIsConcluindo, fetchData, onUpdate
+  });
 
   const handleSaveExecutor = async (atividade, executorEmail, dataInicioCustom = null) => {
     const atividadeId = atividade.base_atividade_id || atividade.id;
@@ -1365,8 +1359,15 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
     }
   };
 
-  const handleConcluirEtapaCompleta = (e) => concluirEtapaCompleta({ etapa: e, empreendimentoId, combinedActivities, documentos, setIsConcluindoEtapa, setEtapaParaConcluir, fetchData, onUpdate });
-  const handleReverterConclusaoEtapa = (e) => reverterConclusaoEtapa({ etapa: e, empreendimentoId, atividadesAgrupadas, setIsRevertendoEtapa, fetchData, onUpdate });
+  const handleConcluirEtapaCompleta = (etapa) => concluirEtapaCompleta({
+    etapa, empreendimentoId, combinedActivities, documentos,
+    setIsConcluindoEtapa, setEtapaParaConcluir, fetchData, onUpdate
+  });
+
+  const handleReverterConclusaoEtapa = (etapa) => reverterConclusaoEtapa({
+    etapa, empreendimentoId, atividadesAgrupadas,
+    setIsRevertendoEtapa, setEtapaParaReverter, fetchData, onUpdate
+  });
 
   const limparAlteracoes = async () => {
     if (!confirm("Deseja limpar o registro de alterações deste empreendimento? Esta ação não pode ser desfeita.")) {

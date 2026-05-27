@@ -203,41 +203,6 @@ export async function concluirEmTodasFolhas({
   }
 }
 
-export async function reverterEmTodasFolhas({
-  atividade, empreendimentoId, setIsConcluindo, fetchData, onUpdate
-}) {
-  const atividadeId = atividade.base_atividade_id || atividade.id;
-  if (!window.confirm(`Reverter conclusão de "${atividade.atividade}" em todas as folhas?`)) return;
-  setIsConcluindo(prev => ({ ...prev, [atividadeId]: true }));
-  try {
-    const plans = await retryWithBackoff(
-      () => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId, atividade_id: atividadeId }),
-      3, 500, `getReverterPlanejamentos-${atividadeId}`
-    );
-    for (const plano of plans) {
-      if (plano.inicio_planejado && plano.termino_planejado) {
-        await retryWithBackoff(() => PlanejamentoAtividade.update(plano.id, { status: 'nao_iniciado', termino_real: null }), 3, 500, `reverterPlano-${plano.id}`);
-      } else {
-        await retryWithBackoff(() => PlanejamentoAtividade.delete(plano.id), 3, 500, `deletarPlanoReverter-${plano.id}`);
-      }
-    }
-    // Remover marcadores de conclusão
-    const marcadores = await retryWithBackoff(
-      () => Atividade.filter({ empreendimento_id: empreendimentoId, id_atividade: atividadeId, tempo: 0 }),
-      3, 500, `getMarcadoresReverterAtiv-${atividadeId}`
-    );
-    for (const m of (marcadores || [])) {
-      await retryWithBackoff(() => Atividade.delete(m.id), 3, 500, `deletarMarcadorReverterAtiv-${m.id}`);
-    }
-    await fetchData();
-    if (onUpdate) onUpdate();
-  } catch (error) {
-    alert("Erro ao reverter conclusão: " + error.message);
-  } finally {
-    setIsConcluindo(prev => ({ ...prev, [atividadeId]: false }));
-  }
-}
-
 export async function reverterConclusaoEtapa({
   etapa, empreendimentoId, atividadesAgrupadas,
   setIsRevertendoEtapa, setEtapaParaReverter, fetchData, onUpdate

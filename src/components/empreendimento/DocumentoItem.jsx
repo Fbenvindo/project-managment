@@ -113,11 +113,9 @@ export default function DocumentoItem({
     // Excluir marcadores de conclusão (tempo === 0) pois não devem suprimir a atividade original
     const idsComOverrideEspecifico = new Set();
     allAtividades.forEach(ativ => {
-      const temDocumentoEspecifico = ativ.documento_id === doc.id ||
-        (Array.isArray(ativ.documento_ids) && ativ.documento_ids.includes(doc.id));
       if (
         ativ.empreendimento_id === empreendimento.id &&
-        temDocumentoEspecifico &&
+        ativ.documento_id === doc.id &&
         ativ.id_atividade &&
         ativ.tempo !== -999 &&
         ativ.tempo !== 0  // marcadores de conclusão não suprimem a atividade genérica
@@ -133,9 +131,7 @@ export default function DocumentoItem({
         return ativ.disciplina === disciplinaDoc &&
           Array.isArray(subdisciplinasDoc) && subdisciplinasDoc.includes(ativ.subdisciplina);
       }
-      const temDocumentoEspecifico = ativ.documento_id === doc.id ||
-        (Array.isArray(ativ.documento_ids) && ativ.documento_ids.includes(doc.id));
-      if (ativ.empreendimento_id === empreendimento.id && temDocumentoEspecifico && ativ.tempo !== -999) {
+      if (ativ.empreendimento_id === empreendimento.id && ativ.documento_id === doc.id && ativ.tempo !== -999) {
         if (ativ.tempo === 0 && String(ativ.atividade || '').includes('Concluída na folha')) return false; // marcador interno, não exibir
         if (ativ.tempo === -999) return false;
         return true;
@@ -149,12 +145,10 @@ export default function DocumentoItem({
 
     allAtividades.forEach(ativ => {
       if (ativ.empreendimento_id === empreendimento.id && ativ.id_atividade) {
-        const temDocumentoEspecifico = ativ.documento_id === doc.id ||
-          (Array.isArray(ativ.documento_ids) && ativ.documento_ids.includes(doc.id));
         if (ativ.tempo === -999) {
-          if (temDocumentoEspecifico) atividadesExcluidasPorDoc.add(ativ.id_atividade);
-          else if (!ativ.documento_id && (!Array.isArray(ativ.documento_ids) || ativ.documento_ids.length === 0)) atividadesExcluidasGlobal.add(ativ.id_atividade);
-        } else if (ativ.tempo === 0 && temDocumentoEspecifico && String(ativ.atividade || '').includes('Concluída na folha')) {
+          if (ativ.documento_id === doc.id) atividadesExcluidasPorDoc.add(ativ.id_atividade);
+          else if (!ativ.documento_id) atividadesExcluidasGlobal.add(ativ.id_atividade);
+        } else if (ativ.tempo === 0 && ativ.documento_id === doc.id && String(ativ.atividade || '').includes('Concluída na folha')) {
           atividadesConcluidasPorDoc.add(ativ.id_atividade);
         }
       }
@@ -201,19 +195,12 @@ export default function DocumentoItem({
         ae.etapa === etapaFinal
       );
 
-      // Apenas atividades com planejamento específico são consideradas "planejadas"
-      // Não herdar "planejada" do planejamento da etapa — atividades novas não devem ser marcadas como planejadas
-      const jaFoiPlanejada = !!planejamentoAtividade || !!atividadeEmpRecord || atividade.status_planejamento === 'planejada';
+      const jaFoiPlanejada = !!planejamentoDocDaEtapa || !!planejamentoAtividade || !!atividadeEmpRecord || atividade.status_planejamento === 'planejada';
 
       // Status: priorizar AtividadesEmpreendimento, depois PlanejamentoAtividade, depois PlanejamentoDocumento
       const statusExecucaoMap = { 'em_andamento': 'em_andamento', 'pausada': 'pausado', 'concluida': 'concluido', 'nao_iniciada': 'nao_iniciado' };
       const statusDeExecucao = atividadeEmpRecord?.status_execucao ? statusExecucaoMap[atividadeEmpRecord.status_execucao] : null;
-      // Não herdar status 'concluido' do PlanejamentoDocumento sem marcador específico da atividade
-      // (evita que atividades novas apareçam como "Finalizado" por herança da etapa concluída)
-      const statusDocEtapa = planejamentoDocDaEtapa?.status === 'concluido' && !estaConcluida
-        ? 'nao_iniciado'
-        : planejamentoDocDaEtapa?.status || 'nao_iniciado';
-      const statusPlanejamento = statusDeExecucao || planejamentoAtividade?.status || (jaFoiPlanejada ? statusDocEtapa : null);
+      const statusPlanejamento = statusDeExecucao || planejamentoAtividade?.status || (jaFoiPlanejada ? (planejamentoDocDaEtapa?.status || 'nao_iniciado') : null);
 
       // Se existe registro em AtividadesEmpreendimento com tempo válido, usar esse tempo (já é o tempo final correto)
       const tempoDoEmpRecord = atividadeEmpRecord && typeof atividadeEmpRecord.tempo === 'number' && atividadeEmpRecord.tempo > 0
@@ -855,26 +842,15 @@ export default function DocumentoItem({
               </div>
 
               <div className="space-y-2">
-                {atividadesDisponiveis.length > 0 ? (() => {
-                   // Agrupar atividades com documento_ids: mostrar apenas UMA entrada por atividade com múltiplas folhas
-                   const atividadesAgrupadas = [];
-                   const idsProcessados = new Set();
-
-                   atividadesDisponiveis.forEach(atividade => {
-                     if (idsProcessados.has(atividade.id)) return;
-                     idsProcessados.add(atividade.id);
-                     atividadesAgrupadas.push(atividade);
-                   });
-
-                   return atividadesAgrupadas.map(atividade => (
-                   <div key={atividade.id} className={`flex justify-between items-center p-3 rounded border ${
-                     atividade.statusPlanejamento === 'concluido' ? 'bg-green-50 border-green-200' :
-                     atividade.estaConcluida ? 'bg-gray-50 border-gray-200' :
-                     atividade.statusPlanejamento === 'em_andamento' ? 'bg-blue-50 border-blue-200' :
-                     atividade.statusPlanejamento === 'pausado' ? 'bg-yellow-50 border-yellow-200' :
-                     atividade.statusPlanejamento === 'nao_iniciado' ? 'bg-blue-50 border-blue-200' :
-                     'bg-white border-gray-200'
-                   }`}>
+                {atividadesDisponiveis.length > 0 ? atividadesDisponiveis.map(atividade => (
+                  <div key={atividade.id} className={`flex justify-between items-center p-3 rounded border ${
+                    atividade.statusPlanejamento === 'concluido' ? 'bg-green-50 border-green-200' :
+                    atividade.estaConcluida ? 'bg-gray-50 border-gray-200' :
+                    atividade.statusPlanejamento === 'em_andamento' ? 'bg-blue-50 border-blue-200' :
+                    atividade.statusPlanejamento === 'pausado' ? 'bg-yellow-50 border-yellow-200' :
+                    atividade.statusPlanejamento === 'nao_iniciado' ? 'bg-blue-50 border-blue-200' :
+                    'bg-white border-gray-200'
+                  }`}>
                     <div className="flex items-center gap-3 flex-1 pr-2">
                       <Checkbox checked={selectedAtividades.includes(atividade.id)} onCheckedChange={() => handleToggleAtividade(atividade.id)} disabled={isUpdatingActivity} />
                       <div className="flex-1">
@@ -924,10 +900,9 @@ export default function DocumentoItem({
                         {isUpdatingActivity ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                       </Button>
                     </div>
-                    </div>
-                    ));
-                    })() : (
-                    <div className="text-center text-gray-500 p-4">
+                  </div>
+                )) : (
+                  <div className="text-center text-gray-500 p-4">
                     <div className="flex flex-col items-center gap-2">
                       <FileText className="w-16 h-16 text-gray-300" />
                       <p>Nenhuma atividade encontrada para esta disciplina/subdisciplinas</p>
