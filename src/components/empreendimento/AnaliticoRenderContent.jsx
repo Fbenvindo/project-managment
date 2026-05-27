@@ -856,14 +856,51 @@ export default function AnaliticoRenderContent({
   );
 
   function renderStatusCell(grupo, ativ) {
+    const genericId = ativ.base_atividade_id || ativ.id;
+    const isConc = isConcluindo[genericId];
+
     if (grupo.folhas.length === 0) {
       if (ativ.source === 'Projeto') return <Badge>Projeto</Badge>;
-      if (ativ.status === 'Concluída') return <Badge className="bg-blue-600 text-white flex items-center gap-1 w-fit"><CheckCircle2 className="w-4 h-4" />Concluída</Badge>;
-      if (ativ.status === 'Planejada') return <Badge className="bg-green-600 text-white flex items-center gap-1 w-fit"><CheckCircle2 className="w-4 h-4" />Planejada</Badge>;
-      return <Badge variant="secondary">Disponível</Badge>;
+      if (ativ.status === 'Concluída') {
+        return (
+          <button
+            onClick={() => handleConcluirEmTodasFolhas(ativ)}
+            disabled={isConc}
+            title="Clique para reverter conclusão"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-blue-600 text-white hover:bg-blue-700 transition-colors cursor-pointer disabled:opacity-60"
+          >
+            {isConc ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+            Concluída
+          </button>
+        );
+      }
+      if (ativ.status === 'Planejada') {
+        return (
+          <button
+            onClick={() => handleConcluirEmTodasFolhas(ativ)}
+            disabled={isConc}
+            title="Clique para concluir"
+            className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-green-600 text-white hover:bg-green-700 transition-colors cursor-pointer disabled:opacity-60"
+          >
+            {isConc ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+            Planejada
+          </button>
+        );
+      }
+      return (
+        <button
+          onClick={() => handleConcluirEmTodasFolhas(ativ)}
+          disabled={isConc}
+          title="Clique para concluir"
+          className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 border border-gray-300 hover:bg-green-50 hover:text-green-700 hover:border-green-400 transition-colors cursor-pointer disabled:opacity-60"
+        >
+          {isConc ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+          Disponível
+        </button>
+      );
     }
     return (
-      <div className="flex gap-1">
+      <div className="flex gap-1 flex-wrap">
         {grupo.folhas.some(f => f.status === 'Concluída') && <Badge className="bg-blue-600 text-white font-semibold shadow-md flex items-center gap-1 w-fit"><CheckCircle2 className="w-4 h-4" />Concluída</Badge>}
         {grupo.folhas.some(f => f.status === 'Planejada') && <Badge className="bg-green-600 text-white font-semibold shadow-md flex items-center gap-1 w-fit"><CheckCircle2 className="w-4 h-4" />Planejada</Badge>}
         {grupo.folhas.some(f => f.status === 'Disponível') && <Badge variant="outline" className="text-gray-600">Disponível</Badge>}
