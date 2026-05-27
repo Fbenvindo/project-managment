@@ -265,8 +265,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
               base_atividade_id: atividadeVinculada.id,
             });
           } else {
+            const planDocVinc = planejamentosDocumentoMap.get(`${doc.id}|${atividadeVinculada.etapa}`);
             const isConcluidaVinc = marcadoresConclusaoSet.has(`${doc.id}|${atividadeVinculada.id}`);
-            const statusVinc = isConcluidaVinc ? 'Concluída' : 'Disponível';
+            const statusVinc = isConcluidaVinc ? 'Concluída' : planDocVinc?.status === 'concluido' ? 'Concluída' : 'Disponível';
             documentActivities.push({
              ...atividadeVinculada,
              uniqueId: `avail-${doc.id}-${atividadeVinculada.id}`,
