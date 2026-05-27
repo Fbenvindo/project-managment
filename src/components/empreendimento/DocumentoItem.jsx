@@ -195,7 +195,9 @@ export default function DocumentoItem({
         ae.etapa === etapaFinal
       );
 
-      const jaFoiPlanejada = !!planejamentoDocDaEtapa || !!planejamentoAtividade || !!atividadeEmpRecord || atividade.status_planejamento === 'planejada';
+      // Apenas atividades com planejamento específico são consideradas "planejadas"
+      // Não herdar "planejada" do planejamento da etapa — atividades novas não devem ser marcadas como planejadas
+      const jaFoiPlanejada = !!planejamentoAtividade || !!atividadeEmpRecord || atividade.status_planejamento === 'planejada';
 
       // Status: priorizar AtividadesEmpreendimento, depois PlanejamentoAtividade, depois PlanejamentoDocumento
       const statusExecucaoMap = { 'em_andamento': 'em_andamento', 'pausada': 'pausado', 'concluida': 'concluido', 'nao_iniciada': 'nao_iniciado' };
