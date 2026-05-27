@@ -19,7 +19,7 @@ import { retryWithBackoff, retryWithExtendedBackoff } from '../utils/apiUtils';
 import { Checkbox } from "@/components/ui/checkbox";
 import { base44 } from '@/api/base44Client';
 const PlanejamentoDocumento = base44.entities.PlanejamentoDocumento;
-import { concluirEtapaCompleta, reverterConclusaoEtapa, concluirEmTodasFolhas } from './AnaliticoHandlers';
+import { concluirEtapaCompleta, reverterConclusaoEtapa, concluirEmTodasFolhas, reverterEmTodasFolhas } from './AnaliticoHandlers';
 import PDFListaDesenvolvimento from '../configuracoes/PDFListaDesenvolvimento';
 import { getNextWorkingDay, distribuirHorasPorDias, isWorkingDay, calculateEndDate, ensureWorkingDay } from '../utils/DateCalculator';
 import { format, isValid, parseISO, addDays } from 'date-fns';
@@ -1081,9 +1081,13 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
     />
   );
 
-  const handleConcluirEmTodasFolhas = (atividade) => concluirEmTodasFolhas({
-    atividade, empreendimentoId, documentos, setIsConcluindo, fetchData, onUpdate
-  });
+  const handleConcluirEmTodasFolhas = (atividade) => {
+    if (atividade.status === 'Concluída') {
+      reverterEmTodasFolhas({ atividade, empreendimentoId, setIsConcluindo, fetchData, onUpdate });
+    } else {
+      concluirEmTodasFolhas({ atividade, empreendimentoId, documentos, setIsConcluindo, fetchData, onUpdate });
+    }
+  };
 
   const handleSaveExecutor = async (atividade, executorEmail, dataInicioCustom = null) => {
     const atividadeId = atividade.base_atividade_id || atividade.id;
@@ -1359,15 +1363,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
     }
   };
 
-  const handleConcluirEtapaCompleta = (etapa) => concluirEtapaCompleta({
-    etapa, empreendimentoId, combinedActivities, documentos,
-    setIsConcluindoEtapa, setEtapaParaConcluir, fetchData, onUpdate
-  });
-
-  const handleReverterConclusaoEtapa = (etapa) => reverterConclusaoEtapa({
-    etapa, empreendimentoId, atividadesAgrupadas,
-    setIsRevertendoEtapa, setEtapaParaReverter, fetchData, onUpdate
-  });
+  const handleConcluirEtapaCompleta = (etapa) => concluirEtapaCompleta({ etapa, empreendimentoId, combinedActivities, documentos, setIsConcluindoEtapa, setEtapaParaConcluir, fetchData, onUpdate });
+  const handleReverterConclusaoEtapa = (etapa) => reverterConclusaoEtapa({ etapa, empreendimentoId, atividadesAgrupadas, setIsRevertendoEtapa, setEtapaParaReverter, fetchData, onUpdate });
 
   const limparAlteracoes = async () => {
     if (!confirm("Deseja limpar o registro de alterações deste empreendimento? Esta ação não pode ser desfeita.")) {
