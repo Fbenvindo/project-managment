@@ -266,12 +266,10 @@ export async function reverterAtividades({
         3, 500, `getPlanosReverter-${atividadeId}`
       );
       for (const plano of planos) {
-        if (plano.status === 'concluido') {
-          await retryWithBackoff(
-            () => PlanejamentoAtividade.update(plano.id, { status: 'nao_iniciado', termino_real: null }),
-            3, 500, `reverterPlano-${plano.id}`
-          );
-        }
+        await retryWithBackoff(
+          () => PlanejamentoAtividade.update(plano.id, { status: 'nao_iniciado', termino_real: null }),
+          3, 500, `reverterPlano-${plano.id}`
+        );
       }
       // Remover marcadores de conclusão
       const marcadores = await retryWithBackoff(
@@ -282,9 +280,9 @@ export async function reverterAtividades({
         await retryWithBackoff(() => Atividade.delete(m.id), 3, 500, `deletarMarcador-${m.id}`);
       }
     }
-    await fetchData();
-    if (onUpdate) onUpdate();
     alert(`✅ ${atividadeIds.length} atividade(s) revertida(s) para "Disponível".`);
+    if (fetchData) await fetchData();
+    if (onUpdate) onUpdate();
   } catch (error) {
     alert("Erro ao reverter atividades: " + error.message);
   }
