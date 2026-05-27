@@ -120,6 +120,16 @@ export default function DocumentosTab({
     }
   }, [updateKey, reloadPlanejamentos]);
 
+  // Recarregar planejamentos em tempo real quando PlanejamentoAtividade mudar externamente
+  // (ex: conclusão feita na aba Atividades do Projeto)
+  useEffect(() => {
+    if (!empreendimento?.id) return;
+    const unsubscribe = PlanejamentoAtividade.subscribe((event) => {
+      reloadPlanejamentos();
+    });
+    return unsubscribe;
+  }, [empreendimento?.id, reloadPlanejamentos]);
+
   useEffect(() => { setLocalDocumentos(documentos); }, [documentos]);
   useEffect(() => { setLocalPlanejamentos(planejamentos); }, [planejamentos]);
 
