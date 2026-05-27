@@ -118,7 +118,7 @@ export default function AtividadesRapidasPage() {
       let descritivo = selectedAtividade.nome;
       if (modalData.usuario_ajudado) {
         const usuarioAjudado = usuarios.find(u => u.email === modalData.usuario_ajudado);
-        descritivo = `Ajudando ${usuarioAjudado?.nome || modalData.usuario_ajudado} - ${descritivo}`;
+        descritivo = `${descritivo} - ${usuarioAjudado?.nome || modalData.usuario_ajudado}`;
       }
       await startExecution({
         descritivo,
