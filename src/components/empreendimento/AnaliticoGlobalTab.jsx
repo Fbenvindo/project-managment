@@ -19,6 +19,7 @@ import { retryWithBackoff, retryWithExtendedBackoff } from '../utils/apiUtils';
 import { Checkbox } from "@/components/ui/checkbox";
 import { base44 } from '@/api/base44Client';
 const PlanejamentoDocumento = base44.entities.PlanejamentoDocumento;
+import { concluirEtapaCompleta, reverterConclusaoEtapa, concluirEmTodasFolhas } from './AnaliticoHandlers';
 import PDFListaDesenvolvimento from '../configuracoes/PDFListaDesenvolvimento';
 import { getNextWorkingDay, distribuirHorasPorDias, isWorkingDay, calculateEndDate, ensureWorkingDay } from '../utils/DateCalculator';
 import { format, isValid, parseISO, addDays } from 'date-fns';
@@ -887,16 +888,24 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
           const baseAtiv = combinedActivities.find(a => a.id === folha.base_atividade_id);
           const descritivo = baseAtiv?.atividade || folha.source_documento_arquivo || '';
           await retryWithBackoff(() => PlanejamentoAtividade.create({
-            empreendimento_id: empreendimentoId,
-            documento_id: folha.source_documento_id,
-            atividade_id: folha.base_atividade_id,
-            etapa: folha.etapa || '',
-            descritivo,
-            tempo_planejado: folha.tempo || 0,
-            status: 'concluido',
-            termino_real: format(new Date(), 'yyyy-MM-dd'),
-            horas_por_dia: {}
+            empreendimento_id: empreendimentoId, documento_id: folha.source_documento_id,
+            atividade_id: folha.base_atividade_id, etapa: folha.etapa || '', descritivo,
+            tempo_planejado: folha.tempo || 0, status: 'concluido',
+            termino_real: format(new Date(), 'yyyy-MM-dd'), horas_por_dia: {}
           }), 3, 500, `criarPlanoConcluidoFolha-${chave}`);
+        }
+        // Criar marcador na entidade Atividade para refletir no DocumentoItem
+        const marcadores = await retryWithBackoff(
+          () => Atividade.filter({ empreendimento_id: empreendimentoId, id_atividade: folha.base_atividade_id, documento_id: folha.source_documento_id, tempo: 0 }),
+          3, 500, `checkMarcadorToggle-${chave}`
+        );
+        if (!marcadores || marcadores.length === 0) {
+          await retryWithBackoff(() => Atividade.create({
+            etapa: folha.etapa || '', disciplina: folha.disciplina, subdisciplina: folha.subdisciplina,
+            atividade: `(Concluída na folha ${folha.source_documento_numero || folha.source_documento_id}) ${String(folha.atividade || '')}`,
+            empreendimento_id: empreendimentoId, id_atividade: folha.base_atividade_id,
+            documento_id: folha.source_documento_id, tempo: 0,
+          }), 3, 500, `criarMarcadorToggle-${chave}`);
         }
       } else {
         await Promise.all(planos.map(p => {
@@ -905,6 +914,14 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
           }
           return retryWithBackoff(() => PlanejamentoAtividade.delete(p.id), 3, 500, `deletarPlanoConcluidoFolha-${p.id}`);
         }));
+        // Remover marcador ao reverter
+        const marcadoresRev = await retryWithBackoff(
+          () => Atividade.filter({ empreendimento_id: empreendimentoId, id_atividade: folha.base_atividade_id, documento_id: folha.source_documento_id, tempo: 0 }),
+          3, 500, `checkMarcadorReverter-${chave}`
+        );
+        for (const m of (marcadoresRev || [])) {
+          await retryWithBackoff(() => Atividade.delete(m.id), 3, 500, `deletarMarcadorReverter-${m.id}`);
+        }
       }
       await fetchData();
     } catch (error) {
@@ -1043,38 +1060,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
     />
   );
 
-  const handleConcluirEmTodasFolhas = async (atividade) => {
-    const atividadeId = atividade.base_atividade_id || atividade.id;
-    if (!window.confirm(`Tem certeza que deseja CONCLUIR a atividade "${atividade.atividade}" em TODAS as folhas?`)) return;
-    setIsConcluindo(prev => ({ ...prev, [atividadeId]: true }));
-    try {
-      const plans = await retryWithBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId, atividade_id: atividadeId }), 3, 500, `getConcluirPlanejamentos-${atividadeId}`);
-      const hoje = format(new Date(), 'yyyy-MM-dd');
-      let concluidos = 0; let jaFinalizados = 0;
-      if (plans.length === 0) {
-        const atividadeOriginalArr = await retryWithBackoff(() => Atividade.filter({ id: atividadeId }), 3, 500, `getOriginalActivity-${atividadeId}`);
-        if (!atividadeOriginalArr || atividadeOriginalArr.length === 0) throw new Error("Atividade original não encontrada.");
-        const atividadeOriginal = atividadeOriginalArr[0];
-        const documentosComAtividade = documentos.filter(doc => doc.disciplina === atividadeOriginal.disciplina && (doc.subdisciplinas || []).includes(atividadeOriginal.subdisciplina));
-        for (const doc of documentosComAtividade) {
-          await retryWithBackoff(() => PlanejamentoAtividade.create({ empreendimento_id: empreendimentoId, atividade_id: atividadeId, documento_id: doc.id, etapa: atividadeOriginal.etapa, descritivo: atividadeOriginal.atividade, tempo_planejado: atividadeOriginal.tempo || 0, status: 'concluido', termino_real: hoje, horas_por_dia: {} }), 3, 500, `createConcludedPlan-${doc.id}-${atividadeId}`);
-          concluidos++;
-        }
-      } else {
-        for (const plano of plans) {
-          if (plano.status === 'concluido') { jaFinalizados++; continue; }
-          await retryWithBackoff(() => PlanejamentoAtividade.update(plano.id, { status: 'concluido', termino_real: hoje }), 3, 500, `concluirPlan-${plano.id}`);
-          concluidos++;
-        }
-      }
-      await fetchData(); if (onUpdate) onUpdate();
-      alert(`✅ Atividade "${atividade.atividade}" concluída!\n• ${concluidos} planejamento(s) concluído(s)${jaFinalizados > 0 ? `\n• ${jaFinalizados} já finalizado(s)` : ''}`);
-    } catch (error) {
-      alert("Erro ao concluir atividade: " + error.message);
-    } finally {
-      setIsConcluindo(prev => ({ ...prev, [atividadeId]: false }));
-    }
-  };
+  const handleConcluirEmTodasFolhas = (atividade) => concluirEmTodasFolhas({
+    atividade, empreendimentoId, documentos, setIsConcluindo, fetchData, onUpdate
+  });
 
   const handleSaveExecutor = async (atividade, executorEmail, dataInicioCustom = null) => {
     const atividadeId = atividade.base_atividade_id || atividade.id;
@@ -1355,171 +1343,15 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
     }
   };
 
-  const handleConcluirEtapaCompleta = async (etapa) => {
-    if (!etapa) {
-      alert("Selecione uma etapa para concluir.");
-      return;
-    }
+  const handleConcluirEtapaCompleta = (etapa) => concluirEtapaCompleta({
+    etapa, empreendimentoId, combinedActivities, documentos,
+    setIsConcluindoEtapa, setEtapaParaConcluir, fetchData, onUpdate
+  });
 
-    // Buscar TODOS os planejamentos da etapa diretamente
-    let todosPlanejamentos = await retryWithBackoff(
-      () => PlanejamentoAtividade.filter({
-        empreendimento_id: empreendimentoId,
-        etapa: etapa
-      }),
-      3, 500, `getTodosPlanejamentosEtapa-${etapa}`
-    );
-
-    // Se não há planejamentos, criar planejamentos concluídos para todas as atividades da etapa
-    if (todosPlanejamentos.length === 0) {
-      console.log(`   ℹ️ Nenhum planejamento encontrado para etapa "${etapa}". Criando planejamentos concluídos...`);
-      
-      // Deduplicate by base_atividade_id
-      const atividadesEtapaDedup = new Map();
-      combinedActivities.filter(a => a.etapa === etapa && !a.isEditable).forEach(a => { const k = a.base_atividade_id || a.id; if (!atividadesEtapaDedup.has(k)) atividadesEtapaDedup.set(k, a); });
-      const atividadesEtapa = Array.from(atividadesEtapaDedup.values());
-      if (atividadesEtapa.length === 0) { alert(`Nenhuma atividade encontrada para a etapa "${etapa}".`); return; }
-      const hoje = format(new Date(), 'yyyy-MM-dd');
-      let novosPlanejamentos = [];
-      const allAtivList = await retryWithBackoff(() => Atividade.list(), 3, 500, `getAllActivitiesForEtapa`);
-      const atividadesOriginaisMap = new Map((allAtivList || []).map(a => [a.id, a]));
-      for (const ativ of atividadesEtapa) {
-        const atividadeId = ativ.base_atividade_id || ativ.id;
-        const atividadeOriginal = atividadesOriginaisMap.get(atividadeId);
-        if (!atividadeOriginal) continue;
-        const documentosComAtividade = documentos.filter(doc => {
-          const disciplinaMatch = doc.disciplina === atividadeOriginal.disciplina;
-          const subdisciplinasDoc = doc.subdisciplinas || [];
-          const subdisciplinaMatch = subdisciplinasDoc.includes(atividadeOriginal.subdisciplina);
-          return disciplinaMatch && subdisciplinaMatch;
-        });
-        
-        const docsParaCriar = documentosComAtividade.length > 0 ? documentosComAtividade.map(d => d.id) : [null];
-        for (const docId of docsParaCriar) {
-          const np = await retryWithBackoff(() => PlanejamentoAtividade.create({ empreendimento_id: empreendimentoId, atividade_id: atividadeId, documento_id: docId, etapa, descritivo: atividadeOriginal.atividade, tempo_planejado: atividadeOriginal.tempo || 0, status: 'concluido', termino_real: hoje, horas_por_dia: {} }), 3, 500, `createEtapaPlan-${docId}-${atividadeId}`);
-          novosPlanejamentos.push(np);
-        }
-      }
-      
-      todosPlanejamentos = novosPlanejamentos;
-      console.log(`   ✅ ${novosPlanejamentos.length} planejamento(s) concluído(s) criado(s)`);
-    }
-
-    // Atividades sem planejamento (Disponível) também precisam ser concluídas
-    const atividadesDedupMap = new Map();
-    combinedActivities.filter(a => a.etapa === etapa && !a.isEditable).forEach(a => { const k = a.base_atividade_id || a.id; if (!atividadesDedupMap.has(k)) atividadesDedupMap.set(k, a); });
-    const atividadesSemPlano = Array.from(atividadesDedupMap.values()).filter(a => !todosPlanejamentos.some(p => p.atividade_id === (a.base_atividade_id || a.id)));
-
-    if (!window.confirm(`Concluir etapa "${etapa}"?\n\n${todosPlanejamentos.length} planejamento(s) + ${atividadesSemPlano.length} atividade(s) disponível(is) serão concluídos.`)) return;
-
-    setIsConcluindoEtapa(true);
-    try {
-      let totalConcluidos = 0;
-      let jaFinalizados = 0;
-      const hoje = format(new Date(), 'yyyy-MM-dd');
-
-      for (const plano of todosPlanejamentos) {
-        if (plano.status === 'concluido') { jaFinalizados++; continue; }
-        await retryWithExtendedBackoff(() => PlanejamentoAtividade.update(plano.id, { status: 'concluido', termino_real: hoje }), `concluirPlan-${plano.id}`);
-        totalConcluidos++;
-      }
-
-      if (atividadesSemPlano.length > 0) {
-        const allAtivExtra = await retryWithBackoff(() => Atividade.list(), 3, 500, `getAllActivitiesExtra`);
-        const atividadesMapExtra = new Map((allAtivExtra || []).map(a => [a.id, a]));
-        for (const ativ of atividadesSemPlano) {
-          const atividadeId = ativ.base_atividade_id || ativ.id;
-          const atividadeOriginal = atividadesMapExtra.get(atividadeId);
-          if (!atividadeOriginal) continue;
-          const docsCompativeis = documentos.filter(doc => doc.disciplina === atividadeOriginal.disciplina && (doc.subdisciplinas || []).includes(atividadeOriginal.subdisciplina));
-          const docsParaCriar = docsCompativeis.length > 0 ? docsCompativeis.map(d => d.id) : [null];
-          for (const docId of docsParaCriar) {
-            await retryWithExtendedBackoff(() => PlanejamentoAtividade.create({ empreendimento_id: empreendimentoId, atividade_id: atividadeId, documento_id: docId, etapa, descritivo: atividadeOriginal.atividade, tempo_planejado: atividadeOriginal.tempo || 0, status: 'concluido', termino_real: hoje, horas_por_dia: {} }), `createConcluido-${docId}-${atividadeId}`); totalConcluidos++;
-          }
-        }
-      }
-
-      await fetchData();
-      if (onUpdate) onUpdate();
-      alert(`✅ Etapa "${etapa}" concluída!\n${totalConcluidos} planejamento(s) concluído(s).${jaFinalizados > 0 ? `\n${jaFinalizados} já estava(m) finalizado(s).` : ''}`);
-      setEtapaParaConcluir('');
-    } catch (error) {
-      alert("Erro ao concluir etapa: " + error.message);
-    } finally {
-      setIsConcluindoEtapa(false);
-    }
-  };
-
-  const handleReverterConclusaoEtapa = async (etapa) => {
-    if (!etapa) {
-      alert("Selecione uma etapa para reverter.");
-      return;
-    }
-
-    const atividadesDaEtapa = atividadesAgrupadas.filter(grupo => 
-      grupo.baseAtividade.etapa === etapa && !grupo.baseAtividade.isEditable
-    );
-
-    if (atividadesDaEtapa.length === 0) {
-      alert(`Nenhuma atividade encontrada para a etapa "${etapa}".`);
-      return;
-    }
-
-    if (!window.confirm(`Tem certeza que deseja REVERTER a conclusão de todas as atividades da etapa "${etapa}"?\n\nTodas as atividades concluídas voltarão ao status "não iniciado".`)) {
-      return;
-    }
-
-    setIsRevertendoEtapa(true);
-
-    try {
-
-
-      let totalPlanejamentosRevertidos = 0;
-
-      for (const grupo of atividadesDaEtapa) {
-        const atividadeId = grupo.baseAtividade.base_atividade_id || grupo.baseAtividade.id;
-        
-        // Buscar todos os planejamentos desta atividade
-        const planejamentosAtividade = await retryWithBackoff(
-          () => PlanejamentoAtividade.filter({
-            empreendimento_id: empreendimentoId,
-            atividade_id: atividadeId
-          }),
-          3, 500, `getPlanejamentos-${atividadeId}`
-        );
-
-        for (const plano of planejamentosAtividade) {
-          if (plano.status === 'concluido') {
-            await retryWithBackoff(
-              () => PlanejamentoAtividade.update(plano.id, {
-                status: 'nao_iniciado',
-                termino_real: null
-              }),
-              3, 500, `reverterPlan-${plano.id}`
-            );
-            totalPlanejamentosRevertidos++;
-          }
-        }
-      }
-
-      console.log(`✅ ========================================`);
-      console.log(`✅ CONCLUSÃO DA ETAPA "${etapa}" REVERTIDA`);
-      console.log(`   Planejamentos revertidos: ${totalPlanejamentosRevertidos}`);
-      console.log(`✅ ========================================\n`);
-
-      await fetchData();
-      if (onUpdate) onUpdate();
-
-      alert(`✅ Conclusão da etapa "${etapa}" revertida!\n\n${totalPlanejamentosRevertidos} planejamento(s) voltou(aram) para "não iniciado".`);
-      setEtapaParaReverter('');
-
-    } catch (error) {
-      console.error("❌ Erro ao reverter conclusão da etapa:", error);
-      alert("Erro ao reverter conclusão da etapa: " + error.message);
-    } finally {
-      setIsRevertendoEtapa(false);
-    }
-  };
+  const handleReverterConclusaoEtapa = (etapa) => reverterConclusaoEtapa({
+    etapa, empreendimentoId, atividadesAgrupadas,
+    setIsRevertendoEtapa, setEtapaParaReverter, fetchData, onUpdate
+  });
 
   const limparAlteracoes = async () => {
     if (!confirm("Deseja limpar o registro de alterações deste empreendimento? Esta ação não pode ser desfeita.")) {
