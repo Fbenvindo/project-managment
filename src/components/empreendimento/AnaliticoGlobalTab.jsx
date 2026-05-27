@@ -285,7 +285,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
             });
           } else {
             const planDocVinc = planejamentosDocumentoMap.get(`${doc.id}|${atividadeVinculada.etapa}`);
-            const isConcluidaVinc = marcadoresConclusaoSet.has(`${doc.id}|${atividadeVinculada.id}`) || planDocVinc?.status === 'concluido';
+            const isConcluidaVinc = marcadoresConclusaoSet.has(`${doc.id}|${atividadeVinculada.id}`);
             const statusVinc = isConcluidaVinc ? 'Concluída' : planDocVinc ? 'Planejada' : 'Disponível';
             documentActivities.push({
              ...atividadeVinculada,
@@ -346,7 +346,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
                  const tempoFinal = tempoComOverride * fatorDificuldade;
 
                  const planDoc = planejamentosDocumentoMap.get(`${doc.id}|${etapaCorreta}`);
-                 const isConcluida = marcadoresConclusaoSet.has(`${doc.id}|${baseAtividade.id}`) || planDoc?.status === 'concluido';
+                 // Marcador de conclusão específico da atividade neste documento
+                 const temMarcadorConclusao = marcadoresConclusaoSet.has(`${doc.id}|${baseAtividade.id}`);
+                 // Só herdar status do PlanejamentoDocumento se houver marcador de conclusão específico desta atividade
+                 // Novas atividades criadas após a conclusão da etapa não devem herdar o status automaticamente
+                 const isConcluida = temMarcadorConclusao;
                  const statusAtiv = isConcluida ? 'Concluída' : planDoc ? 'Planejada' : 'Disponível';
 
                  documentActivities.push({
@@ -1364,7 +1368,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
   };
 
   const handleConcluirEtapaCompleta = (etapa) => concluirEtapaCompleta({ etapa, empreendimentoId, combinedActivities, documentos, setIsConcluindoEtapa, setEtapaParaConcluir, fetchData, onUpdate });
-  const handleReverterConclusaoEtapa = (etapa) => reverterConclusaoEtapa({ etapa, empreendimentoId, atividadesAgrupadas, setIsRevertendoEtapa, setEtapaParaReverter, fetchData, onUpdate });
+  const handleReverterConclusaoEtapa = (etapa) => reverterConclusaoEtapa({ etapa, empreendimentoId, atividadesAgrupadas, setIsRevertendoEtapa, fetchData, onUpdate });
 
   const limparAlteracoes = async () => {
     if (!confirm("Deseja limpar o registro de alterações deste empreendimento? Esta ação não pode ser desfeita.")) {
