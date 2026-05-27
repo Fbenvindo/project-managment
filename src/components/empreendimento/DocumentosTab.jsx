@@ -357,19 +357,11 @@ export default function DocumentosTab({
           if (idsComOverrideEspecifico.has(ativ.id)) return false;
           return ativ.disciplina === disciplinaDoc && Array.isArray(subdisciplinasDoc) && subdisciplinasDoc.includes(ativ.subdisciplina);
         }
+        // Só mostrar se: documento_ids contém este doc OU documento_id é este doc específico
         const temDocumentoEspecifico = ativ.documento_id === documento.id ||
           (Array.isArray(ativ.documento_ids) && ativ.documento_ids.includes(documento.id));
         if (ativ.empreendimento_id === empreendimento.id && temDocumentoEspecifico && ativ.tempo !== -999 && ativ.tempo !== 0) {
-          // Se é uma atividade com múltiplos documentos, só mostrar se documento_ids estar preenchido
-          // (evita mostrar separadamente cada atividade criada por folha)
-          if (Array.isArray(ativ.documento_ids) && ativ.documento_ids.length > 0) {
-            return true;
-          }
-          // Senão, se é documento_id específico
-          if (ativ.documento_id === documento.id) {
-            return true;
-          }
-          return false;
+          return true;
         }
         return false;
       });
