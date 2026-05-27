@@ -284,9 +284,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
               base_atividade_id: atividadeVinculada.id,
             });
           } else {
-            const planDocVinc = planejamentosDocumentoMap.get(`${doc.id}|${atividadeVinculada.etapa}`);
+            const temPlanAtivVinc = planejamentosMap.has(`${doc.id}-${atividadeVinculada.id}`);
             const isConcluidaVinc = marcadoresConclusaoSet.has(`${doc.id}|${atividadeVinculada.id}`);
-            const statusVinc = isConcluidaVinc ? 'Concluída' : planDocVinc ? 'Planejada' : 'Disponível';
+            const statusVinc = isConcluidaVinc ? 'Concluída' : temPlanAtivVinc ? 'Planejada' : 'Disponível';
             documentActivities.push({
              ...atividadeVinculada,
              uniqueId: `avail-${doc.id}-${atividadeVinculada.id}`,
@@ -346,12 +346,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
                  const tempoFinal = tempoComOverride * fatorDificuldade;
 
                  const planDoc = planejamentosDocumentoMap.get(`${doc.id}|${etapaCorreta}`);
-                 // Marcador de conclusão específico da atividade neste documento
                  const temMarcadorConclusao = marcadoresConclusaoSet.has(`${doc.id}|${baseAtividade.id}`);
-                 // Só herdar status do PlanejamentoDocumento se houver marcador de conclusão específico desta atividade
-                 // Novas atividades criadas após a conclusão da etapa não devem herdar o status automaticamente
-                 const isConcluida = temMarcadorConclusao;
-                 const statusAtiv = isConcluida ? 'Concluída' : planDoc ? 'Planejada' : 'Disponível';
+                 const temPlanAtiv = planejamentosMap.has(`${doc.id}-${baseAtividade.id}`);
+                 // Atividades sem planejamento próprio não herdam status de PlanejamentoDocumento
+                 const statusAtiv = temMarcadorConclusao ? 'Concluída' : temPlanAtiv ? 'Planejada' : 'Disponível';
 
                  documentActivities.push({
                      ...baseAtividade,
@@ -1367,8 +1365,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
     }
   };
 
-  const handleConcluirEtapaCompleta = (etapa) => concluirEtapaCompleta({ etapa, empreendimentoId, combinedActivities, documentos, setIsConcluindoEtapa, setEtapaParaConcluir, fetchData, onUpdate });
-  const handleReverterConclusaoEtapa = (etapa) => reverterConclusaoEtapa({ etapa, empreendimentoId, atividadesAgrupadas, setIsRevertendoEtapa, fetchData, onUpdate });
+  const handleConcluirEtapaCompleta = (e) => concluirEtapaCompleta({ etapa: e, empreendimentoId, combinedActivities, documentos, setIsConcluindoEtapa, setEtapaParaConcluir, fetchData, onUpdate });
+  const handleReverterConclusaoEtapa = (e) => reverterConclusaoEtapa({ etapa: e, empreendimentoId, atividadesAgrupadas, setIsRevertendoEtapa, fetchData, onUpdate });
 
   const limparAlteracoes = async () => {
     if (!confirm("Deseja limpar o registro de alterações deste empreendimento? Esta ação não pode ser desfeita.")) {
