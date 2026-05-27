@@ -257,8 +257,10 @@ export default function DocumentosTab({
             const atividadesExcluidasPorDocChild = new Set();
             atividadesEmp.forEach(ativ => {
               if (ativ.empreendimento_id === empreendimento.id && ativ.tempo === -999 && ativ.id_atividade) {
-                if (ativ.documento_id === child.id) atividadesExcluidasPorDocChild.add(ativ.id_atividade);
-                else if (!ativ.documento_id) atividadesExcluidasGlobalChild.add(ativ.id_atividade);
+                const temDocumentoEspecifico = ativ.documento_id === child.id ||
+                  (Array.isArray(ativ.documento_ids) && ativ.documento_ids.includes(child.id));
+                if (temDocumentoEspecifico) atividadesExcluidasPorDocChild.add(ativ.id_atividade);
+                else if (!ativ.documento_id && (!Array.isArray(ativ.documento_ids) || ativ.documento_ids.length === 0)) atividadesExcluidasGlobalChild.add(ativ.id_atividade);
               }
             });
 
@@ -343,7 +345,9 @@ export default function DocumentosTab({
       // IDs de atividades genéricas que têm override específico nesta folha (evitar dupla contagem)
       const idsComOverrideEspecifico = new Set();
       atividadesEmpAuto.forEach(ativ => {
-        if (ativ.empreendimento_id === empreendimento.id && ativ.documento_id === documento.id && ativ.id_atividade && ativ.tempo !== -999) {
+        const temDocumentoEspecifico = ativ.documento_id === documento.id ||
+          (Array.isArray(ativ.documento_ids) && ativ.documento_ids.includes(documento.id));
+        if (ativ.empreendimento_id === empreendimento.id && temDocumentoEspecifico && ativ.id_atividade && ativ.tempo !== -999) {
           idsComOverrideEspecifico.add(ativ.id_atividade);
         }
       });
@@ -353,7 +357,9 @@ export default function DocumentosTab({
           if (idsComOverrideEspecifico.has(ativ.id)) return false;
           return ativ.disciplina === disciplinaDoc && Array.isArray(subdisciplinasDoc) && subdisciplinasDoc.includes(ativ.subdisciplina);
         }
-        if (ativ.empreendimento_id === empreendimento.id && ativ.documento_id === documento.id && ativ.tempo !== -999 && ativ.tempo !== 0) {
+        const temDocumentoEspecifico = ativ.documento_id === documento.id ||
+          (Array.isArray(ativ.documento_ids) && ativ.documento_ids.includes(documento.id));
+        if (ativ.empreendimento_id === empreendimento.id && temDocumentoEspecifico && ativ.tempo !== -999 && ativ.tempo !== 0) {
           return true;
         }
         return false;
@@ -363,8 +369,10 @@ export default function DocumentosTab({
       const atividadesExcluidasPorDoc = new Set();
       atividadesEmpAuto.forEach(ativ => {
         if (ativ.empreendimento_id === empreendimento.id && ativ.tempo === -999 && ativ.id_atividade) {
-          if (ativ.documento_id === documento.id) atividadesExcluidasPorDoc.add(ativ.id_atividade);
-          else if (!ativ.documento_id) atividadesExcluidasGlobal.add(ativ.id_atividade);
+          const temDocumentoEspecifico = ativ.documento_id === documento.id ||
+            (Array.isArray(ativ.documento_ids) && ativ.documento_ids.includes(documento.id));
+          if (temDocumentoEspecifico) atividadesExcluidasPorDoc.add(ativ.id_atividade);
+          else if (!ativ.documento_id && (!Array.isArray(ativ.documento_ids) || ativ.documento_ids.length === 0)) atividadesExcluidasGlobal.add(ativ.id_atividade);
         }
       });
 
