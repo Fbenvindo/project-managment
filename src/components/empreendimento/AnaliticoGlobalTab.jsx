@@ -94,7 +94,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
         atividadesDoProjetoData,
         atividadesEmpreendimentoData,
         pavimentosData,
-        itensPREData
+        itensPREData,
+        planejamentosDocumentoData
       ] = await Promise.all([
         retryWithBackoff(() => Atividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchProjectActivities'),
         retryWithBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchPlanejamentos'),
@@ -108,7 +109,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
         retryWithBackoff(() => AtividadesDoProjeto.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAtividadesDoProjeto'),
         retryWithBackoff(() => base44.entities.AtividadesEmpreendimento.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchAtividadesEmpreendimento'),
         retryWithBackoff(() => base44.entities.Pavimento.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchPavimentos'),
-        retryWithBackoff(() => ItemPRE.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchItensPRE')
+        retryWithBackoff(() => ItemPRE.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchItensPRE'),
+        retryWithBackoff(() => PlanejamentoDocumento.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'fetchPlanejamentosDocumento')
       ]);
 
       setDocumentos(documentosData || []);
@@ -166,6 +168,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
         (projectActivities || [])
           .filter(pa => pa.tempo === 0 && pa.id_atividade && pa.documento_id)
           .map(pa => `${pa.documento_id}|${pa.id_atividade}`)
+      );
+      const planejamentosDocumentoConcluidos = new Set(
+        (planejamentosDocumentoData || [])
+          .filter(p => p.status === 'concluido' && p.documento_id && p.etapa)
+          .map(p => `${p.documento_id}|${p.etapa}`)
       );
 
       // Buscar etapas cadastradas no empreendimento
@@ -277,7 +284,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
               base_atividade_id: atividadeVinculada.id,
             });
           } else {
-            const isConcluidaVinc = marcadoresConclusaoSet.has(`${doc.id}|${atividadeVinculada.id}`);
+            const isConcluidaVinc = marcadoresConclusaoSet.has(`${doc.id}|${atividadeVinculada.id}`)
+              || planejamentosDocumentoConcluidos.has(`${doc.id}|${atividadeVinculada.etapa}`);
             documentActivities.push({
               ...atividadeVinculada,
               uniqueId: `avail-${doc.id}-${atividadeVinculada.id}`,
@@ -338,7 +346,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
                  const tempoFinal = tempoComOverride * fatorDificuldade;
 
                  // Verificar se existe marcador de conclusão manual (entidade Atividade com tempo=0)
-                 const isConcluida = marcadoresConclusaoSet.has(`${doc.id}|${baseAtividade.id}`);
+                 // ou se o PlanejamentoDocumento desta etapa/folha está concluído
+                 const isConcluida = marcadoresConclusaoSet.has(`${doc.id}|${baseAtividade.id}`)
+                   || planejamentosDocumentoConcluidos.has(`${doc.id}|${etapaCorreta}`);
 
                  documentActivities.push({
                      ...baseAtividade,
@@ -1326,12 +1336,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
         }
       }
 
-      console.log(`\n✅ ========================================`);
-      console.log(`✅ PLANEJAMENTO EM LOTE CONCLUÍDO`);
-      console.log(`✅ ========================================`);
-      console.log(`   Planejadas: ${planejadosComSucesso}`);
-      console.log(`   Erros: ${erros}`);
-      console.log(`✅ ========================================\n`);
+      console.log(`Planejamento lote: ${planejadosComSucesso} ok, ${erros} erros`);
 
       // Limpar seleção
       setAtividadesSelecionadasParaPlanejar(new Set());
