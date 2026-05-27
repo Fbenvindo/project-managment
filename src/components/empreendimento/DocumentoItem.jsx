@@ -198,15 +198,9 @@ export default function DocumentoItem({
       const jaFoiPlanejada = !!planejamentoDocDaEtapa || !!planejamentoAtividade || !!atividadeEmpRecord || atividade.status_planejamento === 'planejada';
 
       // Status: priorizar AtividadesEmpreendimento, depois PlanejamentoAtividade, depois PlanejamentoDocumento
-      // IMPORTANTE: Não herdar status 'concluido' do PlanejamentoDocumento se a atividade não existia antes da conclusão
-      // Uma atividade "nova" é identificada por: não ter marcador de conclusão (estaConcluida=false) E não ter PlanejamentoAtividade próprio
       const statusExecucaoMap = { 'em_andamento': 'em_andamento', 'pausada': 'pausado', 'concluida': 'concluido', 'nao_iniciada': 'nao_iniciado' };
       const statusDeExecucao = atividadeEmpRecord?.status_execucao ? statusExecucaoMap[atividadeEmpRecord.status_execucao] : null;
-      const statusDocBase = planejamentoDocDaEtapa?.status;
-      // Atividade nova = adicionada após conclusão da etapa: sem planejamento próprio E sem marcador de conclusão manual
-      const isAtividadeNova = statusDocBase === 'concluido' && !planejamentoAtividade && !estaConcluida;
-      const statusDocHerdado = isAtividadeNova ? null : statusDocBase;
-      const statusPlanejamento = statusDeExecucao || planejamentoAtividade?.status || (jaFoiPlanejada ? (statusDocHerdado || 'nao_iniciado') : null);
+      const statusPlanejamento = statusDeExecucao || planejamentoAtividade?.status || (jaFoiPlanejada ? (planejamentoDocDaEtapa?.status || 'nao_iniciado') : null);
 
       // Se existe registro em AtividadesEmpreendimento com tempo válido, usar esse tempo (já é o tempo final correto)
       const tempoDoEmpRecord = atividadeEmpRecord && typeof atividadeEmpRecord.tempo === 'number' && atividadeEmpRecord.tempo > 0
