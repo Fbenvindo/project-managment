@@ -675,7 +675,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
   
   // Handler para reverter atividade
   const handleReverterAtividade = async (atividadeId) => {
-    reverterAtividades({ atividadeIds: [atividadeId], empreendimentoId, fetchData, onUpdate });
+    setIsConcluindo(prev => ({ ...prev, [atividadeId]: true }));
+    try {
+      await reverterAtividades({ atividadeIds: [atividadeId], empreendimentoId, fetchData, onUpdate });
+    } finally {
+      setIsConcluindo(prev => ({ ...prev, [atividadeId]: false }));
+    }
   };
 
   const renderContent = () => (
