@@ -131,7 +131,9 @@ export default function DocumentoItem({
         return ativ.disciplina === disciplinaDoc &&
           Array.isArray(subdisciplinasDoc) && subdisciplinasDoc.includes(ativ.subdisciplina);
       }
-      if (ativ.empreendimento_id === empreendimento.id && ativ.documento_id === doc.id && ativ.tempo !== -999) {
+      const vinculadoADocumento = ativ.documento_id === doc.id ||
+        (Array.isArray(ativ.documento_ids) && ativ.documento_ids.includes(doc.id));
+      if (ativ.empreendimento_id === empreendimento.id && vinculadoADocumento && ativ.tempo !== -999) {
         if (ativ.tempo === 0 && String(ativ.atividade || '').includes('Concluída na folha')) return false; // marcador interno, não exibir
         if (ativ.tempo === -999) return false;
         return true;
