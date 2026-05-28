@@ -197,12 +197,16 @@ export default function DocumentoItem({
         ae.etapa === etapaFinal
       );
 
-      const jaFoiPlanejada = !!planejamentoDocDaEtapa || !!planejamentoAtividade || !!atividadeEmpRecord || atividade.status_planejamento === 'planejada';
+      // Atividades de projeto (empreendimento_id definido) não herdam status do PlanejamentoDocumento da etapa
+      const isAtividadeProjeto = !!atividade.empreendimento_id;
+      const jaFoiPlanejada = !!planejamentoAtividade || !!atividadeEmpRecord || atividade.status_planejamento === 'planejada' ||
+        (!isAtividadeProjeto && !!planejamentoDocDaEtapa);
 
-      // Status: priorizar AtividadesEmpreendimento, depois PlanejamentoAtividade, depois PlanejamentoDocumento
+      // Status: priorizar AtividadesEmpreendimento, depois PlanejamentoAtividade, depois PlanejamentoDocumento (só para genéricas)
       const statusExecucaoMap = { 'em_andamento': 'em_andamento', 'pausada': 'pausado', 'concluida': 'concluido', 'nao_iniciada': 'nao_iniciado' };
       const statusDeExecucao = atividadeEmpRecord?.status_execucao ? statusExecucaoMap[atividadeEmpRecord.status_execucao] : null;
-      const statusPlanejamento = statusDeExecucao || planejamentoAtividade?.status || (jaFoiPlanejada ? (planejamentoDocDaEtapa?.status || 'nao_iniciado') : null);
+      const statusPlanejamento = statusDeExecucao || planejamentoAtividade?.status ||
+        (!isAtividadeProjeto && jaFoiPlanejada ? (planejamentoDocDaEtapa?.status || 'nao_iniciado') : null);
 
       // Se existe registro em AtividadesEmpreendimento com tempo válido, usar esse tempo (já é o tempo final correto)
       const tempoDoEmpRecord = atividadeEmpRecord && typeof atividadeEmpRecord.tempo === 'number' && atividadeEmpRecord.tempo > 0
