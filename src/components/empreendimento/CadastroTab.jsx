@@ -748,65 +748,67 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
        let successCount = 0;
        let errorCount = 0;
        const updatedLinhas = new Map();
-       const DELAY_ENTRE_SAVES = 300; // Delay entre cada save para evitar rate limit
+       const BATCH_SIZE = 3;
+       const DELAY_ENTRE_LOTES = 600;
 
-       // Processar sequencialmente (uma requisição por vez)
-       for (const linha of linhasParaSalvar) {
-         try {
-           // Preservar metadados
-           const datasComMetadados = {};
-           if (linha.datas) {
-             Object.entries(linha.datas).forEach(([etapa, etapaData]) => {
-               if (etapaData && typeof etapaData === 'object') {
-                 datasComMetadados[etapa] = { ...etapaData };
-               }
-             });
-           }
+       const etapasVisiveis = ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e));
 
-           // GARANTIR que revisões criadas são salvas mesmo que vazias
-           const etapasVisiveis = ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e));
-           etapasVisiveis.forEach(etapa => {
-             const revisoesEtapa = revisoesPorEtapa[etapa];
-             if (revisoesEtapa && revisoesEtapa.length > 0) {
-               if (!datasComMetadados[etapa]) datasComMetadados[etapa] = {};
-               datasComMetadados[etapa]._revisoes_existentes = revisoesEtapa;
+       const processarLinha = async (linha) => {
+         const datasComMetadados = {};
+         if (linha.datas) {
+           Object.entries(linha.datas).forEach(([etapa, etapaData]) => {
+             if (etapaData && typeof etapaData === 'object') {
+               datasComMetadados[etapa] = { ...etapaData };
              }
            });
-
-           const linhaDataFinal = {
-             empreendimento_id: empreendimento.id,
-             ordem: linha.ordem ?? linhasParaSalvar.indexOf(linha),
-             documento_id: linha.documento_id,
-             datas: datasComMetadados
-           };
-
-           const isNew = linha.isNew || linha.id.toString().startsWith('temp-');
-           let result;
-           let attempts = 0;
-           const maxAttempts = 3;
-
-           while (attempts < maxAttempts) {
-             try {
-               result = isNew
-                 ? await DataCadastro.create(linhaDataFinal)
-                 : await DataCadastro.update(linha.id, linhaDataFinal);
-               break;
-             } catch (err) {
-               attempts++;
-               if (attempts >= maxAttempts) throw err;
-               await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
-             }
-           }
-
-           successCount++;
-           updatedLinhas.set(linha.id, result);
-         } catch (error) {
-           errorCount++;
-           console.error(`❌ ERRO na linha ${linha.id}:`, error);
          }
+         etapasVisiveis.forEach(etapa => {
+           const revisoesEtapa = revisoesPorEtapa[etapa];
+           if (revisoesEtapa && revisoesEtapa.length > 0) {
+             if (!datasComMetadados[etapa]) datasComMetadados[etapa] = {};
+             datasComMetadados[etapa]._revisoes_existentes = revisoesEtapa;
+           }
+         });
 
-         // Delay entre cada requisição para respeitar rate limit
-         await new Promise(resolve => setTimeout(resolve, DELAY_ENTRE_SAVES));
+         const linhaDataFinal = {
+           empreendimento_id: empreendimento.id,
+           ordem: linha.ordem ?? linhasParaSalvar.indexOf(linha),
+           documento_id: linha.documento_id,
+           datas: datasComMetadados
+         };
+
+         const isNew = linha.isNew || linha.id.toString().startsWith('temp-');
+         let attempts = 0;
+         while (attempts < 3) {
+           try {
+             const result = isNew
+               ? await DataCadastro.create(linhaDataFinal)
+               : await DataCadastro.update(linha.id, linhaDataFinal);
+             return { linhaId: linha.id, result };
+           } catch (err) {
+             attempts++;
+             if (attempts >= 3) throw err;
+             await new Promise(resolve => setTimeout(resolve, 1500 * attempts));
+           }
+         }
+       };
+
+       // Processar em lotes de BATCH_SIZE com delay entre lotes
+       for (let i = 0; i < linhasParaSalvar.length; i += BATCH_SIZE) {
+         const lote = linhasParaSalvar.slice(i, i + BATCH_SIZE);
+         const resultados = await Promise.allSettled(lote.map(processarLinha));
+         resultados.forEach((res, idx) => {
+           if (res.status === 'fulfilled' && res.value) {
+             successCount++;
+             updatedLinhas.set(res.value.linhaId, res.value.result);
+           } else {
+             errorCount++;
+             console.error(`❌ ERRO na linha ${lote[idx].id}:`, res.reason);
+           }
+         });
+         if (i + BATCH_SIZE < linhasParaSalvar.length) {
+           await new Promise(resolve => setTimeout(resolve, DELAY_ENTRE_LOTES));
+         }
        }
 
       // Atualizar estado local com os IDs salvos
