@@ -471,15 +471,21 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     setHasUnsavedChanges(true);
     setEtapasExcluidas(prev => prev.filter(e => e !== etapa));
     
-    // Remover marcador de exclusão
+    // Remover marcador de exclusão — marcar como modificadas apenas as que tinham _excluida
+    const idsComExcluida = new Set(
+      linhas
+        .filter(l => l.datas?.[etapa]?._excluida)
+        .map(l => l.id)
+    );
     setLinhas(prev => prev.map(linha => {
       const novasDatas = { ...linha.datas };
       if (novasDatas[etapa] && novasDatas[etapa]._excluida) {
+        novasDatas[etapa] = { ...novasDatas[etapa] };
         delete novasDatas[etapa]._excluida;
       }
       return { ...linha, datas: novasDatas };
     }));
-    setLinhasModificadas(new Set(linhas.map(l => l.id)));
+    setLinhasModificadas(prev => new Set([...prev, ...idsComExcluida]));
   };
 
   const handleUpdateData = (linhaId, etapa, revisao, valor) => {
