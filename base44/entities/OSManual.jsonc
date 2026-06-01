@@ -1,0 +1,32 @@
+{
+  "name": "OSManual",
+  "type": "object",
+  "properties": {
+    "usuario_email": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio"
+    },
+    "data": {
+      "type": "string",
+      "format": "date",
+      "description": "Data da OS"
+    },
+    "os": {
+      "type": "string",
+      "description": "N\u00famero da OS"
+    },
+    "empreendimento_nome": {
+      "type": "string",
+      "description": "Nome do empreendimento"
+    },
+    "cor": {
+      "type": "string",
+      "description": "Cor da OS"
+    }
+  },
+  "required": [
+    "usuario_email",
+    "data",
+    "os"
+  ]
+}

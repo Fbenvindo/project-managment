@@ -1,0 +1,48 @@
+{
+  "name": "AtividadeFuncao",
+  "type": "object",
+  "properties": {
+    "funcao": {
+      "type": "string",
+      "description": "A fun\u00e7\u00e3o/cargo ao qual esta atividade se aplica (ex: Projetista, Coordenador)."
+    },
+    "atividade": {
+      "type": "string",
+      "description": "Nome ou descri\u00e7\u00e3o da atividade modelo."
+    },
+    "frequencia": {
+      "type": "string",
+      "enum": [
+        "diaria",
+        "semanal",
+        "quinzenal",
+        "mensal",
+        "ocasional"
+      ],
+      "description": "A frequ\u00eancia com que a atividade ocorre. 'ocasional' notifica usu\u00e1rios toda sexta-feira para agendarem quando quiserem."
+    },
+    "tempo_estimado": {
+      "type": "number",
+      "description": "O tempo estimado em horas para cada ocorr\u00eancia da atividade."
+    },
+    "dias_semana": {
+      "type": "array",
+      "items": {
+        "type": "integer"
+      },
+      "default": [],
+      "description": "Dias da semana para a recorr\u00eancia (0=Domingo, 1=Segunda, etc.). Aplic\u00e1vel para frequ\u00eancias semanal e quinzenal."
+    },
+    "dia_mes": {
+      "type": "integer",
+      "description": "Dia do m\u00eas para a recorr\u00eancia (1-31). Aplic\u00e1vel para frequ\u00eancia mensal.",
+      "default": 1
+    }
+  },
+  "required": [
+    "funcao",
+    "atividade",
+    "frequencia",
+    "tempo_estimado"
+  ]
+}

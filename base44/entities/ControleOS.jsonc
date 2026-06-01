@@ -1,0 +1,450 @@
+{
+  "name": "ControleOS",
+  "type": "object",
+  "properties": {
+    "empreendimento_id": {
+      "type": "string",
+      "description": "ID do empreendimento relacionado"
+    },
+    "os": {
+      "type": "string",
+      "description": "N\u00famero da OS"
+    },
+    "gestao": {
+      "type": "string",
+      "description": "Respons\u00e1vel pela gest\u00e3o (nome do usu\u00e1rio)"
+    },
+    "formalizacao": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o da formaliza\u00e7\u00e3o"
+    },
+    "cronograma": {
+      "type": "string",
+      "enum": [
+        "NA",
+        "Conclu\u00eddo",
+        "Conclu\u00eddo - EX",
+        "Conclu\u00eddo - EX R00",
+        "Conclu\u00eddo - LO",
+        "Conclu\u00eddo - R00",
+        "Conclu\u00eddo - R01",
+        "Conclu\u00eddo - R02",
+        "Conclu\u00eddo - R03",
+        "Conclu\u00eddo - R04",
+        "Conclu\u00eddo - R05",
+        "Conclu\u00eddo - R06",
+        "Conclu\u00eddo - R07",
+        "Hold",
+        "Paralisado",
+        "Pendente"
+      ],
+      "default": "NA",
+      "description": "Status do Cronograma"
+    },
+    "markup": {
+      "type": "string",
+      "enum": [
+        "NA",
+        "Conclu\u00eddo",
+        "Conclu\u00eddo - LO",
+        "Conclu\u00eddo - EX",
+        "Conclu\u00eddo - PR",
+        "Em andamento",
+        "Hold",
+        "Pendente"
+      ],
+      "default": "NA",
+      "description": "Status do Markup"
+    },
+    "abertura_os_servidor": {
+      "type": "string",
+      "enum": [
+        "NA",
+        "Conclu\u00eddo",
+        "Pendente",
+        "Em andamento",
+        "Hold",
+        "Paralisado",
+        "T\u00e9cnico",
+        "Ag. Libera\u00e7\u00e3o",
+        "Finalizado"
+      ],
+      "default": "NA",
+      "description": "Status da Abertura de OS - Servidor"
+    },
+    "atividades_planejamento": {
+      "type": "string",
+      "enum": [
+        "NA",
+        "Conclu\u00eddo",
+        "Pendente",
+        "Em andamento",
+        "Hold",
+        "Paralisado",
+        "T\u00e9cnico",
+        "Ag. Libera\u00e7\u00e3o",
+        "Finalizado"
+      ],
+      "default": "NA",
+      "description": "Status das Atividades de Planejamento"
+    },
+    "kickoff_cliente": {
+      "type": "string",
+      "enum": [
+        "NA",
+        "Conclu\u00eddo",
+        "Pendente",
+        "Em andamento",
+        "Hold",
+        "Paralisado",
+        "T\u00e9cnico",
+        "Ag. Libera\u00e7\u00e3o",
+        "Finalizado"
+      ],
+      "default": "NA",
+      "description": "Status do Kick off com Cliente"
+    },
+    "art_ee_ais": {
+      "type": "string",
+      "enum": [
+        "NA",
+        "Conclu\u00eddo",
+        "Pendente",
+        "Em andamento",
+        "Hold",
+        "Paralisado",
+        "T\u00e9cnico",
+        "Ag. Libera\u00e7\u00e3o",
+        "Finalizado"
+      ],
+      "default": "NA",
+      "description": "Status ART - EE/AIS"
+    },
+    "art_hid_in": {
+      "type": "string",
+      "enum": [
+        "NA",
+        "Conclu\u00eddo",
+        "Pendente",
+        "Em andamento",
+        "Hold",
+        "Paralisado",
+        "T\u00e9cnico",
+        "Ag. Libera\u00e7\u00e3o",
+        "Finalizado"
+      ],
+      "default": "NA",
+      "description": "Status ART - HID/IN"
+    },
+    "art_hvac": {
+      "type": "string",
+      "enum": [
+        "NA",
+        "Conclu\u00eddo",
+        "Pendente",
+        "Em andamento",
+        "Hold",
+        "Paralisado",
+        "T\u00e9cnico",
+        "Ag. Libera\u00e7\u00e3o",
+        "Finalizado"
+      ],
+      "default": "NA",
+      "description": "Status ART - HVAC"
+    },
+    "art_bomb": {
+      "type": "string",
+      "enum": [
+        "NA",
+        "Conclu\u00eddo",
+        "Pendente",
+        "Em andamento",
+        "Hold",
+        "Paralisado",
+        "T\u00e9cnico",
+        "Ag. Libera\u00e7\u00e3o",
+        "Finalizado"
+      ],
+      "default": "NA",
+      "description": "Status ART - BOMB"
+    },
+    "conc_telefonia": {
+      "type": "string",
+      "enum": [
+        "NA",
+        "Conclu\u00eddo",
+        "Pendente",
+        "Em andamento",
+        "Hold",
+        "Paralisado",
+        "T\u00e9cnico",
+        "Ag. Libera\u00e7\u00e3o",
+        "Finalizado",
+        "Em aprova\u00e7\u00e3o"
+      ],
+      "default": "NA",
+      "description": "Status Concession\u00e1ria Telefonia"
+    },
+    "conc_gas": {
+      "type": "string",
+      "enum": [
+        "NA",
+        "Conclu\u00eddo",
+        "Pendente",
+        "Em andamento",
+        "Hold",
+        "Paralisado",
+        "T\u00e9cnico",
+        "Ag. Libera\u00e7\u00e3o",
+        "Finalizado",
+        "Em aprova\u00e7\u00e3o"
+      ],
+      "default": "NA",
+      "description": "Status Concession\u00e1ria G\u00e1s"
+    },
+    "conc_eletrica": {
+      "type": "string",
+      "enum": [
+        "NA",
+        "Conclu\u00eddo",
+        "Pendente",
+        "Em andamento",
+        "Hold",
+        "Paralisado",
+        "T\u00e9cnico",
+        "Ag. Libera\u00e7\u00e3o",
+        "Finalizado",
+        "Em aprova\u00e7\u00e3o"
+      ],
+      "default": "NA",
+      "description": "Status Concession\u00e1ria El\u00e9trica"
+    },
+    "conc_hidraulica": {
+      "type": "string",
+      "enum": [
+        "NA",
+        "Conclu\u00eddo",
+        "Pendente",
+        "Em andamento",
+        "Hold",
+        "Paralisado",
+        "T\u00e9cnico",
+        "Ag. Libera\u00e7\u00e3o",
+        "Finalizado",
+        "Em aprova\u00e7\u00e3o"
+      ],
+      "default": "NA",
+      "description": "Status Concession\u00e1ria Hidr\u00e1ulica"
+    },
+    "conc_agua_pluvial": {
+      "type": "string",
+      "enum": [
+        "NA",
+        "Conclu\u00eddo",
+        "Pendente",
+        "Em andamento",
+        "Hold",
+        "Paralisado",
+        "T\u00e9cnico",
+        "Ag. Libera\u00e7\u00e3o",
+        "Finalizado",
+        "Em aprova\u00e7\u00e3o"
+      ],
+      "default": "NA",
+      "description": "Status Concession\u00e1ria \u00c1gua Pluvial"
+    },
+    "conc_incendio": {
+      "type": "string",
+      "enum": [
+        "NA",
+        "Conclu\u00eddo",
+        "Pendente",
+        "Em andamento",
+        "Hold",
+        "Paralisado",
+        "T\u00e9cnico",
+        "Ag. Libera\u00e7\u00e3o",
+        "Finalizado",
+        "Em aprova\u00e7\u00e3o"
+      ],
+      "default": "NA",
+      "description": "Status Concession\u00e1ria Inc\u00eandio"
+    },
+    "atividades_vinculadas": {
+      "type": "object",
+      "description": "Mapa de atividades vinculadas do empreendimento (chave: nome_atividade, valor: status)",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "planejamento": {
+      "type": "object",
+      "description": "Status de cada disciplina no planejamento (hidr\u00e1ulica, el\u00e9trica, etc) com sub-etapas",
+      "properties": {
+        "hidraulica": {
+          "type": "object",
+          "properties": {
+            "concepcao": {
+              "type": "string",
+              "default": "NA"
+            },
+            "calculo": {
+              "type": "string",
+              "default": "NA"
+            },
+            "diagrama": {
+              "type": "string",
+              "default": "NA"
+            }
+          }
+        },
+        "eletrica": {
+          "type": "object",
+          "properties": {
+            "concepcao": {
+              "type": "string",
+              "default": "NA"
+            },
+            "calculo": {
+              "type": "string",
+              "default": "NA"
+            },
+            "diagrama": {
+              "type": "string",
+              "default": "NA"
+            }
+          }
+        },
+        "incendio": {
+          "type": "object",
+          "properties": {
+            "concepcao": {
+              "type": "string",
+              "default": "NA"
+            },
+            "calculo": {
+              "type": "string",
+              "default": "NA"
+            },
+            "diagrama": {
+              "type": "string",
+              "default": "NA"
+            }
+          }
+        },
+        "sistemas_eletronicos": {
+          "type": "object",
+          "properties": {
+            "concepcao": {
+              "type": "string",
+              "default": "NA"
+            },
+            "calculo": {
+              "type": "string",
+              "default": "NA"
+            },
+            "diagrama": {
+              "type": "string",
+              "default": "NA"
+            }
+          }
+        },
+        "ar_condicionado": {
+          "type": "object",
+          "properties": {
+            "concepcao": {
+              "type": "string",
+              "default": "NA"
+            },
+            "calculo": {
+              "type": "string",
+              "default": "NA"
+            },
+            "diagrama": {
+              "type": "string",
+              "default": "NA"
+            }
+          }
+        },
+        "memorial": {
+          "type": "object",
+          "properties": {
+            "esp_tec": {
+              "type": "string",
+              "default": "NA"
+            },
+            "matlib": {
+              "type": "string",
+              "default": "NA"
+            }
+          }
+        }
+      }
+    },
+    "markup_status": {
+      "type": "string",
+      "enum": [
+        "NA",
+        "Conclu\u00eddo",
+        "Pendente",
+        "Em andamento",
+        "Hold",
+        "Paralisado",
+        "T\u00e9cnico",
+        "Ag. Libera\u00e7\u00e3o",
+        "Finalizado"
+      ],
+      "default": "NA",
+      "description": "Status do Mark-up final"
+    },
+    "monitoramento": {
+      "type": "object",
+      "description": "Status de monitoramento com briefing, cronograma, lmd e entregas x etapas",
+      "properties": {
+        "briefing": {
+          "type": "string",
+          "default": "NA"
+        },
+        "cronograma": {
+          "type": "string",
+          "default": "NA"
+        },
+        "lmd": {
+          "type": "string",
+          "default": "NA"
+        },
+        "entregas_x_etapas": {
+          "type": "string",
+          "default": "NA"
+        }
+      }
+    },
+    "avanco": {
+      "type": "array",
+      "description": "Lista de itens de avan\u00e7o do projeto",
+      "items": {
+        "type": "object",
+        "properties": {
+          "etapa": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "observacoes": {
+            "type": "string"
+          }
+        }
+      },
+      "default": []
+    },
+    "observacoes": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es gerais"
+    }
+  },
+  "required": [
+    "empreendimento_id",
+    "os"
+  ]
+}

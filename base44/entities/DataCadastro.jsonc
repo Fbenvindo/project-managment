@@ -1,0 +1,27 @@
+{
+  "name": "DataCadastro",
+  "type": "object",
+  "properties": {
+    "empreendimento_id": {
+      "type": "string",
+      "description": "ID do empreendimento relacionado"
+    },
+    "ordem": {
+      "type": "number",
+      "description": "Ordem da linha na tabela"
+    },
+    "documento_id": {
+      "type": "string",
+      "description": "ID do documento/folha relacionado"
+    },
+    "datas": {
+      "type": "object",
+      "description": "Objeto com datas por etapa e revis\u00e3o",
+      "additionalProperties": true
+    }
+  },
+  "required": [
+    "empreendimento_id",
+    "ordem"
+  ]
+}

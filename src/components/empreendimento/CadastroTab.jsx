@@ -539,7 +539,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         // mas o que identifica este registro como metadados é a presença de datas[METADATA_MARKER].
         // Se já temos um metadataRecordId, o documento_id já está salvo no banco — não precisa reenviar.
         const primeiroDocId = linhas.find(l => l.documento_id && !l.id.toString().startsWith('temp-'))?.documento_id
-          || sortedDocs[0]?.id
+          || documentos[0]?.id
           || null;
         const estruturaPayload = {
           empreendimento_id: empreendimento.id,

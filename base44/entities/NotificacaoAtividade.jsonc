@@ -1,0 +1,51 @@
+{
+  "name": "NotificacaoAtividade",
+  "type": "object",
+  "properties": {
+    "usuario_email": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio que receber\u00e1 a notifica\u00e7\u00e3o"
+    },
+    "atividade_funcao_id": {
+      "type": "string",
+      "description": "ID da AtividadeFuncao ocasional"
+    },
+    "atividade_nome": {
+      "type": "string",
+      "description": "Nome da atividade (cache para facilitar exibi\u00e7\u00e3o)"
+    },
+    "tempo_estimado": {
+      "type": "number",
+      "description": "Tempo estimado da atividade (cache)"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pendente",
+        "agendada",
+        "ignorada"
+      ],
+      "default": "pendente",
+      "description": "Status da notifica\u00e7\u00e3o"
+    },
+    "data_notificacao": {
+      "type": "string",
+      "format": "date",
+      "description": "Data em que a notifica\u00e7\u00e3o foi enviada"
+    },
+    "data_agendada": {
+      "type": "string",
+      "format": "date",
+      "description": "Data escolhida pelo usu\u00e1rio para executar a atividade"
+    },
+    "planejamento_id": {
+      "type": "string",
+      "description": "ID do planejamento criado quando o usu\u00e1rio agenda"
+    }
+  },
+  "required": [
+    "usuario_email",
+    "atividade_funcao_id",
+    "data_notificacao"
+  ]
+}

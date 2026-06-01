@@ -456,14 +456,11 @@ export default function AlocacaoEquipeTab({
       if (!user.nome && !user.full_name) return;
       if (user.status === 'inativo') return;
       
-      let nomeEquipe = 'Sem Equipe';
-      if (user.equipe_id && equipesMap[user.equipe_id]) {
-        nomeEquipe = equipesMap[user.equipe_id].nome;
-      }
-      
-      if (!grupos[nomeEquipe]) {
-        grupos[nomeEquipe] = [];
-      }
+      // Usuários sem equipe não aparecem no painel
+      if (!user.equipe_id || !equipesMap[user.equipe_id]) return;
+
+      const nomeEquipe = equipesMap[user.equipe_id].nome;
+      if (!grupos[nomeEquipe]) grupos[nomeEquipe] = [];
       grupos[nomeEquipe].push(user);
     });
 

@@ -1,0 +1,202 @@
+{
+  "name": "Comercial",
+  "type": "object",
+  "properties": {
+    "numero": {
+      "type": "string",
+      "description": "N\u00famero da proposta"
+    },
+    "data_solicitacao": {
+      "type": "string",
+      "format": "date",
+      "description": "Data da solicita\u00e7\u00e3o"
+    },
+    "solicitante": {
+      "type": "string",
+      "description": "Nome do solicitante"
+    },
+    "cliente": {
+      "type": "string",
+      "description": "Nome do cliente"
+    },
+    "empreendimento": {
+      "type": "string",
+      "description": "Nome do empreendimento"
+    },
+    "tipo_empreendimento": {
+      "type": "string",
+      "enum": [
+        "Residencial",
+        "Comercial",
+        "Corporativo",
+        "Shopping",
+        "Log\u00edstica",
+        "Hotelaria",
+        "Hospitalar",
+        "Industrial",
+        "Laborat\u00f3rio",
+        "Data Center"
+      ],
+      "description": "Tipo do empreendimento"
+    },
+    "tipo_obra": {
+      "type": "string",
+      "enum": [
+        "Constru\u00e7\u00e3o",
+        "Reforma",
+        "Amplia\u00e7\u00e3o"
+      ],
+      "description": "Tipo da obra"
+    },
+    "utilizacao": {
+      "type": "string",
+      "enum": [
+        "Mono Usu\u00e1rio",
+        "Multi Usu\u00e1rio",
+        "Uso Multiplo"
+      ],
+      "description": "Tipo de utiliza\u00e7\u00e3o"
+    },
+    "parceiros": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "Arquitetura",
+          "Estrutura",
+          "Paisagismo",
+          "Ar condicionado",
+          "Pressuriza\u00e7\u00e3o de escada",
+          "Decora\u00e7\u00e3o",
+          "Luminot\u00e9cnica",
+          "Automa\u00e7\u00e3o",
+          "Seguran\u00e7a",
+          "Ac\u00fastica",
+          "Cozinha",
+          "Veda\u00e7\u00e3o",
+          "Irriga\u00e7\u00e3o",
+          "Piscina",
+          "Aquecimento Solar",
+          "Fotovoltaico",
+          "Consultores"
+        ]
+      },
+      "description": "Lista de parceiros do projeto"
+    },
+    "disciplinas": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Lista de disciplinas do projeto"
+    },
+    "codisciplinas": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Lista de codisciplinas filtradas pelas disciplinas selecionadas"
+    },
+    "pavimentos": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "pavimento": {
+            "type": "string"
+          },
+          "metragem": {
+            "type": "number"
+          },
+          "repeticao": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "pavimento"
+        ]
+      },
+      "description": "Lista de pavimentos com metragem e repeti\u00e7\u00e3o"
+    },
+    "escopo": {
+      "type": "string",
+      "description": "Escopo do projeto"
+    },
+    "area": {
+      "type": "number",
+      "description": "\u00c1rea do projeto em m\u00b2"
+    },
+    "estado": {
+      "type": "string",
+      "description": "Estado (UF)"
+    },
+    "valor_bim": {
+      "type": "number",
+      "description": "Valor BIM"
+    },
+    "valor_cad": {
+      "type": "number",
+      "description": "Valor CAD"
+    },
+    "data_aprovacao": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de aprova\u00e7\u00e3o"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "solicitado",
+        "em_analise",
+        "aprovado",
+        "reprovado"
+      ],
+      "default": "solicitado",
+      "description": "Status da proposta"
+    },
+    "email": {
+      "type": "string",
+      "description": "Email de contato"
+    },
+    "telefone": {
+      "type": "string",
+      "description": "Telefone de contato"
+    },
+    "observacao": {
+      "type": "string",
+      "description": "Observa\u00e7\u00f5es gerais"
+    }
+  },
+  "required": [
+    "numero",
+    "cliente",
+    "empreendimento"
+  ],
+  "rls": {
+    "read": {},
+    "write": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "lider"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "direcao"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "gestao"
+          }
+        }
+      ]
+    }
+  }
+}

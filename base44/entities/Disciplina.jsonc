@@ -1,0 +1,44 @@
+{
+  "name": "Disciplina",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome da disciplina"
+    },
+    "cor": {
+      "type": "string",
+      "description": "Cor identificadora da disciplina"
+    },
+    "icone": {
+      "type": "string",
+      "description": "\u00cdcone da disciplina"
+    },
+    "codisciplinas": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Lista de codisciplinas"
+    }
+  },
+  "required": [
+    "nome"
+  ],
+  "rls": {
+    "write": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "lider"
+          }
+        }
+      ]
+    }
+  }
+}

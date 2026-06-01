@@ -1,0 +1,29 @@
+{
+  "name": "User",
+  "properties": {
+    "perfil": {
+      "type": "string",
+      "enum": [
+        "admin",
+        "lider",
+        "coordenador",
+        "user",
+        "gestao",
+        "apoio",
+        "direcao"
+      ],
+      "default": "user",
+      "description": "Perfil de acesso do usu\u00e1rio - dire\u00e7\u00e3o tem acesso completo incluindo gest\u00e3o"
+    },
+    "playlist_atividades": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": [],
+      "description": "Lista de IDs de PlanejamentoAtividade na playlist do usu\u00e1rio."
+    }
+  },
+  "required": [],
+  "type": "object"
+}

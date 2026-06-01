@@ -1,0 +1,21 @@
+{
+  "name": "Escopo",
+  "type": "object",
+  "properties": {
+    "predecessor": {
+      "type": "number",
+      "description": "Valor num\u00e9rico do predecessor"
+    },
+    "descricao": {
+      "type": "string",
+      "description": "Descri\u00e7\u00e3o do escopo"
+    },
+    "tipo": {
+      "type": "string",
+      "description": "Tipo de obra (refer\u00eancia ao tipo_obra)"
+    }
+  },
+  "required": [
+    "descricao"
+  ]
+}

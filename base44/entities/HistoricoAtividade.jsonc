@@ -1,0 +1,47 @@
+{
+  "name": "HistoricoAtividade",
+  "type": "object",
+  "properties": {
+    "planejamento_id": {
+      "type": "string",
+      "description": "ID do PlanejamentoAtividade ou PlanejamentoDocumento"
+    },
+    "tipo_planejamento": {
+      "type": "string",
+      "enum": [
+        "atividade",
+        "documento"
+      ],
+      "description": "Tipo do planejamento"
+    },
+    "campo": {
+      "type": "string",
+      "description": "Campo alterado (ex: status, termino_planejado, executor_principal)"
+    },
+    "valor_anterior": {
+      "type": "string",
+      "description": "Valor antes da altera\u00e7\u00e3o (serializado como string)"
+    },
+    "valor_novo": {
+      "type": "string",
+      "description": "Valor ap\u00f3s a altera\u00e7\u00e3o (serializado como string)"
+    },
+    "usuario_email": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio que fez a altera\u00e7\u00e3o"
+    },
+    "usuario_nome": {
+      "type": "string",
+      "description": "Nome do usu\u00e1rio que fez a altera\u00e7\u00e3o"
+    },
+    "descricao_atividade": {
+      "type": "string",
+      "description": "Nome/descritivo da atividade no momento da altera\u00e7\u00e3o"
+    }
+  },
+  "required": [
+    "planejamento_id",
+    "campo",
+    "usuario_email"
+  ]
+}

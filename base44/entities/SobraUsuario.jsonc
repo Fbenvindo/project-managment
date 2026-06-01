@@ -1,0 +1,35 @@
+{
+  "name": "SobraUsuario",
+  "type": "object",
+  "properties": {
+    "usuario": {
+      "type": "string",
+      "description": "Email do usu\u00e1rio"
+    },
+    "empreendimento_id": {
+      "type": "string",
+      "description": "ID do empreendimento"
+    },
+    "horas_sobra": {
+      "type": "number",
+      "description": "Horas de sobra acumuladas"
+    }
+  },
+  "required": [
+    "usuario",
+    "empreendimento_id",
+    "horas_sobra"
+  ],
+  "rls": {
+    "read": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "write": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

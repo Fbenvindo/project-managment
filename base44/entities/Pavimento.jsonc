@@ -1,0 +1,64 @@
+{
+  "name": "Pavimento",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome do Pavimento"
+    },
+    "area": {
+      "type": "number",
+      "description": "\u00c1rea do Pavimento em m\u00b2"
+    },
+    "escala": {
+      "type": "string",
+      "description": "Escala original do pavimento (ex: 1:125)"
+    },
+    "empreendimento_id": {
+      "type": "string",
+      "description": "ID do empreendimento relacionado"
+    }
+  },
+  "required": [
+    "nome",
+    "empreendimento_id"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "lider"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "user"
+          }
+        }
+      ]
+    },
+    "write": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "lider"
+          }
+        }
+      ]
+    }
+  }
+}
