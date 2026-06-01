@@ -725,22 +725,16 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       
       // SALVAR APENAS linhas modificadas OU todas se não há rastreamento
       const linhasParaSalvar = linhas.filter(linha => {
-        if (!linha.documento_id) {
-          return false;
-        }
+        if (!linha.documento_id) return false;
         
         // Se há rastreamento de modificações, salvar apenas modificadas
-        if (linhasModificadas.size > 0 && !linhasModificadas.has(linha.id)) {
-          return false;
-        }
+        if (linhasModificadas.size > 0 && !linhasModificadas.has(linha.id)) return false;
         
+        // Linhas novas sempre salvar se foram modificadas
+        if (linha.isNew || linha.id.toString().startsWith('temp-')) return true;
+
         // Se tem datas (mesmo vazias), pode ter metadados
-        if (linha.datas && Object.keys(linha.datas).length > 0) {
-          return true;
-        }
-        
-        // Se não tem datas nenhuma, não salva
-        return false;
+        return linha.datas && Object.keys(linha.datas).length > 0;
       });
       
 
