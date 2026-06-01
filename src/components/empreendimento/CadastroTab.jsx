@@ -110,19 +110,29 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       let revisoesMap = {};
       let etapasExcluidasSet = new Set();
 
-      if (metadataRecord?.estrutura) {
-        // Formato novo: estrutura salva no registro de metadados
+      // hasMetadata indica que o registro de metadados já existe e é a fonte da verdade.
+      // Quando true, os campos legados (_excluida, _revisoes_existentes, etc.) das linhas
+      // são completamente ignorados — evitando que uma restauração de etapa seja revertida
+      // no próximo reload por causa de dados antigos ainda presentes nas linhas do banco.
+      const hasMetadata = !!(metadataRecord?.estrutura);
+
+      if (hasMetadata) {
+        // ── Formato novo: estrutura salva no registro de metadados (fonte da verdade) ──
         const estrutura = metadataRecord.estrutura;
         if (estrutura.revisoesPorEtapa) {
           Object.entries(estrutura.revisoesPorEtapa).forEach(([etapa, revs]) => {
             revisoesMap[etapa] = new Set(Array.isArray(revs) ? revs : []);
           });
         }
+        // etapasExcluidas vem EXCLUSIVAMENTE dos metadados — ignora _excluida nas linhas
         if (Array.isArray(estrutura.etapasExcluidas)) {
           estrutura.etapasExcluidas.forEach(e => etapasExcluidasSet.add(e));
         }
       } else {
-        // Formato legado: extrair estrutura dos registros de linhas (compatibilidade)
+        // ── Formato legado: extrair estrutura dos registros de linhas (compatibilidade) ──
+        // Este branch só é usado enquanto o registro de metadados ainda não foi criado
+        // (antes do primeiro save com a versão nova). Após o primeiro save, hasMetadata
+        // será true e este branch nunca mais será executado.
         dataRecords.forEach(item => {
           if (!item.datas) return;
           Object.entries(item.datas).forEach(([etapa, etapaData]) => {
@@ -539,11 +549,33 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       }
 
       // ── PASSO 2: Salvar apenas linhas com datas realmente modificadas ──
+      // Exceção: quando a estrutura foi modificada (etapa restaurada/excluída, revisão alterada),
+      // todas as linhas que já existem no banco precisam ter seus metadados legados apagados.
+      // Sem isso, um reload futuro leria _excluida:true das linhas antigas e reverteria a restauração.
+      // Para não disparar centenas de requests desnecessários, usamos um flag de "limpeza legada"
+      // que só é ativado quando estruturaModificada era true antes do save.
+      const precisaLimparLegado = estruturaModificada; // captura o valor antes de resetar
+
       const linhasParaSalvar = linhas.filter(linha => {
         if (!linha.documento_id) return false;
-        // Só salva se está na lista de modificadas
-        if (!linhasModificadas.has(linha.id)) return false;
-        return true;
+        // Linhas explicitamente modificadas (datas alteradas)
+        if (linhasModificadas.has(linha.id)) return true;
+        // Quando a estrutura mudou, salvar linhas existentes no banco que ainda têm
+        // metadados legados (_excluida, _revisoes_existentes) para limpá-los
+        if (precisaLimparLegado) {
+          const isExistente = !linha.isNew && !linha.id.toString().startsWith('temp-');
+          if (isExistente) {
+            const temMetadadoLegado = linha.datas && Object.values(linha.datas).some(etapaData =>
+              etapaData && typeof etapaData === 'object' && (
+                '_excluida' in etapaData ||
+                '_revisoes_existentes' in etapaData ||
+                '_revisoes_excluidas' in etapaData
+              )
+            );
+            return temMetadadoLegado;
+          }
+        }
+        return false;
       });
 
       const updatedLinhas = new Map();
