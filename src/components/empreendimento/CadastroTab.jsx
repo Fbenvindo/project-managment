@@ -194,12 +194,12 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     try {
       const [data, docs] = await Promise.all([
         retryWithBackoff(
-          () => DataCadastro.filter({ empreendimento_id: empreendimento.id, limit: 10000 }),
+          () => DataCadastro.filter({ empreendimento_id: empreendimento.id }, '-created_date', 10000),
           3, 2000,
           'loadDataCadastro'
         ),
         retryWithBackoff(
-          () => Documento.filter({ empreendimento_id: empreendimento.id, limit: 10000 }),
+          () => Documento.filter({ empreendimento_id: empreendimento.id }, '-created_date', 10000),
           3, 2000,
           'loadDocumentos'
         )
