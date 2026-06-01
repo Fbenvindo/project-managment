@@ -742,12 +742,9 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
        let successCount = 0;
        let errorCount = 0;
        const updatedLinhas = new Map();
-       const BATCH_SIZE = 3;
-       const DELAY_ENTRE_LOTES = 600;
-
        const etapasVisiveis = ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e));
 
-       const processarLinha = async (linha) => {
+       const salvarLinha = async (linha, idx) => {
          const datasComMetadados = {};
          if (linha.datas) {
            Object.entries(linha.datas).forEach(([etapa, etapaData]) => {
@@ -766,42 +763,42 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
          const linhaDataFinal = {
            empreendimento_id: empreendimento.id,
-           ordem: linha.ordem ?? linhasParaSalvar.indexOf(linha),
+           ordem: idx,
            documento_id: linha.documento_id,
            datas: datasComMetadados
          };
 
          const isNew = linha.isNew || linha.id.toString().startsWith('temp-');
-         let attempts = 0;
-         while (attempts < 3) {
+         let delay = 500;
+         for (let attempt = 1; attempt <= 5; attempt++) {
            try {
              const result = isNew
                ? await DataCadastro.create(linhaDataFinal)
                : await DataCadastro.update(linha.id, linhaDataFinal);
              return { linhaId: linha.id, result };
            } catch (err) {
-             attempts++;
-             if (attempts >= 3) throw err;
-             await new Promise(resolve => setTimeout(resolve, 1500 * attempts));
+             const is429 = err?.status === 429 || err?.message?.includes('429') || err?.message?.includes('Rate limit');
+             if (attempt < 5 && is429) {
+               await new Promise(resolve => setTimeout(resolve, delay));
+               delay *= 2; // backoff exponencial: 500, 1000, 2000, 4000
+             } else {
+               throw err;
+             }
            }
          }
        };
 
-       // Processar em lotes de BATCH_SIZE com delay entre lotes
-       for (let i = 0; i < linhasParaSalvar.length; i += BATCH_SIZE) {
-         const lote = linhasParaSalvar.slice(i, i + BATCH_SIZE);
-         const resultados = await Promise.allSettled(lote.map(processarLinha));
-         resultados.forEach((res, idx) => {
-           if (res.status === 'fulfilled' && res.value) {
+       // Processar sequencialmente para evitar rate limit
+       for (let i = 0; i < linhasParaSalvar.length; i++) {
+         try {
+           const res = await salvarLinha(linhasParaSalvar[i], i);
+           if (res) {
              successCount++;
-             updatedLinhas.set(res.value.linhaId, res.value.result);
-           } else {
-             errorCount++;
-             console.error(`❌ ERRO na linha ${lote[idx].id}:`, res.reason);
+             updatedLinhas.set(res.linhaId, res.result);
            }
-         });
-         if (i + BATCH_SIZE < linhasParaSalvar.length) {
-           await new Promise(resolve => setTimeout(resolve, DELAY_ENTRE_LOTES));
+         } catch (err) {
+           errorCount++;
+           console.error(`❌ ERRO na linha ${linhasParaSalvar[i].id}:`, err);
          }
        }
 
