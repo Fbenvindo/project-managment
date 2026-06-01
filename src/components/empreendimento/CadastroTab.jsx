@@ -9,12 +9,13 @@ import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { format } from "date-fns";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
-// As etapas serão carregadas do empreendimento
-
 const DEFAULT_REVISOES = ["R00", "R01", "R02"];
 
+// Chave especial usada para salvar metadados de estrutura (revisões/etapas)
+// como um único registro no banco, evitando salvar em cada linha
+const METADATA_DOC_ID = '__estrutura_cadastro__';
+
 export default function CadastroTab({ empreendimento, readOnly = false }) {
-  // Etapas do empreendimento convertidas para uppercase
   const ETAPAS = useMemo(() => {
     if (!empreendimento?.etapas || empreendimento.etapas.length === 0) {
       return [
@@ -36,7 +37,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   const [isLoading, setIsLoading] = useState(true);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const [loadedEmpreendimentoId, setLoadedEmpreendimentoId] = useState(null);
-  const autoSaveTimeoutRef = useRef(null);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importFile, setImportFile] = useState(null);
   const [isImporting, setIsImporting] = useState(false);
@@ -48,10 +48,16 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   const [etapasMinimizadas, setEtapasMinimizadas] = useState({});
   const [linhasModificadas, setLinhasModificadas] = useState(new Set());
   const [etapasEfetivas, setEtapasEfetivas] = useState([]);
-  const [editingRevisao, setEditingRevisao] = useState(null); // { etapa, revisao }
+  const [editingRevisao, setEditingRevisao] = useState(null);
   const [editingRevisaoValue, setEditingRevisaoValue] = useState('');
-  const [ordemEtapas, setOrdemEtapas] = useState([]); // ordem customizada de etapas
-  
+  const [ordemEtapas, setOrdemEtapas] = useState([]);
+
+  // ─── NOVO: rastreia se a estrutura (revisões/etapas) foi alterada ───
+  // Quando true, o save vai persistir revisoesPorEtapa e etapasExcluidas
+  // em um único registro dedicado, sem tocar nas linhas de dados.
+  const [estruturaModificada, setEstruturaModificada] = useState(false);
+  const [metadataRecordId, setMetadataRecordId] = useState(null); // id do registro de metadados no banco
+
   const folhasScrollRef = useRef(null);
   const dataScrollRef = useRef(null);
 
@@ -61,141 +67,97 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     loadData();
   }, [empreendimento?.id]);
 
-  // Auto-save desabilitado - causava conflitos de rate limit
-  // useEffect(() => {
-  //   if (hasUnsavedChanges && !isLoading && !isSaving) {
-  //     console.log('Auto-save agendado - mudanças detectadas');
-  //     if (autoSaveTimeoutRef.current) {
-  //       clearTimeout(autoSaveTimeoutRef.current);
-  //     }
-  //     
-  //     autoSaveTimeoutRef.current = setTimeout(() => {
-  //       console.log('Executando auto-save');
-  //       handleSave(true); // true = silent save
-  //     }, 5000); // salva após 5 segundos de inatividade
-  //   }
-  //   
-  //   return () => {
-  //     if (autoSaveTimeoutRef.current) {
-  //       clearTimeout(autoSaveTimeoutRef.current);
-  //     }
-  //   };
-  // }, [hasUnsavedChanges, linhas, isSaving]);
-
   const loadData = async () => {
     setIsLoading(true);
     try {
       const [data, docs] = await Promise.all([
         retryWithBackoff(
           () => DataCadastro.filter({ empreendimento_id: empreendimento.id }, '-created_date', 10000),
-          3, 2000,
-          'loadDataCadastro'
+          3, 2000, 'loadDataCadastro'
         ),
         retryWithBackoff(
           () => Documento.filter({ empreendimento_id: empreendimento.id }, '-created_date', 10000),
-          3, 2000,
-          'loadDocumentos'
+          3, 2000, 'loadDocumentos'
         )
       ]);
-      
-      // Ordenar por disciplina e depois por arquivo (mesma ordem do DocumentosTab)
+
       const sortedDocs = (docs || []).sort((a, b) => {
-        // Primeiro por disciplina
         const discA = (a.disciplina || 'Sem Disciplina').toLowerCase();
         const discB = (b.disciplina || 'Sem Disciplina').toLowerCase();
         const discCompare = discA.localeCompare(discB, 'pt-BR', { sensitivity: 'base' });
-
         if (discCompare !== 0) return discCompare;
-
-        // Depois por arquivo (alfabético natural)
         const arquivoA = (a.arquivo || '').trim().toLowerCase();
         const arquivoB = (b.arquivo || '').trim().toLowerCase();
-        return arquivoA.localeCompare(arquivoB, 'pt-BR', {
-          numeric: true,
-          sensitivity: 'base',
-          ignorePunctuation: false
-        });
+        return arquivoA.localeCompare(arquivoB, 'pt-BR', { numeric: true, sensitivity: 'base' });
       });
       setDocumentos(sortedDocs);
-      
-      // Criar um mapa de dados existentes por documento_id
-      const dataMap = new Map();
-      const revisoesMap = {};
-      const revisoesExcluidasMap = {};
-      const etapasExcluidasSet = new Set();
-      
-      if (data && data.length > 0) {
-        data.forEach((item, itemIdx) => {
-          if (item.documento_id) {
-            dataMap.set(item.documento_id, item);
-          }
 
-          // Detectar revisões existentes e excluídas por etapa
-          if (item.datas) {
-            Object.entries(item.datas).forEach(([etapa, etapaData]) => {
-              if (etapaData && typeof etapaData === 'object') {
-                if (!revisoesMap[etapa]) {
-                  revisoesMap[etapa] = new Set();
-                }
-                if (!revisoesExcluidasMap[etapa]) {
-                  revisoesExcluidasMap[etapa] = new Set();
-                }
+      // ─── Separar registro de metadados das linhas de dados ───
+      // O registro de metadados é identificado pelo campo documento_id === METADATA_DOC_ID
+      // (ou por ausência de documento_id válido com campo especial)
+      const metadataRecord = (data || []).find(
+        item => item.documento_id === METADATA_DOC_ID || item._is_metadata === true
+      );
+      const dataRecords = (data || []).filter(
+        item => item.documento_id !== METADATA_DOC_ID && item._is_metadata !== true && item.documento_id
+      );
 
-                // Revisão válida: não começa com "_" e não é chave de metadado
-                const CHAVES_METADADO = new Set(['_excluida', '_revisoes_excluidas', '_revisoes_existentes', 'meta']);
-                const isRevisaoValida = (r) => r && !CHAVES_METADADO.has(r) && !r.startsWith('_');
+      if (metadataRecord) {
+        setMetadataRecordId(metadataRecord.id);
+      }
 
-                // Adicionar revisões que têm dados preenchidos (excluindo metadados)
-                Object.keys(etapaData).forEach(rev => {
-                  if (isRevisaoValida(rev)) revisoesMap[etapa].add(rev);
-                });
+      // ─── Carregar estrutura a partir do registro de metadados (se existir) ───
+      let revisoesMap = {};
+      let etapasExcluidasSet = new Set();
 
-                // Carregar revisões criadas (mesmo sem dados)
-                if (Array.isArray(etapaData._revisoes_existentes)) {
-                  etapaData._revisoes_existentes.forEach(rev => {
-                    if (isRevisaoValida(rev)) revisoesMap[etapa].add(rev);
-                  });
-                }
+      if (metadataRecord?.estrutura) {
+        // Formato novo: estrutura salva no registro de metadados
+        const estrutura = metadataRecord.estrutura;
+        if (estrutura.revisoesPorEtapa) {
+          Object.entries(estrutura.revisoesPorEtapa).forEach(([etapa, revs]) => {
+            revisoesMap[etapa] = new Set(Array.isArray(revs) ? revs : []);
+          });
+        }
+        if (Array.isArray(estrutura.etapasExcluidas)) {
+          estrutura.etapasExcluidas.forEach(e => etapasExcluidasSet.add(e));
+        }
+      } else {
+        // Formato legado: extrair estrutura dos registros de linhas (compatibilidade)
+        dataRecords.forEach(item => {
+          if (!item.datas) return;
+          Object.entries(item.datas).forEach(([etapa, etapaData]) => {
+            if (!etapaData || typeof etapaData !== 'object') return;
+            if (!revisoesMap[etapa]) revisoesMap[etapa] = new Set();
 
-                // Detectar revisões excluídas
-                if (etapaData._revisoes_excluidas && Array.isArray(etapaData._revisoes_excluidas)) {
-                  etapaData._revisoes_excluidas.forEach(rev => {
-                    revisoesExcluidasMap[etapa].add(rev);
-                  });
-                }
+            const CHAVES_META = new Set(['_excluida', '_revisoes_excluidas', '_revisoes_existentes', 'meta']);
+            const isRevValida = r => r && !CHAVES_META.has(r) && !r.startsWith('_');
 
-                // Detectar etapas excluídas
-                if (etapaData._excluida) {
-                  etapasExcluidasSet.add(etapa);
-                }
-              }
+            Object.keys(etapaData).forEach(rev => {
+              if (isRevValida(rev)) revisoesMap[etapa].add(rev);
             });
-          }
+            if (Array.isArray(etapaData._revisoes_existentes)) {
+              etapaData._revisoes_existentes.forEach(rev => {
+                if (isRevValida(rev)) revisoesMap[etapa].add(rev);
+              });
+            }
+            if (etapaData._excluida) etapasExcluidasSet.add(etapa);
+          });
         });
       }
-      
-      // Inicializar revisões para TODAS as etapas encontradas nos dados do banco + etapas do empreendimento
-      // Priorizar chaves do banco (onde os dados realmente estão), deduplicando case-insensitive
-      const etapasDoBanco = Object.keys(revisoesMap);
-      
-      // Para cada etapa do banco, mapear para a versão canônica de ETAPAS (se existir),
-      // evitando duplicatas quando o banco salva com casing diferente
-      const canonicalMap = new Map(); // lowercase -> versão canônica
+
+      // ─── Normalizar etapas ───
+      const canonicalMap = new Map();
       ETAPAS.forEach(e => canonicalMap.set(e.toLowerCase(), e));
-      
-      // Construir lista sem duplicatas: priorizar a chave do banco (tem dados),
-      // mas normalizar para o nome canônico de ETAPAS quando possível
+
       const etapasVistas = new Set();
       const etapasNormalizadas = [];
-      
-      // Primeiro, adicionar etapas do banco (mapeando para canônico se possível)
-      etapasDoBanco.forEach(etapaBanco => {
+
+      Object.keys(revisoesMap).forEach(etapaBanco => {
         const key = etapaBanco.toLowerCase();
         const canonical = canonicalMap.get(key) || etapaBanco;
         if (!etapasVistas.has(key)) {
           etapasVistas.add(key);
           etapasNormalizadas.push(canonical);
-          // Se a chave canônica difere da chave do banco, migrar os dados no revisoesMap
           if (canonical !== etapaBanco && revisoesMap[etapaBanco]) {
             revisoesMap[canonical] = revisoesMap[canonical] || new Set();
             revisoesMap[etapaBanco].forEach(r => revisoesMap[canonical].add(r));
@@ -203,8 +165,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           }
         }
       });
-      
-      // Depois, adicionar etapas de ETAPAS que ainda não foram incluídas
+
       ETAPAS.forEach(etapaConfig => {
         const key = etapaConfig.toLowerCase();
         if (!etapasVistas.has(key)) {
@@ -212,26 +173,21 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           etapasNormalizadas.push(etapaConfig);
         }
       });
-      
-      // Ordenar etapas na sequência correta (baseado em ETAPAS)
+
       const etapasUnion = etapasNormalizadas.sort((a, b) => {
         const indexA = ETAPAS.findIndex(e => e.toLowerCase() === a.toLowerCase());
         const indexB = ETAPAS.findIndex(e => e.toLowerCase() === b.toLowerCase());
         return (indexA !== -1 ? indexA : 999) - (indexB !== -1 ? indexB : 999);
       });
-      // Contar quantos documentos têm dados para saber quais revisões são "globais"
-      const totalDocumentosComDados = data ? data.filter(item => item.documento_id && item.datas).length : 0;
+
+      const CHAVES_META_GLOBAL = new Set(['_excluida', '_revisoes_excluidas', '_revisoes_existentes', 'revisoes_excluidas', 'revisoes_existentes', 'meta']);
+      const isRevValida = r => r && !CHAVES_META_GLOBAL.has(r) && !r.startsWith('_') && !/^RNaN$/i.test(r);
 
       const revisoesCompletas = {};
       etapasUnion.forEach(etapa => {
         const revisoesEtapaSet = revisoesMap[etapa];
-        
-        const CHAVES_METADADO_GLOBAL = new Set(['_excluida', '_revisoes_excluidas', '_revisoes_existentes', 'revisoes_excluidas', 'revisoes_existentes', 'meta']);
-        const isRevValida = (r) => r && !CHAVES_METADADO_GLOBAL.has(r) && !r.startsWith('_') && !/^RNaN$/i.test(r);
-
         let todasRevisoes = revisoesEtapaSet && revisoesEtapaSet.size > 0
           ? Array.from(revisoesEtapaSet).filter(isRevValida).sort((a, b) => {
-              // Ordenar R00 < R01 < R02 por último
               const numA = parseInt(a.substring(1));
               const numB = parseInt(b.substring(1));
               if (!isNaN(numA) && !isNaN(numB)) return numA - numB;
@@ -240,57 +196,37 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
               return a.localeCompare(b);
             })
           : [...DEFAULT_REVISOES];
-
-        // Uma revisão só deve ser excluída globalmente se TODOS os documentos que têm dados
-        // para esta etapa a marcaram como excluída (ou seja, foi uma exclusão intencional)
-        // Para ser seguro, não excluir revisões que têm dados reais em algum documento
-        const revisoesExcluidas = revisoesExcluidasMap[etapa] || new Set();
-        // Não excluir revisões que têm dados reais (apenas as que estão em _excluidas mas não em dados)
-        const filtradas = todasRevisoes.filter(rev => !revisoesExcluidas.has(rev) || revisoesEtapaSet?.has(rev));
-        revisoesCompletas[etapa] = filtradas;
+        revisoesCompletas[etapa] = todasRevisoes;
       });
-      
-      
-      // Normalizar chaves de datas nos registros do banco para o casing canônico
-      // (evita que "estudo preliminar" e "ESTUDO PRELIMINAR" coexistam nos dados)
-      if (data && data.length > 0) {
-        data.forEach(item => {
-          if (!item.datas) return;
-          const datasNormalizadas = {};
-          Object.entries(item.datas).forEach(([etapa, etapaData]) => {
-            const canonical = canonicalMap.get(etapa.toLowerCase()) || etapa;
-            if (datasNormalizadas[canonical]) {
-              // Mesclar se já existe versão canônica
-              datasNormalizadas[canonical] = { ...datasNormalizadas[canonical], ...etapaData };
-            } else {
-              datasNormalizadas[canonical] = etapaData;
-            }
-          });
-          item.datas = datasNormalizadas;
-        });
-      }
 
-      // Montar linhas baseado nos registros do DataCadastro (fonte primária),
-      // depois adicionar documentos que ainda não têm registro.
-      const docIdSet = new Set(sortedDocs.map(d => d.id));
-      
-      // Mapa de índices dos documentos para reordenação
+      // ─── Normalizar chaves de datas nos registros legados ───
+      dataRecords.forEach(item => {
+        if (!item.datas) return;
+        const datasNormalizadas = {};
+        Object.entries(item.datas).forEach(([etapa, etapaData]) => {
+          const canonical = canonicalMap.get(etapa.toLowerCase()) || etapa;
+          if (datasNormalizadas[canonical]) {
+            datasNormalizadas[canonical] = { ...datasNormalizadas[canonical], ...etapaData };
+          } else {
+            datasNormalizadas[canonical] = etapaData;
+          }
+        });
+        item.datas = datasNormalizadas;
+      });
+
+      // ─── Montar linhas ───
       const docIndexMap = new Map(sortedDocs.map((doc, idx) => [doc.id, idx]));
 
-      // Linhas com DataCadastro existente - deduplicar por documento_id (manter o mais recente)
-      const dataComDocId = (data || []).filter(item => item.documento_id);
       const deduplicadoMap = new Map();
-      dataComDocId.forEach(item => {
+      dataRecords.filter(item => item.documento_id).forEach(item => {
         const existing = deduplicadoMap.get(item.documento_id);
         if (!existing || new Date(item.updated_date) > new Date(existing.updated_date)) {
           deduplicadoMap.set(item.documento_id, item);
         }
       });
       const linhasComData = Array.from(deduplicadoMap.values());
-
       const documento_idsComData = new Set(linhasComData.map(l => l.documento_id));
 
-      // Documentos sem registro DataCadastro ainda
       const docsNovos = sortedDocs
         .filter(doc => !documento_idsComData.has(doc.id))
         .map((doc, idx) => ({
@@ -302,23 +238,20 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           isNew: true
         }));
 
-      // Ordenar todas as linhas de acordo com a ordem dos documentos
       const todasAsLinhas = [...linhasComData, ...docsNovos];
       const novasLinhas = todasAsLinhas.sort((a, b) => {
         const indexA = docIndexMap.get(a.documento_id) ?? 999999;
         const indexB = docIndexMap.get(b.documento_id) ?? 999999;
         return indexA - indexB;
       });
-      
-      // Setar tudo junto de uma vez
+
       setEtapasEfetivas(etapasUnion);
       setRevisoesPorEtapa(revisoesCompletas);
       setEtapasExcluidas(Array.from(etapasExcluidasSet));
       setLinhas(novasLinhas);
       setLoadedEmpreendimentoId(empreendimento.id);
       setLinhasModificadas(new Set());
-      
-      // Log final para confirmar que revisões foram setadas
+      setEstruturaModificada(false);
     } catch (error) {
       console.error('Erro ao carregar dados:', error);
     } finally {
@@ -326,59 +259,36 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     }
   };
 
+  // ─── Helpers para marcar modificações ───
+  // Marca apenas as linhas cujas datas foram alteradas (não todas)
+  const marcarLinhasModificadas = (ids) => {
+    setLinhasModificadas(prev => new Set([...prev, ...ids]));
+  };
 
+  // Marca que a estrutura (revisões/etapas) mudou — NÃO marca linhas
+  const marcarEstruturaModificada = () => {
+    setEstruturaModificada(true);
+    setHasUnsavedChanges(true);
+  };
+
+  // ─── Handlers de Revisão (agora só marcam estrutura, não todas as linhas) ───
 
   const handleAddRevisao = (etapa) => {
     const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+    let novaRevisao;
     if (revisoesEtapa.length === 0) {
-      // Se não há revisões, começar com R00
-      setHasUnsavedChanges(true);
-      setRevisoesPorEtapa(prev => ({
-        ...prev,
-        [etapa]: ['R00']
-      }));
-      // Marcar revisão como existente nas linhas mesmo sem dados
-      setLinhas(prev => prev.map(linha => {
-        const novasDatas = { ...linha.datas };
-        if (!novasDatas[etapa]) {
-          novasDatas[etapa] = {};
-        }
-        if (!novasDatas[etapa]._revisoes_existentes) {
-          novasDatas[etapa]._revisoes_existentes = [];
-        }
-        if (!novasDatas[etapa]._revisoes_existentes.includes('R00')) {
-          novasDatas[etapa]._revisoes_existentes.push('R00');
-        }
-        return { ...linha, datas: novasDatas };
-      }));
-      setLinhasModificadas(new Set(linhas.map(l => l.id)));
-      return;
+      novaRevisao = 'R00';
+    } else {
+      const ultimaRevisao = revisoesEtapa[revisoesEtapa.length - 1];
+      const numero = parseInt(ultimaRevisao.substring(1)) + 1;
+      novaRevisao = `R${String(numero).padStart(2, '0')}`;
     }
-    const ultimaRevisao = revisoesEtapa[revisoesEtapa.length - 1];
-    const numero = parseInt(ultimaRevisao.substring(1)) + 1;
-    const novaRevisao = `R${String(numero).padStart(2, '0')}`;
 
-    setHasUnsavedChanges(true);
     setRevisoesPorEtapa(prev => ({
       ...prev,
       [etapa]: [...(prev[etapa] || []), novaRevisao]
     }));
-    // Marcar revisão como existente nas linhas mesmo sem dados
-    setLinhas(prev => prev.map(linha => {
-      const novasDatas = { ...linha.datas };
-      if (!novasDatas[etapa]) {
-        novasDatas[etapa] = { _revisoes_existentes: [novaRevisao] };
-      } else {
-        if (!novasDatas[etapa]._revisoes_existentes) {
-          novasDatas[etapa]._revisoes_existentes = [];
-        }
-        if (!novasDatas[etapa]._revisoes_existentes.includes(novaRevisao)) {
-          novasDatas[etapa]._revisoes_existentes.push(novaRevisao);
-        }
-      }
-      return { ...linha, datas: novasDatas };
-    }));
-    setLinhasModificadas(new Set(linhas.map(l => l.id)));
+    marcarEstruturaModificada();
   };
 
   const handleRenameRevisao = (etapa, oldName, newName) => {
@@ -388,13 +298,13 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       return;
     }
 
-    setHasUnsavedChanges(true);
     setRevisoesPorEtapa(prev => ({
       ...prev,
       [etapa]: prev[etapa].map(r => r === oldName ? trimmed : r)
     }));
 
-    // Renomear chave nos dados de cada linha
+    // Renomear chave nos dados de cada linha — marcar apenas linhas que tinham essa revisão
+    const idsAfetados = [];
     setLinhas(prev => prev.map(linha => {
       const novasDatas = { ...linha.datas };
       if (novasDatas[etapa]) {
@@ -402,8 +312,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         if (etapaData[oldName] !== undefined) {
           etapaData[trimmed] = etapaData[oldName];
           delete etapaData[oldName];
+          idsAfetados.push(linha.id);
         }
-        // Atualizar _revisoes_existentes
         if (Array.isArray(etapaData._revisoes_existentes)) {
           etapaData._revisoes_existentes = etapaData._revisoes_existentes.map(r => r === oldName ? trimmed : r);
         }
@@ -411,134 +321,80 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       }
       return { ...linha, datas: novasDatas };
     }));
-    setLinhasModificadas(new Set(linhas.map(l => l.id)));
+
+    marcarEstruturaModificada();
+    if (idsAfetados.length > 0) marcarLinhasModificadas(idsAfetados);
     setEditingRevisao(null);
   };
 
   const handleRemoveRevisao = (etapa, revisao) => {
     if (!confirm(`Deseja excluir a revisão ${revisao} da etapa ${etapa}? Os dados desta revisão serão perdidos.`)) return;
-    
-    setHasUnsavedChanges(true);
+
     setRevisoesPorEtapa(prev => ({
       ...prev,
       [etapa]: prev[etapa].filter(r => r !== revisao)
     }));
-    
-    // Limpar dados e marcar revisão como excluída
+
+    // Remover dados da revisão apenas nas linhas que tinham dados
+    const idsAfetados = [];
     setLinhas(prev => prev.map(linha => {
       const novasDatas = { ...linha.datas };
-      if (!novasDatas[etapa]) {
-        novasDatas[etapa] = {};
-      }
-      
-      // Remover dados da revisão
-      if (novasDatas[etapa][revisao]) {
+      if (novasDatas[etapa]?.[revisao] !== undefined) {
+        novasDatas[etapa] = { ...novasDatas[etapa] };
         delete novasDatas[etapa][revisao];
+        idsAfetados.push(linha.id);
       }
-      
-      // Adicionar à lista de revisões excluídas
-      if (!novasDatas[etapa]._revisoes_excluidas) {
-        novasDatas[etapa]._revisoes_excluidas = [];
-      }
-      if (!novasDatas[etapa]._revisoes_excluidas.includes(revisao)) {
-        novasDatas[etapa]._revisoes_excluidas.push(revisao);
-      }
-      
       return { ...linha, datas: novasDatas };
     }));
-    setLinhasModificadas(new Set(linhas.map(l => l.id)));
+
+    marcarEstruturaModificada();
+    if (idsAfetados.length > 0) marcarLinhasModificadas(idsAfetados);
   };
 
   const handleExcluirEtapa = (etapa) => {
     if (!confirm(`Deseja excluir a etapa ${etapa}? Você poderá restaurá-la depois se necessário.`)) return;
-    
-    setHasUnsavedChanges(true);
+
     setEtapasExcluidas(prev => [...prev, etapa]);
-    
-    // Marcar etapa como excluída nas linhas
-    setLinhas(prev => prev.map(linha => {
-      const novasDatas = { ...linha.datas };
-      if (!novasDatas[etapa]) {
-        novasDatas[etapa] = {};
-      }
-      novasDatas[etapa]._excluida = true;
-      return { ...linha, datas: novasDatas };
-    }));
-    setLinhasModificadas(new Set(linhas.map(l => l.id)));
+    marcarEstruturaModificada();
   };
 
   const handleRestaurarEtapa = (etapa) => {
-    setHasUnsavedChanges(true);
     setEtapasExcluidas(prev => prev.filter(e => e !== etapa));
-    
-    // Remover marcador de exclusão — marcar como modificadas apenas as que tinham _excluida
-    const idsComExcluida = new Set(
-      linhas
-        .filter(l => l.datas?.[etapa]?._excluida)
-        .map(l => l.id)
-    );
+    marcarEstruturaModificada();
+  };
+
+  // ─── Handler de atualização de data (só marca a linha alterada) ───
+  const handleUpdateData = (linhaId, etapa, revisao, valor) => {
+    marcarLinhasModificadas([linhaId]);
     setLinhas(prev => prev.map(linha => {
+      if (linha.id !== linhaId) return linha;
       const novasDatas = { ...linha.datas };
-      if (novasDatas[etapa] && novasDatas[etapa]._excluida) {
-        novasDatas[etapa] = { ...novasDatas[etapa] };
-        delete novasDatas[etapa]._excluida;
+      if (!novasDatas[etapa]) novasDatas[etapa] = {};
+      if (!valor || valor.trim() === '') {
+        delete novasDatas[etapa][revisao];
+      } else {
+        novasDatas[etapa][revisao] = valor;
       }
       return { ...linha, datas: novasDatas };
     }));
-    setLinhasModificadas(prev => new Set([...prev, ...idsComExcluida]));
-  };
-
-  const handleUpdateData = (linhaId, etapa, revisao, valor) => {
-    setLinhasModificadas(prev => new Set([...prev, linhaId]));
-    setLinhas(prev => {
-      const updated = prev.map(linha => {
-        if (linha.id !== linhaId) return linha;
-        
-        const novasDatas = { ...linha.datas };
-        if (!novasDatas[etapa]) {
-          novasDatas[etapa] = {};
-        }
-        // Se o valor estiver vazio, deletar a chave ao invés de setar como vazio
-        if (!valor || valor.trim() === '') {
-          delete novasDatas[etapa][revisao];
-        } else {
-          novasDatas[etapa][revisao] = valor;
-        }
-        
-        return { ...linha, datas: novasDatas };
-      });
-      return updated;
-    });
-    // Garantir que o flag de mudanças não salvas é setado DEPOIS da atualização das linhas
-    setTimeout(() => {
-      setHasUnsavedChanges(true);
-    }, 0);
+    setTimeout(() => setHasUnsavedChanges(true), 0);
   };
 
   const copiarDataParaBaixo = (linhaId, etapa, revisao) => {
     const linhaIndex = linhas.findIndex(l => l.id === linhaId);
     if (linhaIndex === -1) return;
-    
     const valorOriginal = getDataValue(linhas[linhaIndex], etapa, revisao);
-    if (!valorOriginal) {
-      alert('Selecione uma data primeiro');
-      return;
-    }
-    
+    if (!valorOriginal) { alert('Selecione uma data primeiro'); return; }
     if (!confirm(`Copiar a data ${format(new Date(valorOriginal), 'dd/MM/yyyy')} para todas as células abaixo nesta coluna?`)) return;
-    
+
+    const idsAfetados = linhas.slice(linhaIndex + 1).map(l => l.id);
+    marcarLinhasModificadas(idsAfetados);
     setHasUnsavedChanges(true);
-    const linhasAfetadas = linhas.slice(linhaIndex + 1).map(l => l.id);
-    setLinhasModificadas(prev => new Set([...prev, ...linhasAfetadas]));
     setLinhas(prev => prev.map((linha, idx) => {
       if (idx <= linhaIndex) return linha;
-      
       const novasDatas = { ...linha.datas };
-      if (!novasDatas[etapa]) {
-        novasDatas[etapa] = {};
-      }
+      if (!novasDatas[etapa]) novasDatas[etapa] = {};
       novasDatas[etapa][revisao] = valorOriginal;
-      
       return { ...linha, datas: novasDatas };
     }));
   };
@@ -546,272 +402,230 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   const copiarLinhaParaProxima = (linhaId) => {
     const linhaIndex = linhas.findIndex(l => l.id === linhaId);
     if (linhaIndex === -1 || linhaIndex === linhas.length - 1) return;
-    
     const linhaOriginal = linhas[linhaIndex];
     if (!linhaOriginal.datas || Object.keys(linhaOriginal.datas).length === 0) {
-      alert('Esta linha não possui datas para copiar');
-      return;
+      alert('Esta linha não possui datas para copiar'); return;
     }
-    
     if (!confirm('Copiar todas as datas desta linha para a próxima linha?')) return;
-    
-    setHasUnsavedChanges(true);
+
     const proxLinha = linhas[linhaIndex + 1];
-    if (proxLinha) {
-      setLinhasModificadas(prev => new Set([...prev, proxLinha.id]));
-    }
+    if (proxLinha) marcarLinhasModificadas([proxLinha.id]);
+    setHasUnsavedChanges(true);
     setLinhas(prev => prev.map((linha, idx) => {
       if (idx !== linhaIndex + 1) return linha;
-      
-      // Deep clone do objeto datas para evitar referências compartilhadas
       return { ...linha, datas: JSON.parse(JSON.stringify(linhaOriginal.datas)) };
-    }));
-  };
-
-  const copiarDataParaProximaColuna = (linhaId, etapa, revisao) => {
-    const linha = linhas.find(l => l.id === linhaId);
-    if (!linha) return;
-    
-    const valorOriginal = getDataValue(linha, etapa, revisao);
-    if (!valorOriginal) {
-      alert('Selecione uma data primeiro');
-      return;
-    }
-    
-    const etapasVisiveis = ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e));
-    const etapaIndex = etapasVisiveis.indexOf(etapa);
-    const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
-    const revisaoIndex = revisoesEtapa.indexOf(revisao);
-    
-    setHasUnsavedChanges(true);
-    setLinhasModificadas(prev => new Set([...prev, linhaId]));
-    setLinhas(prev => prev.map(l => {
-      if (l.id !== linhaId) return l;
-      
-      const novasDatas = { ...l.datas };
-      
-      // Se há próxima revisão na mesma etapa
-      if (revisaoIndex < revisoesEtapa.length - 1) {
-        if (!novasDatas[etapa]) novasDatas[etapa] = {};
-        novasDatas[etapa][revisoesEtapa[revisaoIndex + 1]] = valorOriginal;
-      } 
-      // Senão, vai para primeira revisão da próxima etapa
-      else if (etapaIndex < etapasVisiveis.length - 1) {
-        const proxEtapa = etapasVisiveis[etapaIndex + 1];
-        const proxRevisoes = revisoesPorEtapa[proxEtapa] || DEFAULT_REVISOES;
-        if (proxRevisoes.length > 0) {
-          if (!novasDatas[proxEtapa]) novasDatas[proxEtapa] = {};
-          novasDatas[proxEtapa][proxRevisoes[0]] = valorOriginal;
-        }
-      }
-      
-      return { ...l, datas: novasDatas };
-    }));
-  };
-
-  const toggleSelectFolha = (linhaId) => {
-    setSelectedFolhas(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(linhaId)) {
-        newSet.delete(linhaId);
-      } else {
-        newSet.add(linhaId);
-      }
-      return newSet;
-    });
-  };
-
-  const selectAllFolhas = () => {
-    setSelectedFolhas(new Set(linhas.map(l => l.id)));
-  };
-
-  const clearSelection = () => {
-    setSelectedFolhas(new Set());
-  };
-
-  const handleMassEdit = () => {
-    if (selectedFolhas.size === 0) {
-      alert('Selecione ao menos uma folha');
-      return;
-    }
-    setShowMassEditModal(true);
-  };
-
-  const applyMassEdit = () => {
-    if (!massEditEtapa || !massEditRevisao || !massEditData) {
-      alert('Preencha etapa, revisão e data');
-      return;
-    }
-
-    setHasUnsavedChanges(true);
-    setLinhasModificadas(prev => new Set([...prev, ...Array.from(selectedFolhas)]));
-    setLinhas(prev => prev.map(linha => {
-      if (!selectedFolhas.has(linha.id)) return linha;
-      
-      const novasDatas = { ...linha.datas };
-      if (!novasDatas[massEditEtapa]) {
-        novasDatas[massEditEtapa] = {};
-      }
-      novasDatas[massEditEtapa][massEditRevisao] = massEditData;
-      
-      return { ...linha, datas: novasDatas };
-    }));
-
-    setShowMassEditModal(false);
-    setMassEditEtapa('');
-    setMassEditRevisao('');
-    setMassEditData('');
-    clearSelection();
-  };
-
-  const toggleMinimizarEtapa = (etapa) => {
-    setEtapasMinimizadas(prev => ({
-      ...prev,
-      [etapa]: !prev[etapa]
     }));
   };
 
   const copiarDataParaDireita = (linhaId, etapa, revisao) => {
     const linha = linhas.find(l => l.id === linhaId);
     if (!linha) return;
-    
     const valorOriginal = getDataValue(linha, etapa, revisao);
-    if (!valorOriginal) {
-      alert('Selecione uma data primeiro');
-      return;
-    }
-    
+    if (!valorOriginal) { alert('Selecione uma data primeiro'); return; }
+
     const etapasVisiveis = ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e));
     const etapaIndex = etapasVisiveis.indexOf(etapa);
     const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
     const revisaoIndex = revisoesEtapa.indexOf(revisao);
-    
+
     if (!confirm(`Copiar a data ${format(new Date(valorOriginal), 'dd/MM/yyyy')} para todas as células à direita nesta linha?`)) return;
-    
+
+    marcarLinhasModificadas([linhaId]);
     setHasUnsavedChanges(true);
-    setLinhasModificadas(prev => new Set([...prev, linhaId]));
     setLinhas(prev => prev.map(l => {
       if (l.id !== linhaId) return l;
-      
       const novasDatas = { ...l.datas };
-      
-      // Copiar para revisões seguintes da mesma etapa
       for (let i = revisaoIndex + 1; i < revisoesEtapa.length; i++) {
         if (!novasDatas[etapa]) novasDatas[etapa] = {};
         novasDatas[etapa][revisoesEtapa[i]] = valorOriginal;
       }
-      
-      // Copiar para próximas etapas
       for (let i = etapaIndex + 1; i < etapasVisiveis.length; i++) {
         const proxEtapa = etapasVisiveis[i];
         const proxRevisoes = revisoesPorEtapa[proxEtapa] || DEFAULT_REVISOES;
-        
         if (!novasDatas[proxEtapa]) novasDatas[proxEtapa] = {};
-        proxRevisoes.forEach(rev => {
-          novasDatas[proxEtapa][rev] = valorOriginal;
-        });
+        proxRevisoes.forEach(rev => { novasDatas[proxEtapa][rev] = valorOriginal; });
       }
-      
       return { ...l, datas: novasDatas };
     }));
   };
 
+  // ─── Seleção em massa ───
+  const toggleSelectFolha = (linhaId) => {
+    setSelectedFolhas(prev => {
+      const newSet = new Set(prev);
+      newSet.has(linhaId) ? newSet.delete(linhaId) : newSet.add(linhaId);
+      return newSet;
+    });
+  };
+  const selectAllFolhas = () => setSelectedFolhas(new Set(linhas.map(l => l.id)));
+  const clearSelection = () => setSelectedFolhas(new Set());
 
+  const handleMassEdit = () => {
+    if (selectedFolhas.size === 0) { alert('Selecione ao menos uma folha'); return; }
+    setShowMassEditModal(true);
+  };
 
-  const handleSave = async (silent = false) => {
-    if (isSaving) {
-      return;
+  const applyMassEdit = () => {
+    if (!massEditEtapa || !massEditRevisao || !massEditData) {
+      alert('Preencha etapa, revisão e data'); return;
     }
+    marcarLinhasModificadas(Array.from(selectedFolhas));
+    setHasUnsavedChanges(true);
+    setLinhas(prev => prev.map(linha => {
+      if (!selectedFolhas.has(linha.id)) return linha;
+      const novasDatas = { ...linha.datas };
+      if (!novasDatas[massEditEtapa]) novasDatas[massEditEtapa] = {};
+      novasDatas[massEditEtapa][massEditRevisao] = massEditData;
+      return { ...linha, datas: novasDatas };
+    }));
+    setShowMassEditModal(false);
+    setMassEditEtapa(''); setMassEditRevisao(''); setMassEditData('');
+    clearSelection();
+  };
+
+  const toggleMinimizarEtapa = (etapa) => {
+    setEtapasMinimizadas(prev => ({ ...prev, [etapa]: !prev[etapa] }));
+  };
+
+  // ─── SAVE OTIMIZADO ───
+  const handleSave = async (silent = false) => {
+    if (isSaving) return;
     setIsSaving(true);
+
     try {
-      
-      // SALVAR APENAS linhas modificadas OU todas se não há rastreamento
+      let successCount = 0;
+      let errorCount = 0;
+
+      // ── PASSO 1: Salvar metadados de estrutura (1 único request) ──
+      // Só executa se revisões ou etapas foram alteradas
+      if (estruturaModificada) {
+        const estruturaPayload = {
+          empreendimento_id: empreendimento.id,
+          documento_id: METADATA_DOC_ID,
+          _is_metadata: true,
+          ordem: -1,
+          datas: {},
+          estrutura: {
+            revisoesPorEtapa: Object.fromEntries(
+              Object.entries(revisoesPorEtapa).map(([etapa, revs]) => [etapa, Array.isArray(revs) ? revs : []])
+            ),
+            etapasExcluidas: etapasExcluidas
+          }
+        };
+
+        try {
+          if (metadataRecordId) {
+            const updated = await retryWithBackoff(
+              () => DataCadastro.update(metadataRecordId, estruturaPayload),
+              3, 1000, 'saveMetadata'
+            );
+            successCount++;
+          } else {
+            const created = await retryWithBackoff(
+              () => DataCadastro.create(estruturaPayload),
+              3, 1000, 'createMetadata'
+            );
+            setMetadataRecordId(created.id);
+            successCount++;
+          }
+          setEstruturaModificada(false);
+        } catch (err) {
+          console.error('Erro ao salvar metadados de estrutura:', err);
+          errorCount++;
+        }
+
+        // Pequeno delay após salvar metadados
+        await new Promise(resolve => setTimeout(resolve, 300));
+      }
+
+      // ── PASSO 2: Salvar apenas linhas com datas realmente modificadas ──
       const linhasParaSalvar = linhas.filter(linha => {
         if (!linha.documento_id) return false;
-        
-        // Se há rastreamento de modificações, salvar apenas modificadas
-        if (linhasModificadas.size > 0 && !linhasModificadas.has(linha.id)) return false;
-        
-        // Linhas novas sempre salvar se foram modificadas
-        if (linha.isNew || linha.id.toString().startsWith('temp-')) return true;
-
-        // Se tem datas (mesmo vazias), pode ter metadados
-        return linha.datas && Object.keys(linha.datas).length > 0;
+        // Só salva se está na lista de modificadas
+        if (!linhasModificadas.has(linha.id)) return false;
+        return true;
       });
-      
 
-      // Processar em lotes sequenciais para evitar rate limit
-       let successCount = 0;
-       let errorCount = 0;
-       const updatedLinhas = new Map();
-       const etapasVisiveis = ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e));
+      const updatedLinhas = new Map();
 
-       const salvarLinha = async (linha, idx) => {
-         const datasComMetadados = {};
-         if (linha.datas) {
-           Object.entries(linha.datas).forEach(([etapa, etapaData]) => {
-             if (etapaData && typeof etapaData === 'object') {
-               datasComMetadados[etapa] = { ...etapaData };
-             }
-           });
-         }
-         etapasVisiveis.forEach(etapa => {
-           const revisoesEtapa = revisoesPorEtapa[etapa];
-           if (revisoesEtapa && revisoesEtapa.length > 0) {
-             if (!datasComMetadados[etapa]) datasComMetadados[etapa] = {};
-             datasComMetadados[etapa]._revisoes_existentes = revisoesEtapa;
-           }
-         });
+      const salvarLinha = async (linha, idx) => {
+        // ── Payload limpo: sem metadados de estrutura embutidos ──
+        // Remove _revisoes_existentes, _revisoes_excluidas, _excluida de cada etapa
+        // pois agora esses dados ficam no registro de metadados separado
+        const datasLimpas = {};
+        if (linha.datas) {
+          Object.entries(linha.datas).forEach(([etapa, etapaData]) => {
+            if (!etapaData || typeof etapaData !== 'object') return;
+            // Filtrar apenas chaves de revisões reais (datas de fato)
+            const datasFiltradas = {};
+            Object.entries(etapaData).forEach(([chave, valor]) => {
+              // Ignorar chaves de metadados legados
+              if (
+                chave.startsWith('_') ||
+                chave === 'meta' ||
+                chave === 'revisoes_excluidas' ||
+                chave === 'revisoes_existentes'
+              ) return;
+              datasFiltradas[chave] = valor;
+            });
+            // Só incluir a etapa se tiver ao menos uma data
+            if (Object.keys(datasFiltradas).length > 0) {
+              datasLimpas[etapa] = datasFiltradas;
+            }
+          });
+        }
 
-         const linhaDataFinal = {
-           empreendimento_id: empreendimento.id,
-           ordem: idx,
-           documento_id: linha.documento_id,
-           datas: datasComMetadados
-         };
+        const linhaDataFinal = {
+          empreendimento_id: empreendimento.id,
+          ordem: idx,
+          documento_id: linha.documento_id,
+          datas: datasLimpas
+        };
 
-         const isNew = linha.isNew || linha.id.toString().startsWith('temp-');
-         let delay = 500;
-         for (let attempt = 1; attempt <= 5; attempt++) {
-           try {
-             const result = isNew
-               ? await DataCadastro.create(linhaDataFinal)
-               : await DataCadastro.update(linha.id, linhaDataFinal);
-             return { linhaId: linha.id, result };
-           } catch (err) {
-             const is429 = err?.status === 429 || err?.message?.includes('429') || err?.message?.includes('Rate limit');
-             if (attempt < 5 && is429) {
-               await new Promise(resolve => setTimeout(resolve, delay));
-               delay *= 2; // backoff exponencial: 500, 1000, 2000, 4000
-             } else {
-               throw err;
-             }
-           }
-         }
-       };
+        const isNew = linha.isNew || linha.id.toString().startsWith('temp-');
+        let delay = 500;
 
-       // Processar sequencialmente com delay mínimo para evitar rate limit
-       for (let i = 0; i < linhasParaSalvar.length; i++) {
-         try {
-           const res = await salvarLinha(linhasParaSalvar[i], i);
-           if (res) {
-             successCount++;
-             updatedLinhas.set(res.linhaId, res.result);
-           }
-         } catch (err) {
-           errorCount++;
-           console.error(`❌ ERRO na linha ${linhasParaSalvar[i].id}:`, err);
-         }
-         // Delay mínimo entre requisições para não exceder rate limit (~4 req/s)
-         await new Promise(resolve => setTimeout(resolve, 250));
-       }
+        for (let attempt = 1; attempt <= 5; attempt++) {
+          try {
+            const result = isNew
+              ? await DataCadastro.create(linhaDataFinal)
+              : await DataCadastro.update(linha.id, linhaDataFinal);
+            return { linhaId: linha.id, result };
+          } catch (err) {
+            const is429 = err?.status === 429 || err?.message?.includes('429') || err?.message?.includes('Rate limit');
+            if (attempt < 5 && is429) {
+              console.warn(`Rate limit na tentativa ${attempt}, aguardando ${delay}ms...`);
+              await new Promise(resolve => setTimeout(resolve, delay));
+              delay *= 2;
+            } else {
+              throw err;
+            }
+          }
+        }
+      };
 
-      // Atualizar estado local com os IDs salvos
+      // Processar sequencialmente com delay adequado
+      for (let i = 0; i < linhasParaSalvar.length; i++) {
+        try {
+          const res = await salvarLinha(linhasParaSalvar[i], i);
+          if (res) {
+            successCount++;
+            updatedLinhas.set(res.linhaId, res.result);
+          }
+        } catch (err) {
+          errorCount++;
+          console.error(`Erro na linha ${linhasParaSalvar[i].id}:`, err);
+        }
+        // Delay entre requests — 400ms garante ~2.5 req/s, bem abaixo do rate limit
+        if (i < linhasParaSalvar.length - 1) {
+          await new Promise(resolve => setTimeout(resolve, 400));
+        }
+      }
+
+      // Atualizar IDs das linhas recém-criadas
       setLinhas(prev => prev.map(linha => {
         const savedData = updatedLinhas.get(linha.id);
-        if (savedData) {
-          return { ...linha, id: savedData.id, isNew: false };
-        }
+        if (savedData) return { ...linha, id: savedData.id, isNew: false };
         return linha;
       }));
 
@@ -819,55 +633,46 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       setLinhasModificadas(new Set());
 
       if (!silent) {
+        const totalSalvo = successCount;
+        const totalTentado = linhasParaSalvar.length + (estruturaModificada ? 1 : 0);
         if (errorCount > 0) {
-          alert(`Salvamento parcial: ${successCount} sucesso, ${errorCount} erros.`);
+          alert(`Salvamento parcial: ${successCount} sucesso(s), ${errorCount} erro(s).`);
+        } else if (totalSalvo === 0) {
+          alert('Nenhuma alteração pendente para salvar.');
         } else {
-          alert(`Dados salvos com sucesso! ${successCount} linhas atualizadas.`);
+          alert(`Dados salvos com sucesso! ${successCount} registro(s) atualizado(s).`);
         }
       }
     } catch (error) {
-      console.error('💥 ERRO CRÍTICO ao salvar:', error);
-      if (!silent) {
-        alert(`Erro ao salvar dados: ${error.message || 'Erro desconhecido'}`);
-      }
+      console.error('Erro crítico ao salvar:', error);
+      if (!silent) alert(`Erro ao salvar dados: ${error.message || 'Erro desconhecido'}`);
     } finally {
       setIsSaving(false);
     }
   };
 
   const getDataValue = (linha, etapa, revisao) => {
-  const data = linha.datas?.[etapa]?.[revisao] || '';
-  // Não exibir datas inválidas (01/01/0001 ou dd/mm/aaaa)
-  if (!data || data === '0001-01-01' || (typeof data === 'string' && data.includes('dd/mm/aaaa'))) {
-    return '';
-  }
-  return typeof data === 'string' ? data : '';
+    const data = linha.datas?.[etapa]?.[revisao] || '';
+    if (!data || data === '0001-01-01' || (typeof data === 'string' && data.includes('dd/mm/aaaa'))) return '';
+    return typeof data === 'string' ? data : '';
   };
 
   const linhasPorDisciplina = useMemo(() => {
     const grupos = {};
-    
     linhas.forEach(linha => {
       const doc = documentos.find(d => d.id === linha.documento_id);
-      // Filtrar apenas linhas que possuem um documento válido
       if (!doc) return;
-      
       const disciplina = doc.disciplina || 'Sem Disciplina';
-      
-      if (!grupos[disciplina]) {
-        grupos[disciplina] = [];
-      }
+      if (!grupos[disciplina]) grupos[disciplina] = [];
       grupos[disciplina].push(linha);
     });
-
     return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
   }, [linhas, documentos]);
 
   const ETAPAS_VIEW_BASE = etapasEfetivas.length > 0 ? etapasEfetivas : ETAPAS;
-  // Aplicar ordem customizada se existir
   const ETAPAS_VIEW = useMemo(() => {
     if (ordemEtapas.length === 0) return ETAPAS_VIEW_BASE;
-    const sorted = [...ETAPAS_VIEW_BASE].sort((a, b) => {
+    return [...ETAPAS_VIEW_BASE].sort((a, b) => {
       const ia = ordemEtapas.indexOf(a);
       const ib = ordemEtapas.indexOf(b);
       if (ia === -1 && ib === -1) return 0;
@@ -875,7 +680,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       if (ib === -1) return -1;
       return ia - ib;
     });
-    return sorted;
   }, [ETAPAS_VIEW_BASE, ordemEtapas]);
 
   const handleDragEndEtapas = (result) => {
@@ -884,7 +688,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
     const novaOrdem = Array.from(etapasVisiveis);
     const [moved] = novaOrdem.splice(result.source.index, 1);
     novaOrdem.splice(result.destination.index, 0, moved);
-    // Incluir etapas excluídas ao final para não perdê-las
     const excluidas = ETAPAS_VIEW.filter(e => etapasExcluidas.includes(e));
     setOrdemEtapas([...novaOrdem, ...excluidas]);
   };
@@ -892,10 +695,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   const larguraTotalEtapas = useMemo(() => {
     const etapasVisiveis = ETAPAS_VIEW_BASE.filter(e => !etapasExcluidas.includes(e));
     return etapasVisiveis.reduce((total, etapa) => {
-      const isMinimizada = etapasMinimizadas[etapa];
-      if (isMinimizada) {
-        return total + 40;
-      }
+      if (etapasMinimizadas[etapa]) return total + 40;
       const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
       return total + ((revisoesEtapa.length * 110) + 40);
     }, 0);
@@ -903,31 +703,19 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
   const handleExportData = () => {
     const etapasVisiveis = ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e));
-
-    // Cabeçalhos
     let headers = ['folha', 'descritivo', 'disciplina'];
     etapasVisiveis.forEach(etapa => {
       const revisoes = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
-      revisoes.forEach(rev => {
-        headers.push(`${etapa}_${rev}`);
-      });
+      revisoes.forEach(rev => headers.push(`${etapa}_${rev}`));
     });
-
-    // Linhas de dados
     const rows = linhas.map(linha => {
       const doc = documentos.find(d => d.id === linha.documento_id);
-      const row = [
-        doc?.arquivo || doc?.numero || '',
-        doc?.descritivo || '',
-        doc?.disciplina || ''
-      ];
-
+      const row = [doc?.arquivo || doc?.numero || '', doc?.descritivo || '', doc?.disciplina || ''];
       etapasVisiveis.forEach(etapa => {
         const revisoes = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
         revisoes.forEach(rev => {
           const val = getDataValue(linha, etapa, rev);
           if (val) {
-            // Converter de yyyy-mm-dd para dd/mm/yyyy
             const [ano, mes, dia] = val.split('-');
             row.push(`${dia}/${mes}/${ano}`);
           } else {
@@ -935,15 +723,9 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           }
         });
       });
-
       return row;
     });
-
-    const csvContent = [
-      headers.join(';'),
-      ...rows.map(r => r.join(';'))
-    ].join('\n');
-
+    const csvContent = [headers.join(';'), ...rows.map(r => r.join(';'))].join('\n');
     const BOM = '\uFEFF';
     const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -954,27 +736,17 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
   const handleExportTemplate = () => {
     const etapasVisiveis = ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e));
-    
-    // Criar cabeçalhos dinamicamente
     let headers = ['folha'];
     etapasVisiveis.forEach(etapa => {
       const revisoes = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
-      revisoes.forEach(rev => {
-        headers.push(`${etapa}_${rev}`);
-      });
+      revisoes.forEach(rev => headers.push(`${etapa}_${rev}`));
     });
-    
     const csvContent = [
       headers.join(';'),
-      // Linha de exemplo
-      [
-        'ARQ-01',
-        ...etapasVisiveis.flatMap(etapa => 
-          (revisoesPorEtapa[etapa] || DEFAULT_REVISOES).map(() => '15/01/2025')
-        )
-      ].join(';')
+      ['ARQ-01', ...etapasVisiveis.flatMap(etapa =>
+        (revisoesPorEtapa[etapa] || DEFAULT_REVISOES).map(() => '15/01/2025')
+      )].join(';')
     ].join('\n');
-    
     const BOM = '\uFEFF';
     const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
@@ -984,29 +756,16 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   };
 
   const handleImport = async () => {
-    if (!importFile) {
-      alert('Selecione um arquivo para importar');
-      return;
-    }
-
+    if (!importFile) { alert('Selecione um arquivo para importar'); return; }
     setIsImporting(true);
     try {
       const fileContent = await importFile.text();
       const lines = fileContent.split('\n').filter(line => line.trim());
+      if (lines.length < 2) { alert('Arquivo vazio ou inválido'); return; }
 
-      if (lines.length < 2) {
-        alert('Arquivo vazio ou inválido');
-        return;
-      }
-
-      // Detectar separador (ponto-e-vírgula ou vírgula)
       const separator = lines[0].includes(';') ? ';' : ',';
       const headers = lines[0].split(separator).map(h => h.trim());
-
-      if (!headers.includes('folha')) {
-        alert('Cabeçalho "folha" obrigatório não encontrado');
-        return;
-      }
+      if (!headers.includes('folha')) { alert('Cabeçalho "folha" obrigatório não encontrado'); return; }
 
       const dadosParaImportar = [];
       const erros = [];
@@ -1014,97 +773,50 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       for (let i = 1; i < lines.length; i++) {
         const values = lines[i].split(separator).map(v => v.trim());
         const row = {};
-        headers.forEach((header, idx) => {
-          row[header] = values[idx] || '';
-        });
+        headers.forEach((header, idx) => { row[header] = values[idx] || ''; });
 
         const folhaNome = row.folha;
-        if (!folhaNome) {
-          erros.push(`Linha ${i + 1}: Nome da folha é obrigatório`);
-          continue;
-        }
+        if (!folhaNome) { erros.push(`Linha ${i + 1}: Nome da folha é obrigatório`); continue; }
 
-        // Buscar documento por número ou arquivo
-        const documento = documentos.find(d => 
-          d.numero === folhaNome || d.arquivo === folhaNome
-        );
+        const documento = documentos.find(d => d.numero === folhaNome || d.arquivo === folhaNome);
+        if (!documento) { erros.push(`Linha ${i + 1}: Folha "${folhaNome}" não encontrada`); continue; }
 
-        if (!documento) {
-          erros.push(`Linha ${i + 1}: Folha "${folhaNome}" não encontrada`);
-          continue;
-        }
-
-        // Processar datas por etapa e revisão
         const datas = {};
         headers.forEach(header => {
           if (header === 'folha') return;
-
           const data = row[header];
           if (!data) return;
-
-          // Formato esperado: "ETAPA_REVISAO"
           const parts = header.split('_');
           if (parts.length < 2) return;
-
           const revisao = parts.pop();
           const etapa = parts.join('_');
-
-          // Converter data de dd/mm/aaaa para aaaa-mm-dd
           let dataFormatada = data;
           if (data.includes('/')) {
             const [dia, mes, ano] = data.split('/');
-            if (dia && mes && ano) {
-              dataFormatada = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
-            }
+            if (dia && mes && ano) dataFormatada = `${ano}-${mes.padStart(2, '0')}-${dia.padStart(2, '0')}`;
           }
-
-          if (!datas[etapa]) {
-            datas[etapa] = {};
-          }
+          if (!datas[etapa]) datas[etapa] = {};
           datas[etapa][revisao] = dataFormatada;
         });
 
-        dadosParaImportar.push({
-          documento_id: documento.id,
-          datas
-        });
+        dadosParaImportar.push({ documento_id: documento.id, datas });
       }
 
-      if (erros.length > 0) {
-        alert(`Erros encontrados:\n${erros.join('\n')}\n\nContinuar com os registros válidos?`);
-      }
+      if (erros.length > 0) alert(`Erros encontrados:\n${erros.join('\n')}\n\nContinuando com registros válidos...`);
+      if (dadosParaImportar.length === 0) { alert('Nenhum registro válido encontrado'); return; }
 
-      if (dadosParaImportar.length === 0) {
-        alert('Nenhum registro válido encontrado no arquivo');
-        return;
-      }
-
-      let sucessos = 0;
-      let falhas = 0;
-
+      let sucessos = 0, falhas = 0;
       for (const dado of dadosParaImportar) {
         try {
-          // Verificar se já existe registro para este documento
           const linhaExistente = linhas.find(l => l.documento_id === dado.documento_id);
-
           if (linhaExistente && !linhaExistente.isNew && !linhaExistente.id.toString().startsWith('temp-')) {
-            // Atualizar registro existente
             await retryWithBackoff(
-              () => DataCadastro.update(linhaExistente.id, {
-                datas: { ...linhaExistente.datas, ...dado.datas }
-              }),
+              () => DataCadastro.update(linhaExistente.id, { datas: { ...linhaExistente.datas, ...dado.datas } }),
               3, 1000, `importUpdate-${linhaExistente.id}`
             );
           } else {
-            // Criar novo registro
-            const ordem = linhas.length;
             await retryWithBackoff(
-              () => DataCadastro.create({
-                empreendimento_id: empreendimento.id,
-                ordem,
-                documento_id: dado.documento_id,
-                datas: dado.datas
-              }),
+              () => DataCadastro.create({ empreendimento_id: empreendimento.id, ordem: linhas.length, documento_id: dado.documento_id, datas: dado.datas }),
               3, 1000, `importCreate-${dado.documento_id}`
             );
           }
@@ -1116,13 +828,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       }
 
       alert(`Importação concluída!\n\nSucessos: ${sucessos}\nFalhas: ${falhas}`);
-
-      if (sucessos > 0) {
-        await loadData();
-        setShowImportModal(false);
-        setImportFile(null);
-      }
-
+      if (sucessos > 0) { await loadData(); setShowImportModal(false); setImportFile(null); }
     } catch (error) {
       console.error('Erro na importação:', error);
       alert(`Erro ao processar arquivo: ${error.message}`);
@@ -1150,6 +856,14 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
               Alterações não salvas
             </Badge>
           )}
+          {/* Indicador visual do que será salvo */}
+          {!readOnly && hasUnsavedChanges && (
+            <span className="text-xs text-gray-500">
+              {linhasModificadas.size > 0 && `${linhasModificadas.size} linha(s)`}
+              {linhasModificadas.size > 0 && estruturaModificada && ' + '}
+              {estruturaModificada && 'estrutura'}
+            </span>
+          )}
         </div>
         {!readOnly && (
           <div className="flex gap-2">
@@ -1158,36 +872,20 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 <Badge variant="outline" className="px-3 py-1">
                   {selectedFolhas.size} folha{selectedFolhas.size > 1 ? 's' : ''} selecionada{selectedFolhas.size > 1 ? 's' : ''}
                 </Badge>
-                <Button
-                  variant="outline"
-                  onClick={handleMassEdit}
-                  className="border-purple-500 text-purple-600 hover:bg-purple-50"
-                >
+                <Button variant="outline" onClick={handleMassEdit} className="border-purple-500 text-purple-600 hover:bg-purple-50">
                   <Wand2 className="w-4 h-4 mr-2" />
                   Preencher em Massa
                 </Button>
-                <Button
-                  variant="outline"
-                  onClick={clearSelection}
-                  className="border-gray-400 text-gray-600 hover:bg-gray-50"
-                >
+                <Button variant="outline" onClick={clearSelection} className="border-gray-400 text-gray-600 hover:bg-gray-50">
                   Limpar Seleção
                 </Button>
               </>
             )}
-            <Button
-              variant="outline"
-              onClick={handleExportData}
-              className="border-blue-500 text-blue-600 hover:bg-blue-50"
-            >
+            <Button variant="outline" onClick={handleExportData} className="border-blue-500 text-blue-600 hover:bg-blue-50">
               <Download className="w-4 h-4 mr-2" />
               Exportar
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => setShowImportModal(true)}
-              className="border-green-500 text-green-600 hover:bg-green-50"
-            >
+            <Button variant="outline" onClick={() => setShowImportModal(true)} className="border-green-500 text-green-600 hover:bg-green-50">
               <Upload className="w-4 h-4 mr-2" />
               Importar
             </Button>
@@ -1207,11 +905,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           className="fixed bottom-6 right-6 z-50 h-14 w-14 rounded-full shadow-lg hover:shadow-xl transition-shadow"
           size="icon"
         >
-          {isSaving ? (
-            <Loader2 className="w-6 h-6 animate-spin" />
-          ) : (
-            <Save className="w-6 h-6" />
-          )}
+          {isSaving ? <Loader2 className="w-6 h-6 animate-spin" /> : <Save className="w-6 h-6" />}
         </Button>
       )}
 
@@ -1219,7 +913,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
         <div className="flex h-[calc(100vh-300px)] overflow-hidden max-w-full">
           {/* Container de Folhas Fixo - 20% */}
           <div className="w-[20%] border-r-2 border-gray-300 flex flex-col bg-gray-50">
-            {/* Cabeçalho Fixo das Folhas */}
             <div className="bg-blue-100 border-b-2 border-gray-300 px-2 sticky top-0 z-30 flex items-center" style={{ height: '72px' }}>
               <div className="flex items-center gap-2">
                 {!readOnly && (
@@ -1234,15 +927,11 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                 <span className="font-semibold text-sm">Folha</span>
               </div>
             </div>
-
-            {/* Lista de Folhas */}
-            <div 
+            <div
               ref={folhasScrollRef}
               className="flex-1 overflow-y-auto"
               onScroll={(e) => {
-                if (dataScrollRef.current) {
-                  dataScrollRef.current.scrollTop = e.target.scrollTop;
-                }
+                if (dataScrollRef.current) dataScrollRef.current.scrollTop = e.target.scrollTop;
               }}
             >
               {linhas.length === 0 ? (
@@ -1252,18 +941,13 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
               ) : (
                 linhasPorDisciplina.map(([disciplina, linhasDaDisciplina]) => (
                   <div key={disciplina}>
-                    {/* Cabeçalho da Disciplina */}
                     <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-300 px-2 flex items-center" style={{ height: '44px' }}>
                       <div className="flex items-center gap-1.5 w-full">
                         <div className="w-1 h-5 bg-blue-600 rounded-full"></div>
                         <h3 className="font-semibold text-sm text-gray-800">{disciplina}</h3>
-                        <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">
-                          {linhasDaDisciplina.length}
-                        </Badge>
+                        <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">{linhasDaDisciplina.length}</Badge>
                       </div>
                     </div>
-
-                    {/* Folhas da Disciplina */}
                     {linhasDaDisciplina.map((linha) => {
                       const doc = documentos.find(d => d.id === linha.documento_id);
                       return (
@@ -1303,7 +987,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
           {/* Container de Etapas com Scroll Horizontal - 80% */}
           <div className="w-[80%] flex flex-col overflow-hidden">
-            <div 
+            <div
               ref={dataScrollRef}
               className="flex-1 overflow-x-auto overflow-y-auto"
               onScroll={(e) => {
@@ -1323,7 +1007,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                             const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                             const isMinimizada = etapasMinimizadas[etapa];
                             const colWidth = isMinimizada ? 40 : (revisoesEtapa.length * 110) + 40;
-
                             return (
                               <Draggable key={etapa} draggableId={etapa} index={idx}>
                                 {(prov, snapshot) => (
@@ -1335,15 +1018,10 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                                   >
                                     <div className="p-1.5 text-center font-semibold flex-1 flex items-center justify-center">
                                       <div className="flex items-center justify-center gap-1">
-                                        {/* Drag handle */}
                                         <span {...prov.dragHandleProps} className="cursor-grab text-gray-400 hover:text-gray-600" title="Arrastar para reordenar">
                                           <GripHorizontal className="w-3 h-3" />
                                         </span>
-                                        <button
-                                          onClick={() => toggleMinimizarEtapa(etapa)}
-                                          className="text-gray-600 hover:text-gray-900 p-0.5"
-                                          title={isMinimizada ? "Expandir" : "Minimizar"}
-                                        >
+                                        <button onClick={() => toggleMinimizarEtapa(etapa)} className="text-gray-600 hover:text-gray-900 p-0.5" title={isMinimizada ? "Expandir" : "Minimizar"}>
                                           {isMinimizada ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
                                         </button>
                                         <span className={`${isMinimizada ? 'writing-mode-vertical-rl transform rotate-180 text-xs' : 'text-xs'}`}>
@@ -1360,8 +1038,6 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                                         )}
                                       </div>
                                     </div>
-
-                                    {/* Cabeçalho de Revisões */}
                                     {!isMinimizada && (
                                       <div className="flex border-t border-gray-300 bg-blue-50">
                                         {revisoesEtapa.map((revisao) => (
@@ -1395,11 +1071,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                                                 >{revisao}</span>
                                               )}
                                               {!readOnly && !(editingRevisao?.etapa === etapa && editingRevisao?.revisao === revisao) && (
-                                                <button
-                                                  onClick={() => handleRemoveRevisao(etapa, revisao)}
-                                                  className="text-red-500 hover:text-red-700 p-0.5"
-                                                  title={`Excluir revisão ${revisao}`}
-                                                >
+                                                <button onClick={() => handleRemoveRevisao(etapa, revisao)} className="text-red-500 hover:text-red-700 p-0.5" title={`Excluir revisão ${revisao}`}>
                                                   <Trash2 className="w-2.5 h-2.5" />
                                                 </button>
                                               )}
@@ -1408,11 +1080,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                                         ))}
                                         <div className="bg-green-50 p-0.5 text-center" style={{ width: '40px', minWidth: '40px' }}>
                                           {!readOnly && (
-                                            <button
-                                              onClick={() => handleAddRevisao(etapa)}
-                                              className="text-green-600 hover:text-green-800 p-0.5"
-                                              title="Adicionar revisão"
-                                            >
+                                            <button onClick={() => handleAddRevisao(etapa)} className="text-green-600 hover:text-green-800 p-0.5" title="Adicionar revisão">
                                               <Plus className="w-3 h-3" />
                                             </button>
                                           )}
@@ -1433,90 +1101,81 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
                 {/* Área de Dados */}
                 <div style={{ minWidth: `${larguraTotalEtapas}px` }}>
-              {linhas.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
-                  Nenhum documento cadastrado
-                </div>
-              ) : (
-                linhasPorDisciplina.map(([disciplina, linhasDaDisciplina]) => (
-                  <div key={disciplina}>
-                    {/* Cabeçalho da Disciplina - para alinhar com a coluna de folhas */}
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-300 flex" style={{ minWidth: `${larguraTotalEtapas}px`, height: '44px' }}>
-                      {ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e)).map((etapa) => {
-                        const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
-                        const isMinimizada = etapasMinimizadas[etapa];
-                        return (
-                          <div
-                            key={`${disciplina}-${etapa}`}
-                            className="border-r border-gray-200 flex-shrink-0"
-                            style={{ 
-                              width: isMinimizada ? '40px' : `${(revisoesEtapa.length * 110) + 40}px`,
-                              minWidth: isMinimizada ? '40px' : `${(revisoesEtapa.length * 110) + 40}px`
-                            }}
-                          ></div>
-                        );
-                      })}
-                    </div>
-
-                    {/* Linhas da Disciplina */}
-                    {linhasDaDisciplina.map((linha) => {
-                      const doc = documentos.find(d => d.id === linha.documento_id);
-                      const etapasVisiveis = ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e));
-                      
-                      return (
-                        <div key={linha.id} className="flex border-b border-gray-200 hover:bg-gray-50" style={{ minWidth: `${larguraTotalEtapas}px`, height: '48px' }}>
-                          {etapasVisiveis.map((etapa) => {
+                  {linhas.length === 0 ? (
+                    <div className="p-8 text-center text-gray-500">Nenhum documento cadastrado</div>
+                  ) : (
+                    linhasPorDisciplina.map(([disciplina, linhasDaDisciplina]) => (
+                      <div key={disciplina}>
+                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-300 flex" style={{ minWidth: `${larguraTotalEtapas}px`, height: '44px' }}>
+                          {ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e)).map((etapa) => {
                             const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
                             const isMinimizada = etapasMinimizadas[etapa];
-                            const colSpanTotal = isMinimizada ? 1 : revisoesEtapa.length + 1;
-                            
                             return (
                               <div
-                                key={`${linha.id}-${etapa}`}
-                                className="border-r border-gray-200 last:border-r-0 flex-shrink-0"
-                                style={{ width: isMinimizada ? '40px' : `${(revisoesEtapa.length * 110) + 40}px`, minWidth: isMinimizada ? '40px' : `${(revisoesEtapa.length * 110) + 40}px` }}
-                              >
-                                {isMinimizada ? (
-                                  <div className="h-full flex items-center justify-center p-0.5 bg-gray-50"></div>
-                                ) : (
-                                  <div className="flex">
-                                    {revisoesEtapa.map((revisao) => (
-                                     <div
-                                       key={`${linha.id}-${etapa}-${revisao}`}
-                                       className="border-r border-gray-100 p-0.5 flex-shrink-0 flex items-center relative group"
-                                       style={{ width: '110px', minWidth: '110px' }}
-                                     >
-                                       <input
-                                         type="date"
-                                         value={getDataValue(linha, etapa, revisao)}
-                                         onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
-                                         className="h-8 text-xs w-full px-1 border border-gray-300 rounded cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 hover:[&::-webkit-calendar-picker-indicator]:opacity-100"
-                                         style={{ color: getDataValue(linha, etapa, revisao) ? 'black' : 'transparent' }}
-                                         disabled={readOnly}
-                                       />
-                                       {!readOnly && getDataValue(linha, etapa, revisao) && (
-                                         <button
-                                           onClick={() => copiarDataParaBaixo(linha.id, etapa, revisao)}
-                                           className="text-purple-600 hover:text-purple-800 p-0.5 absolute right-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                                           title="Preencher todas abaixo"
-                                         >
-                                           <Wand2 className="w-2.5 h-2.5" />
-                                         </button>
-                                       )}
-                                     </div>
-                                    ))}
-                                    <div className="p-0.5 flex-shrink-0" style={{ width: '40px', minWidth: '40px' }}></div>
-                                  </div>
-                                )}
-                              </div>
+                                key={`${disciplina}-${etapa}`}
+                                className="border-r border-gray-200 flex-shrink-0"
+                                style={{
+                                  width: isMinimizada ? '40px' : `${(revisoesEtapa.length * 110) + 40}px`,
+                                  minWidth: isMinimizada ? '40px' : `${(revisoesEtapa.length * 110) + 40}px`
+                                }}
+                              ></div>
                             );
                           })}
                         </div>
-                      );
-                    })}
-                  </div>
-                ))
-              )}
+                        {linhasDaDisciplina.map((linha) => {
+                          const etapasVisiveis = ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e));
+                          return (
+                            <div key={linha.id} className="flex border-b border-gray-200 hover:bg-gray-50" style={{ minWidth: `${larguraTotalEtapas}px`, height: '48px' }}>
+                              {etapasVisiveis.map((etapa) => {
+                                const revisoesEtapa = revisoesPorEtapa[etapa] || DEFAULT_REVISOES;
+                                const isMinimizada = etapasMinimizadas[etapa];
+                                return (
+                                  <div
+                                    key={`${linha.id}-${etapa}`}
+                                    className="border-r border-gray-200 last:border-r-0 flex-shrink-0"
+                                    style={{ width: isMinimizada ? '40px' : `${(revisoesEtapa.length * 110) + 40}px`, minWidth: isMinimizada ? '40px' : `${(revisoesEtapa.length * 110) + 40}px` }}
+                                  >
+                                    {isMinimizada ? (
+                                      <div className="h-full flex items-center justify-center p-0.5 bg-gray-50"></div>
+                                    ) : (
+                                      <div className="flex">
+                                        {revisoesEtapa.map((revisao) => (
+                                          <div
+                                            key={`${linha.id}-${etapa}-${revisao}`}
+                                            className="border-r border-gray-100 p-0.5 flex-shrink-0 flex items-center relative group"
+                                            style={{ width: '110px', minWidth: '110px' }}
+                                          >
+                                            <input
+                                              type="date"
+                                              value={getDataValue(linha, etapa, revisao)}
+                                              onChange={(e) => handleUpdateData(linha.id, etapa, revisao, e.target.value)}
+                                              className="h-8 text-xs w-full px-1 border border-gray-300 rounded cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-0 hover:[&::-webkit-calendar-picker-indicator]:opacity-100"
+                                              style={{ color: getDataValue(linha, etapa, revisao) ? 'black' : 'transparent' }}
+                                              disabled={readOnly}
+                                            />
+                                            {!readOnly && getDataValue(linha, etapa, revisao) && (
+                                              <button
+                                                onClick={() => copiarDataParaBaixo(linha.id, etapa, revisao)}
+                                                className="text-purple-600 hover:text-purple-800 p-0.5 absolute right-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                title="Preencher todas abaixo"
+                                              >
+                                                <Wand2 className="w-2.5 h-2.5" />
+                                              </button>
+                                            )}
+                                          </div>
+                                        ))}
+                                        <div className="p-0.5 flex-shrink-0" style={{ width: '40px', minWidth: '40px' }}></div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ))
+                  )}
                 </div>
               </div>
             </div>
@@ -1529,171 +1188,94 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           <h3 className="text-sm font-semibold text-gray-700 mb-2">Etapas Excluídas</h3>
           <div className="flex flex-wrap gap-2">
             {etapasExcluidas.map(etapa => (
-              <Button
-                key={etapa}
-                variant="outline"
-                size="sm"
-                onClick={() => handleRestaurarEtapa(etapa)}
-                className="text-xs"
-              >
+              <Button key={etapa} variant="outline" size="sm" onClick={() => handleRestaurarEtapa(etapa)} className="text-xs">
                 {etapa} - Clique para restaurar
               </Button>
             ))}
           </div>
         </div>
-        )}
+      )}
 
-        {/* Modal de Importação */}
-        <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
+      {/* Modal de Importação */}
+      <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
         <DialogContent className="max-w-2xl">
           <DialogHeader>
             <DialogTitle>Importar Datas de Cadastro</DialogTitle>
           </DialogHeader>
-
           <div className="space-y-4">
             <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
               <h3 className="font-semibold text-blue-900 mb-2">📋 Instruções</h3>
               <ul className="text-sm text-blue-800 space-y-1">
                 <li>• Envie um arquivo CSV com as datas de cadastro</li>
-                <li>• Coluna obrigatória: <code className="bg-white px-1 rounded">folha</code> (número ou arquivo do documento)</li>
+                <li>• Coluna obrigatória: <code className="bg-white px-1 rounded">folha</code></li>
                 <li>• Colunas de datas: <code className="bg-white px-1 rounded">ETAPA_REVISAO</code> (ex: ESTUDO PRELIMINAR_R00)</li>
-                <li>• Formato de data: <code className="bg-white px-1 rounded">DD/MM/AAAA</code> (ex: 15/01/2025)</li>
-                <li>• Baixe o template para ver a estrutura correta</li>
+                <li>• Formato de data: <code className="bg-white px-1 rounded">DD/MM/AAAA</code></li>
               </ul>
             </div>
-
-            <Button
-              variant="outline"
-              onClick={handleExportTemplate}
-              className="w-full"
-            >
+            <Button variant="outline" onClick={handleExportTemplate} className="w-full">
               <Download className="w-4 h-4 mr-2" />
               Baixar Template CSV
             </Button>
-
             <div className="border-2 border-dashed border-gray-300 rounded-lg p-6">
-              <input
-                type="file"
-                accept=".csv"
-                onChange={(e) => setImportFile(e.target.files?.[0] || null)}
-                className="w-full"
-              />
-              {importFile && (
-                <p className="text-sm text-green-600 mt-2">
-                  ✓ Arquivo selecionado: {importFile.name}
-                </p>
-              )}
+              <input type="file" accept=".csv" onChange={(e) => setImportFile(e.target.files?.[0] || null)} className="w-full" />
+              {importFile && <p className="text-sm text-green-600 mt-2">✓ Arquivo selecionado: {importFile.name}</p>}
             </div>
-
             <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowImportModal(false);
-                  setImportFile(null);
-                }}
-                disabled={isImporting}
-              >
-                Cancelar
-              </Button>
-              <Button
-                onClick={handleImport}
-                disabled={!importFile || isImporting}
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {isImporting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Importando...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4 mr-2" />
-                    Importar
-                  </>
-                )}
+              <Button variant="outline" onClick={() => { setShowImportModal(false); setImportFile(null); }} disabled={isImporting}>Cancelar</Button>
+              <Button onClick={handleImport} disabled={!importFile || isImporting} className="bg-green-600 hover:bg-green-700">
+                {isImporting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Importando...</> : <><Upload className="w-4 h-4 mr-2" />Importar</>}
               </Button>
             </div>
           </div>
         </DialogContent>
-        </Dialog>
+      </Dialog>
 
-        {/* Modal de Preenchimento em Massa */}
-        <Dialog open={showMassEditModal} onOpenChange={setShowMassEditModal}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Preencher Data em Massa</DialogTitle>
-            </DialogHeader>
-
-            <div className="space-y-4">
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
-                <p className="text-sm text-blue-800">
-                  Preencher data para <strong>{selectedFolhas.size}</strong> folha{selectedFolhas.size > 1 ? 's' : ''} selecionada{selectedFolhas.size > 1 ? 's' : ''}
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Etapa</label>
-                <select
-                  value={massEditEtapa}
-                  onChange={(e) => setMassEditEtapa(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md p-2 text-sm"
-                >
-                  <option value="">Selecione a etapa</option>
-                  {ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e)).map(etapa => (
-                    <option key={etapa} value={etapa}>{etapa}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Revisão</label>
-                <select
-                  value={massEditRevisao}
-                  onChange={(e) => setMassEditRevisao(e.target.value)}
-                  className="w-full border border-gray-300 rounded-md p-2 text-sm"
-                  disabled={!massEditEtapa}
-                >
-                  <option value="">Selecione a revisão</option>
-                  {massEditEtapa && Array.isArray(revisoesPorEtapa[massEditEtapa] || DEFAULT_REVISOES) && (revisoesPorEtapa[massEditEtapa] || DEFAULT_REVISOES).map(rev => (
-                    <option key={rev} value={rev}>{rev}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-gray-700">Data</label>
-                <Input
-                  type="date"
-                  value={massEditData}
-                  onChange={(e) => setMassEditData(e.target.value)}
-                  className="w-full"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-4">
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setShowMassEditModal(false);
-                    setMassEditEtapa('');
-                    setMassEditRevisao('');
-                    setMassEditData('');
-                  }}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  onClick={applyMassEdit}
-                  className="bg-purple-600 hover:bg-purple-700"
-                >
-                  <Wand2 className="w-4 h-4 mr-2" />
-                  Aplicar a {selectedFolhas.size} Folha{selectedFolhas.size > 1 ? 's' : ''}
-                </Button>
-              </div>
+      {/* Modal de Preenchimento em Massa */}
+      <Dialog open={showMassEditModal} onOpenChange={setShowMassEditModal}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Preencher Data em Massa</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+              <p className="text-sm text-blue-800">
+                Preencher data para <strong>{selectedFolhas.size}</strong> folha{selectedFolhas.size > 1 ? 's' : ''} selecionada{selectedFolhas.size > 1 ? 's' : ''}
+              </p>
             </div>
-          </DialogContent>
-        </Dialog>
-        </div>
-        );
-        }
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Etapa</label>
+              <select value={massEditEtapa} onChange={(e) => setMassEditEtapa(e.target.value)} className="w-full border border-gray-300 rounded-md p-2 text-sm">
+                <option value="">Selecione a etapa</option>
+                {ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e)).map(etapa => (
+                  <option key={etapa} value={etapa}>{etapa}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Revisão</label>
+              <select value={massEditRevisao} onChange={(e) => setMassEditRevisao(e.target.value)} className="w-full border border-gray-300 rounded-md p-2 text-sm" disabled={!massEditEtapa}>
+                <option value="">Selecione a revisão</option>
+                {massEditEtapa && (revisoesPorEtapa[massEditEtapa] || DEFAULT_REVISOES).map(rev => (
+                  <option key={rev} value={rev}>{rev}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-medium text-gray-700">Data</label>
+              <Input type="date" value={massEditData} onChange={(e) => setMassEditData(e.target.value)} className="w-full" />
+            </div>
+            <div className="flex justify-end gap-2 pt-4">
+              <Button variant="outline" onClick={() => { setShowMassEditModal(false); setMassEditEtapa(''); setMassEditRevisao(''); setMassEditData(''); }}>
+                Cancelar
+              </Button>
+              <Button onClick={applyMassEdit} className="bg-purple-600 hover:bg-purple-700">
+                <Wand2 className="w-4 h-4 mr-2" />
+                Aplicar a {selectedFolhas.size} Folha{selectedFolhas.size > 1 ? 's' : ''}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
