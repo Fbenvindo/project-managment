@@ -744,99 +744,65 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
        let successCount = 0;
        let errorCount = 0;
        const updatedLinhas = new Map();
-       const BATCH_SIZE = 5; // Máximo de requisições paralelas por lote
-       const DELAY_ENTRE_LOTES = 800; // Delay entre lotes em ms
+       const DELAY_ENTRE_SAVES = 300; // Delay entre cada save para evitar rate limit
 
-       // Dividir em lotes
-       for (let batchIdx = 0; batchIdx < linhasParaSalvar.length; batchIdx += BATCH_SIZE) {
-         const batch = linhasParaSalvar.slice(batchIdx, batchIdx + BATCH_SIZE);
-
-         const batchPromises = batch.map((linha, idxNoBatch) => 
-           (async () => {
-             const idxGlobal = batchIdx + idxNoBatch;
-             try {
-
-               // Preservar metadados
-               const datasComMetadados = {};
-               if (linha.datas) {
-                 Object.entries(linha.datas).forEach(([etapa, etapaData]) => {
-                   if (etapaData && typeof etapaData === 'object') {
-                     datasComMetadados[etapa] = {
-                       ...etapaData
-                     };
-                   }
-                 });
+       // Processar sequencialmente (uma requisição por vez)
+       for (const linha of linhasParaSalvar) {
+         try {
+           // Preservar metadados
+           const datasComMetadados = {};
+           if (linha.datas) {
+             Object.entries(linha.datas).forEach(([etapa, etapaData]) => {
+               if (etapaData && typeof etapaData === 'object') {
+                 datasComMetadados[etapa] = { ...etapaData };
                }
+             });
+           }
 
-               const linhaData = {
-                 empreendimento_id: empreendimento.id,
-                 ordem: linha.ordem ?? linhasParaSalvar.indexOf(linha),
-                 documento_id: linha.documento_id,
-                 datas: datasComMetadados
-               };
-
-               // GARANTIR que revisões criadas são salvas mesmo que vazias
-               const etapasVisiveis = ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e));
-               etapasVisiveis.forEach(etapa => {
-                 const revisoesEtapa = revisoesPorEtapa[etapa];
-                 if (revisoesEtapa && revisoesEtapa.length > 0) {
-                   if (!datasComMetadados[etapa]) {
-                     datasComMetadados[etapa] = {};
-                   }
-                   // FORÇAR que _revisoes_existentes tem as revisões reais
-                   datasComMetadados[etapa]._revisoes_existentes = revisoesEtapa;
-                 }
-               });
-
-               const linhaDataFinal = {
-                 ...linhaData,
-                 datas: datasComMetadados
-               };
-
-
-               let result;
-               let attempts = 0;
-               const maxAttempts = 3;
-
-               while (attempts < maxAttempts) {
-                 try {
-                   const isNew = linha.isNew || linha.id.toString().startsWith('temp-');
-
-                   if (isNew) {
-                     result = await DataCadastro.create(linhaDataFinal);
-                   } else {
-                     result = await DataCadastro.update(linha.id, linhaDataFinal);
-                   }
-                   break;
-                 } catch (err) {
-                   attempts++;
-                   console.error(`  ❌ Tentativa ${attempts} falhou:`, err.message);
-
-                   if (attempts >= maxAttempts) {
-                     throw err;
-                   }
-
-                   const waitTime = 3000 * attempts;
-                   await new Promise(resolve => setTimeout(resolve, waitTime));
-                 }
-               }
-
-               successCount++;
-               updatedLinhas.set(linha.id, result);
-             } catch (error) {
-               errorCount++;
-               console.error(`❌ ERRO na linha ${linha.id}:`, error);
+           // GARANTIR que revisões criadas são salvas mesmo que vazias
+           const etapasVisiveis = ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e));
+           etapasVisiveis.forEach(etapa => {
+             const revisoesEtapa = revisoesPorEtapa[etapa];
+             if (revisoesEtapa && revisoesEtapa.length > 0) {
+               if (!datasComMetadados[etapa]) datasComMetadados[etapa] = {};
+               datasComMetadados[etapa]._revisoes_existentes = revisoesEtapa;
              }
-           })()
-         );
+           });
 
-         // Executar lote em paralelo
-         await Promise.all(batchPromises);
+           const linhaDataFinal = {
+             empreendimento_id: empreendimento.id,
+             ordem: linha.ordem ?? linhasParaSalvar.indexOf(linha),
+             documento_id: linha.documento_id,
+             datas: datasComMetadados
+           };
 
-         // Delay entre lotes (exceto no último)
-         if (batchIdx + BATCH_SIZE < linhasParaSalvar.length) {
-           await new Promise(resolve => setTimeout(resolve, DELAY_ENTRE_LOTES));
+           const isNew = linha.isNew || linha.id.toString().startsWith('temp-');
+           let result;
+           let attempts = 0;
+           const maxAttempts = 3;
+
+           while (attempts < maxAttempts) {
+             try {
+               result = isNew
+                 ? await DataCadastro.create(linhaDataFinal)
+                 : await DataCadastro.update(linha.id, linhaDataFinal);
+               break;
+             } catch (err) {
+               attempts++;
+               if (attempts >= maxAttempts) throw err;
+               await new Promise(resolve => setTimeout(resolve, 2000 * attempts));
+             }
+           }
+
+           successCount++;
+           updatedLinhas.set(linha.id, result);
+         } catch (error) {
+           errorCount++;
+           console.error(`❌ ERRO na linha ${linha.id}:`, error);
          }
+
+         // Delay entre cada requisição para respeitar rate limit
+         await new Promise(resolve => setTimeout(resolve, DELAY_ENTRE_SAVES));
        }
 
       // Atualizar estado local com os IDs salvos
