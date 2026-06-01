@@ -11,9 +11,10 @@ import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 
 const DEFAULT_REVISOES = ["R00", "R01", "R02"];
 
-// Chave especial usada para salvar metadados de estrutura (revisões/etapas)
-// como um único registro no banco, evitando salvar em cada linha
-const METADATA_DOC_ID = '__estrutura_cadastro__';
+// Identificador interno do registro de metadados de estrutura.
+// Usamos o campo 'datas' com chave especial '__metadata__' + ordem -1,
+// pois documento_id é foreign key e rejeita valores arbitrários.
+const METADATA_MARKER = '__metadata__';
 
 export default function CadastroTab({ empreendimento, readOnly = false }) {
   const ETAPAS = useMemo(() => {
@@ -93,13 +94,13 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       setDocumentos(sortedDocs);
 
       // ─── Separar registro de metadados das linhas de dados ───
-      // O registro de metadados é identificado pelo campo documento_id === METADATA_DOC_ID
-      // (ou por ausência de documento_id válido com campo especial)
+      // O registro de metadados é identificado pelo marcador datas[METADATA_MARKER],
+      // evitando depender de documento_id (que é foreign key e rejeita valores arbitrários).
       const metadataRecord = (data || []).find(
-        item => item.documento_id === METADATA_DOC_ID || item._is_metadata === true
+        item => item.datas?.[METADATA_MARKER] !== undefined
       );
       const dataRecords = (data || []).filter(
-        item => item.documento_id !== METADATA_DOC_ID && item._is_metadata !== true && item.documento_id
+        item => item.datas?.[METADATA_MARKER] === undefined && item.documento_id
       );
 
       if (metadataRecord) {
@@ -114,19 +115,20 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       // Quando true, os campos legados (_excluida, _revisoes_existentes, etc.) das linhas
       // são completamente ignorados — evitando que uma restauração de etapa seja revertida
       // no próximo reload por causa de dados antigos ainda presentes nas linhas do banco.
-      const hasMetadata = !!(metadataRecord?.estrutura);
+      // A estrutura é lida de datas[METADATA_MARKER], que é um campo genérico aceito pelo banco.
+      const metadadosEstrutura = metadataRecord?.datas?.[METADATA_MARKER];
+      const hasMetadata = !!(metadadosEstrutura);
 
       if (hasMetadata) {
         // ── Formato novo: estrutura salva no registro de metadados (fonte da verdade) ──
-        const estrutura = metadataRecord.estrutura;
-        if (estrutura.revisoesPorEtapa) {
-          Object.entries(estrutura.revisoesPorEtapa).forEach(([etapa, revs]) => {
+        if (metadadosEstrutura.revisoesPorEtapa) {
+          Object.entries(metadadosEstrutura.revisoesPorEtapa).forEach(([etapa, revs]) => {
             revisoesMap[etapa] = new Set(Array.isArray(revs) ? revs : []);
           });
         }
         // etapasExcluidas vem EXCLUSIVAMENTE dos metadados — ignora _excluida nas linhas
-        if (Array.isArray(estrutura.etapasExcluidas)) {
-          estrutura.etapasExcluidas.forEach(e => etapasExcluidasSet.add(e));
+        if (Array.isArray(metadadosEstrutura.etapasExcluidas)) {
+          metadadosEstrutura.etapasExcluidas.forEach(e => etapasExcluidasSet.add(e));
         }
       } else {
         // ── Formato legado: extrair estrutura dos registros de linhas (compatibilidade) ──
@@ -532,17 +534,24 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       // ── PASSO 1: Salvar metadados de estrutura (1 único request) ──
       // Só executa se revisões ou etapas foram alteradas
       if (estruturaModificada) {
+        // Salvar estrutura dentro do campo 'datas' usando chave METADATA_MARKER.
+        // Usamos o documento_id do primeiro documento real para satisfazer a foreign key,
+        // mas o que identifica este registro como metadados é a presença de datas[METADATA_MARKER].
+        // Se já temos um metadataRecordId, o documento_id já está salvo no banco — não precisa reenviar.
+        const primeiroDocId = linhas.find(l => l.documento_id && !l.id.toString().startsWith('temp-'))?.documento_id
+          || sortedDocs[0]?.id
+          || null;
         const estruturaPayload = {
           empreendimento_id: empreendimento.id,
-          documento_id: METADATA_DOC_ID,
-          _is_metadata: true,
+          documento_id: primeiroDocId,
           ordem: -1,
-          datas: {},
-          estrutura: {
-            revisoesPorEtapa: Object.fromEntries(
-              Object.entries(revisoesPorEtapa).map(([etapa, revs]) => [etapa, Array.isArray(revs) ? revs : []])
-            ),
-            etapasExcluidas: etapasExcluidas
+          datas: {
+            [METADATA_MARKER]: {
+              revisoesPorEtapa: Object.fromEntries(
+                Object.entries(revisoesPorEtapa).map(([etapa, revs]) => [etapa, Array.isArray(revs) ? revs : []])
+              ),
+              etapasExcluidas: etapasExcluidas
+            }
           }
         };
 
