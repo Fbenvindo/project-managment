@@ -201,39 +201,7 @@ export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreen
               </Select>
             </div>
 
-            <div>
-              <Label>Cliente *</Label>
-              <Input
-                value={formData.cliente}
-                onChange={(e) => setFormData({ ...formData, cliente: e.target.value })}
-                required
-              />
-            </div>
 
-            <div>
-              <Label>Número da OS</Label>
-              <Input
-                value={formData.numero_os}
-                onChange={(e) => setFormData({ ...formData, numero_os: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <Label>Técnico Responsável</Label>
-              <Input
-                value={formData.tecnico_responsavel}
-                onChange={(e) => setFormData({ ...formData, tecnico_responsavel: e.target.value })}
-              />
-            </div>
-
-            <div>
-              <Label>Data de Entrega</Label>
-              <Input
-                type="date"
-                value={formData.data_entrega}
-                onChange={(e) => setFormData({ ...formData, data_entrega: e.target.value })}
-              />
-            </div>
 
 
           </div>
