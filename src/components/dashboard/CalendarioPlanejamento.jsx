@@ -23,33 +23,23 @@ const ActivityItem = (p) => <ActivityItemCalendar {...p} />;
 const parseLocalDate = (dateString) => {
   if (!dateString) return null;
 
-  // Se já for um objeto Date, retornar como está
   if (dateString instanceof Date) {
     return dateString;
   }
 
-  // Se for string no formato YYYY-MM-DD, criar Date local
   if (typeof dateString === 'string') {
-    // Verificar se é formato de data ISO (YYYY-MM-DD)
     if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
       const [year, month, day] = dateString.split('-').map(Number);
-      return new Date(year, month - 1, day); // Cria data local
+      return new Date(year, month - 1, day);
     }
 
-    // Para outros formatos, usar parseISO mas ajustar para local
     try {
       const parsedDate = parseISO(dateString);
       if (!isNaN(parsedDate.getTime())) {
-        // Ajustar para o fuso horário local para evitar mudança de dia
-        // This adjustment aims to keep the "calendar day" consistent
-        // even if the raw ISO string implies a time that would shift the day
-        // when interpreted as UTC then converted to local.
         const localDate = new Date(parsedDate.getTime() + parsedDate.getTimezoneOffset() * 60000);
         return localDate;
       }
-    } catch (e) {
-      // Log removido para otimização de desempenho
-    }
+    } catch (e) {}
   }
 
   return null;
@@ -57,38 +47,19 @@ const parseLocalDate = (dateString) => {
 
 const normalizeActivityId = (value) => String(value ?? '');
 
-// Format hours: always 1 decimal place
 const formatHours = (h) => Number(h).toFixed(1);
 
-// Função para verificar se uma atividade está atrasada (agora usando a compartilhada)
 const isActivityOverdue = (plano) => {
-  // Legacy executions (isLegacyExecution) are not overdue in the traditional sense
-  // They are either 'concluido' or 'pausado' based on their execution status.
   if (plano.isLegacyExecution) return false;
   return isOverdueShared(plano);
 };
 
-// **CORRIGIDO**: Função para calcular o status real da atividade - PRIORIZAR CONCLUSÃO
 const calculateActivityStatus = (plano, allPlanejamentos = []) => {
-  // Se for uma atividade virtual (execução), seu status é direto
-  if (plano.isLegacyExecution) {
-    return plano.status;
-  }
+  if (plano.isLegacyExecution) return plano.status;
+  if (plano.status === 'concluido_com_atraso') return 'concluido_com_atraso';
+  if (plano.status === 'concluido') return 'concluido';
+  if (plano.status === 'atrasado' || isActivityOverdue(plano)) return 'atrasado';
 
-  // **PRIORIDADE 1**: Se está marcada explicitamente como concluída (com ou sem atraso)
-  if (plano.status === 'concluido_com_atraso') {
-    return 'concluido_com_atraso';
-  }
-  if (plano.status === 'concluido') {
-    return 'concluido';
-  }
-
-  // **PRIORIDADE 2**: Se está marcada como atrasada manualmente OU automaticamente, retorna atrasado
-  if (plano.status === 'atrasado' || isActivityOverdue(plano)) {
-    return 'atrasado';
-  }
-
-  // **PRIORIDADE 3**: Verificar se foi replanejada para INICIAR mais tarde
   let foiReplanejadaParaIniciarMaisTarde = false;
   if (plano.inicio_ajustado && plano.inicio_planejado) {
     try {
@@ -97,24 +68,17 @@ const calculateActivityStatus = (plano, allPlanejamentos = []) => {
       if (isValid(ajustado) && isValid(planejado) && isAfter(ajustado, planejado)) {
         foiReplanejadaParaIniciarMaisTarde = true;
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
-  // Verificar se está em risco por causa de predecessora atrasada
   let predecessoraAtrasada = false;
   if (plano.predecessora_id) {
     const predecessora = allPlanejamentos.find(p => normalizeActivityId(p.id) === normalizeActivityId(plano.predecessora_id));
-    if (predecessora && isActivityOverdue(predecessora)) {
-      predecessoraAtrasada = true;
-    }
+    if (predecessora && isActivityOverdue(predecessora)) predecessoraAtrasada = true;
   }
 
-  if (foiReplanejadaParaIniciarMaisTarde || predecessoraAtrasada) {
-    return 'impactado_por_atraso';
-  }
+  if (foiReplanejadaParaIniciarMaisTarde || predecessoraAtrasada) return 'impactado_por_atraso';
 
-  // Manter verificação de TÉRMINO para o status amarelo (replanejado_atrasado)
   let wasReplannedLaterTermino = false;
   if (plano.termino_ajustado && plano.termino_planejado) {
     try {
@@ -123,38 +87,20 @@ const calculateActivityStatus = (plano, allPlanejamentos = []) => {
       if (isValid(ajustado) && isValid(planejado) && isAfter(ajustado, planejado)) {
         wasReplannedLaterTermino = true;
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
-  if (wasReplannedLaterTermino) {
-    return 'replanejado_atrasado';
-  }
+  if (wasReplannedLaterTermino) return 'replanejado_atrasado';
 
-  // Caso contrário, manter o status original ou 'nao_iniciado'
   return plano.status || 'nao_iniciado';
 };
 
 // --- Sub-componente de Filtros ---
 const CalendarFilters = ({
-  users,
-  disciplines,
-  viewMode,
-  onViewModeChange,
-  filters,
-  onFilterChange,
-  onClearFilters,
-  hasSelectedUser,
-  isColaborador,
-  isViewingAllUsers,
-  isGestao,
-  isApoio,
-  podeVerOutros,
-  usuariosPermitidos,
-  currentUserEmail,
-  viewType
+  users, disciplines, viewMode, onViewModeChange, filters, onFilterChange,
+  onClearFilters, hasSelectedUser, isColaborador, isViewingAllUsers, isGestao,
+  isApoio, podeVerOutros, usuariosPermitidos, currentUserEmail, viewType
 }) => {
-  // **MODIFICADO**: Filtrar e ordenar apenas usuários com nome cadastrado
   const usersOrdenados = useMemo(() => {
     return [...users]
       .filter(u => u.nome || u.full_name)
@@ -165,13 +111,10 @@ const CalendarFilters = ({
       });
   }, [users]);
 
-  // **MODIFICADO**: Dropdown bloqueado para colaboradores, gestão e APOIO (sem permissão especial)
   const isDropdownDisabled = (isColaborador || isGestao || isApoio) && !podeVerOutros;
-
 
   return (
     <div className="flex flex-wrap items-center justify-between gap-4 p-4 border-b border-gray-100 bg-gray-50/50">
-      {/* Filtros */}
       <div className="flex flex-wrap items-center gap-4">
         <Filter className="w-5 h-5 text-gray-500" />
         <Select value={filters.user} onValueChange={(value) => onFilterChange('user', value)} disabled={isDropdownDisabled}>
@@ -181,18 +124,11 @@ const CalendarFilters = ({
           <SelectContent>
             {usersOrdenados
               .filter(u => {
-                // Se for colaborador, gestão ou apoio, filtra por permissões
                 if (isColaborador || isGestao || isApoio) {
-                  // Sempre mostra o próprio usuário
                   if (u.email === currentUserEmail) return true;
-                  // Se tem usuários permitidos (array válido com conteúdo), mostra apenas esses
-                  if (podeVerOutros && Array.isArray(usuariosPermitidos)) {
-                    return usuariosPermitidos.includes(u.email);
-                  }
-                  // Sem permissões especiais, não mostra outros usuários
+                  if (podeVerOutros && Array.isArray(usuariosPermitidos)) return usuariosPermitidos.includes(u.email);
                   return false;
                 }
-                // Admin, líder, direção, coordenador veem todos
                 return true;
               })
               .map(userItem => (
@@ -228,7 +164,6 @@ const CalendarFilters = ({
         )}
       </div>
 
-      {/* Controles de Visualização */}
       {hasSelectedUser && (
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
@@ -262,7 +197,7 @@ const CalendarFilters = ({
 };
 
 
-// --- Sub-componente para Container de Atividades (reutilizável) ---
+// --- ActivityContainer ---
 const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKey, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, modoOrdenacao, onClearDayOrder, activityOrder, activityStatusMap }) => {
   const [expandedGroups, setExpandedGroups] = useState(new Set());
 
@@ -304,34 +239,26 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
 
   const toggleGroup = (groupKey) => {
     const newExpanded = new Set(expandedGroups);
-    if (newExpanded.has(groupKey)) {
-      newExpanded.delete(groupKey);
-    } else {
-      newExpanded.add(groupKey);
-    }
+    if (newExpanded.has(groupKey)) newExpanded.delete(groupKey);
+    else newExpanded.add(groupKey);
     setExpandedGroups(newExpanded);
   };
 
-  // **NOVO**: No modo analítico, mostrar atividades diretamente sem grupos
   if (viewType === 'analitico') {
-    // Filtrar sempre por horas do dia (mesmo em modo ordenação, para consistência de índices com onDragEnd)
     const activitiesParaRenderizar = activities.filter(atividade => {
       const horasAlocadas = Number(atividade.horas_por_dia?.[dayKey]) || 0;
       const horasExecutadas = Number(atividade.horas_executadas_por_dia?.[dayKey]) || 0;
       const tempoExecutado = Number(atividade.tempo_executado) || 0;
 
       if (atividade.isLegacyExecution) return tempoExecutado >= 0.05;
-
       if (atividade.isQuickActivity || atividade.is_quick_activity) {
         return horasExecutadas >= 0.05 || horasAlocadas >= 0.05 || atividade.status === 'concluido' || atividade.status === 'concluido_com_atraso' || atividade.status === 'em_andamento';
       }
-
       return horasAlocadas >= 0.05 || horasExecutadas >= 0.05 ||
         ((atividade.status === 'concluido' || atividade.status === 'concluido_com_atraso') && !atividade.atividade_id) ||
         atividade._isExtended || atividade._isPushed;
     });
 
-    // modoOrdenacao e presença de itens já implica que há ordem customizada se o pai passou activityOrder
     const temOrdemCustomizada = !!(activities.length > 0 && activityOrder?.[dayKey]);
 
     return (
@@ -380,14 +307,11 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
     );
   }
 
-  // **MODO SINTÉTICO**: Mostrar apenas os grupos (pastas)
-  // Filtrar grupos vazios (onde todas as atividades têm 0.0h neste dia)
   const groupsComHoras = Object.entries(activityGroups).filter(([groupKey, groupData]) => {
     return groupData.atividades.some(atividade => {
       const horasAlocadas = Number(atividade.horas_por_dia?.[dayKey]) || 0;
       const horasExecutadas = Number(atividade.horas_executadas_por_dia?.[dayKey]) || 0;
       const tempoExecutado = Number(atividade.tempo_executado) || 0;
-
       if (atividade.isLegacyExecution) return tempoExecutado >= 0.05;
       if (atividade.isQuickActivity || atividade.is_quick_activity) {
         return horasExecutadas >= 0.05 || horasAlocadas >= 0.05 || atividade.status === 'concluido' || atividade.status === 'concluido_com_atraso' || atividade.status === 'em_andamento';
@@ -399,12 +323,10 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
   return (
     <div className={`space-y-1 ${containerClass}`}>
       {groupsComHoras.map(([groupKey, groupData]) => {
-        // Filtrar atividades do grupo com 0.0h neste dia
         const atividadesComHoras = groupData.atividades.filter(atividade => {
           const horasAlocadas = Number(atividade.horas_por_dia?.[dayKey]) || 0;
           const horasExecutadas = Number(atividade.horas_executadas_por_dia?.[dayKey]) || 0;
           const tempoExecutado = Number(atividade.tempo_executado) || 0;
-
           if (atividade.isLegacyExecution) return tempoExecutado >= 0.05;
           if (atividade.isQuickActivity || atividade.is_quick_activity) {
             return horasExecutadas >= 0.05 || horasAlocadas >= 0.05 || atividade.status === 'concluido' || atividade.status === 'concluido_com_atraso' || atividade.status === 'em_andamento';
@@ -412,18 +334,14 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
           return horasAlocadas >= 0.05 || horasExecutadas >= 0.05 || atividade._isExtended || atividade._isPushed;
         });
 
-        // Não renderizar grupos vazios
         if (atividadesComHoras.length === 0) return null;
 
-        // Atualizar groupData com atividades filtradas
         const groupDataFiltrado = { ...groupData, atividades: atividadesComHoras };
 
-        // **CORRIGIDO**: Remover restrição de "Atividades Gerais", apenas bloquear "Atividades Rápidas" (Legado) e concluídas
         const canDragGroup = canReprogram &&
           groupDataFiltrado.empreendimento?.nome !== 'Atividades Rápidas' &&
           !groupDataFiltrado.atividades.some(a => a.status === 'concluido' || a.status === 'concluido_com_atraso' || a.isLegacyExecution);
 
-        // Se pode arrastar o grupo, envolve em Draggable
         if (canDragGroup) {
           return (
             <Draggable
@@ -486,13 +404,12 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
   );
 };
 
-// --- Sub-componente para Container de Atividades (reutilizável) ---
+// --- DayCell ---
 const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, activityStatusMap }) => {
   const dayKey = format(day, 'yyyy-MM-dd');
 
-  // **NOVO**: Verificar se pode arrastar o dia inteiro
   const hasMovableActivities = dayActivities.some(a =>
-    !a.isLegacyExecution && // Exclude old quick activities (exec-)
+    !a.isLegacyExecution &&
     a.status !== 'concluido' && a.status !== 'concluido_com_atraso'
   );
 
@@ -504,21 +421,14 @@ const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDel
         <div
           ref={provided.innerRef}
           {...provided.droppableProps}
-          className={`h-40 p-2 border border-gray-100 flex flex-col group ${ // ADDED group class here
+          className={`h-40 p-2 border border-gray-100 flex flex-col group ${
             isSameMonth(day, date) ? 'bg-white' : 'bg-gray-50'
-            } ${isToday ? 'border-2 border-blue-500 bg-blue-50' : ''}
-            ${snapshot.isDraggingOver ? 'bg-purple-100' : ''}
-          `}
+          } ${isToday ? 'border-2 border-blue-500 bg-blue-50' : ''}
+          ${snapshot.isDraggingOver ? 'bg-purple-100' : ''}`}
         >
-          {/* **NOVO**: Header do dia com drag handle */}
-          <div className="flex items-center justify-between mb-2 relative"> {/* Added relative for absolute positioning inside */}
-            {/* **NOVO**: Drag handle do dia inteiro */}
+          <div className="flex items-center justify-between mb-2 relative">
             {canDragDay && (
-              <Draggable
-                draggableId={`day-${dayKey}`}
-                index={0}
-                isDragDisabled={!canDragDay}
-              >
+              <Draggable draggableId={`day-${dayKey}`} index={0} isDragDisabled={!canDragDay}>
                 {(dayProvided, daySnapshot) => (
                   <div
                     ref={dayProvided.innerRef}
@@ -527,46 +437,30 @@ const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDel
                   >
                     <div
                       {...dayProvided.dragHandleProps}
-                      className={`flex items-center justify-center gap-2 p-1 rounded-b cursor-move ${daySnapshot.isDragging
-                        ? 'bg-indigo-600 text-white shadow-lg'
-                        : 'bg-indigo-500 text-white hover:bg-indigo-600'
-                        }`}
+                      className={`flex items-center justify-center gap-2 p-1 rounded-b cursor-move ${daySnapshot.isDragging ? 'bg-indigo-600 text-white shadow-lg' : 'bg-indigo-500 text-white hover:bg-indigo-600'}`}
                       title="🖐️ Arrastar todas as atividades deste dia"
                     >
                       <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor">
-                        <circle cx="9" cy="6" r="1.5" />
-                        <circle cx="15" cy="6" r="1.5" />
-                        <circle cx="9" cy="12" r="1.5" />
-                        <circle cx="15" cy="12" r="1.5" />
-                        <circle cx="9" cy="18" r="1.5" />
-                        <circle cx="15" cy="18" r="1.5" />
+                        <circle cx="9" cy="6" r="1.5" /><circle cx="15" cy="6" r="1.5" />
+                        <circle cx="9" cy="12" r="1.5" /><circle cx="15" cy="12" r="1.5" />
+                        <circle cx="9" cy="18" r="1.5" /><circle cx="15" cy="18" r="1.5" />
                       </svg>
-                      <span className="text-xs font-bold">
-                        {dayActivities.length} ativ.
-                      </span>
+                      <span className="text-xs font-bold">{dayActivities.length} ativ.</span>
                     </div>
-
-                    {/* Badge quando arrastando */}
                     {daySnapshot.isDragging && (
                       <div className="absolute top-full left-1/2 transform -translate-x-1/2 mt-2 bg-indigo-600 text-white px-3 py-2 rounded-lg shadow-xl whitespace-nowrap z-30">
                         <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4" />
-                          <span className="text-sm font-bold">
-                            Movendo {dayActivities.length} atividade{dayActivities.length > 1 ? 's' : ''}
-                          </span>
+                          <span className="text-sm font-bold">Movendo {dayActivities.length} atividade{dayActivities.length > 1 ? 's' : ''}</span>
                         </div>
-                        <div className="text-xs opacity-90 mt-1">
-                          De {format(day, 'd MMM', { locale: ptBR })}
-                        </div>
+                        <div className="text-xs opacity-90 mt-1">De {format(day, 'd MMM', { locale: ptBR })}</div>
                       </div>
                     )}
                   </div>
                 )}
               </Draggable>
             )}
-
-            <span className={`font-semibold text-center flex-1 ${isSameMonth(day, date) ? 'text-gray-800' : 'text-gray-400'
-              } ${isToday ? 'text-blue-700' : ''}`}>
+            <span className={`font-semibold text-center flex-1 ${isSameMonth(day, date) ? 'text-gray-800' : 'text-gray-400'} ${isToday ? 'text-blue-700' : ''}`}>
               {format(day, 'd')}
             </span>
           </div>
@@ -596,7 +490,7 @@ const DayCell = ({ day, dayActivities, date, isToday, disciplinas, onActivityDel
   );
 };
 
-// --- Sub-componente para a Visualização Mensal ---
+// --- MonthView ---
 const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, modoOrdenacao, onClearDayOrder, activityOrder, activityStatusMap }) => {
   const monthDays = useMemo(() => {
     const start = startOfWeek(startOfMonth(date), { locale: ptBR });
@@ -615,7 +509,6 @@ const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onSho
         const dayKey = format(day, 'yyyy-MM-dd');
         const dayActivities = activitiesByDay[dayKey] || [];
         const isToday = isSameDay(day, new Date());
-
         return (
           <DayCell
             key={dayKey}
@@ -642,10 +535,8 @@ const MonthView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onSho
   );
 };
 
-
-// --- Sub-componente para a Visualização Semanal ---
+// --- WeekView ---
 const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, modoOrdenacao, onClearDayOrder, onToggleModoOrdenacao, activityOrder, activityStatusMap }) => {
-  // NOVO: Estado para controlar o dia expandido
   const [expandedDay, setExpandedDay] = useState(null);
 
   const weekDays = useMemo(() => {
@@ -654,10 +545,7 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
     return eachDayOfInterval({ start, end });
   }, [date]);
 
-  // NOVO: Função para alternar a expansão
-  const toggleExpand = (dayKey) => {
-    setExpandedDay(prev => (prev === dayKey ? null : dayKey));
-  };
+  const toggleExpand = (dayKey) => setExpandedDay(prev => (prev === dayKey ? null : dayKey));
 
   return (
     <div className="flex border-t border-l border-gray-100 min-h-[60vh] bg-white">
@@ -680,11 +568,8 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
                   ${snapshot.isDraggingOver ? 'bg-purple-100' : 'bg-white'}
                 `}
               >
-                {/* Header do Dia Clicável */}
                 <div
-                  className={`flex flex-col p-2 cursor-pointer hover:bg-gray-100 border-b border-gray-100 sticky top-0 z-10
-                    ${isToday ? 'bg-blue-50' : 'bg-gray-50/50'}
-                  `}
+                  className={`flex flex-col p-2 cursor-pointer hover:bg-gray-100 border-b border-gray-100 sticky top-0 z-10 ${isToday ? 'bg-blue-50' : 'bg-gray-50/50'}`}
                   onClick={() => toggleExpand(dayKey)}
                 >
                   <div className="flex items-center justify-between">
@@ -709,35 +594,14 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
                             const horasAlocadas = Number(ativ.horas_por_dia?.[dayKey]) || 0;
                             const horasExecutadas = Number(ativ.horas_executadas_por_dia?.[dayKey]) || 0;
                             const tempoExecutado = Number(ativ.tempo_executado) || 0;
-
                             let horasDia = 0;
-
-                            if (ativ.isLegacyExecution) {
-                              horasDia = tempoExecutado;
-                            }
-                            else if (ativ.isQuickActivity || ativ.is_quick_activity) {
-                              horasDia = horasExecutadas > 0 ? horasExecutadas : horasAlocadas;
-                            }
-                            else {
-                              // Prioridade 1: Se tem horas executadas neste dia
-                              if (horasExecutadas > 0) {
-                                horasDia = horasExecutadas;
-                              }
-                              // Prioridade 2: Se concluída mas horas_executadas_por_dia vazio, distribuir tempo_executado
-                              else if (ativ.status === 'concluido' && tempoExecutado > 0 && Object.keys(ativ.horas_executadas_por_dia || {}).length === 0) {
-                                const diasPlanejados = Object.keys(ativ.horas_por_dia || {});
-                                if (diasPlanejados.length > 0 && diasPlanejados.includes(dayKey)) {
-                                  horasDia = tempoExecutado / diasPlanejados.length;
-                                } else {
-                                  horasDia = 0; // Não contar se não está planejada para este dia
-                                }
-                              }
-                              // Prioridade 3: Usar horas planejadas
-                              else {
-                                horasDia = horasAlocadas;
-                              }
-                            }
-
+                            if (ativ.isLegacyExecution) horasDia = tempoExecutado;
+                            else if (ativ.isQuickActivity || ativ.is_quick_activity) horasDia = horasExecutadas > 0 ? horasExecutadas : horasAlocadas;
+                            else if (horasExecutadas > 0) horasDia = horasExecutadas;
+                            else if (ativ.status === 'concluido' && tempoExecutado > 0 && Object.keys(ativ.horas_executadas_por_dia || {}).length === 0) {
+                              const diasPlanejados = Object.keys(ativ.horas_por_dia || {});
+                              horasDia = diasPlanejados.length > 0 && diasPlanejados.includes(dayKey) ? tempoExecutado / diasPlanejados.length : 0;
+                            } else horasDia = horasAlocadas;
                             total += horasDia;
                           });
                           return `${formatHours(total)}h`;
@@ -747,8 +611,7 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
                   )}
                 </div>
 
-                {/* Container das Atividades */}
-                <div className={`flex-grow overflow-y-auto p-2`}>
+                <div className="flex-grow overflow-y-auto p-2">
                   <ActivityContainer
                     activities={dayActivities}
                     disciplinas={disciplinas}
@@ -779,8 +642,7 @@ const WeekView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShow
   );
 };
 
-
-// --- Sub-componente para a Visualização Diária ---
+// --- DayView ---
 const DayView = ({ date, activitiesByDay, disciplinas, onActivityDelete, onShowPrevisao, executorMap, allPlanejamentos, isReprogramando, canReprogram, selectedActivities, onToggleSelect, hasSelections, viewType, modoOrdenacao, onClearDayOrder, onToggleModoOrdenacao, activityOrder, activityStatusMap }) => {
   const dayKey = format(date, 'yyyy-MM-dd');
   const activities = activitiesByDay[dayKey] || [];
@@ -847,40 +709,27 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   const [currentDate, setCurrentDate] = useState(() => startOfWeek(new Date(), { locale: ptBR }));
   const [viewMode, setViewMode] = useState('week');
 
-  // **MODIFICADO**: Verificar se é apoio
   const isApoio = perfilAtual === 'apoio';
-
-  // **MODIFICADO**: Verificar lista de usuários permitidos
   const usuariosPermitidos = userProfile?.usuarios_permitidos_visualizar || [];
   const podeVisualizarOutros = Array.isArray(usuariosPermitidos) && usuariosPermitidos.length > 0;
 
-
-  // **MODIFICADO**: Se for gestão OU apoio (sem permissão especial), já inicia com o próprio email selecionado
-  const [filters, setFilters] = useState({
-    user: '', // Será definido no useEffect se for gestão ou apoio sem permissão
-    discipline: 'all'
-  });
-
-  // Estados locais para dados do calendário e loading
+  const [filters, setFilters] = useState({ user: '', discipline: 'all' });
   const [isCalendarLoading, setIsCalendarLoading] = useState(false);
   const [enrichedData, setEnrichedData] = useState([]);
-
   const [showPrevisaoModal, setShowPrevisaoModal] = useState(false);
   const [planejamentosParaPrevisao, setPlanejamentosParaPrevisao] = useState([]);
   const [isReprogramando, setIsReprogramando] = useState(null);
-  const [viewType, setViewType] = useState('analitico'); // 'sintetico' ou 'analitico'
+  const [viewType, setViewType] = useState('analitico');
 
   const hasSelectedUser = !!filters.user;
   const isViewingAllUsers = filters.user === 'all';
 
-  // Auto-selecionar o próprio usuário no primeiro acesso
   useEffect(() => {
     if (user?.email && !filters.user) {
       setFilters(prev => ({ ...prev, user: user.email }));
     }
   }, [user?.email, filters.user]);
 
-  // Preferir allUsers do contexto (carrega no startup) em vez da prop usuarios (carrega com delays)
   const effectiveUsuarios = (allUsers && allUsers.length > 0) ? allUsers : (usuarios || []);
 
   const executorMap = useMemo(() => {
@@ -892,17 +741,13 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
 
   const [selectedActivities, setSelectedActivities] = useState(new Set());
   const [modoOrdenacao, setModoOrdenacao] = useState(false);
-  // Chave do localStorage inclui o email do usuário para evitar conflito entre sessões
+
   const getStorageKey = useCallback((userEmail) => {
     return `calendar-activity-order-${userEmail || 'default'}`;
   }, []);
 
   const [activityOrder, setActivityOrder] = useState({});
 
-
-
-  // Carregar ordem do localStorage quando o usuário filtrado muda
-  // IMPORTANTE: Fazer com prioridade MÁXIMA para que esteja disponível ao calcular activitiesByDay
   useEffect(() => {
     if (!filters.user) {
       setActivityOrder({});
@@ -925,7 +770,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       localStorage.setItem(storageKey, JSON.stringify(updated));
       return updated;
     });
-    // Limpar ordem_por_dia no banco para todas as atividades deste dia
     const dayActivities = enrichedData.filter(p =>
       !p.isLegacyExecution && p.horas_por_dia?.[dayKey] >= 0.05
     );
@@ -944,7 +788,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     });
   }, [viewType]);
 
-  // Carrega e enriquece dados do calendário em uma única passagem com requisições paralelas
   const loadCalendarData = useCallback(async (userFilter) => {
     if (!userFilter) {
       setEnrichedData([]);
@@ -952,7 +795,12 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     }
     const storageKey = `calendar-activity-order-${userFilter}`;
 
+    // FIX 1: Limpar imediatamente ao trocar usuário para não exibir dados do usuário
+    // anterior enquanto o novo carregamento está em andamento.
+    setEnrichedData([]);
+    setActivityOrder({});
     setIsCalendarLoading(true);
+
     try {
       const execFilter = userFilter !== 'all' ? { usuario: userFilter } : {};
 
@@ -963,20 +811,35 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           retryWithBackoff(() => Entity.list(), 3, 1500, tag+'l').catch(() => []),
         ]);
         const m = new Map((byPrincipal||[]).map(p=>[p.id,p]));
-        (allList||[]).filter(p=>Array.isArray(p.executores)&&p.executores.includes(userFilter)).forEach(p=>{if(!m.has(p.id))m.set(p.id,p);});
+        // FIX 3: Só incluir atividades onde o usuário é executor secundário
+        // se ele realmente tem horas alocadas (horas_por_dia >= 0.05h).
+        // Evita "atividades fantasma" ao trocar de usuário.
+        (allList||[])
+          .filter(p => {
+            if (!Array.isArray(p.executores) || !p.executores.includes(userFilter)) return false;
+            if (m.has(p.id)) return false;
+            if (p.horas_por_dia && typeof p.horas_por_dia === 'object') {
+              return Object.values(p.horas_por_dia).some(h => Number(h) >= 0.05);
+            }
+            return true;
+          })
+          .forEach(p => { if(!m.has(p.id)) m.set(p.id,p); });
         return Array.from(m.values());
       };
+
       const [planosAtividade, planosDocumento, execs] = await Promise.all([
         fetchPlanos(PlanejamentoAtividade,'ca'),
         fetchPlanos(PlanejamentoDocumento,'cd'),
         retryWithBackoff(()=>Execucao.filter(execFilter),3,1500,'cal.exec'),
       ]);
+
       const planosAtividadeComTipo = (planosAtividade || []).map(p => ({ ...p, tipo_planejamento: 'atividade' }));
       const planosDocumentoComTipo = (planosDocumento || []).map(p => ({ ...p, tipo_planejamento: 'documento' }));
       const todosPlanejamentos = [...planosAtividadeComTipo, ...planosDocumentoComTipo];
       const empreendimentoIds = [...new Set(todosPlanejamentos.map(p => p.empreendimento_id).filter(Boolean))];
       const atividadeIds = [...new Set(todosPlanejamentos.map(p => p.atividade_id).filter(Boolean))];
       const documentoIdsArray = [...new Set(todosPlanejamentos.map(p => p.documento_id).filter(Boolean).map(String))];
+
       const [empreendimentosData, atividadesData, documentosData] = await Promise.all([
         empreendimentoIds.length > 0 ? retryWithBackoff(() => Empreendimento.filter({ id: { $in: empreendimentoIds } }), 3, 1000, 'enr.emp') : Promise.resolve([]),
         atividadeIds.length > 0 ? retryWithBackoff(() => Atividade.filter({ id: { $in: atividadeIds } }), 3, 1000, 'enr.ativ') : Promise.resolve([]),
@@ -995,15 +858,14 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         const tempoExec = Number(exec.tempo_total) || 0;
         if (!horasExecutadasPorPlanejamento[exec.planejamento_id]) horasExecutadasPorPlanejamento[exec.planejamento_id] = {};
         horasExecutadasPorPlanejamento[exec.planejamento_id][diaExec] = (horasExecutadasPorPlanejamento[exec.planejamento_id][diaExec] || 0) + tempoExec;
-        // Guardar a última observação de execução para cada planejamento
-        if (exec.observacao) {
-          observacaoPorPlanejamento[exec.planejamento_id] = exec.observacao;
-        }
+        if (exec.observacao) observacaoPorPlanejamento[exec.planejamento_id] = exec.observacao;
       });
+
       const atividadesVirtuais = (execs || []).filter(exec => !exec.planejamento_id).map(exec => {
         const diaExec = exec.inicio ? format(parseLocalDate(exec.inicio), 'yyyy-MM-dd') : null;
         return { id: `exec-${exec.id}`, isLegacyExecution: true, isQuickActivity: true, tipo_planejamento: 'atividade', descritivo: exec.descritivo || 'Execução Rápida', tempo_executado: Number(exec.tempo_total) || 0, executor_principal: exec.usuario, status: 'concluido', horas_executadas_por_dia: diaExec ? { [diaExec]: Number(exec.tempo_total) || 0 } : {}, empreendimento: null, atividade: null, documento: null, os: exec.os || null, observacao: exec.observacao || null };
       });
+
       const finalData = [
         ...todosPlanejamentos.map(plano => {
           const horasExec = horasExecutadasPorPlanejamento[plano.id] || {};
@@ -1026,14 +888,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
 
       setEnrichedData(finalData);
 
-      // Reconstruir activityOrder a partir do campo `ordem_por_dia` salvo no banco
-      // O campo ordem_por_dia é um objeto { [dayKey]: ordem } para suportar atividades multi-dia
-      // Fallback: campo `ordem` (legado, aplica a todos os dias da atividade)
       const orderByDay = {};
       finalData.forEach(plano => {
         if (plano.isLegacyExecution) return;
-
-        // Tentar usar ordem_por_dia (por dia específico) primeiro
         if (plano.ordem_por_dia && typeof plano.ordem_por_dia === 'object') {
           Object.entries(plano.ordem_por_dia).forEach(([dayKey, ordemDia]) => {
             const ord = Number(ordemDia);
@@ -1044,7 +901,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
             }
           });
         } else if (plano.ordem && Number(plano.ordem) >= 1) {
-          // Legado: campo `ordem` único — aplica apenas ao PRIMEIRO dia da atividade para evitar conflito
           const diasSet = Object.keys(plano.horas_por_dia || {})
             .filter(d => Number(plano.horas_por_dia[d]) >= 0.05)
             .sort();
@@ -1058,20 +914,16 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         }
       });
 
-      // O banco é a fonte de verdade para ordem_por_dia.
-      // Sempre reconstruir a ordem a partir do banco ao carregar, ignorando cache local.
       const newActivityOrder = {};
       for (const dayKey in orderByDay) {
         newActivityOrder[dayKey] = orderByDay[dayKey]
           .sort((a, b) => a.ordem - b.ordem)
           .map(x => x.id);
       }
-      // Atualizar cache local e estado
       localStorage.setItem(storageKey, JSON.stringify(newActivityOrder));
       setActivityOrder(newActivityOrder);
 
     } catch (error) {
-      // Log removido para otimização de desempenho
       setEnrichedData([]);
       alert("Erro ao carregar as atividades do calendário. Tente atualizar a página.");
     } finally {
@@ -1079,12 +931,19 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     }
   }, []);
 
-  // Disparar carregamento imediato quando o filtro de usuário mudar
+  // FIX 2: Resetar estados do usuário anterior ANTES de iniciar o fetch do novo.
+  // Sem isso há uma janela onde enrichedData = usuário A mas filters.user = B,
+  // fazendo atividades do A aparecerem no calendário do B (ou sumirem do A).
   useEffect(() => {
     if (filters.user) {
+      setEnrichedData([]);
+      setActivityOrder({});
+      setSelectedActivities(new Set());
       loadCalendarData(filters.user);
     } else {
       setEnrichedData([]);
+      setActivityOrder({});
+      setSelectedActivities(new Set());
       setIsCalendarLoading(false);
     }
   }, [filters.user]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -1094,9 +953,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     if (updateKey === prevUpdateKeyRef.current) return;
     prevUpdateKeyRef.current = updateKey;
     if (!filters.user) return;
-    const timer = setTimeout(() => {
-      loadCalendarData(filters.user);
-    }, 3000);
+    const timer = setTimeout(() => { loadCalendarData(filters.user); }, 3000);
     return () => clearTimeout(timer);
   }, [updateKey]); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -1114,31 +971,21 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         item.id === update.id ? { ...item, ...update } : item
       ));
     }
-    if (hasSelectedUser) {
-      loadCalendarData(filters.user);
-    }
+    if (hasSelectedUser) loadCalendarData(filters.user);
   }, [hasSelectedUser, filters.user, loadCalendarData]);
 
-  // **NOVO**: Função para alternar seleção de atividade
   const toggleActivitySelection = useCallback((activityId) => {
     const normalizedActivityId = normalizeActivityId(activityId);
     setSelectedActivities(prev => {
       const newSet = new Set(prev);
-      if (newSet.has(normalizedActivityId)) {
-        newSet.delete(normalizedActivityId);
-      } else {
-        newSet.add(normalizedActivityId);
-      }
+      if (newSet.has(normalizedActivityId)) newSet.delete(normalizedActivityId);
+      else newSet.add(normalizedActivityId);
       return newSet;
     });
   }, []);
 
-  // **NOVO**: Função para limpar seleção
-  const clearSelection = useCallback(() => {
-    setSelectedActivities(new Set());
-  }, []);
+  const clearSelection = useCallback(() => setSelectedActivities(new Set()), []);
 
-  // **NOVO**: Função para reprogramar atividade
   const handleReprogramarAtividade = useCallback(async (atividadeId, novaDataInicio, executorEmail) => {
     const normalizedActivityId = normalizeActivityId(atividadeId);
     setIsReprogramando(normalizedActivityId);
@@ -1173,7 +1020,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   const onDragEnd = (result) => {
     const { source, destination, draggableId } = result;
     if (!destination) return;
-    // draggableId tem formato "${id}-${dayKey}" — extrair o id real removendo o sufixo do dia
     const extractRealId = (dId, dKey) => {
       const suffix = `-${dKey}`;
       return dId.endsWith(suffix) ? dId.slice(0, -suffix.length) : dId;
@@ -1182,7 +1028,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       if (!modoOrdenacao) return;
       const dayKey = source.droppableId;
       const dayActivities = activitiesByDay[dayKey] || [];
-      // Usar EXATAMENTE o mesmo filtro que o ActivityContainer usa para renderizar os Draggables
       const activitiesDesteDir = dayActivities.filter(a => {
         const horasAlocadas = Number(a.horas_por_dia?.[dayKey]) || 0;
         const horasExecutadas = Number(a.horas_executadas_por_dia?.[dayKey]) || 0;
@@ -1202,7 +1047,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       const storageKey = getStorageKey(filters.user);
       localStorage.setItem(storageKey, JSON.stringify(newOrder));
       setActivityOrder(newOrder);
-      // Salvar ordem no banco usando ordem_por_dia (por dayKey) para suportar atividades multi-dia
       reorderedIds.forEach((id, idx) => {
         const plano = dayActivities.find(a => String(a.id) === id);
         if (!plano || plano.isLegacyExecution) return;
@@ -1263,7 +1107,6 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     })();
   };
 
-
   const filteredPlanejamentos = useMemo(() => {
     if (!hasSelectedUser) return [];
     const base = enrichedData || [];
@@ -1303,44 +1146,28 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     if (!hasSelectedUser) return {};
 
     const grouped = {};
-    const processedPlanIds = new Set(); // Para não duplicar com execuções
+    const processedPlanIds = new Set();
     const hojeDate = startOfDay(new Date());
     const hojeKey = format(hojeDate, 'yyyy-MM-dd');
-    // Atividades "recentes" = vencidas nos últimos 30 dias
     const recentCutoff = addDays(hojeDate, -30);
 
-    // 1. Processar todos os planejamentos (atividades planejadas, planejamentos de documento e rápidas com planejamento)
     filteredPlanejamentos.forEach(plano => {
       processedPlanIds.add(plano.id);
 
-      // Determinar em quais dias a atividade deve aparecer
-      // Para atividades rápidas: aparecer APENAS nos dias em que foi EXECUTADA (horas_executadas_por_dia)
-      // Para atividades concluídas: aparecer nos dias em que foi EXECUTADA (horas_executadas_por_dia)
-      // Para atividades não concluídas: aparecer nos dias PLANEJADOS (horas_por_dia)
-
       const diasParaExibir = new Set();
       const isQuickActivity = plano.is_quick_activity || plano.isQuickActivity;
-      let _isExtendedToToday = false; // marca se esta atividade está sendo estendida para hoje
+      let _isExtendedToToday = false;
 
-      // Para atividades rápidas (concluídas ou não), usar APENAS horas_executadas_por_dia
-      // Atividades rápidas não têm planejamento de dias - aparecem onde foram executadas
       if (isQuickActivity) {
         let hasSignificantExecutionHours = false;
         if (plano.horas_executadas_por_dia && typeof plano.horas_executadas_por_dia === 'object') {
           Object.keys(plano.horas_executadas_por_dia).forEach(dayKey => {
             const horasExec = Number(plano.horas_executadas_por_dia[dayKey]) || 0;
-            // Só mostrar no dia se houver horas significativas (> 0.01h = 36 segundos)
-            if (horasExec > 0.01) {
-              diasParaExibir.add(dayKey);
-              hasSignificantExecutionHours = true;
-            }
+            if (horasExec > 0.01) { diasParaExibir.add(dayKey); hasSignificantExecutionHours = true; }
           });
-          // Fallback adicional: se a atividade está concluída/em andamento mas com 0h registradas,
-          // usar o dia com a entrada mais recente do horas_executadas_por_dia
           if (!hasSignificantExecutionHours && (plano.status === 'concluido' || plano.status === 'concluido_com_atraso' || plano.status === 'em_andamento')) {
             const dias = Object.keys(plano.horas_executadas_por_dia);
             if (dias.length > 0) {
-              // Usar o último dia registrado
               const ultimoDia = dias.sort().pop();
               const parsedUltimo = parseLocalDate(ultimoDia);
               diasParaExibir.add((parsedUltimo && isValid(parsedUltimo)) ? format(parsedUltimo, 'yyyy-MM-dd') : ultimoDia);
@@ -1348,77 +1175,43 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
             }
           }
         }
-        // Fallback: se não há horas executadas significativas, usar o dia planejado
-        // Garante que atividades muito breves (início e fim imediato) ainda apareçam no calendário
         if (!hasSignificantExecutionHours && plano.inicio_planejado) {
           const parsedInicio = parseLocalDate(plano.inicio_planejado);
-          const diaFallback = (parsedInicio && isValid(parsedInicio))
-            ? format(parsedInicio, 'yyyy-MM-dd')
-            : plano.inicio_planejado;
+          const diaFallback = (parsedInicio && isValid(parsedInicio)) ? format(parsedInicio, 'yyyy-MM-dd') : plano.inicio_planejado;
           diasParaExibir.add(diaFallback);
         }
-        // NÃO usar horas_por_dia para atividades rápidas - esse campo pode conter dados incorretos
       } else {
-        // Para atividades normais (não rápidas)
         const realStatus = activityStatusMap.get(normalizeActivityId(plano.id)) || plano.status || 'nao_iniciado';
         const foiExecutada = plano.horas_executadas_por_dia &&
           typeof plano.horas_executadas_por_dia === 'object' &&
           Object.keys(plano.horas_executadas_por_dia).length > 0;
 
         if (realStatus === 'concluido') {
-          // Atividade concluída - SEMPRE mostrar nos dias planejados para não "sumir" do calendário
           if (plano.horas_por_dia && typeof plano.horas_por_dia === 'object') {
             Object.keys(plano.horas_por_dia).forEach(dayKey => {
-              const horas = Number(plano.horas_por_dia[dayKey]) || 0;
-              if (horas >= 0.05) {
-                diasParaExibir.add(dayKey);
-              }
+              if (Number(plano.horas_por_dia[dayKey]) >= 0.05) diasParaExibir.add(dayKey);
             });
           }
-
-          // Adicionar também os dias executados (caso tenha execuções fora do planejado)
           if (foiExecutada) {
             Object.keys(plano.horas_executadas_por_dia).forEach(dayKey => {
-              const horasExec = Number(plano.horas_executadas_por_dia[dayKey]) || 0;
-              if (horasExec >= 0.05) {
-                diasParaExibir.add(dayKey);
-              }
+              if (Number(plano.horas_executadas_por_dia[dayKey]) >= 0.05) diasParaExibir.add(dayKey);
             });
           }
-
-          // Fallback: se nenhum dia foi adicionado (todas as horas são 0), usar termino_real || inicio_planejado
-          // Cobre atividades rápidas concluídas em < 1 segundo que ficam com 0h
           if (diasParaExibir.size === 0) {
             const dataRef = plano.termino_real || plano.inicio_planejado;
-            if (dataRef) {
-              const parsed = parseLocalDate(dataRef);
-              if (parsed && isValid(parsed)) {
-                diasParaExibir.add(format(parsed, 'yyyy-MM-dd'));
-              }
-            }
+            if (dataRef) { const parsed = parseLocalDate(dataRef); if (parsed && isValid(parsed)) diasParaExibir.add(format(parsed, 'yyyy-MM-dd')); }
           }
         } else {
-          // Atividade não concluída: mostrar nos dias planejados e executados
           if (foiExecutada) {
             Object.keys(plano.horas_executadas_por_dia).forEach(dayKey => {
-              const horasExec = Number(plano.horas_executadas_por_dia[dayKey]) || 0;
-              if (horasExec >= 0.05) {
-                diasParaExibir.add(dayKey);
-              }
+              if (Number(plano.horas_executadas_por_dia[dayKey]) >= 0.05) diasParaExibir.add(dayKey);
             });
           }
-
-          // Adicionar dias planejados
           if (plano.horas_por_dia && typeof plano.horas_por_dia === 'object') {
             Object.keys(plano.horas_por_dia).forEach(dayKey => {
-              const horas = Number(plano.horas_por_dia[dayKey]) || 0;
-              if (horas >= 0.05) {
-                diasParaExibir.add(dayKey);
-              }
+              if (Number(plano.horas_por_dia[dayKey]) >= 0.05) diasParaExibir.add(dayKey);
             });
           }
-
-          // Extensão automática: atividade atrasada recente aparece no dia atual (apenas não concluídas)
           if (plano.status !== 'concluido' && plano.status !== 'concluido_com_atraso' && isActivityOverdue(plano)) {
             const terminoRef = plano.termino_ajustado || plano.termino_planejado;
             if (terminoRef) {
@@ -1441,32 +1234,23 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       });
     });
 
-
-    // **PASSO 1**: Aplicar ordem customizada PRIMEIRO como ORDEM PRIMÁRIA absoluta
+    // Passo 1: Ordem customizada como prioridade absoluta
     for (const dayKey in grouped) {
       const customOrder = activityOrder[dayKey];
       if (customOrder && customOrder.length > 0) {
         const orderMap = new Map(customOrder.map((id, i) => [String(id), i]));
-        // Separar itens em: (1) na ordem customizada, (2) fora dela
-        const inOrder = [];
-        const outOfOrder = [];
+        const inOrder = [], outOfOrder = [];
         grouped[dayKey].forEach(item => {
-          if (orderMap.has(String(item.id))) {
-            inOrder.push(item);
-          } else {
-            outOfOrder.push(item);
-          }
+          orderMap.has(String(item.id)) ? inOrder.push(item) : outOfOrder.push(item);
         });
-        // Sort itens em ordem: primeiro os da ordem customizada, depois os demais
         inOrder.sort((a, b) => (orderMap.get(String(a.id)) ?? 9999) - (orderMap.get(String(b.id)) ?? 9999));
         grouped[dayKey] = [...inOrder, ...outOfOrder];
       }
     }
 
-    // **PASSO 2**: Se NÃO há ordem customizada, então aplicar os sorts automáticos
+    // Passo 2: Sort automático quando não há ordem customizada
     for (const dayKey in grouped) {
       const customOrder = activityOrder[dayKey];
-      // Só aplicar sort automático se NÃO há ordem customizada
       if (!customOrder || customOrder.length === 0) {
         grouped[dayKey].sort((a, b) => {
           if (a.isLegacyExecution && !b.isLegacyExecution) return 1;
@@ -1491,24 +1275,18 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       }
     }
 
-    // **PASSO 3**: Ordenar documentos por predecessora (apenas itens ainda não ordenados manualmente)
+    // Passo 3: Ordenar documentos por predecessora
     for (const dayKey in grouped) {
       const customOrder = activityOrder[dayKey];
-      // Só aplicar ordenação de documentos se NÃO há ordem customizada
       if (!customOrder || customOrder.length === 0) {
         const activities = grouped[dayKey];
-        const docIndices = [];
-        const docs = [];
+        const docIndices = [], docs = [];
         activities.forEach((a, i) => {
-          if (a.tipo_planejamento === 'documento') {
-            docIndices.push(i);
-            docs.push(a);
-          }
+          if (a.tipo_planejamento === 'documento') { docIndices.push(i); docs.push(a); }
         });
         if (docs.length >= 2) {
           const docIdMap = new Map(docs.map(d => [normalizeActivityId(d.id), d]));
           const depths = new Map();
-
           const getDepth = (doc, seen = new Set()) => {
             const id = normalizeActivityId(doc.id);
             if (depths.has(id)) return depths.get(id);
@@ -1521,66 +1299,42 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
             depths.set(id, d);
             return d;
           };
-
           docs.forEach(d => getDepth(d));
-
           const sorted = [...docs].sort((a, b) =>
             (depths.get(normalizeActivityId(a.id)) || 0) - (depths.get(normalizeActivityId(b.id)) || 0)
           );
-
           docIndices.forEach((pos, i) => { activities[pos] = sorted[i]; });
         }
       }
     }
 
-    // Garantir que nenhum dia ultrapasse 8h: particionar atividades se necessário
+    // Passo 4: Não ultrapassar 8h por dia
     for (const dayKey in grouped) {
       let cargaTotal = 0;
       const atividades = grouped[dayKey];
-
-      // Calcular carga total do dia
-      atividades.forEach(a => {
-        cargaTotal += Number(a.horas_por_dia?.[dayKey]) || 0;
-      });
-
-      // Se ultrapassa 8h, remover/particionar as atividades estendidas primeiro
+      atividades.forEach(a => { cargaTotal += Number(a.horas_por_dia?.[dayKey]) || 0; });
       if (cargaTotal > 8) {
         const atividadesEstendidas = atividades.filter(a => a._isExtended);
         const atividadesNormais = atividades.filter(a => !a._isExtended);
-
-        let cargaNormal = atividadesNormais.reduce((sum, a) => sum + (Number(a.horas_por_dia?.[dayKey]) || 0), 0);
+        const cargaNormal = atividadesNormais.reduce((sum, a) => sum + (Number(a.horas_por_dia?.[dayKey]) || 0), 0);
         const capacidadeDisponivelParaEstendidas = 8 - cargaNormal;
-
         if (atividadesEstendidas.length > 0) {
           const atividadeEstendida = atividadesEstendidas[0];
           const horasEstendida = Number(atividadeEstendida.horas_por_dia?.[dayKey]) || 0;
-
           if (horasEstendida > capacidadeDisponivelParaEstendidas) {
-            // Particionar: manter apenas o que cabe
             const horasQueCabem = Math.max(0, capacidadeDisponivelParaEstendidas);
             const horasSobram = horasEstendida - horasQueCabem;
-
             if (horasQueCabem > 0) {
-              // Ajustar a atividade estendida
               atividadeEstendida.horas_por_dia = { ...atividadeEstendida.horas_por_dia };
               atividadeEstendida.horas_por_dia[dayKey] = horasQueCabem;
             } else {
-              // Se nem 1 minuto cabe, remover do dia
               atividades.splice(atividades.indexOf(atividadeEstendida), 1);
             }
-
-            // Enviar saldo para próximo dia
             if (horasSobram > 0) {
               const proximoDiaUtil = getNextWorkingDay(parseISO(dayKey));
               const proximoDiaKey = format(proximoDiaUtil, 'yyyy-MM-dd');
               if (!grouped[proximoDiaKey]) grouped[proximoDiaKey] = [];
-
-              const atividadeSaldo = {
-                ...atividadeEstendida,
-                horas_por_dia: { ...atividadeEstendida.horas_por_dia, [proximoDiaKey]: horasSobram },
-                _isPushed: true,
-                _isPartitioned: true
-              };
+              const atividadeSaldo = { ...atividadeEstendida, horas_por_dia: { ...atividadeEstendida.horas_por_dia, [proximoDiaKey]: horasSobram }, _isPushed: true, _isPartitioned: true };
               if (!grouped[proximoDiaKey].some(a => a.id === atividadeEstendida.id && a._isPartitioned)) {
                 grouped[proximoDiaKey].push(atividadeSaldo);
               }
@@ -1604,54 +1358,29 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     return carga;
   }, [filteredPlanejamentos, hasSelectedUser]);
 
-  // Funções de navegação
   const handleDateChange = (direction) => {
     const fns = direction === 'next' ? { month: addMonths, week: addWeeks, day: addDays } : { month: subMonths, week: subWeeks, day: subDays };
     setCurrentDate(c => fns[viewMode](c, 1));
   };
 
-  // Formatar o título do cabeçalho
   const horasDoDia = useMemo(() => {
     const dayKey = format(currentDate, 'yyyy-MM-dd');
     const dayActivities = activitiesByDay[dayKey] || [];
-
     let soma = 0;
     dayActivities.forEach((atividade) => {
       const horasAlocadasDia = Number(atividade.horas_por_dia?.[dayKey]) || 0;
       const horasExecutadasNoDia = Number(atividade.horas_executadas_por_dia?.[dayKey]) || 0;
       const tempoExecutado = Number(atividade.tempo_executado) || 0;
-
       let horasDia = 0;
-
-      if (atividade.isLegacyExecution) {
-        horasDia = tempoExecutado;
-      }
-      else if (atividade.isQuickActivity || atividade.is_quick_activity) {
-        horasDia = horasExecutadasNoDia > 0 ? horasExecutadasNoDia : horasAlocadasDia;
-      }
-      else {
-        // Prioridade 1: Se tem horas executadas neste dia
-        if (horasExecutadasNoDia > 0) {
-          horasDia = horasExecutadasNoDia;
-        }
-        // Prioridade 2: Se concluída mas horas_executadas_por_dia vazio, distribuir tempo_executado
-        else if ((atividade.status === 'concluido' || atividade.status === 'concluido_com_atraso') && tempoExecutado > 0 && Object.keys(atividade.horas_executadas_por_dia || {}).length === 0) {
-          const diasPlanejados = Object.keys(atividade.horas_por_dia || {});
-          if (diasPlanejados.length > 0 && diasPlanejados.includes(dayKey)) {
-            horasDia = tempoExecutado / diasPlanejados.length;
-          } else {
-            horasDia = 0; // Não contar se não está planejada para este dia
-          }
-        }
-        // Prioridade 3: Usar horas planejadas
-        else {
-          horasDia = horasAlocadasDia;
-        }
-      }
-
+      if (atividade.isLegacyExecution) horasDia = tempoExecutado;
+      else if (atividade.isQuickActivity || atividade.is_quick_activity) horasDia = horasExecutadasNoDia > 0 ? horasExecutadasNoDia : horasAlocadasDia;
+      else if (horasExecutadasNoDia > 0) horasDia = horasExecutadasNoDia;
+      else if ((atividade.status === 'concluido' || atividade.status === 'concluido_com_atraso') && tempoExecutado > 0 && Object.keys(atividade.horas_executadas_por_dia || {}).length === 0) {
+        const diasPlanejados = Object.keys(atividade.horas_por_dia || {});
+        horasDia = diasPlanejados.length > 0 && diasPlanejados.includes(dayKey) ? tempoExecutado / diasPlanejados.length : 0;
+      } else horasDia = horasAlocadasDia;
       soma += horasDia;
     });
-
     return soma;
   }, [currentDate, activitiesByDay, viewMode]);
 
@@ -1668,21 +1397,14 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   }, [currentDate, viewMode]);
 
   const handleClearFilters = () => {
-    // **MODIFICADO**: Gestão, Colaboradores e APOIO (sem permissão especial) não podem limpar o filtro de usuário
     const usuariosPermitidos = userProfile?.usuarios_permitidos_visualizar || [];
     const temPermissao = Array.isArray(usuariosPermitidos) && usuariosPermitidos.length > 0;
-
     if ((isGestao || isColaborador || isApoio) && !temPermissao) {
-      const tipoUsuario = isGestao ? 'gestão' : isColaborador ? 'colaborador' : 'apoio';
-      setFilters(prev => ({ ...prev, discipline: 'all' })); // Só limpa disciplina
+      setFilters(prev => ({ ...prev, discipline: 'all' }));
       clearSelection();
       return;
     }
-
-    setFilters({
-      user: '', // Limpa seleção de usuário
-      discipline: 'all'
-    });
+    setFilters({ user: '', discipline: 'all' });
     clearSelection();
   };
 
@@ -1691,30 +1413,23 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     setShowPrevisaoModal(true);
   };
 
-  const selectedUserName = isViewingAllUsers
-    ? 'Todos os Usuários'
-    : executorMap[filters.user]?.nome || filters.user;
-
+  const selectedUserName = isViewingAllUsers ? 'Todos os Usuários' : executorMap[filters.user]?.nome || filters.user;
   const totalLoading = isDashboardRefreshing || isCalendarLoading;
   const canReprogram = hasPermission('admin');
+
   const renderContent = () => {
     if (!hasSelectedUser) {
       return (
         <div className="p-12 text-center min-h-[400px] flex flex-col justify-center items-center">
           <Users className="w-16 h-16 text-gray-300 mx-auto mb-4" />
           <h3 className="text-xl font-semibold text-gray-700 mb-2">Selecione um Usuário</h3>
-          <p className="text-gray-500 mb-6">
-            Para começar, selecione um usuário no filtro acima para carregar o calendário.
-          </p>
+          <p className="text-gray-500 mb-6">Para começar, selecione um usuário no filtro acima para carregar o calendário.</p>
           <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 max-w-md mx-auto">
-            <p className="text-blue-700 text-sm">
-              💡 <strong>Dica:</strong> Para ver as atividades de todos, selecione "Todos os Usuários".
-            </p>
+            <p className="text-blue-700 text-sm">💡 <strong>Dica:</strong> Para ver as atividades de todos, selecione "Todos os Usuários".</p>
           </div>
         </div>
       );
     }
-
     if (totalLoading) {
       return (
         <div className="flex justify-center items-center h-[400px]">
@@ -1723,24 +1438,16 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         </div>
       );
     }
-
     const hasSelections = selectedActivities.size > 0;
-
-    // **MODIFICADO**: Passa 'enrichedData' (que são todos) para as views em vez de 'planejamentos'
     if (viewMode === 'month') return <MonthView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} modoOrdenacao={modoOrdenacao} onClearDayOrder={clearDayOrder} activityOrder={activityOrder} activityStatusMap={activityStatusMap} />;
     if (viewMode === 'week') return <WeekView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} modoOrdenacao={modoOrdenacao} onClearDayOrder={clearDayOrder} onToggleModoOrdenacao={toggleModoOrdenacao} activityOrder={activityOrder} activityStatusMap={activityStatusMap} />;
     if (viewMode === 'day') return <DayView date={currentDate} activitiesByDay={activitiesByDay} disciplinas={disciplinas} onActivityDelete={handleActivityDelete} onShowPrevisao={handleShowPrevisao} executorMap={executorMap} allPlanejamentos={enrichedData} isReprogramando={isReprogramando} canReprogram={canReprogram} selectedActivities={selectedActivities} onToggleSelect={toggleActivitySelection} hasSelections={hasSelections} viewType={viewType} modoOrdenacao={modoOrdenacao} onClearDayOrder={clearDayOrder} onToggleModoOrdenacao={toggleModoOrdenacao} activityOrder={activityOrder} activityStatusMap={activityStatusMap} />;
     return null;
   };
 
-  // **MODIFICADO**: Refresh agora recarrega os dados do calendário se um usuário estiver selecionado
   const refreshAll = () => {
-    if (onRefresh) {
-      onRefresh();
-    }
-    if (hasSelectedUser) {
-      loadCalendarData(filters.user);
-    }
+    if (onRefresh) onRefresh();
+    if (hasSelectedUser) loadCalendarData(filters.user);
   };
 
   return (
@@ -1759,25 +1466,15 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
                     </span>
                   )}
                 </div>
-              ) : (
-                'Calendário de Planejamento'
-              )}
+              ) : 'Calendário de Planejamento'}
             </CardTitle>
             <div className="flex items-center gap-2">
-              {/* Contador de selecionadas e botão de limpar */}
               {selectedActivities.size > 0 ? (
                 <div className="flex items-center gap-2 mr-4 px-3 py-1.5 bg-indigo-50 border border-indigo-200 rounded-lg">
                   <span className="text-sm font-medium text-indigo-700">
                     ✅ {selectedActivities.size} selecionada{selectedActivities.size > 1 ? 's' : ''} — arraste para replanejar
                   </span>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={clearSelection}
-                    className="h-6 px-2 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-100"
-                  >
-                    Limpar
-                  </Button>
+                  <Button variant="ghost" size="sm" onClick={clearSelection} className="h-6 px-2 text-xs text-indigo-600 hover:text-indigo-700 hover:bg-indigo-100">Limpar</Button>
                 </div>
               ) : hasSelectedUser && canReprogram && null}
               {hasSelectedUser && (
@@ -1806,20 +1503,10 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           usuariosPermitidos={usuariosPermitidos}
           viewType={viewType}
           onFilterChange={(key, value) => {
-            // Tratar mudança de viewType separadamente
-            if (key === 'viewType') {
-              setViewType(value);
-              return;
-            }
-            // **MODIFICADO**: Gestão, Colaboradores e APOIO (sem permissão especial) não podem mudar de usuário
+            if (key === 'viewType') { setViewType(value); return; }
             const usuariosPermitidosLocal = userProfile?.usuarios_permitidos_visualizar || [];
             const temPermissao = Array.isArray(usuariosPermitidosLocal) && usuariosPermitidosLocal.length > 0;
-
-
-            if ((isGestao || isColaborador || isApoio) && !temPermissao && key === 'user') {
-              const tipoUsuario = isGestao ? 'gestão' : isColaborador ? 'colaborador' : 'apoio';
-              return;
-            }
+            if ((isGestao || isColaborador || isApoio) && !temPermissao && key === 'user') return;
             setFilters(prev => ({ ...prev, [key]: value }));
           }}
           onClearFilters={handleClearFilters}
@@ -1841,7 +1528,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           isOpen={showPrevisaoModal}
           onClose={() => setShowPrevisaoModal(false)}
           planejamentos={planejamentosParaPrevisao.length > 0 ? planejamentosParaPrevisao : filteredPlanejamentos}
-          execucoes={[]} // execucoes are not relevant for future delivery forecast
+          execucoes={[]}
           cargaDiaria={planejamentosParaPrevisao.length > 0 && planejamentosParaPrevisao[0].executor_principal ? cargaDiariaPorUsuario[planejamentosParaPrevisao[0].executor_principal] || {} : {}}
         />
       )}
