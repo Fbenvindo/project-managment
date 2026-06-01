@@ -788,7 +788,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
          }
        };
 
-       // Processar sequencialmente para evitar rate limit
+       // Processar sequencialmente com delay mínimo para evitar rate limit
        for (let i = 0; i < linhasParaSalvar.length; i++) {
          try {
            const res = await salvarLinha(linhasParaSalvar[i], i);
@@ -800,6 +800,8 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
            errorCount++;
            console.error(`❌ ERRO na linha ${linhasParaSalvar[i].id}:`, err);
          }
+         // Delay mínimo entre requisições para não exceder rate limit (~4 req/s)
+         await new Promise(resolve => setTimeout(resolve, 250));
        }
 
       // Atualizar estado local com os IDs salvos
