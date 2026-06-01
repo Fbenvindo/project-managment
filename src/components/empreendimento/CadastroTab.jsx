@@ -227,6 +227,9 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       // ─── Montar linhas ───
       const docIndexMap = new Map(sortedDocs.map((doc, idx) => [doc.id, idx]));
 
+      // Chaves de metadados legados que nunca devem ir no payload de save
+      const CHAVES_LEGADAS = new Set(['_excluida', '_revisoes_existentes', '_revisoes_excluidas', 'meta', 'revisoes_excluidas', 'revisoes_existentes']);
+
       const deduplicadoMap = new Map();
       dataRecords.filter(item => item.documento_id).forEach(item => {
         const existing = deduplicadoMap.get(item.documento_id);
@@ -234,7 +237,27 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
           deduplicadoMap.set(item.documento_id, item);
         }
       });
-      const linhasComData = Array.from(deduplicadoMap.values());
+
+      // Limpar metadados legados do state em memória.
+      // Assim qualquer save futuro nessas linhas já envia payload limpo,
+      // sem precisar forçar saves extras só para migrar o formato.
+      const linhasComData = Array.from(deduplicadoMap.values()).map(item => {
+        if (!item.datas) return item;
+        const datasLimpas = {};
+        Object.entries(item.datas).forEach(([etapa, etapaData]) => {
+          if (!etapaData || typeof etapaData !== 'object') return;
+          const datasFiltradas = {};
+          Object.entries(etapaData).forEach(([chave, valor]) => {
+            if (!CHAVES_LEGADAS.has(chave) && !chave.startsWith('_')) {
+              datasFiltradas[chave] = valor;
+            }
+          });
+          if (Object.keys(datasFiltradas).length > 0) {
+            datasLimpas[etapa] = datasFiltradas;
+          }
+        });
+        return { ...item, datas: datasLimpas };
+      });
       const documento_idsComData = new Set(linhasComData.map(l => l.documento_id));
 
       const docsNovos = sortedDocs
@@ -549,33 +572,12 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
       }
 
       // ── PASSO 2: Salvar apenas linhas com datas realmente modificadas ──
-      // Exceção: quando a estrutura foi modificada (etapa restaurada/excluída, revisão alterada),
-      // todas as linhas que já existem no banco precisam ter seus metadados legados apagados.
-      // Sem isso, um reload futuro leria _excluida:true das linhas antigas e reverteria a restauração.
-      // Para não disparar centenas de requests desnecessários, usamos um flag de "limpeza legada"
-      // que só é ativado quando estruturaModificada era true antes do save.
-      const precisaLimparLegado = estruturaModificada; // captura o valor antes de resetar
-
+      // Metadados legados (_excluida, _revisoes_existentes, etc.) são removidos
+      // diretamente no loadData ao montar o state, por isso não é necessário
+      // forçar saves de limpeza aqui. Só salvar o que o usuário alterou de fato.
       const linhasParaSalvar = linhas.filter(linha => {
         if (!linha.documento_id) return false;
-        // Linhas explicitamente modificadas (datas alteradas)
-        if (linhasModificadas.has(linha.id)) return true;
-        // Quando a estrutura mudou, salvar linhas existentes no banco que ainda têm
-        // metadados legados (_excluida, _revisoes_existentes) para limpá-los
-        if (precisaLimparLegado) {
-          const isExistente = !linha.isNew && !linha.id.toString().startsWith('temp-');
-          if (isExistente) {
-            const temMetadadoLegado = linha.datas && Object.values(linha.datas).some(etapaData =>
-              etapaData && typeof etapaData === 'object' && (
-                '_excluida' in etapaData ||
-                '_revisoes_existentes' in etapaData ||
-                '_revisoes_excluidas' in etapaData
-              )
-            );
-            return temMetadadoLegado;
-          }
-        }
-        return false;
+        return linhasModificadas.has(linha.id);
       });
 
       const updatedLinhas = new Map();
