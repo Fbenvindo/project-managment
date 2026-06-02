@@ -178,7 +178,7 @@ export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreen
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {ALL_TIPOS.map(tipo => (
+                {tiposDisponiveis.map(tipo => (
                   <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
                 ))}
               </SelectContent>
