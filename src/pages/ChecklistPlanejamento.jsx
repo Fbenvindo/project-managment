@@ -70,7 +70,11 @@ export default function ChecklistPlanejamentoPage() {
     try {
       // Excluir todos os itens primeiro
       for (const item of items) {
-        await base44.entities.ChecklistItem.delete(item.id);
+        try {
+          await base44.entities.ChecklistItem.delete(item.id);
+        } catch (err) {
+          if (!err.message?.includes('Not found')) throw err;
+        }
       }
       // Excluir o checklist
       await base44.entities.ChecklistPlanejamento.delete(selectedChecklist.id);
@@ -91,7 +95,11 @@ export default function ChecklistPlanejamentoPage() {
     try {
       // Excluir todos os itens
       for (const item of items) {
-        await base44.entities.ChecklistItem.delete(item.id);
+        try {
+          await base44.entities.ChecklistItem.delete(item.id);
+        } catch (err) {
+          if (!err.message?.includes('Not found')) throw err;
+        }
       }
       
       await queryClient.invalidateQueries(['checklist-items', selectedChecklist?.id]);
