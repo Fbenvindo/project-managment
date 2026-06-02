@@ -28,7 +28,6 @@ export const ITEMS_BASES_E_FOLHAS = [
 export const SECOES_PADRAO = [
   'SPDA',
   'Sistemas',
-  'Sistemas Eletrônicos',
   'Incêndio',
   'HVAC',
   'Hidráulica',
