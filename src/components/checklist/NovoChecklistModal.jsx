@@ -74,10 +74,13 @@ export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreen
 
   const getDefaultsFromEmpreendimento = (empId) => {
     const emp = empreendimentos?.find(e => e.id === empId);
+    const rawDisciplinas = emp?.disciplinas_checklist?.length > 0 ? emp.disciplinas_checklist : ALL_TIPOS;
+    // Normaliza nome legado
+    const disciplinas = rawDisciplinas.map(d => d === 'Sistemas Eletrônicos' ? 'Sistemas' : d);
     return {
       cliente: emp?.cliente || '',
       numero_os: emp?.os || '',
-      disciplinas: emp?.disciplinas_checklist?.length > 0 ? emp.disciplinas_checklist : ALL_TIPOS
+      disciplinas
     };
   };
 
