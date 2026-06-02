@@ -17,6 +17,7 @@ import {
   ITEMS_INICIO_DE_PROJETO,
   ITEMS_BASES_E_FOLHAS,
   ITEMS_SISTEMAS_RESIDENCIAL,
+  ITEMS_SPDA_RESIDENCIAL,
 } from './checklistTemplates';
 
 const CHECKLIST_TEMPLATES = {
@@ -27,6 +28,7 @@ const CHECKLIST_TEMPLATES = {
     'Incêndio': ITEMS_INCENDIO_RESIDENCIAL,
     'Gás': ITEMS_GAS_RESIDENCIAL,
     'Sistemas': ITEMS_SISTEMAS_RESIDENCIAL,
+    'SPDA': ITEMS_SPDA_RESIDENCIAL,
     'Planejamento - INÍCIO DE PROJETO': ITEMS_INICIO_DE_PROJETO,
     'Planejamento - BASES E FOLHAS': ITEMS_BASES_E_FOLHAS,
     'Planejamento - COMPATIBILIZAÇÃO': ITEMS_COMPATIBILIZACAO,
@@ -67,7 +69,7 @@ const SECOES_PADRAO = [
   'Elétrica'
 ];
 
-const ALL_TIPOS = ['Elétrica', 'Hidráulica', 'HVAC', 'Incêndio', 'Sistemas', 'Planejamento - INÍCIO DE PROJETO', 'Planejamento - BASES E FOLHAS', 'Planejamento - COMPATIBILIZAÇÃO'];
+const ALL_TIPOS = ['Elétrica', 'Hidráulica', 'HVAC', 'Incêndio', 'Sistemas', 'SPDA', 'Planejamento - INÍCIO DE PROJETO', 'Planejamento - BASES E FOLHAS', 'Planejamento - COMPATIBILIZAÇÃO'];
 
 export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreendimentos, defaultEmpreendimentoId }) {
   const [isSaving, setIsSaving] = useState(false);
