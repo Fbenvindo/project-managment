@@ -6,18 +6,30 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Edit2, Save, X } from 'lucide-react';
+import { CalendarIcon, Edit2, Save, X, Plus, Trash2 } from 'lucide-react';
 import { format, parseISO, isValid } from 'date-fns';
 
 export default function ChecklistHeader({ checklist, onUpdate, empreendimentos }) {
   const [isEditing, setIsEditing] = useState(false);
+  const [novoPeriodo, setNovoPeriodo] = useState('');
   const [formData, setFormData] = useState({
     tipo: checklist.tipo || '',
     tecnico_responsavel: checklist.tecnico_responsavel || '',
     numero_os: checklist.numero_os || '',
     cliente: checklist.cliente || '',
-    data_entrega: checklist.data_entrega || ''
+    data_entrega: checklist.data_entrega || '',
+    periodos: checklist.periodos || []
   });
+
+  const handleAddPeriodo = () => {
+    if (!novoPeriodo.trim()) return;
+    setFormData(prev => ({ ...prev, periodos: [...prev.periodos, novoPeriodo.trim()] }));
+    setNovoPeriodo('');
+  };
+
+  const handleRemovePeriodo = (idx) => {
+    setFormData(prev => ({ ...prev, periodos: prev.periodos.filter((_, i) => i !== idx) }));
+  };
 
   const empreendimento = empreendimentos.find(e => e.id === checklist.empreendimento_id);
 
@@ -60,7 +72,8 @@ export default function ChecklistHeader({ checklist, onUpdate, empreendimentos }
                     tecnico_responsavel: checklist.tecnico_responsavel || '',
                     numero_os: checklist.numero_os || '',
                     cliente: checklist.cliente || '',
-                    data_entrega: checklist.data_entrega || ''
+                    data_entrega: checklist.data_entrega || '',
+                    periodos: checklist.periodos || []
                   });
                 }}
               >
@@ -159,6 +172,46 @@ export default function ChecklistHeader({ checklist, onUpdate, empreendimentos }
               <p className="mt-1 text-sm">{empreendimento.nome}</p>
             </div>
           )}
+
+          <div className="mt-4 pt-4 border-t border-gray-300">
+            <Label className="text-xs font-bold text-gray-700 block mb-2">COLUNAS DE STATUS (Documentos/Períodos)</Label>
+            {isEditing ? (
+              <div className="space-y-2">
+                <div className="flex flex-wrap gap-2">
+                  {formData.periodos.map((p, idx) => (
+                    <span key={idx} className="inline-flex items-center gap-1 bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">
+                      {p}
+                      <button onClick={() => handleRemovePeriodo(idx)} className="hover:text-red-600">
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <Input
+                    value={novoPeriodo}
+                    onChange={(e) => setNovoPeriodo(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleAddPeriodo(); } }}
+                    placeholder="Ex: 01/2026, Folha A, Rev.01..."
+                    className="max-w-xs text-sm"
+                  />
+                  <Button type="button" size="sm" variant="outline" onClick={handleAddPeriodo}>
+                    <Plus className="w-3 h-3 mr-1" /> Adicionar
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                {(checklist.periodos || []).length > 0 ? (
+                  checklist.periodos.map((p, idx) => (
+                    <span key={idx} className="bg-blue-100 text-blue-800 text-xs px-2 py-1 rounded">{p}</span>
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500">Nenhuma coluna configurada. Clique em Editar para adicionar.</p>
+                )}
+              </div>
+            )}
+          </div>
 
           <div className="mt-4 pt-4 border-t border-gray-300">
             <Label className="text-xs font-bold text-gray-700 block mb-2">LEGENDA</Label>

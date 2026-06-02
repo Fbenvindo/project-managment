@@ -19,7 +19,10 @@ const STATUS_COLORS = {
   '-': 'bg-white'
 };
 
-export default function ChecklistTable({ secao, items, checklist, documentos = [], onUpdate }) {
+export default function ChecklistTable({ secao, items, checklist, documentos = [], onUpdate, empreendimento }) {
+  // Usa períodos do checklist como colunas se não houver documentos
+  const periodos = checklist?.periodos || [];
+  const usarPeriodos = documentos.length === 0 && periodos.length > 0;
   const [docPage, setDocPage] = useState(0);
   const [showForm, setShowForm] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
@@ -225,8 +228,12 @@ export default function ChecklistTable({ secao, items, checklist, documentos = [
     }
   };
 
-  const totalPages = Math.ceil(documentos.length / DOCS_PER_PAGE);
-  const documentosVisiveis = documentos.slice(docPage * DOCS_PER_PAGE, (docPage + 1) * DOCS_PER_PAGE);
+  // Colunas de status: documentos ou períodos
+  const colunas = usarPeriodos
+    ? periodos.map(p => ({ id: p, label: p }))
+    : documentos.map(d => ({ id: d.id, label: `${d.numero}${d.arquivo ? ` - ${d.arquivo}` : ''}` }));
+  const totalPages = Math.ceil(colunas.length / DOCS_PER_PAGE);
+  const colunasVisiveis = colunas.slice(docPage * DOCS_PER_PAGE, (docPage + 1) * DOCS_PER_PAGE);
 
   return (
     <Card>
@@ -361,7 +368,7 @@ export default function ChecklistTable({ secao, items, checklist, documentos = [
                 <TableHead className="min-w-[250px] border">Descrição</TableHead>
                 <TableHead className="w-20 border text-center">Contribuição</TableHead>
                 <TableHead className="w-16 border text-center">Tempo</TableHead>
-                <TableHead colSpan={documentosVisiveis.length || 1} className="border text-center font-bold">
+                <TableHead colSpan={colunasVisiveis.length || 1} className="border text-center font-bold">
                   <div className="flex items-center justify-center gap-2">
                     <button onClick={() => setDocPage(p => Math.max(0, p - 1))} disabled={docPage === 0} className="p-0.5 rounded hover:bg-gray-200 disabled:opacity-30">
                       <ChevronLeft className="w-3 h-3" />
@@ -377,10 +384,10 @@ export default function ChecklistTable({ secao, items, checklist, documentos = [
               </TableRow>
               <TableRow className="bg-gray-50">
                 <TableHead colSpan="4" className="border"></TableHead>
-                {documentosVisiveis.map((doc) => (
-                  <TableHead key={doc.id} className="border text-xs font-normal p-1 text-center">
+                {colunasVisiveis.map((col) => (
+                  <TableHead key={col.id} className="border text-xs font-normal p-1 text-center">
                     <div className="break-words whitespace-normal leading-tight">
-                      {doc.numero}{doc.arquivo ? ` - ${doc.arquivo}` : ''}
+                      {col.label}
                     </div>
                   </TableHead>
                 ))}
@@ -391,7 +398,7 @@ export default function ChecklistTable({ secao, items, checklist, documentos = [
             <TableBody>
               {items.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={documentosVisiveis.length + 5} className="text-center py-8 text-gray-500">
+                  <TableCell colSpan={colunasVisiveis.length + 5} className="text-center py-8 text-gray-500">
                     Nenhum item adicionado. Clique em "Adicionar Item" para começar.
                   </TableCell>
                 </TableRow>
@@ -410,18 +417,18 @@ export default function ChecklistTable({ secao, items, checklist, documentos = [
                     <TableCell className="border text-center text-sm">
                       {item.tempo || '-'}
                     </TableCell>
-                    {documentosVisiveis.map((doc) => {
-                      const key = `${item.id}_${doc.id}`;
-                      const status = optimisticStatus[key] ?? item.status_por_periodo?.[doc.id] ?? '-';
+                    {colunasVisiveis.map((col) => {
+                      const key = `${item.id}_${col.id}`;
+                      const status = optimisticStatus[key] ?? item.status_por_periodo?.[col.id] ?? '-';
                       const displayStatus = status || '-';
                       return (
                         <TableCell
-                          key={doc.id}
+                          key={col.id}
                           className={`border ${STATUS_COLORS[displayStatus]} p-0`}
                         >
                           <Select
                             value={displayStatus}
-                            onValueChange={(value) => handleStatusChange(item, doc.id, value === '-' ? '' : value)}
+                            onValueChange={(value) => handleStatusChange(item, col.id, value === '-' ? '' : value)}
                           >
                             <SelectTrigger className="h-7 text-xs border-0 bg-transparent rounded-none">
                               <SelectValue />
