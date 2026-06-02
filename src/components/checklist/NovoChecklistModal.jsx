@@ -25,7 +25,7 @@ const CHECKLIST_TEMPLATES = {
     'HVAC': ITEMS_HVAC_RESIDENCIAL,
     'Incêndio': ITEMS_INCENDIO_RESIDENCIAL,
     'Gás': ITEMS_GAS_RESIDENCIAL,
-    'Sistemas Eletrônicos': ITEMS_INICIO_DE_PROJETO,
+    'Sistemas': ITEMS_INICIO_DE_PROJETO,
     'Planejamento - INÍCIO DE PROJETO': ITEMS_INICIO_DE_PROJETO,
     'Planejamento - BASES E FOLHAS': ITEMS_BASES_E_FOLHAS,
     'Planejamento - COMPATIBILIZAÇÃO': ITEMS_COMPATIBILIZACAO,
@@ -35,7 +35,7 @@ const CHECKLIST_TEMPLATES = {
     'Hidráulica': ITEMS_HIDRAULICA_COMERCIAL,
     'HVAC': ITEMS_HVAC_COMERCIAL,
     'Incêndio': ITEMS_INCENDIO_COMERCIAL,
-    'Sistemas Eletrônicos': ITEMS_INICIO_DE_PROJETO,
+    'Sistemas': ITEMS_INICIO_DE_PROJETO,
     'Planejamento - INÍCIO DE PROJETO': ITEMS_INICIO_DE_PROJETO,
     'Planejamento - BASES E FOLHAS': ITEMS_BASES_E_FOLHAS,
     'Planejamento - COMPATIBILIZAÇÃO': ITEMS_COMPATIBILIZACAO,
@@ -45,7 +45,7 @@ const CHECKLIST_TEMPLATES = {
     'Hidráulica': ITEMS_HIDRAULICA_GALPAO,
     'HVAC': ITEMS_HVAC_COMERCIAL,
     'Incêndio': ITEMS_INCENDIO_COMERCIAL,
-    'Sistemas Eletrônicos': ITEMS_INICIO_DE_PROJETO,
+    'Sistemas': ITEMS_INICIO_DE_PROJETO,
     'Planejamento - INÍCIO DE PROJETO': ITEMS_INICIO_DE_PROJETO,
     'Planejamento - BASES E FOLHAS': ITEMS_BASES_E_FOLHAS,
     'Planejamento - COMPATIBILIZAÇÃO': ITEMS_COMPATIBILIZACAO,
@@ -59,14 +59,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Loader2 } from 'lucide-react';
 
 const SECOES_PADRAO = [
-  'Sistemas Eletrônicos',
+  'Sistemas',
   'Incêndio',
   'HVAC',
   'Hidráulica',
   'Elétrica'
 ];
 
-const ALL_TIPOS = ['Elétrica', 'Hidráulica', 'HVAC', 'Incêndio', 'Sistemas Eletrônicos', 'Planejamento - INÍCIO DE PROJETO', 'Planejamento - BASES E FOLHAS', 'Planejamento - COMPATIBILIZAÇÃO'];
+const ALL_TIPOS = ['Elétrica', 'Hidráulica', 'HVAC', 'Incêndio', 'Sistemas', 'Planejamento - INÍCIO DE PROJETO', 'Planejamento - BASES E FOLHAS', 'Planejamento - COMPATIBILIZAÇÃO'];
 
 export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreendimentos, defaultEmpreendimentoId }) {
   const [isSaving, setIsSaving] = useState(false);
