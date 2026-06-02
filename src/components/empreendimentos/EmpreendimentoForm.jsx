@@ -254,7 +254,7 @@ export default function EmpreendimentoForm({ empreendimento, onSubmit, onClose, 
                     <div>
                       <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Disciplinas Técnicas</p>
                       <div className="grid grid-cols-2 gap-2">
-                        {['Elétrica', 'Hidráulica', 'HVAC', 'Incêndio', 'Sistemas Eletrônicos'].map(disc => (
+                        {['Elétrica', 'Hidráulica', 'HVAC', 'Incêndio', 'Sistemas Eletrônicos', ...(formData.tipo_empreendimento_checklist === 'Residencial' ? ['Gás'] : [])].map(disc => (
                           <div key={disc} className="flex items-center gap-2">
                             <Checkbox
                               id={`disc-${disc}`}
