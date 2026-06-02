@@ -1450,9 +1450,6 @@ export const ITEMS_GAS_RESIDENCIAL = [
   { secao: '2. INSTALAÇÕES DE GÁS COMBUSTÍVEL', numero_item: '2.10', descricao: 'Detalhes das suportações.' },
 ];
 
-// ─── SDAI - RESIDENCIAL ───────────────────────────────────────────────────────
-export const ITEMS_SDAI_RESIDENCIAL = ITEMS_SISTEMAS_ELETRONICOS_RESIDENCIAL;
-
 // ─── MAP: disciplina + tipo_empreendimento → template ────────────────────────
 const TEMPLATES_DISCIPLINA = {
   'Elétrica': {
@@ -1486,9 +1483,6 @@ const TEMPLATES_DISCIPLINA = {
   },
   'Gás': {
     'Residencial': ITEMS_GAS_RESIDENCIAL,
-  },
-  'SDAI': {
-    'Residencial': ITEMS_SDAI_RESIDENCIAL,
   },
 };
 
