@@ -67,20 +67,23 @@ export default function ChecklistPlanejamentoPage() {
     
     if (!window.confirm(`Tem certeza que deseja excluir o checklist "${selectedChecklist.tipo}" e todos os seus itens?`)) return;
     
-    try {
-      // Excluir todos os itens em paralelo
-      await Promise.all(items.map(item =>
-        base44.entities.ChecklistItem.delete(item.id).catch(() => {})
-      ));
-      // Excluir o checklist
-      await base44.entities.ChecklistPlanejamento.delete(selectedChecklist.id);
-      
-      setSelectedChecklist(null);
-      await queryClient.invalidateQueries(['checklists']);
-    } catch (error) {
+    // Optimistic: remove da UI imediatamente
+    const checklistId = selectedChecklist.id;
+    const itemsToDelete = [...items];
+    setSelectedChecklist(null);
+    queryClient.setQueryData(['checklists'], (old) => (old || []).filter(c => c.id !== checklistId));
+
+    // Deletar em background
+    Promise.all(itemsToDelete.map(item =>
+      base44.entities.ChecklistItem.delete(item.id).catch(() => {})
+    )).then(() =>
+      base44.entities.ChecklistPlanejamento.delete(checklistId)
+    ).then(() => {
+      queryClient.invalidateQueries(['checklists']);
+    }).catch((error) => {
       console.error('Erro ao excluir checklist:', error);
-      alert('Erro ao excluir checklist');
-    }
+      queryClient.invalidateQueries(['checklists']);
+    });
   };
 
   const handleLimparItens = async () => {
