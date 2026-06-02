@@ -82,6 +82,27 @@ export default function NovoPlanejamentoModal({
 
   // --- Lógica Comum e de Efeitos ---
 
+  const DISCIPLINA_ORDER = ['Elétrica', 'Hidráulica', 'HVAC', 'Incêndio', 'SPDA'];
+
+  const documentosOrdenados = useMemo(() => {
+    if (!documentos || documentos.length === 0) return [];
+    return [...documentos].sort((a, b) => {
+      // 1. Ordenar por disciplina principal na ordem definida
+      const discA = (a.disciplinas && a.disciplinas[0]) || a.disciplina || '';
+      const discB = (b.disciplinas && b.disciplinas[0]) || b.disciplina || '';
+      const idxA = DISCIPLINA_ORDER.findIndex(d => discA.toLowerCase().includes(d.toLowerCase()));
+      const idxB = DISCIPLINA_ORDER.findIndex(d => discB.toLowerCase().includes(d.toLowerCase()));
+      const orderA = idxA === -1 ? DISCIPLINA_ORDER.length : idxA;
+      const orderB = idxB === -1 ? DISCIPLINA_ORDER.length : idxB;
+      if (orderA !== orderB) return orderA - orderB;
+      // 2. Dentro da mesma disciplina, ordenar por número do documento
+      const numA = Number(a.numero) || 0;
+      const numB = Number(b.numero) || 0;
+      if (numA !== numB) return numA - numB;
+      return (a.numero || '').localeCompare(b.numero || '');
+    });
+  }, [documentos]);
+
   // **NOVO**: Ordenar empreendimentos alfabeticamente por nome
   const empreendimentosOrdenados = useMemo(() => {
     if (!empreendimentos) return [];
@@ -1212,12 +1233,12 @@ export default function NovoPlanejamentoModal({
                         <SelectValue placeholder={documentoEmpreendimentoId ? "Selecione um documento" : "Selecione um empreendimento primeiro"} />
                       </SelectTrigger>
                       <SelectContent>
-                        {documentos.length > 0 ? (
-                          documentos.map(doc => (
+                        {documentosOrdenados.length > 0 ? (
+                          documentosOrdenados.map(doc => (
                             <SelectItem key={doc.id} value={doc.id}>
                               <div className="flex flex-col items-start text-left">
                                 <span className="font-medium">{doc.numero || 'Sem número'} - {doc.arquivo}</span>
-                                <span className="text-xs text-gray-500">{doc.disciplina}</span>
+                                <span className="text-xs text-gray-500">{(doc.disciplinas && doc.disciplinas[0]) || doc.disciplina}</span>
                               </div>
                             </SelectItem>
                           ))
