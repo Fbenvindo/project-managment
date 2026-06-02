@@ -139,11 +139,15 @@ export default function ChecklistPlanejamentoPage() {
     itemsPorSecao[secao].sort(compareNumero);
   });
 
-  // Ordenar as seções pela parte numérica inicial (ex: "1. Memorial" < "2. ..." < "11. ...")
+  // Ordenar seções: extrai o número inicial do nome (ex: "11. SISTEMA..." → 11), fallback alfabético
+  const getSecaoNumero = (secao) => {
+    const match = String(secao).match(/^(\d+)/);
+    return match ? parseInt(match[1], 10) : 9999;
+  };
   const secoesOrdenadas = Object.keys(itemsPorSecao).sort((a, b) => {
-    const numA = parseFloat(a) || 0;
-    const numB = parseFloat(b) || 0;
-    if (numA !== numB) return numA - numB;
+    const na = getSecaoNumero(a);
+    const nb = getSecaoNumero(b);
+    if (na !== nb) return na - nb;
     return a.localeCompare(b, 'pt-BR');
   });
 
