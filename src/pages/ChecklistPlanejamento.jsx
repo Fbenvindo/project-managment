@@ -68,14 +68,10 @@ export default function ChecklistPlanejamentoPage() {
     if (!window.confirm(`Tem certeza que deseja excluir o checklist "${selectedChecklist.tipo}" e todos os seus itens?`)) return;
     
     try {
-      // Excluir todos os itens primeiro
-      for (const item of items) {
-        try {
-          await base44.entities.ChecklistItem.delete(item.id);
-        } catch (err) {
-          if (!err.message?.includes('Not found')) throw err;
-        }
-      }
+      // Excluir todos os itens em paralelo
+      await Promise.all(items.map(item =>
+        base44.entities.ChecklistItem.delete(item.id).catch(() => {})
+      ));
       // Excluir o checklist
       await base44.entities.ChecklistPlanejamento.delete(selectedChecklist.id);
       
@@ -93,14 +89,9 @@ export default function ChecklistPlanejamentoPage() {
     if (!window.confirm(`Tem certeza que deseja excluir todos os itens deste checklist?`)) return;
     
     try {
-      // Excluir todos os itens
-      for (const item of items) {
-        try {
-          await base44.entities.ChecklistItem.delete(item.id);
-        } catch (err) {
-          if (!err.message?.includes('Not found')) throw err;
-        }
-      }
+      await Promise.all(items.map(item =>
+        base44.entities.ChecklistItem.delete(item.id).catch(() => {})
+      ));
       
       await queryClient.invalidateQueries(['checklist-items', selectedChecklist?.id]);
     } catch (error) {
