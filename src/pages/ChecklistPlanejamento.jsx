@@ -116,8 +116,27 @@ export default function ChecklistPlanejamentoPage() {
        return acc;
      }, {});
 
+  // Ordenar itens dentro de cada seção numericamente pelo numero_item (ex: 1.1, 1.2, 1.10)
+  const parseNumero = (n) => String(n || '').split('.').map(p => Number(p) || 0);
+  const compareNumero = (a, b) => {
+    const na = parseNumero(a.numero_item);
+    const nb = parseNumero(b.numero_item);
+    for (let i = 0; i < Math.max(na.length, nb.length); i++) {
+      const diff = (na[i] || 0) - (nb[i] || 0);
+      if (diff !== 0) return diff;
+    }
+    return 0;
+  };
   Object.keys(itemsPorSecao).forEach(secao => {
-    itemsPorSecao[secao].sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+    itemsPorSecao[secao].sort(compareNumero);
+  });
+
+  // Ordenar as seções pela parte numérica inicial (ex: "1. Memorial" < "2. ..." < "11. ...")
+  const secoesOrdenadas = Object.keys(itemsPorSecao).sort((a, b) => {
+    const numA = parseFloat(a) || 0;
+    const numB = parseFloat(b) || 0;
+    if (numA !== numB) return numA - numB;
+    return a.localeCompare(b, 'pt-BR');
   });
 
   return (
@@ -225,8 +244,8 @@ export default function ChecklistPlanejamentoPage() {
                   </Button>
                 </div>
 
-                {Object.keys(itemsPorSecao).length > 0 ? (
-                  Object.entries(itemsPorSecao).map(([secao, secaoItems]) => (
+                {secoesOrdenadas.length > 0 ? (
+                  secoesOrdenadas.map((secao) => { const secaoItems = itemsPorSecao[secao]; return (
                     <ChecklistTable
                       key={secao}
                       secao={secao}
@@ -235,7 +254,7 @@ export default function ChecklistPlanejamentoPage() {
                       onUpdate={handleItemsUpdated}
                       empreendimento={empreendimentos.find(e => e.id === selectedChecklist.empreendimento_id) || null}
                     />
-                  ))
+                  ); })
                 ) : (
                   <Card>
                     <CardContent className="py-12 text-center">
