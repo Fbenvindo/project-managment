@@ -42,7 +42,7 @@ export default function ChecklistPlanejamentoPage() {
       if (!selectedChecklist?.id) return [];
       const data = await base44.entities.ChecklistItem.filter({
         checklist_id: selectedChecklist.id
-      });
+      }, 'ordem', 500);
       return data || [];
     },
     enabled: !!selectedChecklist?.id
