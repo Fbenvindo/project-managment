@@ -115,14 +115,11 @@ export default function ChecklistPlanejamentoPage() {
     c.numero_os?.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
-  const itemsPorSecao = items
-    .reduce((acc, item) => {
-       if (!acc[item.secao]) {
-         acc[item.secao] = [];
-       }
-       acc[item.secao].push(item);
-       return acc;
-     }, {});
+  // Extrai o número inicial do nome da seção (ex: "11. SISTEMA..." → 11)
+  const getSecaoNumero = (secao) => {
+    const match = String(secao).match(/^(\d+)/);
+    return match ? parseInt(match[1], 10) : 9999;
+  };
 
   // Ordenar itens dentro de cada seção numericamente pelo numero_item (ex: 1.1, 1.2, 1.10)
   const parseNumero = (n) => String(n || '').split('.').map(p => Number(p) || 0);
@@ -135,15 +132,19 @@ export default function ChecklistPlanejamentoPage() {
     }
     return 0;
   };
+
+  const itemsPorSecao = [...items]
+    .sort((a, b) => getSecaoNumero(a.secao || '') - getSecaoNumero(b.secao || ''))
+    .reduce((acc, item) => {
+       if (!acc[item.secao]) acc[item.secao] = [];
+       acc[item.secao].push(item);
+       return acc;
+     }, {});
+
   Object.keys(itemsPorSecao).forEach(secao => {
     itemsPorSecao[secao].sort(compareNumero);
   });
 
-  // Ordenar seções: extrai o número inicial do nome (ex: "11. SISTEMA..." → 11), fallback alfabético
-  const getSecaoNumero = (secao) => {
-    const match = String(secao).match(/^(\d+)/);
-    return match ? parseInt(match[1], 10) : 9999;
-  };
   const secoesOrdenadas = Object.keys(itemsPorSecao).sort((a, b) => {
     const na = getSecaoNumero(a);
     const nb = getSecaoNumero(b);
