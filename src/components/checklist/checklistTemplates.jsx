@@ -1426,6 +1426,30 @@ export const ITEMS_SISTEMAS_RESIDENCIAL = [
   { secao: '6. INSTALAÇÕES DE TELECOMUNICAÇÕES - ÁREAS COMUNS', numero_item: '6.10', descricao: 'Detalhes gerais e específicos das instalações.' },
 ];
 
+// ─── GÁS - RESIDENCIAL ───────────────────────────────────────────────────────
+export const ITEMS_GAS_RESIDENCIAL = [
+  // 1. MEMORIAL DESCRITIVO
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.1', descricao: 'Descrição técnica dos conceitos e parâmetros utilizados na conceituação dos projetos para redes de gás.' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.2', descricao: 'Apresentação das normas técnicas, bem como das boas práticas de instalações a serem observadas pela instaladora.' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.3', descricao: 'Critérios de sinalização, suportações e fixações.' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.4', descricao: "Descrição dos testes, comissionamentos, relatórios, start-up's, treinamentos, as built e data-book para recebimento das instalações." },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.5', descricao: 'Nota de acompanhamento do processo junto às concessionárias pela instaladora até a ligação final da obra.' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.6', descricao: 'Especificação técnicas de tubulações, conexões, válvulas, registros, grelhas e ralos para captação, canaletas, suportações e afins para as redes de gás.' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.7', descricao: 'Especificação de pintura e sinalizações das tubulações.' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.8', descricao: 'Lista de Fornecedores - VENDOR LIST.' },
+  // 2. INSTALAÇÕES DE GÁS COMBUSTÍVEL
+  { secao: '2. INSTALAÇÕES DE GÁS COMBUSTÍVEL', numero_item: '2.1', descricao: 'Diretriz de fornecimento de gás natural emitido pelo concessionário.' },
+  { secao: '2. INSTALAÇÕES DE GÁS COMBUSTÍVEL', numero_item: '2.2', descricao: 'Posicionamento de entrada de gás natural e do medidor geral conforme padrão concessionária. Ou central de abastecimento de gás natural, compatibilizado com fornecedor local.' },
+  { secao: '2. INSTALAÇÕES DE GÁS COMBUSTÍVEL', numero_item: '2.3', descricao: 'Definição do critério de medições para rateios internos.' },
+  { secao: '2. INSTALAÇÕES DE GÁS COMBUSTÍVEL', numero_item: '2.4', descricao: 'Consideração de proteção mecânica nos trechos de descida de tubulações aparentes.' },
+  { secao: '2. INSTALAÇÕES DE GÁS COMBUSTÍVEL', numero_item: '2.5', descricao: 'Validação e detalhamento para reguladores de gás e alimentação dos pontos de consumo.' },
+  { secao: '2. INSTALAÇÕES DE GÁS COMBUSTÍVEL', numero_item: '2.6', descricao: 'Vistas isométricas das tubulações nas áreas com pontos de consumo, indicando o dimensionamento da rede de altura dos pontos.' },
+  { secao: '2. INSTALAÇÕES DE GÁS COMBUSTÍVEL', numero_item: '2.7', descricao: 'Análise das tubulações passando por áreas enclausuradas com detalhamento de encamisamento e/ou ventilações necessárias.' },
+  { secao: '2. INSTALAÇÕES DE GÁS COMBUSTÍVEL', numero_item: '2.8', descricao: 'Validação das redes de distribuição em esquema vertical ou fluxograma, indicando os diâmetros de cada trecho e as indicações de prumadas.' },
+  { secao: '2. INSTALAÇÕES DE GÁS COMBUSTÍVEL', numero_item: '2.9', descricao: 'Detalhe de alimentação de gás central de aquecimento e pontos de cozinha.' },
+  { secao: '2. INSTALAÇÕES DE GÁS COMBUSTÍVEL', numero_item: '2.10', descricao: 'Detalhes das suportações.' },
+];
+
 // ─── MAP: disciplina + tipo_empreendimento → template ────────────────────────
 const TEMPLATES_DISCIPLINA = {
   'Elétrica': {
@@ -1456,6 +1480,9 @@ const TEMPLATES_DISCIPLINA = {
   },
   'SPDA': {
     'Residencial': ITEMS_SPDA_RESIDENCIAL,
+  },
+  'Gás': {
+    'Residencial': ITEMS_GAS_RESIDENCIAL,
   },
 };
 
