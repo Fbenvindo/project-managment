@@ -167,51 +167,22 @@ export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreen
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Tipo *</Label>
-              <Select
-                value={formData.tipo}
-                onValueChange={(value) => setFormData({ ...formData, tipo: value })}
-                required
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {tiposDisponiveis.map(tipo => (
-                    <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label>Empreendimento</Label>
-              <Select
-                value={formData.empreendimento_id}
-                onValueChange={handleEmpreendimentoChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione (opcional)" />
-                </SelectTrigger>
-                <SelectContent>
-                  {empreendimentos.map((emp) => (
-                    <SelectItem key={emp.id} value={emp.id}>
-                      {emp.nome}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-
-
-
-          </div>
-
-          <div className="bg-blue-50 border border-blue-200 rounded p-3 text-sm text-blue-800">
-            As colunas de STATUS serão geradas automaticamente com base nos documentos/folhas cadastrados no empreendimento.
+          <div>
+            <Label>Tipo *</Label>
+            <Select
+              value={formData.tipo}
+              onValueChange={(value) => setFormData({ ...formData, tipo: value })}
+              required
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ALL_TIPOS.map(tipo => (
+                  <SelectItem key={tipo} value={tipo}>{tipo}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="flex justify-end gap-2">
