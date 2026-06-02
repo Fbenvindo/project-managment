@@ -834,7 +834,12 @@ export default function NovoPlanejamentoModal({
 
       const tempoTotal = Number(documentoFormData.tempo_planejado);
       const allSelectedExecutors = documentoFormData.executores;
-      const planejamentosExistentes = await PlanejamentoDocumento.filter({ executor_principal: { '$in': allSelectedExecutors } });
+      // Buscar carga de AMBAS as entidades para não ignorar atividades do outro tipo
+      const [planosAtivExistentes, planosDocExistentes] = await Promise.all([
+        PlanejamentoAtividade.filter({ executor_principal: { '$in': allSelectedExecutors } }),
+        PlanejamentoDocumento.filter({ executor_principal: { '$in': allSelectedExecutors } }),
+      ]);
+      const planejamentosExistentes = [...(planosAtivExistentes || []), ...(planosDocExistentes || [])];
 
       const cargaPorExecutor = {};
       allSelectedExecutors.forEach(email => { cargaPorExecutor[email] = {}; });
