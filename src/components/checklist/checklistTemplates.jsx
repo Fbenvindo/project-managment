@@ -1144,6 +1144,67 @@ export const ITEMS_INCENDIO_RESIDENCIAL = [
   { secao: '3. INSTALAÇÕES DE EXTINTORES', numero_item: '3.1', descricao: 'Detalhamento de instalação dos extintores portáteis com altura máxima da alça de 160cm do piso e do fundo de no mínimo 10cm.' },
 ];
 
+export const ITEMS_INCENDIO_COMERCIAL = [
+  // 1. MEMORIAL DESCRITIVO
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.1', descricao: 'Descrição técnica dos conceitos e parâmetros utilizados na conceituação dos projetos para redes de hidrantes.' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.2', descricao: 'Descrição técnica dos conceitos e parâmetros utilizados na conceituação dos projetos para chuveiros automáticos.' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.3', descricao: 'Descrição técnica dos conceitos e parâmetros utilizados na conceituação dos projetos para redes de extintores.' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.4', descricao: 'Validação do conceito de atendimento do projeto conforme legislação local, NFPA ou NF Global.' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.5', descricao: 'Apresentação das normas técnicas.' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.6', descricao: 'Apresentação das boas práticas de instalações a serem observadas pelos instaladores.' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.7', descricao: 'Indicação no memorial dos chuveiros sobressalentes em estoque e o place para retirada dos chuveiros.' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.8', descricao: 'Descrição dos testes e comissionamentos exigidos para cada instalação, bem como os documentos a serem entregues pelo instalador ao final da obra.' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.9', descricao: 'Apresentação de projeto As Built, prevendo o acompanhando das mudanças para validação do mesmo ao final da obra.' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.10', descricao: 'Nota de acompanhamento do processo junto ao corpo de bombeiros local pela instaladora até a ligação final da obra.' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.11', descricao: 'Critérios para acústica e vibração nas salas técnicas e tubulações' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.12', descricao: 'Critérios para compartimentação de ambientes nos trechos de passagem das instalações e áreas técnicas' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.13', descricao: 'Validação dos cálculos de volume do reservatório de incêndio.' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.14', descricao: 'Especificação técnicas de tubulações, conexões, válvulas, redutoras, registros, suportações e afins para as redes de hidrantes' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.15', descricao: 'Especificação técnicas de tubulações, conexões, válvulas, registros, suportações e afins para as redes de chuveiros automáticos' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.16', descricao: 'Especificação técnicas de extintores em geral' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.17', descricao: 'Especificação para sistemas de bombeamento para hidrantes e chuveiros automáticos.' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.18', descricao: 'Especificação de pintura e sinalizações das tubulações' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.19', descricao: 'Compatibilização dos equipamentos que possuirão interface com automação, determinando os protocolos utilizados e os dados disponíveis para gerenciamento.' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.20', descricao: 'Lista de Fornecedores - VENDOR LIST' },
+  { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.21', descricao: 'Suportações e fixações' },
+  // 2. INSTALAÇÕES DE HIDRANTES
+  { secao: '2. INSTALAÇÕES DE HIDRANTES', numero_item: '2.1', descricao: 'Validação das áreas de cobertura por hidrantes bem como os tipos de hidrantes adotados' },
+  { secao: '2. INSTALAÇÕES DE HIDRANTES', numero_item: '2.2', descricao: 'Definição do posicionamento dos hidrantes nos pavimentos respeitando a distância mínima do acesso principal e ao raio de cobertura de cada hidrante' },
+  { secao: '2. INSTALAÇÕES DE HIDRANTES', numero_item: '2.3', descricao: 'Definição do registro de recalque locado junto a implantação do empreendimento' },
+  { secao: '2. INSTALAÇÕES DE HIDRANTES', numero_item: '2.4', descricao: 'Definição das zonas de pressão para atendimento da rede de hidrantes' },
+  { secao: '2. INSTALAÇÕES DE HIDRANTES', numero_item: '2.5', descricao: 'Validação da pressão no ponto mais desfavorável e no ponto mais favorável.' },
+  { secao: '2. INSTALAÇÕES DE HIDRANTES', numero_item: '2.6', descricao: 'Detalhamento das casas de bombas indicando os tamanhos reais das bombas, bem como a indicação de todos os equipamentos, válvulas, registros, juntas antivibratorias, cabeçotes de teste e conjunto de automação.' },
+  { secao: '2. INSTALAÇÕES DE HIDRANTES', numero_item: '2.7', descricao: 'Detalhamento em planta ou corte das tubulações que compõem os reservatórios com indicação das alturas da conexões, para recalque, sucção, vasos comunicantes.' },
+  { secao: '2. INSTALAÇÕES DE HIDRANTES', numero_item: '2.8', descricao: "Detalhamento em planta e corte da prumada, apresentando detalhamento da prumada, hidrante, VPP (quando aplicável) e pontos de inspeção para acesso ao shaft" },
+  { secao: '2. INSTALAÇÕES DE HIDRANTES', numero_item: '2.9', descricao: 'Validação das redes de distribuição em esquema vertical, indicando os diâmetros de cada trecho e as indicações de prumadas' },
+  { secao: '2. INSTALAÇÕES DE HIDRANTES', numero_item: '2.10', descricao: 'Consideração de proteção mecânica nos trechos de descida de tubulações aparentes' },
+  { secao: '2. INSTALAÇÕES DE HIDRANTES', numero_item: '2.11', descricao: 'Vista isométrica com o dimensionamento das tubulações.' },
+  { secao: '2. INSTALAÇÕES DE HIDRANTES', numero_item: '2.12', descricao: 'Detalhes das suportações' },
+  { secao: '2. INSTALAÇÕES DE HIDRANTES', numero_item: '2.13', descricao: 'Validação com automação as interfaces entre válvulas de bloqueio e bombas que serão monitorados' },
+  // 3. INSTALAÇÕES DE SPRINKLERS
+  { secao: '3. INSTALAÇÕES DE SPRINKLERS', numero_item: '3.1', descricao: 'Validação dos riscos adotados, área de cobertura dos chuveiros e riscos e tipos de chuveiros adotados.' },
+  { secao: '3. INSTALAÇÕES DE SPRINKLERS', numero_item: '3.2', descricao: 'Definição do posicionamento dos chuveiros automáticos nos pavimentos respeitando a distância mínima e máxima entre chuveiros e entre paredes.' },
+  { secao: '3. INSTALAÇÕES DE SPRINKLERS', numero_item: '3.3', descricao: 'Análise de destruições de chuveiros em ambientes sem forro' },
+  { secao: '3. INSTALAÇÕES DE SPRINKLERS', numero_item: '3.4', descricao: 'Validação de necessidade de áreas com chuveiros no entreforro' },
+  { secao: '3. INSTALAÇÕES DE SPRINKLERS', numero_item: '3.5', descricao: 'Definição do registro de recalque locado junto a implantação do empreendimento' },
+  { secao: '3. INSTALAÇÕES DE SPRINKLERS', numero_item: '3.6', descricao: 'Definição das zonas de pressão para atendimento da rede de chuveiros automáticos.' },
+  { secao: '3. INSTALAÇÕES DE SPRINKLERS', numero_item: '3.7', descricao: 'Definição do conceito de VGA e controles setoriais respeitando os máximos de cobertura por pavimento VGA.' },
+  { secao: '3. INSTALAÇÕES DE SPRINKLERS', numero_item: '3.8', descricao: 'Detalhamento das casas de bombas indicando os tamanhos reais das bombas, bem como a indicação de todos os equipamentos, válvulas, registros, juntas antivibratorias, cabeçotes de teste e conjunto de automação.' },
+  { secao: '3. INSTALAÇÕES DE SPRINKLERS', numero_item: '3.9', descricao: 'Detalhamento da sucção do sistema de incêndio ao reservatório, apresentando disposição do reservatório ou poço de captação.' },
+  { secao: '3. INSTALAÇÕES DE SPRINKLERS', numero_item: '3.10', descricao: 'Detalhamento em planta ou corte das tubulações que compõem os reservatórios com indicação das alturas das conexões, para recalque, sucção, vasos comunicantes.' },
+  { secao: '3. INSTALAÇÕES DE SPRINKLERS', numero_item: '3.11', descricao: 'Validação das redes de distribuição em esquema vertical, indicando os diâmetros de cada trecho e as indicações de prumadas' },
+  { secao: '3. INSTALAÇÕES DE SPRINKLERS', numero_item: '3.12', descricao: 'Validação das redes de distribuição nas plantas, indicando os diâmetros e cotas de instalação' },
+  { secao: '3. INSTALAÇÕES DE SPRINKLERS', numero_item: '3.13', descricao: 'Detalhes de instalações dos tipos de chuveiros propostos.' },
+  { secao: '3. INSTALAÇÕES DE SPRINKLERS', numero_item: '3.14', descricao: 'Detalhes das suportações' },
+  { secao: '3. INSTALAÇÕES DE SPRINKLERS', numero_item: '3.15', descricao: 'Validação com automação as interfaces entre válvulas de bloqueio e bombas que serão monitorados' },
+  // 4. INSTALAÇÕES DE EXTINTORES
+  { secao: '4. INSTALAÇÕES DE EXTINTORES', numero_item: '4.1', descricao: 'Validação de extintor a 5 metros do acesso principal dos pavimentos e áreas de risco, bem como área de cobertura individual.' },
+  { secao: '4. INSTALAÇÕES DE EXTINTORES', numero_item: '4.2', descricao: 'Instalação de no mínimo 2 unidades extintoras por pavimento, sendo 1 A e outra B ou C, ou duas ABC' },
+  { secao: '4. INSTALAÇÕES DE EXTINTORES', numero_item: '4.3', descricao: 'Instalação de extintores do tipo C em casa de caldeira, casa de bombas, casa de força elétrica, casa máquinas, elevador (casa de máquinas), ponte rolante, escada rolante (casa de máquinas), salas de telefonia, gases ou líquidos combustíveis ou inflamáveis e outros riscos semelhantes, instalados do lado externo.' },
+  { secao: '4. INSTALAÇÕES DE EXTINTORES', numero_item: '4.4', descricao: 'Instalação de extintores sobre rodas para heliponto e área de tanque de óleo diesel' },
+  { secao: '4. INSTALAÇÕES DE EXTINTORES', numero_item: '4.5', descricao: 'Detalhamento de instalação dos extintores portáteis com altura máxima da alça de 160cm do piso e do fundo de no mínimo 10cm.' },
+];
+
 export const ITEMS_SISTEMAS_ELETRONICOS_RESIDENCIAL = [
   // 1. MEMORIAL DESCRITIVO
   { secao: '1. MEMORIAL DESCRITIVO', numero_item: '1.1', descricao: 'Descrição técnica e parâmetros utilizados na conceituação dos projetos para Sistema de Detecção e Alarme de Incêndio - SDAI' },
@@ -1383,6 +1444,8 @@ const TEMPLATES_DISCIPLINA = {
     'Residencial': ITEMS_HVAC_RESIDENCIAL,
   },
   'Incêndio': {
+    'Comercial': ITEMS_INCENDIO_COMERCIAL,
+    'Galpão Logístico': ITEMS_INCENDIO_COMERCIAL,
     'Residencial': ITEMS_INCENDIO_RESIDENCIAL,
   },
   'Sistemas Eletrônicos': {
