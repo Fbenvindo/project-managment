@@ -134,7 +134,11 @@ export default function NovoChecklistModal({ isOpen, onClose, onSuccess, empreen
           ordem: i,
           status_por_periodo: {}
         }));
-        await base44.entities.ChecklistItem.bulkCreate(itemsToCreate);
+        // Criar em lotes de 50 para evitar limite da API
+        const BATCH_SIZE = 50;
+        for (let i = 0; i < itemsToCreate.length; i += BATCH_SIZE) {
+          await base44.entities.ChecklistItem.bulkCreate(itemsToCreate.slice(i, i + BATCH_SIZE));
+        }
       } else {
         await base44.entities.ChecklistItem.create({
           checklist_id: novoChecklist.id,
