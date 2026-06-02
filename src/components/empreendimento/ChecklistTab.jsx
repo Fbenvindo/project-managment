@@ -28,7 +28,7 @@ export default function ChecklistTab({ empreendimento }) {
     queryKey: ['checklist-items', selectedChecklist?.id],
     queryFn: async () => {
       if (!selectedChecklist?.id) return [];
-      const data = await base44.entities.ChecklistItem.filter({ checklist_id: selectedChecklist.id });
+      const data = await base44.entities.ChecklistItem.filter({ checklist_id: selectedChecklist.id }, 'ordem', 500);
       return data || [];
     },
     enabled: !!selectedChecklist?.id
@@ -75,14 +75,39 @@ export default function ChecklistTab({ empreendimento }) {
     await queryClient.invalidateQueries(['checklists', empreendimento?.id]);
   };
 
-  const itemsPorSecao = items.reduce((acc, item) => {
-    if (!acc[item.secao]) acc[item.secao] = [];
-    acc[item.secao].push(item);
-    return acc;
-  }, {});
+  const getSecaoNumero = (secao) => {
+    const match = String(secao).match(/^(\d+)/);
+    return match ? parseInt(match[1], 10) : 9999;
+  };
+
+  const parseNumero = (n) => String(n || '').split('.').map(p => Number(p) || 0);
+  const compareNumero = (a, b) => {
+    const na = parseNumero(a.numero_item);
+    const nb = parseNumero(b.numero_item);
+    for (let i = 0; i < Math.max(na.length, nb.length); i++) {
+      const diff = (na[i] || 0) - (nb[i] || 0);
+      if (diff !== 0) return diff;
+    }
+    return 0;
+  };
+
+  const itemsPorSecao = [...items]
+    .sort((a, b) => getSecaoNumero(a.secao || '') - getSecaoNumero(b.secao || ''))
+    .reduce((acc, item) => {
+      if (!acc[item.secao]) acc[item.secao] = [];
+      acc[item.secao].push(item);
+      return acc;
+    }, {});
 
   Object.keys(itemsPorSecao).forEach(secao => {
-    itemsPorSecao[secao].sort((a, b) => (a.ordem || 0) - (b.ordem || 0));
+    itemsPorSecao[secao].sort(compareNumero);
+  });
+
+  const secoesOrdenadas = Object.keys(itemsPorSecao).sort((a, b) => {
+    const na = getSecaoNumero(a);
+    const nb = getSecaoNumero(b);
+    if (na !== nb) return na - nb;
+    return a.localeCompare(b, 'pt-BR');
   });
 
   return (
@@ -156,12 +181,12 @@ export default function ChecklistTab({ empreendimento }) {
                 </Button>
               </div>
 
-              {Object.keys(itemsPorSecao).length > 0 ? (
-                Object.entries(itemsPorSecao).map(([secao, secaoItems]) => (
+              {secoesOrdenadas.length > 0 ? (
+                secoesOrdenadas.map((secao) => (
                   <ChecklistTable
                     key={secao}
                     secao={secao}
-                    items={secaoItems}
+                    items={itemsPorSecao[secao]}
                     checklist={selectedChecklist}
                     documentos={documentos}
                     onUpdate={handleItemsUpdated}
