@@ -6,6 +6,7 @@ import VisualEditAgent from '@/lib/VisualEditAgent'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import DocumentacaoTecnica from './pages/DocumentacaoTecnica';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -60,6 +61,11 @@ const AuthenticatedApp = () => {
           }
         />
       ))}
+      <Route path="/DocumentacaoTecnica" element={
+        <LayoutWrapper currentPageName="DocumentacaoTecnica">
+          <DocumentacaoTecnica />
+        </LayoutWrapper>
+      } />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
   );
