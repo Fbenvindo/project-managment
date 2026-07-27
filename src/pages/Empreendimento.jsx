@@ -64,20 +64,10 @@ export default function EmpreendimentoPage() {
     new URLSearchParams(location.search).get("id"), [location.search]
   );
 
-  const { user } = useContext(ActivityTimerContext);
-  const hasAccessToGestao = user && (
-    user.role === 'admin' ||
-    user.perfil === 'lider' ||
-    user.perfil === 'direcao'
-  );
+  const { user, perfilAtual, isAdmin } = useContext(ActivityTimerContext);
+  const hasAccessToGestao = isAdmin || perfilAtual === 'lider' || perfilAtual === 'direcao';
 
-  const canEdit = user && (
-    user.role === 'admin' ||
-    user.perfil === 'lider' ||
-    user.perfil === 'coordenador' ||
-    user.perfil === 'gestao' ||
-    user.perfil === 'direcao'
-  );
+  const canEdit = isAdmin || perfilAtual === 'lider' || perfilAtual === 'coordenador' || perfilAtual === 'gestao' || perfilAtual === 'direcao';
 
   const visibleTabsForUser = useMemo(() => {
     if (canEdit) {
