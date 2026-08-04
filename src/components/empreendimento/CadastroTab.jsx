@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2, Save, Loader2, Upload, Download, Copy, ArrowDown, ArrowRight, Wand2, ChevronRight, ChevronLeft, GripHorizontal } from "lucide-react";
+import { Plus, Trash2, Save, Loader2, Upload, Download, Copy, ArrowDown, ArrowRight, Wand2, ChevronRight, ChevronLeft, ChevronDown, GripHorizontal } from "lucide-react";
 import { DataCadastro, Documento } from "@/entities/all";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { format } from "date-fns";
@@ -47,6 +47,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   const [massEditRevisao, setMassEditRevisao] = useState('');
   const [massEditData, setMassEditData] = useState('');
   const [etapasMinimizadas, setEtapasMinimizadas] = useState({});
+  const [disciplinasRecolhadas, setDisciplinasRecolhadas] = useState(new Set());
   const [linhasModificadas, setLinhasModificadas] = useState(new Set());
   const [etapasEfetivas, setEtapasEfetivas] = useState([]);
   const [editingRevisao, setEditingRevisao] = useState(null);
@@ -984,14 +985,26 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
               ) : (
                 linhasPorDisciplina.map(([disciplina, linhasDaDisciplina]) => (
                   <div key={disciplina}>
-                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-300 px-2 flex items-center" style={{ height: '44px' }}>
+                    <div
+                      className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-300 px-2 flex items-center cursor-pointer hover:bg-blue-100 transition-colors select-none"
+                      style={{ height: '44px' }}
+                      onClick={() => {
+                        const novo = new Set(disciplinasRecolhadas);
+                        if (novo.has(disciplina)) novo.delete(disciplina);
+                        else novo.add(disciplina);
+                        setDisciplinasRecolhadas(novo);
+                      }}
+                    >
                       <div className="flex items-center gap-1.5 w-full">
                         <div className="w-1 h-5 bg-blue-600 rounded-full"></div>
+                        {disciplinasRecolhadas.has(disciplina)
+                          ? <ChevronRight className="w-4 h-4 text-gray-500" />
+                          : <ChevronDown className="w-4 h-4 text-gray-500" />}
                         <h3 className="font-semibold text-sm text-gray-800">{disciplina}</h3>
                         <Badge variant="secondary" className="ml-1 text-xs px-1.5 py-0">{linhasDaDisciplina.length}</Badge>
                       </div>
                     </div>
-                    {linhasDaDisciplina.map((linha) => {
+                    {!disciplinasRecolhadas.has(disciplina) && linhasDaDisciplina.map((linha) => {
                       const doc = documentos.find(d => d.id === linha.documento_id);
                       return (
                         <div
@@ -1165,7 +1178,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
                             );
                           })}
                         </div>
-                        {linhasDaDisciplina.map((linha) => {
+                        {!disciplinasRecolhadas.has(disciplina) && linhasDaDisciplina.map((linha) => {
                           const etapasVisiveis = ETAPAS_VIEW.filter(e => !etapasExcluidas.includes(e));
                           return (
                             <div key={linha.id} className="flex border-b border-gray-200 hover:bg-gray-50" style={{ minWidth: `${larguraTotalEtapas}px`, height: '48px' }}>
