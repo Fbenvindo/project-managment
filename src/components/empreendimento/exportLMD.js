@@ -92,11 +92,17 @@ export async function exportarLMD({ empreendimento, documentos, pavimentos, user
     return tipoDoc(a).localeCompare(tipoDoc(b), 'pt-BR', { sensitivity: 'base' });
   });
 
-  // Linha do logo (uma vez no topo, imagem com proporção mantida)
-  const logoRow = ws.addRow(Array(4).fill(''));
-  logoRow.height = logoId ? (logoHpx * 0.75 + 6) : 20;
+  // Logo no topo: ocupa as linhas 1 e 2, colunas A-B (canto superior esquerdo)
+  const logoRow1 = ws.addRow(Array(4).fill(''));
+  const logoRow2 = ws.addRow(Array(4).fill(''));
   if (logoId) {
-    ws.addImage(logoId, { tl: { col: 0, row: logoRow.number - 1 }, ext: { width: logoWpx, height: logoHpx } });
+    const halfPx = logoHpx / 2;
+    logoRow1.height = halfPx * 0.75 + 3;
+    logoRow2.height = halfPx * 0.75 + 3;
+    ws.addImage(logoId, { tl: { col: 0, row: 0 }, ext: { width: logoWpx, height: logoHpx } });
+  } else {
+    logoRow1.height = 20;
+    logoRow2.height = 20;
   }
 
   let firstBlock = true;
