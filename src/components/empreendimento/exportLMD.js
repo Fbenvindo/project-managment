@@ -34,7 +34,7 @@ export async function exportarLMD({ empreendimento, documentos, pavimentos, user
   const arialBold = { name: 'Arial', size: 10, bold: true };
   const labelFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } }; // cinza (rótulos)
   const valueFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } }; // azul claro (valores)
-  const sectionFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDAE3F3' } }; // azul claro (cabeçalhos da tabela)
+  const sectionFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB8CCE4' } }; // azul (seções/cabeçalhos)
   const thinBorder = {
     top: { style: 'thin', color: { argb: 'FF000000' } },
     left: { style: 'thin', color: { argb: 'FF000000' } },
@@ -55,8 +55,8 @@ export async function exportarLMD({ empreendimento, documentos, pavimentos, user
 
   // Logo Interativa (busca e dimensões para manter proporção, sem esticar)
   let logoId = null;
-  const logoHpx = 120;
-  let logoWpx = 480;
+  const logoHpx = 80;
+  let logoWpx = 320;
   try {
     const resp = await fetch(LOGO_URL, { mode: 'cors' });
     if (resp.ok) {
