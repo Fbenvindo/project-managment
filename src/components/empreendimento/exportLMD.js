@@ -58,28 +58,25 @@ export async function exportarLMD({ empreendimento, documentos, pavimentos, user
   const logoHpx = 80;
   let logoWpx = 320;
   try {
-    const dims = await new Promise((resolve) => {
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.onload = () => {
-        try {
-          const canvas = document.createElement('canvas');
-          canvas.width = img.naturalWidth;
-          canvas.height = img.naturalHeight;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0);
-          const dataUrl = canvas.toDataURL('image/png');
-          resolve({ base64: dataUrl.split(',')[1], w: img.naturalWidth, h: img.naturalHeight });
-        } catch (err) { resolve(null); }
-      };
-      img.onerror = () => resolve(null);
-      img.src = LOGO_URL;
-    });
-    if (dims) {
-      logoId = wb.addImage({ base64: dims.base64, extension: 'png' });
+    const resp = await fetch(LOGO_URL, { mode: 'cors' });
+    if (resp.ok) {
+      const blob = await resp.blob();
+      const b64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      const dims = await new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+        img.onerror = () => resolve({ w: 4, h: 1 });
+        img.src = URL.createObjectURL(blob);
+      });
+      logoId = wb.addImage({ base64: b64, extension: 'png' });
       logoWpx = logoHpx * dims.w / dims.h;
     }
-  } catch (e) { logoId = null; }
+  } catch (e) { console.warn('Logo LMD não carregado:', e); logoId = null; }
 
   const borderRow = (row, lastCol = 4) => {
     for (let c = 1; c <= lastCol; c++) row.getCell(c).border = thinBorder;
