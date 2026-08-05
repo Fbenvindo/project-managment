@@ -47,10 +47,10 @@ export async function exportarLMD({ empreendimento, documentos, pavimentos, user
   const wb = new ExcelJS.Workbook();
   const ws = wb.addWorksheet('LMD');
   ws.columns = [
-    { width: 11 },   // DOC
-    { width: 45 },   // PAVIMENTO
-    { width: 30 },   // TIPO
-    { width: 38 }    // ARQUIVO
+    { width: 14.43 },   // DOC
+    { width: 83.71 },   // PAVIMENTO
+    { width: 30.71 },   // TIPO
+    { width: 37.29 }    // ARQUIVO
   ];
 
   // Logo Interativa (busca e dimensões para manter proporção, sem esticar)
