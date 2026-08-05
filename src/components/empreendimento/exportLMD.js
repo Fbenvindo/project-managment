@@ -1,8 +1,7 @@
 // Exportação da planilha LMD no padrão visual Interativa
 import ExcelJS from 'exceljs';
 import { format } from 'date-fns';
-
-const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/577f93874_logo_Interativa_versao_final_sem_fundo_0002.png";
+import { LOGO_INTERATIVA_BASE64, LOGO_INTERATIVA_EXT } from './logoInterativaBase64';
 
 export async function exportarLMD({ empreendimento, documentos, pavimentos, userProfile, user, etapaParaPlanejamento }) {
   // Agrupa documentos por disciplina (cada disciplina = um bloco/seção)
@@ -53,29 +52,19 @@ export async function exportarLMD({ empreendimento, documentos, pavimentos, user
     { width: 37.29 }    // ARQUIVO
   ];
 
-  // Logo Interativa (busca e dimensões para manter proporção, sem esticar)
+  // Logo Interativa (base64 embutido para garantir renderização, com proporção mantida)
   let logoId = null;
-  const logoHpx = 80;
-  let logoWpx = 320;
+  const logoHpx = 90;
+  let logoWpx = 360;
   try {
-    const resp = await fetch(LOGO_URL, { mode: 'cors' });
-    if (resp.ok) {
-      const blob = await resp.blob();
-      const b64 = await new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onload = () => resolve(reader.result.split(',')[1]);
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
-      const dims = await new Promise((resolve) => {
-        const img = new Image();
-        img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
-        img.onerror = () => resolve({ w: 4, h: 1 });
-        img.src = URL.createObjectURL(blob);
-      });
-      logoId = wb.addImage({ base64: b64, extension: 'png' });
-      logoWpx = logoHpx * dims.w / dims.h;
-    }
+    const dims = await new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+      img.onerror = () => resolve({ w: 4, h: 1 });
+      img.src = `data:image/png;base64,${LOGO_INTERATIVA_BASE64}`;
+    });
+    logoId = wb.addImage({ base64: LOGO_INTERATIVA_BASE64, extension: LOGO_INTERATIVA_EXT });
+    logoWpx = logoHpx * dims.w / dims.h;
   } catch (e) { console.warn('Logo LMD não carregado:', e); logoId = null; }
 
   const borderRow = (row, lastCol = 4) => {
