@@ -92,17 +92,17 @@ export async function exportarLMD({ empreendimento, documentos, pavimentos, user
     return tipoDoc(a).localeCompare(tipoDoc(b), 'pt-BR', { sensitivity: 'base' });
   });
 
-  // Linha do logo (uma vez no topo, imagem com proporção mantida)
-  const logoRow = ws.addRow(Array(4).fill(''));
-  logoRow.height = logoId ? (logoHpx * 0.75 + 6) : 20;
-  if (logoId) {
-    ws.addImage(logoId, { tl: { col: 0, row: logoRow.number - 1 }, ext: { width: logoWpx, height: logoHpx } });
-  }
-
   let firstBlock = true;
   Object.entries(grupos).forEach(([disciplina, docs]) => {
     if (!firstBlock) ws.addRow(Array(4).fill(''));
     firstBlock = false;
+
+    // Linha do logo (cabeçalho de cada bloco de disciplina, imagem com proporção mantida)
+    const logoRow = ws.addRow(Array(4).fill(''));
+    logoRow.height = logoId ? (logoHpx * 0.75 + 6) : 20;
+    if (logoId) {
+      ws.addImage(logoId, { tl: { col: 0, row: logoRow.number - 1 }, ext: { width: logoWpx, height: logoHpx } });
+    }
 
     // Rótulos: Cliente / Doc
     const rl1 = ws.addRow(['Cliente:', cliente, 'Doc:', docRef]);
