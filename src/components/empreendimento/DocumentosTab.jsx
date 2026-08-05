@@ -534,15 +534,15 @@ export default function DocumentosTab({
 
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('LMD');
+    // Colunas: A=TIPO, B=SUBDISCIPLINA, C=PAVIMENTO, D=DESCRITIVO
     ws.columns = [
-      { width: 10 },  // DOC
-      { width: 22 },  // PAVIMENTO
-      { width: 34 },  // TIPO
-      { width: 40 },  // ARQUIVO
-      { width: 12 }   // ESCALA
+      { width: 18 },     // A - TIPO
+      { width: 22 },     // B - SUBDISCIPLINA
+      { width: 99.43 },  // C - PAVIMENTO
+      { width: 42.43 }   // D - DESCRITIVO
     ];
 
-    const borderRow = (row, lastCol = 5) => {
+    const borderRow = (row, lastCol = 4) => {
       for (let c = 1; c <= lastCol; c++) row.getCell(c).border = thinBorder;
     };
     const pavNome = (doc) => {
@@ -550,69 +550,85 @@ export default function DocumentosTab({
       return (pav && pav.nome) ? pav.nome : (doc.area || '');
     };
 
+    // Logo Interativa no topo (área reservada de 5 linhas)
+    const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/577f93874_logo_Interativa_versao_final_sem_fundo_0002.png";
+    for (let i = 0; i < 5; i++) ws.addRow(['', '', '', '']);
+    try {
+      const logoResp = await fetch(LOGO_URL);
+      const logoBlob = await logoResp.blob();
+      const logoBase64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(logoBlob);
+      });
+      const imageId = wb.addImage({ base64: logoBase64, extension: 'png' });
+      ws.addImage(imageId, { tl: { col: 0, row: 0 }, br: { col: 3, row: 5 } });
+    } catch (e) { /* logo opcional: segue exportação sem ela se falhar */ }
+
     let firstBlock = true;
     Object.entries(grupos).forEach(([disciplina, docs]) => {
-      if (!firstBlock) ws.addRow([]);
+      if (!firstBlock) ws.addRow(['', '', '', '']);
       firstBlock = false;
 
-      // Rótulos: Cliente / Doc
-      const rl1 = ws.addRow(['Cliente:', '', '', 'Doc:', '']);
-      ws.mergeCells(rl1.number, 1, rl1.number, 3); ws.mergeCells(rl1.number, 4, rl1.number, 5);
+      // Rótulos: Cliente / Doc (A:B | C:D)
+      const rl1 = ws.addRow(['Cliente:', '', 'Doc:', '']);
+      ws.mergeCells(rl1.number, 1, rl1.number, 2); ws.mergeCells(rl1.number, 3, rl1.number, 4);
       rl1.getCell(1).font = arialBold; rl1.getCell(1).fill = labelFill; rl1.getCell(1).alignment = left;
-      rl1.getCell(4).font = arialBold; rl1.getCell(4).fill = labelFill; rl1.getCell(4).alignment = left;
+      rl1.getCell(3).font = arialBold; rl1.getCell(3).fill = labelFill; rl1.getCell(3).alignment = left;
       borderRow(rl1);
-      const rv1 = ws.addRow([cliente, '', '', docRef, '']);
-      ws.mergeCells(rv1.number, 1, rv1.number, 3); ws.mergeCells(rv1.number, 4, rv1.number, 5);
+      const rv1 = ws.addRow([cliente, '', docRef, '']);
+      ws.mergeCells(rv1.number, 1, rv1.number, 2); ws.mergeCells(rv1.number, 3, rv1.number, 4);
       rv1.getCell(1).font = arial; rv1.getCell(1).fill = valueFill; rv1.getCell(1).alignment = center;
-      rv1.getCell(4).font = arial; rv1.getCell(4).fill = valueFill; rv1.getCell(4).alignment = center;
+      rv1.getCell(3).font = arial; rv1.getCell(3).fill = valueFill; rv1.getCell(3).alignment = center;
       borderRow(rv1);
 
       // Rótulos: Obra / Código da Obra
-      const rl2 = ws.addRow(['Obra:', '', '', 'Código da Obra:', '']);
-      ws.mergeCells(rl2.number, 1, rl2.number, 3); ws.mergeCells(rl2.number, 4, rl2.number, 5);
+      const rl2 = ws.addRow(['Obra:', '', 'Código da Obra:', '']);
+      ws.mergeCells(rl2.number, 1, rl2.number, 2); ws.mergeCells(rl2.number, 3, rl2.number, 4);
       rl2.getCell(1).font = arialBold; rl2.getCell(1).fill = labelFill; rl2.getCell(1).alignment = left;
-      rl2.getCell(4).font = arialBold; rl2.getCell(4).fill = labelFill; rl2.getCell(4).alignment = left;
+      rl2.getCell(3).font = arialBold; rl2.getCell(3).fill = labelFill; rl2.getCell(3).alignment = left;
       borderRow(rl2);
-      const rv2 = ws.addRow([obra, '', '', '', '']);
-      ws.mergeCells(rv2.number, 1, rv2.number, 3); ws.mergeCells(rv2.number, 4, rv2.number, 5);
+      const rv2 = ws.addRow([obra, '', '', '']);
+      ws.mergeCells(rv2.number, 1, rv2.number, 2); ws.mergeCells(rv2.number, 3, rv2.number, 4);
       rv2.getCell(1).font = arial; rv2.getCell(1).fill = valueFill; rv2.getCell(1).alignment = center;
-      rv2.getCell(4).font = arial; rv2.getCell(4).fill = valueFill; rv2.getCell(4).alignment = center;
+      rv2.getCell(3).font = arial; rv2.getCell(3).fill = valueFill; rv2.getCell(3).alignment = center;
       borderRow(rv2);
 
       // Rótulos: Revisão / Data
-      const rl3 = ws.addRow(['Revisão:', '', '', 'Data:', '']);
-      ws.mergeCells(rl3.number, 1, rl3.number, 3); ws.mergeCells(rl3.number, 4, rl3.number, 5);
+      const rl3 = ws.addRow(['Revisão:', '', 'Data:', '']);
+      ws.mergeCells(rl3.number, 1, rl3.number, 2); ws.mergeCells(rl3.number, 3, rl3.number, 4);
       rl3.getCell(1).font = arialBold; rl3.getCell(1).fill = labelFill; rl3.getCell(1).alignment = left;
-      rl3.getCell(4).font = arialBold; rl3.getCell(4).fill = labelFill; rl3.getCell(4).alignment = left;
+      rl3.getCell(3).font = arialBold; rl3.getCell(3).fill = labelFill; rl3.getCell(3).alignment = left;
       borderRow(rl3);
-      const rv3 = ws.addRow([revisao, '', '', today, '']);
-      ws.mergeCells(rv3.number, 1, rv3.number, 3); ws.mergeCells(rv3.number, 4, rv3.number, 5);
+      const rv3 = ws.addRow([revisao, '', today, '']);
+      ws.mergeCells(rv3.number, 1, rv3.number, 2); ws.mergeCells(rv3.number, 3, rv3.number, 4);
       rv3.getCell(1).font = arial; rv3.getCell(1).fill = valueFill; rv3.getCell(1).alignment = center;
-      rv3.getCell(4).font = arial; rv3.getCell(4).fill = valueFill; rv3.getCell(4).alignment = center;
+      rv3.getCell(3).font = arial; rv3.getCell(3).fill = valueFill; rv3.getCell(3).alignment = center;
       borderRow(rv3);
 
-      // Rótulos: Disciplina / Fase / Coordenador (A:B | C | D:E)
-      const rl4 = ws.addRow(['Disciplina:', '', 'Fase:', 'Coordenador:', '']);
-      ws.mergeCells(rl4.number, 1, rl4.number, 2); ws.mergeCells(rl4.number, 4, rl4.number, 5);
+      // Rótulos: Disciplina / Fase / Coordenador (A | B | C:D)
+      const rl4 = ws.addRow(['Disciplina:', 'Fase:', 'Coordenador:', '']);
+      ws.mergeCells(rl4.number, 3, rl4.number, 4);
       rl4.getCell(1).font = arialBold; rl4.getCell(1).fill = labelFill; rl4.getCell(1).alignment = left;
+      rl4.getCell(2).font = arialBold; rl4.getCell(2).fill = labelFill; rl4.getCell(2).alignment = left;
       rl4.getCell(3).font = arialBold; rl4.getCell(3).fill = labelFill; rl4.getCell(3).alignment = left;
-      rl4.getCell(4).font = arialBold; rl4.getCell(4).fill = labelFill; rl4.getCell(4).alignment = left;
       borderRow(rl4);
-      const rv4 = ws.addRow([disciplina, '', fase, coordenador, '']);
-      ws.mergeCells(rv4.number, 1, rv4.number, 2); ws.mergeCells(rv4.number, 4, rv4.number, 5);
+      const rv4 = ws.addRow([disciplina, fase, coordenador, '']);
+      ws.mergeCells(rv4.number, 3, rv4.number, 4);
       rv4.getCell(1).font = arialBold; rv4.getCell(1).fill = sectionFill; rv4.getCell(1).alignment = center;
+      rv4.getCell(2).font = arial; rv4.getCell(2).fill = valueFill; rv4.getCell(2).alignment = center;
       rv4.getCell(3).font = arial; rv4.getCell(3).fill = valueFill; rv4.getCell(3).alignment = center;
-      rv4.getCell(4).font = arial; rv4.getCell(4).fill = valueFill; rv4.getCell(4).alignment = center;
       borderRow(rv4);
 
       // Seção "DOCUMENTOS"
-      const rDoc = ws.addRow(['DOCUMENTOS', '', '', '', '']);
-      ws.mergeCells(rDoc.number, 1, rDoc.number, 5);
+      const rDoc = ws.addRow(['DOCUMENTOS', '', '', '']);
+      ws.mergeCells(rDoc.number, 1, rDoc.number, 4);
       rDoc.getCell(1).font = arialBold; rDoc.getCell(1).fill = sectionFill; rDoc.getCell(1).alignment = center;
       borderRow(rDoc);
 
       // Cabeçalho da tabela
-      const rHead = ws.addRow(['DOC', 'PAVIMENTO', 'TIPO', 'ARQUIVO', 'ESCALA']);
+      const rHead = ws.addRow(['TIPO', 'SUBDISCIPLINA', 'PAVIMENTO', 'DESCRITIVO']);
       rHead.eachCell(cell => { cell.font = arialBold; cell.fill = sectionFill; cell.alignment = center; cell.border = thinBorder; });
 
       // Documentos agrupados por pavimento
@@ -624,21 +640,19 @@ export default function DocumentosTab({
       });
       Object.entries(pavGroups).forEach(([pavNomeGrupo, docsPav]) => {
         if (pavNomeGrupo !== 'GERAL') {
-          const rSec = ws.addRow([pavNomeGrupo, '', '', '', '']);
-          ws.mergeCells(rSec.number, 1, rSec.number, 5);
+          const rSec = ws.addRow([pavNomeGrupo, '', '', '']);
+          ws.mergeCells(rSec.number, 1, rSec.number, 4);
           rSec.getCell(1).font = arialBold; rSec.getCell(1).fill = sectionFill; rSec.getCell(1).alignment = left;
           borderRow(rSec);
         }
         docsPav.forEach(doc => {
           const row = ws.addRow([
-            String(doc.numero || ''),
-            pavNome(doc) || '',
-            String(doc.descritivo || ''),
             String(doc.arquivo || ''),
-            doc.escala != null && doc.escala !== '' ? String(doc.escala) : 'S/ ESC.'
+            (doc.subdisciplinas || []).join(', '),
+            pavNome(doc) || '',
+            String(doc.descritivo || '')
           ]);
           row.eachCell(cell => { cell.font = arial; cell.border = thinBorder; });
-          row.getCell(1).numFmt = '@';
         });
       });
     });
