@@ -2,7 +2,7 @@
 import ExcelJS from 'exceljs';
 import { format } from 'date-fns';
 
-const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/577f93874_logo_Interativa_versao_final_sem_fundo_0002.png";
+const LOGO_URL = "https://media.base44.com/images/public/6849788440d6602a66231f50/f150d03f4_image.png";
 
 export async function exportarLMD({ empreendimento, documentos, pavimentos, userProfile, user, etapaParaPlanejamento }) {
   // Agrupa documentos por disciplina (cada disciplina = um bloco/seção)
