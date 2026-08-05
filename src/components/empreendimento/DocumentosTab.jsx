@@ -512,9 +512,12 @@ export default function DocumentosTab({
     };
     const fase = faseMap[etapaParaPlanejamento] || String(etapaParaPlanejamento || '').toUpperCase();
     const coordenador = userProfile?.nome || user?.full_name || '';
-    const docRef = String(empreendimento.os || '');
     const cliente = String(empreendimento.cliente || '');
-    const obra = String(empreendimento.nome || '');
+    const nomeStr = String(empreendimento.nome || '');
+    const osStr = String(empreendimento.os || '');
+    let docRef = osStr;
+    if (!docRef) { const m = nomeStr.match(/^(\d+)/); if (m) docRef = m[1]; }
+    let obra = (docRef && nomeStr.startsWith(docRef + '-')) ? nomeStr.slice(docRef.length + 1) : nomeStr.replace(/^\d+-/, '');
     const revisao = 'R00';
 
     // Estilos (fonte Arial em toda a planilha)
@@ -542,6 +545,33 @@ export default function DocumentosTab({
       { width: 12 }   // ESCALA
     ];
 
+    // Logo Interativa (busca e dimensões para manter proporção, sem esticar)
+    const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/577f93874_logo_Interativa_versao_final_sem_fundo_0002.png";
+    let logoId = null;
+    const logoHpx = 50;
+    let logoWpx = 200;
+    try {
+      const resp = await fetch(LOGO_URL);
+      if (resp.ok) {
+        const blob = await resp.blob();
+        const b64 = await new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.onload = () => resolve(reader.result.split(',')[1]);
+          reader.onerror = reject;
+          reader.readAsDataURL(blob);
+        });
+        const dims = await new Promise((resolve) => {
+          const img = new Image();
+          img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+          img.onerror = () => resolve({ w: 4, h: 1 });
+          img.src = URL.createObjectURL(blob);
+        });
+        const ext = (blob.type || '').includes('png') ? 'png' : 'jpeg';
+        logoId = wb.addImage({ base64: b64, extension: ext });
+        logoWpx = logoHpx * dims.w / dims.h;
+      }
+    } catch (e) { logoId = null; }
+
     const borderRow = (row, lastCol = 5) => {
       for (let c = 1; c <= lastCol; c++) row.getCell(c).border = thinBorder;
     };
@@ -554,6 +584,13 @@ export default function DocumentosTab({
     Object.entries(grupos).forEach(([disciplina, docs]) => {
       if (!firstBlock) ws.addRow([]);
       firstBlock = false;
+
+      // Linha do logo (imagem com proporção mantida, sem esticar)
+      const logoRow = ws.addRow(['', '', '', '', '']);
+      logoRow.height = logoId ? (logoHpx * 0.75 + 6) : 20;
+      if (logoId) {
+        ws.addImage(logoId, { tl: { col: 0, row: logoRow.number - 1 }, ext: { width: logoWpx, height: logoHpx } });
+      }
 
       // Rótulos: Cliente / Doc
       const rl1 = ws.addRow(['Cliente:', '', '', 'Doc:', '']);
@@ -632,8 +669,8 @@ export default function DocumentosTab({
         docsPav.forEach(doc => {
           const row = ws.addRow([
             String(doc.numero || ''),
-            pavNome(doc) || '',
             String(doc.descritivo || ''),
+            (doc.subdisciplinas || []).join(', '),
             String(doc.arquivo || ''),
             doc.escala != null && doc.escala !== '' ? String(doc.escala) : 'S/ ESC.'
           ]);
