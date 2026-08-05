@@ -25,7 +25,7 @@ import { ETAPAS_ORDER } from '../utils/PredecessoraValidator';
 import { getNextWorkingDay, distribuirHorasPorDias, isWorkingDay, calculateEndDate, ensureWorkingDay } from '../utils/DateCalculator';
 import { format, isValid, parseISO, addDays } from 'date-fns';
 import { retryWithBackoff, retryWithExtendedBackoff } from '../utils/apiUtils';
-import * as XLSX from 'xlsx';
+import ExcelJS from 'exceljs';
 
 const parseDate = (dateString) => {
   if (!dateString) return null;
@@ -495,7 +495,7 @@ export default function DocumentosTab({
 
   const handleSuccess = async () => { onUpdate(); setShowForm(false); setEditingDocumento(null); setCargaDiariaCache({}); };
 
-  const handleExportData = () => {
+  const handleExportData = async () => {
     // Agrupa documentos por disciplina (cada disciplina = um bloco/seção)
     const grupos = {};
     localDocumentos.forEach(doc => {
@@ -510,17 +510,50 @@ export default function DocumentosTab({
     const docRef = empreendimento.os || empreendimento.num_proposta || '';
     const codObra = empreendimento.nome || '';
 
-    const wsData = [];
-    Object.entries(grupos).forEach(([disciplina, docs], idx) => {
-      if (idx > 0) wsData.push([]);
-      // Cabeçalho do bloco (label/valor em pares)
-      wsData.push(['Doc', String(docRef), 'Código da Obra', String(codObra), 'Data', today]);
-      wsData.push(['Fase', String(fase), 'Coordenador', String(coordenador), 'Disciplina', disciplina]);
-      // Cabeçalho da tabela
-      wsData.push(['Número', 'Arquivo', 'Descritivo', 'Subdisciplina', 'Escala', '']);
-      // Linhas de documentos (numero sempre como string para preservar zeros à esquerda)
+    // Estilos compartilhados (fonte Arial em toda a planilha)
+    const labelFont = { name: 'Arial', bold: true, size: 11 };
+    const labelFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } }; // cinza claro
+    const disciplinaFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } }; // levemente colorido
+    const tableHeaderFont = { name: 'Arial', bold: true, size: 11 };
+    const tableHeaderFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFBDD7EE' } }; // azul claro
+    const tableHeaderBorder = { bottom: { style: 'medium', color: { argb: 'FF000000' } } };
+    const dataFont = { name: 'Arial', size: 11 };
+
+    const wb = new ExcelJS.Workbook();
+    const ws = wb.addWorksheet('LMD');
+    ws.columns = [
+      { width: 14 }, { width: 28 }, { width: 40 }, { width: 22 }, { width: 12 }, { width: 22 }
+    ];
+
+    let firstBlock = true;
+    Object.entries(grupos).forEach(([disciplina, docs]) => {
+      if (!firstBlock) ws.addRow([]);
+      firstBlock = false;
+
+      // Linha 1 do cabeçalho: rótulos/valores em negrito com fundo cinza claro
+      const r1 = ws.addRow(['Doc', String(docRef), 'Código da Obra', String(codObra), 'Data', today]);
+      r1.eachCell(cell => { cell.font = labelFont; cell.fill = labelFill; });
+
+      // Linha 2: Fase/Coordenador/Disciplina
+      const r2 = ws.addRow(['Fase', String(fase), 'Coordenador', String(coordenador), 'Disciplina', disciplina]);
+      r2.eachCell(cell => { cell.font = labelFont; cell.fill = labelFill; });
+      // Nome da disciplina: centralizado com fundo levemente colorido
+      const discCell = r2.getCell(6);
+      discCell.alignment = { horizontal: 'center' };
+      discCell.fill = disciplinaFill;
+
+      // Cabeçalho da tabela: negrito, centralizado, fundo azul claro, borda inferior
+      const r3 = ws.addRow(['Número', 'Arquivo', 'Descritivo', 'Subdisciplina', 'Escala', '']);
+      r3.eachCell(cell => {
+        cell.font = tableHeaderFont;
+        cell.fill = tableHeaderFill;
+        cell.alignment = { horizontal: 'center' };
+        cell.border = tableHeaderBorder;
+      });
+
+      // Linhas de documentos (numero como texto para preservar zeros à esquerda)
       docs.forEach(doc => {
-        wsData.push([
+        const row = ws.addRow([
           String(doc.numero || ''),
           String(doc.arquivo || ''),
           String(doc.descritivo || ''),
@@ -528,23 +561,17 @@ export default function DocumentosTab({
           doc.escala != null ? String(doc.escala) : '',
           ''
         ]);
+        row.eachCell(cell => { cell.font = dataFont; });
+        row.getCell(1).numFmt = '@';
       });
     });
 
-    const ws = XLSX.utils.aoa_to_sheet(wsData);
-    ws['!cols'] = [
-      { wch: 14 }, { wch: 28 }, { wch: 40 }, { wch: 22 }, { wch: 12 }, { wch: 22 }
-    ];
-
-    // Garante formato de texto na coluna "Número" (A) para preservar zeros à esquerda
-    for (let r = 0; r < wsData.length; r++) {
-      const addr = XLSX.utils.encode_cell({ r, c: 0 });
-      if (ws[addr]) ws[addr].z = '@';
-    }
-
-    const wb = XLSX.utils.book_new();
-    XLSX.utils.book_append_sheet(wb, ws, 'LMD');
-    XLSX.writeFile(wb, `LMD_${empreendimento.nome.replace(/\s+/g, '_')}.xlsx`);
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `LMD_${empreendimento.nome.replace(/\s+/g, '_')}.xlsx`;
+    link.click();
   };
 
   const handleExportTemplate = () => {
