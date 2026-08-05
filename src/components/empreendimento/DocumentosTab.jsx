@@ -505,64 +505,141 @@ export default function DocumentosTab({
     });
 
     const today = format(new Date(), 'dd/MM/yyyy');
-    const fase = etapaParaPlanejamento === 'todas' ? 'Todas' : etapaParaPlanejamento;
+    const faseMap = {
+      'todas': 'TODAS', 'Estudo Preliminar': 'PRELIMINAR', 'Ante-Projeto': 'ANTEPROJETO',
+      'Projeto Básico': 'BÁSICO', 'Projeto Executivo': 'EXECUTIVO',
+      'Liberado para Obra': 'LIBERADO OBRA', 'Concepção': 'CONCEPÇÃO', 'Planejamento': 'PLANEJAMENTO'
+    };
+    const fase = faseMap[etapaParaPlanejamento] || String(etapaParaPlanejamento || '').toUpperCase();
     const coordenador = userProfile?.nome || user?.full_name || '';
-    const docRef = empreendimento.os || empreendimento.num_proposta || '';
-    const codObra = empreendimento.nome || '';
+    const docRef = String(empreendimento.os || '');
+    const cliente = String(empreendimento.cliente || '');
+    const obra = String(empreendimento.nome || '');
+    const revisao = 'R00';
 
-    // Estilos compartilhados (fonte Arial em toda a planilha)
-    const labelFont = { name: 'Arial', bold: true, size: 11 };
-    const labelFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE0E0E0' } }; // cinza claro
-    const disciplinaFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } }; // levemente colorido
-    const tableHeaderFont = { name: 'Arial', bold: true, size: 11 };
-    const tableHeaderFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFBDD7EE' } }; // azul claro
-    const tableHeaderBorder = { bottom: { style: 'medium', color: { argb: 'FF000000' } } };
-    const dataFont = { name: 'Arial', size: 11 };
+    // Estilos (fonte Arial em toda a planilha)
+    const arial = { name: 'Arial', size: 11 };
+    const arialBold = { name: 'Arial', size: 11, bold: true };
+    const labelFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFE7E6E6' } }; // cinza (rótulos)
+    const valueFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFD9E1F2' } }; // azul claro (valores)
+    const sectionFill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFB8CCE4' } }; // azul (seções/cabeçalhos)
+    const thinBorder = {
+      top: { style: 'thin', color: { argb: 'FF000000' } },
+      left: { style: 'thin', color: { argb: 'FF000000' } },
+      bottom: { style: 'thin', color: { argb: 'FF000000' } },
+      right: { style: 'thin', color: { argb: 'FF000000' } }
+    };
+    const center = { horizontal: 'center', vertical: 'middle' };
+    const left = { horizontal: 'left', vertical: 'middle' };
 
     const wb = new ExcelJS.Workbook();
     const ws = wb.addWorksheet('LMD');
     ws.columns = [
-      { width: 14 }, { width: 28 }, { width: 40 }, { width: 22 }, { width: 12 }, { width: 22 }
+      { width: 10 },  // DOC
+      { width: 22 },  // PAVIMENTO
+      { width: 34 },  // TIPO
+      { width: 40 },  // ARQUIVO
+      { width: 12 }   // ESCALA
     ];
+
+    const borderRow = (row, lastCol = 5) => {
+      for (let c = 1; c <= lastCol; c++) row.getCell(c).border = thinBorder;
+    };
+    const pavNome = (doc) => {
+      const pav = (pavimentos || []).find(p => p.id === doc.pavimento_id);
+      return (pav && pav.nome) ? pav.nome : (doc.area || '');
+    };
 
     let firstBlock = true;
     Object.entries(grupos).forEach(([disciplina, docs]) => {
       if (!firstBlock) ws.addRow([]);
       firstBlock = false;
 
-      // Linha 1 do cabeçalho: rótulos/valores em negrito com fundo cinza claro
-      const r1 = ws.addRow(['Doc', String(docRef), 'Código da Obra', String(codObra), 'Data', today]);
-      r1.eachCell(cell => { cell.font = labelFont; cell.fill = labelFill; });
+      // Rótulos: Cliente / Doc
+      const rl1 = ws.addRow(['Cliente:', '', '', 'Doc:', '']);
+      ws.mergeCells(rl1.number, 1, rl1.number, 3); ws.mergeCells(rl1.number, 4, rl1.number, 5);
+      rl1.getCell(1).font = arialBold; rl1.getCell(1).fill = labelFill; rl1.getCell(1).alignment = left;
+      rl1.getCell(4).font = arialBold; rl1.getCell(4).fill = labelFill; rl1.getCell(4).alignment = left;
+      borderRow(rl1);
+      const rv1 = ws.addRow([cliente, '', '', docRef, '']);
+      ws.mergeCells(rv1.number, 1, rv1.number, 3); ws.mergeCells(rv1.number, 4, rv1.number, 5);
+      rv1.getCell(1).font = arial; rv1.getCell(1).fill = valueFill; rv1.getCell(1).alignment = center;
+      rv1.getCell(4).font = arial; rv1.getCell(4).fill = valueFill; rv1.getCell(4).alignment = center;
+      borderRow(rv1);
 
-      // Linha 2: Fase/Coordenador/Disciplina
-      const r2 = ws.addRow(['Fase', String(fase), 'Coordenador', String(coordenador), 'Disciplina', disciplina]);
-      r2.eachCell(cell => { cell.font = labelFont; cell.fill = labelFill; });
-      // Nome da disciplina: centralizado com fundo levemente colorido
-      const discCell = r2.getCell(6);
-      discCell.alignment = { horizontal: 'center' };
-      discCell.fill = disciplinaFill;
+      // Rótulos: Obra / Código da Obra
+      const rl2 = ws.addRow(['Obra:', '', '', 'Código da Obra:', '']);
+      ws.mergeCells(rl2.number, 1, rl2.number, 3); ws.mergeCells(rl2.number, 4, rl2.number, 5);
+      rl2.getCell(1).font = arialBold; rl2.getCell(1).fill = labelFill; rl2.getCell(1).alignment = left;
+      rl2.getCell(4).font = arialBold; rl2.getCell(4).fill = labelFill; rl2.getCell(4).alignment = left;
+      borderRow(rl2);
+      const rv2 = ws.addRow([obra, '', '', '', '']);
+      ws.mergeCells(rv2.number, 1, rv2.number, 3); ws.mergeCells(rv2.number, 4, rv2.number, 5);
+      rv2.getCell(1).font = arial; rv2.getCell(1).fill = valueFill; rv2.getCell(1).alignment = center;
+      rv2.getCell(4).font = arial; rv2.getCell(4).fill = valueFill; rv2.getCell(4).alignment = center;
+      borderRow(rv2);
 
-      // Cabeçalho da tabela: negrito, centralizado, fundo azul claro, borda inferior
-      const r3 = ws.addRow(['Número', 'Arquivo', 'Descritivo', 'Subdisciplina', 'Escala', '']);
-      r3.eachCell(cell => {
-        cell.font = tableHeaderFont;
-        cell.fill = tableHeaderFill;
-        cell.alignment = { horizontal: 'center' };
-        cell.border = tableHeaderBorder;
-      });
+      // Rótulos: Revisão / Data
+      const rl3 = ws.addRow(['Revisão:', '', '', 'Data:', '']);
+      ws.mergeCells(rl3.number, 1, rl3.number, 3); ws.mergeCells(rl3.number, 4, rl3.number, 5);
+      rl3.getCell(1).font = arialBold; rl3.getCell(1).fill = labelFill; rl3.getCell(1).alignment = left;
+      rl3.getCell(4).font = arialBold; rl3.getCell(4).fill = labelFill; rl3.getCell(4).alignment = left;
+      borderRow(rl3);
+      const rv3 = ws.addRow([revisao, '', '', today, '']);
+      ws.mergeCells(rv3.number, 1, rv3.number, 3); ws.mergeCells(rv3.number, 4, rv3.number, 5);
+      rv3.getCell(1).font = arial; rv3.getCell(1).fill = valueFill; rv3.getCell(1).alignment = center;
+      rv3.getCell(4).font = arial; rv3.getCell(4).fill = valueFill; rv3.getCell(4).alignment = center;
+      borderRow(rv3);
 
-      // Linhas de documentos (numero como texto para preservar zeros à esquerda)
+      // Rótulos: Disciplina / Fase / Coordenador (A:B | C | D:E)
+      const rl4 = ws.addRow(['Disciplina:', '', 'Fase:', 'Coordenador:', '']);
+      ws.mergeCells(rl4.number, 1, rl4.number, 2); ws.mergeCells(rl4.number, 4, rl4.number, 5);
+      rl4.getCell(1).font = arialBold; rl4.getCell(1).fill = labelFill; rl4.getCell(1).alignment = left;
+      rl4.getCell(3).font = arialBold; rl4.getCell(3).fill = labelFill; rl4.getCell(3).alignment = left;
+      rl4.getCell(4).font = arialBold; rl4.getCell(4).fill = labelFill; rl4.getCell(4).alignment = left;
+      borderRow(rl4);
+      const rv4 = ws.addRow([disciplina, '', fase, coordenador, '']);
+      ws.mergeCells(rv4.number, 1, rv4.number, 2); ws.mergeCells(rv4.number, 4, rv4.number, 5);
+      rv4.getCell(1).font = arialBold; rv4.getCell(1).fill = sectionFill; rv4.getCell(1).alignment = center;
+      rv4.getCell(3).font = arial; rv4.getCell(3).fill = valueFill; rv4.getCell(3).alignment = center;
+      rv4.getCell(4).font = arial; rv4.getCell(4).fill = valueFill; rv4.getCell(4).alignment = center;
+      borderRow(rv4);
+
+      // Seção "DOCUMENTOS"
+      const rDoc = ws.addRow(['DOCUMENTOS', '', '', '', '']);
+      ws.mergeCells(rDoc.number, 1, rDoc.number, 5);
+      rDoc.getCell(1).font = arialBold; rDoc.getCell(1).fill = sectionFill; rDoc.getCell(1).alignment = center;
+      borderRow(rDoc);
+
+      // Cabeçalho da tabela
+      const rHead = ws.addRow(['DOC', 'PAVIMENTO', 'TIPO', 'ARQUIVO', 'ESCALA']);
+      rHead.eachCell(cell => { cell.font = arialBold; cell.fill = sectionFill; cell.alignment = center; cell.border = thinBorder; });
+
+      // Documentos agrupados por pavimento
+      const pavGroups = {};
       docs.forEach(doc => {
-        const row = ws.addRow([
-          String(doc.numero || ''),
-          String(doc.arquivo || ''),
-          String(doc.descritivo || ''),
-          (doc.subdisciplinas || []).join(', '),
-          doc.escala != null ? String(doc.escala) : '',
-          ''
-        ]);
-        row.eachCell(cell => { cell.font = dataFont; });
-        row.getCell(1).numFmt = '@';
+        const p = pavNome(doc) || 'GERAL';
+        if (!pavGroups[p]) pavGroups[p] = [];
+        pavGroups[p].push(doc);
+      });
+      Object.entries(pavGroups).forEach(([pavNomeGrupo, docsPav]) => {
+        if (pavNomeGrupo !== 'GERAL') {
+          const rSec = ws.addRow([pavNomeGrupo, '', '', '', '']);
+          ws.mergeCells(rSec.number, 1, rSec.number, 5);
+          rSec.getCell(1).font = arialBold; rSec.getCell(1).fill = sectionFill; rSec.getCell(1).alignment = left;
+          borderRow(rSec);
+        }
+        docsPav.forEach(doc => {
+          const row = ws.addRow([
+            String(doc.numero || ''),
+            pavNome(doc) || '',
+            String(doc.descritivo || ''),
+            String(doc.arquivo || ''),
+            doc.escala != null && doc.escala !== '' ? String(doc.escala) : 'S/ ESC.'
+          ]);
+          row.eachCell(cell => { cell.font = arial; cell.border = thinBorder; });
+          row.getCell(1).numFmt = '@';
+        });
       });
     });
 
