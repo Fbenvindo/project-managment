@@ -1,7 +1,8 @@
 // Exportação da planilha LMD no padrão visual Interativa
 import ExcelJS from 'exceljs';
 import { format } from 'date-fns';
-import { getLogoInterativa } from "@/functions/getLogoInterativa";
+
+const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/577f93874_logo_Interativa_versao_final_sem_fundo_0002.png";
 
 export async function exportarLMD({ empreendimento, documentos, pavimentos, userProfile, user, etapaParaPlanejamento }) {
   // Agrupa documentos por disciplina (cada disciplina = um bloco/seção)
@@ -54,19 +55,29 @@ export async function exportarLMD({ empreendimento, documentos, pavimentos, user
 
   // Logo Interativa (busca e dimensões para manter proporção, sem esticar)
   let logoId = null;
-  const logoHpx = 80;
-  let logoWpx = 320;
+  const logoHpx = 50;
+  let logoWpx = 200;
   try {
-    // Busca o logo via função backend (server-side, sem CORS) e devolve base64 + dimensões
-    const res = await getLogoInterativa({});
-    const data = res?.data || res;
-    if (data?.base64) {
-      logoId = wb.addImage({ base64: data.base64, extension: data.extension || 'png' });
-      const w = Number(data.width) || 4;
-      const h = Number(data.height) || 1;
-      logoWpx = logoHpx * w / h;
+    const resp = await fetch(LOGO_URL);
+    if (resp.ok) {
+      const blob = await resp.blob();
+      const b64 = await new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+      const dims = await new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => resolve({ w: img.naturalWidth, h: img.naturalHeight });
+        img.onerror = () => resolve({ w: 4, h: 1 });
+        img.src = URL.createObjectURL(blob);
+      });
+      const ext = (blob.type || '').includes('png') ? 'png' : 'jpeg';
+      logoId = wb.addImage({ base64: b64, extension: ext });
+      logoWpx = logoHpx * dims.w / dims.h;
     }
-  } catch (e) { console.warn('Logo LMD não carregado:', e); logoId = null; }
+  } catch (e) { logoId = null; }
 
   const borderRow = (row, lastCol = 4) => {
     for (let c = 1; c <= lastCol; c++) row.getCell(c).border = thinBorder;
@@ -82,17 +93,17 @@ export async function exportarLMD({ empreendimento, documentos, pavimentos, user
     return tipoDoc(a).localeCompare(tipoDoc(b), 'pt-BR', { sensitivity: 'base' });
   });
 
+  // Linha do logo (uma vez no topo, imagem com proporção mantida)
+  const logoRow = ws.addRow(Array(4).fill(''));
+  logoRow.height = logoId ? (logoHpx * 0.75 + 6) : 20;
+  if (logoId) {
+    ws.addImage(logoId, { tl: { col: 0, row: logoRow.number - 1 }, ext: { width: logoWpx, height: logoHpx } });
+  }
+
   let firstBlock = true;
   Object.entries(grupos).forEach(([disciplina, docs]) => {
     if (!firstBlock) ws.addRow(Array(4).fill(''));
     firstBlock = false;
-
-    // Linha do logo (cabeçalho de cada bloco de disciplina, imagem com proporção mantida)
-    const logoRow = ws.addRow(Array(4).fill(''));
-    logoRow.height = logoId ? (logoHpx * 0.75 + 6) : 20;
-    if (logoId) {
-      ws.addImage(logoId, { tl: { col: 0, row: logoRow.number - 1 }, ext: { width: logoWpx, height: logoHpx } });
-    }
 
     // Rótulos: Cliente / Doc
     const rl1 = ws.addRow(['Cliente:', cliente, 'Doc:', docRef]);
