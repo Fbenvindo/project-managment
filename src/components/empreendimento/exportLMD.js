@@ -2,7 +2,7 @@
 import ExcelJS from 'exceljs';
 import { format } from 'date-fns';
 
-const LOGO_URL = "https://media.base44.com/images/public/6849788440d6602a66231f50/f150d03f4_image.png";
+const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/577f93874_logo_Interativa_versao_final_sem_fundo_0002.png";
 
 export async function exportarLMD({ empreendimento, documentos, pavimentos, userProfile, user, etapaParaPlanejamento }) {
   // Agrupa documentos por disciplina (cada disciplina = um bloco/seção)
@@ -92,17 +92,11 @@ export async function exportarLMD({ empreendimento, documentos, pavimentos, user
     return tipoDoc(a).localeCompare(tipoDoc(b), 'pt-BR', { sensitivity: 'base' });
   });
 
-  // Logo no topo: ocupa as linhas 1 e 2, colunas A-B (canto superior esquerdo)
-  const logoRow1 = ws.addRow(Array(4).fill(''));
-  const logoRow2 = ws.addRow(Array(4).fill(''));
+  // Linha do logo (uma vez no topo, imagem com proporção mantida)
+  const logoRow = ws.addRow(Array(4).fill(''));
+  logoRow.height = logoId ? (logoHpx * 0.75 + 6) : 20;
   if (logoId) {
-    const halfPx = logoHpx / 2;
-    logoRow1.height = halfPx * 0.75 + 3;
-    logoRow2.height = halfPx * 0.75 + 3;
-    ws.addImage(logoId, { tl: { col: 0, row: 0 }, ext: { width: logoWpx, height: logoHpx } });
-  } else {
-    logoRow1.height = 20;
-    logoRow2.height = 20;
+    ws.addImage(logoId, { tl: { col: 0, row: logoRow.number - 1 }, ext: { width: logoWpx, height: logoHpx } });
   }
 
   let firstBlock = true;
