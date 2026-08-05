@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Trash2, Save, Loader2, Upload, Download, Copy, ArrowDown, ArrowRight, Wand2, ChevronRight, ChevronLeft, ChevronDown, GripHorizontal } from "lucide-react";
+import { Plus, Trash2, Save, Loader2, Upload, Download, Copy, ArrowDown, ArrowRight, Wand2, ChevronRight, ChevronLeft, ChevronDown, GripHorizontal, Search } from "lucide-react";
 import { DataCadastro, Documento } from "@/entities/all";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { format } from "date-fns";
@@ -53,6 +53,7 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
   const [editingRevisao, setEditingRevisao] = useState(null);
   const [editingRevisaoValue, setEditingRevisaoValue] = useState('');
   const [ordemEtapas, setOrdemEtapas] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // ─── NOVO: rastreia se a estrutura (revisões/etapas) foi alterada ───
   // Quando true, o save vai persistir revisoesPorEtapa e etapasExcluidas
@@ -703,15 +704,20 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
 
   const linhasPorDisciplina = useMemo(() => {
     const grupos = {};
+    const term = searchTerm.trim().toLowerCase();
     linhas.forEach(linha => {
       const doc = documentos.find(d => d.id === linha.documento_id);
       if (!doc) return;
+      if (term) {
+        const haystack = [doc.arquivo, doc.numero, doc.descritivo].filter(Boolean).join(' ').toLowerCase();
+        if (!haystack.includes(term)) return;
+      }
       const disciplina = doc.disciplina || 'Sem Disciplina';
       if (!grupos[disciplina]) grupos[disciplina] = [];
       grupos[disciplina].push(linha);
     });
     return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
-  }, [linhas, documentos]);
+  }, [linhas, documentos, searchTerm]);
 
   const ETAPAS_VIEW_BASE = etapasEfetivas.length > 0 ? etapasEfetivas : ETAPAS;
   const ETAPAS_VIEW = useMemo(() => {
@@ -939,6 +945,17 @@ export default function CadastroTab({ empreendimento, readOnly = false }) {
             </Button>
           </div>
         )}
+      </div>
+
+      {/* Barra de pesquisa por nome */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+        <Input
+          placeholder="Pesquisar por nome, arquivo ou descritivo..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className="pl-10 max-w-md"
+        />
       </div>
 
       {/* Botão flutuante de salvar */}
