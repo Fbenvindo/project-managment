@@ -25,6 +25,7 @@ import { ETAPAS_ORDER } from '../utils/PredecessoraValidator';
 import { getNextWorkingDay, distribuirHorasPorDias, isWorkingDay, calculateEndDate, ensureWorkingDay } from '../utils/DateCalculator';
 import { format, isValid, parseISO, addDays } from 'date-fns';
 import { retryWithBackoff, retryWithExtendedBackoff } from '../utils/apiUtils';
+import * as XLSX from 'xlsx';
 
 const parseDate = (dateString) => {
   if (!dateString) return null;
@@ -111,7 +112,7 @@ export default function DocumentosTab({
     }
   }, [empreendimento?.id]);
 
-  const { updateKey } = useContext(ActivityTimerContext);
+  const { updateKey, userProfile, user } = useContext(ActivityTimerContext);
   const prevUpdateKeyRef = useRef(updateKey);
   useEffect(() => {
     if (updateKey !== prevUpdateKeyRef.current) {
@@ -495,27 +496,55 @@ export default function DocumentosTab({
   const handleSuccess = async () => { onUpdate(); setShowForm(false); setEditingDocumento(null); setCargaDiariaCache({}); };
 
   const handleExportData = () => {
-    const rows = localDocumentos.map(doc => {
-      const pavimento = (pavimentos || []).find(p => p.id === doc.pavimento_id);
-      return [
-        doc.numero || '',
-        doc.arquivo || '',
-        doc.descritivo || '',
-        pavimento?.nome || '',
-        (doc.disciplinas || (doc.disciplina ? [doc.disciplina] : [])).join(', '),
-        (doc.subdisciplinas || []).join(', '),
-        doc.escala || '',
-        doc.fator_dificuldade || ''
-      ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(';');
+    // Agrupa documentos por disciplina (cada disciplina = um bloco/seção)
+    const grupos = {};
+    localDocumentos.forEach(doc => {
+      const disciplina = doc.disciplina || (Array.isArray(doc.disciplinas) && doc.disciplinas[0]) || 'Sem Disciplina';
+      if (!grupos[disciplina]) grupos[disciplina] = [];
+      grupos[disciplina].push(doc);
     });
 
-    const header = ['numero', 'arquivo', 'descritivo', 'pavimento_nome', 'disciplinas', 'subdisciplinas', 'escala', 'fator_dificuldade'].join(';');
-    const csvContent = [header, ...rows].join('\n');
-    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `documentos_${empreendimento.nome.replace(/\s+/g, '_')}.csv`;
-    link.click();
+    const today = format(new Date(), 'dd/MM/yyyy');
+    const fase = etapaParaPlanejamento === 'todas' ? 'Todas' : etapaParaPlanejamento;
+    const coordenador = userProfile?.nome || user?.full_name || '';
+    const docRef = empreendimento.os || empreendimento.num_proposta || '';
+    const codObra = empreendimento.nome || '';
+
+    const wsData = [];
+    Object.entries(grupos).forEach(([disciplina, docs], idx) => {
+      if (idx > 0) wsData.push([]);
+      // Cabeçalho do bloco (label/valor em pares)
+      wsData.push(['Doc', String(docRef), 'Código da Obra', String(codObra), 'Data', today]);
+      wsData.push(['Fase', String(fase), 'Coordenador', String(coordenador), 'Disciplina', disciplina]);
+      // Cabeçalho da tabela
+      wsData.push(['Número', 'Arquivo', 'Descritivo', 'Subdisciplina', 'Escala', '']);
+      // Linhas de documentos (numero sempre como string para preservar zeros à esquerda)
+      docs.forEach(doc => {
+        wsData.push([
+          String(doc.numero || ''),
+          String(doc.arquivo || ''),
+          String(doc.descritivo || ''),
+          (doc.subdisciplinas || []).join(', '),
+          doc.escala != null ? String(doc.escala) : '',
+          ''
+        ]);
+      });
+    });
+
+    const ws = XLSX.utils.aoa_to_sheet(wsData);
+    ws['!cols'] = [
+      { wch: 14 }, { wch: 28 }, { wch: 40 }, { wch: 22 }, { wch: 12 }, { wch: 22 }
+    ];
+
+    // Garante formato de texto na coluna "Número" (A) para preservar zeros à esquerda
+    for (let r = 0; r < wsData.length; r++) {
+      const addr = XLSX.utils.encode_cell({ r, c: 0 });
+      if (ws[addr]) ws[addr].z = '@';
+    }
+
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'LMD');
+    XLSX.writeFile(wb, `LMD_${empreendimento.nome.replace(/\s+/g, '_')}.xlsx`);
   };
 
   const handleExportTemplate = () => {
