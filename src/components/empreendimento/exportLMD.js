@@ -1,8 +1,7 @@
 // Exportação da planilha LMD no padrão visual Interativa
 import ExcelJS from 'exceljs';
 import { format } from 'date-fns';
-
-const LOGO_URL = "https://media.base44.com/images/public/6849788440d6602a66231f50/590b8dd13_image.png";
+import { getLogoInterativa } from "@/functions/getLogoInterativa";
 
 export async function exportarLMD({ empreendimento, documentos, pavimentos, userProfile, user, etapaParaPlanejamento }) {
   // Agrupa documentos por disciplina (cada disciplina = um bloco/seção)
@@ -58,23 +57,15 @@ export async function exportarLMD({ empreendimento, documentos, pavimentos, user
   const logoHpx = 80;
   let logoWpx = 320;
   try {
-    // Carrega a imagem via <img> com crossOrigin e renderiza em canvas para obter
-    // base64 + dimensões. O canvas evita problemas de CORS/taint e garante PNG válido.
-    const img = await new Promise((resolve, reject) => {
-      const el = new Image();
-      el.crossOrigin = 'anonymous';
-      el.onload = () => resolve(el);
-      el.onerror = reject;
-      el.src = LOGO_URL;
-    });
-    const dims = { w: img.naturalWidth || 4, h: img.naturalHeight || 1 };
-    const canvas = document.createElement('canvas');
-    canvas.width = dims.w;
-    canvas.height = dims.h;
-    canvas.getContext('2d').drawImage(img, 0, 0);
-    const b64 = canvas.toDataURL('image/png').split(',')[1];
-    logoId = wb.addImage({ base64: b64, extension: 'png' });
-    logoWpx = logoHpx * dims.w / dims.h;
+    // Busca o logo via função backend (server-side, sem CORS) e devolve base64 + dimensões
+    const res = await getLogoInterativa({});
+    const data = res?.data || res;
+    if (data?.base64) {
+      logoId = wb.addImage({ base64: data.base64, extension: data.extension || 'png' });
+      const w = Number(data.width) || 4;
+      const h = Number(data.height) || 1;
+      logoWpx = logoHpx * w / h;
+    }
   } catch (e) { console.warn('Logo LMD não carregado:', e); logoId = null; }
 
   const borderRow = (row, lastCol = 4) => {
