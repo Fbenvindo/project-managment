@@ -20,7 +20,6 @@ export async function exportarLMD({ empreendimento, documentos, pavimentos, user
     'Liberado para Obra': 'LIBERADO OBRA', 'Concepção': 'CONCEPÇÃO', 'Planejamento': 'PLANEJAMENTO'
   };
   const fase = faseMap[etapaParaPlanejamento] || String(etapaParaPlanejamento || '').toUpperCase();
-  const coordenador = userProfile?.nome || user?.full_name || '';
   const cliente = String(empreendimento.cliente || '');
   const nomeStr = String(empreendimento.nome || '');
   const osStr = String(empreendimento.os || '');
@@ -87,11 +86,9 @@ export async function exportarLMD({ empreendimento, documentos, pavimentos, user
     return (pav && pav.nome) ? pav.nome : (doc.area || '');
   };
   const tipoDoc = (doc) => (doc.subdisciplinas || []).join(', ');
-  const sortDocs = (arr) => arr.slice().sort((a, b) => {
-    const numCmp = String(a.numero || '').localeCompare(String(b.numero || ''), 'pt-BR', { numeric: true, sensitivity: 'base' });
-    if (numCmp !== 0) return numCmp;
-    return tipoDoc(a).localeCompare(tipoDoc(b), 'pt-BR', { sensitivity: 'base' });
-  });
+  const sortDocs = (arr) => arr.slice().sort((a, b) =>
+    String(a.arquivo || '').localeCompare(String(b.arquivo || ''), 'pt-BR', { sensitivity: 'base' })
+  );
 
   // Linha do logo (uma vez no topo, imagem com proporção mantida)
   const logoRow = ws.addRow(Array(4).fill(''));
@@ -136,13 +133,6 @@ export async function exportarLMD({ empreendimento, documentos, pavimentos, user
     rl4.getCell(3).font = arialBold; rl4.getCell(3).fill = labelFill; rl4.getCell(3).alignment = left;
     rl4.getCell(4).font = arial; rl4.getCell(4).fill = valueFill; rl4.getCell(4).alignment = center;
     borderRow(rl4);
-
-    // Rótulos: Coordenador
-    const rl5 = ws.addRow(['Coordenador:', coordenador, '', '']);
-    ws.mergeCells(rl5.number, 2, rl5.number, 4);
-    rl5.getCell(1).font = arialBold; rl5.getCell(1).fill = labelFill; rl5.getCell(1).alignment = left;
-    rl5.getCell(2).font = arial; rl5.getCell(2).fill = valueFill; rl5.getCell(2).alignment = center;
-    borderRow(rl5);
 
     // Cabeçalho da tabela (4 colunas)
     const rHead = ws.addRow(['DOC', 'PAVIMENTO', 'TIPO', 'ARQUIVO']);
