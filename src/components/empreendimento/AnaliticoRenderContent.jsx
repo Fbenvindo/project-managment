@@ -575,9 +575,8 @@ export default function AnaliticoRenderContent({
       )}
 
       {(atividadesPorDisciplina || []).map(([disciplina, grupos]) => {
-        const isDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'].includes(disciplina);
-        const subdisciplinasMap = isDocumentacao ? grupos : null;
-        const atividadesList = isDocumentacao ? null : grupos;
+        const subdisciplinasMap = grupos;
+        const totalCount = Object.values(subdisciplinasMap).flat().length;
 
         return (
           <div key={disciplina} className="border rounded-lg overflow-hidden">
@@ -586,15 +585,12 @@ export default function AnaliticoRenderContent({
                 <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
                 {disciplina}
                 <Badge variant="secondary" className="ml-2">
-                  {isDocumentacao
-                    ? Object.values(subdisciplinasMap).flat().length
-                    : atividadesList.length
-                  } {(isDocumentacao ? Object.values(subdisciplinasMap).flat().length : atividadesList.length) === 1 ? 'atividade' : 'atividades'}
+                  {totalCount} {totalCount === 1 ? 'atividade' : 'atividades'}
                 </Badge>
               </h3>
             </div>
             <div className="overflow-x-auto">
-              {isDocumentacao ? (
+              {subdisciplinasMap ? (
                 <div className="space-y-4 p-4">
                   {Object.entries(subdisciplinasMap)
                     .sort((a, b) => a[0].localeCompare(b[0]))
@@ -690,10 +686,40 @@ export default function AnaliticoRenderContent({
                                       {renderExecutorCell(ativ, genericAtividadeIdToExclude)}
                                     </TableCell>
                                     <TableCell className="text-sm">
-                                      <div className="flex flex-col gap-0.5">
-                                        <span className="text-gray-600">{ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}</span>
-                                        <span className="font-semibold text-blue-600">{grupo.folhas.length > 0 ? `${grupo.folhas.reduce((sum, f) => sum + (Number(f.tempo) || 0), 0).toFixed(1)}h` : '-'}</span>
-                                      </div>
+                                      {editandoTempo[genericAtividadeIdToExclude] ? (
+                                        <div className="flex items-center gap-1">
+                                          <Input
+                                            type="number"
+                                            step="0.1"
+                                            min="0"
+                                            value={novosTempoPadrao[genericAtividadeIdToExclude] ?? ativ.tempo ?? 0}
+                                            onChange={(e) => setNovosTempoPadrao(prev => ({ ...prev, [genericAtividadeIdToExclude]: e.target.value }))}
+                                            className="w-20 h-7 text-xs"
+                                            onKeyDown={(e) => {
+                                              if (e.key === 'Enter') handleSalvarTempoPadrao(ativ, genericAtividadeIdToExclude);
+                                              else if (e.key === 'Escape') setEditandoTempo(prev => ({ ...prev, [genericAtividadeIdToExclude]: false }));
+                                            }}
+                                            autoFocus
+                                          />
+                                          <Button size="icon" variant="ghost" onClick={() => handleSalvarTempoPadrao(ativ, genericAtividadeIdToExclude)} className="h-7 w-7">
+                                            <CheckCircle className="w-4 h-4 text-green-600" />
+                                          </Button>
+                                          <Button size="icon" variant="ghost" onClick={() => setEditandoTempo(prev => ({ ...prev, [genericAtividadeIdToExclude]: false }))} className="h-7 w-7">
+                                            <XCircle className="w-4 h-4 text-gray-400" />
+                                          </Button>
+                                        </div>
+                                      ) : (
+                                        <div className="flex flex-col gap-0.5">
+                                          <button
+                                            onClick={() => { setEditandoTempo(prev => ({ ...prev, [genericAtividadeIdToExclude]: true })); setNovosTempoPadrao(prev => ({ ...prev, [genericAtividadeIdToExclude]: ativ.tempo ?? 0 })); }}
+                                            className="text-gray-600 hover:text-blue-800 hover:underline cursor-pointer text-left"
+                                            title="Clique para editar o tempo padrão"
+                                          >
+                                            {ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}
+                                          </button>
+                                          <span className="font-semibold text-blue-600">{grupo.folhas.length > 0 ? `${grupo.folhas.reduce((sum, f) => sum + (Number(f.tempo) || 0), 0).toFixed(1)}h` : '-'}</span>
+                                        </div>
+                                      )}
                                     </TableCell>
                                     <TableCell className="text-center">
                                       {!ativ.isEditable && renderAcoesCell(ativ, genericAtividadeIdToExclude, isDeleting)}

@@ -33,7 +33,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
   const [documentos, setDocumentos] = useState([]);
   const [usuarios, setUsuarios] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [filters, setFilters] = useState({ search: '', disciplina: 'all', etapa: 'all' });
+  const [filters, setFilters] = useState({ search: '', disciplina: 'all', etapa: 'all', subdisciplina: 'all' });
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedAtividade, setSelectedAtividade] = useState(null);
   const [isEtapaModalOpen, setIsEtapaModalOpen] = useState(false);
@@ -394,8 +394,9 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
       
       const disciplinaMatch = filters.disciplina === 'all' || ativ.disciplina === filters.disciplina;
       const etapaMatch = filters.etapa === 'all' || ativ.etapa === 'all' || ativ.etapa === filters.etapa;
+      const subdisciplinaMatch = filters.subdisciplina === 'all' || ativ.subdisciplina === filters.subdisciplina;
 
-      return searchMatch && disciplinaMatch && etapaMatch;
+      return searchMatch && disciplinaMatch && etapaMatch && subdisciplinaMatch;
     });
 
     const grupos = new Map();
@@ -419,43 +420,17 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
   }, [combinedActivities, filters]);
 
   const atividadesPorDisciplina = useMemo(() => {
-    const disciplinasDocumentacao = ['Planejamento', 'Gestão', 'BIM', 'Apoio', 'Coordenação'];
     const grupos = {};
-    const gruposDocumentacao = {};
-    
-    disciplinasDocumentacao.forEach(disc => {
-      gruposDocumentacao[disc] = {};
-    });
-    
+
     atividadesAgrupadas.forEach(grupo => {
       const disciplina = grupo.baseAtividade.disciplina || 'Sem Disciplina';
-      
-      if (disciplinasDocumentacao.includes(disciplina)) {
-        const subdisciplina = grupo.baseAtividade.subdisciplina || 'Sem Subdisciplina';
-        if (!gruposDocumentacao[disciplina][subdisciplina]) {
-          gruposDocumentacao[disciplina][subdisciplina] = [];
-        }
-        gruposDocumentacao[disciplina][subdisciplina].push(grupo);
-      } else {
-        if (!grupos[disciplina]) {
-          grupos[disciplina] = [];
-        }
-        grupos[disciplina].push(grupo);
-      }
+      const subdisciplina = grupo.baseAtividade.subdisciplina || 'Sem Subdisciplina';
+      if (!grupos[disciplina]) grupos[disciplina] = {};
+      if (!grupos[disciplina][subdisciplina]) grupos[disciplina][subdisciplina] = [];
+      grupos[disciplina][subdisciplina].push(grupo);
     });
 
-    const result = Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
-    
-    Object.entries(gruposDocumentacao)
-      .sort((a, b) => a[0].localeCompare(b[0]))
-      .forEach(([disciplina, subdisciplinas]) => {
-        const temAtividades = Object.values(subdisciplinas).flat().length > 0;
-        if (temAtividades) {
-          result.push([disciplina, subdisciplinas]);
-        }
-      });
-    
-    return result;
+    return Object.entries(grupos).sort((a, b) => a[0].localeCompare(b[0]));
   }, [atividadesAgrupadas]);
   
   const etapasUnicas = useMemo(() => {
@@ -465,6 +440,15 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
     }
     return [...new Set(combinedActivities.map(a => a.etapa).filter(Boolean))];
   }, [combinedActivities, empreendimentoId]);
+
+  const subdisciplinasUnicas = useMemo(() => {
+    const set = new Set(
+      (combinedActivities || [])
+        .filter(a => a.subdisciplina && (filters.disciplina === 'all' || a.disciplina === filters.disciplina))
+        .map(a => a.subdisciplina)
+    );
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [combinedActivities, filters.disciplina]);
 
   const handleOpenModal = (atividade = null) => {
     setSelectedAtividade(atividade);
@@ -773,11 +757,21 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
         </div>
         <div className="flex items-center gap-2">
             <Filter className="w-4 h-4 text-gray-400" />
-            <Select value={filters.disciplina} onValueChange={(value) => setFilters(prev => ({ ...prev, disciplina: value }))}>
+            <Select value={filters.disciplina} onValueChange={(value) => setFilters(prev => ({ ...prev, disciplina: value, subdisciplina: 'all' }))}>
                 <SelectTrigger className="w-auto md:w-48"><SelectValue placeholder="Filtrar por Disciplina" /></SelectTrigger>
                 <SelectContent>
                     <SelectItem value="all">Todas as Disciplinas</SelectItem>
                     {disciplinas.map(d => <SelectItem key={d.id} value={d.nome}>{d.nome}</SelectItem>)}
+                </SelectContent>
+            </Select>
+        </div>
+        <div className="flex items-center gap-2">
+            <Filter className="w-4 h-4 text-gray-400" />
+            <Select value={filters.subdisciplina} onValueChange={(value) => setFilters(prev => ({ ...prev, subdisciplina: value }))}>
+                <SelectTrigger className="w-auto md:w-52"><SelectValue placeholder="Filtrar por Subdisciplina" /></SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="all">Todas as Subdisciplinas</SelectItem>
+                    {subdisciplinasUnicas.map(sub => <SelectItem key={sub} value={sub}>{sub}</SelectItem>)}
                 </SelectContent>
             </Select>
         </div>
