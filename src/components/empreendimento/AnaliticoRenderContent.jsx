@@ -650,89 +650,15 @@ export default function AnaliticoRenderContent({
                               <TableRow>
                                 <TableCell colSpan={hasCheckboxColumn ? 11 : 10} className="text-center text-gray-400 py-4">Nenhuma folha vinculada</TableCell>
                               </TableRow>
-                            ) : todasFolhas.map(({ folha, grupo }) => {
-                              const ativ = grupo.baseAtividade;
-                              const folhaKey = folha.uniqueId || `${folha.source_documento_id}-${folha.base_atividade_id}`;
-                              const isFolhaExpanded = folhasExpandidas.has(folhaKey);
-                              const genericAtividadeIdToExclude = ativ.base_atividade_id || ativ.id;
-                              const isDeleting = isDeletingActivity[genericAtividadeIdToExclude];
-                              return [
+                            ) : todasFolhas.map(({ folha, grupo }) => (
                                 <AnaliticoFolhaRow
-                                  key={`folha-${folhaKey}`}
+                                  key={`folha-${folha.uniqueId || `${folha.source_documento_id}-${folha.base_atividade_id}`}`}
                                   folha={folha}
-                                  atividade={ativ}
+                                  atividade={grupo.baseAtividade}
                                   hasCheckboxColumn={hasCheckboxColumn}
-                                  isExpanded={isFolhaExpanded}
-                                  onToggleExpand={() => toggleFolha(folhaKey)}
                                   {...folhaRowProps}
-                                />,
-                                ...(isFolhaExpanded ? [
-                                  <TableRow key={`ativ-${folhaKey}`} className="bg-indigo-50/40">
-                                    <TableCell colSpan={hasCheckboxColumn ? 11 : 10} className="py-3">
-                                      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pl-8">
-                                        <div className="min-w-[260px]">
-                                          <div className="font-medium text-gray-800 text-sm">{String(ativ.atividade || '')}</div>
-                                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                                            {ativ.subdisciplina && <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{ativ.subdisciplina}</span>}
-                                            <button onClick={() => handleOpenEtapaModal(ativ)} className="text-xs text-blue-500 hover:text-blue-700 hover:underline cursor-pointer" title="Clique para editar a etapa">{ativ.etapa}</button>
-                                            <Badge variant="outline" className="text-[10px] h-4 px-1">{grupo.folhas.length} {grupo.folhas.length === 1 ? 'folha' : 'folhas'}</Badge>
-                                          </div>
-                                        </div>
-                                        <div className="flex items-center gap-2 min-w-[140px]">
-                                          <span className="text-xs text-gray-400">Status:</span>
-                                          {renderStatusCell(grupo, ativ)}
-                                        </div>
-                                        <div className="flex items-center gap-2 min-w-[180px]">
-                                          <span className="text-xs text-gray-400">Executor:</span>
-                                          {renderExecutorCell(ativ, genericAtividadeIdToExclude)}
-                                        </div>
-                                        <div className="flex items-center gap-2 text-sm">
-                                          <span className="text-xs text-gray-400">Horas:</span>
-                                          {editandoTempo[genericAtividadeIdToExclude] ? (
-                                            <div className="flex items-center gap-1">
-                                              <Input
-                                                type="number"
-                                                step="0.1"
-                                                min="0"
-                                                value={novosTempoPadrao[genericAtividadeIdToExclude] ?? ativ.tempo ?? 0}
-                                                onChange={(e) => setNovosTempoPadrao(prev => ({ ...prev, [genericAtividadeIdToExclude]: e.target.value }))}
-                                                className="w-20 h-7 text-xs"
-                                                onKeyDown={(e) => {
-                                                  if (e.key === 'Enter') handleSalvarTempoPadrao(ativ, genericAtividadeIdToExclude);
-                                                  else if (e.key === 'Escape') setEditandoTempo(prev => ({ ...prev, [genericAtividadeIdToExclude]: false }));
-                                                }}
-                                                autoFocus
-                                              />
-                                              <Button size="icon" variant="ghost" onClick={() => handleSalvarTempoPadrao(ativ, genericAtividadeIdToExclude)} className="h-7 w-7">
-                                                <CheckCircle className="w-4 h-4 text-green-600" />
-                                              </Button>
-                                              <Button size="icon" variant="ghost" onClick={() => setEditandoTempo(prev => ({ ...prev, [genericAtividadeIdToExclude]: false }))} className="h-7 w-7">
-                                                <XCircle className="w-4 h-4 text-gray-400" />
-                                              </Button>
-                                            </div>
-                                          ) : (
-                                            <div className="flex flex-col gap-0.5">
-                                              <button
-                                                onClick={() => { setEditandoTempo(prev => ({ ...prev, [genericAtividadeIdToExclude]: true })); setNovosTempoPadrao(prev => ({ ...prev, [genericAtividadeIdToExclude]: ativ.tempo ?? 0 })); }}
-                                                className="text-gray-600 hover:text-blue-800 hover:underline cursor-pointer text-left"
-                                                title="Clique para editar o tempo padrão"
-                                              >
-                                                {ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}
-                                              </button>
-                                              <span className="font-semibold text-blue-600">{grupo.folhas.length > 0 ? `${grupo.folhas.reduce((sum, f) => sum + (Number(f.tempo) || 0), 0).toFixed(1)}h` : '-'}</span>
-                                            </div>
-                                          )}
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                          {!ativ.isEditable && renderAcoesCell(ativ, genericAtividadeIdToExclude, isDeleting)}
-                                          {renderDropdownCell(ativ, isDeleting)}
-                                        </div>
-                                      </div>
-                                    </TableCell>
-                                  </TableRow>
-                                ] : [])
-                              ];
-                            })}
+                                />
+                              ))}
                           </TableBody>
                         </Table>
                         )}
