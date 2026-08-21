@@ -208,17 +208,14 @@ function AnaliticoFolhaRow({
             )}
             <Button
               size="sm"
-              variant={isConcluida ? 'outline' : 'default'}
+              variant="default"
               onClick={handleToggleConclusao}
-              disabled={isConc}
-              title={isConcluida ? 'Reverter conclusão desta folha' : 'Marcar como realizado'}
-              className={isConcluida
-                ? 'border-blue-500 text-blue-600 hover:bg-blue-50 h-7'
-                : 'bg-green-600 hover:bg-green-700 text-white h-7'
-              }
+              disabled={isConc || isConcluida}
+              title="Marcar como realizado"
+              className="bg-green-600 hover:bg-green-700 text-white h-7 disabled:opacity-100 disabled:bg-green-600/50"
             >
               {isConc ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <CheckCircle className="w-3 h-3 mr-1" />}
-              {isConcluida ? 'Reverter' : 'Realizado'}
+              Realizado
             </Button>
           </div>
         </TableCell>
