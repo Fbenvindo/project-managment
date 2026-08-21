@@ -638,7 +638,7 @@ export default function AnaliticoRenderContent({
                               <TableHead className="w-[40px]"></TableHead>
                               <TableHead>Status</TableHead>
                               <TableHead>Etapa</TableHead>
-                              <TableHead>Executor</TableHead>
+                              <TableHead>Usuário</TableHead>
                               <TableHead>Datas</TableHead>
                               <TableHead className="w-[70px]">Horas</TableHead>
                               <TableHead className="w-[70px]">Total</TableHead>
@@ -650,15 +650,44 @@ export default function AnaliticoRenderContent({
                               <TableRow>
                                 <TableCell colSpan={hasCheckboxColumn ? 11 : 10} className="text-center text-gray-400 py-4">Nenhuma folha vinculada</TableCell>
                               </TableRow>
-                            ) : todasFolhas.map(({ folha, grupo }) => (
-                                <AnaliticoFolhaRow
-                                  key={`folha-${folha.uniqueId || `${folha.source_documento_id}-${folha.base_atividade_id}`}`}
-                                  folha={folha}
-                                  atividade={grupo.baseAtividade}
-                                  hasCheckboxColumn={hasCheckboxColumn}
-                                  {...folhaRowProps}
-                                />
-                              ))}
+                            ) : todasFolhas.flatMap(({ folha, grupo }) => {
+                                const folhaKey = folha.uniqueId || `${folha.source_documento_id}-${folha.base_atividade_id}`;
+                                const isFolhaExpanded = folhasExpandidas.has(folhaKey);
+                                const atividadesDoDocumento = (atividadesAgrupadas || [])
+                                  .flatMap(g => g.folhas || [])
+                                  .filter(f => f.source_documento_id === folha.source_documento_id);
+                                return [
+                                  <AnaliticoFolhaRow
+                                    key={`folha-${folhaKey}`}
+                                    folha={folha}
+                                    atividade={grupo.baseAtividade}
+                                    hasCheckboxColumn={hasCheckboxColumn}
+                                    isExpanded={isFolhaExpanded}
+                                    onToggleExpand={() => toggleFolha(folhaKey)}
+                                    {...folhaRowProps}
+                                  />,
+                                  ...(isFolhaExpanded ? [
+                                    <TableRow key={`ativs-${folhaKey}`} className="bg-gray-50">
+                                      <TableCell colSpan={hasCheckboxColumn ? 11 : 10} className="py-3">
+                                        <div className="pl-12 space-y-1.5">
+                                          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Atividades do documento</div>
+                                          {atividadesDoDocumento.length === 0 ? (
+                                            <div className="text-sm text-gray-400">Nenhuma atividade vinculada</div>
+                                          ) : atividadesDoDocumento.map((a, i) => (
+                                            <div key={i} className="flex items-center gap-3 text-sm">
+                                              <span className="text-gray-400 w-6 text-right">{i + 1}.</span>
+                                              <span className="text-gray-700 flex-1 min-w-0 truncate">{String(a.atividade || '')}</span>
+                                              {a.subdisciplina && <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0">{a.subdisciplina}</span>}
+                                              <span className="text-xs text-gray-400 flex-shrink-0">{a.etapa}</span>
+                                              <span className="text-xs text-gray-500 flex-shrink-0">{a.tempo ? `${Number(a.tempo).toFixed(1)}h` : '-'}</span>
+                                            </div>
+                                          ))}
+                                        </div>
+                                      </TableCell>
+                                    </TableRow>
+                                  ] : [])
+                                ];
+                              })}
                           </TableBody>
                         </Table>
                         )}
