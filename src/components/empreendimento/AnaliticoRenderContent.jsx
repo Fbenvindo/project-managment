@@ -74,6 +74,13 @@ export default function AnaliticoRenderContent({
   const [isReverendoFolhas, setIsReverendoFolhas] = useState(false);
   const [isExcluindoFolhas, setIsExcluindoFolhas] = useState(false);
   const [isConcluindoAtividades, setIsConcluindoAtividades] = useState(false);
+  const [disciplinasRecolhidas, setDisciplinasRecolhidas] = useState(() => new Set());
+  const [subdisciplinasRecolhidas, setSubdisciplinasRecolhidas] = useState(() => new Set());
+  const [folhasExpandidas, setFolhasExpandidas] = useState(() => new Set());
+
+  const toggleDisciplina = useCallback((d) => setDisciplinasRecolhidas(p => { const n = new Set(p); n.has(d) ? n.delete(d) : n.add(d); return n; }), []);
+  const toggleSubdisciplina = useCallback((k) => setSubdisciplinasRecolhidas(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; }), []);
+  const toggleFolha = useCallback((k) => setFolhasExpandidas(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; }), []);
 
   const handleConcluirFolha = useCallback(() => {
     if (fetchData) fetchData();
@@ -591,8 +598,9 @@ export default function AnaliticoRenderContent({
 
         return (
           <div key={disciplina} className="border rounded-lg overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border-b">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border-b cursor-pointer hover:from-blue-100 hover:to-indigo-100" onClick={() => toggleDisciplina(disciplina)}>
               <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
+                {disciplinasRecolhidas.has(disciplina) ? <ChevronRight className="w-5 h-5 text-blue-600" /> : <ChevronDown className="w-5 h-5 text-blue-600" />}
                 <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
                 {disciplina}
                 <Badge variant="secondary" className="ml-2">
@@ -600,159 +608,137 @@ export default function AnaliticoRenderContent({
                 </Badge>
               </h3>
             </div>
-            <div className="overflow-x-auto">
+            <div className={`overflow-x-auto ${disciplinasRecolhidas.has(disciplina) ? 'hidden' : ''}`}>
               {subdisciplinasMap ? (
                 <div className="space-y-4 p-4">
                   {Object.entries(subdisciplinasMap)
                     .sort((a, b) => a[0].localeCompare(b[0]))
-                    .map(([subdisciplina, atividadesSubgrupo]) => (
+                    .map(([subdisciplina, atividadesSubgrupo]) => {
+                      const subKey = `${disciplina}::${subdisciplina}`;
+                      const subRecolhida = subdisciplinasRecolhidas.has(subKey);
+                      const todasFolhas = [];
+                      atividadesSubgrupo.forEach(grupo => {
+                        (grupo.folhas || []).forEach(folha => todasFolhas.push({ folha, grupo }));
+                      });
+                      return (
                       <div key={subdisciplina} className="border rounded-lg overflow-hidden">
-                        <div className="bg-gray-50 px-3 py-2 border-b">
-                          <h4 className="font-medium text-sm text-gray-700">
-                            {subdisciplina} ({atividadesSubgrupo.length})
+                        <div className="bg-gray-50 px-3 py-2 border-b cursor-pointer hover:bg-gray-100 flex items-center" onClick={() => toggleSubdisciplina(subKey)}>
+                          <h4 className="font-medium text-sm text-gray-700 flex items-center gap-2">
+                            {subRecolhida ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            {subdisciplina} ({todasFolhas.length} {todasFolhas.length === 1 ? 'folha' : 'folhas'})
                           </h4>
                         </div>
+                        {!subRecolhida && (
                         <Table className="text-sm">
                           <TableHeader className="bg-white">
                             <TableRow>
                               {hasCheckboxColumn && <TableHead className="w-[50px]"></TableHead>}
-                              <TableHead className="w-[50px]">
-                                <Checkbox
-                                  checked={atividadesSelecionadasParaExcluir.size > 0 &&
-                                    atividadesSubgrupo.every(grupo => atividadesSelecionadasParaExcluir.has(grupo.baseAtividade.base_atividade_id || grupo.baseAtividade.id))}
-                                  onCheckedChange={(checked) => {
-                                    const ids = atividadesSubgrupo.map(g => g.baseAtividade.base_atividade_id || g.baseAtividade.id);
-                                    setAtividadesSelecionadasParaExcluir(prev => {
-                                      const newSet = new Set(prev);
-                                      ids.forEach(id => { if (checked) newSet.add(id); else newSet.delete(id); });
-                                      return newSet;
-                                    });
-                                  }}
-                                />
-                              </TableHead>
                               <TableHead className="w-[50px]"></TableHead>
-                              <TableHead>Atividade</TableHead>
+                              <TableHead>Folha</TableHead>
+                              <TableHead className="w-[40px]"></TableHead>
                               <TableHead>Status</TableHead>
+                              <TableHead>Etapa</TableHead>
                               <TableHead>Executor</TableHead>
-                              <TableHead className="w-[90px]">Horas</TableHead>
+                              <TableHead>Datas</TableHead>
+                              <TableHead className="w-[70px]">Horas</TableHead>
+                              <TableHead className="w-[70px]">Total</TableHead>
                               <TableHead className="text-center w-[120px]">Ações</TableHead>
-                              <TableHead className="w-[50px]"></TableHead>
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {atividadesSubgrupo.map(grupo => {
+                            {todasFolhas.length === 0 ? (
+                              <TableRow>
+                                <TableCell colSpan={hasCheckboxColumn ? 11 : 10} className="text-center text-gray-400 py-4">Nenhuma folha vinculada</TableCell>
+                              </TableRow>
+                            ) : todasFolhas.map(({ folha, grupo }) => {
                               const ativ = grupo.baseAtividade;
-                              const key = `${ativ.base_atividade_id}-${ativ.etapa}-${ativ.disciplina}-${ativ.subdisciplina}`;
-                              const isExpanded = expandedAtividades[key];
+                              const folhaKey = folha.uniqueId || `${folha.source_documento_id}-${folha.base_atividade_id}`;
+                              const isFolhaExpanded = folhasExpandidas.has(folhaKey);
                               const genericAtividadeIdToExclude = ativ.base_atividade_id || ativ.id;
                               const isDeleting = isDeletingActivity[genericAtividadeIdToExclude];
-
                               return [
-                                <TableRow key={`${key}-row`} className="hover:bg-gray-50 group">
-                                    {hasCheckboxColumn && (
-                                      <TableCell>
-                                        {ativ.isEditable && (
-                                          <Checkbox
-                                            checked={selectedIds.has(ativ.uniqueId)}
-                                            onCheckedChange={() => handleSelectItem(ativ.uniqueId)}
-                                            disabled={isDeletingMultiple}
-                                          />
-                                        )}
-                                      </TableCell>
-                                    )}
-                                    <TableCell>
-                                      {!ativ.isEditable && (
-                                        <Checkbox
-                                          checked={atividadesSelecionadasParaExcluir.has(ativ.base_atividade_id || ativ.id)}
-                                          onCheckedChange={(checked) => {
-                                            setAtividadesSelecionadasParaExcluir(prev => {
-                                              const newSet = new Set(prev);
-                                              const id = ativ.base_atividade_id || ativ.id;
-                                              if (checked) newSet.add(id); else newSet.delete(id);
-                                              return newSet;
-                                            });
-                                          }}
-                                        />
-                                      )}
-                                    </TableCell>
-                                    <TableCell>
-                                      {grupo.folhas.length > 0 && (
-                                        <Button variant="ghost" size="icon" onClick={() => toggleAtividadeExpansion(key)} className="h-8 w-8">
-                                          {isExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
-                                        </Button>
-                                      )}
-                                    </TableCell>
-                                    <TableCell className="font-medium text-sm">
-                                      <div>{String(ativ.atividade || '')}</div>
-                                      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
-                                        {ativ.subdisciplina && <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{ativ.subdisciplina}</span>}
-                                        <button onClick={() => handleOpenEtapaModal(ativ)} className="text-xs text-blue-500 hover:text-blue-700 hover:underline cursor-pointer" title="Clique para editar a etapa">{ativ.etapa}</button>
-                                        <Badge variant="outline" className="text-[10px] h-4 px-1">{grupo.folhas.length} {grupo.folhas.length === 1 ? 'folha' : 'folhas'}</Badge>
+                                <AnaliticoFolhaRow
+                                  key={`folha-${folhaKey}`}
+                                  folha={folha}
+                                  atividade={ativ}
+                                  hasCheckboxColumn={hasCheckboxColumn}
+                                  isExpanded={isFolhaExpanded}
+                                  onToggleExpand={() => toggleFolha(folhaKey)}
+                                  {...folhaRowProps}
+                                />,
+                                ...(isFolhaExpanded ? [
+                                  <TableRow key={`ativ-${folhaKey}`} className="bg-indigo-50/40">
+                                    <TableCell colSpan={hasCheckboxColumn ? 11 : 10} className="py-3">
+                                      <div className="flex flex-wrap items-center gap-x-6 gap-y-2 pl-8">
+                                        <div className="min-w-[260px]">
+                                          <div className="font-medium text-gray-800 text-sm">{String(ativ.atividade || '')}</div>
+                                          <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+                                            {ativ.subdisciplina && <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">{ativ.subdisciplina}</span>}
+                                            <button onClick={() => handleOpenEtapaModal(ativ)} className="text-xs text-blue-500 hover:text-blue-700 hover:underline cursor-pointer" title="Clique para editar a etapa">{ativ.etapa}</button>
+                                            <Badge variant="outline" className="text-[10px] h-4 px-1">{grupo.folhas.length} {grupo.folhas.length === 1 ? 'folha' : 'folhas'}</Badge>
+                                          </div>
+                                        </div>
+                                        <div className="flex items-center gap-2 min-w-[140px]">
+                                          <span className="text-xs text-gray-400">Status:</span>
+                                          {renderStatusCell(grupo, ativ)}
+                                        </div>
+                                        <div className="flex items-center gap-2 min-w-[180px]">
+                                          <span className="text-xs text-gray-400">Executor:</span>
+                                          {renderExecutorCell(ativ, genericAtividadeIdToExclude)}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-sm">
+                                          <span className="text-xs text-gray-400">Horas:</span>
+                                          {editandoTempo[genericAtividadeIdToExclude] ? (
+                                            <div className="flex items-center gap-1">
+                                              <Input
+                                                type="number"
+                                                step="0.1"
+                                                min="0"
+                                                value={novosTempoPadrao[genericAtividadeIdToExclude] ?? ativ.tempo ?? 0}
+                                                onChange={(e) => setNovosTempoPadrao(prev => ({ ...prev, [genericAtividadeIdToExclude]: e.target.value }))}
+                                                className="w-20 h-7 text-xs"
+                                                onKeyDown={(e) => {
+                                                  if (e.key === 'Enter') handleSalvarTempoPadrao(ativ, genericAtividadeIdToExclude);
+                                                  else if (e.key === 'Escape') setEditandoTempo(prev => ({ ...prev, [genericAtividadeIdToExclude]: false }));
+                                                }}
+                                                autoFocus
+                                              />
+                                              <Button size="icon" variant="ghost" onClick={() => handleSalvarTempoPadrao(ativ, genericAtividadeIdToExclude)} className="h-7 w-7">
+                                                <CheckCircle className="w-4 h-4 text-green-600" />
+                                              </Button>
+                                              <Button size="icon" variant="ghost" onClick={() => setEditandoTempo(prev => ({ ...prev, [genericAtividadeIdToExclude]: false }))} className="h-7 w-7">
+                                                <XCircle className="w-4 h-4 text-gray-400" />
+                                              </Button>
+                                            </div>
+                                          ) : (
+                                            <div className="flex flex-col gap-0.5">
+                                              <button
+                                                onClick={() => { setEditandoTempo(prev => ({ ...prev, [genericAtividadeIdToExclude]: true })); setNovosTempoPadrao(prev => ({ ...prev, [genericAtividadeIdToExclude]: ativ.tempo ?? 0 })); }}
+                                                className="text-gray-600 hover:text-blue-800 hover:underline cursor-pointer text-left"
+                                                title="Clique para editar o tempo padrão"
+                                              >
+                                                {ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}
+                                              </button>
+                                              <span className="font-semibold text-blue-600">{grupo.folhas.length > 0 ? `${grupo.folhas.reduce((sum, f) => sum + (Number(f.tempo) || 0), 0).toFixed(1)}h` : '-'}</span>
+                                            </div>
+                                          )}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                          {!ativ.isEditable && renderAcoesCell(ativ, genericAtividadeIdToExclude, isDeleting)}
+                                          {renderDropdownCell(ativ, isDeleting)}
+                                        </div>
                                       </div>
                                     </TableCell>
-                                    <TableCell>
-                                      {renderStatusCell(grupo, ativ)}
-                                    </TableCell>
-                                    <TableCell>
-                                      {renderExecutorCell(ativ, genericAtividadeIdToExclude)}
-                                    </TableCell>
-                                    <TableCell className="text-sm">
-                                      {editandoTempo[genericAtividadeIdToExclude] ? (
-                                        <div className="flex items-center gap-1">
-                                          <Input
-                                            type="number"
-                                            step="0.1"
-                                            min="0"
-                                            value={novosTempoPadrao[genericAtividadeIdToExclude] ?? ativ.tempo ?? 0}
-                                            onChange={(e) => setNovosTempoPadrao(prev => ({ ...prev, [genericAtividadeIdToExclude]: e.target.value }))}
-                                            className="w-20 h-7 text-xs"
-                                            onKeyDown={(e) => {
-                                              if (e.key === 'Enter') handleSalvarTempoPadrao(ativ, genericAtividadeIdToExclude);
-                                              else if (e.key === 'Escape') setEditandoTempo(prev => ({ ...prev, [genericAtividadeIdToExclude]: false }));
-                                            }}
-                                            autoFocus
-                                          />
-                                          <Button size="icon" variant="ghost" onClick={() => handleSalvarTempoPadrao(ativ, genericAtividadeIdToExclude)} className="h-7 w-7">
-                                            <CheckCircle className="w-4 h-4 text-green-600" />
-                                          </Button>
-                                          <Button size="icon" variant="ghost" onClick={() => setEditandoTempo(prev => ({ ...prev, [genericAtividadeIdToExclude]: false }))} className="h-7 w-7">
-                                            <XCircle className="w-4 h-4 text-gray-400" />
-                                          </Button>
-                                        </div>
-                                      ) : (
-                                        <div className="flex flex-col gap-0.5">
-                                          <button
-                                            onClick={() => { setEditandoTempo(prev => ({ ...prev, [genericAtividadeIdToExclude]: true })); setNovosTempoPadrao(prev => ({ ...prev, [genericAtividadeIdToExclude]: ativ.tempo ?? 0 })); }}
-                                            className="text-gray-600 hover:text-blue-800 hover:underline cursor-pointer text-left"
-                                            title="Clique para editar o tempo padrão"
-                                          >
-                                            {ativ.tempo ? `${Number(ativ.tempo).toFixed(1)}h` : '-'}
-                                          </button>
-                                          <span className="font-semibold text-blue-600">{grupo.folhas.length > 0 ? `${grupo.folhas.reduce((sum, f) => sum + (Number(f.tempo) || 0), 0).toFixed(1)}h` : '-'}</span>
-                                        </div>
-                                      )}
-                                    </TableCell>
-                                    <TableCell className="text-center">
-                                      {!ativ.isEditable && renderAcoesCell(ativ, genericAtividadeIdToExclude, isDeleting)}
-                                    </TableCell>
-                                    <TableCell>
-                                      {renderDropdownCell(ativ, isDeleting)}
-                                    </TableCell>
-                                  </TableRow>,
-                                  ...(isExpanded ? grupo.folhas.map(folha => (
-                                    <AnaliticoFolhaRow
-                                      key={`${key}-${folha.uniqueId}`}
-                                      folha={folha}
-                                      showExcluirCheckbox={true}
-                                      {...folhaRowProps}
-                                    />
-                                  )) : [])
-                                ];
+                                  </TableRow>
+                                ] : [])
+                              ];
                             })}
                           </TableBody>
                         </Table>
+                        )}
                       </div>
-                    ))}
+                      );
+                    })}
                 </div>
               ) : (
                 <Table>

@@ -4,7 +4,7 @@ import { TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ChevronRight, CheckCircle2, CheckCircle, Loader2, Calendar, CalendarPlus } from 'lucide-react';
+import { ChevronRight, ChevronDown, CheckCircle2, CheckCircle, Loader2, Calendar, CalendarPlus } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import { PlanejamentoAtividade, Atividade } from '@/entities/all';
 import { retryWithBackoff } from '../utils/apiUtils';
@@ -20,6 +20,8 @@ function AnaliticoFolhaRow({
   atividade,
   folhasSelecionadas = new Set(),
   setFolhasSelecionadas = () => {},
+  isExpanded,
+  onToggleExpand,
 }) {
   const [isConc, setIsConc] = useState(false);
   const [showPlanejamentoModal, setShowPlanejamentoModal] = useState(false);
@@ -147,7 +149,13 @@ function AnaliticoFolhaRow({
           </TableCell>
         )}
         <TableCell className="pl-12">
-          <ChevronRight className="w-3 h-3 text-gray-400 inline mr-1" />
+          {onToggleExpand ? (
+            <Button variant="ghost" size="icon" className="h-6 w-6 p-0" onClick={onToggleExpand} title={isExpanded ? 'Recolher atividade' : 'Expandir atividade'}>
+              {isExpanded ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+            </Button>
+          ) : (
+            <ChevronRight className="w-3 h-3 text-gray-400 inline mr-1" />
+          )}
         </TableCell>
         <TableCell className="text-sm text-gray-600 min-w-[220px]">
           <span className="font-medium text-blue-700">{folha.source_documento_numero}</span>
@@ -263,6 +271,7 @@ export default React.memo(AnaliticoFolhaRow, (prev, next) => {
   
   if (prev.hasCheckboxColumn !== next.hasCheckboxColumn) return false;
   if (prev.empreendimentoId !== next.empreendimentoId) return false;
+  if (prev.isExpanded !== next.isExpanded) return false;
   
   return true;
 });
