@@ -575,7 +575,18 @@ export default function AnaliticoRenderContent({
       )}
 
       {(atividadesPorDisciplina || []).map(([disciplina, grupos]) => {
-        const subdisciplinasMap = grupos;
+        const subdisciplinasMap = (() => {
+          const map = {};
+          const add = (g) => {
+            if (!g) return;
+            const sub = g?.baseAtividade?.subdisciplina || 'Sem Subdisciplina';
+            if (!map[sub]) map[sub] = [];
+            map[sub].push(g);
+          };
+          if (Array.isArray(grupos)) grupos.forEach(add);
+          else if (grupos && typeof grupos === 'object') Object.values(grupos).forEach(arr => (Array.isArray(arr) ? arr : []).forEach(add));
+          return map;
+        })();
         const totalCount = Object.values(subdisciplinasMap).flat().length;
 
         return (
