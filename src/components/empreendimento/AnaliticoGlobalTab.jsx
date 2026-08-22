@@ -667,6 +667,18 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
     const saveKey = docId;
     setIsSavingFolhaExecutor(prev => ({ ...prev, [saveKey]: true }));
     try {
+      if (!executorEmail) {
+        const docAtual = documentos.find(d => d.id === docId);
+        const prevExecutor = docAtual?.executor_principal;
+        if (prevExecutor) {
+          const planosDoc = await retryWithBackoff(() =>
+            PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId, documento_id: docId }),
+            3, 500, `getPlanosFolha-${docId}`
+          );
+          const planosRemover = (planosDoc || []).filter(p => p.executor_principal === prevExecutor);
+          await Promise.all(planosRemover.map(p => retryWithBackoff(() => PlanejamentoAtividade.delete(p.id), 3, 500, `deleteFolhaPlano-${p.id}`)));
+        }
+      }
       await retryWithBackoff(() =>
         Documento.update(docId, { executor_principal: executorEmail || null }),
         3, 500, `updateFolhaExec-${docId}`
@@ -693,8 +705,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
       if (!executorEmail) {
         for (const plano of planos) {
           await retryWithBackoff(() =>
-            PlanejamentoAtividade.update(plano.id, { executor_principal: null }),
-            3, 500, `clearAtivExec-${plano.id}`
+            PlanejamentoAtividade.delete(plano.id),
+            3, 500, `deleteAtivExec-${plano.id}`
           );
         }
       } else {
@@ -745,8 +757,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
         if (!executorEmail) {
           for (const plano of planos) {
             await retryWithBackoff(() =>
-              PlanejamentoAtividade.update(plano.id, { executor_principal: null }),
-              3, 500, `clearEtapaExec-${plano.id}`
+              PlanejamentoAtividade.delete(plano.id),
+              3, 500, `deleteEtapaExec-${plano.id}`
             );
           }
         } else {
@@ -794,6 +806,18 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
         if (a.source_documento_id) docIds.add(a.source_documento_id);
       });
       for (const docId of Array.from(docIds)) {
+        if (!executorEmail) {
+          const docAtual = documentos.find(d => d.id === docId);
+          const prevExecutor = docAtual?.executor_principal;
+          if (prevExecutor) {
+            const planosDoc = await retryWithBackoff(() =>
+              PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId, documento_id: docId }),
+              3, 500, `getPlanosDisc-${docId}`
+            );
+            const planosRemover = (planosDoc || []).filter(p => p.executor_principal === prevExecutor);
+            await Promise.all(planosRemover.map(p => retryWithBackoff(() => PlanejamentoAtividade.delete(p.id), 3, 500, `deleteDiscPlano-${p.id}`)));
+          }
+        }
         await retryWithBackoff(() =>
           Documento.update(docId, { executor_principal: executorEmail || null }),
           3, 500, `updateDocExec-${docId}`
@@ -850,6 +874,18 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
         if (a.source_documento_id) docIds.add(a.source_documento_id);
       });
       for (const docId of Array.from(docIds)) {
+        if (!executorEmail) {
+          const docAtual = documentos.find(d => d.id === docId);
+          const prevExecutor = docAtual?.executor_principal;
+          if (prevExecutor) {
+            const planosDoc = await retryWithBackoff(() =>
+              PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId, documento_id: docId }),
+              3, 500, `getPlanosSub-${docId}`
+            );
+            const planosRemover = (planosDoc || []).filter(p => p.executor_principal === prevExecutor);
+            await Promise.all(planosRemover.map(p => retryWithBackoff(() => PlanejamentoAtividade.delete(p.id), 3, 500, `deleteSubPlano-${p.id}`)));
+          }
+        }
         await retryWithBackoff(() =>
           Documento.update(docId, { executor_principal: executorEmail || null }),
           3, 500, `updateDocExecSub-${docId}`
