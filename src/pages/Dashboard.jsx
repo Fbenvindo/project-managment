@@ -16,7 +16,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { retryWithBackoff, delay } from "../components/utils/apiUtils";
 import { parseISO, subDays, isValid, format } from 'date-fns';
 import { getNextWorkingDay, distribuirHorasPorDias } from '../components/utils/DateCalculator';
-import NovoPlanejamentoModal from "../components/planejamento/NovoPlanejamentoModal";
 
 const MemoizedExecucoesPorUsuario = memo(ExecucoesPorUsuario);
 
@@ -45,7 +44,6 @@ export default function Dashboard() {
   const [isDashboardLoading, setIsDashboardLoading] = useState(false);
   const [dashboardError, setDashboardError] = useState(null);
   const [viewMode, setViewMode] = useState('calendar');
-  const [showNovoPlanejamentoModal, setShowNovoPlanejamentoModal] = useState(false);
 
   const isColaboradorView = nivelUsuario === 1 && !isAdmin;
   const canCreatePlanning = !isGestao && (isAdmin || perfilAtual === 'direcao' || perfilAtual === 'coordenador');
@@ -180,18 +178,6 @@ export default function Dashboard() {
                 </div>
               }
             </div>
-            {canCreatePlanning &&
-              <Button
-                onClick={async () => {
-                  await loadAtividadesSeNecessario();
-                  setShowNovoPlanejamentoModal(true);
-                }}
-                className="bg-zinc-950 text-slate-50 px-4 py-2 text-sm font-medium inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0 h-10 hover:bg-purple-700 shadow-lg"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Novo Planejamento
-              </Button>
-            }
           </div>
 
           <AlertaAtrasosEntrega
@@ -256,19 +242,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {showNovoPlanejamentoModal && (
-        <NovoPlanejamentoModal
-          isOpen={showNovoPlanejamentoModal}
-          onClose={() => setShowNovoPlanejamentoModal(false)}
-          empreendimentos={allEmpreendimentos}
-          usuarios={allUsers}
-          atividades={atividades}
-          onSuccess={() => {
-            setShowNovoPlanejamentoModal(false);
-            triggerUpdate(); // Atualiza o calendário mantendo o usuário filtrado
-          }}
-        />
-      )}
     </div>
   );
 }

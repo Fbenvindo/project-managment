@@ -57,12 +57,6 @@ const LayoutComponent = ({ children, currentPageName }) => {
 
     if (hasPermission('coordenador')) {
       items.push({
-        title: "Planejamento",
-        url: createPageUrl("SeletorPlanejamento"),
-        icon: Calendar,
-        show: true
-      });
-      items.push({
         title: "Controle OS",
         url: createPageUrl("ControleOSGlobal"),
         icon: Briefcase,

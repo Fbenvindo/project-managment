@@ -10,7 +10,6 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Play, Square, Filter, ClipboardList, CheckSquare, FileText, Calendar } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import PlanejamentoAtividadeModal from "@/components/empreendimento/PlanejamentoAtividadeModal";
 
 export default function AnaliseConcepcaoPlanejamento() {
     const [documentos, setDocumentos] = useState([]);
@@ -31,8 +30,6 @@ export default function AnaliseConcepcaoPlanejamento() {
     const [finalStatus, setFinalStatus] = useState("Finalizado");
     
     const [selectedDocAtividades, setSelectedDocAtividades] = useState([]);
-    const [planejamentoModalOpen, setPlanejamentoModalOpen] = useState(false);
-    const [currentAtividade, setCurrentAtividade] = useState(null);
     const [usuarios, setUsuarios] = useState([]);
 
     useEffect(() => {
@@ -303,16 +300,6 @@ export default function AnaliseConcepcaoPlanejamento() {
         );
     };
 
-    const handlePlanejamentoAtividadeComplete = () => {
-        loadData();
-        setPlanejamentoModalOpen(false);
-        setCurrentAtividade(null);
-    };
-
-    const handlePlanejarAtividade = (atividade, empreendimentoId) => {
-        setCurrentAtividade({ ...atividade, empreendimentoId });
-        setPlanejamentoModalOpen(true);
-    };
 
     const toggleDocAtividadeSelection = (atividadeId) => {
         setSelectedDocAtividades(prev => 
@@ -505,14 +492,7 @@ export default function AnaliseConcepcaoPlanejamento() {
                                                             <TableCell className="text-center">{(planejamento.tempo_planejado || 0).toFixed(1)}h</TableCell>
                                                             <TableCell className="text-center">{tempoExibir.toFixed(1)}h</TableCell>
                                                             <TableCell className="text-center">
-                                                                <Button 
-                                                                    size="sm" 
-                                                                    onClick={() => handlePlanejarAtividade(atividade, planejamento.empreendimento_id)}
-                                                                    className="bg-purple-600 hover:bg-purple-700 text-white"
-                                                                >
-                                                                    <Calendar className="w-4 h-4 mr-1" />
-                                                                    Planejar
-                                                                </Button>
+                                                                
                                                             </TableCell>
                                                         </TableRow>
                                                     );
@@ -545,17 +525,6 @@ export default function AnaliseConcepcaoPlanejamento() {
                 </DialogContent>
             </Dialog>
 
-            {planejamentoModalOpen && currentAtividade && (
-                <PlanejamentoAtividadeModal
-                    isOpen={planejamentoModalOpen}
-                    onClose={() => setPlanejamentoModalOpen(false)}
-                    atividade={currentAtividade}
-                    empreendimentoId={currentAtividade.empreendimentoId}
-                    documentos={documentos}
-                    usuarios={usuarios}
-                    onSuccess={handlePlanejamentoAtividadeComplete}
-                />
-            )}
         </div>
     );
 }

@@ -12,7 +12,6 @@ import { Search, Filter, Folder, BarChart3, Play, Timer, BookOpen, CalendarDays,
 import { ActivityTimerContext } from "../contexts/ActivityTimerContext";
 import { canStartActivity } from "../utils/PredecessoraValidator";
 import PlanejamentoDocumentacaoModal from "./PlanejamentoDocumentacaoModal";
-import PlanejamentoAtividadeModal from "./PlanejamentoAtividadeModal";
 
 const useDebounce = (value, delay) => {
   const [debouncedValue, setDebouncedValue] = useState(value);
@@ -72,8 +71,6 @@ export default function AnaliseConcepcaoPlanejamentoTab({
     const { activeExecution, startExecution } = useContext(ActivityTimerContext);
 
     const [isPlanningModalOpen, setIsPlanningModalOpen] = useState(false);
-    const [showPlanejamentoModal, setShowPlanejamentoModal] = useState(false);
-    const [atividadeParaPlanejar, setAtividadeParaPlanejar] = useState(null);
 
     useEffect(() => {
         User.me().then(setUser).catch(() => setUser(null));
@@ -113,10 +110,6 @@ export default function AnaliseConcepcaoPlanejamentoTab({
         setIsPlanningModalOpen(true);
     };
 
-    const handlePlanejarAtividade = (atividade) => {
-        setAtividadeParaPlanejar(atividade);
-        setShowPlanejamentoModal(true);
-    };
 
     const handleIniciarAtividade = async (planejamento) => {
         if (!planejamento || !empreendimentoId || activeExecution) return;
@@ -287,23 +280,6 @@ export default function AnaliseConcepcaoPlanejamentoTab({
                 onSave={onUpdate}
             />
 
-            {showPlanejamentoModal && atividadeParaPlanejar && (
-                <PlanejamentoAtividadeModal
-                    isOpen={showPlanejamentoModal}
-                    onClose={() => {
-                        setShowPlanejamentoModal(false);
-                        setAtividadeParaPlanejar(null);
-                    }}
-                    atividade={atividadeParaPlanejar}
-                    usuarios={usuarios}
-                    empreendimentoId={empreendimentoId}
-                    onSuccess={() => {
-                        setShowPlanejamentoModal(false);
-                        setAtividadeParaPlanejar(null);
-                        onUpdate();
-                    }}
-                />
-            )}
 
             <Card>
                 <CardHeader>
@@ -400,14 +376,7 @@ export default function AnaliseConcepcaoPlanejamentoTab({
                                             <TableCell><Badge className={getStatusColor(percentual)}>{getStatusText(percentual)}</Badge></TableCell>
                                             <TableCell className="text-right">
                                                 <div className="flex gap-2 justify-end">
-                                                    {/* CORRIGIDO: Botão de planejar sempre visível */}
-                                                    <Button 
-                                                        size="sm" 
-                                                        onClick={() => handlePlanejarAtividade(atividade)}
-                                                        className="bg-blue-600 hover:bg-blue-700"
-                                                    >
-                                                        <Calendar className="w-3 h-3 mr-1" /> Planejar
-                                                    </Button>
+
                                                     
                                                     {/* Lógica de "Iniciar" pode ser revista no futuro, se necessário */}
                                                     {planejamentosDaAtividade.length > 0 && !activeExecution && (
