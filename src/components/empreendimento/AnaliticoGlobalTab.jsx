@@ -11,7 +11,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { Label } from '@/components/ui/label';
 import { EtapaEditModal, EditarEtapaEmFolhasModal, ExcluirDeFolhasModal } from './AnaliticoModais';
 import { PlusCircle, Search, Filter, MoreHorizontal, Edit, Trash2, Loader2, PackageOpen, Layers, XCircle, FileX, RefreshCw, Edit2, ChevronRight, ChevronDown, Calendar, CheckCircle2, Users2, CheckCircle } from 'lucide-react';
-import PlanejamentoAtividadeModal from './PlanejamentoAtividadeModal';
+
 import AtividadeFormModal from './AtividadeFormModal';
 import { debounce } from 'lodash';
 import { Badge } from '@/components/ui/badge';
@@ -39,8 +39,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
   const [isEtapaModalOpen, setIsEtapaModalOpen] = useState(false);
   const [isExcluirDeFolhasModalOpen, setIsExcluirDeFolhasModalOpen] = useState(false);
   const [isEditarEtapaEmFolhasModalOpen, setIsEditarEtapaEmFolhasModalOpen] = useState(false);
-  const [isPlanejamentoModalOpen, setIsPlanejamentoModalOpen] = useState(false);
-  const [atividadeParaPlanejar, setAtividadeParaPlanejar] = useState(null);
+
   const [isDeletingActivity, setIsDeletingActivity] = useState({});
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [isDeletingMultiple, setIsDeletingMultiple] = useState(false);

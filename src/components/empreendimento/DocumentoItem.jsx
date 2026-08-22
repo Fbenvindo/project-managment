@@ -41,7 +41,6 @@ export default function DocumentoItem({
   allAtividades,
   handleEdit,
   handleDelete,
-  handleOpenDocEtapaModal,
   handlePredecessoraChange,
   handleDataInicioChange,
   etapaParaPlanejamento,
@@ -369,7 +368,7 @@ export default function DocumentoItem({
         const updatedDocFromAPI = await retryWithExtendedBackoff(() => Documento.update(doc.id, updateData), `updateDocMulti-${doc.id}`);
         handleLocalUpdate(updatedDocFromAPI);
         setCargaDiariaCache({});
-        if (value === true && updatedDocFromAPI) handleOpenDocEtapaModal(updatedDocFromAPI);
+
       } else if (field === 'executor_principal' && value === null) {
         updateData = { executor_principal: null, inicio_planejado: null, termino_planejado: null, tempo_total: 0 };
         const allPlansForDoc = localPlanejamentos.filter(p => p.documento_id === doc.id);

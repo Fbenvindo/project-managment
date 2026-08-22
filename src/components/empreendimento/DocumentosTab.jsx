@@ -19,8 +19,7 @@ import DocumentoForm from "./DocumentoForm";
 import AtividadeFormModal from "./AtividadeFormModal";
 import DocumentoItemBase from "./DocumentoItem";
 const MemoDocumentoItem = React.memo(DocumentoItemBase);
-import PlanejamentoDocumentoEtapaModal from './PlanejamentoDocumentoEtapaModal';
-import PlanejamentoDocumentoDataModal from './PlanejamentoDocumentoDataModal';
+
 import { ETAPAS_ORDER } from '../utils/PredecessoraValidator';
 import { getNextWorkingDay, distribuirHorasPorDias, isWorkingDay, calculateEndDate, ensureWorkingDay } from '../utils/DateCalculator';
 import { format, isValid, parseISO, addDays } from 'date-fns';
@@ -69,16 +68,13 @@ export default function DocumentosTab({
   const [importFile, setImportFile] = useState(null);
   const [isImporting, setIsImporting] = useState(false);
 
-  const [isDocEtapaModalOpen, setIsDocEtapaModal] = useState(false);
-  const [documentForDocEtapaModal, setDocumentForDocEtapaModal] = useState(null);
-  const [isDocDataModalOpen, setIsDocDataModalOpen] = useState(false);
-  const [documentForDocDataModal, setDocumentForDocDataModal] = useState(null);
+
 
   const [loadingDocs, setLoadingDocs] = useState({});
   const [localDocumentos, setLocalDocumentos] = useState(documentos);
   const [atividadesEmpCache, setAtividadesEmpCache] = useState([]);
   const [localPlanejamentos, setLocalPlanejamentos] = useState(planejamentos);
-  const [executorPreSelecionado, setExecutorPreSelecionado] = useState(null);
+
   const [cargaDiariaCache, setCargaDiariaCache] = useState({});
   const [mediasDocumentos, setMediasDocumentos] = useState([]);
   const [mediasAtividades, setMediasAtividades] = useState([]);
@@ -656,34 +652,7 @@ export default function DocumentosTab({
     }
   };
 
-  const handleOpenDocEtapaModal = useCallback((doc) => {
-    setDocumentForDocEtapaModal(doc);
-    setExecutorPreSelecionado(null);
-    setIsDocEtapaModal(true);
-  }, []);
 
-  const handleCloseDocEtapaModal = useCallback(() => {
-    setIsDocEtapaModal(false);
-    setDocumentForDocEtapaModal(null);
-    setExecutorPreSelecionado(null);
-  }, []);
-
-  const handleSaveDocEtapaPlanning = useCallback(() => {
-    setCargaDiariaCache({});
-    setTimeout(() => {
-      Promise.all([
-        retryWithBackoff(() => PlanejamentoAtividade.filter({ empreendimento_id: empreendimento.id }), 3, 500).catch(() => []),
-        retryWithBackoff(() => PlanejamentoDocumento.filter({ empreendimento_id: empreendimento.id }), 3, 500).catch(() => []),
-      ]).then(([plansAtividade, plansDocumento]) => {
-        setLocalPlanejamentos([
-          ...(Array.isArray(plansAtividade) ? plansAtividade : []).map(p => ({ ...p, tipo_plano: 'atividade' })),
-          ...(Array.isArray(plansDocumento) ? plansDocumento : []).map(p => ({ ...p, tipo_plano: 'documento' }))
-        ]);
-      }).catch(() => {});
-    }, 200);
-    handleCloseDocEtapaModal();
-    setExecutorPreSelecionado(null);
-  }, [empreendimento.id, handleCloseDocEtapaModal]);
 
   const toggleRow = useCallback((docId) => {
     setExpandedRows(prev => ({ ...prev, [docId]: !prev[docId] }));
@@ -970,7 +939,6 @@ export default function DocumentosTab({
                                 allAtividades={atividadesFiltradas}
                                 handleEdit={handleEdit}
                                 handleDelete={handleDelete}
-                                handleOpenDocEtapaModal={handleOpenDocEtapaModal}
                                 handlePredecessoraChange={handlePredecessoraChange}
                                 handleDataInicioChange={handleDataInicioChange}
                                 etapaParaPlanejamento={etapaParaPlanejamento}
@@ -1010,30 +978,9 @@ export default function DocumentosTab({
         )}
       </AnimatePresence>
 
-      {isDocEtapaModalOpen && documentForDocEtapaModal && (
-        <PlanejamentoDocumentoEtapaModal
-          documento={{ ...documentForDocEtapaModal, empreendimento_etapas: empreendimento?.etapas || [] }}
-          usuarios={usuariosOrdenados}
-          empreendimentoId={empreendimento.id}
-          allAtividades={allAtividades}
-          executorPadrao={executorPreSelecionado}
-          etapaParaPlanejamento={etapaParaPlanejamento}
-          isOpen={isDocEtapaModalOpen}
-          onClose={handleCloseDocEtapaModal}
-          onSuccess={handleSaveDocEtapaPlanning}
-        />
-      )}
 
-      {isDocDataModalOpen && documentForDocDataModal && (
-        <PlanejamentoDocumentoDataModal
-          documento={documentForDocDataModal}
-          documentos={localDocumentos}
-          planejamentosDoc={localPlanejamentos}
-          isOpen={isDocDataModalOpen}
-          onClose={() => { setIsDocDataModalOpen(false); setDocumentForDocDataModal(null); }}
-          onSuccess={() => { onUpdate(); setIsDocDataModalOpen(false); setDocumentForDocDataModal(null); }}
-        />
-      )}
+
+
 
       {showAtividadeForm && (
         <AtividadeFormModal

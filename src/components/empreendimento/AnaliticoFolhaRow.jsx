@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { format, parseISO } from 'date-fns';
 import { PlanejamentoAtividade, Atividade } from '@/entities/all';
 import { retryWithBackoff } from '../utils/apiUtils';
-import PlanejamentoFolhaUnicaModal from './PlanejamentoFolhaUnicaModal';
+
 
 function AnaliticoFolhaRow({
   folha,
@@ -27,7 +27,7 @@ function AnaliticoFolhaRow({
   isSavingFolhaExecutor,
 }) {
   const [isConc, setIsConc] = useState(false);
-  const [showPlanejamentoModal, setShowPlanejamentoModal] = useState(false);
+
 
   const isConcluida = folha.status === 'Concluída';
   const isSelected = folhasSelecionadas.has(folha.source_documento_id);
@@ -137,12 +137,7 @@ function AnaliticoFolhaRow({
     }
   }, [folha, empreendimentoId, onConcluirFolha]);
 
-  const handleOpenModal = useCallback(() => setShowPlanejamentoModal(true), []);
-  const handleCloseModal = useCallback(() => setShowPlanejamentoModal(false), []);
-  const handleModalSuccess = useCallback(() => {
-    setShowPlanejamentoModal(false);
-    if (onConcluirFolha) onConcluirFolha();
-  }, [onConcluirFolha]);
+
 
   return (
     <>
@@ -221,17 +216,7 @@ function AnaliticoFolhaRow({
         <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
         <TableCell>
           <div className="flex items-center gap-1">
-            {folha.status !== 'Planejada' && !isConcluida && (
-              <Button
-                size="icon"
-                variant="outline"
-                onClick={handleOpenModal}
-                title="Planejar esta folha"
-                className="border-purple-400 text-purple-600 hover:bg-purple-50 h-7 w-7"
-              >
-                <CalendarPlus className="w-3 h-3" />
-              </Button>
-            )}
+
             <Button
               size="sm"
               variant="default"
@@ -246,17 +231,7 @@ function AnaliticoFolhaRow({
           </div>
         </TableCell>
       </TableRow>
-      {showPlanejamentoModal && (
-        <PlanejamentoFolhaUnicaModal
-          isOpen={showPlanejamentoModal}
-          onClose={handleCloseModal}
-          folha={folha}
-          atividade={atividade}
-          usuarios={usuarios || []}
-          empreendimentoId={empreendimentoId}
-          onSuccess={handleModalSuccess}
-        />
-      )}
+
     </>
   );
 }
