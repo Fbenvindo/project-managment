@@ -4,14 +4,15 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Calendar, Filter, Trash2, CalendarDays, RefreshCw, Users, ListOrdered } from "lucide-react";
+import { ChevronLeft, ChevronRight, Calendar, Filter, Trash2, CalendarDays, RefreshCw, Users, ListOrdered, AlertTriangle } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { format, addMonths, subMonths, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, parseISO, addWeeks, subWeeks, addDays, subDays, startOfDay, isValid, isAfter } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { motion, AnimatePresence } from 'framer-motion';
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 import PrevisaoEntregaModal from './PrevisaoEntregaModal';
-import { PlanejamentoAtividade, Atividade, Documento, Empreendimento, Execucao, PlanejamentoDocumento } from '@/entities/all';
+import { PlanejamentoAtividade, Atividade, Documento, Empreendimento, Execucao, PlanejamentoDocumento, PlanoDataEtapa, Pavimento } from '@/entities/all';
+import { buildEtapaCalendarEntries } from './EtapaPlanningSync';
 import { ChevronsUpDown } from 'lucide-react';
 import { isActivityOverdue as isOverdueShared, distribuirHorasPorDias, getNextWorkingDay } from '../utils/DateCalculator';
 import { retryWithBackoff } from '../utils/apiUtils';
@@ -280,8 +281,8 @@ const ActivityContainer = ({ activities, containerClass = "", disciplinas, dayKe
             index={index}
             isDragDisabled={
               modoOrdenacao
-                ? (atividade.status === 'concluido' || atividade.status === 'concluido_com_atraso')
-                : (!canReprogram || atividade.status === 'concluido' || atividade.status === 'concluido_com_atraso' || atividade.isLegacyExecution || normalizeActivityId(isReprogramando) === normalizeActivityId(atividade.id))
+                ? (atividade.isEtapaPlanning || atividade.status === 'concluido' || atividade.status === 'concluido_com_atraso')
+                : (atividade.isEtapaPlanning || !canReprogram || atividade.status === 'concluido' || atividade.status === 'concluido_com_atraso' || atividade.isLegacyExecution || normalizeActivityId(isReprogramando) === normalizeActivityId(atividade.id))
             }
           >
             {(provided, snapshot) => (
@@ -827,23 +828,27 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         return Array.from(m.values());
       };
 
-      const [planosAtividade, planosDocumento, execs] = await Promise.all([
+      const [planosAtividade, planosDocumento, execs, planoDataEtapas] = await Promise.all([
         fetchPlanos(PlanejamentoAtividade,'ca'),
         fetchPlanos(PlanejamentoDocumento,'cd'),
         retryWithBackoff(()=>Execucao.filter(execFilter),3,1500,'cal.exec'),
+        retryWithBackoff(()=>PlanoDataEtapa.list(),3,1500,'cal.etapa').catch(()=>[]),
       ]);
 
       const planosAtividadeComTipo = (planosAtividade || []).map(p => ({ ...p, tipo_planejamento: 'atividade' }));
       const planosDocumentoComTipo = (planosDocumento || []).map(p => ({ ...p, tipo_planejamento: 'documento' }));
       const todosPlanejamentos = [...planosAtividadeComTipo, ...planosDocumentoComTipo];
-      const empreendimentoIds = [...new Set(todosPlanejamentos.map(p => p.empreendimento_id).filter(Boolean))];
+      const etapaEmpIds = [...new Set((planoDataEtapas || []).map(p => p.empreendimento_id).filter(Boolean))];
+      const empreendimentoIds = [...new Set([...todosPlanejamentos.map(p => p.empreendimento_id).filter(Boolean), ...etapaEmpIds])];
       const atividadeIds = [...new Set(todosPlanejamentos.map(p => p.atividade_id).filter(Boolean))];
       const documentoIdsArray = [...new Set(todosPlanejamentos.map(p => p.documento_id).filter(Boolean).map(String))];
 
-      const [empreendimentosData, atividadesData, documentosData] = await Promise.all([
+      const [empreendimentosData, atividadesData, documentosData, etapaDocumentos, etapaPavimentos] = await Promise.all([
         empreendimentoIds.length > 0 ? retryWithBackoff(() => Empreendimento.filter({ id: { $in: empreendimentoIds } }), 3, 1000, 'enr.emp') : Promise.resolve([]),
         atividadeIds.length > 0 ? retryWithBackoff(() => Atividade.filter({ id: { $in: atividadeIds } }), 3, 1000, 'enr.ativ') : Promise.resolve([]),
         documentoIdsArray.length > 0 ? retryWithBackoff(() => Documento.filter({ id: { $in: documentoIdsArray } }), 3, 1000, 'enr.docs') : Promise.resolve([]),
+        etapaEmpIds.length > 0 ? retryWithBackoff(() => Documento.filter({ empreendimento_id: { $in: etapaEmpIds } }), 3, 1000, 'enr.etapa.docs') : Promise.resolve([]),
+        etapaEmpIds.length > 0 ? retryWithBackoff(() => Pavimento.filter({ empreendimento_id: { $in: etapaEmpIds } }), 3, 1000, 'enr.etapa.pav') : Promise.resolve([]),
       ]);
 
       const empreendimentosMap = new Map((empreendimentosData || []).map(item => [String(item.id), item]));
@@ -866,6 +871,15 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
         return { id: `exec-${exec.id}`, isLegacyExecution: true, isQuickActivity: true, tipo_planejamento: 'atividade', descritivo: exec.descritivo || 'Execução Rápida', tempo_executado: Number(exec.tempo_total) || 0, executor_principal: exec.usuario, status: 'concluido', horas_executadas_por_dia: diaExec ? { [diaExec]: Number(exec.tempo_total) || 0 } : {}, empreendimento: null, atividade: null, documento: null, os: exec.os || null, observacao: exec.observacao || null };
       });
 
+      const etapaEntries = buildEtapaCalendarEntries({
+        planoDataEtapas: planoDataEtapas || [],
+        documentos: etapaDocumentos,
+        pavimentos: etapaPavimentos,
+        empreendimentosMap,
+        existingPlanejamentos: todosPlanejamentos,
+        userFilter,
+      });
+
       const finalData = [
         ...todosPlanejamentos.map(plano => {
           const horasExec = horasExecutadasPorPlanejamento[plano.id] || {};
@@ -883,7 +897,8 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           const observacaoExec = observacaoPorPlanejamento[plano.id] || null;
           return { ...plano, empreendimento: empreendimentosMap.get(String(plano.empreendimento_id)) || null, atividade: atividadesMap.get(String(plano.atividade_id)) || null, documento: documentoEnriquecido, horas_executadas_por_dia: mergedHorasExec, observacao: observacaoExec };
         }),
-        ...atividadesVirtuais
+        ...atividadesVirtuais,
+        ...etapaEntries,
       ];
 
       setEnrichedData(finalData);
@@ -993,6 +1008,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       const atividadeParaMover = (enrichedData || []).find(p => normalizeActivityId(p.id) === normalizedActivityId);
       if (!atividadeParaMover) throw new Error("Atividade não encontrada.");
       if (atividadeParaMover.isLegacyExecution) throw new Error("Execuções antigas não podem ser reprogramadas.");
+      if (atividadeParaMover.isEtapaPlanning) throw new Error("Planejamentos por etapa não podem ser reprogramados pelo calendário.");
       if (atividadeParaMover.status === 'concluido' || atividadeParaMover.status === 'concluido_com_atraso') throw new Error("Atividades concluídas não podem ser reprogramadas.");
       const entidadePlanejamento = atividadeParaMover.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
       // Buscar carga de AMBAS as entidades para não ignorar atividades do outro tipo
@@ -1068,7 +1084,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     if (isDayDrag) {
       const sourceDayKey = draggableId.replace('day-', '');
       const dayActivities = activitiesByDay[sourceDayKey] || [];
-      const movableActivities = dayActivities.filter(a => !a.isLegacyExecution && a.status !== 'concluido' && a.status !== 'concluido_com_atraso');
+      const movableActivities = dayActivities.filter(a => !a.isLegacyExecution && !a.isEtapaPlanning && a.status !== 'concluido' && a.status !== 'concluido_com_atraso');
       if (movableActivities.length === 0) { alert("Nenhuma atividade pode ser movida."); return; }
       if (!window.confirm(`Mover ${movableActivities.length} atividade(s) de ${format(parseISO(sourceDayKey), 'd MMM', { locale: ptBR })} para ${format(parseISO(destination.droppableId), 'd MMM', { locale: ptBR })}?`)) return;
       (async () => {
@@ -1089,7 +1105,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       let groupActivities = [];
       if (groupKey.startsWith('virtual-')) groupActivities = allActivitiesInSourceDay.filter(a => a.isLegacyExecution && a.executor_principal === groupKey.replace('virtual-', ''));
       else if (groupKey.startsWith('geral-')) groupActivities = allActivitiesInSourceDay.filter(a => !a.empreendimento_id && a.executor_principal === groupKey.replace('geral-', '') && !a.isLegacyExecution);
-      else { const [empId, executorEmail] = groupKey.split('|'); groupActivities = allActivitiesInSourceDay.filter(a => a.empreendimento_id === empId && a.executor_principal === executorEmail && !a.isLegacyExecution); }
+      else { const [empId, executorEmail] = groupKey.split('|'); groupActivities = allActivitiesInSourceDay.filter(a => a.empreendimento_id === empId && a.executor_principal === executorEmail && !a.isLegacyExecution && !a.isEtapaPlanning); }
       if (groupActivities.some(a => a.isLegacyExecution || a.status === 'concluido' || a.status === 'concluido_com_atraso')) { alert("Algumas atividades do grupo não podem ser reprogramadas."); return; }
       (async () => {
         let ok = 0, err = 0;
@@ -1100,7 +1116,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     }
     const realDraggableId = extractRealId(draggableId, source.droppableId);
     const activitiesToMove = selectedActivities.has(realDraggableId) && selectedActivities.size > 1 ? Array.from(selectedActivities) : [realDraggableId];
-    if (activitiesToMove.some(id => { const a = (enrichedData || []).find(p => normalizeActivityId(p.id) === normalizeActivityId(id)); return !a || a.isLegacyExecution || a.status === 'concluido' || a.status === 'concluido_com_atraso'; })) { alert("Algumas atividades não podem ser reprogramadas."); return; }
+    if (activitiesToMove.some(id => { const a = (enrichedData || []).find(p => normalizeActivityId(p.id) === normalizeActivityId(id)); return !a || a.isLegacyExecution || a.isEtapaPlanning || a.status === 'concluido' || a.status === 'concluido_com_atraso'; })) { alert("Algumas atividades não podem ser reprogramadas."); return; }
     (async () => {
       let ok = 0, err = 0;
       for (const activityId of activitiesToMove) {
@@ -1117,6 +1133,9 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
     const base = enrichedData || [];
     if (filters.discipline !== 'all') {
       return base.filter(item => {
+        if (item.isEtapaPlanning) {
+          return item.disciplina === filters.discipline || item.subdisciplina === filters.discipline;
+        }
         if (item.tipo_planejamento === 'documento' && item.atividade_id === null) {
           return !!(item.documento?.subdisciplinas && item.documento.subdisciplinas.includes(filters.discipline));
         }
@@ -1422,6 +1441,8 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   const totalLoading = isDashboardRefreshing || isCalendarLoading;
   const canReprogram = hasPermission('admin');
 
+  const etapaConflictCount = useMemo(() => (enrichedData || []).filter(p => p.isEtapaPlanning && p._hasDateConflict).length, [enrichedData]);
+
   const renderContent = () => {
     if (!hasSelectedUser) {
       return (
@@ -1465,6 +1486,12 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
               {hasSelectedUser ? (
                 <div className="flex items-center gap-3">
                   <span>{`Calendário - ${selectedUserName} (${filteredPlanejamentos.length})`}</span>
+                  {etapaConflictCount > 0 && (
+                    <span className="text-sm font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-3 py-1 rounded-lg flex items-center gap-1">
+                      <AlertTriangle className="w-4 h-4" />
+                      {etapaConflictCount} planejamento(s) por etapa com conflito de datas
+                    </span>
+                  )}
                   {viewMode === 'day' && (
                     <span className="text-sm font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-lg">
                       {formatHours(horasDoDia)}h planejadas

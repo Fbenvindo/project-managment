@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, Check, Trash2, RefreshCw, Edit2, Loader2 } from "lucide-react";
+import { CheckCircle, Check, Trash2, RefreshCw, Edit2, Loader2, AlertTriangle } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 import { PlanejamentoAtividade, Execucao, PlanejamentoDocumento, Documento } from '@/entities/all';
@@ -317,6 +317,43 @@ export default function CalendarioActivityItem({
 
   const shouldShowAdjustButton = () => canEditDelete && !plano.isLegacyExecution && plano.status !== 'concluido';
   const observacao = plano.observacao || null;
+
+  // Tag dedicada para planejamento por etapa (PlanoDataEtapa):
+  // título = empreendimento, subtítulo = subdisciplina, descritivo = folhas por ordem de execução.
+  if (plano.isEtapaPlanning) {
+    return (
+      <div
+        ref={provided.innerRef}
+        {...provided.draggableProps}
+        style={{ ...provided.draggableProps.style, backgroundColor: '#fffbeb' }}
+        className="p-2 rounded border mb-1 text-xs border-amber-300 bg-amber-50 group"
+      >
+        <div className="flex items-start justify-between gap-1">
+          <div className="flex-1 overflow-hidden">
+            <p className="font-semibold text-gray-800 truncate">📋 {plano.empreendimento?.nome || 'Empreendimento'}</p>
+            <p className="text-blue-600 font-medium truncate">{plano.subdisciplina}</p>
+            {plano.folhas && plano.folhas.length > 0 && (
+              <p className="text-gray-600 truncate" title={plano.folhas.join(', ')}>
+                {plano.folhas.join(' · ')}
+              </p>
+            )}
+          </div>
+          <Badge variant="outline" className="text-xs whitespace-nowrap ml-1 shrink-0">{plano.etapa}</Badge>
+        </div>
+        <div className="flex items-center justify-between mt-1.5 gap-1">
+          {plano._hasDateConflict ? (
+            <Badge variant="destructive" className="text-xs">
+              <AlertTriangle className="w-3 h-3 mr-1" />
+              Conflito de datas
+            </Badge>
+          ) : (
+            <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200">Planejamento por etapa</Badge>
+          )}
+          <span className="font-mono text-blue-600 font-semibold text-sm">{formatHours(plano.tempo_planejado)}h</span>
+        </div>
+      </div>
+    );
+  }
 
   const getStatusBg = () => {
     if (isSelected) return '#e0e7ff';
