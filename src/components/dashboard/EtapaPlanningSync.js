@@ -50,6 +50,15 @@ export function buildEtapaCalendarEntries({ planoDataEtapas, documentos, pavimen
     });
   });
 
+  // Mapa documento_id -> executors (a partir dos planejamentos existentes das folhas)
+  const executorsByDocId = {};
+  (existingPlanejamentos || []).forEach(p => {
+    if (!p.documento_id || !p.executor_principal) return;
+    const key = String(p.documento_id);
+    if (!executorsByDocId[key]) executorsByDocId[key] = {};
+    executorsByDocId[key][p.executor_principal] = (executorsByDocId[key][p.executor_principal] || 0) + 1;
+  });
+
   const entries = [];
 
   (planoDataEtapas || []).forEach(plano => {
@@ -80,11 +89,18 @@ export function buildEtapaCalendarEntries({ planoDataEtapas, documentos, pavimen
       return oa - ob;
     });
 
-    // Executor: o mais frequente entre as folhas (vinculado ao executor do documento)
+    // Executor: o mais frequente entre as folhas. Vinculado ao executor do documento,
+    // lendo primeiro dos planejamentos existentes (PlanejamentoAtividade) e, como
+    // fallback, do campo executor_principal do próprio documento.
     const execCount = {};
     folhasOrdenadas.forEach(({ doc }) => {
-      if (!doc.executor_principal) return;
-      execCount[doc.executor_principal] = (execCount[doc.executor_principal] || 0) + 1;
+      const docExecs = executorsByDocId[String(doc.id)];
+      if (docExecs) {
+        Object.entries(docExecs).forEach(([email, n]) => { execCount[email] = (execCount[email] || 0) + n; });
+      }
+      if (doc.executor_principal) {
+        execCount[doc.executor_principal] = (execCount[doc.executor_principal] || 0) + 1;
+      }
     });
     const executores = Object.entries(execCount).sort((a, b) => b[1] - a[1]);
     if (executores.length === 0) return;
