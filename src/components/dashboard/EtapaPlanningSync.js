@@ -50,6 +50,18 @@ export function buildEtapaCalendarEntries({ planoDataEtapas, documentos, pavimen
     });
   });
 
+  // Ocupação por dia por executor (para listar as atividades em conflito)
+  const ocupacaoPorExecutor = {};
+  (existingPlanejamentos || []).forEach(p => {
+    if (!p.executor_principal || !p.horas_por_dia) return;
+    if (!ocupacaoPorExecutor[p.executor_principal]) ocupacaoPorExecutor[p.executor_principal] = {};
+    Object.entries(p.horas_por_dia).forEach(([d, h]) => {
+      if (Number(h) < 0.05) return;
+      if (!ocupacaoPorExecutor[p.executor_principal][d]) ocupacaoPorExecutor[p.executor_principal][d] = [];
+      ocupacaoPorExecutor[p.executor_principal][d].push({ id: p.id, tipo: p.tipo_planejamento, horas: Number(h) });
+    });
+  });
+
   // Mapa documento_id -> executors (a partir dos planejamentos existentes das folhas)
   const executorsByDocId = {};
   (existingPlanejamentos || []).forEach(p => {
@@ -143,7 +155,15 @@ export function buildEtapaCalendarEntries({ planoDataEtapas, documentos, pavimen
       }
       const dias = Object.keys(allocatedDays).sort();
       if (dias.length === 0) return;
-      const hasConflict = dias.some(d => diasOcupados.has(d));
+      const ocupacaoExecutor = ocupacaoPorExecutor[executor] || {};
+      const conflitos = [];
+      const seenIds = new Set();
+      dias.forEach(d => {
+        (ocupacaoExecutor[d] || []).forEach(o => {
+          if (!seenIds.has(o.id)) { seenIds.add(o.id); conflitos.push({ ...o, dia: d }); }
+        });
+      });
+      const hasConflict = conflitos.length > 0;
 
       const parts = [];
       if (doc.numero) parts.push(doc.numero);
@@ -172,6 +192,9 @@ export function buildEtapaCalendarEntries({ planoDataEtapas, documentos, pavimen
         status: 'nao_iniciado',
         folhas: [folhaDesc],
         _hasDateConflict: hasConflict,
+        _conflictWith: conflitos,
+        _planoId: plano.id,
+        _horasTotais: horasTotais,
       });
     });
   });

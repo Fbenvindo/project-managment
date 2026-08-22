@@ -13,6 +13,8 @@ import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 import PrevisaoEntregaModal from './PrevisaoEntregaModal';
 import { PlanejamentoAtividade, Atividade, Documento, Empreendimento, Execucao, PlanejamentoDocumento, PlanoDataEtapa, Pavimento } from '@/entities/all';
 import { buildEtapaCalendarEntries } from './EtapaPlanningSync';
+import { ConflictResolutionProvider } from './ConflictResolutionContext';
+import ConflictResolutionModal from './ConflictResolutionModal';
 import { ChevronsUpDown } from 'lucide-react';
 import { isActivityOverdue as isOverdueShared, distribuirHorasPorDias, getNextWorkingDay } from '../utils/DateCalculator';
 import { retryWithBackoff } from '../utils/apiUtils';
@@ -721,6 +723,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   const [planejamentosParaPrevisao, setPlanejamentosParaPrevisao] = useState([]);
   const [isReprogramando, setIsReprogramando] = useState(null);
   const [viewType, setViewType] = useState('analitico');
+  const [conflictEntry, setConflictEntry] = useState(null);
 
   const hasSelectedUser = !!filters.user;
   const isViewingAllUsers = filters.user === 'all';
@@ -1037,6 +1040,50 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
       setIsReprogramando(null);
     }
   }, [enrichedData, triggerUpdate, hasSelectedUser, filters.user, loadCalendarData]);
+
+  const handleResolveConflict = useCallback(async (action) => {
+    const folha = conflictEntry;
+    if (!folha) return;
+    const executor = folha.executor_principal;
+    try {
+      if (action === 'shift_etapa') {
+        // Carga do executor (excluindo as entradas virtuais de etapa)
+        const carga = {};
+        (enrichedData || []).forEach(p => {
+          if (p.executor_principal !== executor || !p.horas_por_dia || p.isEtapaPlanning) return;
+          Object.entries(p.horas_por_dia).forEach(([d, h]) => { carga[d] = (carga[d] || 0) + Number(h); });
+        });
+        // Próximo dia útil livre a partir do início atual da etapa
+        let cursor = parseLocalDate(folha.inicio_planejado);
+        let guard = 0;
+        while (guard < 400) {
+          const wd = cursor.getDay() !== 0 && cursor.getDay() !== 6;
+          const key = format(cursor, 'yyyy-MM-dd');
+          if (wd && (carga[key] || 0) < 0.05) break;
+          cursor = addDays(cursor, 1);
+          guard++;
+        }
+        const novaDataInicio = format(cursor, 'yyyy-MM-dd');
+        const { distribuicao, dataTermino } = distribuirHorasPorDias(cursor, folha._horasTotais, 8, carga);
+        const novoTermino = dataTermino ? format(dataTermino, 'yyyy-MM-dd') : novaDataInicio;
+        await retryWithBackoff(() => PlanoDataEtapa.update(folha._planoId, { data_inicio: novaDataInicio, data_termino: novoTermino }), 3, 1500, 'shiftEtapa');
+      } else if (action === 'move_existing') {
+        // Mover cada atividade em conflito para o próximo dia útil
+        const conflitos = folha._conflictWith || [];
+        for (const c of conflitos) {
+          let cursor = addDays(parseLocalDate(c.dia), 1);
+          while (cursor.getDay() === 0 || cursor.getDay() === 6) cursor = addDays(cursor, 1);
+          const novaData = format(cursor, 'yyyy-MM-dd');
+          await handleReprogramarAtividade(c.id, novaData, executor);
+        }
+      }
+      setConflictEntry(null);
+      if (hasSelectedUser) loadCalendarData(filters.user);
+      if (triggerUpdate) triggerUpdate();
+    } catch (error) {
+      alert('Erro ao resolver conflito: ' + (error.message || 'Tente novamente.'));
+    }
+  }, [conflictEntry, enrichedData, hasSelectedUser, filters.user, loadCalendarData, triggerUpdate, handleReprogramarAtividade]);
 
   const onDragEnd = (result) => {
     const { source, destination, draggableId } = result;
@@ -1477,7 +1524,7 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
   };
 
   return (
-    <>
+    <ConflictResolutionProvider openConflictModal={setConflictEntry}>
       <Card className="bg-white shadow-lg border-0 h-full flex flex-col">
         <CardHeader>
           <div className="flex items-center justify-between">
@@ -1564,6 +1611,15 @@ export default function CalendarioPlanejamento({ usuarios, disciplinas, onRefres
           cargaDiaria={planejamentosParaPrevisao.length > 0 && planejamentosParaPrevisao[0].executor_principal ? cargaDiariaPorUsuario[planejamentosParaPrevisao[0].executor_principal] || {} : {}}
         />
       )}
-    </>
+
+      <ConflictResolutionModal
+        open={!!conflictEntry}
+        folhaEntry={conflictEntry}
+        allPlanejamentos={enrichedData}
+        executorMap={executorMap}
+        onResolve={handleResolveConflict}
+        onClose={() => setConflictEntry(null)}
+      />
+    </ConflictResolutionProvider>
   );
 }
