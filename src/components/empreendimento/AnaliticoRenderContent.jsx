@@ -82,10 +82,12 @@ export default function AnaliticoRenderContent({
   const [disciplinasRecolhidas, setDisciplinasRecolhidas] = useState(() => new Set());
   const [subdisciplinasRecolhidas, setSubdisciplinasRecolhidas] = useState(() => new Set());
   const [folhasExpandidas, setFolhasExpandidas] = useState(() => new Set());
+  const [etapasExpandidas, setEtapasExpandidas] = useState(() => new Set());
 
   const toggleDisciplina = useCallback((d) => setDisciplinasRecolhidas(p => { const n = new Set(p); n.has(d) ? n.delete(d) : n.add(d); return n; }), []);
   const toggleSubdisciplina = useCallback((k) => setSubdisciplinasRecolhidas(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; }), []);
   const toggleFolha = useCallback((k) => setFolhasExpandidas(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; }), []);
+  const toggleEtapa = useCallback((k) => setEtapasExpandidas(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; }), []);
 
   const handleConcluirFolha = useCallback(() => {
     if (fetchData) fetchData();
@@ -729,51 +731,79 @@ export default function AnaliticoRenderContent({
                                   ...(isFolhaExpanded ? [
                                     <TableRow key={`ativs-${folhaKey}`} className="bg-gray-50">
                                       <TableCell colSpan={hasCheckboxColumn ? 11 : 10} className="py-3">
-                                        <div className="pl-12 space-y-1.5">
+                                        <div className="pl-8 space-y-2">
                                           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Atividades do documento</div>
                                           {atividadesDoDocumento.length === 0 ? (
                                             <div className="text-sm text-gray-400">Nenhuma atividade vinculada</div>
-                                          ) : atividadesDoDocumento.map((a, i) => {
-                                            const ativPlano = planejamentos?.find(p =>
-                                              p.documento_id === a.source_documento_id &&
-                                              p.atividade_id === a.base_atividade_id
-                                            );
-                                            const ativExecutor = ativPlano?.executor_principal || '';
-                                            const folhaExecutor = folha.executor_principal;
-                                            const isHerdado = !ativExecutor && folhaExecutor;
-                                            const saveKey = `ativ-${a.source_documento_id}-${a.base_atividade_id}`;
-                                            return (
-                                              <div key={i} className="flex items-center gap-3 text-sm py-0.5">
-                                                <span className="text-gray-400 w-6 text-right">{i + 1}.</span>
-                                                <span className="text-gray-700 flex-1 min-w-0 truncate">{String(a.atividade || '')}</span>
-                                                {a.subdisciplina && <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0">{a.subdisciplina}</span>}
-                                                <span className="text-xs text-gray-400 flex-shrink-0">{a.etapa}</span>
-                                                <span className="text-xs text-gray-500 flex-shrink-0">{a.tempo ? `${Number(a.tempo).toFixed(1)}h` : '-'}</span>
-                                                <div className="flex items-center gap-1 flex-shrink-0">
-                                                  <Select
-                                                    value={ativExecutor || '__none__'}
-                                                    onValueChange={(value) => {
-                                                      const email = value === '__none__' ? '' : value;
-                                                      handleSaveAtividadeExecutor?.(a, email);
-                                                    }}
-                                                    disabled={isSavingFolhaExecutor?.[saveKey]}
-                                                  >
-                                                    <SelectTrigger className="h-6 text-xs w-[160px]">
-                                                      <Users2 className="w-3 h-3 mr-1" />
-                                                      <SelectValue placeholder={isHerdado ? `Herdado: ${usuariosSemDuplicatas.find(u => u.email === folhaExecutor)?.nome || folhaExecutor}` : 'Sem executor'} />
-                                                    </SelectTrigger>
-                                                    <SelectContent>
-                                                      <SelectItem value="__none__" className="text-xs text-red-600">— Remover —</SelectItem>
-                                                      {usuariosSemDuplicatas.filter(u => u.status === 'ativo').sort((a, b) => (a.nome || '').localeCompare(b.nome || '')).map(u => (
-                                                        <SelectItem key={u.email} value={u.email} className="text-xs">{u.nome || u.email}</SelectItem>
-                                                      ))}
-                                                    </SelectContent>
-                                                  </Select>
-                                                  {isSavingFolhaExecutor?.[saveKey] && <Loader2 className="w-3 h-3 animate-spin text-blue-600" />}
+                                          ) : (() => {
+                                            const etapasMap = {};
+                                            atividadesDoDocumento.forEach(a => {
+                                              const etapa = a.etapa || 'Sem Etapa';
+                                              if (!etapasMap[etapa]) etapasMap[etapa] = [];
+                                              etapasMap[etapa].push(a);
+                                            });
+                                            return Object.entries(etapasMap).map(([etapa, atividadesEtapa]) => {
+                                              const etapaKey = `${folhaKey}::${etapa}`;
+                                              const etapaExpandida = etapasExpandidas.has(etapaKey);
+                                              const totalHoras = atividadesEtapa.reduce((sum, a) => sum + (Number(a.tempo) || 0), 0);
+                                              return (
+                                                <div key={etapa} className="border rounded-md overflow-hidden">
+                                                  <div className="bg-gray-100 px-3 py-1.5 cursor-pointer hover:bg-gray-200 flex items-center justify-between" onClick={() => toggleEtapa(etapaKey)}>
+                                                    <span className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+                                                      {etapaExpandida ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
+                                                      {etapa}
+                                                      <Badge variant="secondary" className="text-xs ml-1">{atividadesEtapa.length} {atividadesEtapa.length === 1 ? 'atividade' : 'atividades'}</Badge>
+                                                    </span>
+                                                    <span className="text-xs text-gray-500">{totalHoras.toFixed(1)}h</span>
+                                                  </div>
+                                                  {etapaExpandida && (
+                                                    <div className="pl-4 py-1.5 space-y-1 bg-white border-t">
+                                                      {atividadesEtapa.map((a, i) => {
+                                                        const ativPlano = planejamentos?.find(p =>
+                                                          p.documento_id === a.source_documento_id &&
+                                                          p.atividade_id === a.base_atividade_id
+                                                        );
+                                                        const ativExecutor = ativPlano?.executor_principal || '';
+                                                        const folhaExecutor = folha.executor_principal;
+                                                        const isHerdado = !ativExecutor && folhaExecutor;
+                                                        const saveKey = `ativ-${a.source_documento_id}-${a.base_atividade_id}`;
+                                                        return (
+                                                          <div key={i} className="flex items-center gap-3 text-sm py-0.5">
+                                                            <span className="text-gray-400 w-5 text-right">{i + 1}.</span>
+                                                            <span className="text-gray-700 flex-1 min-w-0 truncate">{String(a.atividade || '')}</span>
+                                                            {a.subdisciplina && <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0">{a.subdisciplina}</span>}
+                                                            <span className="text-xs text-gray-500 flex-shrink-0">{a.tempo ? `${Number(a.tempo).toFixed(1)}h` : '-'}</span>
+                                                            <div className="flex items-center gap-1 flex-shrink-0">
+                                                              <Select
+                                                                value={ativExecutor || '__none__'}
+                                                                onValueChange={(value) => {
+                                                                  const email = value === '__none__' ? '' : value;
+                                                                  handleSaveAtividadeExecutor?.(a, email);
+                                                                }}
+                                                                disabled={isSavingFolhaExecutor?.[saveKey]}
+                                                              >
+                                                                <SelectTrigger className="h-6 text-xs w-[160px]">
+                                                                  <Users2 className="w-3 h-3 mr-1" />
+                                                                  <SelectValue placeholder={isHerdado ? `Herdado: ${usuariosSemDuplicatas.find(u => u.email === folhaExecutor)?.nome || folhaExecutor}` : 'Sem executor'} />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                  <SelectItem value="__none__" className="text-xs text-red-600">— Remover —</SelectItem>
+                                                                  {usuariosSemDuplicatas.filter(u => u.status === 'ativo').sort((a, b) => (a.nome || '').localeCompare(b.nome || '')).map(u => (
+                                                                    <SelectItem key={u.email} value={u.email} className="text-xs">{u.nome || u.email}</SelectItem>
+                                                                  ))}
+                                                                </SelectContent>
+                                                              </Select>
+                                                              {isSavingFolhaExecutor?.[saveKey] && <Loader2 className="w-3 h-3 animate-spin text-blue-600" />}
+                                                            </div>
+                                                          </div>
+                                                        );
+                                                      })}
+                                                    </div>
+                                                  )}
                                                 </div>
-                                              </div>
-                                            );
-                                          })}
+                                              );
+                                            });
+                                          })()}
                                         </div>
                                       </TableCell>
                                     </TableRow>
