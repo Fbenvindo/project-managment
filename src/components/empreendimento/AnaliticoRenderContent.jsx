@@ -71,6 +71,7 @@ export default function AnaliticoRenderContent({
   handleAtribuirExecutorDisciplina,
   handleAtribuirExecutorSubdisciplina,
   isSavingExecutorDisciplina,
+  handleSaveAtividadeExecutor,
 }) {
   // folhasSelecionadas lives here so checkbox clicks don't re-render the entire parent
   const [folhasSelecionadas, setFolhasSelecionadas] = useState(new Set());
@@ -643,27 +644,7 @@ export default function AnaliticoRenderContent({
                   {totalCount} {totalCount === 1 ? 'atividade' : 'atividades'}
                 </Badge>
               </h3>
-              <div className="mt-2 flex items-center gap-2 flex-wrap" onClick={e => e.stopPropagation()}>
-                <Users2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
-                <Select
-                  value={getExecutorDisciplina(disciplina) === 'mixed' ? undefined : (getExecutorDisciplina(disciplina) || undefined)}
-                  onValueChange={(value) => handleAtribuirExecutorDisciplina?.(disciplina, value)}
-                  disabled={isSavingExecutorDisciplina?.[`disc-${disciplina}`]}
-                >
-                  <SelectTrigger className="h-7 text-xs w-[240px]">
-                    <SelectValue placeholder={getExecutorDisciplina(disciplina) === 'mixed' ? 'Múltiplos executores' : 'Atribuir executor à disciplina'} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {usuariosSemDuplicatas.filter(u => u.status === 'ativo').sort((a, b) => (a.nome || '').localeCompare(b.nome || '')).map(u => (
-                      <SelectItem key={u.email} value={u.email}>{u.nome || u.email}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                {isSavingExecutorDisciplina?.[`disc-${disciplina}`] && <Loader2 className="w-3 h-3 animate-spin text-blue-600" />}
-                {filters?.etapa !== 'all' && (
-                  <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded">Atribuição limitada à etapa: {filters.etapa}</span>
-                )}
-              </div>
+
             </div>
             <div className={`overflow-x-auto ${disciplinasRecolhidas.has(disciplina) ? 'hidden' : ''}`}>
               {subdisciplinasMap ? (
@@ -686,8 +667,11 @@ export default function AnaliticoRenderContent({
                           </h4>
                           <div className="ml-auto flex items-center gap-1" onClick={e => e.stopPropagation()}>
                             <Select
-                              value={getExecutorSubdisciplina(disciplina, subdisciplina) === 'mixed' ? undefined : (getExecutorSubdisciplina(disciplina, subdisciplina) || undefined)}
-                              onValueChange={(value) => handleAtribuirExecutorSubdisciplina?.(disciplina, subdisciplina, value)}
+                              value={getExecutorSubdisciplina(disciplina, subdisciplina) === 'mixed' ? undefined : (getExecutorSubdisciplina(disciplina, subdisciplina) || '__none__')}
+                              onValueChange={(value) => {
+                                const email = value === '__none__' ? '' : value;
+                                handleAtribuirExecutorSubdisciplina?.(disciplina, subdisciplina, email);
+                              }}
                               disabled={isSavingExecutorDisciplina?.[`sub-${disciplina}-${subdisciplina}`]}
                             >
                               <SelectTrigger className="h-6 text-xs w-[200px]">
@@ -695,6 +679,7 @@ export default function AnaliticoRenderContent({
                                 <SelectValue placeholder={getExecutorSubdisciplina(disciplina, subdisciplina) === 'mixed' ? 'Múltiplos' : 'Executor da subdisc.'} />
                               </SelectTrigger>
                               <SelectContent>
+                                <SelectItem value="__none__" className="text-red-600">— Remover executor —</SelectItem>
                                 {usuariosSemDuplicatas.filter(u => u.status === 'ativo').sort((a, b) => (a.nome || '').localeCompare(b.nome || '')).map(u => (
                                   <SelectItem key={u.email} value={u.email}>{u.nome || u.email}</SelectItem>
                                 ))}
@@ -748,15 +733,47 @@ export default function AnaliticoRenderContent({
                                           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Atividades do documento</div>
                                           {atividadesDoDocumento.length === 0 ? (
                                             <div className="text-sm text-gray-400">Nenhuma atividade vinculada</div>
-                                          ) : atividadesDoDocumento.map((a, i) => (
-                                            <div key={i} className="flex items-center gap-3 text-sm">
-                                              <span className="text-gray-400 w-6 text-right">{i + 1}.</span>
-                                              <span className="text-gray-700 flex-1 min-w-0 truncate">{String(a.atividade || '')}</span>
-                                              {a.subdisciplina && <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0">{a.subdisciplina}</span>}
-                                              <span className="text-xs text-gray-400 flex-shrink-0">{a.etapa}</span>
-                                              <span className="text-xs text-gray-500 flex-shrink-0">{a.tempo ? `${Number(a.tempo).toFixed(1)}h` : '-'}</span>
-                                            </div>
-                                          ))}
+                                          ) : atividadesDoDocumento.map((a, i) => {
+                                            const ativPlano = planejamentos?.find(p =>
+                                              p.documento_id === a.source_documento_id &&
+                                              p.atividade_id === a.base_atividade_id
+                                            );
+                                            const ativExecutor = ativPlano?.executor_principal || '';
+                                            const folhaExecutor = folha.executor_principal;
+                                            const isHerdado = !ativExecutor && folhaExecutor;
+                                            const saveKey = `ativ-${a.source_documento_id}-${a.base_atividade_id}`;
+                                            return (
+                                              <div key={i} className="flex items-center gap-3 text-sm py-0.5">
+                                                <span className="text-gray-400 w-6 text-right">{i + 1}.</span>
+                                                <span className="text-gray-700 flex-1 min-w-0 truncate">{String(a.atividade || '')}</span>
+                                                {a.subdisciplina && <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0">{a.subdisciplina}</span>}
+                                                <span className="text-xs text-gray-400 flex-shrink-0">{a.etapa}</span>
+                                                <span className="text-xs text-gray-500 flex-shrink-0">{a.tempo ? `${Number(a.tempo).toFixed(1)}h` : '-'}</span>
+                                                <div className="flex items-center gap-1 flex-shrink-0">
+                                                  <Select
+                                                    value={ativExecutor || '__none__'}
+                                                    onValueChange={(value) => {
+                                                      const email = value === '__none__' ? '' : value;
+                                                      handleSaveAtividadeExecutor?.(a, email);
+                                                    }}
+                                                    disabled={isSavingFolhaExecutor?.[saveKey]}
+                                                  >
+                                                    <SelectTrigger className="h-6 text-xs w-[160px]">
+                                                      <Users2 className="w-3 h-3 mr-1" />
+                                                      <SelectValue placeholder={isHerdado ? `Herdado: ${usuariosSemDuplicatas.find(u => u.email === folhaExecutor)?.nome || folhaExecutor}` : 'Sem executor'} />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                      <SelectItem value="__none__" className="text-xs text-red-600">— Remover —</SelectItem>
+                                                      {usuariosSemDuplicatas.filter(u => u.status === 'ativo').sort((a, b) => (a.nome || '').localeCompare(b.nome || '')).map(u => (
+                                                        <SelectItem key={u.email} value={u.email} className="text-xs">{u.nome || u.email}</SelectItem>
+                                                      ))}
+                                                    </SelectContent>
+                                                  </Select>
+                                                  {isSavingFolhaExecutor?.[saveKey] && <Loader2 className="w-3 h-3 animate-spin text-blue-600" />}
+                                                </div>
+                                              </div>
+                                            );
+                                          })}
                                         </div>
                                       </TableCell>
                                     </TableRow>

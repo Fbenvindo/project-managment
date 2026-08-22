@@ -662,8 +662,73 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
     // Implementação simplificada
   };
 
-  const handleSaveFolhaExecutor = async (folha, executorEmail, dataInicioCustom = null) => {
-    // Implementação simplificada
+  const handleSaveFolhaExecutor = async (folha, executorEmail) => {
+    const docId = folha.source_documento_id;
+    if (!docId) return;
+    const saveKey = docId;
+    setIsSavingFolhaExecutor(prev => ({ ...prev, [saveKey]: true }));
+    try {
+      await retryWithBackoff(() =>
+        Documento.update(docId, { executor_principal: executorEmail || null }),
+        3, 500, `updateFolhaExec-${docId}`
+      );
+      await fetchData();
+    } catch (error) {
+      alert('Erro ao atribuir executor da folha: ' + error.message);
+    } finally {
+      setIsSavingFolhaExecutor(prev => ({ ...prev, [saveKey]: false }));
+    }
+  };
+
+  const handleSaveAtividadeExecutor = async (atividadeFolha, executorEmail) => {
+    const docId = atividadeFolha.source_documento_id;
+    const atividadeId = atividadeFolha.base_atividade_id;
+    if (!docId || !atividadeId) return;
+    const saveKey = `ativ-${docId}-${atividadeId}`;
+    setIsSavingFolhaExecutor(prev => ({ ...prev, [saveKey]: true }));
+    try {
+      const planos = await retryWithBackoff(() =>
+        PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId, documento_id: docId, atividade_id: atividadeId }),
+        3, 500, `getPlanoAtivExec-${docId}-${atividadeId}`
+      );
+      if (!executorEmail) {
+        for (const plano of planos) {
+          await retryWithBackoff(() =>
+            PlanejamentoAtividade.update(plano.id, { executor_principal: null }),
+            3, 500, `clearAtivExec-${plano.id}`
+          );
+        }
+      } else {
+        if (planos.length > 0) {
+          await retryWithBackoff(() =>
+            PlanejamentoAtividade.update(planos[0].id, { executor_principal: executorEmail, executores: [executorEmail] }),
+            3, 500, `updateAtivExec-${planos[0].id}`
+          );
+        } else {
+          const atividadeData = combinedActivities.find(a => a.base_atividade_id === atividadeId && a.source_documento_id === docId);
+          await retryWithBackoff(() =>
+            PlanejamentoAtividade.create({
+              empreendimento_id: empreendimentoId,
+              documento_id: docId,
+              atividade_id: atividadeId,
+              etapa: atividadeData?.etapa || '',
+              descritivo: atividadeData?.atividade || '',
+              tempo_planejado: atividadeData?.tempo || 0,
+              executor_principal: executorEmail,
+              executores: [executorEmail],
+              status: 'nao_iniciado',
+              horas_por_dia: {},
+            }),
+            3, 500, `createAtivExec-${docId}-${atividadeId}`
+          );
+        }
+      }
+      await fetchData();
+    } catch (error) {
+      alert('Erro ao atribuir executor da atividade: ' + error.message);
+    } finally {
+      setIsSavingFolhaExecutor(prev => ({ ...prev, [saveKey]: false }));
+    }
   };
 
   const handleAtribuirExecutorDisciplina = async (disciplina, executorEmail) => {
@@ -693,6 +758,35 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
 
   const handleAtribuirExecutorSubdisciplina = async (disciplina, subdisciplina, executorEmail) => {
     const etapaFilter = filters.etapa !== 'all' ? filters.etapa : null;
+    
+    if (executorEmail) {
+      const docIds = new Set();
+      combinedActivities.forEach(a => {
+        if (a.disciplina !== disciplina) return;
+        const sub = a.subdisciplina || 'Sem Subdisciplina';
+        if (sub !== subdisciplina) return;
+        if (etapaFilter && a.etapa !== etapaFilter) return;
+        if (a.source_documento_id) docIds.add(a.source_documento_id);
+      });
+      
+      const docIdsArray = Array.from(docIds);
+      const docsWithDifferentExecutor = docIdsArray.filter(docId => {
+        const doc = documentos.find(d => d.id === docId);
+        return doc && doc.executor_principal && doc.executor_principal !== executorEmail;
+      });
+      if (docsWithDifferentExecutor.length > 0) {
+        if (!confirm(`Existem ${docsWithDifferentExecutor.length} folha(s) nesta subdisciplina com executor diferente. Deseja realmente sobrescrever?`)) return;
+      }
+      
+      const planosComExecutorDiferente = planejamentos.filter(p => {
+        if (!p.documento_id || !docIds.has(p.documento_id)) return false;
+        return p.executor_principal && p.executor_principal !== executorEmail;
+      });
+      if (planosComExecutorDiferente.length > 0) {
+        if (!confirm(`Existem ${planosComExecutorDiferente.length} atividade(s) com executor específico diferente. Deseja realmente alterar o executor da subdisciplina?`)) return;
+      }
+    }
+    
     const saveKey = `sub-${disciplina}-${subdisciplina}`;
     setIsSavingExecutorDisciplina(prev => ({ ...prev, [saveKey]: true }));
     try {
@@ -780,6 +874,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
       handleAtribuirExecutorDisciplina={handleAtribuirExecutorDisciplina}
       handleAtribuirExecutorSubdisciplina={handleAtribuirExecutorSubdisciplina}
       isSavingExecutorDisciplina={isSavingExecutorDisciplina}
+      handleSaveAtividadeExecutor={handleSaveAtividadeExecutor}
     />
   );
 

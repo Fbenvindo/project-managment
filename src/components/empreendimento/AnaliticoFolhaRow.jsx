@@ -4,7 +4,8 @@ import { TableRow, TableCell } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
-import { ChevronRight, ChevronDown, CheckCircle2, CheckCircle, Loader2, Calendar, CalendarPlus } from 'lucide-react';
+import { ChevronRight, ChevronDown, CheckCircle2, CheckCircle, Loader2, Calendar, CalendarPlus, Users2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format, parseISO } from 'date-fns';
 import { PlanejamentoAtividade, Atividade } from '@/entities/all';
 import { retryWithBackoff } from '../utils/apiUtils';
@@ -22,6 +23,8 @@ function AnaliticoFolhaRow({
   setFolhasSelecionadas = () => {},
   isExpanded,
   onToggleExpand,
+  handleSaveFolhaExecutor,
+  isSavingFolhaExecutor,
 }) {
   const [isConc, setIsConc] = useState(false);
   const [showPlanejamentoModal, setShowPlanejamentoModal] = useState(false);
@@ -174,14 +177,36 @@ function AnaliticoFolhaRow({
         </TableCell>
         <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
         <TableCell>
-          {executorNome ? (
-            <div className="flex items-center gap-1">
-              <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0" />
-              <span className="text-xs font-medium text-green-800 truncate max-w-[120px]">{executorNome}</span>
-            </div>
-          ) : (
-            <span className="text-xs text-gray-400">-</span>
-          )}
+          <div className="flex items-center gap-1">
+            <Select
+              value={folha.executor_principal || '__none__'}
+              onValueChange={(value) => {
+                const email = value === '__none__' ? '' : value;
+                const planosComExecutor = planejamentos?.filter(p =>
+                  p.documento_id === folha.source_documento_id &&
+                  p.executor_principal &&
+                  p.executor_principal !== email
+                ) || [];
+                if (email && planosComExecutor.length > 0) {
+                  if (!confirm(`Existem ${planosComExecutor.length} atividade(s) neste documento com executor específico diferente. Deseja realmente alterar o executor da folha? Isso pode sobrescrever as atribuições por atividade.`)) return;
+                }
+                handleSaveFolhaExecutor?.(folha, email);
+              }}
+              disabled={isSavingFolhaExecutor?.[folha.source_documento_id]}
+            >
+              <SelectTrigger className="h-7 text-xs w-[150px]">
+                <Users2 className="w-3 h-3 mr-1 flex-shrink-0" />
+                <SelectValue placeholder="Sem executor" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="__none__" className="text-xs text-red-600">— Remover —</SelectItem>
+                {(usuarios || []).filter(u => u.status === 'ativo').sort((a, b) => (a.nome || '').localeCompare(b.nome || '')).map(u => (
+                  <SelectItem key={u.email} value={u.email} className="text-xs">{u.nome || u.email}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {isSavingFolhaExecutor?.[folha.source_documento_id] && <Loader2 className="w-3 h-3 animate-spin text-blue-600" />}
+          </div>
         </TableCell>
         <TableCell>
           {(folha.status === 'Planejada' || isConcluida) && plano?.inicio_planejado && plano?.termino_planejado ? (
@@ -270,6 +295,10 @@ export default React.memo(AnaliticoFolhaRow, (prev, next) => {
     const nextUser = next.usuarios?.find(u => u.email === nextPlan?.executor_principal);
     if (prevUser?.nome !== nextUser?.nome) return false;
   }
+  
+  const prevSaving = prev.isSavingFolhaExecutor?.[prev.folha.source_documento_id];
+  const nextSaving = next.isSavingFolhaExecutor?.[next.folha.source_documento_id];
+  if (prevSaving !== nextSaving) return false;
   
   if (prev.hasCheckboxColumn !== next.hasCheckboxColumn) return false;
   if (prev.empreendimentoId !== next.empreendimentoId) return false;
