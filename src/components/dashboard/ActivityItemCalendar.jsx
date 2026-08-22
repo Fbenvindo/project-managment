@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, Circle, Check, Trash2, RefreshCw, Edit2, Loader2 } from "lucide-react";
+import { CheckCircle, Check, Trash2, RefreshCw, Edit2, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 import { PlanejamentoAtividade, Execucao, PlanejamentoDocumento, Documento } from '@/entities/all';
@@ -453,8 +453,8 @@ export default function CalendarioActivityItem({
                 : realStatus === 'concluido_com_atraso'
                   ? <Check className="w-3.5 h-3.5 text-white" />
                   : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado')
-                    ? <Circle className="w-3.5 h-3.5 text-red-500" />
-                    : <Circle className="w-3.5 h-3.5 text-green-500" />}
+                    ? <span className="block w-2.5 h-2.5 rounded-full bg-red-500" />
+                    : <span className="block w-2.5 h-2.5 rounded-full bg-green-500" />}
             </button>
             {canEditDelete && (
               <button
