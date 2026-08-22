@@ -1,0 +1,110 @@
+{
+  "name": "PlanoDataEtapa",
+  "type": "object",
+  "properties": {
+    "empreendimento_id": {
+      "type": "string",
+      "description": "ID do empreendimento"
+    },
+    "disciplina": {
+      "type": "string",
+      "description": "Disciplina do grupo"
+    },
+    "subdisciplina": {
+      "type": "string",
+      "description": "Subdisciplina do grupo"
+    },
+    "etapa": {
+      "type": "string",
+      "description": "Etapa do projeto"
+    },
+    "data_inicio": {
+      "type": "string",
+      "format": "date",
+      "description": "Data inicial informada para o grupo"
+    },
+    "data_termino": {
+      "type": "string",
+      "format": "date",
+      "description": "Data de t\u00e9rmino calculada (in\u00edcio + horas, 8h/dia, seg-sex, sem feriados)"
+    },
+    "horas_totais": {
+      "type": "number",
+      "description": "Soma das horas das atividades do grupo"
+    }
+  },
+  "required": [
+    "empreendimento_id",
+    "subdisciplina",
+    "etapa",
+    "data_inicio"
+  ],
+  "rls": {
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "lider"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "direcao"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "gestao"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "coordenador"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "consultor"
+          }
+        }
+      ]
+    },
+    "write": {
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "lider"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "direcao"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "gestao"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "coordenador"
+          }
+        }
+      ]
+    }
+  }
+}

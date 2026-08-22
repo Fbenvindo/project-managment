@@ -25,8 +25,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import AplicarAtividadeModal from "./AplicarAtividadeModal";
-import PlanejamentoAtividadeModal from "./PlanejamentoAtividadeModal";
 import AtividadesProjetoFilters from "./AtividadesProjetoFilters";
+import PlanoDatasAtividadesView from "./PlanoDatasAtividadesView";
+import { useFeriados } from "@/components/utils/PlanoDatasUtils";
 
 const initialState = {
   etapa: '',
@@ -275,11 +276,10 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
   const [subdisciplinaFilter, setSubdisciplinaFilter] = useState("");
   const [showAplicarModal, setShowAplicarModal] = useState(false);
   const [atividadeParaAplicar, setAtividadeParaAplicar] = useState(null);
-  const [showPlanejamentoModal, setShowPlanejamentoModal] = useState(false);
-  const [atividadeParaPlanejar, setAtividadeParaPlanejar] = useState(null);
   const [selectedAtividades, setSelectedAtividades] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false);
   const [disciplinasMinimizadas, setDisciplinasMinimizadas] = useState({});
+  const { feriados } = useFeriados();
 
   const handleEdit = (atividade) => {
     setEditingAtividade(atividade);
@@ -301,23 +301,6 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
   const handleAplicarADocumentos = (atividade) => {
     setAtividadeParaAplicar(atividade);
     setShowAplicarModal(true);
-  };
-
-  const handlePlanejarDiretamente = async (atividade) => {
-    try {
-      const atividadeComPlanejamento = {
-        ...atividade,
-        tempo_planejado: Number(atividade.tempo) || 0 
-      };
-
-      console.log("🎯 Abrindo modal de planejamento para atividade:", atividadeComPlanejamento);
-      
-      setAtividadeParaPlanejar(atividadeComPlanejamento);
-      setShowPlanejamentoModal(true);
-    } catch (error) {
-      console.error("Erro ao preparar atividade para planejamento:", error);
-      alert("Erro ao preparar atividade para planejamento");
-    }
   };
 
   const handleToggleAtividade = (atividadeId) => {
@@ -475,27 +458,6 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
         onSave={onUpdate}
       />
 
-      {showPlanejamentoModal && atividadeParaPlanejar && (
-        <PlanejamentoAtividadeModal
-          isOpen={showPlanejamentoModal}
-          onClose={() => {
-            console.log("🔄 Fechando modal de planejamento");
-            setShowPlanejamentoModal(false);
-            setAtividadeParaPlanejar(null);
-          }}
-          atividade={atividadeParaPlanejar}
-          usuarios={usuarios}
-          empreendimentoId={empreendimentoId}
-          documentos={documentos}
-          onSuccess={() => {
-            console.log("✅ Planejamento realizado com sucesso");
-            setShowPlanejamentoModal(false);
-            setAtividadeParaPlanejar(null);
-            onUpdate();
-          }}
-        />
-      )}
-
       <div className="flex justify-between items-center">
          <div>
            <h3 className="text-lg font-semibold">Atividades do Projeto</h3>
@@ -595,118 +557,24 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
                   </button>
                 </div>
                 {!disciplinasMinimizadas[disciplina] && (
-                <div className="overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12"></TableHead>
-                      <TableHead>Atividade</TableHead>
-                      <TableHead>Folhas</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Etapa</TableHead>
-                      <TableHead>Tempo Padrão</TableHead>
-                      <TableHead>Tempo Total</TableHead>
-                      <TableHead className="text-right">Planejar</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {atividadesDisciplina.map(atividade => {
-                      console.log("🔍 Atividade:", atividade.atividade, {
-                        documento_ids: atividade.documento_ids,
-                        documento_id: atividade.documento_id,
-                        tipo_documento_ids: typeof atividade.documento_ids,
-                        eh_array: Array.isArray(atividade.documento_ids)
-                      });
-                      const numFolhas = atividade.documento_ids?.length || (atividade.documento_id ? 1 : 0);
-                      const documentosVinculados = atividade.documento_ids 
-                        ? documentos.filter(d => atividade.documento_ids.includes(d.id))
-                        : atividade.documento_id 
-                        ? documentos.filter(d => d.id === atividade.documento_id)
-                        : [];
-                      console.log("📊 Resultados:", { numFolhas, documentosVinculados: documentosVinculados.length });
-                      
-                      return (
-                        <TableRow key={atividade.id}>
-                          <TableCell>
-                            <Checkbox
-                              checked={selectedAtividades.includes(atividade.id)}
-                              onCheckedChange={() => handleToggleAtividade(atividade.id)}
-                            />
-                          </TableCell>
-                          <TableCell className="font-medium">{String(atividade.atividade || '')}</TableCell>
-                          <TableCell>
-                            {numFolhas > 0 ? (
-                              <div className="flex flex-col gap-1">
-                                <Badge variant="outline" className="w-fit">
-                                  {numFolhas} {numFolhas === 1 ? 'folha' : 'folhas'}
-                                </Badge>
-                                {documentosVinculados.length > 0 && (
-                                  <div className="text-xs text-gray-500 max-w-[200px] truncate" title={documentosVinculados.map(d => d.arquivo).join(', ')}>
-                                    {documentosVinculados.map(d => d.numero).join(', ')}
-                                  </div>
-                                )}
-                              </div>
-                            ) : (
-                              <Badge variant="secondary">Disponível</Badge>
-                            )}
-                          </TableCell>
-                          <TableCell>
-                            <Popover>
-                              <PopoverTrigger asChild>
-                                <button className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold border cursor-pointer transition-colors ${
-                                  atividade.status_planejamento === 'concluida'
-                                    ? 'bg-green-100 text-green-800 border-green-300 hover:bg-green-200'
-                                    : atividade.status_planejamento === 'planejada'
-                                    ? 'bg-blue-100 text-blue-800 border-blue-300 hover:bg-blue-200'
-                                    : 'bg-gray-100 text-gray-600 border-gray-300 hover:bg-gray-200'
-                                }`}>
-                                  {atividade.status_planejamento === 'concluida' ? <CheckCircle2 className="w-3 h-3" /> : atividade.status_planejamento === 'planejada' ? <Clock className="w-3 h-3" /> : <Circle className="w-3 h-3" />}
-                                  {atividade.status_planejamento === 'concluida' ? 'Concluída' : atividade.status_planejamento === 'planejada' ? 'Planejada' : 'Disponível'}
-                                  <ChevronDown className="w-3 h-3" />
-                                </button>
-                              </PopoverTrigger>
-                              <PopoverContent className="w-44 p-1" align="start">
-                                <div className="flex flex-col gap-0.5">
-                                  <button onClick={() => handleChangeStatus(atividade, 'nao_planejada')} className="flex items-center gap-2 px-3 py-2 text-sm rounded hover:bg-gray-100 text-left w-full">
-                                    <Circle className="w-3 h-3 text-gray-500" /> Disponível
-                                  </button>
-                                  <button onClick={() => handleChangeStatus(atividade, 'planejada')} className="flex items-center gap-2 px-3 py-2 text-sm rounded hover:bg-blue-50 text-blue-700 text-left w-full">
-                                    <Clock className="w-3 h-3" /> Planejada
-                                  </button>
-                                  <button onClick={() => handleChangeStatus(atividade, 'concluida')} className="flex items-center gap-2 px-3 py-2 text-sm rounded hover:bg-green-50 text-green-700 text-left w-full">
-                                    <CheckCircle2 className="w-3 h-3" /> Concluída
-                                  </button>
-                                </div>
-                              </PopoverContent>
-                            </Popover>
-                          </TableCell>
-                          <TableCell>{atividade.etapa}</TableCell>
-                          <TableCell>{atividade.tempo}h</TableCell>
-                          <TableCell className="font-semibold">{(atividade.tempo * numFolhas).toFixed(1)}h</TableCell>
-                          <TableCell className="text-right">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => {
-                              console.log("🎯 Clicou no botão Planejar para:", atividade);
-                              handlePlanejarDiretamente(atividade);
-                            }}
-                            className="bg-purple-600 text-white hover:bg-purple-700"
-                          >
-                            <Calendar className="w-3 h-3 mr-1" />
-                            Planejar
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    );
-                    })}
-                  </TableBody>
-                </Table>
-                </div>
+                  <div className="p-4">
+                    <PlanoDatasAtividadesView
+                      empreendimentoId={empreendimentoId}
+                      disciplina={disciplina}
+                      atividades={atividadesDisciplina}
+                      documentos={documentos}
+                      feriados={feriados}
+                      selectedAtividades={selectedAtividades}
+                      onToggleAtividade={handleToggleAtividade}
+                      onEdit={handleEdit}
+                      onDelete={handleDelete}
+                      onChangeStatus={handleChangeStatus}
+                    />
+                  </div>
                 )}
-                </div>
-                );
-                })}
+              </div>
+            );
+          })}
         </div>
       )}
     </div>
