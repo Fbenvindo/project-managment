@@ -14,6 +14,10 @@
       "type": "string",
       "description": "Escala original do pavimento (ex: 1:125)"
     },
+    "ordem_execucao": {
+      "type": "number",
+      "description": "Ordem de execu\u00e7\u00e3o do pavimento"
+    },
     "empreendimento_id": {
       "type": "string",
       "description": "ID do empreendimento relacionado"

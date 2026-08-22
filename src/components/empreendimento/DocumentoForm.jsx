@@ -374,6 +374,7 @@ export default function DocumentoForm({
     if (!formData.arquivo.trim()) newErrors.arquivo = "Nome do arquivo é obrigatório";
     if (formData.disciplinas.length === 0) newErrors.disciplinas = "Selecione ao menos uma disciplina";
     if (formData.subdisciplinas.length === 0) newErrors.subdisciplinas = "Selecione ao menos uma subdisciplina";
+    if (!formData.pavimento_id) newErrors.pavimento_id = "Selecione um pavimento existente";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -637,7 +638,7 @@ export default function DocumentoForm({
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4"> {/* Adjusted from outline, keeping responsive */}
             <div className="space-y-2">
               <Label htmlFor="pavimento_id">
-                Pavimento (para cálculo de área)
+                Pavimento * (para cálculo de área)
                 {formData.pavimento_id && pavimentos && pavimentos.length > 0 && (
                   <span className="text-xs text-blue-600 ml-2">
                     ({pavimentos.find(p => p.id === formData.pavimento_id)?.area || 0} m²)
@@ -652,7 +653,6 @@ export default function DocumentoForm({
                   <SelectValue placeholder="Selecione o pavimento" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value={null}>Sem pavimento (usar horas padrão)</SelectItem>
                   {pavimentos && pavimentos.length > 0 ? (
                     pavimentos.map(pav => (
                       <SelectItem key={pav.id} value={pav.id}>
@@ -666,10 +666,9 @@ export default function DocumentoForm({
                   )}
                 </SelectContent>
               </Select>
+              {errors.pavimento_id && <p className="text-red-500 text-sm mt-1">{errors.pavimento_id}</p>}
               <p className="text-xs text-gray-500 mt-1">
-                {formData.pavimento_id
-                  ? "A área do pavimento será usada para calcular o tempo das atividades (tempo/m² × área)"
-                  : "Sem pavimento, será usado o tempo padrão das atividades (sem multiplicar pela área)"}
+                Selecione um pavimento cadastrado na página de Pavimentos. A área do pavimento será usada para calcular o tempo das atividades.
               </p>
             </div>
 

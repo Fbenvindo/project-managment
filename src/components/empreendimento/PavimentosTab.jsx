@@ -5,10 +5,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Pavimento } from "@/entities/all";
 import { Plus, Edit, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 export default function PavimentosTab({ empreendimentoId, onUpdate }) {
   const [pavimentos, setPavimentos] = useState([]);
-  const [formData, setFormData] = useState({ nome: '', area: '', escala: '' });
+  const [formData, setFormData] = useState({ nome: '', area: '', escala: '', ordem_execucao: '' });
   const [editingPavimento, setEditingPavimento] = useState(null);
   const [showForm, setShowForm] = useState(false);
 
@@ -49,6 +50,7 @@ export default function PavimentosTab({ empreendimentoId, onUpdate }) {
         nome: formData.nome,
         area: areaFinal,
         escala: formData.escala || null, // Escala é opcional
+        ordem_execucao: formData.ordem_execucao ? Number(formData.ordem_execucao) : null,
         empreendimento_id: empreendimentoId
       };
 
@@ -58,7 +60,7 @@ export default function PavimentosTab({ empreendimentoId, onUpdate }) {
         await Pavimento.create(pavimentoData);
       }
 
-      setFormData({ nome: '', area: '', escala: '' });
+      setFormData({ nome: '', area: '', escala: '', ordem_execucao: '' });
       setEditingPavimento(null);
       setShowForm(false);
       fetchPavimentos();
@@ -131,6 +133,20 @@ export default function PavimentosTab({ empreendimentoId, onUpdate }) {
                   Escala do desenho original (apenas para referência)
                 </p>
               </div>
+              <div>
+                <Label htmlFor="ordem_execucao">Ordem de Execução (Opcional)</Label>
+                <Input
+                  id="ordem_execucao"
+                  type="number"
+                  step="1"
+                  placeholder="Ex: 1, 2, 3"
+                  value={formData.ordem_execucao}
+                  onChange={(e) => setFormData({ ...formData, ordem_execucao: e.target.value })}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Define a sequência de execução dos pavimentos
+                </p>
+              </div>
               <div className="flex gap-2">
                 <Button type="submit">
                   <Plus className="w-4 h-4 mr-2" />
@@ -142,7 +158,7 @@ export default function PavimentosTab({ empreendimentoId, onUpdate }) {
                   onClick={() => {
                     setShowForm(false);
                     setEditingPavimento(null);
-                    setFormData({ nome: '', area: '', escala: '' });
+                    setFormData({ nome: '', area: '', escala: '', ordem_execucao: '' });
                   }}
                 >
                   Cancelar
@@ -160,16 +176,19 @@ export default function PavimentosTab({ empreendimentoId, onUpdate }) {
         <div>
           <h3 className="font-semibold mb-4 text-lg">Lista de Pavimentos</h3>
           <div className="space-y-2">
-            {pavimentos.map(pav => {
+            {[...pavimentos].sort((a, b) => (Number(a.ordem_execucao) || 9999) - (Number(b.ordem_execucao) || 9999)).map(pav => {
               const area = Number(pav.area);
               const areaFormatada = area % 1 === 0 ? area.toFixed(0) : area.toFixed(2);
               const displayText = pav.escala ? `${areaFormatada} m² (Escala: ${pav.escala})` : `${areaFormatada} m²`;
               
               return (
                 <div key={pav.id} className="flex justify-between items-center p-3 border rounded-md bg-white hover:bg-gray-50 transition-colors">
-                  <div>
-                    <p className="font-medium">{pav.nome}</p>
-                    <p className="text-sm text-gray-500">{displayText}</p>
+                  <div className="flex items-center gap-2">
+                    {pav.ordem_execucao != null && <Badge variant="secondary" className="text-xs">Ordem {pav.ordem_execucao}</Badge>}
+                    <div>
+                      <p className="font-medium">{pav.nome}</p>
+                      <p className="text-sm text-gray-500">{displayText}</p>
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <Button 
@@ -180,7 +199,8 @@ export default function PavimentosTab({ empreendimentoId, onUpdate }) {
                         setFormData({ 
                           nome: pav.nome, 
                           area: String(pav.area),
-                          escala: pav.escala || ''
+                          escala: pav.escala || '',
+                          ordem_execucao: pav.ordem_execucao != null ? String(pav.ordem_execucao) : ''
                         });
                         setShowForm(true);
                       }}
