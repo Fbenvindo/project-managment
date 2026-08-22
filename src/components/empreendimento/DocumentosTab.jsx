@@ -956,7 +956,6 @@ export default function DocumentosTab({
                               <th className="p-3 text-left text-sm font-medium">Descritivo</th>
                               <th className="p-3 text-left text-sm font-medium">Subdisciplina</th>
                               <th className="p-3 text-left text-sm font-medium">Escala</th>
-                              {!readOnly && <th className="p-3 text-left text-sm font-medium">Executor</th>}
                               {!readOnly && <th className="p-3 text-left text-sm font-medium">Datas</th>}
                               {!readOnly && <th className="p-3 text-left text-sm font-medium">Tempo</th>}
                               {!readOnly && <th className="p-3 text-left text-sm font-medium w-[100px]">Ações</th>}

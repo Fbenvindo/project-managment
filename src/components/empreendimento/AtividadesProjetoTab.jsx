@@ -2,7 +2,7 @@ import React, { useState, useMemo, useCallback } from 'react';
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Checkbox } from "@/components/ui/checkbox";
-import { Plus, Edit, Trash2, Search, Calendar, ChevronDown, CheckCircle2, Circle, Clock } from "lucide-react";
+import { Plus, Edit, Trash2, Search, Calendar, ChevronDown, ChevronRight, CheckCircle2, Circle, Clock } from "lucide-react";
 import { Atividade } from "@/entities/all";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
@@ -279,6 +279,7 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
   const [atividadeParaPlanejar, setAtividadeParaPlanejar] = useState(null);
   const [selectedAtividades, setSelectedAtividades] = useState([]);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [disciplinasMinimizadas, setDisciplinasMinimizadas] = useState({});
 
   const handleEdit = (atividade) => {
     setEditingAtividade(atividade);
@@ -580,18 +581,21 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
           {atividadesPorDisciplina.map(([disciplina, atividadesDisciplina]) => {
             return (
               <div key={disciplina} className="border rounded-lg overflow-hidden">
-                <div className="bg-blue-50 px-4 py-3 border-b border-blue-200">
-                  <div className="flex items-center gap-2">
-                    <div className="w-1 h-5 bg-blue-600 rounded"></div>
-                    <h3 className="font-semibold text-lg text-gray-900">
-                      {disciplina}
-                    </h3>
-                    <span className="text-sm text-gray-600">
-                      {atividadesDisciplina.length} {atividadesDisciplina.length === 1 ? 'atividade' : 'atividades'}
-                    </span>
-                  </div>
+                <div
+                  className="bg-gradient-to-r from-blue-50 to-indigo-50 px-4 py-3 border-b flex items-center justify-between cursor-pointer hover:from-blue-100 hover:to-indigo-100 transition-colors"
+                  onClick={() => setDisciplinasMinimizadas(prev => ({ ...prev, [disciplina]: !prev[disciplina] }))}
+                >
+                  <h3 className="font-semibold text-lg text-gray-800 flex items-center gap-2">
+                    <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
+                    {disciplina}
+                    <Badge variant="secondary" className="ml-2">{atividadesDisciplina.length} {atividadesDisciplina.length === 1 ? 'atividade' : 'atividades'}</Badge>
+                  </h3>
+                  <button className="p-1 hover:bg-blue-200 rounded transition-colors">
+                    {disciplinasMinimizadas[disciplina] ? <ChevronRight className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+                  </button>
                 </div>
-              <div className="overflow-x-auto">
+                {!disciplinasMinimizadas[disciplina] && (
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -698,10 +702,11 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
                     })}
                   </TableBody>
                 </Table>
-              </div>
-            </div>
-            );
-          })}
+                </div>
+                )}
+                </div>
+                );
+                })}
         </div>
       )}
     </div>

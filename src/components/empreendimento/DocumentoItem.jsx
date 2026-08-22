@@ -561,26 +561,6 @@ export default function DocumentoItem({
         <TableCell className="text-sm text-gray-600">{doc.escala ? `1:${doc.escala}` : '-'}</TableCell>
 
         {!readOnly && (
-          <TableCell className="w-[200px]">
-            <div className="space-y-1">
-              {(() => {
-                const executorEmail = doc.executor_principal;
-                if (!executorEmail) {
-                  return <span className="text-xs text-gray-400 italic">Atribuir via disciplina/subdisciplina</span>;
-                }
-                const userName = usuariosOrdenados.find(u => u.email === executorEmail)?.nome || executorEmail;
-                return (
-                  <div className="flex items-center gap-1 p-1 bg-green-50 border border-green-200 rounded">
-                    <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
-                    <span className="text-xs font-medium text-green-800 truncate">{userName}</span>
-                  </div>
-                );
-              })()}
-            </div>
-          </TableCell>
-        )}
-
-        {!readOnly && (
           <TableCell className="text-sm text-gray-700">
             <div className="flex flex-col gap-1">
               <div className="flex items-center gap-1">
@@ -623,55 +603,13 @@ export default function DocumentoItem({
 
         {!readOnly && (
           <TableCell>
-            <div className="space-y-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-full justify-between text-xs h-8" disabled={isDocLoading}>
-                    <span className="truncate">
-                      {doc.predecessora_id
-                        ? (() => { const pred = localDocumentos.find(d => d.id === doc.predecessora_id); return pred ? `${pred.numero}` : 'Não encontrado'; })()
-                        : 'Predecessora'}
-                    </span>
-                    <ChevronDown className="h-4 w-4 ml-2 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-[400px] p-0" align="start">
-                  <div className="p-2 border-b">
-                    <div className="relative">
-                      <Search className="absolute left-2 top-2.5 h-4 w-4 text-gray-400" />
-                      <Input placeholder="Buscar documento..." value={searchPredecessor} onChange={(e) => setSearchPredecessor(e.target.value)} className="pl-8" />
-                    </div>
-                  </div>
-                  <div className="max-h-[300px] overflow-y-auto">
-                    <div className="p-1">
-                      <Button variant="ghost" className="w-full justify-start text-left font-normal" onClick={() => { handlePredecessoraChange(doc.id, null); setSearchPredecessor(''); }}>
-                        <span className="text-gray-500">Nenhum predecessor</span>
-                      </Button>
-                      {documentosFiltradosParaPredecessor.map(d => (
-                        <Button key={d.id} variant="ghost" className="w-full justify-start text-left font-normal" onClick={() => { handlePredecessoraChange(doc.id, d.id); setSearchPredecessor(''); }}>
-                          <span className="font-medium">{d.numero}</span>
-                          <span className="text-gray-500 ml-2 truncate">{d.arquivo}</span>
-                        </Button>
-                      ))}
-                      {documentosFiltradosParaPredecessor.length === 0 && searchPredecessor && (
-                        <div className="p-4 text-center text-sm text-gray-500">Nenhum documento encontrado</div>
-                      )}
-                    </div>
-                  </div>
-                </PopoverContent>
-              </Popover>
-
-              <div className="flex items-center gap-1">
-                <Button variant="outline" size="icon" className="h-7 w-7 border-blue-500 text-blue-600 hover:bg-blue-50" onClick={() => handleOpenDocEtapaModal(doc)} disabled={isDocLoading} title="Planejar Documento">
-                  <CalendarDays className="h-3.5 w-3.5" />
-                </Button>
-                <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleEdit(doc)} disabled={isDocLoading}>
-                  <Edit className="h-3.5 w-3.5" />
-                </Button>
-                <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => handleDelete(doc.id)} disabled={isDocLoading}>
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
+            <div className="flex items-center gap-1">
+              <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => handleEdit(doc)} disabled={isDocLoading}>
+                <Edit className="h-3.5 w-3.5" />
+              </Button>
+              <Button variant="destructive" size="icon" className="h-7 w-7" onClick={() => handleDelete(doc.id)} disabled={isDocLoading}>
+                <Trash2 className="h-3.5 w-3.5" />
+              </Button>
             </div>
           </TableCell>
         )}
@@ -679,7 +617,7 @@ export default function DocumentoItem({
 
       {expandedRows[doc.id] && (
         <TableRow>
-          <TableCell colSpan={8} className="bg-gray-50">
+          <TableCell colSpan={readOnly ? 6 : 9} className="bg-gray-50">
             <div className="p-4">
               <div className="flex justify-between items-center mb-3">
                 <div className="flex items-center gap-3">
