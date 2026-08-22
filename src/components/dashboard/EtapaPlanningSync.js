@@ -99,11 +99,14 @@ export function computeEtapaFolhaPacking({ plano, documentos, pavimentos, existi
   const folhasCount = folhasOrdenadas.length;
   const horasPorFolha = folhasCount > 0 ? horasTotais / folhasCount : horasTotais;
   const ocupacaoExecutor = ocupacaoPorExecutor[executor] || {};
+  // Horas já ocupadas pelo executor em cada dia (planejamentos existentes)
+  const ocupacaoDia = (d) => (ocupacaoExecutor[d] || []).reduce((s, o) => s + Number(o.horas || 0), 0);
 
   let cursor = new Date(inicioDate);
   while (!isWeekday(cursor)) cursor = addDays(cursor, 1);
   let dayKey = format(cursor, 'yyyy-MM-dd');
   let dayUsed = 0;
+  let guard = 0;
 
   const folhas = [];
   const conflicts = [];
@@ -112,13 +115,17 @@ export function computeEtapaFolhaPacking({ plano, documentos, pavimentos, existi
   folhasOrdenadas.forEach(({ doc }) => {
     const allocatedDays = {};
     let remaining = horasPorFolha;
-    while (remaining > 0.01) {
-      let avail = 8 - dayUsed;
-      if (avail <= 0.01) {
+    while (remaining > 0.01 && guard < 10000) {
+      guard++;
+      // Capacidade restante no dia descontando o que o executor já tem alocado
+      let avail = 8 - dayUsed - ocupacaoDia(dayKey);
+      // Avança até achar um dia útil com capacidade livre
+      while (avail <= 0.01 && guard < 10000) {
+        guard++;
         do { cursor = addDays(cursor, 1); } while (!isWeekday(cursor));
         dayKey = format(cursor, 'yyyy-MM-dd');
         dayUsed = 0;
-        avail = 8;
+        avail = 8 - ocupacaoDia(dayKey);
       }
       const h = Math.min(avail, remaining);
       allocatedDays[dayKey] = Number(((allocatedDays[dayKey] || 0) + h).toFixed(2));
@@ -133,10 +140,14 @@ export function computeEtapaFolhaPacking({ plano, documentos, pavimentos, existi
     if (doc.arquivo) parts.push(doc.arquivo);
     const folhaDesc = parts.join(' - ') || doc.arquivo || doc.numero || 'Folha';
 
+    // Conflito real somente quando o total do dia (existente + alocado) excede 8h
     dias.forEach(d => {
-      (ocupacaoExecutor[d] || []).forEach(o => {
-        if (!seenIds.has(o.id)) { seenIds.add(o.id); conflicts.push({ ...o, dia: d }); }
-      });
+      const totalDia = ocupacaoDia(d) + (allocatedDays[d] || 0);
+      if (totalDia > 8.01) {
+        (ocupacaoExecutor[d] || []).forEach(o => {
+          if (!seenIds.has(o.id)) { seenIds.add(o.id); conflicts.push({ ...o, dia: d }); }
+        });
+      }
     });
 
     folhas.push({
