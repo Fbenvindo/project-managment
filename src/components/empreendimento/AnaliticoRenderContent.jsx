@@ -116,6 +116,13 @@ export default function AnaliticoRenderContent({
     return etapa;
   }, [etapasConfig]);
 
+  const etapaOrdemMap = useMemo(() => {
+    const map = {};
+    (etapasConfig || []).forEach((e, i) => { map[e.nome] = e.ordem !== undefined ? Number(e.ordem) : i; });
+    return map;
+  }, [etapasConfig]);
+  const etapaSortKey = (nome) => etapaOrdemMap[nome] !== undefined ? etapaOrdemMap[nome] : 9999;
+
   const getPlanoEtapa = (disc, sub, etapa) =>
     planosEtapa.find(p => p.disciplina === disc && p.subdisciplina === sub && p.etapa === etapa);
 
@@ -730,7 +737,11 @@ export default function AnaliticoRenderContent({
                           });
                         });
                         return Object.entries(map)
-                          .sort((a, b) => a[0].localeCompare(b[0]))
+                          .sort((a, b) => {
+                            const oa = etapaSortKey(a[0]); const ob = etapaSortKey(b[0]);
+                            if (oa !== ob) return oa - ob;
+                            return a[0].localeCompare(b[0]);
+                          })
                           .map(([etapa, folhasMap]) => ({ etapa, folhas: Object.values(folhasMap) }));
                       })();
                       return (
@@ -829,6 +840,7 @@ export default function AnaliticoRenderContent({
                                       hasCheckboxColumn={hasCheckboxColumn}
                                       isExpanded={isFolhaExpanded}
                                       onToggleExpand={() => toggleFolha(folhaKey)}
+                                      totalHorasFolha={atividades.reduce((s, a) => s + (Number(a.tempo) || 0), 0)}
                                       {...folhaRowProps}
                                     />,
                                     ...(isFolhaExpanded ? [

@@ -25,6 +25,7 @@ function AnaliticoFolhaRow({
   onToggleExpand,
   handleSaveFolhaExecutor,
   isSavingFolhaExecutor,
+  totalHorasFolha,
 }) {
   const [isConc, setIsConc] = useState(false);
 
@@ -212,8 +213,8 @@ function AnaliticoFolhaRow({
             <span className="text-xs text-gray-400">-</span>
           )}
         </TableCell>
-        <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
-        <TableCell className="text-sm">{folha.tempo ? `${Number(folha.tempo).toFixed(1)}h` : '-'}</TableCell>
+        <TableCell className="text-sm">{totalHorasFolha ? `${Number(totalHorasFolha).toFixed(1)}h` : '-'}</TableCell>
+        <TableCell className="text-sm">{totalHorasFolha ? `${Number(totalHorasFolha).toFixed(1)}h` : '-'}</TableCell>
         <TableCell>
           <div className="flex items-center gap-1">
 
@@ -245,6 +246,7 @@ export default React.memo(AnaliticoFolhaRow, (prev, next) => {
   if (prev.folha.base_atividade_id !== next.folha.base_atividade_id) return false;
   if (prev.folha.status !== next.folha.status) return false;
   if (prev.folha.tempo !== next.folha.tempo) return false;
+  if (prev.totalHorasFolha !== next.totalHorasFolha) return false;
   if (prev.folha.etapa !== next.folha.etapa) return false;
   
   // Planejamentos comparison — only check relevant planning for this folha
