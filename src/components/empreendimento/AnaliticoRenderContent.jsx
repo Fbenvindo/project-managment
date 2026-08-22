@@ -695,28 +695,6 @@ export default function AnaliticoRenderContent({
                             {subRecolhida ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                             {subdisciplina} ({todasFolhas.length} {todasFolhas.length === 1 ? 'folha' : 'folhas'})
                           </h4>
-                          <div className="ml-auto flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                            <Select
-                              value={getExecutorSubdisciplina(disciplina, subdisciplina) === 'mixed' ? undefined : (getExecutorSubdisciplina(disciplina, subdisciplina) || '__none__')}
-                              onValueChange={(value) => {
-                                const email = value === '__none__' ? '' : value;
-                                handleAtribuirExecutorSubdisciplina?.(disciplina, subdisciplina, email);
-                              }}
-                              disabled={isSavingExecutorDisciplina?.[`sub-${disciplina}-${subdisciplina}`]}
-                            >
-                              <SelectTrigger className="h-6 text-xs w-[200px]">
-                                <Users2 className="w-3 h-3 mr-1" />
-                                <SelectValue placeholder={getExecutorSubdisciplina(disciplina, subdisciplina) === 'mixed' ? 'Múltiplos' : 'Executor da subdisc.'} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="__none__" className="text-red-600">— Remover executor —</SelectItem>
-                                {usuariosSemDuplicatas.filter(u => u.status === 'ativo').sort((a, b) => (a.nome || '').localeCompare(b.nome || '')).map(u => (
-                                  <SelectItem key={u.email} value={u.email}>{u.nome || u.email}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                            {isSavingExecutorDisciplina?.[`sub-${disciplina}-${subdisciplina}`] && <Loader2 className="w-3 h-3 animate-spin text-blue-600" />}
-                          </div>
                         </div>
                         {!subRecolhida && (
                         <Table className="text-sm">
