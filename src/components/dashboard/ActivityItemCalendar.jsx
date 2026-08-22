@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Clock, Play, Trash2, RefreshCw, Edit2, Loader2 } from "lucide-react";
+import { CheckCircle, Trash2, RefreshCw, Edit2, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 import { PlanejamentoAtividade, Execucao, PlanejamentoDocumento, Documento } from '@/entities/all';
@@ -66,6 +66,8 @@ export default function CalendarioActivityItem({
   const [editForm, setEditForm] = useState({});
   const [isEditLoading, setIsEditLoading] = useState(false);
   const [showAtividadesFolhaModal, setShowAtividadesFolhaModal] = useState(false);
+  const [showConcluirModal, setShowConcluirModal] = useState(false);
+  const [isConcluindo, setIsConcluindo] = useState(false);
 
   // FIX 4: Usar o status calculado pelo pai quando disponível.
   // O pai (CalendarioPlanejamento) usa a versão completa que considera
@@ -161,6 +163,28 @@ export default function CalendarioActivityItem({
       alert("Não foi possível iniciar a atividade.");
     } finally {
       setIsStarting(false);
+    }
+  };
+
+  const handleConcluir = async (executorEmail) => {
+    if (isConcluded) return;
+    setIsConcluindo(true);
+    try {
+      if (plano.isLegacyExecution) { alert('Esta execução antiga não pode ser concluída.'); return; }
+      const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
+      const hoje = format(new Date(), 'yyyy-MM-dd');
+      const updateData = {
+        status: 'concluido',
+        termino_real: hoje,
+        executor_principal: executorEmail || plano.executor_principal || user?.email,
+      };
+      await retryWithBackoff(() => entityToUpdate.update(plano.id, updateData), 3, 1000, 'concluirAtividade');
+      setShowConcluirModal(false);
+      if (onDelete) onDelete();
+    } catch (error) {
+      alert('Erro ao concluir atividade.');
+    } finally {
+      setIsConcluindo(false);
     }
   };
 
@@ -408,24 +432,18 @@ export default function CalendarioActivityItem({
         <div className="flex gap-2 mt-2 items-center justify-between">
           <div className="flex gap-2 items-center">
             <button
-              onClick={handleStartActivity}
-              disabled={!!activeExecution || isStarting || isConcluded}
+              onClick={() => setShowConcluirModal(true)}
+              disabled={isConcluded || isConcluindo}
               className={`p-1.5 rounded-md transition-colors ${
-                activeExecution?.planejamento_id === plano.id ? 'bg-yellow-500 animate-pulse'
-                : realStatus === 'concluido' ? 'bg-green-500 cursor-not-allowed'
-                : realStatus === 'concluido_com_atraso' ? 'bg-red-500 cursor-not-allowed'
+                isConcluded ? 'bg-green-500 cursor-not-allowed'
                 : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado') ? 'bg-red-500 hover:bg-red-600'
                 : 'bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed'
               }`}
+              title={isConcluded ? 'Atividade concluída' : 'Marcar como concluída'}
             >
-              {activeExecution?.planejamento_id === plano.id
-                ? <Clock className="w-3.5 h-3.5 text-white" />
-                : realStatus === 'concluido' ? <span className="text-white text-xs font-bold">✓</span>
-                : realStatus === 'concluido_com_atraso' ? <span className="text-white text-xs font-bold">✓</span>
-                : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado')
-                  ? <span className="text-white text-xs font-bold">✕</span>
-                  : <Play className="w-3.5 h-3.5 text-white" fill="white" />
-              }
+              {isConcluded
+                ? <span className="text-white text-xs font-bold">✓</span>
+                : <CheckCircle className="w-3.5 h-3.5 text-white" />}
             </button>
             {canEditDelete && (
               <button
@@ -519,6 +537,27 @@ export default function CalendarioActivityItem({
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowTimeAdjustModal(false)}>Cancelar</Button>
             <Button onClick={handleAdjustTime} className="bg-blue-600 hover:bg-blue-700">Ajustar e Finalizar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showConcluirModal} onOpenChange={setShowConcluirModal}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Quem executou esta atividade?</DialogTitle></DialogHeader>
+          <div className="py-4 space-y-3">
+            <p className="text-sm text-gray-600"><strong>Atividade:</strong> {displayName}</p>
+            <p className="text-sm text-gray-600">Selecione quem realizou a execução para registrar o executor correto.</p>
+          </div>
+          <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+            <Button variant="outline" onClick={() => setShowConcluirModal(false)} disabled={isConcluindo}>Cancelar</Button>
+            <Button onClick={() => handleConcluir(user?.email)} disabled={isConcluindo} className="bg-green-600 hover:bg-green-700">
+              {isConcluindo ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+              Eu executei
+            </Button>
+            <Button onClick={() => handleConcluir(plano.executor_principal)} disabled={isConcluindo || !plano.executor_principal} className="bg-blue-600 hover:bg-blue-700">
+              <CheckCircle className="w-4 h-4 mr-2" />
+              O executor planejado executou{plano.executor_principal ? ` (${executorMap?.[plano.executor_principal]?.nome || plano.executor_principal})` : ''}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
