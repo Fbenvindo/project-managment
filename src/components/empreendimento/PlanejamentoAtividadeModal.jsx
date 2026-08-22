@@ -97,9 +97,18 @@ export default function PlanejamentoAtividadeModal({
   useEffect(() => {
     if (isOpen && atividade) {
       console.log('🎯 Modal aberto com atividade:', atividade);
+      const disciplinaAtiv = atividade.disciplina;
+      const subdisciplinaAtiv = atividade.subdisciplina;
+      const matchingDoc = (documentos || []).find(doc => {
+        if (!doc.executor_principal) return false;
+        const disciplinaMatch = doc.disciplina === disciplinaAtiv;
+        const subdisciplinaMatch = !subdisciplinaAtiv || (doc.subdisciplinas || []).includes(subdisciplinaAtiv);
+        return disciplinaMatch && subdisciplinaMatch;
+      });
+      const executorFromDocs = matchingDoc?.executor_principal || '';
       setFormData({
         tempo_planejado: atividade.tempo_planejado || atividade.tempo || '',
-        executor_principal: '',
+        executor_principal: executorFromDocs,
         multiplos_executores: false,
         metodo_data: 'agenda',
         data_inicio_manual: null,
@@ -114,7 +123,7 @@ export default function PlanejamentoAtividadeModal({
         documento_id: null
       });
     }
-  }, [isOpen, atividade]);
+  }, [isOpen, atividade, documentos]);
 
   useEffect(() => {
     if (formData.permite_multiplas_execucoes) {
@@ -334,7 +343,7 @@ export default function PlanejamentoAtividadeModal({
     }
 
     if (!formData.executor_principal) {
-      alert('Por favor, selecione um executor.');
+      alert('Nenhum executor atribuído. Atribua um executor no nível da disciplina ou subdisciplina na aba Analítico antes de planejar atividades.');
       return;
     }
 
@@ -648,33 +657,26 @@ export default function PlanejamentoAtividadeModal({
             )}
 
             <div>
-              <Label htmlFor="executor_principal" className="flex items-center gap-2">
+              <Label className="flex items-center gap-2">
                 <Users className="w-4 h-4" />
-                Executor (aplicará em todas as folhas sem executor)
+                Executor
               </Label>
-              <Select
-                value={formData.executor_principal}
-                onValueChange={handleExecutorChange}
-                required
-              >
-                <SelectTrigger id="executor_principal">
-                  <SelectValue placeholder="Selecione o executor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {usuariosOrdenados && usuariosOrdenados.length > 0 ? (
-                    usuariosOrdenados.map(u => (
-                      <SelectItem key={u.id} value={u.email}>
-                        {u.nome || u.email}
-                      </SelectItem>
-                    ))
-                  ) : (
-                    <SelectItem value={null} disabled>Nenhum usuário disponível</SelectItem>
-                  )}
-                </SelectContent>
-              </Select>
-              <p className="text-xs text-gray-500 mt-1">
-                💡 A atividade será planejada apenas em folhas que ainda não têm executor definido
-              </p>
+              <Input
+                value={(() => {
+                  if (!formData.executor_principal) {
+                    return 'Atribua um executor no nível da disciplina/subdisciplina (aba Analítico)';
+                  }
+                  const user = usuariosOrdenados.find(u => u.email === formData.executor_principal);
+                  return user?.nome || formData.executor_principal;
+                })()}
+                disabled
+                className={!formData.executor_principal ? 'bg-amber-50 text-amber-700 border-amber-300' : 'bg-gray-50'}
+              />
+              {formData.executor_principal && (
+                <p className="text-xs text-gray-500 mt-1">
+                  💡 Executor definido no nível da disciplina/subdisciplina
+                </p>
+              )}
             </div>
 
             <div>
