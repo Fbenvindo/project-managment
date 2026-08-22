@@ -669,6 +669,25 @@ export default function AnaliticoRenderContent({
                           }
                         });
                       });
+                      // Build etapa → folhas map: Subdisciplina > Etapa > Folha > Atividade
+                      const etapasNoSubgrupo = (() => {
+                        const map = {};
+                        todasFolhas.forEach(({ folha, grupo }) => {
+                          const atvs = (atividadesAgrupadas || [])
+                            .flatMap(g => g.folhas || [])
+                            .filter(f => f.source_documento_id === folha.source_documento_id);
+                          atvs.forEach(a => {
+                            const etapa = a.etapa || 'Sem Etapa';
+                            if (!map[etapa]) map[etapa] = {};
+                            const docKey = folha.source_documento_id || `nofolio-${folha.base_atividade_id}`;
+                            if (!map[etapa][docKey]) map[etapa][docKey] = { folha, grupo, atividades: [] };
+                            map[etapa][docKey].atividades.push(a);
+                          });
+                        });
+                        return Object.entries(map)
+                          .sort((a, b) => a[0].localeCompare(b[0]))
+                          .map(([etapa, folhasMap]) => ({ etapa, folhas: Object.values(folhasMap) }));
+                      })();
                       return (
                       <div key={subdisciplina} className="border rounded-lg overflow-hidden">
                         <div className="bg-gray-50 px-3 py-2 border-b cursor-pointer hover:bg-gray-100 flex items-center" onClick={() => toggleSubdisciplina(subKey)}>
@@ -716,142 +735,129 @@ export default function AnaliticoRenderContent({
                             </TableRow>
                           </TableHeader>
                           <TableBody>
-                            {todasFolhas.length === 0 ? (
+                            {etapasNoSubgrupo.length === 0 ? (
                               <TableRow>
-                                <TableCell colSpan={hasCheckboxColumn ? 10 : 9} className="text-center text-gray-400 py-4">Nenhuma folha vinculada</TableCell>
+                                <TableCell colSpan={hasCheckboxColumn ? 10 : 9} className="text-center text-gray-400 py-4">Nenhuma atividade vinculada</TableCell>
                               </TableRow>
-                            ) : todasFolhas.flatMap(({ folha, grupo }) => {
-                                const folhaKey = folha.uniqueId || `${folha.source_documento_id}-${folha.base_atividade_id}`;
-                                const isFolhaExpanded = folhasExpandidas.has(folhaKey);
-                                const atividadesDoDocumento = (atividadesAgrupadas || [])
-                                  .flatMap(g => g.folhas || [])
-                                  .filter(f => f.source_documento_id === folha.source_documento_id);
+                            ) : etapasNoSubgrupo.flatMap(({ etapa, folhas }) => {
+                                const etapaKey = `${subKey}::${etapa}`;
+                                const isEtapaExpanded = etapasExpandidas.has(etapaKey);
+                                const totalHorasEtapa = folhas.reduce((sum, f) => sum + f.atividades.reduce((s, a) => s + (Number(a.tempo) || 0), 0), 0);
+                                const totalAtividades = folhas.reduce((sum, f) => sum + f.atividades.length, 0);
+                                const etapaExecutors = folhas.flatMap(f => f.atividades.map(a => {
+                                  const p = planejamentos?.find(p => p.documento_id === a.source_documento_id && p.atividade_id === a.base_atividade_id);
+                                  return p?.executor_principal || '';
+                                }));
+                                const uniqueEtapaExecutors = [...new Set(etapaExecutors.filter(Boolean))];
+                                const etapaExecutor = uniqueEtapaExecutors.length === 1 ? uniqueEtapaExecutors[0] : (uniqueEtapaExecutors.length > 1 ? '__mixed__' : '');
+                                const isEtapaSaving = folhas.some(f => isSavingFolhaExecutor?.[`etapa-${f.folha.source_documento_id}-${etapa}`]);
                                 return [
-                                  <AnaliticoFolhaRow
-                                    key={`folha-${folhaKey}`}
-                                    folha={folha}
-                                    atividade={grupo.baseAtividade}
-                                    hasCheckboxColumn={hasCheckboxColumn}
-                                    isExpanded={isFolhaExpanded}
-                                    onToggleExpand={() => toggleFolha(folhaKey)}
-                                    {...folhaRowProps}
-                                  />,
-                                  ...(isFolhaExpanded ? [
-                                    <TableRow key={`ativs-${folhaKey}`} className="bg-gray-50">
-                                      <TableCell colSpan={hasCheckboxColumn ? 10 : 9} className="py-3">
-                                        <div className="pl-8 space-y-2">
-                                          <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Atividades do documento</div>
-                                          {atividadesDoDocumento.length === 0 ? (
-                                            <div className="text-sm text-gray-400">Nenhuma atividade vinculada</div>
-                                          ) : (() => {
-                                            const etapasMap = {};
-                                            atividadesDoDocumento.forEach(a => {
-                                              const etapa = a.etapa || 'Sem Etapa';
-                                              if (!etapasMap[etapa]) etapasMap[etapa] = [];
-                                              etapasMap[etapa].push(a);
+                                <TableRow key={`etapa-${etapaKey}`} className="bg-gray-100 cursor-pointer hover:bg-gray-200" onClick={() => toggleEtapa(etapaKey)}>
+                                  <TableCell colSpan={hasCheckboxColumn ? 10 : 9} className="py-2">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-sm font-semibold text-gray-700 flex items-center gap-2">
+                                        {isEtapaExpanded ? <ChevronDown className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />}
+                                        {etapa}
+                                        <Badge variant="secondary" className="text-xs">{folhas.length} {folhas.length === 1 ? 'folha' : 'folhas'}</Badge>
+                                        <Badge variant="outline" className="text-xs">{totalAtividades} {totalAtividades === 1 ? 'atividade' : 'atividades'}</Badge>
+                                      </span>
+                                      <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                                        <Select
+                                          value={etapaExecutor === '__mixed__' || !etapaExecutor ? undefined : etapaExecutor}
+                                          onValueChange={(value) => {
+                                            const email = value === '__none__' ? '' : value;
+                                            folhas.forEach(f => {
+                                              handleSaveEtapaExecutor?.(f.folha.source_documento_id, etapa, f.atividades, email);
                                             });
-                                            return Object.entries(etapasMap).map(([etapa, atividadesEtapa]) => {
-                                              const etapaKey = `${folhaKey}::${etapa}`;
-                                              const etapaExpandida = etapasExpandidas.has(etapaKey);
-                                              const totalHoras = atividadesEtapa.reduce((sum, a) => sum + (Number(a.tempo) || 0), 0);
-                                              const etapaExecutors = atividadesEtapa.map(a => {
-                                                const p = planejamentos?.find(p => p.documento_id === a.source_documento_id && p.atividade_id === a.base_atividade_id);
-                                                return p?.executor_principal || '';
-                                              });
-                                              const uniqueEtapaExecutors = [...new Set(etapaExecutors.filter(Boolean))];
-                                              const etapaExecutor = uniqueEtapaExecutors.length === 1 ? uniqueEtapaExecutors[0] : (uniqueEtapaExecutors.length > 1 ? '__mixed__' : '');
-                                              const etapaSaveKey = `etapa-${folha.source_documento_id}-${etapa}`;
-                                              const folhaExecutorForEtapa = folha.executor_principal;
-                                              const isEtapaHerdado = (!etapaExecutor || etapaExecutor === '__mixed__') && !!folhaExecutorForEtapa;
-                                              const etapaPlaceholder = etapaExecutor === '__mixed__' ? 'Múltiplos' : (isEtapaHerdado ? `Herdado: ${usuariosSemDuplicatas.find(u => u.email === folhaExecutorForEtapa)?.nome || folhaExecutorForEtapa}` : 'Sem executor');
+                                          }}
+                                          disabled={isEtapaSaving}
+                                        >
+                                          <SelectTrigger className="h-6 text-xs w-[160px]">
+                                            <Users2 className="w-3 h-3 mr-1" />
+                                            <SelectValue placeholder={etapaExecutor === '__mixed__' ? 'Múltiplos' : 'Sem executor'} />
+                                          </SelectTrigger>
+                                          <SelectContent>
+                                            <SelectItem value="__none__" className="text-xs text-red-600">— Remover —</SelectItem>
+                                            {usuariosSemDuplicatas.filter(u => u.status === 'ativo').sort((a, b) => (a.nome || '').localeCompare(b.nome || '')).map(u => (
+                                              <SelectItem key={u.email} value={u.email} className="text-xs">{u.nome || u.email}</SelectItem>
+                                            ))}
+                                          </SelectContent>
+                                        </Select>
+                                        {isEtapaSaving && <Loader2 className="w-3 h-3 animate-spin text-blue-600" />}
+                                        <span className="text-xs text-gray-500">{totalHorasEtapa.toFixed(1)}h</span>
+                                      </div>
+                                    </div>
+                                  </TableCell>
+                                </TableRow>,
+                                ...(isEtapaExpanded ? folhas.flatMap(({ folha, grupo, atividades }) => {
+                                  const folhaKey = folha.uniqueId || `${folha.source_documento_id}-${folha.base_atividade_id}`;
+                                  const isFolhaExpanded = folhasExpandidas.has(folhaKey);
+                                  return [
+                                    <AnaliticoFolhaRow
+                                      key={`folha-${folhaKey}`}
+                                      folha={folha}
+                                      atividade={grupo.baseAtividade}
+                                      hasCheckboxColumn={hasCheckboxColumn}
+                                      isExpanded={isFolhaExpanded}
+                                      onToggleExpand={() => toggleFolha(folhaKey)}
+                                      {...folhaRowProps}
+                                    />,
+                                    ...(isFolhaExpanded ? [
+                                      <TableRow key={`ativs-${folhaKey}`} className="bg-gray-50">
+                                        <TableCell colSpan={hasCheckboxColumn ? 10 : 9} className="py-3">
+                                          <div className="pl-8 space-y-1">
+                                            <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Atividades da etapa</div>
+                                            {atividades.length === 0 ? (
+                                              <div className="text-sm text-gray-400">Nenhuma atividade vinculada</div>
+                                            ) : atividades.map((a, i) => {
+                                              const ativPlano = planejamentos?.find(p =>
+                                                p.documento_id === a.source_documento_id &&
+                                                p.atividade_id === a.base_atividade_id
+                                              );
+                                              const ativExecutor = ativPlano?.executor_principal || '';
+                                              const folhaExecutor = folha.executor_principal;
+                                              const isHerdado = !ativExecutor && folhaExecutor;
+                                              const saveKey = `ativ-${a.source_documento_id}-${a.base_atividade_id}`;
                                               return (
-                                                <div key={etapa} className="border rounded-md overflow-hidden">
-                                                  <div className="bg-gray-100 px-3 py-1.5 cursor-pointer hover:bg-gray-200 flex items-center justify-between" onClick={() => toggleEtapa(etapaKey)}>
-                                                    <span className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
-                                                      {etapaExpandida ? <ChevronDown className="w-3 h-3" /> : <ChevronRight className="w-3 h-3" />}
-                                                      {etapa}
-                                                      <Badge variant="secondary" className="text-xs ml-1">{atividadesEtapa.length} {atividadesEtapa.length === 1 ? 'atividade' : 'atividades'}</Badge>
-                                                    </span>
-                                                    <div className="flex items-center gap-2">
-                                                      <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
-                                                        <Select
-                                                          value={etapaExecutor === '__mixed__' || !etapaExecutor ? undefined : etapaExecutor}
-                                                          onValueChange={(value) => {
-                                                            const email = value === '__none__' ? '' : value;
-                                                            handleSaveEtapaExecutor?.(folha.source_documento_id, etapa, atividadesEtapa, email);
-                                                          }}
-                                                          disabled={isSavingFolhaExecutor?.[etapaSaveKey]}
-                                                        >
-                                                          <SelectTrigger className="h-6 text-xs w-[160px]">
-                                                            <Users2 className="w-3 h-3 mr-1" />
-                                                            <SelectValue placeholder={etapaPlaceholder} />
-                                                          </SelectTrigger>
-                                                          <SelectContent>
-                                                            <SelectItem value="__none__" className="text-xs text-red-600">— Remover —</SelectItem>
-                                                            {usuariosSemDuplicatas.filter(u => u.status === 'ativo').sort((a, b) => (a.nome || '').localeCompare(b.nome || '')).map(u => (
-                                                              <SelectItem key={u.email} value={u.email} className="text-xs">{u.nome || u.email}</SelectItem>
-                                                            ))}
-                                                          </SelectContent>
-                                                        </Select>
-                                                        {isSavingFolhaExecutor?.[etapaSaveKey] && <Loader2 className="w-3 h-3 animate-spin text-blue-600" />}
-                                                      </div>
-                                                      <span className="text-xs text-gray-500">{totalHoras.toFixed(1)}h</span>
-                                                    </div>
+                                                <div key={i} className="flex items-center gap-3 text-sm py-0.5">
+                                                  <span className="text-gray-400 w-5 text-right">{i + 1}.</span>
+                                                  <span className="text-gray-700 flex-1 min-w-0 truncate">{String(a.atividade || '')}</span>
+                                                  {a.subdisciplina && <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0">{a.subdisciplina}</span>}
+                                                  <span className="text-xs text-gray-500 flex-shrink-0">{a.tempo ? `${Number(a.tempo).toFixed(1)}h` : '-'}</span>
+                                                  <div className="flex items-center gap-1 flex-shrink-0">
+                                                    <Select
+                                                      value={ativExecutor || undefined}
+                                                      onValueChange={(value) => {
+                                                        const email = value === '__none__' ? '' : value;
+                                                        handleSaveAtividadeExecutor?.(a, email);
+                                                      }}
+                                                      disabled={isSavingFolhaExecutor?.[saveKey]}
+                                                    >
+                                                      <SelectTrigger className="h-6 text-xs w-[160px]">
+                                                        <Users2 className="w-3 h-3 mr-1" />
+                                                        <SelectValue placeholder={isHerdado ? `Herdado: ${usuariosSemDuplicatas.find(u => u.email === folhaExecutor)?.nome || folhaExecutor}` : 'Sem executor'} />
+                                                      </SelectTrigger>
+                                                      <SelectContent>
+                                                        <SelectItem value="__none__" className="text-xs text-red-600">— Remover —</SelectItem>
+                                                        {usuariosSemDuplicatas.filter(u => u.status === 'ativo').sort((a, b) => (a.nome || '').localeCompare(b.nome || '')).map(u => (
+                                                          <SelectItem key={u.email} value={u.email} className="text-xs">{u.nome || u.email}</SelectItem>
+                                                        ))}
+                                                      </SelectContent>
+                                                    </Select>
+                                                    {isSavingFolhaExecutor?.[saveKey] && <Loader2 className="w-3 h-3 animate-spin text-blue-600" />}
                                                   </div>
-                                                  {etapaExpandida && (
-                                                    <div className="pl-4 py-1.5 space-y-1 bg-white border-t">
-                                                      {atividadesEtapa.map((a, i) => {
-                                                        const ativPlano = planejamentos?.find(p =>
-                                                          p.documento_id === a.source_documento_id &&
-                                                          p.atividade_id === a.base_atividade_id
-                                                        );
-                                                        const ativExecutor = ativPlano?.executor_principal || '';
-                                                        const folhaExecutor = folha.executor_principal;
-                                                        const isHerdado = !ativExecutor && folhaExecutor;
-                                                        const saveKey = `ativ-${a.source_documento_id}-${a.base_atividade_id}`;
-                                                        return (
-                                                          <div key={i} className="flex items-center gap-3 text-sm py-0.5">
-                                                            <span className="text-gray-400 w-5 text-right">{i + 1}.</span>
-                                                            <span className="text-gray-700 flex-1 min-w-0 truncate">{String(a.atividade || '')}</span>
-                                                            {a.subdisciplina && <span className="text-xs text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded flex-shrink-0">{a.subdisciplina}</span>}
-                                                            <span className="text-xs text-gray-500 flex-shrink-0">{a.tempo ? `${Number(a.tempo).toFixed(1)}h` : '-'}</span>
-                                                            <div className="flex items-center gap-1 flex-shrink-0">
-                                                              <Select
-                                                                value={ativExecutor || undefined}
-                                                                onValueChange={(value) => {
-                                                                  const email = value === '__none__' ? '' : value;
-                                                                  handleSaveAtividadeExecutor?.(a, email);
-                                                                }}
-                                                                disabled={isSavingFolhaExecutor?.[saveKey]}
-                                                              >
-                                                                <SelectTrigger className="h-6 text-xs w-[160px]">
-                                                                  <Users2 className="w-3 h-3 mr-1" />
-                                                                  <SelectValue placeholder={isHerdado ? `Herdado: ${usuariosSemDuplicatas.find(u => u.email === folhaExecutor)?.nome || folhaExecutor}` : 'Sem executor'} />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                  <SelectItem value="__none__" className="text-xs text-red-600">— Remover —</SelectItem>
-                                                                  {usuariosSemDuplicatas.filter(u => u.status === 'ativo').sort((a, b) => (a.nome || '').localeCompare(b.nome || '')).map(u => (
-                                                                    <SelectItem key={u.email} value={u.email} className="text-xs">{u.nome || u.email}</SelectItem>
-                                                                  ))}
-                                                                </SelectContent>
-                                                              </Select>
-                                                              {isSavingFolhaExecutor?.[saveKey] && <Loader2 className="w-3 h-3 animate-spin text-blue-600" />}
-                                                            </div>
-                                                          </div>
-                                                        );
-                                                      })}
-                                                    </div>
-                                                  )}
                                                 </div>
                                               );
-                                            });
-                                          })()}
+                                            })}
                                         </div>
                                       </TableCell>
                                     </TableRow>
                                   ] : [])
                                 ];
-                              })}
+                              })
+                              : [])
+                              ];
+                            })}
                           </TableBody>
                         </Table>
                         )}
