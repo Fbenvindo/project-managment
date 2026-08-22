@@ -108,61 +108,71 @@ export function buildEtapaCalendarEntries({ planoDataEtapas, documentos, pavimen
 
     if (userFilter && userFilter !== 'all' && executor !== userFilter) return;
 
-    // Distribuir horas em dias úteis dentro do período [data_inicio, data_termino]
-    const inicioDate = parseLocalDateOnly(plano.data_inicio);
-    const terminoDate = parseLocalDateOnly(plano.data_termino || plano.data_inicio);
-    if (!inicioDate) return;
-    const diasUteis = [];
-    let cur = new Date(inicioDate);
-    const end = terminoDate || inicioDate;
-    let safety = 0;
-    while (cur <= end && safety < 400) {
-      if (isWeekday(cur)) diasUteis.push(format(cur, 'yyyy-MM-dd'));
-      cur = addDays(cur, 1);
-      safety++;
-    }
-    if (diasUteis.length === 0) diasUteis.push(format(inicioDate, 'yyyy-MM-dd'));
-
     const horasTotais = Number(plano.horas_totais) || 0;
-    const horasPorDia = Math.min(8, horasTotais / diasUteis.length);
-    const distribuicao = {};
-    diasUteis.forEach(d => { distribuicao[d] = Number(horasPorDia.toFixed(2)); });
+    const inicioDate = parseLocalDateOnly(plano.data_inicio);
+    if (!inicioDate) return;
 
-    const termino = plano.data_termino || diasUteis[diasUteis.length - 1];
-
-    // Conflito de datas: algum dia do etapa já ocupado pelo executor
+    // Cada folha recebe uma fatia igual das horas da etapa, empacotada em dias
+    // úteis (8h/dia) a partir de data_inicio, na ordem de execução (pavimento
+    // ou sequência da pasta de documentos). Assim cada folha tem sua própria
+    // data planejada dentro do período global da subdisciplina.
+    const folhasCount = folhasOrdenadas.length;
+    const horasPorFolha = folhasCount > 0 ? horasTotais / folhasCount : horasTotais;
     const diasOcupados = diasOcupadosPorExecutor[executor] || new Set();
-    const hasConflict = diasUteis.some(d => diasOcupados.has(d));
 
-    const folhasDesc = folhasOrdenadas.map(({ doc }) => {
+    let cursor = new Date(inicioDate);
+    while (!isWeekday(cursor)) cursor = addDays(cursor, 1);
+    let dayKey = format(cursor, 'yyyy-MM-dd');
+    let dayUsed = 0;
+
+    folhasOrdenadas.forEach(({ doc }) => {
+      const allocatedDays = {};
+      let remaining = horasPorFolha;
+      while (remaining > 0.01) {
+        let avail = 8 - dayUsed;
+        if (avail <= 0.01) {
+          do { cursor = addDays(cursor, 1); } while (!isWeekday(cursor));
+          dayKey = format(cursor, 'yyyy-MM-dd');
+          dayUsed = 0;
+          avail = 8;
+        }
+        const h = Math.min(avail, remaining);
+        allocatedDays[dayKey] = Number(((allocatedDays[dayKey] || 0) + h).toFixed(2));
+        dayUsed += h;
+        remaining -= h;
+      }
+      const dias = Object.keys(allocatedDays).sort();
+      if (dias.length === 0) return;
+      const hasConflict = dias.some(d => diasOcupados.has(d));
+
       const parts = [];
       if (doc.numero) parts.push(doc.numero);
       if (doc.arquivo) parts.push(doc.arquivo);
-      return parts.join(' - ') || doc.arquivo || doc.numero || 'Folha';
-    });
+      const folhaDesc = parts.join(' - ') || doc.arquivo || doc.numero || 'Folha';
 
-    entries.push({
-      id: `etapa-${plano.id}`,
-      tipo_planejamento: 'etapa',
-      isEtapaPlanning: true,
-      isVirtual: true, // não dispara lógica de atraso/extensão do calendário
-      isLegacyExecution: false,
-      isQuickActivity: false,
-      empreendimento_id: plano.empreendimento_id,
-      empreendimento: emp,
-      disciplina: plano.disciplina,
-      subdisciplina: plano.subdisciplina,
-      etapa: plano.etapa,
-      executor_principal: executor,
-      inicio_planejado: plano.data_inicio,
-      termino_planejado: termino,
-      tempo_planejado: horasTotais,
-      horas_por_dia: distribuicao,
-      horas_executadas_por_dia: {},
-      tempo_executado: 0,
-      status: 'nao_iniciado',
-      folhas: folhasDesc,
-      _hasDateConflict: hasConflict,
+      entries.push({
+        id: `etapa-${plano.id}-folha-${doc.id}`,
+        tipo_planejamento: 'etapa',
+        isEtapaPlanning: true,
+        isVirtual: true,
+        isLegacyExecution: false,
+        isQuickActivity: false,
+        empreendimento_id: plano.empreendimento_id,
+        empreendimento: emp,
+        disciplina: plano.disciplina,
+        subdisciplina: plano.subdisciplina,
+        etapa: plano.etapa,
+        executor_principal: executor,
+        inicio_planejado: dias[0],
+        termino_planejado: dias[dias.length - 1],
+        tempo_planejado: Number(horasPorFolha.toFixed(2)),
+        horas_por_dia: allocatedDays,
+        horas_executadas_por_dia: {},
+        tempo_executado: 0,
+        status: 'nao_iniciado',
+        folhas: [folhaDesc],
+        _hasDateConflict: hasConflict,
+      });
     });
   });
 
