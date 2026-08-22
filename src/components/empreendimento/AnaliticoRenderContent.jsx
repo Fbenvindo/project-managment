@@ -657,8 +657,16 @@ export default function AnaliticoRenderContent({
                       const subKey = `${disciplina}::${subdisciplina}`;
                       const subRecolhida = subdisciplinasRecolhidas.has(subKey);
                       const todasFolhas = [];
+                      const seenDocIds = new Set();
                       atividadesSubgrupo.forEach(grupo => {
-                        (grupo.folhas || []).forEach(folha => todasFolhas.push({ folha, grupo }));
+                        (grupo.folhas || []).forEach(folha => {
+                          if (folha.source_documento_id && !seenDocIds.has(folha.source_documento_id)) {
+                            seenDocIds.add(folha.source_documento_id);
+                            todasFolhas.push({ folha, grupo });
+                          } else if (!folha.source_documento_id) {
+                            todasFolhas.push({ folha, grupo });
+                          }
+                        });
                       });
                       return (
                       <div key={subdisciplina} className="border rounded-lg overflow-hidden">
@@ -699,7 +707,6 @@ export default function AnaliticoRenderContent({
                               <TableHead>Folha</TableHead>
                               <TableHead className="w-[40px]"></TableHead>
                               <TableHead>Status</TableHead>
-                              <TableHead>Etapa</TableHead>
                               <TableHead>Usuário</TableHead>
                               <TableHead>Datas</TableHead>
                               <TableHead className="w-[70px]">Horas</TableHead>
@@ -710,7 +717,7 @@ export default function AnaliticoRenderContent({
                           <TableBody>
                             {todasFolhas.length === 0 ? (
                               <TableRow>
-                                <TableCell colSpan={hasCheckboxColumn ? 11 : 10} className="text-center text-gray-400 py-4">Nenhuma folha vinculada</TableCell>
+                                <TableCell colSpan={hasCheckboxColumn ? 10 : 9} className="text-center text-gray-400 py-4">Nenhuma folha vinculada</TableCell>
                               </TableRow>
                             ) : todasFolhas.flatMap(({ folha, grupo }) => {
                                 const folhaKey = folha.uniqueId || `${folha.source_documento_id}-${folha.base_atividade_id}`;
@@ -730,7 +737,7 @@ export default function AnaliticoRenderContent({
                                   />,
                                   ...(isFolhaExpanded ? [
                                     <TableRow key={`ativs-${folhaKey}`} className="bg-gray-50">
-                                      <TableCell colSpan={hasCheckboxColumn ? 11 : 10} className="py-3">
+                                      <TableCell colSpan={hasCheckboxColumn ? 10 : 9} className="py-3">
                                         <div className="pl-8 space-y-2">
                                           <div className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Atividades do documento</div>
                                           {atividadesDoDocumento.length === 0 ? (

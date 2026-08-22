@@ -175,7 +175,6 @@ function AnaliticoFolhaRow({
               : <Badge variant="outline" className="text-xs text-gray-600">{folha.status}</Badge>
           }
         </TableCell>
-        <TableCell className="text-sm text-gray-500">{folha.etapa}</TableCell>
         <TableCell>
           <div className="flex items-center gap-1">
             <Select
