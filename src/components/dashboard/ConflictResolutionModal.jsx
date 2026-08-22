@@ -54,7 +54,7 @@ export default function ConflictResolutionModal({ open, folhaEntry, allPlanejame
               <Badge variant="outline" className="text-xs">{folhaEntry.etapa}</Badge>
             </p>
             <p className="text-sm text-gray-700 mt-1 truncate">{folhaEntry.folhas?.[0]}</p>
-            <p className="text-xs text-gray-600 mt-1">Executor: {executorName}</p>
+            <p className="text-xs text-gray-600 mt-1">Usuário: {executorName}</p>
             <p className="text-xs text-gray-600">
               Data: {fmtDate(folhaEntry.inicio_planejado)} · {Number(folhaEntry.tempo_planejado).toFixed(1)}h
             </p>

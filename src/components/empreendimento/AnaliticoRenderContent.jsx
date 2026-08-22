@@ -764,7 +764,7 @@ export default function AnaliticoRenderContent({
             <Badge className="bg-blue-600 text-white">
               {atividadesSelecionadasParaPlanejar.size} atividade{atividadesSelecionadasParaPlanejar.size > 1 ? 's' : ''} selecionada{atividadesSelecionadasParaPlanejar.size > 1 ? 's' : ''}
             </Badge>
-            <span className="text-sm text-gray-700">Selecione executor e data para planejar em lote</span>
+            <span className="text-sm text-gray-700">Selecione o usuário e a data para planejar em lote</span>
           </div>
           <Button variant="outline" size="sm" onClick={() => setAtividadesSelecionadasParaPlanejar(new Set())}>
             Cancelar
@@ -955,7 +955,7 @@ export default function AnaliticoRenderContent({
                                         >
                                           <SelectTrigger className="h-6 text-xs w-[160px]">
                                             <Users2 className="w-3 h-3 mr-1" />
-                                            <SelectValue placeholder={etapaExecutor === '__mixed__' ? 'Múltiplos' : 'Sem executor'} />
+                                            <SelectValue placeholder={etapaExecutor === '__mixed__' ? 'Múltiplos' : 'Sem usuário'} />
                                           </SelectTrigger>
                                           <SelectContent>
                                             <SelectItem value="__none__" className="text-xs text-red-600">— Remover —</SelectItem>
@@ -1023,7 +1023,7 @@ export default function AnaliticoRenderContent({
                                                     >
                                                       <SelectTrigger className="h-6 text-xs w-[160px]">
                                                         <Users2 className="w-3 h-3 mr-1" />
-                                                        <SelectValue placeholder={isHerdado ? `Herdado: ${usuariosSemDuplicatas.find(u => u.email === folhaExecutor)?.nome || folhaExecutor}` : 'Sem executor'} />
+                                                        <SelectValue placeholder={isHerdado ? `Herdado: ${usuariosSemDuplicatas.find(u => u.email === folhaExecutor)?.nome || folhaExecutor}` : 'Sem usuário'} />
                                                       </SelectTrigger>
                                                       <SelectContent>
                                                         <SelectItem value="__none__" className="text-xs text-red-600">— Remover —</SelectItem>
@@ -1184,7 +1184,7 @@ export default function AnaliticoRenderContent({
             >
               <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
                 <Users2 className="w-3 h-3 mr-1" />
-                <SelectValue placeholder="Selecionar Executor" />
+                <SelectValue placeholder="Selecionar Usuário" />
               </SelectTrigger>
               <SelectContent>
                 {usuariosSemDuplicatas

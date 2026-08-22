@@ -589,7 +589,7 @@ export default function CurvaSPlanejamento({ isLoading: isDashboardLoading, onRe
                                   
                                   {doc.executor && (
                                     <p className="text-xs text-gray-500">
-                                      Executor: {doc.executor.nome || doc.executor.email}
+                                      Usuário: {doc.executor.nome || doc.executor.email}
                                     </p>
                                   )}
                                   

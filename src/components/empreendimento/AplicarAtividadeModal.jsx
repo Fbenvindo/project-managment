@@ -28,7 +28,7 @@ export default function AplicarAtividadeModal({ isOpen, onClose, empreendimentoI
 
     const handleConfirm = async () => {
         if (!executorEmail || atividadesSelecionadas.length === 0) {
-            alert('Por favor, selecione as atividades e um executor.');
+            alert('Por favor, selecione as atividades e um usuário.');
             return;
         }
 
@@ -146,10 +146,10 @@ export default function AplicarAtividadeModal({ isOpen, onClose, empreendimentoI
                         </div>
                     </div>
                     <div className="space-y-2">
-                        <Label htmlFor="executor-select">Selecione o Executor</Label>
+                        <Label htmlFor="executor-select">Selecione o Usuário</Label>
                         <Select value={executorEmail} onValueChange={setExecutorEmail}>
                             <SelectTrigger id="executor-select">
-                                <SelectValue placeholder="Escolha um executor..." />
+                                <SelectValue placeholder="Escolha um usuário..." />
                             </SelectTrigger>
                             <SelectContent>
                                 {usuarios.map(user => (

@@ -191,7 +191,7 @@ function AnaliticoFolhaRow({
             >
               <SelectTrigger className="h-7 text-xs w-[150px]">
                 <Users2 className="w-3 h-3 mr-1 flex-shrink-0" />
-                <SelectValue placeholder="Sem executor" />
+                <SelectValue placeholder="Sem usuário" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__none__" className="text-xs text-red-600">— Remover —</SelectItem>

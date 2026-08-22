@@ -315,7 +315,7 @@ export default function DocumentosTab({
 
   const autoPlanejarAtividades = useCallback(async (documento, etapa, executorEmail, metodoData, dataManualInicio) => {
     if (!documento?.id || !executorEmail || !etapa) { alert("Dados insuficientes para planejar."); return; }
-    if (etapa === 'todas') { alert("Selecione uma etapa específica antes de definir o executor."); return; }
+    if (etapa === 'todas') { alert("Selecione uma etapa específica antes de definir o usuário."); return; }
 
     setLoadingDocs(prev => ({ ...prev, [documento.id]: true }));
 
@@ -681,7 +681,7 @@ export default function DocumentosTab({
       handleLocalUpdate(updatedDocFromAPI);
       setCargaDiariaCache({});
 
-      if (predecessoraId) alert(`✅ Predecessora alterada! Os planejamentos antigos foram removidos.\n\nDefina o executor novamente para replanejar.`);
+      if (predecessoraId) alert(`✅ Predecessora alterada! Os planejamentos antigos foram removidos.\n\nDefina o usuário novamente para replanejar.`);
     } catch (error) {
       alert('Ocorreu um erro ao definir a predecessora.');
     } finally {

@@ -385,7 +385,7 @@ export default function DocumentoItem({
         setCargaDiariaCache({});
       }
     } catch (error) {
-      alert("Falha ao atualizar o executor.");
+      alert("Falha ao atualizar o usuário.");
     } finally {
       setIsUpdating(false);
     }
@@ -394,7 +394,7 @@ export default function DocumentoItem({
   const handleExecutorSelectChange = async (executorEmail) => {
     if (!executorEmail) return;
     if (etapaParaPlanejamento === 'todas') {
-      alert("Por favor, selecione uma etapa específica no dropdown 'Planejar Etapa' antes de atribuir um executor.");
+      alert("Por favor, selecione uma etapa específica no dropdown 'Planejar Etapa' antes de atribuir um usuário.");
       return;
     }
     const successorsWithoutExecutor = localDocumentos.filter(d => d.predecessora_id === doc.id && !d.executor_principal);
@@ -480,7 +480,7 @@ export default function DocumentoItem({
         }).catch(() => {});
       }, 200);
     } catch (error) {
-      alert(error.message || "Erro ao definir executor e planejar.");
+      alert(error.message || "Erro ao definir usuário e planejar.");
     } finally {
       setIsUpdating(false);
       setShowExecutorDialog(false);

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   Dialog,
@@ -229,12 +228,12 @@ export default function PlanejamentoModal({
         } else {
           logExecution("⚠️ [INÍCIO] Data manual inválida, parse falhou. Caindo para cálculo automático.");
           dataInicioSimulacao = await calcularDataInicioAutomatico(executorPrincipal);
-          origemCalculo = 'da agenda do executor (fallback da data manual)';
+          origemCalculo = 'da agenda do usuário (fallback da data manual)';
           logExecution("📅 [INÍCIO] Usando cálculo automático (fallback da data manual): " + format(dataInicioSimulacao, 'dd/MM/yyyy'));
         }
       } else { // metodoCalculo === 'agenda_executor'
         dataInicioSimulacao = await calcularDataInicioAutomatico(executorPrincipal);
-        origemCalculo = 'da agenda do executor';
+        origemCalculo = 'da agenda do usuário';
         logExecution("📅 [INÍCIO] Usando cálculo automático (considerando carga total do executor): " + format(dataInicioSimulacao, 'dd/MM/yyyy'));
       }
 
@@ -415,7 +414,7 @@ export default function PlanejamentoModal({
 
   const handleAtribuirExecutor = async () => {
     if (!executorPrincipal) {
-      alert("Selecione um executor principal");
+      alert("Selecione um usuário principal");
       return;
     }
     if (atividadesSelecionadas.size === 0) {
@@ -424,7 +423,7 @@ export default function PlanejamentoModal({
     }
     // Ensure a calculation has been performed and result is available
     if (!resumoPlanejamento || atividadesPlanejadas.length === 0) {
-      alert("Por favor, calcule as datas antes de atribuir o executor.");
+      alert("Por favor, calcule as datas antes de atribuir o usuário.");
       return;
     }
 
@@ -535,7 +534,7 @@ export default function PlanejamentoModal({
     } catch (error) {
       console.error("Erro ao atribuir executor:", error);
       logExecution(`❌ ERRO FATAL: ${error.message}`);
-      alert("Ocorreu um erro ao atribuir o executor. Verifique o log de execução no console ou nas mensagens da tela.");
+      alert("Ocorreu um erro ao atribuir o usuário. Verifique o log de execução no console ou nas mensagens da tela.");
     } finally {
       setIsSaving(false);
     }
@@ -693,10 +692,10 @@ export default function PlanejamentoModal({
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
-                  <Label>Executor Principal</Label>
+                  <Label>Usuário Principal</Label>
                   <Select value={executorPrincipal} onValueChange={setExecutorPrincipal}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Selecione um executor" />
+                      <SelectValue placeholder="Selecione um usuário" />
                     </SelectTrigger>
                     <SelectContent>
                       {usuariosOrdenados.map(usuario => (
@@ -712,7 +711,7 @@ export default function PlanejamentoModal({
                   <h3 className="font-medium text-blue-800 mb-2">Método de Cálculo da Data de Início</h3>
                   <p className="text-blue-600 text-sm mb-3">
                     {metodoCalculo === 'agenda_executor' ?
-                      'Agenda do Executor (prioriza preenchimento de agenda)' :
+                      'Agenda do Usuário (prioriza preenchimento de agenda)' :
                       'Data Específica (inicia em data escolhida pelo usuário)'
                     }
                   </p>
@@ -723,7 +722,7 @@ export default function PlanejamentoModal({
                   >
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="agenda_executor" id="r1" />
-                      <Label htmlFor="r1">Agenda do Executor</Label>
+                      <Label htmlFor="r1">Agenda do Usuário</Label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="data_manual" id="r2" />
@@ -808,7 +807,7 @@ export default function PlanejamentoModal({
               <CardContent>
                 <div className="grid grid-cols-2 gap-4">
                   <div>
-                    <strong>Executor para Cálculo:</strong> {executorSelecionado?.nome || executorSelecionado?.full_name || executorPrincipal}
+                    <strong>Usuário para Cálculo:</strong> {executorSelecionado?.nome || executorSelecionado?.full_name || executorPrincipal}
                     <div className="text-sm text-gray-600">(Origem: {resumoPlanejamento.origemCalculo})</div>
                   </div>
                   <div>
@@ -827,7 +826,7 @@ export default function PlanejamentoModal({
 
                 {resumoPlanejamento.resumoCargaExistente && (
                   <div className="mt-3 p-2 bg-yellow-50 rounded border border-yellow-200 text-sm">
-                    <strong>Carga Existente do Executor:</strong>
+                    <strong>Carga Existente do Usuário:</strong>
                     <p className="text-yellow-800">
                       {resumoPlanejamento.resumoCargaExistente.totalHorasExistentes.toFixed(1)}h distribuídas em {resumoPlanejamento.resumoCargaExistente.totalDiasComCarga} dias.
                       Última atividade planejada termina em: {resumoPlanejamento.resumoCargaExistente.ultimaDataPlanejada ? format(parseISO(resumoPlanejamento.resumoCargaExistente.ultimaDataPlanejada), 'dd/MM/yyyy') : 'N/A'}.
@@ -964,7 +963,7 @@ export default function PlanejamentoModal({
             ) : (
               <>
                 <UserCheck className="w-4 h-4 mr-2" />
-                Atribuir Executor
+                Atribuir Usuário
               </>
             )}
           </Button>

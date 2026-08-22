@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from 'react';
 import { PlanejamentoAtividade } from '@/entities/all';
 import {
@@ -125,7 +124,7 @@ export default function PlanejamentoDocumentacaoModal({
 
   const handleSubmit = async () => {
     if (!executorPrincipal) {
-      alert("Selecione um Executor Principal.");
+      alert("Selecione um Usuário Principal.");
       return;
     }
     if (selectedAtividades.size === 0) {
@@ -310,7 +309,7 @@ export default function PlanejamentoDocumentacaoModal({
               <div className="space-y-2">
                 <Label className="font-semibold flex items-center gap-2"><Users className="w-4 h-4"/> Ações em Massa</Label>
                 <Select value={executorPrincipal} onValueChange={setExecutorPrincipal}>
-                  <SelectTrigger><SelectValue placeholder="Selecione um executor principal" /></SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Selecione um usuário principal" /></SelectTrigger>
                   <SelectContent>
                     {usuarios.map(u => <SelectItem key={u.id} value={u.email}>{u.nome}</SelectItem>)}
                   </SelectContent>
@@ -321,7 +320,7 @@ export default function PlanejamentoDocumentacaoModal({
                 <RadioGroup value={metodoCalculo} onValueChange={setMetodoCalculo} className="mt-2">
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="agenda" id="r_agenda" />
-                    <Label htmlFor="r_agenda">Agenda do Executor (prioriza preenchimento de agenda)</Label>
+                    <Label htmlFor="r_agenda">Agenda do Usuário (prioriza preenchimento de agenda)</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="manual" id="r_manual" />
@@ -381,7 +380,7 @@ export default function PlanejamentoDocumentacaoModal({
           <Button variant="outline" onClick={onClose}>Fechar</Button>
           <Button onClick={handleSubmit} disabled={isSubmitting}>
             {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Users className="w-4 h-4 mr-2" />}
-            Atribuir Executor
+            Atribuir Usuário
           </Button>
         </DialogFooter>
       </DialogContent>

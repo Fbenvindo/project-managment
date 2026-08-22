@@ -673,7 +673,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
       );
       await fetchData();
     } catch (error) {
-      alert('Erro ao atribuir executor da folha: ' + error.message);
+      alert('Erro ao atribuir usuário da folha: ' + error.message);
     } finally {
       setIsSavingFolhaExecutor(prev => ({ ...prev, [saveKey]: false }));
     }
@@ -724,7 +724,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
       }
       await fetchData();
     } catch (error) {
-      alert('Erro ao atribuir executor da atividade: ' + error.message);
+      alert('Erro ao atribuir usuário da atividade: ' + error.message);
     } finally {
       setIsSavingFolhaExecutor(prev => ({ ...prev, [saveKey]: false }));
     }
@@ -776,7 +776,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
       }
       await fetchData();
     } catch (error) {
-      alert('Erro ao atribuir executor da etapa: ' + error.message);
+      alert('Erro ao atribuir usuário da etapa: ' + error.message);
     } finally {
       setIsSavingFolhaExecutor(prev => ({ ...prev, [saveKey]: false }));
     }
@@ -801,7 +801,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
       }
       await fetchData();
     } catch (error) {
-      alert('Erro ao atribuir executor: ' + error.message);
+      alert('Erro ao atribuir usuário: ' + error.message);
     } finally {
       setIsSavingExecutorDisciplina(prev => ({ ...prev, [saveKey]: false }));
     }
@@ -857,7 +857,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
       }
       await fetchData();
     } catch (error) {
-      alert('Erro ao atribuir executor: ' + error.message);
+      alert('Erro ao atribuir usuário: ' + error.message);
     } finally {
       setIsSavingExecutorDisciplina(prev => ({ ...prev, [saveKey]: false }));
     }

@@ -15,7 +15,7 @@ const CAMPO_LABELS = {
   inicio_planejado: 'Início Planejado',
   termino_ajustado: 'Término Ajustado',
   inicio_ajustado: 'Início Ajustado',
-  executor_principal: 'Executor Principal',
+  executor_principal: 'Usuário Principal',
   tempo_planejado: 'Tempo Planejado',
   descritivo: 'Descrição',
 };

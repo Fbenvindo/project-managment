@@ -594,7 +594,7 @@ export default function CalendarioActivityItem({
           <DialogHeader><DialogTitle>Quem executou esta atividade?</DialogTitle></DialogHeader>
           <div className="py-4 space-y-3">
             <p className="text-sm text-gray-600"><strong>Atividade:</strong> {displayName}</p>
-            <p className="text-sm text-gray-600">Selecione quem realizou a execução para registrar o executor correto.</p>
+            <p className="text-sm text-gray-600">Selecione quem realizou a execução para registrar o usuário correto.</p>
           </div>
           <DialogFooter className="flex flex-col gap-2 sm:flex-row sm:justify-end">
             <Button variant="outline" onClick={() => setShowConcluirModal(false)} disabled={isConcluindo}>Cancelar</Button>
@@ -663,7 +663,7 @@ export default function CalendarioActivityItem({
                 />
               </div>
               <div className="space-y-2">
-                <Label>Executor Principal</Label>
+                <Label>Usuário Principal</Label>
                 {/*
                   FIX 2: usar u.email como value (não u.id).
                   O campo executor_principal em todo o sistema é o email do usuário.

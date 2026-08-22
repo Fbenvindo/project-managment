@@ -92,7 +92,7 @@ export default function DailyActivityGroup({ empreendimento, executor, atividade
 
   const empreendimentoNome = empreendimento?.nome || empreendimento?.nome_fantasia || 'Sem Empreendimento';
   const planoExecutor = executor?.email ? executorMap[executor.email] : null;
-  const executorNome = planoExecutor?.nome || planoExecutor?.email || 'Sem Executor';
+  const executorNome = planoExecutor?.nome || planoExecutor?.email || 'Sem Usuário';
 
   const canDragGroup = canReprogram &&
     empreendimentoNome !== 'Atividades Rápidas' &&

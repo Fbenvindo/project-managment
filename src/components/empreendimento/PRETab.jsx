@@ -769,13 +769,13 @@ export default function PRETab({ empreendimento, readOnly = false, onAfterSave }
 
               {/* Executor */}
               <div className="space-y-1">
-                <label className="text-sm font-medium text-gray-700">Executor *</label>
+                <label className="text-sm font-medium text-gray-700">Usuário *</label>
                 <Select
                   value={planejamentoForm.executor}
                   onValueChange={(v) => setPlanejamentoForm(f => ({ ...f, executor: v }))}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Selecione o executor" />
+                    <SelectValue placeholder="Selecione o usuário" />
                   </SelectTrigger>
                   <SelectContent>
                     {[...new Map(usuarios.map(u => [u.email, u])).values()].map(u => (

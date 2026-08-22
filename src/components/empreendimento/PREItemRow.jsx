@@ -426,7 +426,7 @@ const PREItemRow = memo(function PREItemRow({
                 onClick={() => onRemoveExecutor(item)}
               >
                 <X className="w-3 h-3 mr-1" />
-                Remover executor
+                Remover usuário
               </Button>
             </div>
           ) : (
