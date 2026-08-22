@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CheckCircle, Trash2, RefreshCw, Edit2, Loader2 } from "lucide-react";
+import { CheckCircle, Circle, Check, Trash2, RefreshCw, Edit2, Loader2 } from "lucide-react";
 import { format, parseISO } from "date-fns";
 import { ActivityTimerContext } from '../contexts/ActivityTimerContext';
 import { PlanejamentoAtividade, Execucao, PlanejamentoDocumento, Documento } from '@/entities/all';
@@ -434,16 +434,27 @@ export default function CalendarioActivityItem({
             <button
               onClick={() => setShowConcluirModal(true)}
               disabled={isConcluded || isConcluindo}
-              className={`p-1.5 rounded-md transition-colors ${
-                isConcluded ? 'bg-green-500 cursor-not-allowed'
-                : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado') ? 'bg-red-500 hover:bg-red-600'
-                : 'bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed'
+              className={`p-1.5 rounded-full transition-colors flex items-center justify-center ${
+                realStatus === 'concluido' ? 'bg-green-500 cursor-not-allowed'
+                : realStatus === 'concluido_com_atraso' ? 'bg-red-500 cursor-not-allowed'
+                : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado')
+                  ? 'bg-white border-2 border-red-500 hover:bg-red-50'
+                  : 'bg-white border-2 border-green-500 hover:bg-green-50'
               }`}
-              title={isConcluded ? 'Atividade concluída' : 'Marcar como concluída'}
+              title={
+                realStatus === 'concluido' ? 'Concluída no prazo'
+                : realStatus === 'concluido_com_atraso' ? 'Concluída com atraso'
+                : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado') ? 'Atrasada - clique para concluir'
+                : 'No prazo - clique para concluir'
+              }
             >
-              {isConcluded
-                ? <span className="text-white text-xs font-bold">✓</span>
-                : <CheckCircle className="w-3.5 h-3.5 text-white" />}
+              {realStatus === 'concluido'
+                ? <Check className="w-3.5 h-3.5 text-white" />
+                : realStatus === 'concluido_com_atraso'
+                  ? <Check className="w-3.5 h-3.5 text-white" />
+                  : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado')
+                    ? <Circle className="w-3.5 h-3.5 text-red-500" />
+                    : <Circle className="w-3.5 h-3.5 text-green-500" />}
             </button>
             {canEditDelete && (
               <button
