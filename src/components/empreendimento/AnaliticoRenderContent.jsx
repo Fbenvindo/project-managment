@@ -1,5 +1,5 @@
 // @ts-nocheck
-import React, { useMemo, useState, useCallback } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -19,6 +19,9 @@ import { ptBR } from 'date-fns/locale';
 import AnaliticoFolhaRow from './AnaliticoFolhaRow';
 import { PlanejamentoAtividade, Atividade } from '@/entities/all';
 import { retryWithBackoff } from '../utils/apiUtils';
+import EtapaDataCell from './EtapaDataCell';
+import { PlanoDataEtapa } from '@/entities/all';
+import { useFeriados } from '@/components/utils/PlanoDatasUtils';
 
 export default function AnaliticoRenderContent({
   isLoading,
@@ -73,6 +76,7 @@ export default function AnaliticoRenderContent({
   isSavingExecutorDisciplina,
   handleSaveAtividadeExecutor,
   handleSaveEtapaExecutor,
+  empreendimento,
 }) {
   // folhasSelecionadas lives here so checkbox clicks don't re-render the entire parent
   const [folhasSelecionadas, setFolhasSelecionadas] = useState(new Set());
@@ -89,6 +93,47 @@ export default function AnaliticoRenderContent({
   const toggleSubdisciplina = useCallback((k) => setSubdisciplinasRecolhidas(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; }), []);
   const toggleFolha = useCallback((k) => setFolhasExpandidas(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; }), []);
   const toggleEtapa = useCallback((k) => setEtapasExpandidas(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; }), []);
+
+  const { feriados } = useFeriados();
+  const [planosEtapa, setPlanosEtapa] = useState([]);
+
+  useEffect(() => {
+    if (!empreendimentoId) return;
+    let active = true;
+    PlanoDataEtapa.filter({ empreendimento_id: empreendimentoId })
+      .then(lista => { if (active) setPlanosEtapa(lista || []); })
+      .catch(e => console.error(e));
+    return () => { active = false; };
+  }, [empreendimentoId]);
+
+  const etapasConfig = empreendimento?.etapas_config || [];
+  const mapEtapaDisplay = useCallback((etapa) => {
+    if (!etapa || etapasConfig.length === 0) return etapa;
+    for (const entry of etapasConfig) {
+      if (entry.nome === etapa) return etapa;
+      if (Array.isArray(entry.etapas_padrao) && entry.etapas_padrao.includes(etapa)) return entry.nome;
+    }
+    return etapa;
+  }, [etapasConfig]);
+
+  const getPlanoEtapa = (disc, sub, etapa) =>
+    planosEtapa.find(p => p.disciplina === disc && p.subdisciplina === sub && p.etapa === etapa);
+
+  const handleSavePlanoEtapa = async (disc, sub, etapa, dataInicio, dataTermino, horasTotais) => {
+    const existing = getPlanoEtapa(disc, sub, etapa);
+    const payload = { empreendimento_id: empreendimentoId, disciplina: disc, subdisciplina: sub, etapa, data_inicio: dataInicio, data_termino: dataTermino, horas_totais: horasTotais };
+    try {
+      if (existing?.id) {
+        await PlanoDataEtapa.update(existing.id, payload);
+        setPlanosEtapa(prev => prev.map(p => p.id === existing.id ? { ...p, ...payload } : p));
+      } else {
+        const created = await PlanoDataEtapa.create(payload);
+        setPlanosEtapa(prev => [...prev, created]);
+      }
+    } catch (e) {
+      console.error("Erro ao salvar data da etapa:", e);
+    }
+  };
 
   const handleConcluirFolha = useCallback(() => {
     if (fetchData) fetchData();
@@ -677,7 +722,7 @@ export default function AnaliticoRenderContent({
                             .flatMap(g => g.folhas || [])
                             .filter(f => f.source_documento_id === folha.source_documento_id);
                           atvs.forEach(a => {
-                            const etapa = a.etapa || 'Sem Etapa';
+                            const etapa = mapEtapaDisplay(a.etapa || 'Sem Etapa');
                             if (!map[etapa]) map[etapa] = {};
                             const docKey = folha.source_documento_id || `nofolio-${folha.base_atividade_id}`;
                             if (!map[etapa][docKey]) map[etapa][docKey] = { folha, grupo, atividades: [] };
@@ -762,6 +807,12 @@ export default function AnaliticoRenderContent({
                                           </SelectContent>
                                         </Select>
                                         {isEtapaSaving && <Loader2 className="w-3 h-3 animate-spin text-blue-600" />}
+                                        <EtapaDataCell
+                                          plano={getPlanoEtapa(disciplina, subdisciplina, etapa)}
+                                          feriados={feriados}
+                                          totalHoras={totalHorasEtapa}
+                                          onSave={(inicio, termino) => handleSavePlanoEtapa(disciplina, subdisciplina, etapa, inicio, termino, totalHorasEtapa)}
+                                        />
                                         <span className="text-xs text-gray-500">{totalHorasEtapa.toFixed(1)}h</span>
                                       </div>
                                     </div>

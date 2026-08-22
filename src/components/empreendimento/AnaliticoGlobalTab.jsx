@@ -927,6 +927,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
       isSavingExecutorDisciplina={isSavingExecutorDisciplina}
       handleSaveAtividadeExecutor={handleSaveAtividadeExecutor}
       handleSaveEtapaExecutor={handleSaveEtapaExecutor}
+      empreendimento={empreendimentoObj}
     />
   );
 
