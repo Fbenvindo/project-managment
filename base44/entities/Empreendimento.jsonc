@@ -61,9 +61,12 @@
             "type": "string",
             "description": "Nome da etapa conforme definido no projeto"
           },
-          "etapa_padrao": {
-            "type": "string",
-            "description": "Etapa padr\u00e3o do cat\u00e1logo atribu\u00edda a esta etapa do projeto"
+          "etapas_padrao": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Lista de etapas padr\u00e3o do cat\u00e1logo atribu\u00eddas a esta etapa do projeto"
           },
           "ordem": {
             "type": "number",
@@ -72,7 +75,7 @@
         },
         "required": [
           "nome",
-          "etapa_padrao"
+          "etapas_padrao"
         ]
       },
       "default": []

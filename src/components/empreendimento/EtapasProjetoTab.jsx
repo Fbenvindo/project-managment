@@ -4,13 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import {
   Dialog,
   DialogContent,
@@ -26,8 +26,10 @@ import {
   Save,
   Layers,
   Info,
+  ChevronDown as ChevronDownIcon,
 } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
+import { cn } from "@/lib/utils";
 
 // Etapas padrão disponíveis no catálogo de atividades (empreendimento_id = null)
 const ETAPAS_PADRAO_CATALOGO = [
@@ -48,12 +50,75 @@ const ETAPAS_DEFAULT_PROJETO = [
   "Liberado para Obra",
 ];
 
+// Normaliza para array, migrando do formato legado (string única) se necessário
+const normalizarEtapasPadrao = (etapa) => {
+  if (Array.isArray(etapa.etapas_padrao)) return etapa.etapas_padrao;
+  if (etapa.etapa_padrao) return [etapa.etapa_padrao];
+  return [];
+};
+
+function MultiEtapaPadraoSelect({ value, onChange, disabled, placeholder }) {
+  const [open, setOpen] = useState(false);
+
+  const toggle = (ep) => {
+    if (value.includes(ep)) {
+      onChange(value.filter((v) => v !== ep));
+    } else {
+      // mantém a ordem do catálogo
+      const merged = [...value, ep];
+      const ordered = ETAPAS_PADRAO_CATALOGO.filter((e) => merged.includes(e));
+      onChange(ordered);
+    }
+  };
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          variant="outline"
+          role="combobox"
+          disabled={disabled}
+          className={cn(
+            "h-9 w-full justify-between font-normal",
+            value.length === 0 && "text-gray-400"
+          )}
+        >
+          <span className="truncate text-left flex-1">
+            {value.length === 0
+              ? placeholder || "Selecione as etapas padrão"
+              : value.join(", ")}
+          </span>
+          <ChevronDownIcon className="w-4 h-4 opacity-50 flex-shrink-0 ml-2" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-0" align="start">
+        <div className="max-h-64 overflow-y-auto p-2 space-y-1">
+          {ETAPAS_PADRAO_CATALOGO.map((ep) => (
+            <label
+              key={ep}
+              htmlFor={`ep-${ep}`}
+              className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-gray-50 cursor-pointer"
+            >
+              <Checkbox
+                id={`ep-${ep}`}
+                checked={value.includes(ep)}
+                onCheckedChange={() => toggle(ep)}
+              />
+              <span className="text-sm">{ep}</span>
+            </label>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export default function EtapasProjetoTab({ empreendimento, onUpdate, readOnly }) {
   const { toast } = useToast();
   const [etapas, setEtapas] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
-  const [novaEtapa, setNovaEtapa] = useState({ nome: "", etapa_padrao: "" });
+  const [novaEtapa, setNovaEtapa] = useState({ nome: "", etapas_padrao: [] });
 
   useEffect(() => {
     if (!empreendimento) return;
@@ -63,7 +128,7 @@ export default function EtapasProjetoTab({ empreendimento, onUpdate, readOnly })
       setEtapas(
         config.map((e, i) => ({
           nome: e.nome || "",
-          etapa_padrao: e.etapa_padrao || "",
+          etapas_padrao: normalizarEtapasPadrao(e),
           ordem: e.ordem ?? i + 1,
         }))
       );
@@ -76,7 +141,7 @@ export default function EtapasProjetoTab({ empreendimento, onUpdate, readOnly })
       setEtapas(
         etapasLegadas.map((nome, i) => ({
           nome,
-          etapa_padrao: ETAPAS_PADRAO_CATALOGO.includes(nome) ? nome : "",
+          etapas_padrao: ETAPAS_PADRAO_CATALOGO.includes(nome) ? [nome] : [],
           ordem: i + 1,
         }))
       );
@@ -87,7 +152,7 @@ export default function EtapasProjetoTab({ empreendimento, onUpdate, readOnly })
     setEtapas(
       ETAPAS_DEFAULT_PROJETO.map((nome, i) => ({
         nome,
-        etapa_padrao: nome,
+        etapas_padrao: [nome],
         ordem: i + 1,
       }))
     );
@@ -130,24 +195,28 @@ export default function EtapasProjetoTab({ empreendimento, onUpdate, readOnly })
       toast({ title: "Informe o nome da etapa", variant: "destructive" });
       return;
     }
-    if (!novaEtapa.etapa_padrao) {
+    if (novaEtapa.etapas_padrao.length === 0) {
       toast({
-        title: "Selecione a etapa padrão do catálogo",
+        title: "Selecione ao menos uma etapa padrão do catálogo",
         variant: "destructive",
       });
       return;
     }
     setEtapas((prev) => [
       ...prev,
-      { ...novaEtapa, nome: novaEtapa.nome.trim(), ordem: prev.length + 1 },
+      {
+        ...novaEtapa,
+        nome: novaEtapa.nome.trim(),
+        ordem: prev.length + 1,
+      },
     ]);
-    setNovaEtapa({ nome: "", etapa_padrao: "" });
+    setNovaEtapa({ nome: "", etapas_padrao: [] });
     setShowAddDialog(false);
   };
 
   const handleSave = async () => {
     const inválidas = etapas.filter(
-      (e) => !e.nome.trim() || !e.etapa_padrao
+      (e) => !e.nome.trim() || e.etapas_padrao.length === 0
     );
     if (inválidas.length > 0) {
       toast({
@@ -161,7 +230,7 @@ export default function EtapasProjetoTab({ empreendimento, onUpdate, readOnly })
     try {
       const etapasConfig = etapas.map((e, i) => ({
         nome: e.nome.trim(),
-        etapa_padrao: e.etapa_padrao,
+        etapas_padrao: e.etapas_padrao,
         ordem: i + 1,
       }));
       // Sincroniza etapas (strings) para compatibilidade com o restante do sistema
@@ -193,8 +262,8 @@ export default function EtapasProjetoTab({ empreendimento, onUpdate, readOnly })
             <div>
               <CardTitle className="text-lg">Etapas do Projeto</CardTitle>
               <p className="text-sm text-gray-500 mt-1">
-                Defina as etapas do projeto e mapeie cada uma para uma etapa
-                padrão do catálogo de atividades.
+                Defina as etapas do projeto e mapeie cada uma para uma ou mais
+                etapas padrão do catálogo de atividades.
               </p>
             </div>
           </div>
@@ -213,12 +282,12 @@ export default function EtapasProjetoTab({ empreendimento, onUpdate, readOnly })
           <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-100 rounded-lg">
             <Info className="w-4 h-4 text-blue-600 flex-shrink-0 mt-0.5" />
             <p className="text-xs text-blue-800">
-              A <strong>etapa padrão</strong> define de qual etapa do catálogo
-              de atividades as tarefas serão originadas. Atividades que se
-              repetem em etapas padrão distintas (ex.: Compatibilização em
-              Ante-Projeto e Projeto Básico) serão mantidas apenas uma vez no
-              projeto. A ordem das etapas segue a classificação crescente
-              (predecessora).
+              A <strong>etapa padrão</strong> define de quais etapas do
+              catálogo as atividades serão originadas. Ao atribuir mais de uma
+              etapa padrão, atividades que se repetem entre elas (ex.:
+              Compatibilização em Ante-Projeto e Projeto Básico) serão mantidas
+              apenas uma vez no projeto. A ordem das etapas segue a
+              classificação crescente (predecessora).
             </p>
           </div>
 
@@ -232,8 +301,8 @@ export default function EtapasProjetoTab({ empreendimento, onUpdate, readOnly })
               {/* Header */}
               <div className="hidden md:grid grid-cols-12 gap-2 px-3 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 <div className="col-span-1 text-center">Ordem</div>
-                <div className="col-span-5">Etapa do Projeto</div>
-                <div className="col-span-5">Etapa Padrão (Catálogo)</div>
+                <div className="col-span-4">Etapa do Projeto</div>
+                <div className="col-span-6">Etapas Padrão (Catálogo)</div>
                 <div className="col-span-1 text-center">Ações</div>
               </div>
 
@@ -248,7 +317,7 @@ export default function EtapasProjetoTab({ empreendimento, onUpdate, readOnly })
                     </span>
                   </div>
 
-                  <div className="col-span-7 md:col-span-5">
+                  <div className="col-span-8 md:col-span-4">
                     <Input
                       value={etapa.nome}
                       onChange={(e) =>
@@ -260,25 +329,24 @@ export default function EtapasProjetoTab({ empreendimento, onUpdate, readOnly })
                     />
                   </div>
 
-                  <div className="col-span-3 md:col-span-5">
-                    <Select
-                      value={etapa.etapa_padrao}
-                      onValueChange={(value) =>
-                        handleEdit(index, "etapa_padrao", value)
-                      }
-                      disabled={readOnly}
-                    >
-                      <SelectTrigger className="h-9">
-                        <SelectValue placeholder="Selecione a etapa padrão" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {ETAPAS_PADRAO_CATALOGO.map((ep) => (
-                          <SelectItem key={ep} value={ep}>
+                  <div className="col-span-2 md:col-span-6">
+                    {readOnly ? (
+                      <div className="flex flex-wrap gap-1">
+                        {etapa.etapas_padrao.map((ep) => (
+                          <Badge key={ep} variant="secondary" className="text-xs">
                             {ep}
-                          </SelectItem>
+                          </Badge>
                         ))}
-                      </SelectContent>
-                    </Select>
+                      </div>
+                    ) : (
+                      <MultiEtapaPadraoSelect
+                        value={etapa.etapas_padrao}
+                        onChange={(val) =>
+                          handleEdit(index, "etapas_padrao", val)
+                        }
+                        placeholder="Selecione as etapas padrão"
+                      />
+                    )}
                   </div>
 
                   <div className="col-span-12 md:col-span-1 flex items-center justify-center gap-1">
@@ -355,31 +423,18 @@ export default function EtapasProjetoTab({ empreendimento, onUpdate, readOnly })
               />
             </div>
             <div className="space-y-2">
-              <Label>Etapa Padrão do Catálogo *</Label>
-              <Select
-                value={novaEtapa.etapa_padrao}
-                onValueChange={(value) =>
-                  setNovaEtapa((prev) => ({
-                    ...prev,
-                    etapa_padrao: value,
-                    nome: prev.nome || value,
-                  }))
+              <Label>Etapas Padrão do Catálogo *</Label>
+              <MultiEtapaPadraoSelect
+                value={novaEtapa.etapas_padrao}
+                onChange={(val) =>
+                  setNovaEtapa((prev) => ({ ...prev, etapas_padrao: val }))
                 }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Selecione a etapa padrão" />
-                </SelectTrigger>
-                <SelectContent>
-                  {ETAPAS_PADRAO_CATALOGO.map((ep) => (
-                    <SelectItem key={ep} value={ep}>
-                      {ep}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                placeholder="Selecione uma ou mais etapas padrão"
+              />
               <p className="text-xs text-gray-500">
-                As atividades do catálogo desta etapa padrão serão originadas
-                para o projeto.
+                As atividades do catálogo das etapas padrão selecionadas serão
+                originadas para o projeto, com deduplicação das atividades
+                repetidas.
               </p>
             </div>
           </div>
