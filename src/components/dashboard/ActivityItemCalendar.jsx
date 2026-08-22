@@ -14,7 +14,6 @@ import { PlanejamentoAtividade, Execucao, PlanejamentoDocumento, Documento } fro
 import { retryWithBackoff } from '../utils/apiUtils';
 import { distribuirHorasPorDias } from '../utils/DateCalculator';
 import AtividadesFolhaModal from './AtividadesFolhaModal';
-import { useConflictResolution } from './ConflictResolutionContext';
 
 const parseLocalDate = (dateString) => {
   if (!dateString) return null;
@@ -57,8 +56,6 @@ export default function CalendarioActivityItem({
 }) {
   const { activeExecution, startExecution, user, playlist, hasPermission, isAdmin, perfilAtual, allEmpreendimentos } = useContext(ActivityTimerContext);
   const canEditDelete = isAdmin || perfilAtual === 'direcao' || perfilAtual === 'coordenador';
-  const conflictCtx = useConflictResolution();
-  const openConflictModal = conflictCtx?.openConflictModal;
 
   const [isStarting, setIsStarting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -354,15 +351,6 @@ export default function CalendarioActivityItem({
           )}
           <span className="font-mono text-blue-600 font-semibold text-sm">{formatHours(plano.tempo_planejado)}h</span>
         </div>
-        {plano._hasDateConflict && canEditDelete && openConflictModal && (
-          <button
-            onClick={() => openConflictModal(plano)}
-            className="mt-1.5 w-full text-xs bg-red-600 hover:bg-red-700 text-white rounded py-1 font-medium flex items-center justify-center gap-1 transition-colors"
-          >
-            <AlertTriangle className="w-3 h-3" />
-            Resolver conflito
-          </button>
-        )}
       </div>
     );
   }

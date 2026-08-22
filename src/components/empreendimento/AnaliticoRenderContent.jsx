@@ -14,14 +14,16 @@ import {
   Loader2, PackageOpen, PlusCircle, ChevronRight, ChevronDown, Trash2, Edit, Edit2,
   Calendar, CheckCircle2, XCircle, FileX, Layers, Users2, CheckCircle, MoreHorizontal, RotateCcw
 } from 'lucide-react';
-import { format, parseISO } from 'date-fns';
+import { format, parseISO, addDays } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import AnaliticoFolhaRow from './AnaliticoFolhaRow';
-import { PlanejamentoAtividade, Atividade } from '@/entities/all';
+import { PlanejamentoAtividade, Atividade, Documento, Pavimento, PlanoDataEtapa } from '@/entities/all';
 import { retryWithBackoff } from '../utils/apiUtils';
 import EtapaDataCell from './EtapaDataCell';
-import { PlanoDataEtapa } from '@/entities/all';
 import { useFeriados } from '@/components/utils/PlanoDatasUtils';
+import { computeEtapaFolhaPacking } from '../dashboard/EtapaPlanningSync';
+import { distribuirHorasPorDias } from '../utils/DateCalculator';
+import ConflictResolutionModal from '../dashboard/ConflictResolutionModal';
 
 export default function AnaliticoRenderContent({
   isLoading,
@@ -88,6 +90,7 @@ export default function AnaliticoRenderContent({
   const [subdisciplinasExpandidas, setSubdisciplinasExpandidas] = useState(() => new Set());
   const [folhasExpandidas, setFolhasExpandidas] = useState(() => new Set());
   const [etapasExpandidas, setEtapasExpandidas] = useState(() => new Set());
+  const [conflictEntry, setConflictEntry] = useState(null);
 
   const toggleDisciplina = useCallback((d) => setDisciplinasRecolhidas(p => { const n = new Set(p); n.has(d) ? n.delete(d) : n.add(d); return n; }), []);
   const toggleSubdisciplina = useCallback((k) => setSubdisciplinasExpandidas(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; }), []);
@@ -126,20 +129,158 @@ export default function AnaliticoRenderContent({
   const getPlanoEtapa = (disc, sub, etapa) =>
     planosEtapa.find(p => p.disciplina === disc && p.subdisciplina === sub && p.etapa === etapa);
 
+  const regenerateEtapaPlanejamentos = async (planoId, folhas, executor, plano) => {
+    try {
+      const antigos = await retryWithBackoff(() => PlanejamentoAtividade.filter({ plano_data_etapa_id: planoId }), 3, 500, 'delEtapaOld');
+      for (const a of (antigos || [])) {
+        await retryWithBackoff(() => PlanejamentoAtividade.delete(a.id), 3, 300, `delEtapa-${a.id}`);
+      }
+    } catch (e) { console.error("Erro ao remover planejamentos antigos da etapa:", e); }
+    for (const f of folhas) {
+      try {
+        await retryWithBackoff(() => PlanejamentoAtividade.create({
+          empreendimento_id: empreendimentoId,
+          plano_data_etapa_id: planoId,
+          documento_id: f.doc.id,
+          etapa: plano.etapa,
+          descritivo: f.folhaDesc,
+          executor_principal: executor,
+          tempo_planejado: f.horas,
+          inicio_planejado: f.inicio,
+          termino_planejado: f.termino,
+          horas_por_dia: f.allocatedDays,
+          status: 'nao_iniciado',
+        }), 3, 400, `criaEtapa-${f.doc.id}`);
+      } catch (e) { console.error("Erro ao criar planejamento de folha:", e); }
+    }
+    if (fetchData) fetchData();
+  };
+
+  const gerarPlanejamentosEtapa = async (plano, horasTotais) => {
+    try {
+      const [documentos, pavimentos] = await Promise.all([
+        retryWithBackoff(() => Documento.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'etapaDocs').catch(() => []),
+        retryWithBackoff(() => Pavimento.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'etapaPav').catch(() => []),
+      ]);
+      const existingSemEtapa = (planejamentos || []).filter(p => p.plano_data_etapa_id !== plano.id);
+      const { folhas, conflicts, executor } = computeEtapaFolhaPacking({
+        plano: { ...plano, horas_totais: horasTotais },
+        documentos,
+        pavimentos,
+        existingPlanejamentos: existingSemEtapa,
+      });
+      if (!executor) { await regenerateEtapaPlanejamentos(plano.id, [], null, plano); return; }
+      if (conflicts.length > 0) {
+        setConflictEntry({
+          _planoId: plano.id,
+          _horasTotais: horasTotais,
+          _conflictWith: conflicts,
+          executor_principal: executor,
+          empreendimento: { nome: empreendimento?.nome },
+          subdisciplina: plano.subdisciplina,
+          disciplina: plano.disciplina,
+          etapa: plano.etapa,
+          folhas: [`${folhas.length} folha(s) planejada(s)`],
+          inicio_planejado: plano.data_inicio,
+          tempo_planejado: horasTotais,
+          _folhas: folhas,
+          _plano: plano,
+        });
+        return;
+      }
+      await regenerateEtapaPlanejamentos(plano.id, folhas, executor, plano);
+    } catch (e) {
+      console.error("Erro ao gerar planejamentos da etapa:", e);
+    }
+  };
+
+  const handleResolveConflict = async (action) => {
+    const ctx = conflictEntry;
+    if (!ctx) return;
+    const executor = ctx.executor_principal;
+    try {
+      if (action === 'shift_etapa') {
+        const carga = {};
+        (planejamentos || []).forEach(p => {
+          if (p.plano_data_etapa_id === ctx._planoId || !p.horas_por_dia || p.executor_principal !== executor) return;
+          Object.entries(p.horas_por_dia).forEach(([d, h]) => { carga[d] = (carga[d] || 0) + Number(h); });
+        });
+        let cursor = parseISO(ctx._plano.data_inicio);
+        let guard = 0;
+        while (guard < 400) {
+          const wd = cursor.getDay() !== 0 && cursor.getDay() !== 6;
+          const key = format(cursor, 'yyyy-MM-dd');
+          if (wd && (carga[key] || 0) < 0.05) break;
+          cursor = addDays(cursor, 1);
+          guard++;
+        }
+        const novaDataInicio = format(cursor, 'yyyy-MM-dd');
+        const { distribuicao, dataTermino } = distribuirHorasPorDias(cursor, ctx._horasTotais, 8, carga);
+        const novoTermino = dataTermino ? format(dataTermino, 'yyyy-MM-dd') : novaDataInicio;
+        await PlanoDataEtapa.update(ctx._planoId, { data_inicio: novaDataInicio, data_termino: novoTermino });
+        setPlanosEtapa(prev => prev.map(p => p.id === ctx._planoId ? { ...p, data_inicio: novaDataInicio, data_termino: novoTermino } : p));
+        const [documentos, pavimentos] = await Promise.all([
+          retryWithBackoff(() => Documento.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'shiftDocs').catch(() => []),
+          retryWithBackoff(() => Pavimento.filter({ empreendimento_id: empreendimentoId }), 3, 500, 'shiftPav').catch(() => []),
+        ]);
+        const existingSemEtapa = (planejamentos || []).filter(p => p.plano_data_etapa_id !== ctx._planoId);
+        const { folhas } = computeEtapaFolhaPacking({
+          plano: { ...ctx._plano, data_inicio: novaDataInicio, data_termino: novoTermino, horas_totais: ctx._horasTotais },
+          documentos, pavimentos, existingPlanejamentos: existingSemEtapa,
+        });
+        await regenerateEtapaPlanejamentos(ctx._planoId, folhas, executor, { ...ctx._plano, data_inicio: novaDataInicio });
+      } else if (action === 'move_existing') {
+        const carga = {};
+        (planejamentos || []).forEach(p => {
+          if (p.plano_data_etapa_id === ctx._planoId || !p.horas_por_dia || p.executor_principal !== executor) return;
+          Object.entries(p.horas_por_dia).forEach(([d, h]) => { carga[d] = (carga[d] || 0) + Number(h); });
+        });
+        for (const c of (ctx._conflictWith || [])) {
+          const planoMov = (planejamentos || []).find(p => p.id === c.id);
+          const tempo = planoMov?.tempo_planejado || 0;
+          let cursor = addDays(parseISO(c.dia), 1);
+          let guard = 0;
+          while (guard < 400) {
+            const wd = cursor.getDay() !== 0 && cursor.getDay() !== 6;
+            const key = format(cursor, 'yyyy-MM-dd');
+            if (wd && (carga[key] || 0) < 8) break;
+            cursor = addDays(cursor, 1);
+            guard++;
+          }
+          const { distribuicao, dataTermino } = distribuirHorasPorDias(cursor, tempo, 8, carga);
+          const inicio = Object.keys(distribuicao).sort()[0];
+          const termino = dataTermino ? format(dataTermino, 'yyyy-MM-dd') : inicio;
+          await retryWithBackoff(() => PlanejamentoAtividade.update(c.id, { inicio_planejado: inicio, termino_planejado: termino, horas_por_dia: distribuicao }), 3, 500, `moveConf-${c.id}`);
+          if (planoMov?.horas_por_dia) Object.entries(planoMov.horas_por_dia).forEach(([d, h]) => { carga[d] = Math.max(0, (carga[d] || 0) - Number(h)); });
+          Object.entries(distribuicao).forEach(([d, h]) => { carga[d] = (carga[d] || 0) + Number(h); });
+        }
+        await regenerateEtapaPlanejamentos(ctx._planoId, ctx._folhas, executor, ctx._plano);
+      }
+      setConflictEntry(null);
+    } catch (e) {
+      alert('Erro ao resolver conflito: ' + (e.message || 'Tente novamente.'));
+    }
+  };
+
   const handleSavePlanoEtapa = async (disc, sub, etapa, dataInicio, dataTermino, horasTotais) => {
     const existing = getPlanoEtapa(disc, sub, etapa);
     const payload = { empreendimento_id: empreendimentoId, disciplina: disc, subdisciplina: sub, etapa, data_inicio: dataInicio, data_termino: dataTermino, horas_totais: horasTotais };
+    let planoId;
     try {
       if (existing?.id) {
         await PlanoDataEtapa.update(existing.id, payload);
         setPlanosEtapa(prev => prev.map(p => p.id === existing.id ? { ...p, ...payload } : p));
+        planoId = existing.id;
       } else {
         const created = await PlanoDataEtapa.create(payload);
         setPlanosEtapa(prev => [...prev, created]);
+        planoId = created.id;
       }
     } catch (e) {
       console.error("Erro ao salvar data da etapa:", e);
+      return;
     }
+    await gerarPlanejamentosEtapa({ id: planoId, ...payload }, horasTotais);
   };
 
   const handleConcluirFolha = useCallback(() => {
@@ -435,6 +576,12 @@ export default function AnaliticoRenderContent({
       seen.add(u.email);
       return true;
     });
+  }, [usuarios]);
+
+  const executorMap = useMemo(() => {
+    const m = {};
+    (usuarios || []).forEach(u => { if (u.email) m[u.email] = u; });
+    return m;
   }, [usuarios]);
 
   const getExecutorDisciplina = useCallback((disciplina) => {
@@ -911,6 +1058,15 @@ export default function AnaliticoRenderContent({
           </div>
         );
       })}
+
+      <ConflictResolutionModal
+        open={!!conflictEntry}
+        folhaEntry={conflictEntry}
+        allPlanejamentos={planejamentos}
+        executorMap={executorMap}
+        onResolve={handleResolveConflict}
+        onClose={() => setConflictEntry(null)}
+      />
     </div>
   );
 
