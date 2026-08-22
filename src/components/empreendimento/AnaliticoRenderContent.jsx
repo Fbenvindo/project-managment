@@ -761,6 +761,9 @@ export default function AnaliticoRenderContent({
                                               const uniqueEtapaExecutors = [...new Set(etapaExecutors.filter(Boolean))];
                                               const etapaExecutor = uniqueEtapaExecutors.length === 1 ? uniqueEtapaExecutors[0] : (uniqueEtapaExecutors.length > 1 ? '__mixed__' : '');
                                               const etapaSaveKey = `etapa-${folha.source_documento_id}-${etapa}`;
+                                              const folhaExecutorForEtapa = folha.executor_principal;
+                                              const isEtapaHerdado = (!etapaExecutor || etapaExecutor === '__mixed__') && !!folhaExecutorForEtapa;
+                                              const etapaPlaceholder = etapaExecutor === '__mixed__' ? 'Múltiplos' : (isEtapaHerdado ? `Herdado: ${usuariosSemDuplicatas.find(u => u.email === folhaExecutorForEtapa)?.nome || folhaExecutorForEtapa}` : 'Sem executor');
                                               return (
                                                 <div key={etapa} className="border rounded-md overflow-hidden">
                                                   <div className="bg-gray-100 px-3 py-1.5 cursor-pointer hover:bg-gray-200 flex items-center justify-between" onClick={() => toggleEtapa(etapaKey)}>
@@ -772,7 +775,7 @@ export default function AnaliticoRenderContent({
                                                     <div className="flex items-center gap-2">
                                                       <div className="flex items-center gap-1" onClick={e => e.stopPropagation()}>
                                                         <Select
-                                                          value={etapaExecutor === '__mixed__' ? undefined : (etapaExecutor || '__none__')}
+                                                          value={etapaExecutor === '__mixed__' || !etapaExecutor ? undefined : etapaExecutor}
                                                           onValueChange={(value) => {
                                                             const email = value === '__none__' ? '' : value;
                                                             handleSaveEtapaExecutor?.(folha.source_documento_id, etapa, atividadesEtapa, email);
@@ -781,7 +784,7 @@ export default function AnaliticoRenderContent({
                                                         >
                                                           <SelectTrigger className="h-6 text-xs w-[160px]">
                                                             <Users2 className="w-3 h-3 mr-1" />
-                                                            <SelectValue placeholder={etapaExecutor === '__mixed__' ? 'Múltiplos' : 'Sem executor'} />
+                                                            <SelectValue placeholder={etapaPlaceholder} />
                                                           </SelectTrigger>
                                                           <SelectContent>
                                                             <SelectItem value="__none__" className="text-xs text-red-600">— Remover —</SelectItem>
@@ -814,7 +817,7 @@ export default function AnaliticoRenderContent({
                                                             <span className="text-xs text-gray-500 flex-shrink-0">{a.tempo ? `${Number(a.tempo).toFixed(1)}h` : '-'}</span>
                                                             <div className="flex items-center gap-1 flex-shrink-0">
                                                               <Select
-                                                                value={ativExecutor || '__none__'}
+                                                                value={ativExecutor || undefined}
                                                                 onValueChange={(value) => {
                                                                   const email = value === '__none__' ? '' : value;
                                                                   handleSaveAtividadeExecutor?.(a, email);
