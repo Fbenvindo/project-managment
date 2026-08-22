@@ -731,6 +731,58 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
     }
   };
 
+  const handleSaveEtapaExecutor = async (docId, etapa, atividadesEtapa, executorEmail) => {
+    if (!docId || !etapa) return;
+    const saveKey = `etapa-${docId}-${etapa}`;
+    setIsSavingFolhaExecutor(prev => ({ ...prev, [saveKey]: true }));
+    try {
+      for (const a of atividadesEtapa) {
+        const atividadeId = a.base_atividade_id;
+        if (!atividadeId) continue;
+        const planos = await retryWithBackoff(() =>
+          PlanejamentoAtividade.filter({ empreendimento_id: empreendimentoId, documento_id: docId, atividade_id: atividadeId }),
+          3, 500, `getPlanoEtapaExec-${docId}-${atividadeId}`
+        );
+        if (!executorEmail) {
+          for (const plano of planos) {
+            await retryWithBackoff(() =>
+              PlanejamentoAtividade.update(plano.id, { executor_principal: null }),
+              3, 500, `clearEtapaExec-${plano.id}`
+            );
+          }
+        } else {
+          if (planos.length > 0) {
+            await retryWithBackoff(() =>
+              PlanejamentoAtividade.update(planos[0].id, { executor_principal: executorEmail, executores: [executorEmail] }),
+              3, 500, `updateEtapaExec-${planos[0].id}`
+            );
+          } else {
+            await retryWithBackoff(() =>
+              PlanejamentoAtividade.create({
+                empreendimento_id: empreendimentoId,
+                documento_id: docId,
+                atividade_id: atividadeId,
+                etapa: etapa,
+                descritivo: a.atividade || '',
+                tempo_planejado: a.tempo || 0,
+                executor_principal: executorEmail,
+                executores: [executorEmail],
+                status: 'nao_iniciado',
+                horas_por_dia: {},
+              }),
+              3, 500, `createEtapaExec-${docId}-${atividadeId}`
+            );
+          }
+        }
+      }
+      await fetchData();
+    } catch (error) {
+      alert('Erro ao atribuir executor da etapa: ' + error.message);
+    } finally {
+      setIsSavingFolhaExecutor(prev => ({ ...prev, [saveKey]: false }));
+    }
+  };
+
   const handleAtribuirExecutorDisciplina = async (disciplina, executorEmail) => {
     const etapaFilter = filters.etapa !== 'all' ? filters.etapa : null;
     const saveKey = `disc-${disciplina}`;
@@ -875,6 +927,7 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
       handleAtribuirExecutorSubdisciplina={handleAtribuirExecutorSubdisciplina}
       isSavingExecutorDisciplina={isSavingExecutorDisciplina}
       handleSaveAtividadeExecutor={handleSaveAtividadeExecutor}
+      handleSaveEtapaExecutor={handleSaveEtapaExecutor}
     />
   );
 
