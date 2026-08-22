@@ -26,6 +26,7 @@ import AnaliseConcepcaoPlanejamentoTab from "../components/empreendimento/Analis
 import GestaoTab from "../components/empreendimento/GestaoTab";
 import PRETab from "../components/empreendimento/PRETab";
 import CadastroTab from "../components/empreendimento/CadastroTab";
+import EtapasProjetoTab from "../components/empreendimento/EtapasProjetoTab";
 import ControleOSTab from "../components/empreendimento/ControleOSTab";
 import ChecklistTab from "../components/empreendimento/ChecklistTab";
 import { ActivityTimerContext } from "@/components/contexts/ActivityTimerContext";
@@ -71,7 +72,7 @@ export default function EmpreendimentoPage() {
 
   const visibleTabsForUser = useMemo(() => {
     if (canEdit) {
-      return ['documentos', 'cadastro', 'pavimentos', 'atividades_projeto', 'pre', 'controle_os', 'checklist', 'gestao'];
+      return ['documentos', 'cadastro', 'etapas', 'pavimentos', 'atividades_projeto', 'pre', 'controle_os', 'checklist', 'gestao'];
     }
     // Usuários comuns veem apenas: Documentos, Cadastro, PRE
     return ['documentos', 'cadastro', 'pre'];
@@ -351,9 +352,10 @@ export default function EmpreendimentoPage() {
         <EmpreendimentoHeader empreendimento={empreendimento} />
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className={`grid w-full ${canEdit ? (hasAccessToGestao ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-8' : 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-7') : 'grid-cols-3'} bg-white shadow-sm`}>
+          <TabsList className={`grid w-full ${canEdit ? (hasAccessToGestao ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-9' : 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-8') : 'grid-cols-3'} bg-white shadow-sm`}>
             {visibleTabsForUser.includes('documentos') && <TabsTrigger value="documentos">Documentos</TabsTrigger>}
             {visibleTabsForUser.includes('cadastro') && <TabsTrigger value="cadastro">Cadastro</TabsTrigger>}
+            {visibleTabsForUser.includes('etapas') && <TabsTrigger value="etapas">Etapas do Projeto</TabsTrigger>}
             {visibleTabsForUser.includes('pavimentos') && <TabsTrigger value="pavimentos">Pavimentos</TabsTrigger>}
             {visibleTabsForUser.includes('atividades_projeto') && <TabsTrigger value="atividades_projeto">Atividades do Projeto</TabsTrigger>}
             {visibleTabsForUser.includes('pre') && <TabsTrigger value="pre">PRE</TabsTrigger>}
@@ -429,6 +431,14 @@ export default function EmpreendimentoPage() {
 
           <TabsContent value="cadastro">
             <CadastroTab empreendimento={empreendimento} readOnly={!canEdit} />
+          </TabsContent>
+
+          <TabsContent value="etapas">
+            <EtapasProjetoTab
+              empreendimento={empreendimento}
+              onUpdate={loadEmpreendimento}
+              readOnly={!canEdit}
+            />
           </TabsContent>
 
           <TabsContent value="pre">

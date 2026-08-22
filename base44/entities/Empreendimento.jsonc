@@ -49,7 +49,33 @@
         "Projeto Executivo",
         "Liberado para Obra"
       ],
-      "description": "Etapas ativas neste empreendimento"
+      "description": "Etapas ativas neste empreendimento (nomes, mantido para compatibilidade)"
+    },
+    "etapas_config": {
+      "type": "array",
+      "description": "Configura\u00e7\u00e3o das etapas do projeto com mapeamento para etapas padr\u00e3o do cat\u00e1logo de atividades",
+      "items": {
+        "type": "object",
+        "properties": {
+          "nome": {
+            "type": "string",
+            "description": "Nome da etapa conforme definido no projeto"
+          },
+          "etapa_padrao": {
+            "type": "string",
+            "description": "Etapa padr\u00e3o do cat\u00e1logo atribu\u00edda a esta etapa do projeto"
+          },
+          "ordem": {
+            "type": "number",
+            "description": "Ordem da etapa no fluxo do projeto"
+          }
+        },
+        "required": [
+          "nome",
+          "etapa_padrao"
+        ]
+      },
+      "default": []
     },
     "tipo_empreendimento_checklist": {
       "type": "string",
