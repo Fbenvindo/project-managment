@@ -1,0 +1,68 @@
+{
+  "name": "Feriado",
+  "type": "object",
+  "properties": {
+    "nome": {
+      "type": "string",
+      "description": "Nome do feriado"
+    },
+    "data": {
+      "type": "string",
+      "format": "date",
+      "description": "Data do feriado (YYYY-MM-DD)"
+    },
+    "tipo": {
+      "type": "string",
+      "enum": [
+        "nacional",
+        "estadual",
+        "municipal",
+        "facultativo",
+        "ponto_facultativo"
+      ],
+      "default": "nacional",
+      "description": "Tipo do feriado"
+    },
+    "recorrente": {
+      "type": "boolean",
+      "default": true,
+      "description": "Indica se o feriado se repete todos os anos no mesmo dia/m\u00eas"
+    }
+  },
+  "required": [
+    "nome",
+    "data"
+  ],
+  "rls": {
+    "read": {},
+    "write": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "lider"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "direcao"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "gestao"
+          }
+        },
+        {
+          "user_condition": {
+            "perfil": "coordenador"
+          }
+        }
+      ]
+    }
+  }
+}

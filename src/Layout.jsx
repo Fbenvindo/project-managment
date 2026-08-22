@@ -1,7 +1,7 @@
 import React, { useContext } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { createPageUrl } from "@/utils";
-import { Building2, Settings, Home, Users, Zap, Calendar, BarChart3, Briefcase, FileText, Calculator } from "lucide-react";
+import { Building2, Settings, Home, Users, Zap, Calendar, BarChart3, Briefcase, FileText, Calculator, CalendarClock } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -116,6 +116,16 @@ const LayoutComponent = ({ children, currentPageName }) => {
         title: "Configurações",
         url: createPageUrl("Configuracoes"),
         icon: Settings,
+        show: true
+      });
+    }
+
+    // Feriados: calendário anual usado no planejamento de datas
+    if (isAdmin || perfilAtual === 'lider' || perfilAtual === 'direcao' || perfilAtual === 'gestao' || perfilAtual === 'coordenador') {
+      items.push({
+        title: "Feriados",
+        url: createPageUrl("Feriados"),
+        icon: CalendarClock,
         show: true
       });
     }
