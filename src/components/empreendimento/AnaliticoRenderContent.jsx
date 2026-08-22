@@ -85,12 +85,12 @@ export default function AnaliticoRenderContent({
   const [isExcluindoFolhas, setIsExcluindoFolhas] = useState(false);
   const [isConcluindoAtividades, setIsConcluindoAtividades] = useState(false);
   const [disciplinasRecolhidas, setDisciplinasRecolhidas] = useState(() => new Set());
-  const [subdisciplinasRecolhidas, setSubdisciplinasRecolhidas] = useState(() => new Set());
+  const [subdisciplinasExpandidas, setSubdisciplinasExpandidas] = useState(() => new Set());
   const [folhasExpandidas, setFolhasExpandidas] = useState(() => new Set());
   const [etapasExpandidas, setEtapasExpandidas] = useState(() => new Set());
 
   const toggleDisciplina = useCallback((d) => setDisciplinasRecolhidas(p => { const n = new Set(p); n.has(d) ? n.delete(d) : n.add(d); return n; }), []);
-  const toggleSubdisciplina = useCallback((k) => setSubdisciplinasRecolhidas(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; }), []);
+  const toggleSubdisciplina = useCallback((k) => setSubdisciplinasExpandidas(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; }), []);
   const toggleFolha = useCallback((k) => setFolhasExpandidas(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; }), []);
   const toggleEtapa = useCallback((k) => setEtapasExpandidas(p => { const n = new Set(p); n.has(k) ? n.delete(k) : n.add(k); return n; }), []);
 
@@ -708,7 +708,7 @@ export default function AnaliticoRenderContent({
                     .sort((a, b) => a[0].localeCompare(b[0]))
                     .map(([subdisciplina, atividadesSubgrupo]) => {
                       const subKey = `${disciplina}::${subdisciplina}`;
-                      const subRecolhida = subdisciplinasRecolhidas.has(subKey);
+                      const subRecolhida = !subdisciplinasExpandidas.has(subKey);
                       const todasFolhas = [];
                       const seenDocIds = new Set();
                       atividadesSubgrupo.forEach(grupo => {
