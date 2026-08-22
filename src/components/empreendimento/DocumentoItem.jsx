@@ -564,127 +564,19 @@ export default function DocumentoItem({
           <TableCell className="w-[200px]">
             <div className="space-y-1">
               {(() => {
-                const etapaSelecionada = etapaParaPlanejamento !== 'todas' ? etapaParaPlanejamento : null;
-
-                // Quando uma etapa específica está selecionada
-                if (etapaSelecionada) {
-                  const planejamentoDaEtapa = planejamentosDoDocumento.find(p =>
-                    (p.etapa || '').toLowerCase() === (etapaSelecionada || '').toLowerCase() && p.executor_principal
-                  );
-                  const executorDaEtapa = planejamentoDaEtapa?.executor_principal || doc.executor_principal || null;
-
-                  if (planejamentoDaEtapa && executorDaEtapa) {
-                    return (
-                      <div className="space-y-1">
-                        <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
-                          <div className="flex items-center gap-1 min-w-0">
-                            <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
-                            <span className="text-xs font-medium text-green-800 truncate">
-                              {usuariosOrdenados.find(u => u.email === executorDaEtapa)?.nome || executorDaEtapa}
-                            </span>
-                          </div>
-                          <Button variant="ghost" size="sm" onClick={() => handleExecutorChange('executor_principal', null)} className="text-xs text-red-600 hover:text-red-700 h-6 flex-shrink-0" disabled={isUpdating || isDocLoading}>
-                            Remover
-                          </Button>
-                        </div>
-                        <div className="text-xs text-gray-500 italic">{etapaSelecionada}</div>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <Select onValueChange={(value) => handleExecutorSelectChange(value)} disabled={isUpdating || isDocLoading}>
-                      <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
-                        <Users2 className="w-3 h-3 mr-1" />
-                        <SelectValue placeholder="Selecionar Executor" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {usuariosOrdenados.map(u => <SelectItem key={u.id} value={u.email}>{u.nome}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  );
+                const executorEmail = doc.executor_principal;
+                if (!executorEmail) {
+                  return <span className="text-xs text-gray-400 italic">Atribuir via disciplina/subdisciplina</span>;
                 }
-
-                // "Todas as etapas": mostrar todos os planejamentos existentes agrupados por etapa
-                const planejamentosComExecutor = planejamentosDoDocumento.filter(p => p.executor_principal && p.etapa);
-
-                if (planejamentosComExecutor.length > 0) {
-                  return (
-                    <div className="space-y-1">
-                      {planejamentosComExecutor.map((p) => (
-                        <div key={p.id} className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded gap-1">
-                          <div className="flex flex-col min-w-0">
-                            <div className="flex items-center gap-1">
-                              <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
-                              <span className="text-xs font-medium text-green-800 truncate">
-                                {usuariosOrdenados.find(u => u.email === p.executor_principal)?.nome || p.executor_principal}
-                              </span>
-                            </div>
-                            <span className="text-xs text-gray-500 italic pl-3">{p.etapa || 'Múltiplas etapas'}</span>
-                          </div>
-                          <Button variant="ghost" size="sm" onClick={() => handleExecutorChange('executor_principal', null)} className="text-xs text-red-600 hover:text-red-700 h-6 flex-shrink-0" disabled={isUpdating || isDocLoading}>
-                            Remover
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                }
-
-                if (doc.executor_principal) {
-                  return (
-                    <div className="flex items-center justify-between p-1 bg-green-50 border border-green-200 rounded">
-                      <div className="flex items-center gap-1">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-xs font-medium text-green-800">
-                          {usuariosOrdenados.find(u => u.email === doc.executor_principal)?.nome || doc.executor_principal}
-                        </span>
-                      </div>
-                      <Button variant="ghost" size="sm" onClick={() => handleExecutorChange('executor_principal', null)} className="text-xs text-red-600 hover:text-red-700 h-6" disabled={isUpdating || isDocLoading}>
-                        Remover
-                      </Button>
-                    </div>
-                  );
-                }
-
+                const userName = usuariosOrdenados.find(u => u.email === executorEmail)?.nome || executorEmail;
                 return (
-                  <Select onValueChange={(value) => handleExecutorSelectChange(value)} disabled={isUpdating || isDocLoading}>
-                    <SelectTrigger className="w-full text-xs h-7 border-blue-500 text-blue-600 hover:bg-blue-50">
-                      <Users2 className="w-3 h-3 mr-1" />
-                      <SelectValue placeholder="Selecionar Executor" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {usuariosOrdenados.map(u => <SelectItem key={u.id} value={u.email}>{u.nome}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex items-center gap-1 p-1 bg-green-50 border border-green-200 rounded">
+                    <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
+                    <span className="text-xs font-medium text-green-800 truncate">{userName}</span>
+                  </div>
                 );
               })()}
-              {(isUpdating || isDocLoading) && (
-                <div className="flex items-center gap-1 text-xs text-blue-600">
-                  <Loader2 className="w-3 h-3 animate-spin" />
-                  {isDocLoading ? "Planejando..." : "Salvando..."}
-                </div>
-              )}
             </div>
-
-            <Dialog open={showExecutorDialog} onOpenChange={setShowExecutorDialog}>
-              <DialogContent className="max-w-md">
-                <DialogHeader>
-                  <div className="font-semibold text-lg">Aplicar executor a folhas relacionadas?</div>
-                </DialogHeader>
-                <div className="space-y-4">
-                  <p className="text-sm text-gray-600">
-                    Esta folha possui folhas sucessoras ainda sem executor. Deseja aplicar o executor <strong>{pendingExecutor}</strong> também a elas?
-                  </p>
-                  <div className="flex justify-end gap-2">
-                    <Button variant="outline" onClick={() => handleApplyToRelated(false)} disabled={isUpdating}>Apenas esta folha</Button>
-                    <Button onClick={() => handleApplyToRelated(true)} disabled={isUpdating} className="bg-blue-600 hover:bg-blue-700">
-                      {isUpdating ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Aplicando...</> : 'Aplicar a todas'}
-                    </Button>
-                  </div>
-                </div>
-              </DialogContent>
-            </Dialog>
           </TableCell>
         )}
 

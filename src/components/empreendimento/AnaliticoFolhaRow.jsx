@@ -38,9 +38,10 @@ function AnaliticoFolhaRow({
   );
 
   const executorNome = useMemo(() => {
-    if (!plano?.executor_principal) return null;
-    return (usuarios || []).find(u => u.email === plano.executor_principal)?.nome || plano.executor_principal;
-  }, [plano?.executor_principal, usuarios]);
+    const executorEmail = plano?.executor_principal || folha.executor_principal;
+    if (!executorEmail) return null;
+    return (usuarios || []).find(u => u.email === executorEmail)?.nome || executorEmail;
+  }, [plano?.executor_principal, folha.executor_principal, usuarios]);
 
   const handleToggleSelecao = useCallback((checked) => {
     setFolhasSelecionadas(prev => {
@@ -160,6 +161,7 @@ function AnaliticoFolhaRow({
         <TableCell className="text-sm text-gray-600 min-w-[220px]">
           <span className="font-medium text-blue-700">{folha.source_documento_numero}</span>
           {folha.source_documento_arquivo && <span className="ml-1">— {folha.source_documento_arquivo}</span>}
+          {folha.source_documento_pavimento && <span className="block text-xs text-gray-400 mt-0.5">{folha.source_documento_pavimento}</span>}
         </TableCell>
         <TableCell></TableCell>
         <TableCell>
@@ -257,6 +259,8 @@ export default React.memo(AnaliticoFolhaRow, (prev, next) => {
   );
   
   if (prevPlan?.executor_principal !== nextPlan?.executor_principal) return false;
+  if (prev.folha.executor_principal !== next.folha.executor_principal) return false;
+  if (prev.folha.source_documento_pavimento !== next.folha.source_documento_pavimento) return false;
   if (prevPlan?.inicio_planejado !== nextPlan?.inicio_planejado) return false;
   if (prevPlan?.termino_planejado !== nextPlan?.termino_planejado) return false;
   

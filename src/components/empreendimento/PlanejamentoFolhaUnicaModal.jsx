@@ -24,7 +24,6 @@ export default function PlanejamentoFolhaUnicaModal({
 }) {
   const [formData, setFormData] = useState({
     tempo_planejado: '',
-    executor_principal: '',
     metodo_data: 'agenda',
     data_inicio_manual: null,
   });
@@ -40,7 +39,6 @@ export default function PlanejamentoFolhaUnicaModal({
     if (isOpen && folha) {
       setFormData({
         tempo_planejado: folha.tempo || atividade?.tempo || '',
-        executor_principal: '',
         metodo_data: 'agenda',
         data_inicio_manual: null,
       });
@@ -83,8 +81,8 @@ export default function PlanejamentoFolhaUnicaModal({
       alert('Por favor, insira um tempo válido maior que zero.');
       return;
     }
-    if (!formData.executor_principal) {
-      alert('Por favor, selecione um executor.');
+    if (!folha.executor_principal) {
+      alert('Atribua um executor no nível da disciplina ou subdisciplina antes de planejar.');
       return;
     }
     if (formData.metodo_data === 'manual' && !formData.data_inicio_manual) {
@@ -96,7 +94,7 @@ export default function PlanejamentoFolhaUnicaModal({
     try {
       const tempo = parseFloat(formData.tempo_planejado);
       const dadosCalculo = await calcularDistribuicao(
-        formData.executor_principal,
+        folha.executor_principal,
         tempo,
         formData.metodo_data === 'manual' ? formData.data_inicio_manual : null
       );
@@ -109,8 +107,8 @@ export default function PlanejamentoFolhaUnicaModal({
           base_descritivo: folha.atividade || atividade?.atividade,
           etapa: folha.etapa,
           tempo_planejado: tempo,
-          executor_principal: formData.executor_principal,
-          executores: [formData.executor_principal],
+          executor_principal: folha.executor_principal,
+          executores: [folha.executor_principal],
           status: 'nao_iniciado',
           documento_id: folha.source_documento_id,
           prioridade: 1,
@@ -192,17 +190,17 @@ export default function PlanejamentoFolhaUnicaModal({
             </div>
 
             <div>
-              <Label htmlFor="executor_principal">Executor</Label>
-              <Select value={formData.executor_principal} onValueChange={(v) => setFormData(prev => ({ ...prev, executor_principal: v }))} required>
-                <SelectTrigger id="executor_principal">
-                  <SelectValue placeholder="Selecione o executor" />
-                </SelectTrigger>
-                <SelectContent>
-                  {usuariosOrdenados.filter(u => u.status === 'ativo').map(u => (
-                    <SelectItem key={u.id || u.email} value={u.email}>{u.nome || u.email}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label>Executor</Label>
+              <Input
+                value={(() => {
+                  const executorEmail = folha.executor_principal;
+                  if (!executorEmail) return 'Atribua um executor no nível da disciplina ou subdisciplina';
+                  const user = (usuarios || []).find(u => u.email === executorEmail);
+                  return user?.nome || executorEmail;
+                })()}
+                disabled
+                className={!folha.executor_principal ? 'bg-amber-50 text-amber-700 border-amber-300' : 'bg-gray-50'}
+              />
             </div>
 
             <div>

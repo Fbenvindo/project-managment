@@ -68,6 +68,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
   const [empreendimentoObj, setEmpreendimentoObj] = useState(null);
   const [itensPRE, setItensPRE] = useState([]);
   const [allEmpreendimentos, setAllEmpreendimentos] = useState([]);
+  const [pavimentos, setPavimentos] = useState([]);
+  const [isSavingExecutorDisciplina, setIsSavingExecutorDisciplina] = useState({});
 
   const documentosMap = useMemo(() => {
     return new Map((documentos || []).map(doc => [doc.id, doc]));
@@ -116,6 +118,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
       setPlanejamentos(planejamentosData || []);
       setAllEmpreendimentos(todosEmpreendimentos || []);
       setItensPRE(itensPREData || []);
+      setPavimentos(pavimentosData || []);
+      const pavimentosMap = new Map((pavimentosData || []).map(p => [p.id, p]));
       
       const activitiesToProcess = (atividadesDoProjetoData && atividadesDoProjetoData.length > 0) 
         ? atividadesDoProjetoData 
@@ -233,6 +237,8 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
       let documentActivities = [];
       (documentosData || []).forEach(doc => {
         const subdisciplinasDoc = doc.subdisciplinas || [];
+        const pavimentoDoc = doc.pavimento_id ? pavimentosMap.get(doc.pavimento_id) : null;
+        const pavimentoNome = pavimentoDoc?.nome || doc.area || '';
         const disciplinasDoc = doc.disciplinas?.length > 0 ? doc.disciplinas : [doc.disciplina].filter(Boolean);
         const fatorDificuldade = doc.fator_dificuldade || 1;
 
@@ -258,10 +264,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
               source_documento_id: doc.id,
               source_documento_numero: doc.numero,
               source_documento_arquivo: doc.arquivo,
+              source_documento_pavimento: pavimentoNome,
               status: existingPlan.status === 'concluido' ? 'Concluída' : 'Planejada',
               isEditable: false,
               etapa: existingPlan.etapa || atividadeVinculada.etapa,
-              executor_principal: existingPlan.executor_principal,
+              executor_principal: existingPlan.executor_principal || doc.executor_principal,
               base_atividade_id: atividadeVinculada.id,
             });
           } else {
@@ -276,10 +283,12 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
              source_documento_id: doc.id,
              source_documento_numero: doc.numero,
              source_documento_arquivo: doc.arquivo,
+             source_documento_pavimento: pavimentoNome,
+             executor_principal: doc.executor_principal || null,
              status: statusVinc,
-              isEditable: false,
-              etapa: atividadeVinculada.etapa,
-              base_atividade_id: atividadeVinculada.id,
+             isEditable: false,
+             etapa: atividadeVinculada.etapa,
+             base_atividade_id: atividadeVinculada.id,
             });
           }
         });
@@ -313,10 +322,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
                   source_documento_id: doc.id,
                   source_documento_numero: doc.numero,
                   source_documento_arquivo: doc.arquivo,
+                  source_documento_pavimento: pavimentoNome,
                   status: existingPlan.status === 'concluido' ? 'Concluída' : 'Planejada',
                   isEditable: false,
                   etapa: existingPlan.etapa || etapaCorreta,
-                  executor_principal: existingPlan.executor_principal || executorPrincipal,
+                  executor_principal: existingPlan.executor_principal || executorPrincipal || doc.executor_principal,
                   base_atividade_id: baseAtividade.id,
                 });
               } else {
@@ -337,10 +347,11 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
                      source_documento_id: doc.id,
                      source_documento_numero: doc.numero,
                      source_documento_arquivo: doc.arquivo,
+                     source_documento_pavimento: pavimentoNome,
                      status: statusAtiv,
                      isEditable: false,
                      etapa: etapaCorreta,
-                     executor_principal: executorPrincipal,
+                     executor_principal: executorPrincipal || doc.executor_principal,
                      base_atividade_id: baseAtividade.id,
                    });
               }
@@ -654,6 +665,58 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
   const handleSaveFolhaExecutor = async (folha, executorEmail, dataInicioCustom = null) => {
     // Implementação simplificada
   };
+
+  const handleAtribuirExecutorDisciplina = async (disciplina, executorEmail) => {
+    const etapaFilter = filters.etapa !== 'all' ? filters.etapa : null;
+    const saveKey = `disc-${disciplina}`;
+    setIsSavingExecutorDisciplina(prev => ({ ...prev, [saveKey]: true }));
+    try {
+      const docIds = new Set();
+      combinedActivities.forEach(a => {
+        if (a.disciplina !== disciplina) return;
+        if (etapaFilter && a.etapa !== etapaFilter) return;
+        if (a.source_documento_id) docIds.add(a.source_documento_id);
+      });
+      for (const docId of Array.from(docIds)) {
+        await retryWithBackoff(() =>
+          Documento.update(docId, { executor_principal: executorEmail || null }),
+          3, 500, `updateDocExec-${docId}`
+        );
+      }
+      await fetchData();
+    } catch (error) {
+      alert('Erro ao atribuir executor: ' + error.message);
+    } finally {
+      setIsSavingExecutorDisciplina(prev => ({ ...prev, [saveKey]: false }));
+    }
+  };
+
+  const handleAtribuirExecutorSubdisciplina = async (disciplina, subdisciplina, executorEmail) => {
+    const etapaFilter = filters.etapa !== 'all' ? filters.etapa : null;
+    const saveKey = `sub-${disciplina}-${subdisciplina}`;
+    setIsSavingExecutorDisciplina(prev => ({ ...prev, [saveKey]: true }));
+    try {
+      const docIds = new Set();
+      combinedActivities.forEach(a => {
+        if (a.disciplina !== disciplina) return;
+        const sub = a.subdisciplina || 'Sem Subdisciplina';
+        if (sub !== subdisciplina) return;
+        if (etapaFilter && a.etapa !== etapaFilter) return;
+        if (a.source_documento_id) docIds.add(a.source_documento_id);
+      });
+      for (const docId of Array.from(docIds)) {
+        await retryWithBackoff(() =>
+          Documento.update(docId, { executor_principal: executorEmail || null }),
+          3, 500, `updateDocExecSub-${docId}`
+        );
+      }
+      await fetchData();
+    } catch (error) {
+      alert('Erro ao atribuir executor: ' + error.message);
+    } finally {
+      setIsSavingExecutorDisciplina(prev => ({ ...prev, [saveKey]: false }));
+    }
+  };
   
   // Handler para reverter atividade
   const handleReverterAtividade = async (atividadeId) => {
@@ -713,6 +776,10 @@ export default function AnaliticoGlobalTab({ empreendimentoId, onUpdate, activeT
       isSavingFolhaExecutor={isSavingFolhaExecutor}
       fetchData={fetchData}
       handleReverterAtividade={handleReverterAtividade}
+      filters={filters}
+      handleAtribuirExecutorDisciplina={handleAtribuirExecutorDisciplina}
+      handleAtribuirExecutorSubdisciplina={handleAtribuirExecutorSubdisciplina}
+      isSavingExecutorDisciplina={isSavingExecutorDisciplina}
     />
   );
 

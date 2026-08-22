@@ -67,6 +67,10 @@ export default function AnaliticoRenderContent({
   isSavingFolhaExecutor,
   fetchData,
   handleReverterAtividade,
+  filters,
+  handleAtribuirExecutorDisciplina,
+  handleAtribuirExecutorSubdisciplina,
+  isSavingExecutorDisciplina,
 }) {
   // folhasSelecionadas lives here so checkbox clicks don't re-render the entire parent
   const [folhasSelecionadas, setFolhasSelecionadas] = useState(new Set());
@@ -377,6 +381,38 @@ export default function AnaliticoRenderContent({
     });
   }, [usuarios]);
 
+  const getExecutorDisciplina = useCallback((disciplina) => {
+    const entry = (atividadesPorDisciplina || []).find(([d]) => d === disciplina);
+    if (!entry) return null;
+    const executores = new Set();
+    Object.values(entry[1]).flat().forEach(grupo => {
+      (grupo.folhas || []).forEach(folha => {
+        if (folha.executor_principal) executores.add(folha.executor_principal);
+      });
+      if (!grupo.baseAtividade?.source_documento_id && grupo.baseAtividade?.executor_principal) {
+        executores.add(grupo.baseAtividade.executor_principal);
+      }
+    });
+    if (executores.size === 0) return null;
+    if (executores.size === 1) return Array.from(executores)[0];
+    return 'mixed';
+  }, [atividadesPorDisciplina]);
+
+  const getExecutorSubdisciplina = useCallback((disciplina, subdisciplina) => {
+    const entry = (atividadesPorDisciplina || []).find(([d]) => d === disciplina);
+    if (!entry) return null;
+    const subGrupos = entry[1][subdisciplina] || [];
+    const executores = new Set();
+    subGrupos.forEach(grupo => {
+      (grupo.folhas || []).forEach(folha => {
+        if (folha.executor_principal) executores.add(folha.executor_principal);
+      });
+    });
+    if (executores.size === 0) return null;
+    if (executores.size === 1) return Array.from(executores)[0];
+    return 'mixed';
+  }, [atividadesPorDisciplina]);
+
   const preTempoByDocumentoId = useMemo(() => {
     const map = new Map();
     (itensPRE || []).forEach(pre => {
@@ -607,6 +643,27 @@ export default function AnaliticoRenderContent({
                   {totalCount} {totalCount === 1 ? 'atividade' : 'atividades'}
                 </Badge>
               </h3>
+              <div className="mt-2 flex items-center gap-2 flex-wrap" onClick={e => e.stopPropagation()}>
+                <Users2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                <Select
+                  value={getExecutorDisciplina(disciplina) === 'mixed' ? undefined : (getExecutorDisciplina(disciplina) || undefined)}
+                  onValueChange={(value) => handleAtribuirExecutorDisciplina?.(disciplina, value)}
+                  disabled={isSavingExecutorDisciplina?.[`disc-${disciplina}`]}
+                >
+                  <SelectTrigger className="h-7 text-xs w-[240px]">
+                    <SelectValue placeholder={getExecutorDisciplina(disciplina) === 'mixed' ? 'Múltiplos executores' : 'Atribuir executor à disciplina'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {usuariosSemDuplicatas.filter(u => u.status === 'ativo').sort((a, b) => (a.nome || '').localeCompare(b.nome || '')).map(u => (
+                      <SelectItem key={u.email} value={u.email}>{u.nome || u.email}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {isSavingExecutorDisciplina?.[`disc-${disciplina}`] && <Loader2 className="w-3 h-3 animate-spin text-blue-600" />}
+                {filters?.etapa !== 'all' && (
+                  <span className="text-xs text-amber-600 bg-amber-50 px-2 py-0.5 rounded">Atribuição limitada à etapa: {filters.etapa}</span>
+                )}
+              </div>
             </div>
             <div className={`overflow-x-auto ${disciplinasRecolhidas.has(disciplina) ? 'hidden' : ''}`}>
               {subdisciplinasMap ? (
@@ -627,6 +684,24 @@ export default function AnaliticoRenderContent({
                             {subRecolhida ? <ChevronRight className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
                             {subdisciplina} ({todasFolhas.length} {todasFolhas.length === 1 ? 'folha' : 'folhas'})
                           </h4>
+                          <div className="ml-auto flex items-center gap-1" onClick={e => e.stopPropagation()}>
+                            <Select
+                              value={getExecutorSubdisciplina(disciplina, subdisciplina) === 'mixed' ? undefined : (getExecutorSubdisciplina(disciplina, subdisciplina) || undefined)}
+                              onValueChange={(value) => handleAtribuirExecutorSubdisciplina?.(disciplina, subdisciplina, value)}
+                              disabled={isSavingExecutorDisciplina?.[`sub-${disciplina}-${subdisciplina}`]}
+                            >
+                              <SelectTrigger className="h-6 text-xs w-[200px]">
+                                <Users2 className="w-3 h-3 mr-1" />
+                                <SelectValue placeholder={getExecutorSubdisciplina(disciplina, subdisciplina) === 'mixed' ? 'Múltiplos' : 'Executor da subdisc.'} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {usuariosSemDuplicatas.filter(u => u.status === 'ativo').sort((a, b) => (a.nome || '').localeCompare(b.nome || '')).map(u => (
+                                  <SelectItem key={u.email} value={u.email}>{u.nome || u.email}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                            {isSavingExecutorDisciplina?.[`sub-${disciplina}-${subdisciplina}`] && <Loader2 className="w-3 h-3 animate-spin text-blue-600" />}
+                          </div>
                         </div>
                         {!subRecolhida && (
                         <Table className="text-sm">
