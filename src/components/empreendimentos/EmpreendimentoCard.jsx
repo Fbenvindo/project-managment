@@ -1,9 +1,8 @@
-
 import { memo } from 'react';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Building2, MapPin, User, Edit, ExternalLink, Trash2, MoreVertical, Calendar } from "lucide-react";
+import { Building2, MapPin, User, Edit, ExternalLink, Trash2, MoreVertical } from "lucide-react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { createPageUrl } from "@/utils";
@@ -102,16 +101,11 @@ function EmpreendimentoCard({ empreendimento, user, onEdit, onDelete }) {
             </div>
           </div>
 
-          <div className="flex gap-2 mt-auto pt-4">
-            <Link to={createPageUrl(`Empreendimento?id=${empreendimento.id}`)} className="flex-1">
+          <div className="mt-auto pt-4">
+            <Link to={createPageUrl(`Empreendimento?id=${empreendimento.id}`)} className="block">
               <Button size="sm" className="bg-blue-600 hover:bg-blue-700 w-full">
                 <ExternalLink className="w-4 h-4 mr-2" />
                 Abrir Projeto
-              </Button>
-            </Link>
-            <Link to={createPageUrl(`Planejamento?id=${empreendimento.id}`)}>
-              <Button size="sm" variant="outline" className="border-green-600 text-green-600 hover:bg-green-50">
-                <Calendar className="w-4 h-4" />
               </Button>
             </Link>
           </div>
