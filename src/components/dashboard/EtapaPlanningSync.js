@@ -58,27 +58,31 @@ export function buildEtapaCalendarEntries({ planoDataEtapas, documentos, pavimen
     if (!emp) return;
 
     const docsEmp = docsByEmpreendimento[plano.empreendimento_id] || [];
-    const folhasMatch = docsEmp.filter(doc => {
-      const subs = Array.isArray(doc.subdisciplinas) ? doc.subdisciplinas : [];
-      if (!subs.includes(plano.subdisciplina)) return false;
-      if (plano.disciplina && Array.isArray(doc.disciplinas) && doc.disciplinas.length > 0 && !doc.disciplinas.includes(plano.disciplina)) return false;
-      return true;
-    });
+    // seq = ordem de sequência da folha na pasta de documentos (fallback quando não há pavimento)
+    const folhasMatch = docsEmp
+      .map((doc, idx) => ({ doc, seq: idx }))
+      .filter(({ doc }) => {
+        const subs = Array.isArray(doc.subdisciplinas) ? doc.subdisciplinas : [];
+        if (!subs.includes(plano.subdisciplina)) return false;
+        if (plano.disciplina && Array.isArray(doc.disciplinas) && doc.disciplinas.length > 0 && !doc.disciplinas.includes(plano.disciplina)) return false;
+        return true;
+      });
 
     if (folhasMatch.length === 0) return;
 
-    // Folhas ordenadas pela ordem de execução do pavimento
-    const folhasOrdenadas = [...folhasMatch].sort((a, b) => {
+    // Folhas ordenadas pela ordem de execução do pavimento; quando a folha não tem
+    // pavimento atribuído, usa a ordem de sequência na pasta de documentos.
+    const folhasOrdenadas = [...folhasMatch].sort(({ doc: a, seq: sa }, { doc: b, seq: sb }) => {
       const pa = a.pavimento_id ? pavimentoMap.get(String(a.pavimento_id)) : null;
       const pb = b.pavimento_id ? pavimentoMap.get(String(b.pavimento_id)) : null;
-      const oa = pa && pa.ordem_execucao != null ? Number(pa.ordem_execucao) : 9999;
-      const ob = pb && pb.ordem_execucao != null ? Number(pb.ordem_execucao) : 9999;
+      const oa = pa && pa.ordem_execucao != null ? Number(pa.ordem_execucao) : (sa + 1);
+      const ob = pb && pb.ordem_execucao != null ? Number(pb.ordem_execucao) : (sb + 1);
       return oa - ob;
     });
 
     // Executor: o mais frequente entre as folhas (vinculado ao executor do documento)
     const execCount = {};
-    folhasOrdenadas.forEach(doc => {
+    folhasOrdenadas.forEach(({ doc }) => {
       if (!doc.executor_principal) return;
       execCount[doc.executor_principal] = (execCount[doc.executor_principal] || 0) + 1;
     });
@@ -114,7 +118,7 @@ export function buildEtapaCalendarEntries({ planoDataEtapas, documentos, pavimen
     const diasOcupados = diasOcupadosPorExecutor[executor] || new Set();
     const hasConflict = diasUteis.some(d => diasOcupados.has(d));
 
-    const folhasDesc = folhasOrdenadas.map(doc => {
+    const folhasDesc = folhasOrdenadas.map(({ doc }) => {
       const parts = [];
       if (doc.numero) parts.push(doc.numero);
       if (doc.arquivo) parts.push(doc.arquivo);
