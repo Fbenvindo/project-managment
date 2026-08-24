@@ -357,12 +357,12 @@ export default function CalendarioActivityItem({
 
   const getStatusBg = () => {
     if (isSelected) return '#e0e7ff';
-    if (realStatus === 'concluido_com_atraso' || realStatus === 'atrasado' || realStatus === 'replanejado_atrasado') return '#fef2f2';
+    if (realStatus === 'concluido_com_atraso' || realStatus === 'atrasado' || realStatus === 'replanejado_atrasado') return '#fff5f5';
     if (realStatus === 'impactado_por_atraso') return '#ffffff';
-    if (realStatus === 'em_andamento') return '#eff6ff';
-    if (realStatus === 'concluido') return '#dcfce7';
+    if (realStatus === 'em_andamento') return '#e6fcf0';
+    if (realStatus === 'concluido') return '#e6fcf0';
     if (realStatus === 'pausado') return '#fffbeb';
-    return '#ffffff';
+    return '#e6fcf0';
   };
 
   return (
@@ -417,7 +417,11 @@ export default function CalendarioActivityItem({
             {plano.empreendimento?.nome && (
               <p className="text-xs text-gray-500 mb-0.5 font-medium truncate">📋 {plano.empreendimento.nome}</p>
             )}
-            <p className="font-medium text-gray-800 leading-tight truncate" title={displayName}>{displayName}</p>
+            <p className="font-medium text-gray-800 leading-tight truncate" title={displayName}>
+              {plano.tipo_planejamento === 'documento' && (plano.documento?.subdisciplinas?.length || plano.atividade?.subdisciplina)
+                ? (plano.documento?.subdisciplinas?.length ? plano.documento.subdisciplinas.join(' · ') : plano.atividade.subdisciplina)
+                : displayName}
+            </p>
             <div className="flex flex-wrap gap-1 mt-1">
               {plano.isQuickActivity && (
                 <Badge variant="outline" className="px-1 py-0.5 text-xs bg-gray-100 text-gray-600 border-gray-300">
@@ -437,15 +441,7 @@ export default function CalendarioActivityItem({
           </div>
         </div>
 
-        {plano.tipo_planejamento === 'documento' && plano.documento?.subdisciplinas?.length > 0 && (
-          <div className="mb-1.5 flex flex-wrap gap-1">
-            {plano.documento.subdisciplinas.map((sub, idx) => (
-              <Badge key={idx} variant="outline" className="text-xs px-1.5 py-0.5 bg-indigo-50 text-indigo-700 border-indigo-200">
-                {sub}
-              </Badge>
-            ))}
-          </div>
-        )}
+
 
         {subdisciplina && (
           <div className="flex items-center gap-1.5 mb-1.5">
@@ -475,8 +471,8 @@ export default function CalendarioActivityItem({
                 realStatus === 'concluido' ? 'bg-green-500 cursor-not-allowed'
                 : realStatus === 'concluido_com_atraso' ? 'bg-red-500 cursor-not-allowed'
                 : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado')
-                  ? 'bg-white border-2 border-red-500 hover:bg-red-50'
-                  : 'bg-white border-2 border-green-500 hover:bg-green-50'
+                  ? 'bg-red-500 hover:bg-red-600'
+                  : 'bg-green-500 hover:bg-green-600'
               }`}
               title={
                 realStatus === 'concluido' ? 'Concluída no prazo'
@@ -485,13 +481,9 @@ export default function CalendarioActivityItem({
                 : 'No prazo - clique para concluir'
               }
             >
-              {realStatus === 'concluido'
+              {isConcluded
                 ? <Check className="w-3.5 h-3.5 text-white" />
-                : realStatus === 'concluido_com_atraso'
-                  ? <Check className="w-3.5 h-3.5 text-white" />
-                  : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado')
-                    ? <span className="block w-2.5 h-2.5 rounded-full bg-red-500" />
-                    : <span className="block w-2.5 h-2.5 rounded-full bg-green-500" />}
+                : <span className="block w-2.5 h-2.5 rounded-full bg-white" />}
             </button>
             {canEditDelete && (
               <button
