@@ -45,10 +45,18 @@ export default function ControleHorasTab({ documentos = [], planejamentos = [] }
         let discExecutado = 0;
         const subLista = Object.entries(subs)
           .map(([sub, dados]) => {
-            discGeral += dados.geral;
+            // Regra: as horas gerais nunca podem ser menores que as planejadas
+            // ou realizadas. O total do catálogo (tempo_total) pode estar
+            // desatualizado, então o geral é o teto entre os três valores.
+            const geralCalculado = Math.max(
+              dados.geral || 0,
+              dados.planejado || 0,
+              dados.executado || 0
+            );
+            discGeral += geralCalculado;
             discPlanejado += dados.planejado;
             discExecutado += dados.executado;
-            return { subdisciplina: sub, ...dados };
+            return { subdisciplina: sub, ...dados, geral: geralCalculado };
           })
           .sort((a, b) => a.subdisciplina.localeCompare(b.subdisciplina));
         return {
