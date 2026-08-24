@@ -901,20 +901,6 @@ export default function AnaliticoRenderContent({
                         </div>
                         {!subRecolhida && (
                         <Table className="text-sm">
-                          <TableHeader className="bg-white">
-                            <TableRow>
-                              {hasCheckboxColumn && <TableHead className="w-[50px]"></TableHead>}
-                              <TableHead className="w-[50px]"></TableHead>
-                              <TableHead>Folha</TableHead>
-                              <TableHead className="w-[40px]"></TableHead>
-                              <TableHead>Status</TableHead>
-                              <TableHead>Usuário</TableHead>
-                              <TableHead>Datas</TableHead>
-                              <TableHead className="w-[70px]">Horas</TableHead>
-                              <TableHead className="w-[70px]">Total</TableHead>
-                              <TableHead className="text-center w-[120px]">Ações</TableHead>
-                            </TableRow>
-                          </TableHeader>
                           <TableBody>
                             {etapasNoSubgrupo.length === 0 ? (
                               <TableRow>
@@ -932,6 +918,10 @@ export default function AnaliticoRenderContent({
                                 const uniqueEtapaExecutors = [...new Set(etapaExecutors.filter(Boolean))];
                                 const etapaExecutor = uniqueEtapaExecutors.length === 1 ? uniqueEtapaExecutors[0] : (uniqueEtapaExecutors.length > 1 ? '__mixed__' : '');
                                 const isEtapaSaving = folhas.some(f => isSavingFolhaExecutor?.[`etapa-${f.folha.source_documento_id}-${etapa}`]);
+                                const etapaAtividadesPlanos = folhas.flatMap(f => f.atividades.map(a =>
+                                  planejamentos?.find(p => p.documento_id === a.source_documento_id && p.atividade_id === a.base_atividade_id)
+                                ).filter(Boolean));
+                                const etapaConcluida = etapaAtividadesPlanos.length > 0 && etapaAtividadesPlanos.every(p => p.status === 'concluido' || p.termino_real);
                                 return [
                                 <TableRow key={`etapa-${etapaKey}`} className="bg-gray-100 cursor-pointer hover:bg-gray-200" onClick={() => toggleEtapa(etapaKey)}>
                                   <TableCell colSpan={hasCheckboxColumn ? 10 : 9} className="py-2">
@@ -969,9 +959,15 @@ export default function AnaliticoRenderContent({
                                           plano={getPlanoEtapa(disciplina, subdisciplina, etapa)}
                                           feriados={feriados}
                                           totalHoras={totalHorasEtapa}
+                                          disabled={etapaConcluida}
                                           onSave={(inicio, termino) => handleSavePlanoEtapa(disciplina, subdisciplina, etapa, inicio, termino, totalHorasEtapa)}
                                         />
                                         <span className="text-xs text-gray-500">{totalHorasEtapa.toFixed(1)}h</span>
+                                        {etapaConcluida && (
+                                          <Badge className="bg-green-600 text-white text-xs flex items-center gap-1">
+                                            <CheckCircle2 className="w-3 h-3" /> Concluída
+                                          </Badge>
+                                        )}
                                       </div>
                                     </div>
                                   </TableCell>
