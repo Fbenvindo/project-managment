@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from "react";
-import { ChevronDown, ChevronRight, Clock, CheckCircle2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Clock, CheckCircle2, Layers } from "lucide-react";
 
 const fmt = (n) => (Number(n) || 0).toFixed(1).replace('.', ',');
 
@@ -25,11 +25,13 @@ export default function ControleHorasTab({ documentos = [], planejamentos = [] }
           ? doc.subdisciplinas[0]
           : "Sem Subdisciplina";
       const horas = horasPorDoc[doc.id] || { planejado: 0, executado: 0 };
+      const geral = Number(doc.tempo_total) || 0;
 
       if (!arvore[disciplina]) arvore[disciplina] = {};
       if (!arvore[disciplina][subdisciplina])
-        arvore[disciplina][subdisciplina] = { planejado: 0, executado: 0, folhas: 0 };
+        arvore[disciplina][subdisciplina] = { geral: 0, planejado: 0, executado: 0, folhas: 0 };
 
+      arvore[disciplina][subdisciplina].geral += geral;
       arvore[disciplina][subdisciplina].planejado += horas.planejado;
       arvore[disciplina][subdisciplina].executado += horas.executado;
       arvore[disciplina][subdisciplina].folhas += 1;
@@ -38,10 +40,12 @@ export default function ControleHorasTab({ documentos = [], planejamentos = [] }
     // Monta resultado ordenado com totais por disciplina
     return Object.entries(arvore)
       .map(([disciplina, subs]) => {
+        let discGeral = 0;
         let discPlanejado = 0;
         let discExecutado = 0;
         const subLista = Object.entries(subs)
           .map(([sub, dados]) => {
+            discGeral += dados.geral;
             discPlanejado += dados.planejado;
             discExecutado += dados.executado;
             return { subdisciplina: sub, ...dados };
@@ -50,6 +54,7 @@ export default function ControleHorasTab({ documentos = [], planejamentos = [] }
         return {
           disciplina,
           subdisciplinas: subLista,
+          geral: discGeral,
           planejado: discPlanejado,
           executado: discExecutado,
         };
@@ -60,11 +65,12 @@ export default function ControleHorasTab({ documentos = [], planejamentos = [] }
   const totalGeral = useMemo(() => {
     return arvore.reduce(
       (acc, d) => {
+        acc.geral += d.geral;
         acc.planejado += d.planejado;
         acc.executado += d.executado;
         return acc;
       },
-      { planejado: 0, executado: 0 }
+      { geral: 0, planejado: 0, executado: 0 }
     );
   }, [arvore]);
 
@@ -94,6 +100,11 @@ export default function ControleHorasTab({ documentos = [], planejamentos = [] }
       {/* Resumo geral */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-white rounded-lg border border-gray-200 px-5 py-4 shadow-sm">
         <div className="flex items-center gap-6">
+          <div>
+            <p className="text-xs text-gray-500 uppercase tracking-wide">Horas Gerais</p>
+            <p className="text-xl font-bold text-amber-600">{fmt(totalGeral.geral)}h</p>
+          </div>
+          <div className="h-8 w-px bg-gray-200" />
           <div>
             <p className="text-xs text-gray-500 uppercase tracking-wide">Horas Planejadas</p>
             <p className="text-xl font-bold text-blue-700">{fmt(totalGeral.planejado)}h</p>
@@ -132,7 +143,7 @@ export default function ControleHorasTab({ documentos = [], planejamentos = [] }
 
       {/* Árvore disciplina > subdisciplina */}
       <div className="space-y-3">
-        {arvore.map(({ disciplina, subdisciplinas, planejado, executado }) => {
+        {arvore.map(({ disciplina, subdisciplinas, geral, planejado, executado }) => {
           const aberta = expandidas.has(disciplina);
           const progresso = planejado > 0 ? Math.round((executado / planejado) * 100) : 0;
 
@@ -154,6 +165,10 @@ export default function ControleHorasTab({ documentos = [], planejamentos = [] }
                   <span className="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-full px-3 py-0.5 text-xs font-medium text-gray-600">
                     {subdisciplinas.length} {subdisciplinas.length === 1 ? "subdisciplina" : "subdisciplinas"}
                   </span>
+                  <span className="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-full px-3 py-0.5 text-xs font-semibold text-amber-600">
+                    <Layers className="w-3 h-3" />
+                    {fmt(geral)}h
+                  </span>
                   <span className="inline-flex items-center gap-1 bg-white border border-gray-200 rounded-full px-3 py-0.5 text-xs font-semibold text-blue-700">
                     <Clock className="w-3 h-3" />
                     {fmt(planejado)}h
@@ -168,7 +183,7 @@ export default function ControleHorasTab({ documentos = [], planejamentos = [] }
               {/* Subdisciplinas */}
               {aberta && (
                 <div className="bg-white p-3 space-y-2">
-                  {subdisciplinas.map(({ subdisciplina, planejado: sp, executado: se, folhas }) => {
+                  {subdisciplinas.map(({ subdisciplina, geral: sg, planejado: sp, executado: se, folhas }) => {
                     const pct = sp > 0 ? Math.round((se / sp) * 100) : 0;
                     return (
                       <div
@@ -183,11 +198,15 @@ export default function ControleHorasTab({ documentos = [], planejamentos = [] }
                           <span className="text-xs text-gray-400 shrink-0">({folhas} {folhas === 1 ? "folha" : "folhas"})</span>
                         </div>
                         <div className="flex items-center gap-4 shrink-0">
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5" title="Horas gerais">
+                            <Layers className="w-3.5 h-3.5 text-amber-500" />
+                            <span className="text-sm font-semibold text-amber-600">{fmt(sg)}h</span>
+                          </div>
+                          <div className="flex items-center gap-1.5" title="Horas planejadas">
                             <Clock className="w-3.5 h-3.5 text-blue-500" />
                             <span className="text-sm font-semibold text-blue-700">{fmt(sp)}h</span>
                           </div>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5" title="Horas executadas">
                             <CheckCircle2 className="w-3.5 h-3.5 text-green-500" />
                             <span className="text-sm font-semibold text-green-700">{fmt(se)}h</span>
                           </div>
