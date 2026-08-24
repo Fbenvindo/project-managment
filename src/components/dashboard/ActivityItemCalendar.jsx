@@ -173,10 +173,19 @@ export default function CalendarioActivityItem({
       if (plano.isLegacyExecution) { alert('Esta execução antiga não pode ser concluída.'); return; }
       const entityToUpdate = plano.tipo_planejamento === 'documento' ? PlanejamentoDocumento : PlanejamentoAtividade;
       const hoje = format(new Date(), 'yyyy-MM-dd');
+      const terminoPlanejado = plano.termino_ajustado || plano.termino_planejado;
+      const statusFinal = terminoPlanejado && hoje > terminoPlanejado ? 'concluido_com_atraso' : 'concluido';
+      // As horas realizadas passam a ser iguais às horas planejadas no momento da conclusão.
+      const tempoPlanejado = Number(plano.tempo_planejado) || 0;
+      const horasPorDia = (plano.horas_por_dia && typeof plano.horas_por_dia === 'object')
+        ? { ...plano.horas_por_dia }
+        : (tempoPlanejado > 0 ? { [hoje]: tempoPlanejado } : {});
       const updateData = {
-        status: 'concluido',
+        status: statusFinal,
         termino_real: hoje,
         executor_principal: executorEmail || plano.executor_principal || user?.email,
+        tempo_executado: tempoPlanejado,
+        horas_executadas_por_dia: horasPorDia,
       };
       await retryWithBackoff(() => entityToUpdate.update(plano.id, updateData), 3, 1000, 'concluirAtividade');
       setShowConcluirModal(false);
