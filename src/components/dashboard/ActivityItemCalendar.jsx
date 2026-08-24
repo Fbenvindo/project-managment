@@ -418,9 +418,9 @@ export default function CalendarioActivityItem({
               <p className="text-xs text-gray-500 mb-0.5 font-medium truncate">📋 {plano.empreendimento.nome}</p>
             )}
             <p className="font-medium text-gray-800 leading-tight truncate" title={displayName}>
-              {plano.tipo_planejamento === 'documento' && (plano.documento?.subdisciplinas?.length || plano.atividade?.subdisciplina)
-                ? (plano.documento?.subdisciplinas?.length ? plano.documento.subdisciplinas.join(' · ') : plano.atividade.subdisciplina)
-                : displayName}
+              {plano.documento?.subdisciplinas?.length
+                ? plano.documento.subdisciplinas.join(' · ')
+                : (plano.atividade?.subdisciplina || displayName)}
             </p>
             <div className="flex flex-wrap gap-1 mt-1">
               {plano.isQuickActivity && (
