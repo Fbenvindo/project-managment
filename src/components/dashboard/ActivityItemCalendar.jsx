@@ -467,12 +467,12 @@ export default function CalendarioActivityItem({
             <button
               onClick={() => setShowConcluirModal(true)}
               disabled={isConcluded || isConcluindo}
-              className={`p-1.5 rounded-full transition-colors flex items-center justify-center ${
-                realStatus === 'concluido' ? 'bg-green-500 cursor-not-allowed'
-                : realStatus === 'concluido_com_atraso' ? 'bg-red-500 cursor-not-allowed'
+              className={`p-1.5 rounded-full transition-colors flex items-center justify-center bg-white ${
+                realStatus === 'concluido' ? 'border-2 border-green-500 cursor-not-allowed'
+                : realStatus === 'concluido_com_atraso' ? 'border-2 border-red-500 cursor-not-allowed'
                 : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado')
-                  ? 'bg-red-500 hover:bg-red-600'
-                  : 'bg-green-500 hover:bg-green-600'
+                  ? 'border-2 border-red-500 hover:bg-red-50'
+                  : 'border-2 border-green-500 hover:bg-green-50'
               }`}
               title={
                 realStatus === 'concluido' ? 'Concluída no prazo'
@@ -482,8 +482,10 @@ export default function CalendarioActivityItem({
               }
             >
               {isConcluded
-                ? <Check className="w-3.5 h-3.5 text-white" />
-                : <span className="block w-2.5 h-2.5 rounded-full bg-white" />}
+                ? <Check className={`w-3.5 h-3.5 ${realStatus === 'concluido_com_atraso' ? 'text-red-500' : 'text-green-500'}`} />
+                : (realStatus === 'atrasado' || realStatus === 'replanejado_atrasado')
+                  ? <span className="block w-2.5 h-2.5 rounded-full bg-red-500" />
+                  : <span className="block w-2.5 h-2.5 rounded-full bg-green-500" />}
             </button>
             {canEditDelete && (
               <button
