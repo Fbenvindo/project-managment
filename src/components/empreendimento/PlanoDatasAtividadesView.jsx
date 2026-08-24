@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { PlanoDataEtapa } from "@/entities/all";
 import { Badge } from "@/components/ui/badge";
-import { ChevronDown, ChevronRight } from "lucide-react";
+import { ChevronDown, ChevronRight, Clock } from "lucide-react";
 import EtapaPlanoGroup from "./EtapaPlanoGroup";
 
 export default function PlanoDatasAtividadesView({
@@ -48,6 +48,7 @@ export default function PlanoDatasAtividadesView({
       });
       return {
         subdisciplina: sub,
+        totalHoras: acts.reduce((s, a) => s + (Number(a.tempo) || 0), 0),
         etapas: Object.entries(porEtapa).map(([etapa, ats]) => ({
           etapa,
           atividades: ats,
@@ -82,6 +83,10 @@ export default function PlanoDatasAtividadesView({
               )}
               {grupo.subdisciplina}
               <Badge variant="secondary">{grupo.etapas.length} etapa(s)</Badge>
+              <Badge variant="outline" className="text-blue-700">
+                <Clock className="w-3 h-3 mr-1" />
+                {grupo.totalHoras.toFixed(1)}h
+              </Badge>
             </div>
           </div>
           {subsExpandidas[grupo.subdisciplina] !== false && (

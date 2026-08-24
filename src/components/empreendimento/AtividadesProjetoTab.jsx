@@ -541,6 +541,7 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
       ) : (
         <div className="space-y-6">
           {atividadesPorDisciplina.map(([disciplina, atividadesDisciplina]) => {
+            const totalHorasDisciplina = atividadesDisciplina.reduce((s, a) => s + (Number(a.tempo) || 0), 0);
             return (
               <div key={disciplina} className="border rounded-lg overflow-hidden">
                 <div
@@ -551,6 +552,10 @@ export default function AtividadesProjetoTab({ empreendimentoId, atividades = []
                     <div className="w-1 h-6 bg-blue-600 rounded-full"></div>
                     {disciplina}
                     <Badge variant="secondary" className="ml-2">{atividadesDisciplina.length} {atividadesDisciplina.length === 1 ? 'atividade' : 'atividades'}</Badge>
+                    <Badge variant="outline" className="ml-1 text-blue-700">
+                      <Clock className="w-3 h-3 mr-1" />
+                      {totalHorasDisciplina.toFixed(1)}h
+                    </Badge>
                   </h3>
                   <button className="p-1 hover:bg-blue-200 rounded transition-colors">
                     {disciplinasMinimizadas[disciplina] ? <ChevronRight className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
