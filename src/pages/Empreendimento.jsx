@@ -24,6 +24,7 @@ import AtividadesProjetoTab from "../components/empreendimento/AtividadesProjeto
 import AnaliticoGlobalTab from "../components/empreendimento/AnaliticoGlobalTab";
 import AnaliseConcepcaoPlanejamentoTab from "../components/empreendimento/AnaliseConcepcaoPlanejamentoTab";
 import GestaoTab from "../components/empreendimento/GestaoTab";
+import ControleHorasTab from "../components/empreendimento/ControleHorasTab";
 import PRETab from "../components/empreendimento/PRETab";
 import CadastroTab from "../components/empreendimento/CadastroTab";
 import EtapasProjetoTab from "../components/empreendimento/EtapasProjetoTab";
@@ -72,7 +73,7 @@ export default function EmpreendimentoPage() {
 
   const visibleTabsForUser = useMemo(() => {
     if (canEdit) {
-      return ['documentos', 'cadastro', 'etapas', 'pavimentos', 'atividades_projeto', 'pre', 'controle_os', 'checklist', 'gestao'];
+      return ['documentos', 'cadastro', 'etapas', 'pavimentos', 'atividades_projeto', 'pre', 'controle_os', 'checklist', 'controle_horas', 'gestao'];
     }
     // Usuários comuns veem apenas: Documentos, Cadastro, PRE
     return ['documentos', 'cadastro', 'pre'];
@@ -215,7 +216,7 @@ export default function EmpreendimentoPage() {
       loadSharedData();
     }
 
-    if (newTab !== 'gestao' && newTab !== 'checklist' && newTab !== 'cadastro' && newTab !== 'pre' && !tabData[newTab]?.loaded && !tabData[newTab]?.loading) {
+    if (newTab !== 'gestao' && newTab !== 'checklist' && newTab !== 'cadastro' && newTab !== 'pre' && newTab !== 'controle_horas' && !tabData[newTab]?.loaded && !tabData[newTab]?.loading) {
       loadTabData(newTab);
     }
 
@@ -230,6 +231,12 @@ export default function EmpreendimentoPage() {
 
     if (newTab === 'documentos' && !tabData.pavimentos.loaded && !tabData.pavimentos.loading) {
       loadTabData('pavimentos');
+    }
+
+    if (newTab === 'controle_horas') {
+      if (!tabData.documentos.loaded && !tabData.documentos.loading) {
+        loadTabData('documentos');
+      }
     }
 
     if (newTab === 'gestao') {
@@ -352,7 +359,7 @@ export default function EmpreendimentoPage() {
         <EmpreendimentoHeader empreendimento={empreendimento} />
 
         <Tabs value={activeTab} onValueChange={handleTabChange} className="w-full">
-          <TabsList className={`grid w-full ${canEdit ? (hasAccessToGestao ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-9' : 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-8') : 'grid-cols-3'} bg-white shadow-sm`}>
+          <TabsList className={`grid w-full ${canEdit ? (hasAccessToGestao ? 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-10' : 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-9') : 'grid-cols-3'} bg-white shadow-sm`}>
             {visibleTabsForUser.includes('documentos') && <TabsTrigger value="documentos">Documentos</TabsTrigger>}
             {visibleTabsForUser.includes('cadastro') && <TabsTrigger value="cadastro">Cadastro</TabsTrigger>}
             {visibleTabsForUser.includes('etapas') && <TabsTrigger value="etapas">Etapas do Projeto</TabsTrigger>}
@@ -361,6 +368,7 @@ export default function EmpreendimentoPage() {
             {visibleTabsForUser.includes('pre') && <TabsTrigger value="pre">PRE</TabsTrigger>}
             {visibleTabsForUser.includes('controle_os') && <TabsTrigger value="controle_os">Controle OS</TabsTrigger>}
             {visibleTabsForUser.includes('checklist') && <TabsTrigger value="checklist">Checklist</TabsTrigger>}
+            {visibleTabsForUser.includes('controle_horas') && <TabsTrigger value="controle_horas">Controle de Horas</TabsTrigger>}
             {hasAccessToGestao && visibleTabsForUser.includes('gestao') && (
               <TabsTrigger value="gestao">Gestão</TabsTrigger>
             )}
@@ -470,6 +478,26 @@ export default function EmpreendimentoPage() {
 
           <TabsContent value="checklist">
             <ChecklistTab empreendimento={empreendimento} />
+          </TabsContent>
+
+          <TabsContent value="controle_horas">
+            {tabData.documentos.loading || sharedData.loading ? (
+              <div className="flex flex-col items-center justify-center h-96">
+                <RefreshCw className="w-8 h-8 animate-spin text-blue-500 mb-4" />
+                <p className="text-gray-600">Carregando horas...</p>
+              </div>
+            ) : tabData.documentos.loaded ? (
+              <ControleHorasTab
+                documentos={tabData.documentos.data.documentos || []}
+                planejamentos={tabData.documentos.data.planejamentos || []}
+              />
+            ) : (
+              <div className="flex justify-center items-center h-64">
+                <Button onClick={() => handleTabChange('controle_horas')}>
+                  Carregar Controle de Horas
+                </Button>
+              </div>
+            )}
           </TabsContent>
 
           {hasAccessToGestao && (
