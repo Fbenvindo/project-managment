@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { base44 } from "@/api/base44Client";
 import { exportarPREExcel } from "@/components/utils/exportPREExcel";
+import { extrairImagensPlanilha, imagensDoItem } from "@/components/utils/importPREImages";
 import PREItemRow from "./PREItemRow";
 
 const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/577f93874_logo_Interativa_versao_final_sem_fundo_0002.png";
@@ -592,6 +593,29 @@ export default function PRETab({ empreendimento, readOnly = false, onAfterSave }
         return;
       }
 
+      // Fotos embutidas na planilha: envia e vincula ao item da mesma linha
+      const imagensPorItem = new Map();
+      if (!isCSV) {
+        try {
+          const fotos = await extrairImagensPlanilha(file);
+          const pendentes = [];
+          fotos.forEach((arquivos, chave) => arquivos.forEach(f => pendentes.push({ chave, f })));
+          for (let i = 0; i < pendentes.length; i += 5) {
+            const lote = pendentes.slice(i, i + 5);
+            const enviadas = await Promise.all(lote.map(async ({ chave, f }) => {
+              const { file_url } = await base44.integrations.Core.UploadPublicFile({ file: f });
+              return { chave, file_url };
+            }));
+            enviadas.forEach(({ chave, file_url }) => {
+              if (!imagensPorItem.has(chave)) imagensPorItem.set(chave, []);
+              imagensPorItem.get(chave).push(file_url);
+            });
+          }
+        } catch (error) {
+          console.warn('Não foi possível importar as fotos da planilha:', error);
+        }
+      }
+
       const novosItens = rows.map((row, idx) => ({
         id: `temp-import-${Date.now()}-${idx}`,
         empreendimento_id: empreendimento.id,
@@ -606,12 +630,13 @@ export default function PRETab({ empreendimento, readOnly = false, onAfterSave }
         disciplina: row.disciplina || '',
         status: row.status || 'Em andamento',
         resposta: row.resposta || '',
-        imagens: [],
+        imagens: imagensDoItem(imagensPorItem, row.item),
         isNew: true,
       }));
 
       setItems(prev => [...prev, ...novosItens]);
-      alert(`${novosItens.length} item(s) importado(s)! Clique em Salvar para persistir.`);
+      const totalFotos = Array.from(imagensPorItem.values()).reduce((soma, lista) => soma + lista.length, 0);
+      alert(`${novosItens.length} item(s) importado(s)${totalFotos ? ` com ${totalFotos} foto(s)` : ''}! Clique em Salvar para persistir.`);
     } catch {
       alert('Erro ao importar arquivo.');
     } finally {
@@ -847,6 +872,7 @@ export default function PRETab({ empreendimento, readOnly = false, onAfterSave }
               <p className="text-blue-700">• Envie um arquivo CSV com os itens PRE</p>
               <p className="text-blue-700">• Colunas obrigatórias: <strong>item</strong>, <strong>data</strong></p>
               <p className="text-blue-700">• Colunas opcionais: de, descritiva, localizacao, assunto, comentario, tempo_atendimento, status, resposta</p>
+              <p className="text-blue-700">• Fotos embutidas na planilha (.xlsx) entram junto com os itens</p>
               <p className="text-blue-700">• Formato de data: YYYY-MM-DD (ex: 2026-03-27)</p>
               <p className="text-blue-700">• Separador: ponto e vírgula (;) ou vírgula (,)</p>
             </div>
