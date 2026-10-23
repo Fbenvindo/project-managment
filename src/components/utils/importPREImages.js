@@ -53,6 +53,15 @@ function arquivoDaImagem(media, nome) {
   return new File([bytes], `${nome}.${extensao}`, { type: MIME_POR_EXTENSAO[extensao] || 'image/png' });
 }
 
+// Chave do item da linha; quando a foto fica em uma linha sem item (ex: logo abaixo), sobe até encontrá-lo
+function chaveDoItemAcima(ws, colunaItem, linha) {
+  for (let n = linha; n >= 1; n--) {
+    const chave = chaveDoItem(ws.getRow(n).getCell(colunaItem).value);
+    if (chave && chave !== 'item' && chave !== 'itens') return chave;
+  }
+  return '';
+}
+
 // Lê as fotos embutidas e agrupa por item: Map<chave do item, File[]>
 export async function extrairImagensPlanilha(file) {
   const wb = new ExcelJS.Workbook();
@@ -67,7 +76,7 @@ export async function extrairImagensPlanilha(file) {
   planilha.getImages().forEach((imagem, indice) => {
     const linha = linhaDaImagem(imagem.range);
     if (!linha) return;
-    const chave = chaveDoItem(planilha.getRow(linha).getCell(colunaItem).value);
+    const chave = chaveDoItemAcima(planilha, colunaItem, linha);
     if (!chave) return;
     const arquivo = arquivoDaImagem(wb.getImage(imagem.imageId), `pre-item-${chave}-${indice + 1}`);
     if (!arquivo) return;

@@ -26,6 +26,32 @@ function formatarData(valor) {
   return isNaN(d.getTime()) ? String(valor) : format(d, 'dd/MM/yyyy');
 }
 
+const FOTO_MAX_W = 900;
+const FOTO_MAX_H = 420;
+
+async function carregarImagem(url) {
+  try {
+    const resp = await fetch(url);
+    if (!resp.ok) return null;
+    const blob = await resp.blob();
+    const base64 = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+    const dims = await new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => resolve({ w: img.naturalWidth || 4, h: img.naturalHeight || 3 });
+      img.onerror = () => resolve({ w: 4, h: 3 });
+      img.src = URL.createObjectURL(blob);
+    });
+    return { base64, dims, ext: (blob.type || '').includes('png') ? 'png' : 'jpeg' };
+  } catch {
+    return null;
+  }
+}
+
 export async function exportarPREExcel({ empreendimento, items = [], headerData }) {
   const lastCol = COLUNAS.length;
 
@@ -122,7 +148,7 @@ export async function exportarPREExcel({ empreendimento, items = [], headerData 
   headRow.height = 20;
 
   // Itens da PRE
-  items.forEach(item => {
+  for (const item of items) {
     const row = ws.addRow([
       String(item.item ?? ''),
       formatarData(item.data),
@@ -145,7 +171,21 @@ export async function exportarPREExcel({ empreendimento, items = [], headerData 
     row.getCell(11).alignment = centerWrap;
     for (let c = 3; c <= 10; c++) row.getCell(c).alignment = leftWrap;
     row.getCell(12).alignment = leftWrap;
-  });
+
+    // Fotos do item: uma linha por imagem, logo abaixo do item
+    for (const url of (item.imagens || [])) {
+      const foto = await carregarImagem(url);
+      if (!foto) continue;
+      const escala = Math.min(1, FOTO_MAX_W / foto.dims.w, FOTO_MAX_H / foto.dims.h);
+      const largura = Math.round(foto.dims.w * escala);
+      const altura = Math.round(foto.dims.h * escala);
+      const fotoId = wb.addImage({ base64: foto.base64, extension: foto.ext });
+      const fotoRow = ws.addRow(Array(lastCol).fill(''));
+      borderRow(fotoRow);
+      fotoRow.height = altura * 0.75 + 4;
+      ws.addImage(fotoId, { tl: { col: 0, row: fotoRow.number - 1 }, ext: { width: largura, height: altura } });
+    }
+  }
 
   const buffer = await wb.xlsx.writeBuffer();
   const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
