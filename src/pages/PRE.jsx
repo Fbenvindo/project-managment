@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Plus, Trash2, Printer, Save, FileText, Loader2, Upload, Image as ImageIcon, X, CheckCircle, FileUp } from "lucide-react";
+import { Plus, Trash2, Printer, Save, FileText, Loader2, Upload, Image as ImageIcon, X, CheckCircle, FileUp, Download } from "lucide-react";
 import { Empreendimento, ItemPRE, Disciplina } from "@/entities/all";
 import { format } from "date-fns";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { base44 } from "@/api/base44Client";
+import { exportarPREExcel } from "@/components/utils/exportPREExcel";
 
 const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/577f93874_logo_Interativa_versao_final_sem_fundo_0002.png";
 
@@ -96,6 +97,7 @@ export default function PRE() {
   const [disciplinas, setDisciplinas] = useState([]);
   const [filtroDispline, setFiltroDispline] = useState('todas');
   const [isImporting, setIsImporting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const importFileRef = useRef(null);
   const autoSaveTimerRef = useRef(null);
   const [headerData, setHeaderData] = useState({
@@ -442,6 +444,23 @@ export default function PRE() {
     return items.filter(item => item.disciplina === filtroDispline);
   }, [items, filtroDispline]);
 
+  const handleExportExcel = async () => {
+    if (!selectedEmp) return;
+    setIsExporting(true);
+    try {
+      await exportarPREExcel({
+        empreendimento: empreendimentos.find(e => e.id === selectedEmp),
+        items: filteredItems,
+        headerData,
+      });
+    } catch (error) {
+      console.error('Erro ao exportar PRE:', error);
+      alert('Erro ao exportar a planilha.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -489,6 +508,10 @@ export default function PRE() {
               <Button variant="outline" onClick={handlePrint} disabled={!selectedEmp}>
                 <Printer className="w-4 h-4 mr-2" />
                 Imprimir
+              </Button>
+              <Button variant="outline" onClick={handleExportExcel} disabled={isExporting || !selectedEmp}>
+                {isExporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+                Exportar Excel
               </Button>
               <Button onClick={handleAddItem} disabled={!selectedEmp}>
                 <Plus className="w-4 h-4 mr-2" />
