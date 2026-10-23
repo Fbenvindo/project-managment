@@ -11,6 +11,7 @@ import { ItemPRE, Disciplina, Usuario, PlanejamentoAtividade, Documento } from "
 import { format } from "date-fns";
 import { retryWithBackoff } from "@/components/utils/apiUtils";
 import { base44 } from "@/api/base44Client";
+import { exportarPREExcel } from "@/components/utils/exportPREExcel";
 import PREItemRow from "./PREItemRow";
 
 const LOGO_URL = "https://qtrypzzcjebvfcihiynt.supabase.co/storage/v1/object/public/base44-prod/public/577f93874_logo_Interativa_versao_final_sem_fundo_0002.png";
@@ -97,6 +98,7 @@ export default function PRETab({ empreendimento, readOnly = false, onAfterSave }
   const [lastSaved, setLastSaved] = useState(/** @type {Date | null} */ (null));
   const dirtyItemIds = React.useRef(/** @type {Set<string>} */ (new Set()));
   const [isImporting, setIsImporting] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [importSelectedFile, setImportSelectedFile] = useState(null);
   const importFileRef = useRef(/** @type {HTMLInputElement | null} */ (null));
@@ -660,6 +662,18 @@ export default function PRETab({ empreendimento, readOnly = false, onAfterSave }
     });
   }, [items, filtroDispline, filtroStatus]);
 
+  const handleExportExcel = async () => {
+    setIsExporting(true);
+    try {
+      await exportarPREExcel({ empreendimento, items: filteredItems, headerData });
+    } catch (error) {
+      console.error('Erro ao exportar PRE:', error);
+      alert('Erro ao exportar a planilha.');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <>
       <style>{printStyles}</style>
@@ -903,6 +917,10 @@ export default function PRETab({ empreendimento, readOnly = false, onAfterSave }
             <Button variant="outline" onClick={handlePrint}>
               <Printer className="w-4 h-4 mr-2" />
               Imprimir
+            </Button>
+            <Button variant="outline" onClick={handleExportExcel} disabled={isExporting}>
+              {isExporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Download className="w-4 h-4 mr-2" />}
+              Exportar Excel
             </Button>
             {!readOnly && (
               <Button onClick={handleAddItem}>
